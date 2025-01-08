@@ -5,13 +5,13 @@ import AgoraRTC, {
   IAgoraRTCClient,
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
-  UID,
+  UID, ICameraVideoTrack,
 } from "agora-rtc-sdk-ng"
 import { ITextItem } from "@/types"
 import { AGEventEmitter } from "../events"
 import { RtcEvents, IUserTracks } from "./types"
-import { apiGenAgoraData } from "@/common"
-
+import { apiGenAgoraData } from "@/common/request"
+import { VideoSourceType } from "@/common/constant"
 
 const TIMEOUT_MS = 5000; // Timeout for incomplete messages
 
@@ -52,35 +52,77 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     }
   }
 
-  async createTracks() {
+  async createCameraTracks() {
     try {
-      const videoTrack = await AgoraRTC.createCameraVideoTrack()
-      this.localTracks.videoTrack = videoTrack
+      const videoTrack = await AgoraRTC.createCameraVideoTrack();
+      this.localTracks.videoTrack = videoTrack;
     } catch (err) {
-      console.error("Failed to create video track", err)
+      console.error("Failed to create video track", err);
     }
+    this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async createMicrophoneTracks() {
     try {
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack()
-      this.localTracks.audioTrack = audioTrack
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      this.localTracks.audioTrack = audioTrack;
     } catch (err) {
-      console.error("Failed to create audio track", err)
+      console.error("Failed to create audio track", err);
     }
-    this.emit("localTracksChanged", this.localTracks)
+    this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async createScreenShareTrack() {
+    try {
+      const screenTrack = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: {
+          width: 1200,
+          height: 800,
+          frameRate: 5
+        }
+      }, "disable");
+      this.localTracks.screenTrack = screenTrack;
+    } catch (err) {
+      console.error("Failed to create screen track", err);
+    }
+    this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async switchVideoSource(type:VideoSourceType) {
+    if (type === VideoSourceType.SCREEN) {
+      await this.createScreenShareTrack();
+      if(this.localTracks.screenTrack) {
+        this.client.unpublish(this.localTracks.videoTrack);
+        this.localTracks.videoTrack?.close();
+        this.localTracks.videoTrack = undefined;
+        this.client.publish(this.localTracks.screenTrack);
+        this.emit("localTracksChanged", this.localTracks);
+      }
+    } else if (type === VideoSourceType.CAMERA) {
+      await this.createCameraTracks();
+      if(this.localTracks.videoTrack) {
+        this.client.unpublish(this.localTracks.screenTrack);
+        this.localTracks.screenTrack?.close();
+        this.localTracks.screenTrack = undefined;
+        this.client.publish(this.localTracks.videoTrack);
+        this.emit("localTracksChanged", this.localTracks);
+      }
+    }
   }
 
   async publish() {
-    const tracks = []
+    const tracks = [];
     if (this.localTracks.videoTrack) {
-      tracks.push(this.localTracks.videoTrack)
+      tracks.push(this.localTracks.videoTrack);
     }
     if (this.localTracks.audioTrack) {
-      tracks.push(this.localTracks.audioTrack)
+      tracks.push(this.localTracks.audioTrack);
     }
     if (tracks.length) {
-      await this.client.publish(tracks)
+      await this.client.publish(tracks);
     }
   }
-
+  
   async destroy() {
     this.localTracks?.audioTrack?.close()
     this.localTracks?.videoTrack?.close()

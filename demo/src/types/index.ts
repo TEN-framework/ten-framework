@@ -19,6 +19,17 @@ export interface IAgentSettings {
   greeting: string
 }
 
+export interface ICozeSettings {
+  token: string
+  bot_id: string
+  base_url: string
+}
+
+
+export interface IDifySettings {
+  api_key: string
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",

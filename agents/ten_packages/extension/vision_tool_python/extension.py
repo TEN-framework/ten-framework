@@ -3,10 +3,8 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import json
-from ten.cmd_result import CmdResult
-from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
-from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
+from ten_ai_base import AsyncLLMToolBaseExtension
+from ten_ai_base.types import LLMToolMetadata, LLMToolResult
 from ten import (
     AudioFrame,
     VideoFrame,
@@ -18,8 +16,6 @@ from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolMetadataParameter
-
 
 def rgb2base64jpeg(rgb_data, width, height):
     # Convert the RGB image to a PIL Image
@@ -27,7 +23,7 @@ def rgb2base64jpeg(rgb_data, width, height):
     pil_image = pil_image.convert("RGB")
 
     # Resize the image while maintaining its aspect ratio
-    pil_image = resize_image_keep_aspect(pil_image, 320)
+    pil_image = resize_image_keep_aspect(pil_image, 512)
 
     # Save the image to a BytesIO object in JPEG format
     buffered = BytesIO()
@@ -109,17 +105,15 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
         data_name = data.get_name()
         ten_env.log_debug("on_data name {}".format(data_name))
 
-        # TODO: process data
-        pass
-
-    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         audio_frame_name = audio_frame.get_name()
         ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
 
-        # TODO: process audio frame
-        pass
-
-    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(
+        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
+    ) -> None:
         video_frame_name = video_frame.get_name()
         ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
 
@@ -136,19 +130,17 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
             ),
         ]
 
-    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(
+        self, ten_env: AsyncTenEnv, name: str, args: dict
+    ) -> LLMToolResult | None:
         if name == "get_vision_tool":
             if self.image_data is None:
-                raise Exception("No image data available")
+                raise ValueError("No image data available")
 
             base64_image = rgb2base64jpeg(
-                self.image_data, self.image_width, self.image_height)
+                self.image_data, self.image_width, self.image_height
+            )
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             return {
-                "content": [{
-                    "type": "image_url",
-                    "image_url": {
-                        "url": base64_image
-                    }
-                }]
+                "content": [{"type": "image_url", "image_url": {"url": base64_image}}]
             }

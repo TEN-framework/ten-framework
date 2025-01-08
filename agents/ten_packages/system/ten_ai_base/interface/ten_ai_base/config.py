@@ -1,7 +1,10 @@
-from dataclasses import dataclass, fields
 import builtins
-from typing import TypeVar, Type
-from ten import TenEnv
+import json
+
+from typing import TypeVar, Type, List
+from ten import AsyncTenEnv, TenEnv
+from dataclasses import dataclass, fields
+
 
 T = TypeVar('T', bound='BaseConfig')
 
@@ -17,6 +20,12 @@ class BaseConfig:
     def create(cls: Type[T], ten_env: TenEnv) -> T:
         c = cls()
         c._init(ten_env)
+        return c
+
+    @classmethod
+    async def create_async(cls: Type[T], ten_env: AsyncTenEnv) -> T:
+        c = cls()
+        await c._init_async(ten_env)
         return c
 
     def _init(obj, ten_env: TenEnv):
@@ -43,6 +52,33 @@ class BaseConfig:
                         val = ten_env.get_property_float(field.name)
                         setattr(obj, field.name, val)
                     case _:
-                        pass
+                        val = ten_env.get_property_to_json(field.name)
+                        setattr(obj, field.name, json.loads(val))
+            except Exception as e:
+                pass
+
+    async def _init_async(obj, ten_env: AsyncTenEnv):
+        """
+        Get property from ten_env to initialize the dataclass config.    
+        """
+        for field in fields(obj):
+            try:
+                match field.type:
+                    case builtins.str:
+                        val = await ten_env.get_property_string(field.name)
+                        if val:
+                            setattr(obj, field.name, val)
+                    case builtins.int:
+                        val = await ten_env.get_property_int(field.name)
+                        setattr(obj, field.name, val)
+                    case builtins.bool:
+                        val = await ten_env.get_property_bool(field.name)
+                        setattr(obj, field.name, val)
+                    case builtins.float:
+                        val = await ten_env.get_property_float(field.name)
+                        setattr(obj, field.name, val)
+                    case _:
+                        val = await ten_env.get_property_to_json(field.name)
+                        setattr(obj, field.name, json.loads(val))
             except Exception as e:
                 pass

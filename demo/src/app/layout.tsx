@@ -2,11 +2,20 @@ import { StoreProvider } from "@/store"
 import type { Metadata, Viewport } from "next"
 import "./global.css"
 import { Toaster } from "@/components/ui/sonner"
+import { Roboto } from "next/font/google"
+import { cn } from "@/lib/utils"
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-roboto",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "TEN Agent",
   description:
-    "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)",
+    "A Realtime Conversational AI Agent powered by TEN",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
@@ -29,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="dark">
+      <body className={cn("dark", "antialiased", roboto.variable)}>
         {/* <ConfigProvider
           theme={{
             components: {
@@ -41,7 +50,7 @@ export default function RootLayout({
         > */}
         <StoreProvider>{children}</StoreProvider>
         {/* </ConfigProvider> */}
-        <Toaster />
+        <Toaster richColors closeButton theme="dark" />
       </body>
     </html>
   )

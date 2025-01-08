@@ -8,7 +8,13 @@ import {
   getRandomChannel,
   genRandomString,
 } from "@/common"
-import { setOptions, reset, setAgentSettings } from "@/store/reducers/global"
+import {
+  setOptions,
+  reset,
+  setAgentSettings,
+  setCozeSettings,
+  setDifySettings,
+} from "@/store/reducers/global"
 
 interface AuthInitializerProps {
   children: ReactNode
@@ -25,6 +31,8 @@ const AuthInitializer = (props: AuthInitializerProps) => {
         dispatch(reset())
         dispatch(setOptions(data.options))
         dispatch(setAgentSettings(data.settings))
+        dispatch(setCozeSettings(data.cozeSettings))
+        dispatch(setDifySettings(data.difySettings))
       } else {
         const newOptions = {
           userName: genRandomString(8),

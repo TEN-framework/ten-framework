@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4"
+      "version": "0.6"
     }
   ],
   "package": {
@@ -56,6 +56,15 @@
       },
       "max_memory_length": {
         "type": "int64"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "azure_endpoint": {
+        "type": "string"
+      },
+      "azure_api_version": {
+        "type": "string"
       }
     },
     "data_in": [
@@ -93,21 +102,30 @@
       {
         "name": "tool_register",
         "property": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "parameters": {
-            "type": "string"
+          "tool": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "parameters"
+            ]
           }
         },
-        "required": [
-          "name",
-          "description",
-          "parameters"
-        ],
         "result": {
           "property": {
             "response": {
