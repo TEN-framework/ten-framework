@@ -1252,6 +1252,491 @@
             ]
           }
         ]
+      },
+      {
+        "name": "story_teller_stt_integrated",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "llm",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "base_url": "",
+              "frequency_penalty": 0.9,
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "max_memory_length": 10,
+              "max_tokens": 512,
+              "model": "${env:OPENAI_MODEL}",
+              "prompt": "You are an ai agent bot producing child picture books. Each response should be short and no more than 50 words as it's for child. \nFor every response relevant to the story-telling, you will use the 'image_generate' tool to create an image based on the description or key moment in that part of the story. \n The story should be set in a fantasy world. Try asking questions relevant to the story to decide how the story should proceed. Every response should include rich, vivid descriptions that will guide the 'image_generate' tool to produce an image that aligns with the scene or mood.\n Whether it’s the setting, a character’s expression, or a dramatic moment, the paragraph should give enough detail for a meaningful visual representation.",
+              "proxy_url": "${env:OPENAI_PROXY_URL}"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "tts",
+            "addon": "azure_tts",
+            "extension_group": "tts",
+            "property": {
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector_python",
+            "extension_group": "default",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "openai_image_generate_tool",
+            "addon": "openai_image_generate_tool",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "llm",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "openai_image_generate_tool"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "openai_image_generate_tool",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "va_nova_multimodal_aws",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": false,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4,
+              "subscribe_video": true,
+              "max_memory_length":10
+            }
+          },
+          {
+            "type": "extension",
+            "name": "stt",
+            "addon": "transcribe_asr_python",
+            "extension_group": "stt",
+            "property": {
+              "access_key": "${env:AWS_ACCESS_KEY_ID}",
+              "lang_code": "en-US",
+              "region": "us-east-1",
+              "sample_rate": "16000",
+              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "llm",
+            "addon": "bedrock_llm_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "access_key_id": "${env:AWS_ACCESS_KEY_ID}",
+              "greeting": "TEN Agent connected. I am nova, How can I help you today?",
+              "max_memory_length": 10,
+              "max_tokens": 256,
+              "model": "us.amazon.nova-lite-v1:0",
+              "prompt": "Now you are an intelligent assistant with real-time interaction capabilities. I will provide you with a series of real-time video image information. Please understand these images as video frames. Based on the images and the user's input, engage in a conversation with the user, remembering the dialogue content in a concise and clear manner.",
+              "region": "us-east-1",
+              "secret_access_key": "${env:AWS_SECRET_ACCESS_KEY}",
+              "temperature": 0.7,
+              "topK": 10,
+              "topP": 0.5,
+              "is_memory_enabled": false,
+              "is_enable_video": true
+            }
+          },
+          {
+            "type": "extension",
+            "name": "tts",
+            "addon": "polly_tts",
+            "extension_group": "tts",
+            "property": {
+              "region": "us-east-1",
+              "access_key": "${env:AWS_ACCESS_KEY_ID}",
+              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
+              "engine": "generative",
+              "voice": "Ruth",
+              "sample_rate": 16000,
+              "lang_code": "en-US"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector_python",
+            "extension_group": "default",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "stt"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "stt",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "llm",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ],
     "log_level": 3
