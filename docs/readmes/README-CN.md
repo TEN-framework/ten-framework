@@ -1,6 +1,6 @@
 <div align="center"> <a name="readme-top"></a>
 
-![TEN Agent 横幅](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+![TEN Agent 横幅](https://ten-framework-assets.s3.us-east-1.amazonaws.com/banner.jpg)
 
 [![在 X 上关注](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
 [![讨论帖子](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
@@ -40,27 +40,39 @@
 
 #### 目录
 
-- [👋 开始使用 & 加入 TEN 社区](#-开始使用--加入-ten-社区)
+- [👋 开始使用 \& 加入 TEN 社区](#-开始使用--加入-ten-社区)
 - [✨ 特性](#-特性)
-  - [1️⃣ Ten Agent + Trulience](#1️⃣--ten-agent--trulience)
-  - [2️⃣ Ten Agent + Deepseek](#2️⃣-ten-agent--deepseek)
-  - [3️⃣ Ten Agent + ESP32](#3️⃣-ten-agent--esp32)
-  - [4️⃣ Ten Agent + Gemini 多模态实时 API](#4️⃣-ten-agent--gemini-多模态实时-api)
-  - [5️⃣ Ten Agent + 故事讲述者 + 图像生成器](#5️⃣-ten-agent--故事讲述者--图像生成器)
-  - [6️⃣ Ten Agent + Dify](#6️⃣-ten-agent--dify)
-  - [7️⃣ Ten Agent + Coze](#7️⃣-ten-agent--coze)
+  - [1️⃣ 🔥 Ten Agent + Trulience](#1️⃣--ten-agent--trulience)
+  - [2️⃣ TEN Agent + DeepSeek](#2️⃣-ten-agent--deepseek)
+  - [3️⃣ TEN Agent + ESP32](#3️⃣-ten-agent--esp32)
+  - [4️⃣ TEN Agent + Gemini 多模态实时 API](#4️⃣-ten-agent--gemini-多模态实时-api)
+  - [5️⃣ TEN Agent + 故事讲述者 + 图像生成器](#5️⃣-ten-agent--故事讲述者--图像生成器)
+  - [6️⃣ TEN Agent + Dify](#6️⃣-ten-agent--dify)
+  - [7️⃣ TEN Agent + Coze](#7️⃣-ten-agent--coze)
 - [💡 TEN Agent 用例](#-ten-agent-用例)
 - [🧩 现成可用的扩展](#-现成可用的扩展)
 - [🎮 TEN Agent Playground](#-ten-agent-playground)
-  - [️️🅰 在 `localhost` 运行 Playground](#🅰️-在-localhost-运行-playground)
-  - [️🅱 在 Codespace 运行 Playground(无需 docker)](#🅱️-在-codespace-运行-playgroundno-docker)
+    - [🅰️ 在 localhost 运行 Playground](#️-在-localhost-运行-playground)
+    - [步骤 ⓵ - 先决条件](#步骤----先决条件)
+    - [步骤 ⓶ - 在虚拟机中构建代理](#步骤----在虚拟机中构建代理)
+      - [1. 克隆仓库并从 `.env.example` 创建 `.env` 文件](#1-克隆仓库并从-envexample-创建-env-文件)
+      - [2. 在 `.env` 中设置 Agora App ID 和 App 证书](#2-在-env-中设置-agora-app-id-和-app-证书)
+      - [3. 启动代理开发容器](#3-启动代理开发容器)
+      - [4. 进入容器](#4-进入容器)
+      - [5. 使用默认的 `graph` 构建代理 (约 5-8 分钟)](#5-使用默认的-graph-构建代理-约-5-8-分钟)
+      - [6. 启动 Web 服务器](#6-启动-web-服务器)
+    - [步骤 ⓷ - 自定义您的代理](#步骤----自定义您的代理)
+    - [🅱️ 在 Codespace 运行 Playground(无需 docker)](#️-在-codespace-运行-playground无需-docker)
 - [↪️ TEN Agent Demo](#️-ten-agent-demo)
 - [🛳️ 自托管](#️-自托管)
-  - [🅰️ 使用 Docker 部署](#🅰️-使用-docker-部署)
-  - [🅱️ 使用其他服务部署](#🅱️-使用其他服务部署)
+    - [🅰️ 使用 Docker 部署](#️-使用-docker-部署)
+    - [🅱️ 使用其他服务部署](#️-使用其他服务部署)
 - [🏗️ TEN Agent 架构](#️-ten-agent-架构)
 - [🌍 TEN Framework 生态系统](#-ten-framework-生态系统)
 - [🤝 贡献](#-贡献)
+  - [代码贡献者](#代码贡献者)
+  - [贡献指南](#贡献指南)
+  - [许可证](#许可证)
 
 <br/>
 
@@ -452,7 +464,7 @@ _即将推出..._
 ## 🌍 TEN Framework 生态系统
 
 | [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN，一个支持实时对话的 AI 代理框架，用于创建各种 AI 代理。<br/><br/>![][ten-framework-shield]                                                                                                                   | ![][ten-framework-banner] |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------ |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------ |
 | [**🎙️ TEN Agent**][ten-agent-link]<br/>TEN Agent 是一个由 TEN 提供支持的会话式语音 AI 代理，集成了 Deepseek、Gemini、OpenAI、RTC 和 ESP32 等硬件设备。它支持实时 AI 功能，如视觉、听觉和语音，并与 Dify 和 Coze 等平台完全兼容。<br/><br/>![][ten-agent-shield] | ![][ten-agent-banner]     |
 | **🎨 TMAN Designer** `alpha`<br/>TMAN Designer 是一个低/无代码选项，用于制作酷炫的语音代理。凭借其易于使用的工作流 UI，您可以轻松构建各种功能。它带有运行时、暗/亮主题、集成编辑器和集成终端。<br/><br/>![][tman-designer-shield]                               | ![][tman-designer-banner] |
 | **📒 TEN Portal**<br/>TEN 框架的官方网站，包含文档、博客和展示内容。<br/><br/>![][ten-docs-shield]                                                                                                                                                              | ![][ten-docs-banner]      |
