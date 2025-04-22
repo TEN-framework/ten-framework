@@ -88,7 +88,7 @@ TEN Agent 是一个由 TEN 提供支持的会话式语音 AI 代理，集成了 
 
 <br>
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
+![TEN star us gif](https://ten-framework-assets.s3.us-east-1.amazonaws.com/star-us.gif)
 
 <details>
   <summary><kbd>星标历史</kbd></summary>
@@ -120,7 +120,7 @@ TEN Agent 是一个由 TEN 提供支持的会话式语音 AI 代理，集成了 
   <br>
   <picture>
 
-![TEN Agent with Trulience](https://github.com/TEN-framework/docs/blob/main/assets/gif/ten-trulience.gif?raw=true)
+![TEN Agent with Trulience](https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-trulience.gif)
 
   </picture>
 
@@ -236,7 +236,7 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 ## 💡 TEN Agent 用例
 
-![用例](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
+![用例](https://ten-framework-assets.s3.us-east-1.amazonaws.com/usecases.jpg)
 
 <div align="right">
 
@@ -248,7 +248,7 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 ## 🧩 现成可用的扩展
 
-![现成的扩展](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
+![现成的扩展](https://ten-framework-assets.s3.us-east-1.amazonaws.com/extensions.jpg)
 
 <div align="right">
 
@@ -439,7 +439,7 @@ _即将推出..._
 
 ## 🏗️ TEN Agent 架构
 
-![组件图](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
+![组件图](https://ten-framework-assets.s3.us-east-1.amazonaws.com/diagram.jpg)
 
 <div align="right">
 
@@ -487,14 +487,17 @@ _即将推出..._
 
 </div>
 
-[back-to-top]: https://img.shields.io/badge/-返回顶部-gray?style=flat-square
+[back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
+
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
 [ten-agent-shield]: https://img.shields.io/github/stars/ten-framework/ten-agent?color=ffcb47&labelColor=gray&style=flat-square&logo=github
 [tman-designer-shield]: https://img.shields.io/github/stars/ten-framework/ten_ai_base?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-docs-shield]: https://img.shields.io/github/stars/ten-framework/docs?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+[ten-docs-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 [ten-agent-link]: https://github.com/ten-framework/ten-agent
-[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/1.jpg?raw=true
-[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
-[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
-[ten-docs-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/banner.jpg
+
+[ten-framework-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-portal.jpeg
+[ten-agent-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-agent.jpeg
+[tman-designer-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/tman-manager.jpeg
+[ten-docs-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-doc.jpeg
