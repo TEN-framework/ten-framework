@@ -1,6 +1,6 @@
 <div align="center"> <a name="readme-top"></a>
 
-![TEN Agent 横幅](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+![TEN Agent 横幅](https://ten-framework-assets.s3.us-east-1.amazonaws.com/banner.jpg)
 
 [![在 X 上关注](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
 [![讨论帖子](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
@@ -497,4 +497,4 @@ _即将推出..._
 [ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/1.jpg?raw=true
 [ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
 [tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
-[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/2.jpg?raw=true
+[ten-docs-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/banner.jpg
