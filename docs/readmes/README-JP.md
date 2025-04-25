@@ -25,9 +25,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[ドキュメント](https://doc.theten.ai/ten-agent/overview)
+[ドキュメント](https://theten.ai/docs/ten-agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[始めに](https://doc.theten.ai/ten-agent/getting_started)
+[始めに](https://theten.ai/docs/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TENフレームワークリポジトリ](https://github.com/TEN-framework/ten_framework)
 
@@ -83,9 +83,9 @@ TEN Agentは現在、Espressif ESP32-S3 Korvo V3開発ボードで動作して�
 
 </details>
 
-[TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+[TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
 
-[TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+[TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
 
 TENは、他のLLMプラットフォームでもリアルタイムのインタラクティブ体験をさらに向上させるための優れたサポートを提供しています。詳細についてはドキュメントを参照してください。
 
@@ -203,14 +203,14 @@ task run
 
 ![モジュールの例](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
-これでPlaygroundのセットアップが完了しました。これがTEN Agentの始まりに過ぎません。TEN Agentを探求し、活用するためのさまざまな方法があります。詳細については、[ドキュメント](https://doc.theten.ai/ten-agent/overview)を参照してください。
+これでPlaygroundのセットアップが完了しました。これがTEN Agentの始まりに過ぎません。TEN Agentを探求し、活用するためのさまざまな方法があります。詳細については、[ドキュメント](https://theten.ai/docs/ten-agent/overview)を参照してください。
 
 <br>
 <h2>デプロイメント</h2>
 
 Playgroundを使用するか、直接`property.json`を編集してエージェントをカスタマイズしたら、サービス用のリリースDockerイメージを作成してデプロイできます。
 
-デプロイメントに関する詳細情報は[デプロイメントガイド](https://doc.theten.ai/ten-agent/deployment/deploy_agent_service)を参照してください。
+デプロイメントに関する詳細情報は[デプロイメントガイド](https://theten.ai/docs/ten-agent/deployment/deploy_agent_service)を参照してください。
 
 <br>
 <h2>TEN Agentアーキテクチャ</h2>
@@ -251,4 +251,3 @@ Playgroundを使用するか、直接`property.json`を編集してエージェ�
 <h2>ライセンス</h2>
 
 このプロジェクトはApache 2.0ライセンスの下でライセンスされています。詳細については、[LICENSE](LICENSE)ファイルを参照してください。
-

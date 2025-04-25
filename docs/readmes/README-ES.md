@@ -23,9 +23,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en francés" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README en italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Documentación](https://doc.theten.ai/docs/ten_agent/overview)
+[Documentación](https://theten.ai/docs/ten_agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Comenzando](https://doc.theten.ai/docs/ten_agent/getting_started)
+[Comenzando](https://theten.ai/docs/ten_agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Repositorio TEN Framework](https://github.com/TEN-framework/ten_framework)
 
@@ -54,7 +54,7 @@
 - [🎮 Playground de TEN Agent](#-ten-agent-playground)
   - [️🅰 Ejecutar Playground en `localhost` (Entorno local)](#🅰️-run-playground-in-localhost)
   - [️🅱 Ejecutar Playground en espacio de código(no docker)](#🅱️-run-playground-in-codespaceno-docker)
-- [🎥 Ejecutar demo del Agente ](#-ten-agent-demo)
+- [🎥 Ejecutar demo del Agente](#-ten-agent-demo)
 - [️🛳️ Despliegue](#️-deployment)
   - [🅰 Despliegue con Docker](#🅰️-deploying-with-docker)
   - [🅱 Despliegue con otros servicios](#🅱️-deploying-with-other-services)
@@ -198,7 +198,7 @@ Describe un tema y pide a TEN Agent que te cuente una historia mientras también
 
 ### 6️⃣ TEN Agent + Dify
 
-[TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)
+[TEN Agent + Dify](https://theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)
 
 TEN ofrece un gran soporte para mejorar la experiencia interactiva en tiempo real en otras plataformas LLM también, consulta los documentos para más información.
 
@@ -222,7 +222,7 @@ TEN ofrece un gran soporte para mejorar la experiencia interactiva en tiempo rea
 
 ### 7️⃣ TEN Agent + Coze
 
-[TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)
+[TEN Agent + Coze](https://theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)
 
 TEN se integra a la perfección con la plataforma Coze para mejorar las experiencias interactivas en tiempo real. Consulta nuestra documentación para saber cómo aprovechar estas potentes integraciones.
 
@@ -343,7 +343,7 @@ task run
 
 </details>
 
-Ahora, hemos configurado exitosamente el playground. Esto es solo el comienzo de TEN Agent. Hay muchas formas diferentes de explorar y utilizar TEN Agent. Para obtener más información, consulta la [documentación](https://doc.theten.ai/docs/ten_agent/overview).
+Ahora, hemos configurado exitosamente el playground. Esto es solo el comienzo de TEN Agent. Hay muchas formas diferentes de explorar y utilizar TEN Agent. Para obtener más información, consulta la [documentación](https://theten.ai/docs/ten_agent/overview).
 
 <div align="right">
 
@@ -357,7 +357,7 @@ Ahora, hemos configurado exitosamente el playground. Esto es solo el comienzo de
 
 GitHub ofrece un espacio de código gratis para cada repositorio, puedes ejecutar el playground en el espacio de código sin usar Docker. También, La velocidad del espacio de código es mucho más rápida que localhost.
 
-Revisa [esta guía](https://doc.theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) para más detalles
+Revisa [esta guía](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) para más detalles
 
 <div align="right">
 
@@ -367,11 +367,11 @@ Revisa [esta guía](https://doc.theten.ai/docs/ten_agent/setup_development_env/s
 
 <br>
 
-## 🎥 Ejecutar Demo de TEN Agent 
+## 🎥 Ejecutar Demo de TEN Agent
 
 El Playground y el servidor Demo tienen diferentes propósitos, en pocas palabras, piensa que el Playground es para que personalices a tu agente, y el demo es para que despliegues a tu agente.
 
-Check out [this guide](https://doc.theten.ai/docs/ten_agent/demo) for more details.
+Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -385,7 +385,7 @@ Check out [this guide](https://doc.theten.ai/docs/ten_agent/demo) for more detai
 #### 🅰️ 🐳 Despliegue con Docker
 
 Una vez que hayas personalizado a tu agente (ya sea usando playground o editando `property.json` directamente), puedes desplegarlo creando una imagen de Docker de lanzamiento para tu servicio.
-Lee la [Guía de despliegue](https://doc.theten.ai/docs/ten_agent/deployment_ten_agent/deploy_agent_service) para información detallada acerca del despliegue.
+Lee la [Guía de despliegue](https://theten.ai/docs/ten_agent/deployment_ten_agent/deploy_agent_service) para información detallada acerca del despliegue.
 
 <br>
 
@@ -401,7 +401,7 @@ Lee la [Guía de despliegue](https://doc.theten.ai/docs/ten_agent/deployment_ten
 
 <br>
 
-## 🏗️ Arquitectura de TEN Agent 
+## 🏗️ Arquitectura de TEN Agent
 
 1️⃣ **TEN Agent App**: Aplicación central que administra extensiones y flujo de datos basado en configuración de gráficos.
 
@@ -424,7 +424,7 @@ Lee la [Guía de despliegue](https://doc.theten.ai/docs/ten_agent/deployment_ten
 
 <br>
 
-## 🌍 Ecosistema de TEN Framework 
+## 🌍 Ecosistema de TEN Framework
 
 | [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN, un framework de agente IA para crear varios agentes IA los cuales soportan conversaciones en tiempo real.<br/><br/>![][ten-framework-shield]                                                                                                                                                   | ![][ten-framework-banner] |
 |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| :----------------------------------------- |
@@ -453,19 +453,17 @@ Lee la [Guía de despliegue](https://doc.theten.ai/docs/ten_agent/deployment_ten
 >
 > Conecta con el mantenedor de TEN [@cyfyifanchen](https://github.com/cyfyifanchen) en GitHub y [@elliotchen100](https://x.com/elliotchen100) en 𝕏 para actualizaciones del proyecto, discusiones y oportunidades de colaboración.
 
-
 ### Contribuyentes de Código
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
-### Directrices de Contribución 
+### Directrices de Contribución
 
 ¡Las contribuciones son bienvenidas! Por favor, lee primero las [directrices de contribución](../code-of-conduct/contributing.md).
 
 ### Licencia
 
 Este proyecto está licenciado bajo la Licencia [Apache 2.0](../../LICENSE).
-
 
 <div align="right">
 
