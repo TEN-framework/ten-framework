@@ -25,9 +25,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Documentation](https://doc.theten.ai/ten-agent/overview)
+[Documentation](https://theten.ai/docs/ten-agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
+[Getting Started](https://theten.ai/docs/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
@@ -83,9 +83,9 @@ TEN Agent는 이제 Espressif ESP32-S3 Korvo V3 개발 보드에서 실행되며
 
 </details>
 
-  [TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
 
-  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
 
 TEN은 다른 LLM 플랫폼에서도 실시간 인터랙티브 경험을 더욱 향상시키기 위해 뛰어난 지원을 제공합니다. 더 많은 정보를 원하시면 문서를 확인하세요.
 
@@ -195,7 +195,7 @@ task run
 
 #### 7. Playground 설정 편집
 
-http://localhost:3000에서 Playground를 열어 에이전트를 구성하세요.
+<http://localhost:3000에서> Playground를 열어 에이전트를 구성하세요.
 
  1. 그래프 유형 선택 (예: Voice Agent, Realtime Agent)
  2. 해당 모듈 선택
@@ -203,14 +203,14 @@ http://localhost:3000에서 Playground를 열어 에이전트를 구성하세요
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
-이제 Playground를 성공적으로 설정했습니다. 이것은 TEN Agent의 시작에 불과합니다. TEN Agent를 탐색하고 활용하는 다양한 방법이 있습니다. 더 많은 정보를 원하시면 [문서](https://doc.theten.ai/ten-agent/overview)를 확인하세요.
+이제 Playground를 성공적으로 설정했습니다. 이것은 TEN Agent의 시작에 불과합니다. TEN Agent를 탐색하고 활용하는 다양한 방법이 있습니다. 더 많은 정보를 원하시면 [문서](https://theten.ai/docs/ten-agent/overview)를 확인하세요.
 
 <br>
 <h2>배포</h2>
 
 Playground를 사용하거나 `property.json`을 직접 편집하여 에이전트를 사용자 지정한 후, 서비스용 릴리스 Docker 이미지를 생성하여 배포할 수 있습니다.
 
-배포에 대한 자세한 정보는 [배포 가이드](https://doc.theten.ai/ten-agent/deployment/deploy_agent_service)를 참조하세요.
+배포에 대한 자세한 정보는 [배포 가이드](https://theten.ai/docs/ten-agent/deployment/deploy_agent_service)를 참조하세요.
 
 <br>
 <h2>TEN Agent 아키텍처</h2>

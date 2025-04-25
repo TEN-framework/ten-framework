@@ -23,9 +23,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[文档](https://doc.theten.ai/docs/ten_agent/overview)
+[文档](https://theten.ai/docs/ten_agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[快速开始](https://doc.theten.ai/docs/ten_agent/getting_started)
+[快速开始](https://theten.ai/docs/ten_agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN 框架仓库](https://github.com/TEN-framework/ten_framework)
 
@@ -198,7 +198,7 @@ TEN Agent 现在运行在 Espressif ESP32-S3 Korvo V3 开发板上，这是将�
 
 ### 6️⃣ TEN Agent + Dify
 
-[TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)
+[TEN Agent + Dify](https://theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)
 
 TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也变得更好，查看文档了解更多。
 
@@ -222,7 +222,7 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 ### 7️⃣ TEN Agent + Coze
 
-[TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)
+[TEN Agent + Coze](https://theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)
 
 TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也变得更好，查看文档了解更多。
 
@@ -357,9 +357,9 @@ task run
 
 #### 步骤 ⓷ - 自定义您的代理
 
-1.  打开 [localhost:3000](http://localhost:3000) 并选择一个图示例
-2.  选择对应的模块
-3.  选择一个扩展并配置其 API 密钥和设置
+1. 打开 [localhost:3000](http://localhost:3000) 并选择一个图示例
+2. 选择对应的模块
+3. 选择一个扩展并配置其 API 密钥和设置
 
 <details>
   <summary><kbd>模块选择器示例</kbd></summary>
@@ -373,7 +373,7 @@ task run
 
 </details>
 
-现在，我们已经成功设置了 Playground。这只是 TEN Agent 的开始。还有许多不同的方式可以探索和利用 TEN Agent。要了解更多，请参阅 [文档](https://doc.theten.ai/docs/ten_agent/overview)。
+现在，我们已经成功设置了 Playground。这只是 TEN Agent 的开始。还有许多不同的方式可以探索和利用 TEN Agent。要了解更多，请参阅 [文档](https://theten.ai/docs/ten_agent/overview)。
 
 <div align="right">
 
@@ -391,7 +391,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 [![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
 
-查看 [此指南](https://doc.theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) 了解更多详情。
+查看 [此指南](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) 了解更多详情。
 
 <div align="right">
 
@@ -405,7 +405,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 Playground 和 Demo 服务于不同的目的，简而言之，可以将 Playground 视为自定义代理的工具，而 Demo 则是部署代理的工具。
 
-查看 [此指南](https://doc.theten.ai/docs/ten_agent/demo) 了解更多详情。
+查看 [此指南](https://theten.ai/docs/ten_agent/demo) 了解更多详情。
 
 <div align="right">
 
@@ -421,7 +421,7 @@ Playground 和 Demo 服务于不同的目的，简而言之，可以将 Playgrou
 
 一旦您定制了您的代理（无论是通过使用 Playground 还是直接编辑 `property.json`），您可以通过为您的服务创建发布 Docker 镜像来部署它。
 
-阅读 [部署指南](https://doc.theten.ai/docs/ten_agent/deployment_ten_agent/deploy_agent_service) 以获取有关部署的详细信息。
+阅读 [部署指南](https://theten.ai/docs/ten_agent/deployment_ten_agent/deploy_agent_service) 以获取有关部署的详细信息。
 
 <br>
 
