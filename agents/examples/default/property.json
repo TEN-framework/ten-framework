@@ -531,15 +531,16 @@
             "addon": "openai_v2v_python",
             "extension_group": "llm",
             "property": {
-              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "api_key": "111",
               "enable_storage": false,
-              "history": 10,
+              "history": "10",
               "language": "en-US",
               "max_tokens": 2048,
-              "model": "gpt-4o-realtime-preview",
+              "model": "step-1o-audio",
               "server_vad": true,
               "temperature": 0.9,
-              "voice": "alloy"
+              "voice": "alloy",
+              "base_uri": "wss://api.stepfun.com"
             }
           },
           {

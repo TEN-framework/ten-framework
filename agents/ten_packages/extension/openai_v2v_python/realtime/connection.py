@@ -74,12 +74,16 @@ class RealtimeApiConnection:
         if self.vendor == VENDOR_AZURE:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
-            auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            headers = {"OpenAI-Beta": "realtime=v1"}
+            # auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
+            headers = {
+                # "OpenAI-Beta": "realtime=v1",
+                "Authorization": "Bearer " + self.api_key,
+            }
 
+        self.ten_env.log_info(f"Connecting to {self.url}, headers: {headers}")
         self.websocket = await self.session.ws_connect(
             url=self.url,
-            auth=auth,
+            # auth=auth,
             headers=headers,
         )
 
