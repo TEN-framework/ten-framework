@@ -1,4 +1,4 @@
-name: Build Docker
+name: Build Docker Image for Agents
 
 on:
   push:
