@@ -9,12 +9,13 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
-  "workspaceFolder": "/app",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/ten,type=bind",
+  "workspaceFolder": "/ten",
   "forwardPorts": [
     3000,
     8080,
-    49483
+    49483,
+    49484
   ],
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
