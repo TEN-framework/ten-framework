@@ -1,0 +1,684 @@
+/* BEGIN_HEADER */
+#include "psa/crypto_se_driver.h"
+
+#include "psa_crypto_se.h"
+#include "psa_crypto_storage.h"
+
+/** The location and lifetime used for tests that use a single driver. */
+#define TEST_DRIVER_LOCATION 1
+#define TEST_SE_PERSISTENT_LIFETIME                             \
+    ( PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION(           \
+        PSA_KEY_PERSISTENCE_DEFAULT, TEST_DRIVER_LOCATION ) )
+
+static struct
+{
+    uint16_t called;
+    psa_key_location_t location;
+    psa_status_t return_value;
+} mock_init_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t key_slot;
+    psa_key_attributes_t attributes;
+    size_t pubkey_size;
+    psa_status_t return_value;
+} mock_generate_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t key_slot;
+    psa_key_attributes_t attributes;
+    size_t bits;
+    size_t data_length;
+    psa_status_t return_value;
+} mock_import_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t slot_number;
+    size_t data_size;
+    psa_status_t return_value;
+} mock_export_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t slot_number;
+    size_t data_size;
+    psa_status_t return_value;
+} mock_export_public_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t key_slot;
+    psa_algorithm_t alg;
+    size_t hash_length;
+    size_t signature_size;
+    psa_status_t return_value;
+} mock_sign_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t key_slot;
+    psa_algorithm_t alg;
+    size_t hash_length;
+    size_t signature_length;
+    psa_status_t return_value;
+} mock_verify_data;
+
+static struct
+{
+    uint16_t called;
+    psa_status_t return_value;
+} mock_allocate_data;
+
+static struct
+{
+    uint16_t called;
+    psa_key_slot_number_t slot_number;
+    psa_status_t return_value;
+} mock_destroy_data;
+
+#define MAX_KEY_ID_FOR_TEST 10
+static void psa_purge_storage( void )
+{
+    psa_key_id_t id;
+    psa_key_location_t location;
+
+    /* The tests may have potentially created key ids from 1 to
+     * MAX_KEY_ID_FOR_TEST. In addition, run the destroy function on key id
+     * 0, which file-based storage uses as a temporary file. */
+    for( id = 0; id <= MAX_KEY_ID_FOR_TEST; id++ )
+        psa_destroy_persistent_key( mbedtls_svc_key_id_make( 1, id ) );
+
+    /* Purge the transaction file. */
+    psa_crypto_stop_transaction( );
+    /* Purge driver persistent data. */
+    for( location = 0; location < PSA_MAX_SE_LOCATION; location++ )
+        psa_destroy_se_persistent_data( location );
+}
+
+static void mock_teardown( void )
+{
+    memset( &mock_init_data, 0, sizeof( mock_init_data ) );
+    memset( &mock_import_data, 0, sizeof( mock_import_data ) );
+    memset( &mock_export_data, 0, sizeof( mock_export_data ) );
+    memset( &mock_export_public_data, 0, sizeof( mock_export_public_data ) );
+    memset( &mock_sign_data, 0, sizeof( mock_sign_data ) );
+    memset( &mock_verify_data, 0, sizeof( mock_verify_data ) );
+    memset( &mock_allocate_data, 0, sizeof( mock_allocate_data ) );
+    memset( &mock_destroy_data, 0, sizeof( mock_destroy_data ) );
+    memset( &mock_generate_data, 0, sizeof( mock_generate_data ) );
+    psa_purge_storage( );
+}
+
+static psa_status_t mock_init( psa_drv_se_context_t *drv_context,
+                               void *persistent_data,
+                               psa_key_location_t location )
+{
+    (void) drv_context;
+    (void) persistent_data;
+
+    mock_init_data.called++;
+    mock_init_data.location = location;
+    return( mock_init_data.return_value );
+}
+
+static psa_status_t mock_generate( psa_drv_se_context_t *drv_context,
+                                   psa_key_slot_number_t key_slot,
+                                   const psa_key_attributes_t *attributes,
+                                   uint8_t *pubkey,
+                                   size_t pubkey_size,
+                                   size_t *pubkey_length )
+{
+    (void) drv_context;
+    (void) pubkey;
+    (void) pubkey_length;
+
+    mock_generate_data.called++;
+    mock_generate_data.key_slot = key_slot;
+    mock_generate_data.attributes = *attributes;
+    mock_generate_data.pubkey_size = pubkey_size;
+
+    return( mock_generate_data.return_value );
+}
+
+static psa_status_t mock_import( psa_drv_se_context_t *drv_context,
+                                 psa_key_slot_number_t key_slot,
+                                 const psa_key_attributes_t *attributes,
+                                 const uint8_t *data,
+                                 size_t data_length,
+                                 size_t *bits )
+{
+    (void) drv_context;
+    (void) data;
+
+    *bits = mock_import_data.bits;
+
+    mock_import_data.called++;
+    mock_import_data.key_slot = key_slot;
+    mock_import_data.attributes = *attributes;
+    mock_import_data.data_length = data_length;
+
+    return( mock_import_data.return_value );
+}
+
+psa_status_t mock_export( psa_drv_se_context_t *context,
+                          psa_key_slot_number_t slot_number,
+                          uint8_t *p_data,
+                          size_t data_size,
+                          size_t *p_data_length )
+{
+    (void) context;
+    (void) p_data;
+    (void) p_data_length;
+
+    mock_export_data.called++;
+    mock_export_data.slot_number = slot_number;
+    mock_export_data.data_size = data_size;
+
+    return( mock_export_data.return_value );
+}
+
+psa_status_t mock_export_public( psa_drv_se_context_t *context,
+                                 psa_key_slot_number_t slot_number,
+                                 uint8_t *p_data,
+                                 size_t data_size,
+                                 size_t *p_data_length )
+{
+    (void) context;
+    (void) p_data;
+    (void) p_data_length;
+
+    mock_export_public_data.called++;
+    mock_export_public_data.slot_number = slot_number;
+    mock_export_public_data.data_size = data_size;
+
+    return( mock_export_public_data.return_value );
+}
+
+psa_status_t mock_sign( psa_drv_se_context_t *context,
+                        psa_key_slot_number_t key_slot,
+                        psa_algorithm_t alg,
+                        const uint8_t *p_hash,
+                        size_t hash_length,
+                        uint8_t *p_signature,
+                        size_t signature_size,
+                        size_t *p_signature_length )
+{
+    (void) context;
+    (void) p_hash;
+    (void) p_signature;
+    (void) p_signature_length;
+
+    mock_sign_data.called++;
+    mock_sign_data.key_slot = key_slot;
+    mock_sign_data.alg = alg;
+    mock_sign_data.hash_length = hash_length;
+    mock_sign_data.signature_size = signature_size;
+
+    return mock_sign_data.return_value;
+}
+
+psa_status_t mock_verify( psa_drv_se_context_t *context,
+                          psa_key_slot_number_t key_slot,
+                          psa_algorithm_t alg,
+                          const uint8_t *p_hash,
+                          size_t hash_length,
+                          const uint8_t *p_signature,
+                          size_t signature_length )
+{
+    (void) context;
+    (void) p_hash;
+    (void) p_signature;
+
+    mock_verify_data.called++;
+    mock_verify_data.key_slot = key_slot;
+    mock_verify_data.alg = alg;
+    mock_verify_data.hash_length = hash_length;
+    mock_verify_data.signature_length = signature_length;
+
+    return mock_verify_data.return_value;
+}
+
+psa_status_t mock_allocate( psa_drv_se_context_t *drv_context,
+                            void *persistent_data,
+                            const psa_key_attributes_t *attributes,
+                            psa_key_creation_method_t method,
+                            psa_key_slot_number_t *key_slot )
+{
+    (void) drv_context;
+    (void) persistent_data;
+    (void) attributes;
+    (void) method;
+    (void) key_slot;
+
+    mock_allocate_data.called++;
+    *key_slot = 0;
+
+    return( mock_allocate_data.return_value );
+}
+
+psa_status_t mock_destroy( psa_drv_se_context_t *context,
+                           void *persistent_data,
+                           psa_key_slot_number_t slot_number )
+{
+    (void) context;
+    (void) persistent_data;
+
+    mock_destroy_data.called++;
+    mock_destroy_data.slot_number = slot_number;
+
+    return( mock_destroy_data.return_value );
+}
+
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_PSA_CRYPTO_SE_C
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE */
+void mock_init( int location_arg,
+                int expected_register_status_arg,
+                int driver_status_arg,
+                int expected_psa_status_arg,
+                int expected_called )
+{
+    psa_key_location_t location = location_arg;
+    psa_status_t expected_register_status = expected_register_status_arg;
+    psa_status_t driver_status = driver_status_arg;
+    psa_status_t expected_psa_status = expected_psa_status_arg;
+    psa_drv_se_t driver = {
+        .hal_version = PSA_DRV_SE_HAL_VERSION,
+        .p_init = mock_init,
+    };
+    int psa_crypto_init_called = 0;
+
+    mock_init_data.return_value = driver_status;
+
+    TEST_EQUAL( psa_register_se_driver( location, &driver ),
+                expected_register_status );
+
+    psa_crypto_init_called = 1;
+    TEST_EQUAL( psa_crypto_init( ), expected_psa_status );
+
+    TEST_EQUAL( mock_init_data.called, expected_called );
+    if( expected_called )
+        TEST_EQUAL( mock_init_data.location, location );
+
+exit:
+    if( psa_crypto_init_called )
+        PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_import( int mock_alloc_return_value,
+                  int mock_import_return_value,
+                  int bits,
+                  int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+
+    mock_allocate_data.return_value = mock_alloc_return_value;
+    mock_import_data.return_value = mock_import_return_value;
+    mock_import_data.bits = bits;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    key_management.p_import = mock_import;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    TEST_ASSERT( psa_import_key( &attributes,
+                                 key_material, sizeof( key_material ),
+                                 &returned_id ) == expected_result );
+
+    TEST_ASSERT( mock_allocate_data.called == 1 );
+    TEST_ASSERT( mock_import_data.called ==
+        ( mock_alloc_return_value == PSA_SUCCESS? 1 : 0 ) );
+
+    if( mock_alloc_return_value == PSA_SUCCESS )
+    {
+        TEST_ASSERT( mbedtls_svc_key_id_equal(
+                         mock_import_data.attributes.core.id, id ) );
+    }
+    else
+    {
+        TEST_ASSERT( MBEDTLS_SVC_KEY_ID_GET_KEY_ID(
+                         mock_import_data.attributes.core.id ) == 0 );
+        TEST_ASSERT( MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(
+                         mock_import_data.attributes.core.id ) == 0 );
+    }
+
+    TEST_ASSERT( mock_import_data.attributes.core.lifetime ==
+        ( mock_alloc_return_value == PSA_SUCCESS? lifetime : 0 ) );
+    TEST_ASSERT( mock_import_data.attributes.core.policy.usage ==
+        ( mock_alloc_return_value == PSA_SUCCESS? PSA_KEY_USAGE_EXPORT : 0 ) );
+    TEST_ASSERT( mock_import_data.attributes.core.type ==
+        ( mock_alloc_return_value == PSA_SUCCESS? PSA_KEY_TYPE_RAW_DATA : 0 ) );
+
+    if( expected_result == PSA_SUCCESS )
+    {
+        PSA_ASSERT( psa_destroy_key( id ) );
+        TEST_ASSERT( mock_destroy_data.called == 1 );
+    }
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_export( int mock_export_return_value, int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+    uint8_t exported[sizeof( key_material )];
+    size_t exported_length;
+
+    mock_export_data.return_value = mock_export_return_value;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.p_init = mock_init;
+    key_management.p_import = mock_import;
+    key_management.p_export = mock_export;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material, sizeof( key_material ),
+                                &returned_id ) );
+
+    TEST_ASSERT( psa_export_key( id,
+                                 exported, sizeof( exported ),
+                                 &exported_length ) == expected_result );
+
+    TEST_ASSERT( mock_export_data.called == 1 );
+
+    PSA_ASSERT( psa_destroy_key( id ) );
+
+    TEST_ASSERT( mock_destroy_data.called == 1 );
+
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_generate( int mock_alloc_return_value,
+                    int mock_generate_return_value,
+                    int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    mock_allocate_data.return_value = mock_alloc_return_value;
+    mock_generate_data.return_value = mock_generate_return_value;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    key_management.p_generate = mock_generate;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    psa_set_key_bits( &attributes, 8 );
+    TEST_ASSERT( psa_generate_key( &attributes, &returned_id) == expected_result );
+    TEST_ASSERT( mock_allocate_data.called == 1 );
+    TEST_ASSERT( mock_generate_data.called ==
+        ( mock_alloc_return_value == PSA_SUCCESS? 1 : 0 ) );
+
+    if( mock_alloc_return_value == PSA_SUCCESS )
+    {
+        TEST_ASSERT( mbedtls_svc_key_id_equal(
+                         mock_generate_data.attributes.core.id, id ) );
+    }
+    else
+    {
+        TEST_ASSERT( MBEDTLS_SVC_KEY_ID_GET_KEY_ID(
+                         mock_generate_data.attributes.core.id ) == 0 );
+        TEST_ASSERT( MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(
+                         mock_generate_data.attributes.core.id ) == 0 );
+    }
+
+    TEST_ASSERT( mock_generate_data.attributes.core.lifetime ==
+        ( mock_alloc_return_value == PSA_SUCCESS? lifetime : 0 ) );
+    TEST_ASSERT( mock_generate_data.attributes.core.policy.usage ==
+        ( mock_alloc_return_value == PSA_SUCCESS? PSA_KEY_USAGE_EXPORT : 0 ) );
+    TEST_ASSERT( mock_generate_data.attributes.core.type ==
+        ( mock_alloc_return_value == PSA_SUCCESS? PSA_KEY_TYPE_RAW_DATA : 0 ) );
+
+    if( expected_result == PSA_SUCCESS )
+    {
+        PSA_ASSERT( psa_destroy_key( id ) );
+        TEST_ASSERT( mock_destroy_data.called == 1 );
+    }
+
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_export_public( int mock_export_public_return_value,
+                         int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+    uint8_t exported[sizeof( key_material )];
+    size_t exported_length;
+
+    mock_export_public_data.return_value = mock_export_public_return_value;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    key_management.p_import = mock_import;
+    key_management.p_export_public = mock_export_public;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RSA_PUBLIC_KEY );
+
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material, sizeof( key_material ),
+                                &returned_id ) );
+
+    TEST_ASSERT( psa_export_public_key( id, exported, sizeof(exported),
+                                        &exported_length ) == expected_result );
+    TEST_ASSERT( mock_export_public_data.called == 1 );
+
+    PSA_ASSERT( psa_destroy_key( id ) );
+    TEST_ASSERT( mock_destroy_data.called == 1 );
+
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_sign( int mock_sign_return_value, int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_drv_se_asymmetric_t asymmetric;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+    psa_algorithm_t algorithm = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
+    const uint8_t hash[1] = {'H'};
+    uint8_t signature[1] = {'S'};
+    size_t signature_length;
+
+    mock_sign_data.return_value = mock_sign_return_value;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    memset( &asymmetric, 0, sizeof( asymmetric ) );
+
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+
+    driver.key_management = &key_management;
+    key_management.p_import = mock_import;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    driver.asymmetric = &asymmetric;
+    asymmetric.p_sign = mock_sign;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_SIGN_HASH );
+    psa_set_key_algorithm( &attributes, algorithm );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RSA_KEY_PAIR );
+
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material, sizeof( key_material ),
+                                &returned_id ) );
+
+    TEST_ASSERT( psa_sign_hash( id, algorithm,
+                                hash, sizeof( hash ),
+                                signature, sizeof( signature ),
+                                &signature_length)
+                 == expected_result );
+    TEST_ASSERT( mock_sign_data.called == 1 );
+
+    PSA_ASSERT( psa_destroy_key( id ) );
+    TEST_ASSERT( mock_destroy_data.called == 1 );
+
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mock_verify( int mock_verify_return_value, int expected_result )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_drv_se_asymmetric_t asymmetric;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+    psa_algorithm_t algorithm = PSA_ALG_ECDSA(PSA_ALG_SHA_256);
+    const uint8_t hash[1] = {'H'};
+    const uint8_t signature[1] = {'S'};
+
+    mock_verify_data.return_value = mock_verify_return_value;
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    memset( &asymmetric, 0, sizeof( asymmetric ) );
+
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+
+    driver.key_management = &key_management;
+    key_management.p_import = mock_import;
+    key_management.p_destroy = mock_destroy;
+    key_management.p_allocate = mock_allocate;
+
+    driver.asymmetric = &asymmetric;
+    asymmetric.p_verify = mock_verify;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_VERIFY_HASH );
+    psa_set_key_algorithm( &attributes, algorithm );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material, sizeof( key_material ),
+                                &returned_id ) );
+
+    TEST_ASSERT( psa_verify_hash( id, algorithm,
+                                  hash, sizeof( hash ),
+                                  signature, sizeof( signature ) )
+                 == expected_result );
+    TEST_ASSERT( mock_verify_data.called == 1 );
+
+    PSA_ASSERT( psa_destroy_key( id ) );
+    TEST_ASSERT( mock_destroy_data.called == 1 );
+
+exit:
+    PSA_DONE( );
+    mock_teardown( );
+}
+/* END_CASE */

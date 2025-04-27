@@ -1,0 +1,104 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//third_party/libwebsockets/output_libs.gni")
+import("//third_party/mbedtls/output_libs.gni")
+
+ten_mbedtls_copy_deps("websockets_copy_mbedtls") {
+  basedir = "${root_gen_dir}/cmake/websockets/install/"
+
+  # Because libwebsockets depends on mbedtls, so this is for the building of
+  # libwebsockets itself.
+  copy_files_for_development = true
+
+  # The module which depends on libwebsockets will copy all the runtime
+  # libraries relevant to libwebsockets from the build result folder of
+  # libwebsockets, so we copy all the libwebsockets relevant runtime libraries
+  # to the build result folder of libwebsockets in advance.
+  runtime_libs_dest_dir_in_win_is_bin = true
+}
+
+config("websockets_header") {
+  # We uses mbedtls to implement the tls feature of libwebsockets, so the users
+  # of libwebsockets need the header files of mbedtls.
+
+  include_dirs = [
+    "${root_gen_dir}/cmake/websockets/install/include",
+    "${root_gen_dir}/cmake/mbedtls/install/include",
+  ]
+}
+
+cmake_project("websockets") {
+  public_configs = [ ":websockets_header" ]
+
+  deps = [ ":websockets_copy_mbedtls" ]
+
+  project_path = "."
+  if (is_win) {
+    project_name = "ALL_BUILD"
+  } else {
+    project_name = "all"
+  }
+  build_path = "${root_gen_dir}/cmake/websockets/"
+  install_path = "${build_path}/install/"
+
+  library_path = [ "$install_path/lib/" ]
+
+  options = [ "CMAKE_PREFIX_PATH=" +
+              rebase_path("${root_gen_dir}/cmake/mbedtls/install") ]
+
+  if (is_mac) {
+    # Refer to the following 2 stackoverflows:
+    #
+    # https://stackoverflow.com/questions/40054495/set-cmake-prefix-path-not-working-with-android-toolchain
+    #
+    # https://stackoverflow.com/questions/63286708/cmake-prefix-path-does-not-work-as-expected
+    options += [ "CMAKE_FIND_ROOT_PATH=" +
+                 rebase_path("${root_gen_dir}/cmake/mbedtls/install") ]
+  }
+
+  options += [
+    # Enable to print the verbose logs during the http transcation.
+    "LWS_TLS_LOG_PLAINTEXT_TX=OFF",
+
+    # Some clients(e.g.: browsers and curl) support http/2, but the libws
+    # protocol implementation does not support http/2 now. If enable the http/2
+    # feature here, the http headers must be sent in the different frame from
+    # the request body. When we send the headers and body in the same frame with
+    # http/1.1, the clients can not parse the frame correctly. So we disable the
+    # http/2 feature now.
+    # If enable, refer to roles/http/header.c#L474.
+    "LWS_WITH_HTTP2=OFF",
+
+    "LWS_CLIENT_HTTP_PROXYING=OFF",
+    "LWS_HAVE_SYS_CAPABILITY_H=OFF",
+    "LWS_STATIC_PIC=ON",
+    "LWS_WITHOUT_TESTAPPS=ON",  # disable testing
+    "LWS_WITHOUT_TEST_SERVER=ON",
+    "LWS_WITHOUT_TEST_SERVER_EXTPOLL=ON",
+    "LWS_WITHOUT_TEST_PING=ON",
+    "LWS_WITHOUT_TEST_CLIENT=ON",
+    "LWS_ROLE_H1=ON",
+    "LWS_WITH_SERVER=ON",
+    "LWS_WITH_NETWORK=ON",
+    "LWS_WITH_SSL=ON",
+    "LWS_WITH_MBEDTLS=ON",
+
+    "DISABLE_WERROR=ON",
+    "CMAKE_BUILD_RPATH_USE_ORIGIN=TRUE",
+  ]
+
+  if (is_win) {
+    options += [ "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON" ]
+  }
+
+  outputs_seen_by_ag = libwebsockets_output_libs
+}
+
+group("libwebsockets") {
+  public_deps = [ ":websockets" ]
+}

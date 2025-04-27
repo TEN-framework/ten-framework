@@ -1,0 +1,198 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+declare_args() {
+  mbedtls_use_shared_lib = true
+}
+
+mbedtls_output_libs = []
+
+if (is_win) {
+  mbedtls_output_libs += [
+    "${root_gen_dir}/cmake/mbedtls/install/bin/mbedcrypto.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/mbedcrypto.lib",
+    "${root_gen_dir}/cmake/mbedtls/install/bin/mbedtls.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/mbedtls.lib",
+    "${root_gen_dir}/cmake/mbedtls/install/bin/mbedx509.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/mbedx509.lib",
+  ]
+} else if (is_linux) {
+  mbedtls_output_libs += [
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.so",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.so.12",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.so.3.2.1",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.so",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.so.18",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.so.3.2.1",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.so",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.so.3.2.1",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.so.4",
+  ]
+} else if (is_mac) {
+  mbedtls_output_libs += [
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.12.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.3.2.1.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.18.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.3.2.1.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.3.2.1.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.4.dylib",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.dylib",
+  ]
+}
+
+template("ten_mbedtls_copy_deps") {
+  basedir = invoker.basedir
+
+  copy_files_for_development = false
+  if (defined(invoker.copy_files_for_development)) {
+    copy_files_for_development = invoker.copy_files_for_development
+  }
+
+  action("ten_mbedtls_copy_runtime_libs") {
+    runtime_libs_dest_dir_in_win_is_bin = false
+    if (defined(invoker.runtime_libs_dest_dir_in_win_is_bin)) {
+      runtime_libs_dest_dir_in_win_is_bin =
+          invoker.runtime_libs_dest_dir_in_win_is_bin
+    }
+    assert(runtime_libs_dest_dir_in_win_is_bin != "")
+
+    if (is_win) {
+      runtime_libs_src_dir = "${root_gen_dir}/cmake/mbedtls/install/bin"
+    } else {
+      runtime_libs_src_dir = "${root_gen_dir}/cmake/mbedtls/install/lib"
+    }
+
+    runtime_libs_dest_dir = basedir + "/lib"
+    if (is_win) {
+      if (runtime_libs_dest_dir_in_win_is_bin) {
+        runtime_libs_dest_dir = basedir + "/bin"
+      }
+    }
+
+    script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+    args = [
+      "--sources",
+      rebase_path(runtime_libs_src_dir),
+      "--dest-dir",
+      rebase_path(runtime_libs_dest_dir),
+      "--tg-timestamp-proxy-file",
+      rebase_path("${target_gen_dir}/copy_runtime_libs_dummy_output_file"),
+    ]
+
+    outputs = [ "${target_gen_dir}/copy_runtime_libs_dummy_output_file" ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "data_deps",
+                           ])
+
+    # This action should wait for the completion of the building of mbedtls.
+    deps = [ "//third_party/mbedtls" ]
+  }
+
+  all_deps = [ ":ten_mbedtls_copy_runtime_libs" ]
+
+  if (copy_files_for_development) {
+    headers_src_dir = "${root_gen_dir}/cmake/mbedtls/install/include"
+
+    headers_dest_dir = basedir + "/include"
+    if (defined(invoker.subdir) && invoker.subdir != "") {
+      headers_dest_dir += "/" + invoker.subdir
+    }
+
+    action("ten_mbedtls_copy_headers_mbedtls") {
+      script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+      args = [
+        "--sources",
+        rebase_path(headers_src_dir + "/mbedtls"),
+        "--dest-dir",
+        rebase_path(headers_dest_dir + "/mbedtls"),
+        "--tg-timestamp-proxy-file",
+        rebase_path("${target_gen_dir}/copy_headers_mbedtls_dummy_output_file"),
+      ]
+
+      # This action should wait for the completion of the building of mbedtls.
+      deps = [ "//third_party/mbedtls" ]
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                               "data_deps",
+                             ])
+
+      outputs = [ "${target_gen_dir}/copy_headers_mbedtls_dummy_output_file" ]
+    }
+
+    all_deps += [ ":ten_mbedtls_copy_headers_mbedtls" ]
+
+    action("ten_mbedtls_copy_headers_psa") {
+      script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+      args = [
+        "--sources",
+        rebase_path(headers_src_dir + "/psa"),
+        "--dest-dir",
+        rebase_path(headers_dest_dir + "/psa"),
+        "--tg-timestamp-proxy-file",
+        rebase_path("${target_gen_dir}/copy_headers_psa_dummy_output_file"),
+      ]
+
+      # This action should wait for the completion of the building of mbedtls.
+      deps = [ "//third_party/mbedtls" ]
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                               "data_deps",
+                             ])
+
+      outputs = [ "${target_gen_dir}/copy_headers_psa_dummy_output_file" ]
+    }
+
+    all_deps += [ ":ten_mbedtls_copy_headers_psa" ]
+
+    if (is_win) {
+      action("ten_mbedtls_copy_win_exported_libs") {
+        script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+        args = [
+          "--sources",
+          rebase_path("${root_gen_dir}/cmake/mbedtls/install/lib"),
+          "--patterns",
+          "^.*\\.lib\$",
+          "--dest-dir",
+          rebase_path(basedir + "/lib"),
+          "--tg-timestamp-proxy-file",
+          rebase_path(
+              "${target_gen_dir}/copy_win_exported_libs_dummy_output_file"),
+        ]
+
+        # This action should wait for the completion of the building of mbedtls.
+        deps = [ "//third_party/mbedtls" ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                                 "data_deps",
+                               ])
+
+        outputs =
+            [ "${target_gen_dir}/copy_win_exported_libs_dummy_output_file" ]
+      }
+
+      all_deps += [ ":ten_mbedtls_copy_win_exported_libs" ]
+    }
+  }
+
+  group("${target_name}") {
+    deps = all_deps
+  }
+}

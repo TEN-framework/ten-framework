@@ -1,0 +1,66 @@
+Create NV seed file
+create_nv_seed:
+
+PSA init/deinit
+init_deinit:2
+
+PSA deinit without init
+deinit_without_init:0
+
+PSA deinit twice
+deinit_without_init:1
+
+No random without init
+validate_module_init_generate_random:0
+
+No key slot access without init
+validate_module_init_key_based:0
+
+No random after deinit
+validate_module_init_generate_random:1
+
+No key slot access after deinit
+validate_module_init_key_based:1
+
+Custom entropy sources: all standard
+custom_entropy_sources:0x0000ffff:PSA_SUCCESS
+
+Custom entropy sources: none
+custom_entropy_sources:0:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+Fake entropy: never returns anything
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:0:0:0:0:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+Fake entropy: less than the block size
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:MBEDTLS_ENTROPY_BLOCK_SIZE - 1:-1:-1:-1:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+Fake entropy: not enough for a nonce
+depends_on:ENTROPY_NONCE_LEN != 0
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:ENTROPY_NONCE_LEN - 1:-1:-1:-1:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+Fake entropy: one block eventually
+depends_on:ENTROPY_NONCE_LEN == 0
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:0:0:0:MBEDTLS_ENTROPY_BLOCK_SIZE:PSA_SUCCESS
+
+Fake entropy: one block in two steps
+depends_on:ENTROPY_NONCE_LEN == 0
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:MBEDTLS_ENTROPY_BLOCK_SIZE - 1:1:-1:-1:PSA_SUCCESS
+
+Fake entropy: more than one block in two steps
+depends_on:ENTROPY_NONCE_LEN == 0
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:MBEDTLS_ENTROPY_BLOCK_SIZE - 1:MBEDTLS_ENTROPY_BLOCK_SIZE - 1:-1:-1:PSA_SUCCESS
+
+Fake entropy: two blocks eventually
+fake_entropy_source:MBEDTLS_ENTROPY_BLOCK_SIZE:0:MBEDTLS_ENTROPY_BLOCK_SIZE:0:MBEDTLS_ENTROPY_BLOCK_SIZE:PSA_SUCCESS
+
+NV seed only: less than minimum
+entropy_from_nv_seed:MBEDTLS_ENTROPY_MIN_PLATFORM - 1:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+NV seed only: less than one block
+entropy_from_nv_seed:MBEDTLS_ENTROPY_BLOCK_SIZE - 1:PSA_ERROR_INSUFFICIENT_ENTROPY
+
+NV seed only: just enough
+entropy_from_nv_seed:ENTROPY_MIN_NV_SEED_SIZE:PSA_SUCCESS
+
+Recreate NV seed file
+create_nv_seed:

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="117.55mm" height="43.682mm" version="1.1" viewBox="0 0 117.55421 43.682442" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<marker id="a" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<filter id="b" x="-.044975" y="-.14275" width="1.09" height="1.2855" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="24.569981"/>
+		</filter>
+	</defs>
+	<g transform="translate(534.27 246.45)">
+		<rect transform="matrix(.08226 0 0 .08226 -259.43 86.518)" x="-3282.1" y="-3988.8" width="1311.1" height="413.09" filter="url(#b)"/>
+		<rect x="-530.41" y="-243.08" width="107.85" height="33.981" fill="#fff"/>
+		<path d="m-518.44-222.12h87.407" fill="none" marker-end="url(#a)" stroke="#000" stroke-width=".8444"/>
+		<text x="-474.75528" y="-216.97371" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.1788px" letter-spacing="0px" stroke-width=".021765" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-474.75528" y="-216.97371" stroke-width=".021765">All new work is done only on master</tspan></text>
+		<rect x="-493.93" y="-234.24" width="37.485" height="5.7258" fill-opacity=".91732"/>
+		<text x="-476.569" y="-229.52711" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="6.5983px" letter-spacing="0px" stroke-width=".034366" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-476.569" y="-229.52711" fill="#ffffff" stroke-width=".034366">master</tspan></text>
+		<g fill-opacity=".91732">
+			<circle cx="-450.55" cy="-231.43" r="2.8446"/>
+			<circle cx="-443.98" cy="-231.4" r="2.8446" opacity=".742"/>
+			<circle cx="-437.52" cy="-231.26" r="2.8446" opacity=".497"/>
+			<circle cx="-513.47" cy="-231.74" r="2.8446" opacity=".522"/>
+			<circle cx="-506.9" cy="-231.7" r="2.8446" opacity=".73"/>
+			<circle cx="-500.44" cy="-231.56" r="2.8446"/>
+			<circle cx="-493.87" cy="-231.43" r="2.8446"/>
+			<circle cx="-457.11" cy="-231.42" r="2.8446"/>
+		</g>
+		<rect x="-527.7" y="-242.83" width="107.85" height="33.981" fill="none"/>
+	</g>
+</svg>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="164.43mm" height="92.039mm" version="1.1" viewBox="0 0 164.43303 92.038696" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<marker id="b" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="a" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<linearGradient id="c" x1="1000.2" x2="993.99" y1="928.57" y2="992.97" gradientTransform="matrix(-.19888 .028535 .028535 .19888 73.514 -107.37)" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#e9ddaf" offset="0"/>
+			<stop stop-color="#504416" offset="1"/>
+		</linearGradient>
+		<filter id="e" x="-.060394" y="-.055053" width="1.1208" height="1.1101" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="0.44336333"/>
+		</filter>
+		<filter id="d" x="-.042027" y="-.0804" width="1.0841" height="1.1608" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="32.290007"/>
+		</filter>
+	</defs>
+	<g transform="translate(167.26 -73.321)">
+		<rect transform="matrix(.08226 0 0 .08226 153.32 266.78)" x="-3819.6" y="-2274.3" width="1843.9" height="963.88" filter="url(#d)"/>
+		<rect x="-162.36" y="77.972" width="151.68" height="79.289" fill="#fff"/>
+		<rect x="-133.03" y="119.7" width="90.911" height="5.7258" fill-opacity=".91732"/>
+		<path d="m-94.403 120.82 39.644-31.888 4.5555 5.4173-38.66 31.888z" fill="#00f" stroke="#000" stroke-width=".021765px"/>
+		<g transform="matrix(.08226 0 0 .08226 172.4 186.89)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<circle cx="-96.18" cy="114.18" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<path transform="matrix(-.75166 .10785 .10785 .75166 -2117 614.9)" d="m-2725.9-287.4c-0.4737 0.0104-0.7327 0.29435-0.9193 0.61443-2.45 4.2318-6.125 10.579-7.35 12.695-0.6344 1.3127 0.5828 2.8675 1.0263 3.5972 0.5853 0.7769 0.802 1.1542 1.8469 1.882 1.1717 0.46167 2.3507 0.56335 2.8066 0.53435s2.7265 0.26464 4.5434-1.3364c1.1317-2.0971 4.6213-8.6717 6.8848-12.866 0.2058-0.37197 0.6954-0.86583-0.1364-1.3663-2.8286-1.2472-5.6572-2.4941-8.4858-3.7414-0.077-0.0104-0.1488-0.0149-0.2165-0.0134zm-4.2607 15.885a1.1359 1.0667 0 0 1 1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1359 -1.0666 1.1359 1.0667 0 0 1 1.1359 -1.0666z" filter="url(#e)" stroke="#000" stroke-width=".26458px"/>
+		<path d="m-99.039 104.62c0.3572-0.0433 0.5825 0.14222 0.7573 0.36268 2.2979 2.9166 5.7448 7.2913 6.8938 8.7496 0.6184 0.91831-0.1288 2.2186-0.3835 2.815-0.356 0.64707-0.4783 0.95367-1.1853 1.6135-0.8309 0.47333-1.7057 0.67687-2.0515 0.70422-0.3458 0.0273-2.0213 0.49307-3.5596-0.51442-1.077-1.4542-4.409-6.0198-6.5627-8.9282-0.1948-0.25742-0.61611-0.57547-0.045-1.0414 1.9917-1.2426 3.9833-2.4853 5.9749-3.7278 0.057-0.0161 0.1104-0.0268 0.1614-0.0332zm4.9158 11.48a0.81001 0.86256 81.835 0 0 -0.7388 0.92424 0.81001 0.86256 81.835 0 0 0.9688 0.67923 0.81001 0.86256 81.835 0 0 0.7387 -0.92424 0.81001 0.86256 81.835 0 0 -0.9687 -0.67923z" fill="url(#c)" stroke="#000" stroke-width=".20091px"/>
+		<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width=".20123">
+			<path d="m-99.682 106.08 6.3983 8.4695"/>
+			<path d="m-103.5 108.42 6.4415 8.7713"/>
+			<path d="m-101.61 107.3 6.4288 8.5557"/>
+		</g>
+		<text x="-115.66345" y="124.41663" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="6.5983px" letter-spacing="0px" stroke-width=".034366" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-115.66345" y="124.41663" fill="#ffffff" stroke-width=".034366">master</tspan></text>
+		<g fill-opacity=".91732">
+			<circle cx="-35.652" cy="122.51" r="2.8446"/>
+			<circle cx="-29.085" cy="122.55" r="2.8446" opacity=".742"/>
+			<circle cx="-22.623" cy="122.69" r="2.8446" opacity=".497"/>
+			<circle cx="-152.56" cy="122.21" r="2.8446" opacity=".522"/>
+			<circle cx="-146" cy="122.24" r="2.8446" opacity=".73"/>
+			<circle cx="-139.53" cy="122.38" r="2.8446"/>
+			<circle cx="-132.97" cy="122.52" r="2.8446"/>
+			<circle cx="-42.219" cy="122.52" r="2.8446"/>
+		</g>
+		<g>
+			<text transform="rotate(30.874)" x="-27.055706" y="148.02026" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" letter-spacing="0px" stroke-width=".027864" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-27.055706" y="148.02026" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.0.0</tspan></text>
+			<text transform="rotate(-39.355)" x="-121.56568" y="31.720842" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.5255px" letter-spacing="0px" stroke-width=".028779" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-121.56568" y="31.720842" fill="#000000" stroke-width=".028779">v3.0-stable</tspan></text>
+			<path d="m-147.93 134.3h118.75" fill="none" marker-end="url(#a)" stroke="#000" stroke-width=".8444"/>
+			<text x="-91.00293" y="139.95488" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.1788px" letter-spacing="0px" stroke-width=".021765" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-91.00293" y="139.95488">Work continues on master, and if a fix is made</tspan><tspan x="-91.00293" y="145.17841">that is also relevant to the last release,</tspan><tspan x="-91.00293" y="150.40193">it is also backported on to the -stable branch</tspan></text>
+			<path d="m-64.193 120.82c6.0493-5.3437 1.0792-10.607-3.5694-14.321" fill="none" marker-end="url(#b)" stroke="#37abc8" stroke-width=".8226"/>
+		</g>
+		<g>
+			<path d="m-47.649 97.997c1.4407-2.4326 2.859-4.8788 4.3139-7.3028 0.17716-0.40617 0.6636-0.54529 0.96587-0.0746 0.26326 0.52636 0.48333 0.8893 0.71368 1.3389 1.1541 1.9984 2.3082 3.9968 3.4622 5.9951 0.19316 0.42448 0.15667 0.86961-0.23008 1.0817-0.48896 0.0759-0.78571 0.0177-1.1873 0.0337-2.4778-8e-3 -4.9561 0.0193-7.4341 0.01-0.44278 0.031-0.89016-0.42352-0.72643-0.83708 0.0407-0.0815 0.0816-0.16303 0.12232-0.24453z" fill="#f00"/>
+			<path d="m-46.502 97.457c1.0958-1.8504 2.1748-3.7112 3.2815-5.5551 0.13473-0.30895 0.50479-0.41474 0.73477-0.0565 0.20022 0.4004 0.36765 0.6765 0.54289 1.0185 0.8779 1.5201 1.7557 3.0402 2.6336 4.5604 0.14699 0.32287 0.11916 0.66146-0.17502 0.82279-0.37193 0.0578-0.59763 0.0128-0.90321 0.0257-1.8848-6e-3 -3.77 0.0144-5.6549 8e-3 -0.33683 0.0235-0.67719-0.32217-0.55263-0.63674 0.031-0.0618 0.0618-0.12403 0.0931-0.18599z" fill="#fff"/>
+			<path d="m-43.337 95.934c-0.0751-0.8306-0.1502-1.6613-0.22522-2.492 0-0.39216 0.3897-0.72284 0.77565-0.59506 0.40104 0.0284 0.56665 0.45257 0.4812 0.8032-0.14185 0.80235-0.21195 1.6168-0.38274 2.4144-0.10873 0.33827-0.64932 0.28856-0.6353-0.0932l-0.01389-0.0375z"/>
+			<circle cx="-43.007" cy="97.222" r=".51388"/>
+			<text x="-28.618044" y="94.997299" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="3.259px" letter-spacing="0px" stroke-width=".016974" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-28.618044" y="94.997299">New features</tspan><tspan x="-28.618044" y="99.071075">and API</tspan><tspan x="-28.618044" y="103.14484">changes are</tspan><tspan x="-28.618044" y="107.21862">not allowed for</tspan><tspan x="-28.618044" y="111.29239">backport</tspan></text>
+		</g>
+	</g>
+</svg>

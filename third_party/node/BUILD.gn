@@ -1,0 +1,37 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_common/prebuilt/prebuilt.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/options.gni")
+
+config("node_header") {
+  include_dirs = [
+    "include",
+    "include/node",
+  ]
+}
+
+ten_prebuilt_library("prebuilt_node_shared") {
+  name = "node_shared"
+
+  if (is_clang) {
+    url = "https://github.com/TEN-framework/node_shared/releases/download/v1.0.6/node-shared-${target_os}-${target_cpu}-clang.zip"
+  } else {
+    url = "https://github.com/TEN-framework/node_shared/releases/download/v1.0.6/node-shared-${target_os}-${target_cpu}-gcc.zip"
+  }
+
+  is_shared_library = true
+
+  libs = [ "node" ]
+  lib_version = 127
+}
+
+group("node") {
+  public_configs = [ ":node_header" ]
+  public_deps = [ ":prebuilt_node_shared" ]
+}

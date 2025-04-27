@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">libwebsockets Android Client</string>
+    <string name="start">Start/Stop thread</string>
+    <string name="suspend">Suspend/Resume thread</string>
+</resources>

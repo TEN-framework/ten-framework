@@ -1,0 +1,257 @@
+{
+  "Name":           "libwebsockets",
+  "SourceUrl":      "https://github.com/warmcat/libwebsockets/releases",
+  "Git":            "https://github.com/warmcat/libwebsockets",
+
+  "Versions": [
+  {
+    "Number":         "current",
+    "Installed":      "installed/libwebsockets/current",
+    "Source":         "src/libwebsockets/current",
+    "Changelog":      "On",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "3.0.0",
+    "Installed":      "installed/libwebsockets/3.0.0",
+    "Source":         "src/libwebsockets/3.0.0/libwebsockets-3.0.0.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.4.2",
+    "Installed":      "installed/libwebsockets/2.4.2",
+    "Source":         "src/libwebsockets/2.4.2/libwebsockets-2.4.2.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.4.1",
+    "Installed":      "installed/libwebsockets/2.4.1",
+    "Source":         "src/libwebsockets/2.4.1/libwebsockets-2.4.1.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.4.0",
+    "Installed":      "installed/libwebsockets/2.4.0",
+    "Source":         "src/libwebsockets/2.4.0/libwebsockets-2.4.0.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.3.0",
+    "Installed":      "installed/libwebsockets/2.3.0",
+    "Source":         "src/libwebsockets/2.3.0/libwebsockets-2.3.0.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.2.2",
+    "Installed":      "installed/libwebsockets/2.2.2",
+    "Source":         "src/libwebsockets/2.2.2/libwebsockets-2.2.2.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.2.1",
+    "Installed":      "installed/libwebsockets/2.2.1",
+    "Source":         "src/libwebsockets/2.2.1/libwebsockets-2.2.1.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.2.0",
+    "Installed":      "installed/libwebsockets/2.2.0",
+    "Source":         "src/libwebsockets/2.2.0/libwebsockets-2.2.0.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.1.1",
+    "Installed":      "installed/libwebsockets/2.1.1",
+    "Source":         "src/libwebsockets/2.1.1/libwebsockets-2.1.1.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "2.1.0",
+    "Installed":      "installed/libwebsockets/2.1.0",
+    "Source":         "src/libwebsockets/2.1.0/libwebsockets-2.1.0.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.9",
+    "Installed":      "installed/libwebsockets/1.7.9",
+    "Source":         "src/libwebsockets/1.7.9/libwebsockets-1.7.9.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.8",
+    "Installed":      "installed/libwebsockets/1.7.8",
+    "Source":         "src/libwebsockets/1.7.8/libwebsockets-1.7.8.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.7",
+    "Installed":      "installed/libwebsockets/1.7.7",
+    "Source":         "src/libwebsockets/1.7.7/libwebsockets-1.7.7.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.6",
+    "Installed":      "installed/libwebsockets/1.7.6",
+    "Source":         "src/libwebsockets/1.7.6/libwebsockets-1.7.6.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.5",
+    "Installed":      "installed/libwebsockets/1.7.5",
+    "Source":         "src/libwebsockets/1.7.5/libwebsockets-1.7.5.tar.gz",
+    "Changelog":      "changelog",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.4",
+    "Installed":      "installed/libwebsockets/1.7.4",
+    "Source":         "src/libwebsockets/1.7.4/libwebsockets-1.7.4.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.3",
+    "Installed":      "installed/libwebsockets/1.7.3",
+    "Source":         "src/libwebsockets/1.7.3/libwebsockets-1.7.3.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.2",
+    "Installed":      "installed/libwebsockets/1.7.2",
+    "Source":         "src/libwebsockets/1.7.2/libwebsockets-1.7.2.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.1",
+    "Installed":      "installed/libwebsockets/1.7.1",
+    "Source":         "src/libwebsockets/1.7.1/libwebsockets-1.7.1.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.7.0",
+    "Installed":      "installed/libwebsockets/1.7.0",
+    "Source":         "src/libwebsockets/1.7.0/libwebsockets-1.7.0.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.6.3",
+    "Installed":      "installed/libwebsockets/1.6.3",
+    "Source":         "src/libwebsockets/1.6.3/libwebsockets-1.6.3.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.6.2",
+    "Installed":      "installed/libwebsockets/1.6.2",
+    "Source":         "src/libwebsockets/1.6.2/libwebsockets-1.6.2.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.6.1",
+    "Installed":      "installed/libwebsockets/1.6.1",
+    "Source":         "src/libwebsockets/1.6.1/libwebsockets-1.6.1.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  },
+  {
+    "Number":         "1.5.1",
+    "Installed":      "installed/libwebsockets/1.5.1",
+    "Source":         "src/libwebsockets/1.5.1/libwebsockets-1.5.1.tar.gz",
+    "Changelog":      "Off",
+    "HeadersDiff":    "On",
+    "PkgDiff":        "Off",
+    "ABIView":        "Off",
+    "ABIDiff":        "Off"
+  }]
+}

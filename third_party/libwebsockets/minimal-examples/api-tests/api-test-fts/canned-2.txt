@@ -1,0 +1,42 @@
+API selftest: full-text search
+no autocomplete results
+../minimal-examples/api-tests/api-test-fts/the-picture-of-dorian-gray.txt: (8904 lines) 32 hits 
+360
+17482
+393
+18984
+562
+28820
+837
+42903
+1640
+82057
+2037
+102214
+2091
+105019
+2145
+107351
+2725
+137188
+2808
+141127
+2977
+149971
+3429
+173810
+4417
+229186
+4431
+230058
+4656
+241181
+4708
+244372
+../minimal-examples/api-tests/api-test-fts/les-mis-utf8.txt: (14399 lines) 3 hits 
+14106
+14313
+14396
+
+
+

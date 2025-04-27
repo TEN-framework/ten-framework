@@ -1,0 +1,12 @@
+[Unit]
+Description=Libwebsockets test server
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/bin/libwebsockets-test-server --ssl -C /etc/pki/tls/certs/libwebsockets.org.crt -K /etc/pki/tls/private/libwebsockets.org.key -A /etc/pki/tls/certs/libwebsockets.org.cer  --port 7681 -u 99 -g 99 --daemonize
+Type=forking
+PIDFile=/tmp/.lwsts-lock
+
+[Install]
+WantedBy=multi-user.target
+

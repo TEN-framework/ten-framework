@@ -1,0 +1,72 @@
+# Declare python as our language. This way we get our chosen Python version,
+# and pip is available. Gcc and clang are available anyway.
+language: python
+python: 3.5
+sudo: false
+cache: ccache
+
+jobs:
+  include:
+    - name: basic checks and reference configurations
+      addons:
+        apt:
+          packages:
+          - gnutls-bin
+          - doxygen
+          - graphviz
+          - gcc-arm-none-eabi
+          - libnewlib-arm-none-eabi
+          - gcc-arm-linux-gnueabi
+          - libc6-dev-armel-cross
+      script:
+        - tests/scripts/all.sh -k 'check_*'
+        - tests/scripts/all.sh -k test_default_out_of_box
+        - tests/scripts/all.sh -k test_ref_configs
+        - tests/scripts/all.sh -k build_arm_linux_gnueabi_gcc_arm5vte build_arm_none_eabi_gcc_m0plus
+
+    - name: full configuration
+      script:
+        - tests/scripts/all.sh -k test_full_cmake_gcc_asan
+
+    - name: Windows
+      os: windows
+      # The language 'python' is currently unsupported on the
+      # Windows Build Environment. And 'generic' causes the job to get stuck
+      # on "Booting virtual machine".
+      language: c
+      before_install:
+        - choco install python --version=3.5.4
+      env:
+        # Add the directory where the Choco packages go
+        - PATH=/c/Python35:/c/Python35/Scripts:$PATH
+        - PYTHON=python.exe
+      script:
+        - type perl; perl --version
+        - type python; python --version
+        - scripts/make_generated_files.bat
+        # Logs appear out of sequence on Windows. Give time to catch up.
+        - sleep 5
+        - scripts/windows_msbuild.bat v141 # Visual Studio 2017
+
+after_failure:
+- tests/scripts/travis-log-failure.sh
+
+env:
+  global:
+    - SEED=1
+    - secure: "JECCru6HASpKZ0OLfHh8f/KXhKkdrCwjquZghd/qbA4ksxsWImjR7KEPERcaPndXEilzhDbKwuFvJiQX2duVgTGoq745YGhLZIjzo1i8tySkceCVd48P8WceYGz+F/bmY7r+m6fFNuxDSoGGSVeA4Lnjvmm8PFUP45YodDV9no4="
+
+install:
+  - $PYTHON scripts/min_requirements.py
+
+addons:
+  apt:
+    packages:
+    - gnutls-bin
+  coverity_scan:
+    project:
+      name: "ARMmbed/mbedtls"
+    notification_email: support-mbedtls@arm.com
+    build_command_prepend:
+    build_command: make
+    branch_pattern: coverity_scan

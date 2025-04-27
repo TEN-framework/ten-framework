@@ -1,0 +1,255 @@
+/* lws_config.h  Generated from lws_config.h.in  */
+
+#ifndef NDEBUG
+	#ifndef _DEBUG
+		#define _DEBUG
+	#endif
+#endif
+
+#define LWS_INSTALL_DATADIR "${CMAKE_INSTALL_PREFIX}/share"
+#define LWS_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${LWS_INSTALL_LIB_DIR}${LIB_SUFFIX}"
+#define LWS_LIBRARY_VERSION_MAJOR ${LWS_LIBRARY_VERSION_MAJOR}
+#define LWS_LIBRARY_VERSION_MINOR ${LWS_LIBRARY_VERSION_MINOR}
+#define LWS_LIBRARY_VERSION_PATCH_ELABORATED ${LWS_LIBRARY_VERSION_PATCH_ELABORATED}
+#define LWS_LIBRARY_VERSION_PATCH ${LWS_LIBRARY_VERSION_PATCH}
+
+/* LWS_LIBRARY_VERSION_NUMBER looks like 1005001 for e.g. version 1.5.1 */
+#define LWS_LIBRARY_VERSION_NUMBER (LWS_LIBRARY_VERSION_MAJOR * 1000000) + \
+					(LWS_LIBRARY_VERSION_MINOR * 1000) + \
+					LWS_LIBRARY_VERSION_PATCH
+#define LWS_MAX_SMP ${LWS_MAX_SMP}
+
+#cmakedefine LWS_ESP_PLATFORM
+#cmakedefine LWS_LIBRARY_VERSION_NUMBER
+
+#cmakedefine LWS_EXT_PTHREAD_LIBRARIES
+
+#cmakedefine LWS_AVOID_SIGPIPE_IGN
+#cmakedefine LWS_BUILD_HASH "${LWS_BUILD_HASH}"
+#cmakedefine LWS_BUILTIN_GETIFADDRS
+#cmakedefine LWS_CLIENT_HTTP_PROXYING
+#cmakedefine LWS_DETECTED_PLAT_IOS
+#cmakedefine LWS_FALLBACK_GETHOSTBYNAME
+#cmakedefine LWS_HAS_INTPTR_T
+#cmakedefine LWS_HAS_GETOPT_LONG
+#cmakedefine LWS_HAVE__ATOI64
+#cmakedefine LWS_HAVE_ATOLL
+#cmakedefine LWS_HAVE_BN_bn2binpad
+#cmakedefine LWS_HAVE_CLOCK_GETTIME
+#cmakedefine LWS_HAVE_EC_POINT_get_affine_coordinates
+#cmakedefine LWS_HAVE_EC_KEY_new_by_curve_name
+#cmakedefine LWS_HAVE_ECDSA_SIG_set0
+#cmakedefine LWS_HAVE_EVP_MD_CTX_free
+#cmakedefine LWS_HAVE_EVP_aes_128_wrap
+#cmakedefine LWS_HAVE_EVP_aes_128_cfb8
+#cmakedefine LWS_HAVE_EVP_aes_128_cfb128
+#cmakedefine LWS_HAVE_EVP_aes_192_cfb8
+#cmakedefine LWS_HAVE_EVP_aes_192_cfb128
+#cmakedefine LWS_HAVE_EVP_aes_256_cfb8
+#cmakedefine LWS_HAVE_EVP_aes_256_cfb128
+#cmakedefine LWS_HAVE_EVP_aes_128_ofb
+#cmakedefine LWS_HAVE_EVP_aes_128_xts
+#cmakedefine LWS_HAVE_EVP_aes_128_ctr
+#cmakedefine LWS_HAVE_EVP_aes_128_ecb
+#cmakedefine LWS_HAVE_EVP_PKEY_new_raw_private_key
+#cmakedefine LWS_HAVE_EXECVPE
+#cmakedefine LWS_HAVE_LOCALTIME_R
+#cmakedefine LWS_HAVE_GMTIME_R
+#cmakedefine LWS_HAVE_CTIME_R
+#cmakedefine LWS_HAVE_GETGRGID_R
+#cmakedefine LWS_HAVE_GETGRNAM_R
+#cmakedefine LWS_HAVE_GETPWUID_R
+#cmakedefine LWS_HAVE_GETPWNAM_R
+#cmakedefine LWS_HAVE_LIBCAP
+#cmakedefine LWS_HAVE_HMAC_CTX_new
+#cmakedefine LWS_HAVE_MALLOC_H
+#cmakedefine LWS_HAVE_MALLOC_TRIM
+#cmakedefine LWS_HAVE_MALLOC_USABLE_SIZE
+#cmakedefine LWS_HAVE_mbedtls_md_setup
+#cmakedefine LWS_HAVE_mbedtls_net_init
+#cmakedefine LWS_HAVE_mbedtls_rsa_complete
+#cmakedefine LWS_HAVE_mbedtls_internal_aes_encrypt
+#cmakedefine LWS_HAVE_mbedtls_ssl_conf_alpn_protocols
+#cmakedefine LWS_HAVE_mbedtls_ssl_get_alpn_protocol
+#cmakedefine LWS_HAVE_mbedtls_ssl_conf_sni
+#cmakedefine LWS_HAVE_mbedtls_ssl_set_hs_ca_chain
+#cmakedefine LWS_HAVE_mbedtls_ssl_set_hs_own_cert
+#cmakedefine LWS_HAVE_mbedtls_ssl_set_hs_authmode
+#cmakedefine LWS_HAVE_mbedtls_ssl_set_verify
+#cmakedefine LWS_HAVE_mbedtls_x509_crt_parse_file
+#cmakedefine LWS_HAVE_MBEDTLS_NET_SOCKETS
+#cmakedefine LWS_HAVE_MBEDTLS_AUTH_KEY_ID
+#cmakedefine LWS_HAVE_NEW_UV_VERSION_H
+#cmakedefine LWS_HAVE_OPENSSL_ECDH_H
+#cmakedefine LWS_HAVE_OPENSSL_STACK
+#cmakedefine LWS_HAVE_PIPE2
+#cmakedefine LWS_HAVE_EVENTFD
+#cmakedefine LWS_HAVE_PTHREAD_H
+#cmakedefine LWS_HAVE_RSA_SET0_KEY
+#cmakedefine LWS_HAVE_RSA_verify_pss_mgf1
+#cmakedefine LWS_HAVE_SSL_CTX_get0_certificate
+#cmakedefine LWS_HAVE_SSL_CTX_load_verify_file
+#cmakedefine LWS_HAVE_SSL_CTX_load_verify_dir
+#cmakedefine LWS_HAVE_SSL_CTX_set1_param
+#cmakedefine LWS_HAVE_SSL_CTX_set_ciphersuites
+#cmakedefine LWS_HAVE_SSL_EXTRA_CHAIN_CERTS
+#cmakedefine LWS_HAVE_SSL_get0_alpn_selected
+#cmakedefine LWS_HAVE_SSL_CTX_EVP_PKEY_new_raw_private_key
+#cmakedefine LWS_HAVE_SSL_set_alpn_protos
+#cmakedefine LWS_HAVE_SSL_SET_INFO_CALLBACK
+#cmakedefine LWS_HAVE_SSL_SESSION_set_time
+#cmakedefine LWS_HAVE_SSL_SESSION_up_ref
+#cmakedefine LWS_HAVE__STAT32I64
+#cmakedefine LWS_HAVE_STDINT_H
+#cmakedefine LWS_HAVE_SYS_CAPABILITY_H
+#cmakedefine LWS_HAVE_TIMEGM
+#cmakedefine LWS_HAVE_TLS_CLIENT_METHOD
+#cmakedefine LWS_HAVE_TLSV1_2_CLIENT_METHOD
+#cmakedefine LWS_HAVE_SUSECONDS_T
+#cmakedefine LWS_HAVE_UV_VERSION_H
+#cmakedefine LWS_HAVE_VFORK
+#cmakedefine LWS_HAVE_X509_get_key_usage
+#cmakedefine LWS_HAVE_X509_VERIFY_PARAM_set1_host
+#cmakedefine LWS_LIBRARY_VERSION "${LWS_LIBRARY_VERSION}"
+#define LWS_LOGGING_BITFIELD_CLEAR ${LWS_LOGGING_BITFIELD_CLEAR}
+#define LWS_LOGGING_BITFIELD_SET ${LWS_LOGGING_BITFIELD_SET}
+#cmakedefine LWS_LOG_TAG_LIFECYCLE
+#cmakedefine LWS_MINGW_SUPPORT
+#cmakedefine LWS_NO_CLIENT
+#cmakedefine LWS_NO_DAEMONIZE
+#cmakedefine LWS_OPENSSL_CLIENT_CERTS "${LWS_OPENSSL_CLIENT_CERTS}"
+#cmakedefine LWS_OPENSSL_SUPPORT
+#cmakedefine LWS_PLAT_OPTEE
+#cmakedefine LWS_PLAT_UNIX
+#cmakedefine LWS_PLAT_FREERTOS
+#cmakedefine LWS_ROLE_CGI
+#cmakedefine LWS_ROLE_DBUS
+#cmakedefine LWS_ROLE_H1
+#cmakedefine LWS_ROLE_H2
+#cmakedefine LWS_ROLE_RAW
+#cmakedefine LWS_ROLE_RAW_FILE
+#cmakedefine LWS_ROLE_RAW_PROXY
+#cmakedefine LWS_ROLE_WS
+#cmakedefine LWS_ROLE_MQTT
+#cmakedefine LWS_SHA1_USE_OPENSSL_NAME
+#cmakedefine LWS_SSL_CLIENT_USE_OS_CA_CERTS
+#cmakedefine LWS_SSL_SERVER_WITH_ECDH_CERT
+#cmakedefine LWS_SUPPRESS_DEPRECATED_API_WARNINGS
+#cmakedefine LWS_TLS_LOG_PLAINTEXT_RX
+#cmakedefine LWS_TLS_LOG_PLAINTEXT_TX
+#cmakedefine LWS_WITH_ABSTRACT
+#cmakedefine LWS_WITH_ACCESS_LOG
+#cmakedefine LWS_WITH_ACME
+#cmakedefine LWS_WITH_ALSA
+#cmakedefine LWS_WITH_SYS_ASYNC_DNS
+#cmakedefine LWS_WITH_BORINGSSL
+#cmakedefine LWS_WITH_CGI
+#cmakedefine LWS_WITH_CONMON
+#cmakedefine LWS_WITH_COSE
+#cmakedefine LWS_WITH_CUSTOM_HEADERS
+#cmakedefine LWS_WITH_DEPRECATED_LWS_DLL
+#cmakedefine LWS_WITH_DETAILED_LATENCY
+#cmakedefine LWS_WITH_DIR
+#cmakedefine LWS_WITH_DRIVERS
+#cmakedefine LWS_WITH_ESP32
+#cmakedefine LWS_HAVE_EVBACKEND_LINUXAIO
+#cmakedefine LWS_HAVE_EVBACKEND_IOURING
+#cmakedefine LWS_WITH_EXTERNAL_POLL
+#cmakedefine LWS_WITH_FILE_OPS
+#cmakedefine LWS_WITH_FSMOUNT
+#cmakedefine LWS_WITH_FTS
+#cmakedefine LWS_WITH_GENCRYPTO
+#cmakedefine LWS_WITH_GENERIC_SESSIONS
+#cmakedefine LWS_WITH_GLIB
+#cmakedefine LWS_WITH_GTK
+#cmakedefine LWS_WITH_HTTP2
+#cmakedefine LWS_WITH_HTTP_BASIC_AUTH
+#cmakedefine LWS_WITH_HTTP_BROTLI
+#cmakedefine LWS_HTTP_HEADERS_ALL
+#cmakedefine LWS_WITH_HTTP_PROXY
+#cmakedefine LWS_WITH_HTTP_STREAM_COMPRESSION
+#cmakedefine LWS_WITH_HTTP_UNCOMMON_HEADERS
+#cmakedefine LWS_WITH_IPV6
+#cmakedefine LWS_WITH_JOSE
+#cmakedefine LWS_WITH_CBOR
+#cmakedefine LWS_WITH_CBOR_FLOAT
+#cmakedefine LWS_WITH_LEJP
+#cmakedefine LWS_WITH_LIBEV
+#cmakedefine LWS_WITH_LIBEVENT
+#cmakedefine LWS_WITH_LIBUV
+#cmakedefine LWS_WITH_SDEVENT
+#cmakedefine LWS_WITH_LWSAC
+#cmakedefine LWS_LOGS_TIMESTAMP
+#cmakedefine LWS_WITH_MBEDTLS
+#cmakedefine LWS_WITH_MINIZ
+#cmakedefine LWS_WITH_NETLINK
+#cmakedefine LWS_WITH_NETWORK
+#cmakedefine LWS_WITH_NO_LOGS
+#cmakedefine LWS_WITH_CACHE_NSCOOKIEJAR
+#cmakedefine LWS_WITH_CLIENT
+#cmakedefine LWS_WITHOUT_EXTENSIONS
+#cmakedefine LWS_WITH_SERVER
+#cmakedefine LWS_WITH_SPAWN
+#cmakedefine LWS_WITH_PEER_LIMITS
+#cmakedefine LWS_WITH_PLUGINS
+#cmakedefine LWS_WITH_PLUGINS_BUILTIN
+#cmakedefine LWS_WITH_POLARSSL
+#cmakedefine LWS_WITH_POLL
+#cmakedefine LWS_WITH_RANGES
+#cmakedefine LWS_WITH_RFC6724
+#cmakedefine LWS_WITH_SECURE_STREAMS
+#cmakedefine LWS_WITH_SECURE_STREAMS_CPP
+#cmakedefine LWS_WITH_SECURE_STREAMS_SYS_AUTH_API_AMAZON_COM
+#cmakedefine LWS_WITH_SECURE_STREAMS_PROXY_API
+#cmakedefine LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY
+#cmakedefine LWS_WITH_SECURE_STREAMS_AUTH_SIGV4
+#cmakedefine LWS_WITH_SECURE_STREAMS_BUFFER_DUMP
+#cmakedefine LWS_WITH_SS_DIRECT_PROTOCOL_STR
+#cmakedefine LWS_WITH_SELFTESTS
+#cmakedefine LWS_WITH_SEQUENCER
+#cmakedefine LWS_WITH_SERVER_STATUS
+#cmakedefine LWS_WITH_SYS_SMD
+#cmakedefine LWS_WITH_SMTP
+#cmakedefine LWS_WITH_SOCKS5
+#cmakedefine LWS_WITH_STATEFUL_URLDECODE
+#cmakedefine LWS_WITH_STATS
+#cmakedefine LWS_WITH_STRUCT_SQLITE3
+#cmakedefine LWS_WITH_STRUCT_JSON
+#cmakedefine LWS_WITH_SUL_DEBUGGING
+#cmakedefine LWS_WITH_SQLITE3
+#cmakedefine LWS_WITH_SYS_DHCP_CLIENT
+#cmakedefine LWS_WITH_SYS_FAULT_INJECTION
+#cmakedefine LWS_WITH_SYS_METRICS
+#cmakedefine LWS_WITH_SYS_NTPCLIENT
+#cmakedefine LWS_WITH_SYS_STATE
+#cmakedefine LWS_WITH_THREADPOOL
+#cmakedefine LWS_WITH_TLS
+#cmakedefine LWS_WITH_TLS_JIT_TRUST
+#cmakedefine LWS_WITH_TLS_SESSIONS
+#cmakedefine LWS_WITH_UDP
+#cmakedefine LWS_WITH_ULOOP
+#cmakedefine LWS_WITH_UNIX_SOCK
+#cmakedefine LWS_WITH_ZIP_FOPS
+#cmakedefine USE_OLD_CYASSL
+#cmakedefine USE_WOLFSSL
+#cmakedefine LWS_WITH_EVENT_LIBS
+#cmakedefine LWS_WITH_EVLIB_PLUGINS
+#cmakedefine LWS_WITH_LIBUV_INTERNAL
+#cmakedefine LWS_WITH_PLUGINS_API
+#cmakedefine LWS_HAVE_RTA_PREF
+
+// TODO(Liu): Apply the patch in `dependency.md` rather than set
+// `USING_SHARED_MBEDTLS` when we upgrade cmake to `3.24`.
+// Refer to doc/developer_guide/src/chapters/dependency.md.
+
+// NOTE(Liu): The libwebsockets will use the external variables in the mbedtls
+// if enable 'LWS_WITH_MBEDTLS'. And the variable declaration in the header
+// file must start with '__declspec(dllimport)' on windows, otherwise the
+// symbols can not be accessed. And the libwebsockets has to inherit the
+// `USING_SHARED_MBEDTLS` compile definition from mbedtls. So the libwebsockets
+// should use `find_package` rather than `find_library` to search the mbedtls
+// libraries, as `find_library` only find the library, static or shared.
+// Refer to `third_party/mbedtls/include/mbedtls/export.h`. And `find_package`
+// will set compiler flags, definitions, include directories, and link
+// libraries from `imported target` to your target.
+#define USING_SHARED_MBEDTLS

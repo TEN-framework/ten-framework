@@ -1,0 +1,25 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//third_party/yyjson/output_libs.gni")
+
+config("yyjson_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/yyjson/install/include" ]
+}
+
+cmake_project("yyjson") {
+  public_configs = [ ":yyjson_header" ]
+
+  project_path = "."
+  project_name = "yyjson"
+  build_path = "${root_gen_dir}/cmake/yyjson/"
+  install_path = "${build_path}/install/"
+
+  library_path = [ "$install_path/lib/" ]
+
+  outputs_seen_by_ag = yyjson_output_libs
+}

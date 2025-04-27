@@ -1,0 +1,26 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+
+config("nlohmann_json_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/nlohmann_json/install/include" ]
+}
+
+cmake_project("nlohmann_json") {
+  public_configs = [ ":nlohmann_json_header" ]
+
+  project_path = "."
+  project_name = "nlohmann_json"
+  build_path = "${root_gen_dir}/cmake/nlohmann_json/"
+  install_path = "${build_path}/install/"
+
+  options = [ "JSON_BuildTests=OFF" ]
+
+  run_build = false
+
+  outputs_seen_by_ag = [ "${install_path}/include" ]
+}

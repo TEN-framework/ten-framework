@@ -1,0 +1,202 @@
+Register SE driver: good
+register_one:2:PSA_DRV_SE_HAL_VERSION:PSA_SUCCESS
+
+# Run this test case a second time to verify that the library deinit
+# unregistered the first driver.
+Register SE driver: good, again
+register_one:2:PSA_DRV_SE_HAL_VERSION:PSA_SUCCESS
+
+Register SE driver: invalid location (0)
+register_one:0:PSA_DRV_SE_HAL_VERSION:PSA_ERROR_INVALID_ARGUMENT
+
+Register SE driver: invalid location (local)
+register_one:PSA_KEY_LOCATION_LOCAL_STORAGE:PSA_DRV_SE_HAL_VERSION:PSA_ERROR_INVALID_ARGUMENT
+
+Register SE driver: invalid version (ancient)
+register_one:2:0x00000003:PSA_ERROR_NOT_SUPPORTED
+
+Register SE driver: invalid version (future)
+register_one:2:PSA_DRV_SE_HAL_VERSION + 1:PSA_ERROR_NOT_SUPPORTED
+
+Register SE driver: already registered
+register_twice:3
+
+Register SE driver: maximum number of drivers
+register_max:
+
+SE key import-export persistent (p_allocate allows all slots)
+key_creation_import_export:TEST_SE_PERSISTENT_LIFETIME:0:0
+
+SE key import-export persistent (p_allocate allows 1 slot)
+key_creation_import_export:TEST_SE_PERSISTENT_LIFETIME:ARRAY_LENGTH( ram_slots ) - 1:0
+
+SE key import-export persistent, check after restart (slot 0)
+key_creation_import_export:TEST_SE_PERSISTENT_LIFETIME:0:1
+
+SE key import-export persistent, check after restart (slot 3)
+key_creation_import_export:TEST_SE_PERSISTENT_LIFETIME:3:1
+
+SE key import-export volatile (p_allocate allows all slots)
+key_creation_import_export:TEST_SE_VOLATILE_LIFETIME:0:0
+
+SE key import-export volatile (p_allocate allows 1 slot)
+key_creation_import_export:TEST_SE_VOLATILE_LIFETIME:ARRAY_LENGTH( ram_slots ) - 1:0
+
+SE key import-export volatile, check after restart (slot 0)
+key_creation_import_export:TEST_SE_VOLATILE_LIFETIME:0:1
+
+SE key import-export volatile, check after restart (slot 3)
+key_creation_import_export:TEST_SE_VOLATILE_LIFETIME:3:1
+
+Key creation in a specific slot (0)
+key_creation_in_chosen_slot:0:0:PSA_SUCCESS
+
+Key creation in a specific slot (max)
+key_creation_in_chosen_slot:ARRAY_LENGTH( ram_slots ) - 1:0:PSA_SUCCESS
+
+Key creation in a specific slot (0, restart)
+key_creation_in_chosen_slot:0:1:PSA_SUCCESS
+
+Key creation in a specific slot (max, restart)
+key_creation_in_chosen_slot:ARRAY_LENGTH( ram_slots ) - 1:1:PSA_SUCCESS
+
+Key creation in a specific slot (too large)
+key_creation_in_chosen_slot:ARRAY_LENGTH( ram_slots ):0:PSA_ERROR_INVALID_ARGUMENT
+
+Key import smoke test: AES-CTR
+import_key_smoke:PSA_KEY_TYPE_AES:PSA_ALG_CTR:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: AES-CBC
+import_key_smoke:PSA_KEY_TYPE_AES:PSA_ALG_CBC_NO_PADDING:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: AES-CMAC
+import_key_smoke:PSA_KEY_TYPE_AES:PSA_ALG_CMAC:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: AES-CCM
+import_key_smoke:PSA_KEY_TYPE_AES:PSA_ALG_CCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: AES-GCM
+import_key_smoke:PSA_KEY_TYPE_AES:PSA_ALG_GCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: ARIA-CTR
+import_key_smoke:PSA_KEY_TYPE_ARIA:PSA_ALG_CTR:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: ARIA-CBC
+import_key_smoke:PSA_KEY_TYPE_ARIA:PSA_ALG_CBC_NO_PADDING:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: ARIA-CMAC
+import_key_smoke:PSA_KEY_TYPE_ARIA:PSA_ALG_CMAC:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: ARIA-CCM
+import_key_smoke:PSA_KEY_TYPE_ARIA:PSA_ALG_CCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: ARIA-GCM
+import_key_smoke:PSA_KEY_TYPE_ARIA:PSA_ALG_GCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: CAMELLIA-CTR
+import_key_smoke:PSA_KEY_TYPE_CAMELLIA:PSA_ALG_CTR:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: CAMELLIA-CBC
+import_key_smoke:PSA_KEY_TYPE_CAMELLIA:PSA_ALG_CBC_NO_PADDING:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: CAMELLIA-CMAC
+import_key_smoke:PSA_KEY_TYPE_CAMELLIA:PSA_ALG_CMAC:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: CAMELLIA-CCM
+import_key_smoke:PSA_KEY_TYPE_CAMELLIA:PSA_ALG_CCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: CAMELLIA-GCM
+import_key_smoke:PSA_KEY_TYPE_CAMELLIA:PSA_ALG_GCM:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: HMAC-SHA-256
+import_key_smoke:PSA_KEY_TYPE_HMAC:PSA_ALG_HMAC( PSA_ALG_SHA_256 ):"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: HKDF-SHA-256
+import_key_smoke:PSA_KEY_TYPE_DERIVE:PSA_ALG_HKDF( PSA_ALG_SHA_256 ):"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+Key import smoke test: RSA PKCS#1v1.5 signature
+import_key_smoke:PSA_KEY_TYPE_RSA_KEY_PAIR:PSA_ALG_RSA_PKCS1V15_SIGN_RAW:"30818902818100af057d396ee84fb75fdbb5c2b13c7fe5a654aa8aa2470b541ee1feb0b12d25c79711531249e1129628042dbbb6c120d1443524ef4c0e6e1d8956eeb2077af12349ddeee54483bc06c2c61948cd02b202e796aebd94d3a7cbf859c2c1819c324cb82b9cd34ede263a2abffe4733f077869e8660f7d6834da53d690ef7985f6bc30203010001"
+
+Key import smoke test: RSA PKCS#1v1.5 encryption
+import_key_smoke:PSA_KEY_TYPE_RSA_KEY_PAIR:PSA_ALG_RSA_PKCS1V15_CRYPT:"30818902818100af057d396ee84fb75fdbb5c2b13c7fe5a654aa8aa2470b541ee1feb0b12d25c79711531249e1129628042dbbb6c120d1443524ef4c0e6e1d8956eeb2077af12349ddeee54483bc06c2c61948cd02b202e796aebd94d3a7cbf859c2c1819c324cb82b9cd34ede263a2abffe4733f077869e8660f7d6834da53d690ef7985f6bc30203010001"
+
+Key import smoke test: RSA OAEP encryption
+import_key_smoke:PSA_KEY_TYPE_RSA_KEY_PAIR:PSA_ALG_RSA_OAEP( PSA_ALG_SHA_256 ):"30818902818100af057d396ee84fb75fdbb5c2b13c7fe5a654aa8aa2470b541ee1feb0b12d25c79711531249e1129628042dbbb6c120d1443524ef4c0e6e1d8956eeb2077af12349ddeee54483bc06c2c61948cd02b202e796aebd94d3a7cbf859c2c1819c324cb82b9cd34ede263a2abffe4733f077869e8660f7d6834da53d690ef7985f6bc30203010001"
+
+Key import smoke test: ECDSA secp256r1
+import_key_smoke:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee"
+
+Key import smoke test: ECDH secp256r1
+import_key_smoke:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDH:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee"
+
+Key import smoke test: ECDH secp256r1 with HKDF
+import_key_smoke:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_KEY_AGREEMENT( PSA_ALG_ECDH, PSA_ALG_HKDF( PSA_ALG_SHA_256 ) ):"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee"
+
+Generate key: not supported
+generate_key_not_supported:PSA_KEY_TYPE_AES:128
+
+Key generation smoke test: AES-128-CTR
+generate_key_smoke:PSA_KEY_TYPE_AES:128:PSA_ALG_CTR
+
+Key generation smoke test: AES-256-CTR
+generate_key_smoke:PSA_KEY_TYPE_AES:128:PSA_ALG_CTR
+
+Key generation smoke test: HMAC-SHA-256
+generate_key_smoke:PSA_KEY_TYPE_HMAC:256:PSA_ALG_HMAC( PSA_ALG_SHA_256 )
+
+Key registration: smoke test
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:1:1:PSA_SUCCESS
+
+Key registration: invalid lifetime (volatile internal storage)
+register_key_smoke_test:PSA_KEY_LIFETIME_VOLATILE:7:1:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: invalid lifetime (internal storage)
+register_key_smoke_test:PSA_KEY_LIFETIME_PERSISTENT:7:1:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: invalid lifetime (no registered driver)
+register_key_smoke_test:PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION( PSA_KEY_PERSISTENCE_DEFAULT, TEST_DRIVER_LOCATION + 1 ):7:1:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: rejected
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:1:0:PSA_ERROR_NOT_PERMITTED
+
+Key registration: not supported
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:1:-1:PSA_ERROR_NOT_SUPPORTED
+
+Key registration: key id out of range
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:PSA_KEY_ID_VENDOR_MAX+1:-1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: key id min vendor
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:PSA_KEY_ID_VENDOR_MIN:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: key id max vendor except volatile
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:PSA_KEY_ID_VOLATILE_MIN-1:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: key id min volatile
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:PSA_KEY_ID_VOLATILE_MIN:1:PSA_ERROR_INVALID_ARGUMENT
+
+Key registration: key id max volatile
+register_key_smoke_test:TEST_SE_PERSISTENT_LIFETIME:7:PSA_KEY_ID_VOLATILE_MAX:1:PSA_ERROR_INVALID_ARGUMENT
+
+Import-sign-verify: sign in driver, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_DRIVER_AND_PARALLEL_CREATION:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:0:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
+
+Import-sign-verify: sign in driver then export_public, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:0:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
+
+Import-sign-verify: sign in software, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:0:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
+
+Generate-sign-verify: sign in driver, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_DRIVER_AND_PARALLEL_CREATION:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:256:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
+
+Generate-sign-verify: sign in driver then export_public, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:256:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
+
+Generate-sign-verify: sign in software, ECDSA
+depends_on:MBEDTLS_ECDSA_C:MBEDTLS_ECP_C:PSA_WANT_ECC_SECP_R1_256
+sign_verify:SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION:PSA_KEY_TYPE_ECC_KEY_PAIR( PSA_ECC_FAMILY_SECP_R1 ):PSA_ALG_ECDSA_ANY:256:"49c9a8c18c4b885638c431cf1df1c994131609b580d4fd43a0cab17db2f13eee":"54686973206973206e6f74206120686173682e"
