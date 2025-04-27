@@ -4,6 +4,10 @@ on:
   pull_request:
     types: ["opened", "edited", "reopened", "synchronize"]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest

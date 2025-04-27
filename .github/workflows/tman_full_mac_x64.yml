@@ -10,6 +10,10 @@ on:
       - "core/src/ten_rust/**"
       - "agent_solutions/**"
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: tman-full-mac-x64-${{ github.head_ref }}
   cancel-in-progress: true

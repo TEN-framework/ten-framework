@@ -16,6 +16,10 @@ on:
       - "**.md"
       - "agent_solutions/**"
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: mac-arm64-without-rust-${{ github.head_ref }}
   cancel-in-progress: true

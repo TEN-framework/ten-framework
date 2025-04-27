@@ -17,6 +17,10 @@ on:
       - "agent_solutions/playground/**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   ci:
     runs-on: ubuntu-latest

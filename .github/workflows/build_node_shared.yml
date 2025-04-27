@@ -6,6 +6,10 @@ on:
     paths:
       - ".github/workflows/build_node_shared.yml"
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: build-node-shared-${{ github.head_ref }}
   cancel-in-progress: true
