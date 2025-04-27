@@ -5,6 +5,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - ".github/workflows/build_node_shared.yml"
+    paths-ignore:
+      - "ai_agents/**"
 
 permissions:
   contents: read

@@ -15,6 +15,14 @@ on:
       - "ai_agents/docker-compose.yml"
       - "ai_agents/demo/**"
       - "ai_agents/playground/**"
+      - "build/**"
+      - "core/**"
+      - "packages/**"
+      - "portal/**"
+      - "tests/**"
+      - "third_party/**"
+      - "tools/**"
+      - "BUILD.gn"
   workflow_dispatch:
 
 permissions:
