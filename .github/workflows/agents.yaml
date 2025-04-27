@@ -6,15 +6,15 @@ on:
     paths-ignore:
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/ci.yaml"
+      - "!.github/workflows/agents.yaml"
       - ".vscode/**"
-      - "docs/**"
-      - "esp32-client/**"
+      - "agent_solutions/docs/**"
+      - "agent_solutions/esp32-client/**"
       - "**.md"
-      - "Dockerfile"
-      - "docker-compose.yml"
-      - "demo/**"
-      - "playground/**"
+      - "agent_solutions/Dockerfile"
+      - "agent_solutions/docker-compose.yml"
+      - "agent_solutions/demo/**"
+      - "agent_solutions/playground/**"
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       image: ghcr.io/ten-framework/ten_agent_build:0.6.1
     strategy:
       matrix:
-        agent: [agents/examples/default, agents/examples/demo, agents/examples/experimental]
+        agent: [agent_solutions/agents/examples/default, agent_solutions/agents/examples/demo, agent_solutions/agents/examples/experimental]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,17 +34,16 @@ jobs:
       - name: Use agent
         run: |
           git config --global --add safe.directory $(pwd)
-          task use AGENT=${{ matrix.agent }}
+          task agent-use AGENT=${{ matrix.agent }}
 
       - name: Run format check
         run: |
-          task check
-
+          task agent-check
 
       - name: Run lint
         run: |
-          task lint
+          task agent-lint
 
       - name: Run tests
         run: |
-          task test -- -s -v
+          task agent-test -- -s -v
