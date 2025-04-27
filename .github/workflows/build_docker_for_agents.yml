@@ -22,6 +22,10 @@ on:
       - "**.md"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   SERVER_IMAGE_NAME: ten_agent_server
   PLAYGROUND_IMAGE_NAME: ten_agent_playground

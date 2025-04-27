@@ -8,6 +8,10 @@ on:
       - "tools/docker_for_building/**"
       - ".github/workflows/build_docker.yml"
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   IMAGE_NAME_PREFIX: ten_building_
 
