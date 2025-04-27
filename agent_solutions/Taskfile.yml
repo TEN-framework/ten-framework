@@ -30,8 +30,8 @@ tasks:
     vars:
       AGENT: '{{.AGENT| default "agents/examples/default"}}'
     cmds:
-      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agent-solutions/agents/
-      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agent-solutions/agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
       - task: build
 
   run-server:
