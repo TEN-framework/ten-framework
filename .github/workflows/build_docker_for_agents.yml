@@ -37,9 +37,11 @@ jobs:
         with:
           fetch-tags: true
           fetch-depth: "0"
+
       - id: pre-step
         shell: bash
         run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+
       - name: Build & Publish Docker Image for Agents Server
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
@@ -49,6 +51,8 @@ jobs:
           registry: ghcr.io
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
+          workdir: ./agent_solutions/
+
       - name: Build & Publish Docker Image for Playground
         uses: elgohr/Publish-Docker-Github-Action@v5
         env:
@@ -58,10 +62,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: playground
+          workdir: ./agent_solutions/playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
           buildargs: EDIT_GRAPH_MODE
+
       - name: Build & Publish Docker Image for Non-Editable Playground
         uses: elgohr/Publish-Docker-Github-Action@v5
         env:
@@ -71,10 +76,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: playground
+          workdir: ./agent_solutions/playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
           buildargs: EDIT_GRAPH_MODE
+
       - name: Build & Publish Docker Image for demo
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
@@ -82,6 +88,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: demo
+          workdir: ./agent_solutions/demo
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
