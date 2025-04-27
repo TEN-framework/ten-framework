@@ -60,7 +60,7 @@ tasks:
 
   build-server:
     desc: build server
-    dir: ./server
+    dir: ./agent_solutions/server
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
@@ -77,7 +77,7 @@ tasks:
 
   clean-server:
     desc: clean up server
-    dir: ./server
+    dir: ./agent_solutions/server
     internal: true
     cmds:
       - rm -rf bin
@@ -90,7 +90,7 @@ tasks:
 
   test-server:
     desc: test server
-    dir: ./server
+    dir: ./agent_solutions/server
     internal: true
     cmds:
       - go test -v ./...
