@@ -11,9 +11,20 @@ from dataclasses import dataclass
 from typing import AsyncGenerator
 
 import aiohttp
-from ten import AsyncTenEnv, AudioFrame, Cmd, CmdResult, Data, StatusCode, VideoFrame
+from ten import (
+    AsyncTenEnv,
+    AudioFrame,
+    Cmd,
+    CmdResult,
+    Data,
+    StatusCode,
+    VideoFrame,
+)
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMDataCompletionArgs
+from ten_ai_base.types import (
+    LLMChatCompletionUserMessageParam,
+    LLMDataCompletionArgs,
+)
 from ten_ai_base.llm import (
     AsyncLLMBaseExtension,
 )
@@ -133,14 +144,18 @@ class DifyExtension(AsyncLLMBaseExtension):
         is_final = False
         input_text = ""
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
 
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
@@ -156,7 +171,9 @@ class DifyExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
+        message = LLMChatCompletionUserMessageParam(
+            role="user", content=input_text
+        )
         await self.queue_input_item(False, messages=[message])
 
     async def on_audio_frame(
@@ -178,7 +195,9 @@ class DifyExtension(AsyncLLMBaseExtension):
     async def on_data_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
     ) -> None:
-        input_messages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
+        input_messages: LLMChatCompletionUserMessageParam = kargs.get(
+            "messages", []
+        )
         if not input_messages:
             ten_env.log_warn("No message in data")
 
@@ -193,9 +212,13 @@ class DifyExtension(AsyncLLMBaseExtension):
             # self.ten_env.log_info(f"content: {message}")
             message_type = message.get("event")
             if message_type == "message" or message_type == "agent_message":
-                if not self.conversational_id and message.get("conversation_id"):
+                if not self.conversational_id and message.get(
+                    "conversation_id"
+                ):
                     self.conversational_id = message["conversation_id"]
-                    ten_env.log_info(f"conversation_id: {self.conversational_id}")
+                    ten_env.log_info(
+                        f"conversation_id: {self.conversational_id}"
+                    )
 
                 total_output += message.get("answer", "")
                 sentences, sentence_fragment = parse_sentences(
@@ -249,24 +272,32 @@ class DifyExtension(AsyncLLMBaseExtension):
                     payload["conversation_id"] = self.conversational_id
                 if self.config.user_id:
                     payload["user"] = self.config.user_id
-                self.ten_env.log_info(f"payload before sending: {json.dumps(payload)}")
+                self.ten_env.log_info(
+                    f"payload before sending: {json.dumps(payload)}"
+                )
                 headers = {
                     "Authorization": f"Bearer {self.config.api_key}",
                     "Content-Type": "application/json",
                 }
                 url = f"{self.config.base_url}/chat-messages"
                 start_time = time.time()
-                async with session.post(url, json=payload, headers=headers) as response:
+                async with session.post(
+                    url, json=payload, headers=headers
+                ) as response:
                     if response.status != 200:
                         r = await response.json()
                         self.ten_env.log_error(
                             f"Received unexpected status {r} from the server."
                         )
                         if self.config.failure_info:
-                            await self._send_text(self.config.failure_info, True)
+                            await self._send_text(
+                                self.config.failure_info, True
+                            )
                         return
                     end_time = time.time()
-                    self.ten_env.log_info(f"connect time {end_time - start_time} s")
+                    self.ten_env.log_info(
+                        f"connect time {end_time - start_time} s"
+                    )
 
                     async for line in response.content:
                         if line:

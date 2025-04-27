@@ -73,7 +73,9 @@ class QWenLLMExtension(Extension):
         with self.outdate_ts_lock:
             return self.outdate_ts
 
-    def complete_with_history(self, ten: TenEnv, ts: datetime.time, input_text: str):
+    def complete_with_history(
+        self, ten: TenEnv, ts: datetime.time, input_text: str
+    ):
         """
         Complete input_text querying with built-in chat history.
         """

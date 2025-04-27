@@ -43,7 +43,9 @@ def rgb2base64jpeg(rgb_data: bytes, width: int, height: int) -> bytes:
     return buffered.getvalue()
 
 
-def resize_image_keep_aspect(image: Image.Image, max_size: int = 512) -> Image.Image:
+def resize_image_keep_aspect(
+    image: Image.Image, max_size: int = 512
+) -> Image.Image:
     """Resize an image while maintaining its aspect ratio."""
     width, height = image.size
 

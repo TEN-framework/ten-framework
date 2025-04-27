@@ -119,14 +119,18 @@ class LlamaIndexExtension(Extension):
             # notify user
             file_chunked_text = "Your document has been processed. You can now start asking questions about your document. "
             # self._send_text_data(ten, file_chunked_text, True)
-            self.queue.put((file_chunked_text, datetime.now(), TASK_TYPE_GREETING))
+            self.queue.put(
+                (file_chunked_text, datetime.now(), TASK_TYPE_GREETING)
+            )
         elif cmd_name == "file_chunk":
             self.collection_name = ""  # clear current collection
 
             # notify user
             file_chunk_text = "Your document has been received. Please wait a moment while we process it for you.  "
             # self._send_text_data(ten, file_chunk_text, True)
-            self.queue.put((file_chunk_text, datetime.now(), TASK_TYPE_GREETING))
+            self.queue.put(
+                (file_chunk_text, datetime.now(), TASK_TYPE_GREETING)
+            )
         elif cmd_name == "update_querying_collection":
             coll = cmd.get_property_string("collection")
             ten.log_info(
@@ -142,7 +146,11 @@ class LlamaIndexExtension(Extension):
                 )
             # self._send_text_data(ten, update_querying_collection_text, True)
             self.queue.put(
-                (update_querying_collection_text, datetime.now(), TASK_TYPE_GREETING)
+                (
+                    update_querying_collection_text,
+                    datetime.now(),
+                    TASK_TYPE_GREETING,
+                )
             )
 
         elif cmd_name == "flush":
@@ -202,7 +210,9 @@ class LlamaIndexExtension(Extension):
 
                     chat_engine = ContextChatEngine.from_defaults(
                         llm=LlamaLLM(ten=ten),
-                        retriever=LlamaRetriever(ten=ten, coll=self.collection_name),
+                        retriever=LlamaRetriever(
+                            ten=ten, coll=self.collection_name
+                        ),
                         memory=self.chat_memory,
                         system_prompt=(
                             # "You are an expert Q&A system that is trusted around the world.\n"

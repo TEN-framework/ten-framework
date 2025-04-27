@@ -74,7 +74,9 @@ class FileChunkerExtension(Extension):
             chunk_overlap=CHUNK_OVERLAP,
         )
         nodes = splitter.get_nodes_from_documents(documents)
-        ten.log_info(f"file {path} pages count {documents}, chunking count {nodes}")
+        ten.log_info(
+            f"file {path} pages count {documents}, chunking count {nodes}"
+        )
         return nodes
 
     def create_collection(self, ten: TenEnv, collection_name: str, wait: bool):
@@ -97,10 +99,13 @@ class FileChunkerExtension(Extension):
         cmd_out = Cmd.create("embed_batch")
         cmd_out.set_property_from_json("inputs", json.dumps(texts))
         ten.send_cmd(
-            cmd_out, lambda ten, result, _: self.vector_store(ten, path, texts, result)
+            cmd_out,
+            lambda ten, result, _: self.vector_store(ten, path, texts, result),
         )
 
-    def vector_store(self, ten: TenEnv, path: str, texts: List[str], result: CmdResult):
+    def vector_store(
+        self, ten: TenEnv, path: str, texts: List[str], result: CmdResult
+    ):
         ten.log_info(f"vector store start for one splitting of the file {path}")
         file_name = path.split("/")[-1]
         embed_output_json = result.get_property_string("embeddings")
@@ -114,7 +119,9 @@ class FileChunkerExtension(Extension):
             content.append({"text": text, "embedding": embedding})
         cmd_out.set_property_string("content", json.dumps(content))
         # ten.log_info(json.dumps(content))
-        ten.send_cmd(cmd_out, lambda ten, result, _: self.file_chunked(ten, path))
+        ten.send_cmd(
+            cmd_out, lambda ten, result, _: self.file_chunked(ten, path)
+        )
 
     def file_chunked(self, ten: TenEnv, path: str):
         if path in self.counters and path in self.expected:
@@ -134,7 +141,9 @@ class FileChunkerExtension(Extension):
                 )
                 cmd_out = Cmd.create(FILE_CHUNKED_CMD)
                 cmd_out.set_property_string("path", path)
-                cmd_out.set_property_string("collection", self.new_collection_name)
+                cmd_out.set_property_string(
+                    "collection", self.new_collection_name
+                )
                 ten.send_cmd(
                     cmd_out,
                     lambda ten, result, _: ten.log_info("send_cmd done"),
@@ -154,7 +163,9 @@ class FileChunkerExtension(Extension):
             except Exception:
                 ten.log_warn(f"missing collection property in cmd {cmd_name}")
 
-            self.queue.put((path, collection))  # make sure files are processed in order
+            self.queue.put(
+                (path, collection)
+            )  # make sure files are processed in order
         else:
             ten.log_info(f"unknown cmd {cmd_name}")
 

@@ -24,7 +24,9 @@ class TranscribeAsrExtension(Extension):
         super().__init__(name)
 
         self.stopped = False
-        self.queue = asyncio.Queue(maxsize=3000)  # about 3000 * 10ms = 30s input
+        self.queue = asyncio.Queue(
+            maxsize=3000
+        )  # about 3000 * 10ms = 30s input
         self.transcribe = None
         self.thread = None
 
@@ -70,7 +72,9 @@ class TranscribeAsrExtension(Extension):
             # Use a simpler synchronous approach with put_nowait
             if not self.loop.is_closed():
                 if self.queue.qsize() < self.queue.maxsize:
-                    self.loop.call_soon_threadsafe(self.queue.put_nowait, pcm_frame)
+                    self.loop.call_soon_threadsafe(
+                        self.queue.put_nowait, pcm_frame
+                    )
                 else:
                     ten.log_error("Queue is full, dropping frame")
             else:
@@ -78,9 +82,7 @@ class TranscribeAsrExtension(Extension):
         except Exception as e:
             import traceback
 
-            error_msg = (
-                f"Error putting frame in queue: {str(e)}\n{traceback.format_exc()}"
-            )
+            error_msg = f"Error putting frame in queue: {str(e)}\n{traceback.format_exc()}"
             ten.log_error(error_msg)
 
     def on_audio_frame(self, ten: TenEnv, frame: AudioFrame) -> None:

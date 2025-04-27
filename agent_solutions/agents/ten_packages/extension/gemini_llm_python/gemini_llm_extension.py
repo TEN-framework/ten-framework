@@ -54,7 +54,9 @@ class GeminiLLMExtension(Extension):
             api_key = ten.get_property_string(PROPERTY_API_KEY)
             gemini_llm_config.api_key = api_key
         except Exception as err:
-            ten.log_info(f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
+            ten.log_info(
+                f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}"
+            )
             return
 
         for key in [PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
@@ -63,22 +65,32 @@ class GeminiLLMExtension(Extension):
                 if val:
                     setattr(gemini_llm_config, key, val)
             except Exception as e:
-                ten.log_warn(f"get_property_string optional {key} failed, err: {e}")
+                ten.log_warn(
+                    f"get_property_string optional {key} failed, err: {e}"
+                )
 
         for key in [PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
             try:
-                setattr(gemini_llm_config, key, float(ten.get_property_float(key)))
+                setattr(
+                    gemini_llm_config, key, float(ten.get_property_float(key))
+                )
             except Exception as e:
-                ten.log_warn(f"get_property_float optional {key} failed, err: {e}")
+                ten.log_warn(
+                    f"get_property_float optional {key} failed, err: {e}"
+                )
 
         for key in [PROPERTY_MAX_OUTPUT_TOKENS, PROPERTY_TOP_K]:
             try:
                 setattr(gemini_llm_config, key, int(ten.get_property_int(key)))
             except Exception as e:
-                ten.log_warn(f"get_property_int optional {key} failed, err: {e}")
+                ten.log_warn(
+                    f"get_property_int optional {key} failed, err: {e}"
+                )
 
         try:
-            prop_max_memory_length = ten.get_property_int(PROPERTY_MAX_MEMORY_LENGTH)
+            prop_max_memory_length = ten.get_property_int(
+                PROPERTY_MAX_MEMORY_LENGTH
+            )
             if prop_max_memory_length > 0:
                 self.max_memory_length = int(prop_max_memory_length)
         except Exception as err:
@@ -149,7 +161,9 @@ class GeminiLLMExtension(Extension):
 
         # Assume 'data' is an object from which we can get properties
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
             if not is_final:
                 ten.log_info("ignore non-final input")
                 return
@@ -161,7 +175,9 @@ class GeminiLLMExtension(Extension):
 
         # Get input text
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
             if not input_text:
                 ten.log_info("ignore empty text")
                 return
@@ -215,7 +231,9 @@ class GeminiLLMExtension(Extension):
                         )
 
                         if len(sentence) == 0 or not sentence_is_final:
-                            ten.log_info(f"sentence {sentence} is empty or not final")
+                            ten.log_info(
+                                f"sentence {sentence} is empty or not final"
+                            )
                             break
 
                         ten.log_info(
@@ -229,7 +247,8 @@ class GeminiLLMExtension(Extension):
                                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
                             )
                             output_data.set_property_bool(
-                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
+                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT,
+                                False,
                             )
                             ten.send_data(output_data)
                             ten.log_info(

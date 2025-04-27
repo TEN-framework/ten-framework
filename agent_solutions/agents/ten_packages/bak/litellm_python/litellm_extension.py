@@ -62,7 +62,9 @@ class LiteLLMExtension(Extension):
                 if val:
                     litellm_config.key = val
             except Exception as e:
-                logger.warning(f"get_property_string optional {key} failed, err: {e}")
+                logger.warning(
+                    f"get_property_string optional {key} failed, err: {e}"
+                )
 
         for key in [
             PROPERTY_FREQUENCY_PENALTY,
@@ -73,13 +75,17 @@ class LiteLLMExtension(Extension):
             try:
                 litellm_config.key = float(ten.get_property_float(key))
             except Exception as e:
-                logger.warning(f"get_property_float optional {key} failed, err: {e}")
+                logger.warning(
+                    f"get_property_float optional {key} failed, err: {e}"
+                )
 
         for key in [PROPERTY_MAX_MEMORY_LENGTH, PROPERTY_MAX_TOKENS]:
             try:
                 litellm_config.key = int(ten.get_property_int(key))
             except Exception as e:
-                logger.warning(f"get_property_int optional {key} failed, err: {e}")
+                logger.warning(
+                    f"get_property_int optional {key} failed, err: {e}"
+                )
 
         # Create LiteLLM instance
         self.litellm = LiteLLM(litellm_config)
@@ -144,7 +150,9 @@ class LiteLLMExtension(Extension):
 
         # Assume 'data' is an object from which we can get properties
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
             if not is_final:
                 logger.info("ignore non-final input")
                 return
@@ -156,7 +164,9 @@ class LiteLLMExtension(Extension):
 
         # Get input text
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
             if not input_text:
                 logger.info("ignore empty text")
                 return
@@ -199,7 +209,8 @@ class LiteLLMExtension(Extension):
 
                     if (
                         len(chat_completions.choices) > 0
-                        and chat_completions.choices[0].delta.content is not None
+                        and chat_completions.choices[0].delta.content
+                        is not None
                     ):
                         content = chat_completions.choices[0].delta.content
                     else:
@@ -213,7 +224,9 @@ class LiteLLMExtension(Extension):
                         )
 
                         if len(sentence) == 0 or not sentence_is_final:
-                            logger.info(f"sentence {sentence} is empty or not final")
+                            logger.info(
+                                f"sentence {sentence} is empty or not final"
+                            )
                             break
 
                         logger.info(
@@ -227,7 +240,8 @@ class LiteLLMExtension(Extension):
                                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
                             )
                             output_data.set_property_bool(
-                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
+                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT,
+                                False,
                             )
                             ten.send_data(output_data)
                             logger.info(

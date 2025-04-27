@@ -19,4 +19,6 @@ class MessageCollectorRTMExtensionAddon(Addon):
         from .extension import MessageCollectorRTMExtension
 
         ten_env.log_info("MessageCollectorRTMExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(MessageCollectorRTMExtension(name), context)
+        ten_env.on_create_instance_done(
+            MessageCollectorRTMExtension(name), context
+        )

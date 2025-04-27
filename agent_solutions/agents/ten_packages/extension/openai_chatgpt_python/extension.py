@@ -75,7 +75,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         async_ten_env.log_info("on_start")
         await super().on_start(async_ten_env)
 
-        self.config = await OpenAIChatGPTConfig.create_async(ten_env=async_ten_env)
+        self.config = await OpenAIChatGPTConfig.create_async(
+            ten_env=async_ten_env
+        )
 
         # Mandatory properties
         if not self.config.api_key:
@@ -148,7 +150,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         async_ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
+        message = LLMChatCompletionUserMessageParam(
+            role="user", content=input_text
+        )
         await self.queue_input_item(False, messages=[message])
 
     async def on_tools_update(
@@ -184,7 +188,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.memory_cache = []
         memory = self.memory
         try:
-            async_ten_env.log_info(f"for input text: [{messages}] memory: {memory}")
+            async_ten_env.log_info(
+                f"for input text: [{messages}] memory: {memory}"
+            )
             tools = None
             no_tool = kargs.get("no_tool", False)
 
@@ -250,7 +256,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                                 result.get_property_to_json(CMD_PROPERTY_RESULT)
                             )
 
-                            async_ten_env.log_info(f"tool_result: {tool_result}")
+                            async_ten_env.log_info(
+                                f"tool_result: {tool_result}"
+                            )
 
                             if tool_result["type"] == "llmresult":
                                 result_content = tool_result["content"]
@@ -286,7 +294,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                                 }
                                 new_message["content"] = new_message[
                                     "content"
-                                ] + self._convert_to_content_parts(result_content)
+                                ] + self._convert_to_content_parts(
+                                    result_content
+                                )
                                 await self.queue_input_item(
                                     True, messages=[new_message], no_tool=True
                                 )
@@ -320,7 +330,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
             async def handle_reasoning_update_finish(think: str):
                 self.last_reasoning_ts = int(time.time() * 1000)
-                self.send_reasoning_text_output(async_ten_env, message_id, think, True)
+                self.send_reasoning_text_output(
+                    async_ten_env, message_id, think, True
+                )
 
             async def handle_content_finished(_: str):
                 # Wait for the single tool task to complete (if any)
@@ -332,7 +344,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             listener.on("tool_call", handle_tool_call)
             listener.on("content_update", handle_content_update)
             listener.on("reasoning_update", handle_reasoning_update)
-            listener.on("reasoning_update_finish", handle_reasoning_update_finish)
+            listener.on(
+                "reasoning_update_finish", handle_reasoning_update_finish
+            )
             listener.on("content_finished", handle_content_finished)
 
             # Make an async API call to get chat completions
@@ -392,7 +406,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 "description": param.description,
             }
             if param.required:
-                json_dict["function"]["parameters"]["required"].append(param.name)
+                json_dict["function"]["parameters"]["required"].append(
+                    param.name
+                )
             if param.type == "array":
                 json_dict["function"]["parameters"]["properties"][param.name][
                     "items"
@@ -412,7 +428,10 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         if len(self.memory) > self.config.max_memory_length:
             removed_item = self.memory.pop(0)
             # Remove tool calls from memory
-            if removed_item.get("tool_calls") and self.memory[0].get("role") == "tool":
+            if (
+                removed_item.get("tool_calls")
+                and self.memory[0].get("role") == "tool"
+            ):
                 self.memory.pop(0)
         self.memory.append(message)
 
@@ -428,7 +447,11 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             output_data.set_property_string(
                 DATA_OUT_PROPERTY_TEXT,
                 json.dumps(
-                    {"id": msg_id, "data": {"text": sentence}, "type": "reasoning"}
+                    {
+                        "id": msg_id,
+                        "data": {"text": sentence},
+                        "type": "reasoning",
+                    }
                 ),
             )
             output_data.set_property_bool(

@@ -20,4 +20,6 @@ class InterruptDetectorExtensionAddon(Addon):
 
         from .extension import InterruptDetectorExtension
 
-        ten.on_create_instance_done(InterruptDetectorExtension(addon_name), context)
+        ten.on_create_instance_done(
+            InterruptDetectorExtension(addon_name), context
+        )

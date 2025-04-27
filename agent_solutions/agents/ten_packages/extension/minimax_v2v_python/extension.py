@@ -66,7 +66,9 @@ class MinimaxV2VConfig:
                     case _:
                         pass
             except Exception as e:
-                ten_env.log_warn(f"get property for {field.name} failed, err {e}")
+                ten_env.log_warn(
+                    f"get property for {field.name} failed, err {e}"
+                )
 
 
 class MinimaxV2VExtension(AsyncExtension):
@@ -95,7 +97,8 @@ class MinimaxV2VExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         self.process_input_task = asyncio.create_task(
-            self._process_input(ten_env=ten_env, queue=self.queue), name="process_input"
+            self._process_input(ten_env=ten_env, queue=self.queue),
+            name="process_input",
         )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -104,7 +107,9 @@ class MinimaxV2VExtension(AsyncExtension):
         self.queue.put_nowait(None)
         if self.process_input_task:
             self.process_input_task.cancel()
-            await asyncio.gather(self.process_input_task, return_exceptions=True)
+            await asyncio.gather(
+                self.process_input_task, return_exceptions=True
+            )
             self.process_input_task = None
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -210,7 +215,9 @@ class MinimaxV2VExtension(AsyncExtension):
         # prepare messages with prompt and history
         messages = []
         if self.config.prompt:
-            messages.append({"role": Role.System, "content": self.config.prompt})
+            messages.append(
+                {"role": Role.System, "content": self.config.prompt}
+            )
         messages.extend(self.memory.get())
         ten_env.log_debug(f"messages without audio: [{messages}]")
         messages.append(
@@ -268,8 +275,8 @@ class MinimaxV2VExtension(AsyncExtension):
                                 content = delta["content"]
                                 assistant_transcript += content
                                 if not assistant_transcript_ttfb:
-                                    assistant_transcript_ttfb = duration_in_ms_since(
-                                        start_time
+                                    assistant_transcript_ttfb = (
+                                        duration_in_ms_since(start_time)
                                     )
                                     ten_env.log_info(
                                         f"trace-id {trace_id} chunck-{i} get assistant_transcript_ttfb {assistant_transcript_ttfb}ms, assistant transcript [{content}]"

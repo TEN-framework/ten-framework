@@ -100,7 +100,11 @@ class BytedanceASRExtension(AsyncExtension):
         self.ten_env.log_info("start and listen bytedance_asr")
 
         async def on_message(result):
-            if not result or "text" not in result[0] or "utterances" not in result[0]:
+            if (
+                not result
+                or "text" not in result[0]
+                or "utterances" not in result[0]
+            ):
                 self.ten_env.log_warn("Received malformed result.")
                 return
 
@@ -133,11 +137,17 @@ class BytedanceASRExtension(AsyncExtension):
         await self.client.start()
         self.connected = True
 
-    async def _send_text(self, text: str, is_final: bool, stream_id: str) -> None:
+    async def _send_text(
+        self, text: str, is_final: bool, stream_id: str
+    ) -> None:
         stable_data = Data.create("text_data")
-        stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
+        stable_data.set_property_bool(
+            DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final
+        )
         stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        stable_data.set_property_int(DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id)
+        stable_data.set_property_int(
+            DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id
+        )
         stable_data.set_property_bool(
             DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final
         )

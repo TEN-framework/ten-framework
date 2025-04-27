@@ -21,7 +21,10 @@ class AudioTimeline:
 
         if self.timeline and self.timeline[-1][0] == "user_audio":
             # 合并相邻的用户音频事件
-            self.timeline[-1] = ("user_audio", self.timeline[-1][1] + duration_ms)
+            self.timeline[-1] = (
+                "user_audio",
+                self.timeline[-1][1] + duration_ms,
+            )
         else:
             self.timeline.append(("user_audio", duration_ms))
 
@@ -36,7 +39,10 @@ class AudioTimeline:
 
         if self.timeline and self.timeline[-1][0] == "silence_audio":
             # 合并相邻的静音事件
-            self.timeline[-1] = ("silence_audio", self.timeline[-1][1] + duration_ms)
+            self.timeline[-1] = (
+                "silence_audio",
+                self.timeline[-1][1] + duration_ms,
+            )
         else:
             self.timeline.append(("silence_audio", duration_ms))
 
@@ -57,7 +63,9 @@ class AudioTimeline:
 
     def get_total_user_audio_duration(self) -> int:
         return sum(
-            duration for event, duration in self.timeline if event == "user_audio"
+            duration
+            for event, duration in self.timeline
+            if event == "user_audio"
         )
 
     def reset(self):

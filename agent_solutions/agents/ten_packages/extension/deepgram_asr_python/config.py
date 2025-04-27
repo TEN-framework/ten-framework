@@ -3,7 +3,11 @@ from typing import Union
 
 class DeepgramConfig:
     def __init__(
-        self, api_key: str, language: str, model: str, sample_rate: Union[str, int]
+        self,
+        api_key: str,
+        language: str,
+        model: str,
+        sample_rate: Union[str, int],
     ):
         self.api_key = api_key
         self.language = language
@@ -17,4 +21,6 @@ class DeepgramConfig:
 
     @classmethod
     def default_config(cls):
-        return cls(api_key="", language="en-US", model="nova-2", sample_rate=16000)
+        return cls(
+            api_key="", language="en-US", model="nova-2", sample_rate=16000
+        )

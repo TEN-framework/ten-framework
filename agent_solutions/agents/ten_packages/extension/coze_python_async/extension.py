@@ -114,7 +114,8 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         self.memory = ChatMemory(self.config.max_history)
         try:
             self.acoze = AsyncCoze(
-                auth=TokenAuth(token=self.config.token), base_url=self.config.base_url
+                auth=TokenAuth(token=self.config.token),
+                base_url=self.config.base_url,
             )
 
             # self.conversation = await self.acoze.conversations.create(messages = [
@@ -176,7 +177,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             )
             return
 
-        input_messages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
+        input_messages: LLMChatCompletionUserMessageParam = kargs.get(
+            "messages", []
+        )
         messages = copy.copy(self.memory.get())
         if not input_messages:
             ten_env.log_warn("No message in data")
@@ -202,7 +205,10 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     )
                     for s in sentences:
                         await self._send_text(s, False)
-                elif message.event == ChatEventType.CONVERSATION_MESSAGE_COMPLETED:
+                elif (
+                    message.event
+                    == ChatEventType.CONVERSATION_MESSAGE_COMPLETED
+                ):
                     if sentence_fragment:
                         await self._send_text(sentence_fragment, True)
                     else:
@@ -217,7 +223,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     else:
                         await self._send_text(last_error.msg, True)
             except Exception as e:
-                self.ten_env.log_error(f"Failed to parse response: {message} {e}")
+                self.ten_env.log_error(
+                    f"Failed to parse response: {message} {e}"
+                )
                 traceback.print_exc()
 
         self.memory.put({"role": "assistant", "content": total_output})
@@ -236,14 +244,18 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         is_final = False
         input_text = ""
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
 
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
@@ -259,7 +271,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
+        message = LLMChatCompletionUserMessageParam(
+            role="user", content=input_text
+        )
         await self.queue_input_item(False, messages=[message])
 
     async def on_audio_frame(
@@ -313,7 +327,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                 ChatEventType.CONVERSATION_CHAT_FAILED,
                 ChatEventType.CONVERSATION_CHAT_REQUIRES_ACTION,
             ]:
-                return ChatEvent(event=event, chat=Chat.model_validate_json(event_data))
+                return ChatEvent(
+                    event=event, chat=Chat.model_validate_json(event_data)
+                )
             else:
                 raise ValueError(f"invalid chat.event: {event}, {event_data}")
 
@@ -332,7 +348,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     # "conversation_id": self.conversation.id
                 }
                 event = ""
-                async with session.post(url, json=params, headers=headers) as response:
+                async with session.post(
+                    url, json=params, headers=headers
+                ) as response:
                     async for line in response.content:
                         if line:
                             try:
@@ -354,7 +372,8 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                                         code = result.get("code", 0)
                                         if code == 4000:
                                             await self._send_text(
-                                                "Coze bot is not published.", True
+                                                "Coze bot is not published.",
+                                                True,
                                             )
                                         else:
                                             self.ten_env.log_error(
@@ -365,7 +384,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                                                 True,
                                             )
                             except Exception as e:
-                                self.ten_env.log_error(f"Failed to stream chat: {e}")
+                                self.ten_env.log_error(
+                                    f"Failed to stream chat: {e}"
+                                )
             except Exception as e:
                 traceback.print_exc()
                 self.ten_env.log_error(f"Failed to stream chat: {e}")

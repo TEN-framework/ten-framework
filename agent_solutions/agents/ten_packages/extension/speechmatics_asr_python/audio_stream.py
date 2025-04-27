@@ -61,7 +61,9 @@ class AudioStream:
                         * 2
                     )
                     frame = bytearray(empty_audio_bytes_len)
-                    self.timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+                    self.timeline.add_silence_audio(
+                        self.config.mute_pkg_duration_ms
+                    )
             else:
                 self.timeline.add_user_audio(
                     len(frame) / (self.config.sample_rate / 1000 * 2)

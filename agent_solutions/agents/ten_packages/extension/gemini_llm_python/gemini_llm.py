@@ -58,4 +58,6 @@ class GeminiLLM:
 
             return response
         except Exception as e:
-            raise RuntimeError(f"get_chat_completions_stream failed, err: {e}") from e
+            raise RuntimeError(
+                f"get_chat_completions_stream failed, err: {e}"
+            ) from e

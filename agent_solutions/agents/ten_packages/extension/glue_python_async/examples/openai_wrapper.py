@@ -116,7 +116,9 @@ class ToolMessage(BaseModel):
 class ChatCompletionRequest(BaseModel):
     context: Optional[Dict] = None
     model: Optional[str] = None
-    messages: List[Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]]
+    messages: List[
+        Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
+    ]
     response_format: Optional[ResponseFormat] = None
     modalities: List[str] = ["text"]
     audio: Optional[Dict[str, str]] = None
@@ -150,7 +152,9 @@ async def create_chat_completion(request: ChatCompletionRequest, req: Request):
             model=request.model,
             messages=request.messages,  # Directly use request messages
             tool_choice=(
-                request.tool_choice if request.tools and request.tool_choice else None
+                request.tool_choice
+                if request.tools and request.tool_choice
+                else None
             ),
             tools=request.tools if request.tools else None,
             # modalities=request.modalities,

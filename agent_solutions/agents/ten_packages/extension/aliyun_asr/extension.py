@@ -102,7 +102,9 @@ class AliyunASRExtension(AsyncExtension):
         self.ten_env.log_info("start and listen aliyun_asr")
 
         def on_start(message, *_):
-            self.ten_env.log_info(f"aliyun_asr event callback on_start: {message}")
+            self.ten_env.log_info(
+                f"aliyun_asr event callback on_start: {message}"
+            )
             self.connected = True
 
         def on_close(*args):
@@ -120,7 +122,9 @@ class AliyunASRExtension(AsyncExtension):
 
             try:
                 # Parse the JSON string once
-                result_data = json.loads(result)  # Assuming result is a JSON string
+                result_data = json.loads(
+                    result
+                )  # Assuming result is a JSON string
 
                 if "payload" not in result_data:
                     self.ten_env.log_warn("Received malformed result.")
@@ -131,21 +135,27 @@ class AliyunASRExtension(AsyncExtension):
                 if len(sentence) == 0:
                     return
 
-                is_final = result_data.get("header", {}).get("name") == "SentenceEnd"
+                is_final = (
+                    result_data.get("header", {}).get("name") == "SentenceEnd"
+                )
                 self.ten_env.log_info(
                     f"aliyun_asr got sentence: [{sentence}], is_final: {is_final}, stream_id: {self.stream_id}"
                 )
 
                 self.loop.create_task(
                     self._send_text(
-                        text=sentence, is_final=is_final, stream_id=self.stream_id
+                        text=sentence,
+                        is_final=is_final,
+                        stream_id=self.stream_id,
                     )
                 )
             except Exception as e:
                 self.ten_env.log_error(f"Error processing message: {e}")
 
         def on_error(message, *_):
-            self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
+            self.ten_env.log_error(
+                f"aliyun_asr event callback on_error: {message}"
+            )
 
         import nls
 
@@ -172,11 +182,17 @@ class AliyunASRExtension(AsyncExtension):
             enable_inverse_text_normalization=True,
         )
 
-    async def _send_text(self, text: str, is_final: bool, stream_id: str) -> None:
+    async def _send_text(
+        self, text: str, is_final: bool, stream_id: str
+    ) -> None:
         stable_data = Data.create("text_data")
-        stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
+        stable_data.set_property_bool(
+            DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final
+        )
         stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        stable_data.set_property_int(DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id)
+        stable_data.set_property_int(
+            DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id
+        )
         stable_data.set_property_bool(
             DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final
         )

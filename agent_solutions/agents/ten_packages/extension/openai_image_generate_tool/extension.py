@@ -34,7 +34,9 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
         await super().on_start(ten_env)
 
         # initialize configuration
-        self.config = await OpenAIImageGenerateToolConfig.create_async(ten_env=ten_env)
+        self.config = await OpenAIImageGenerateToolConfig.create_async(
+            ten_env=ten_env
+        )
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:
@@ -62,7 +64,9 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
             )
         ]
 
-    async def send_image(self, async_ten_env: AsyncTenEnv, image_url: str) -> None:
+    async def send_image(
+        self, async_ten_env: AsyncTenEnv, image_url: str
+    ) -> None:
         # Implement this method to send the image to the chat.
         async_ten_env.log_info(f"Sending image: {image_url}")
         try:
@@ -71,11 +75,15 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
             )
             output_data = Data.create(CONTENT_DATA_OUT_NAME)
             output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, sentence)
-            output_data.set_property_bool(DATA_OUT_PROPERTY_END_OF_SEGMENT, True)
+            output_data.set_property_bool(
+                DATA_OUT_PROPERTY_END_OF_SEGMENT, True
+            )
             asyncio.create_task(async_ten_env.send_data(output_data))
             async_ten_env.log_info(f"sent sentence [{sentence}]")
         except Exception as err:
-            async_ten_env.log_warn(f"send sentence [{sentence}] failed, err: {err}")
+            async_ten_env.log_warn(
+                f"send sentence [{sentence}] failed, err: {err}"
+            )
 
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict

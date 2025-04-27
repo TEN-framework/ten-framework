@@ -119,7 +119,9 @@ class TSDBFirestoreExtension(Extension):
         ten_env.log_info("TSDBFirestoreExtension on_start")
 
         try:
-            self.credentials = ten_env.get_property_to_json(PROPERTY_CREDENTIALS)
+            self.credentials = ten_env.get_property_to_json(
+                PROPERTY_CREDENTIALS
+            )
         except Exception as err:
             ten_env.log_error(
                 f"GetProperty required {PROPERTY_CREDENTIALS} failed, err: {err}"
@@ -127,7 +129,9 @@ class TSDBFirestoreExtension(Extension):
             return
 
         try:
-            self.channel_name = ten_env.get_property_string(PROPERTY_CHANNEL_NAME)
+            self.channel_name = ten_env.get_property_string(
+                PROPERTY_CHANNEL_NAME
+            )
         except Exception as err:
             ten_env.log_error(
                 f"GetProperty required {PROPERTY_CHANNEL_NAME} failed, err: {err}"
@@ -135,7 +139,9 @@ class TSDBFirestoreExtension(Extension):
             return
 
         try:
-            self.collection_name = ten_env.get_property_string(PROPERTY_COLLECTION_NAME)
+            self.collection_name = ten_env.get_property_string(
+                PROPERTY_COLLECTION_NAME
+            )
         except Exception as err:
             ten_env.log_error(
                 f"GetProperty required {PROPERTY_COLLECTION_NAME} failed, err: {err}"
@@ -147,11 +153,13 @@ class TSDBFirestoreExtension(Extension):
         firebase_admin.initialize_app(cred)
         self.client = firestore.client()
 
-        self.document_ref = self.client.collection(self.collection_name).document(
-            self.channel_name
-        )
+        self.document_ref = self.client.collection(
+            self.collection_name
+        ).document(self.channel_name)
         # update ttl
-        expiration_time = datetime.datetime.now() + datetime.timedelta(days=self.ttl)
+        expiration_time = datetime.datetime.now() + datetime.timedelta(
+            days=self.ttl
+        )
         exists = self.document_ref.get().exists
         if exists:
             self.document_ref.update({DOC_EXPIRE_PATH: expiration_time})
@@ -231,7 +239,9 @@ class TSDBFirestoreExtension(Extension):
             cmd_name = cmd.get_name()
             ten_env.log_info(f"on_cmd name {cmd_name}")
             if cmd_name == RETRIEVE_CMD:
-                asyncio.run_coroutine_threadsafe(self.retrieve(ten_env, cmd), self.loop)
+                asyncio.run_coroutine_threadsafe(
+                    self.retrieve(ten_env, cmd), self.loop
+                )
             else:
                 ten_env.log_info(f"unknown cmd name {cmd_name}")
                 cmd_result = CmdResult.create(StatusCode.ERROR)
@@ -241,7 +251,9 @@ class TSDBFirestoreExtension(Extension):
 
     async def retrieve(self, ten_env: TenEnv, cmd: Cmd):
         try:
-            doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
+            doc_dict = read_in_transaction(
+                self.client.transaction(), self.document_ref
+            )
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ten_env.log_info(f"after retrieve {contents}")
@@ -251,7 +263,9 @@ class TSDBFirestoreExtension(Extension):
                 )
                 ten_env.return_result(ret, cmd)
             else:
-                ten_env.log_info(f"no contents for the channel {self.channel_name} yet")
+                ten_env.log_info(
+                    f"no contents for the channel {self.channel_name} yet"
+                )
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         except Exception:
             ten_env.log_error(
@@ -265,7 +279,9 @@ class TSDBFirestoreExtension(Extension):
         # assume 'data' is an object from which we can get properties
         is_final = False
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
             if not is_final:
                 ten_env.log_info("ignore non-final input")
                 return
@@ -276,7 +292,9 @@ class TSDBFirestoreExtension(Extension):
 
         stream_id = 0
         try:
-            stream_id = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID)
+            stream_id = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID
+            )
         except Exception as err:
             ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID} failed, err: {err}"
@@ -284,7 +302,9 @@ class TSDBFirestoreExtension(Extension):
 
         # get input text
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
             if not input_text:
                 ten_env.log_info("ignore empty text")
                 return

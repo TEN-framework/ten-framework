@@ -18,6 +18,8 @@ class SpeechmaticsASRExtensionAddon(Addon):
 
         from .extension import SpeechmaticsASRExtension
 
-        ten.on_create_instance_done(SpeechmaticsASRExtension(addon_name), context)
+        ten.on_create_instance_done(
+            SpeechmaticsASRExtension(addon_name), context
+        )
 
         ten.log_info("on_create_instance done")

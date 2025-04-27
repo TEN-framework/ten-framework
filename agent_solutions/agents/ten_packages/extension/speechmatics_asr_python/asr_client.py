@@ -99,7 +99,9 @@ class SpeechmaticsASRClient:
             max_delay_mode=self.config.max_delay_mode,
             additional_vocab=additional_vocab,
             operating_point=(
-                self.config.operating_point if self.config.operating_point else None
+                self.config.operating_point
+                if self.config.operating_point
+                else None
             ),
         )
 
@@ -108,20 +110,26 @@ class SpeechmaticsASRClient:
 
         # Set up callbacks
         self.client.add_event_handler(
-            ServerMessageType.RecognitionStarted, self._handle_recognition_started
+            ServerMessageType.RecognitionStarted,
+            self._handle_recognition_started,
         )
         self.client.add_event_handler(
             ServerMessageType.EndOfTranscript, self._handle_end_transcript
         )
         self.client.add_event_handler(
-            ServerMessageType.AudioEventStarted, self._handle_audio_event_started
+            ServerMessageType.AudioEventStarted,
+            self._handle_audio_event_started,
         )
         self.client.add_event_handler(
             ServerMessageType.AudioEventEnded, self._handle_audio_event_ended
         )
         self.client.add_event_handler(ServerMessageType.Info, self._handle_info)
-        self.client.add_event_handler(ServerMessageType.Warning, self._handle_warning)
-        self.client.add_event_handler(ServerMessageType.Error, self._handle_error)
+        self.client.add_event_handler(
+            ServerMessageType.Warning, self._handle_warning
+        )
+        self.client.add_event_handler(
+            ServerMessageType.Error, self._handle_error
+        )
 
         if self.config.enable_word_final_mode:
             self.client.add_event_handler(
@@ -178,7 +186,9 @@ class SpeechmaticsASRClient:
         if self.config.dump:
             await self.audio_dumper.stop()
 
-    async def _send_asr_result(self, text: str, is_final: bool, stream_id: str) -> None:
+    async def _send_asr_result(
+        self, text: str, is_final: bool, stream_id: str
+    ) -> None:
         self.ten_env.log_info(
             f"send asr result text [{text}] is_final [{is_final}] stream_id [{stream_id}]"
         )
@@ -213,7 +223,9 @@ class SpeechmaticsASRClient:
                 retry_interval = min(retry_interval * 2, max_retry_interval)
 
             self.ten_env.log_info(
-                "run end, client_needs_stopping:{}".format(self.client_needs_stopping)
+                "run end, client_needs_stopping:{}".format(
+                    self.client_needs_stopping
+                )
             )
 
             if self.client_needs_stopping:
@@ -283,7 +295,9 @@ class SpeechmaticsASRClient:
             self.ten_env.log_error(f"Error processing transcript: {e}")
 
     def _handle_transcript_sentence_final_mode(self, msg):
-        self.ten_env.log_info(f"_handle_transcript_sentence_final_mode, msg: {msg}")
+        self.ten_env.log_info(
+            f"_handle_transcript_sentence_final_mode, msg: {msg}"
+        )
 
         try:
             results = msg.get("results", {})
@@ -298,7 +312,9 @@ class SpeechmaticsASRClient:
                         end_ms = result.get("end_time", 0) * 1000
                         duration_ms = int(end_ms - start_ms)
                         actual_start_ms = int(
-                            self.timeline.get_audio_duration_before_time(start_ms)
+                            self.timeline.get_audio_duration_before_time(
+                                start_ms
+                            )
                             + self.sent_user_audio_duration_ms_before_last_reset
                         )
                         result_type = result.get("type", "")
@@ -313,19 +329,25 @@ class SpeechmaticsASRClient:
                         self.cache_words.append(word)
 
                 if result.get("is_eos") == True:
-                    sentence = convert_words_to_sentence(self.cache_words, self.config)
+                    sentence = convert_words_to_sentence(
+                        self.cache_words, self.config
+                    )
                     start_ms = get_sentence_start_ms(self.cache_words)
                     duration_ms = get_sentence_duration_ms(self.cache_words)
                     asyncio.create_task(
                         self._send_asr_result(
-                            text=sentence, is_final=True, stream_id=self.stream_id
+                            text=sentence,
+                            is_final=True,
+                            stream_id=self.stream_id,
                         )
                     )
                     self.cache_words = []
 
             # if the transcript is not empty, send it as a partial transcript
             if self.cache_words:
-                sentence = convert_words_to_sentence(self.cache_words, self.config)
+                sentence = convert_words_to_sentence(
+                    self.cache_words, self.config
+                )
                 start_ms = get_sentence_start_ms(self.cache_words)
                 duration_ms = get_sentence_duration_ms(self.cache_words)
                 asyncio.create_task(

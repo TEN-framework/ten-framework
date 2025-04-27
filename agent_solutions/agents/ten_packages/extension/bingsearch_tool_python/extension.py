@@ -14,7 +14,11 @@ from ten import (
 )
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResult,
+)
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 
 CMD_TOOL_REGISTER = "tool_register"

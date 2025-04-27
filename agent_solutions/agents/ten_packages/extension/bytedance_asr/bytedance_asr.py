@@ -92,7 +92,8 @@ def generate_audio_default_header():
 
 def generate_last_audio_default_header():
     return generate_header(
-        message_type=CLIENT_AUDIO_ONLY_REQUEST, message_type_specific_flags=NEG_SEQUENCE
+        message_type=CLIENT_AUDIO_ONLY_REQUEST,
+        message_type_specific_flags=NEG_SEQUENCE,
     )
 
 
@@ -151,10 +152,13 @@ class AsrWsClient:
         self.nbest = int(kwargs.get("nbest", 1))
         self.appid = kwargs.get("appid", "")
         self.token = kwargs.get("token", "")
-        self.ws_url = kwargs.get("ws_url", "wss://openspeech.bytedance.com/api/v2/asr")
+        self.ws_url = kwargs.get(
+            "ws_url", "wss://openspeech.bytedance.com/api/v2/asr"
+        )
         self.uid = kwargs.get("uid", "streaming_asr_demo")
         self.workflow = kwargs.get(
-            "workflow", "audio_in,resample,partition,vad,fe,decode,itn,nlu_punctuate"
+            "workflow",
+            "audio_in,resample,partition,vad,fe,decode,itn,nlu_punctuate",
         )
         self.show_language = kwargs.get("show_language", False)
         self.show_utterances = kwargs.get("show_utterances", True)
@@ -186,7 +190,9 @@ class AsrWsClient:
                 result = parse_response(res)
                 # self.ten_env.log_info(f"{result}")
                 # 处理接收到的消息
-                await self.handle_received_message(result["payload_msg"].get("result"))
+                await self.handle_received_message(
+                    result["payload_msg"].get("result")
+                )
             except websockets.ConnectionClosed:
                 self.ten_env.log_info("ConnectionClosed")
                 break
@@ -279,7 +285,9 @@ class AsrWsClient:
         input_data = bytearray(input_str, "utf-8")
         input_data += data
         mac = base64.urlsafe_b64encode(
-            hmac.new(self.secret.encode("utf-8"), input_data, digestmod=sha256).digest()
+            hmac.new(
+                self.secret.encode("utf-8"), input_data, digestmod=sha256
+            ).digest()
         )
         header_dicts["Authorization"] = (
             'HMAC256; access_token="{}"; mac="{}"; h="{}"'.format(

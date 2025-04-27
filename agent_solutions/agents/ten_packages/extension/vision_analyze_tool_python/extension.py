@@ -168,11 +168,16 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                     role="user",
                     content=[
                         {"type": "text", "text": query},
-                        {"type": "image_url", "image_url": {"url": base64_image}},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": base64_image},
+                        },
                     ],
                 )
             )
-            cmd.set_property_from_json("arguments", json.dumps({"messages": [message]}))
+            cmd.set_property_from_json(
+                "arguments", json.dumps({"messages": [message]})
+            )
             ten_env.log_info("send_cmd {}".format(message))
             [cmd_result, _] = await ten_env.send_cmd(cmd)
             result = cmd_result.get_property_to_json("response")

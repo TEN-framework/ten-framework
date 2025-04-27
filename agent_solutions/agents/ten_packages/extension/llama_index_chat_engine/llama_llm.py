@@ -12,7 +12,10 @@ from llama_index.core.base.llms.types import (
     CompletionResponseGen,
 )
 
-from llama_index.core.llms.callbacks import llm_chat_callback, llm_completion_callback
+from llama_index.core.llms.callbacks import (
+    llm_chat_callback,
+    llm_completion_callback,
+)
 
 from llama_index.core.llms.custom import CustomLLM
 from ten import Cmd, StatusCode, CmdResult, TenEnv
@@ -53,7 +56,9 @@ class LlamaLLM(CustomLLM):
         )
 
     @llm_chat_callback()
-    def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
+    def chat(
+        self, messages: Sequence[ChatMessage], **kwargs: Any
+    ) -> ChatResponse:
         self.ten.log_debug("LlamaLLM chat start")
 
         resp: ChatResponse
@@ -83,7 +88,9 @@ class LlamaLLM(CustomLLM):
     def complete(
         self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponse:
-        raise NotImplementedError("LlamaLLM complete hasn't been implemented yet")
+        raise NotImplementedError(
+            "LlamaLLM complete hasn't been implemented yet"
+        )
 
     @llm_chat_callback()
     def stream_chat(
@@ -101,7 +108,9 @@ class LlamaLLM(CustomLLM):
                     break
 
                 yield ChatResponse(
-                    message=ChatMessage(content=delta_text, role=MessageRole.ASSISTANT),
+                    message=ChatMessage(
+                        content=delta_text, role=MessageRole.ASSISTANT
+                    ),
                     delta=delta_text,
                 )
 
@@ -111,12 +120,16 @@ class LlamaLLM(CustomLLM):
 
             status = result.get_status_code()
             if status != StatusCode.OK:
-                self.ten.log_warn(f"LlamaLLM stream_chat callback status {status}")
+                self.ten.log_warn(
+                    f"LlamaLLM stream_chat callback status {status}"
+                )
                 resp_queue.put(None)
                 return
 
             cur_tokens = result.get_property_string("text")
-            self.ten.log_debug(f"LlamaLLM stream_chat callback text [{cur_tokens}]")
+            self.ten.log_debug(
+                f"LlamaLLM stream_chat callback text [{cur_tokens}]"
+            )
             resp_queue.put(cur_tokens)
             if result.get_is_final():
                 resp_queue.put(None)

@@ -51,7 +51,9 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
                     ten_env, frame, sample_rate=self.client.config.sample_rate
                 )
         except Exception:
-            ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
+            ten_env.log_error(
+                f"on_request_tts failed: {traceback.format_exc()}"
+            )
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)

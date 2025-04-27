@@ -96,7 +96,9 @@ class Session:
     modalities: Set[str] = field(
         default_factory=lambda: {"text", "audio"}
     )  # Set of allowed modalities (e.g., "text", "audio")
-    instructions: Optional[str] = None  # Instructions or guidance for the session
+    instructions: Optional[str] = (
+        None  # Instructions or guidance for the session
+    )
     turn_detection: Optional[ServerVADUpdateParams] = (
         None  # Voice activity detection (VAD) settings
     )
@@ -250,8 +252,12 @@ class EventType(str, Enum):
     RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.audio_transcript.done"
     RESPONSE_AUDIO_DELTA = "response.audio.delta"
     RESPONSE_AUDIO_DONE = "response.audio.done"
-    RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = "response.function_call_arguments.delta"
-    RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE = "response.function_call_arguments.done"
+    RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = (
+        "response.function_call_arguments.delta"
+    )
+    RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE = (
+        "response.function_call_arguments.done"
+    )
     RATE_LIMITS_UPDATED = "rate_limits.updated"
 
 
@@ -331,7 +337,8 @@ class ItemDeleted(ServerToClientMessage):
 
 # Enum or Literal for ResponseStatus (could be more extensive)
 ResponseStatus = Union[
-    str, Literal["in_progress", "completed", "cancelled", "incomplete", "failed"]
+    str,
+    Literal["in_progress", "completed", "cancelled", "incomplete", "failed"],
 ]
 
 
@@ -405,7 +412,9 @@ class Response:
         None  # Additional details based on status
     )
     usage: Optional[Usage] = None  # Token usage information
-    metadata: Optional[Dict[str, Any]] = None  # Additional metadata for the response
+    metadata: Optional[Dict[str, Any]] = (
+        None  # Additional metadata for the response
+    )
 
 
 @dataclass
@@ -489,8 +498,12 @@ class ResponseFunctionCallArgumentsDone(ServerToClientMessage):
 @dataclass
 class RateLimitDetails:
     name: str  # Name of the rate limit, e.g., "api_requests", "message_generation"
-    limit: int  # The maximum number of allowed requests in the current time window
-    remaining: int  # The number of requests remaining in the current time window
+    limit: (
+        int  # The maximum number of allowed requests in the current time window
+    )
+    remaining: (
+        int  # The number of requests remaining in the current time window
+    )
     reset_seconds: float  # The number of seconds until the rate limit resets
 
 
@@ -544,14 +557,18 @@ class ResponseOutputItemDone(ServerToClientMessage):
 class ItemInputAudioTranscriptionCompleted(ServerToClientMessage):
     content_index: int  # Index of the content part that was transcribed
     transcript: str  # The transcribed text
-    type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED  # Fixed event type
+    type: str = (
+        EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED
+    )  # Fixed event type
 
 
 @dataclass
 class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
     content_index: int  # Index of the content part that failed to transcribe
     error: ResponseError  # Error details explaining the failure
-    type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED  # Fixed event type
+    type: str = (
+        EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED
+    )  # Fixed event type
 
 
 # Union of all server-to-client message types
@@ -638,22 +655,32 @@ class ResponseCreateParams:
     commit: bool = (
         True  # Whether the generated messages should be appended to the conversation
     )
-    cancel_previous: bool = True  # Whether to cancel the previous pending generation
+    cancel_previous: bool = (
+        True  # Whether to cancel the previous pending generation
+    )
     append_input_items: Optional[List[ItemParam]] = (
         None  # Messages to append before response generation
     )
     input_items: Optional[List[ItemParam]] = (
         None  # Initial messages to use for generation
     )
-    modalities: Optional[Set[str]] = None  # Allowed modalities (e.g., "text", "audio")
+    modalities: Optional[Set[str]] = (
+        None  # Allowed modalities (e.g., "text", "audio")
+    )
     instructions: Optional[str] = None  # Instructions or guidance for the model
     # voice: Optional[Voices] = None  # Voice setting for audio output
-    output_audio_format: Optional[AudioFormats] = None  # Format for the audio output
-    tools: Optional[List[Dict[str, Any]]] = None  # Tools available for this response
+    output_audio_format: Optional[AudioFormats] = (
+        None  # Format for the audio output
+    )
+    tools: Optional[List[Dict[str, Any]]] = (
+        None  # Tools available for this response
+    )
     tool_choice: Optional[ToolChoice] = (
         None  # How to choose the tool ("auto", "required", etc.)
     )
-    temperature: Optional[float] = None  # The randomness of the model's responses
+    temperature: Optional[float] = (
+        None  # The randomness of the model's responses
+    )
     max_response_output_tokens: Optional[Union[int, str]] = (
         None  # Max number of tokens for the output, "inf" for infinite
     )
@@ -716,7 +743,9 @@ ClientToServerMessages = Union[
 def from_dict(data_class, data):
     """Recursively convert a dictionary to a dataclass instance."""
     if is_dataclass(data_class):  # Check if the target class is a dataclass
-        fieldtypes = {f.name: f.type for f in data_class.__dataclass_fields__.values()}
+        fieldtypes = {
+            f.name: f.type for f in data_class.__dataclass_fields__.values()
+        }
         # Filter out keys that are not in the dataclass fields
         valid_data = {f: data[f] for f in fieldtypes if f in data}
         return data_class(
@@ -825,5 +854,7 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
 def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
     # ignore none value
     return json.dumps(
-        asdict(obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
+        asdict(
+            obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
+        )
     )

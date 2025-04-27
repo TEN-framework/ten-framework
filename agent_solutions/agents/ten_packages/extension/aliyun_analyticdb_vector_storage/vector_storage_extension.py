@@ -23,7 +23,9 @@ class AliPGDBExtension(Extension):
         self.thread = None
         self.loop = None
         self.access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")
-        self.access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+        self.access_key_secret = os.environ.get(
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+        )
         self.region_id = os.environ.get("ADBPG_INSTANCE_REGION")
         self.dbinstance_id = os.environ.get("ADBPG_INSTANCE_ID")
         self.endpoint = "gpdb.aliyuncs.com"
@@ -56,7 +58,9 @@ class AliPGDBExtension(Extension):
         self.dbinstance_id = self.get_property_string(
             ten, "ADBPG_INSTANCE_ID", self.dbinstance_id
         )
-        self.account = self.get_property_string(ten, "ADBPG_ACCOUNT", self.account)
+        self.account = self.get_property_string(
+            ten, "ADBPG_ACCOUNT", self.account
+        )
         self.account_password = self.get_property_string(
             ten, "ADBPG_ACCOUNT_PASSWORD", self.account_password
         )
@@ -185,7 +189,11 @@ class AliPGDBExtension(Extension):
         top_k = cmd.get_property_int("top_k")
         vector = json.loads(embedding)
         response, error = await self.model.query_collection_data_async(
-            collection, self.namespace, self.namespace_password, vector, top_k=top_k
+            collection,
+            self.namespace,
+            self.namespace_password,
+            vector,
+            top_k=top_k,
         )
         ten.log_info(
             f"query_vector finished for collection {collection}, embedding len {len(embedding)}, err {error}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"

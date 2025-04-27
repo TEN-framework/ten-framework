@@ -12,7 +12,9 @@ import os
 class Dumper:
     def __init__(self, dump_file_path: str):
         self.dump_file_path = dump_file_path
-        self._file: Optional[aiofiles.threadpool.binary.AsyncBufferedIOBase] = None
+        self._file: Optional[aiofiles.threadpool.binary.AsyncBufferedIOBase] = (
+            None
+        )
 
     async def start(self):
         os.makedirs(os.path.dirname(self.dump_file_path), exist_ok=True)

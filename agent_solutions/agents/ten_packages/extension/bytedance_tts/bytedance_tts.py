@@ -35,8 +35,16 @@ MESSAGE_TYPE_SPECIFIC_FLAGS = {
     2: "last message from server (seq < 0)",
     3: "sequence number < 0",
 }
-MESSAGE_SERIALIZATION_METHODS = {0: "no serialization", 1: "JSON", 15: "custom type"}
-MESSAGE_COMPRESSIONS = {0: "no compression", 1: "gzip", 15: "custom compression method"}
+MESSAGE_SERIALIZATION_METHODS = {
+    0: "no serialization",
+    1: "JSON",
+    15: "custom type",
+}
+MESSAGE_COMPRESSIONS = {
+    0: "no compression",
+    1: "gzip",
+    15: "custom compression method",
+}
 
 LATENCY_SAMPLE_INTERVAL_MS = 5
 
@@ -163,7 +171,9 @@ class TTSClient:
                 self.ten_env.log_debug("Payload size: 0")
                 return None, False
             else:
-                sequence_number = int.from_bytes(payload[:4], "big", signed=True)
+                sequence_number = int.from_bytes(
+                    payload[:4], "big", signed=True
+                )
                 payload_size = int.from_bytes(payload[4:8], "big", signed=False)
                 payload = payload[8:]
                 self.ten_env.log_debug(f"Sequence number: {sequence_number}")
@@ -235,7 +245,9 @@ class TTSClient:
 
             while True:
                 if self.is_cancelled():
-                    self.ten_env.log_info(f"Request ({request_id}) has been cancelled.")
+                    self.ten_env.log_info(
+                        f"Request ({request_id}) has been cancelled."
+                    )
 
                     # Current connection should be closed, as the server will not drop the remain data.
                     await self.close()

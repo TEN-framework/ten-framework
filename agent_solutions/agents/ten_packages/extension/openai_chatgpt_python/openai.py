@@ -82,7 +82,9 @@ class OpenAIChatGPT:
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
         self.ten_env = ten_env
-        ten_env.log_info(f"OpenAIChatGPT initialized with config: {config.api_key}")
+        ten_env.log_info(
+            f"OpenAIChatGPT initialized with config: {config.api_key}"
+        )
         if self.config.vendor == "azure":
             self.client = AsyncAzureOpenAI(
                 api_key=config.api_key,
@@ -111,7 +113,9 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
-    async def get_chat_completions(self, messages, tools=None) -> ChatCompletion:
+    async def get_chat_completions(
+        self, messages, tools=None
+    ) -> ChatCompletion:
         req = {
             "model": self.config.model,
             "messages": [
@@ -137,7 +141,9 @@ class OpenAIChatGPT:
 
         return response
 
-    async def get_chat_completions_stream(self, messages, tools=None, listener=None):
+    async def get_chat_completions_stream(
+        self, messages, tools=None, listener=None
+    ):
         req = {
             "model": self.config.model,
             "messages": [
@@ -160,7 +166,9 @@ class OpenAIChatGPT:
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
-            raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
+            raise RuntimeError(
+                f"CreateChatCompletionStream failed, err: {e}"
+            ) from e
 
         full_content = ""
         # Check for tool calls
@@ -215,7 +223,9 @@ class OpenAIChatGPT:
                         listener.emit("content_update", content)
 
                 if prev_state == "THINK" and parser.state == "NORMAL":
-                    listener.emit("reasoning_update_finish", parser.think_content)
+                    listener.emit(
+                        "reasoning_update_finish", parser.think_content
+                    )
                     parser.think_content = ""
 
             full_content += content
@@ -232,7 +242,9 @@ class OpenAIChatGPT:
                             }
 
                         if tool_call.id:
-                            tool_calls_dict[tool_call.index]["id"] = tool_call.id
+                            tool_calls_dict[tool_call.index][
+                                "id"
+                            ] = tool_call.id
 
                         # If the function name is not None, set it
                         if tool_call.function.name:
@@ -248,7 +260,9 @@ class OpenAIChatGPT:
 
                         # If the type is not None, set it
                         if tool_call.type:
-                            tool_calls_dict[tool_call.index]["type"] = tool_call.type
+                            tool_calls_dict[tool_call.index][
+                                "type"
+                            ] = tool_call.type
                 except Exception as e:
                     import traceback
 

@@ -59,7 +59,9 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
             # pylint: enable=no-member
 
             self._session_context = ClientSession(*streams)
-            self.session: ClientSession = await self._session_context.__aenter__()
+            self.session: ClientSession = (
+                await self._session_context.__aenter__()
+            )
 
             # Initialize
             await self.session.initialize()
@@ -74,9 +76,13 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
                     for param_name, param_schema in tool.inputSchema[
                         "properties"
                     ].items():
-                        required = param_name in tool.inputSchema.get("required", [])
+                        required = param_name in tool.inputSchema.get(
+                            "required", []
+                        )
                         param_type = param_schema.get("type", "string")
-                        param_items = param_schema.get("items", {"type": "string"})
+                        param_items = param_schema.get(
+                            "items", {"type": "string"}
+                        )
                         description = param_schema.get("title", param_name)
 
                         param = LLMToolMetadataParameter(

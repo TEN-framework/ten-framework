@@ -56,7 +56,9 @@ class AliGPDBClient:
                 try:
                     task = asyncio.create_task(coro)
                     tasks.add(task)
-                    task.add_done_callback(lambda t: future.set_result(t.result()))
+                    task.add_done_callback(
+                        lambda t: future.set_result(t.result())
+                    )
                 except Exception as e:
                     future.set_exception(e)
             elif tasks:
@@ -65,7 +67,9 @@ class AliGPDBClient:
                 )
                 for task in done:
                     if task.exception():
-                        self.ten_env.log_error(f"task exception: {task.exception()}")
+                        self.ten_env.log_error(
+                            f"task exception: {task.exception()}"
+                        )
                         future.set_exception(task.exception())
             else:
                 await asyncio.sleep(0.1)

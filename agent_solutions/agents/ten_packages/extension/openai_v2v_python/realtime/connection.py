@@ -64,7 +64,9 @@ class RealtimeApiConnection:
         await self.connect()
         return self
 
-    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> bool:
+    async def __aexit__(
+        self, exc_type: Any, exc_value: Any, traceback: Any
+    ) -> bool:
         await self.close()
         return False
 

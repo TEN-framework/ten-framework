@@ -47,7 +47,9 @@ class OpenAITTSExtension(AsyncTTSBaseExtension):
             async for frame in data:
                 await self.send_audio_out(ten_env, frame, sample_rate=16000)
         except Exception:
-            ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
+            ten_env.log_error(
+                f"on_request_tts failed: {traceback.format_exc()}"
+            )
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)

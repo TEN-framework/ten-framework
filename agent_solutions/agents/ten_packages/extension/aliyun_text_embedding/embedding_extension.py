@@ -69,7 +69,9 @@ class EmbeddingExtension(Extension):
             ten.log_info(f"async_handler {index} processing cmd {cmd_name}")
 
             if cmd_name == CMD_EMBED:
-                cmd_result = self.call_with_str(cmd.get_property_string("input"), ten)
+                cmd_result = self.call_with_str(
+                    cmd.get_property_string("input"), ten
+                )
                 ten.return_result(cmd_result, cmd)
             elif cmd_name == CMD_EMBED_BATCH:
                 inputs_list = json.loads(cmd.get_property_to_json("inputs"))
@@ -117,7 +119,9 @@ class EmbeddingExtension(Extension):
         batch_counter = 0
         for batch in self.batched(messages):
             # pylint: disable=undefined-variable
-            response = dashscope.TextEmbedding.call(model=self.model, input=batch)
+            response = dashscope.TextEmbedding.call(
+                model=self.model, input=batch
+            )
             # ten.log_info("%s Received %s", batch, response)
             if response.status_code == HTTPStatus.OK:
                 if result is None:
@@ -144,7 +148,9 @@ class EmbeddingExtension(Extension):
             return cmd_result
         else:
             cmd_result = CmdResult.create(StatusCode.ERROR)
-            cmd_result.set_property_string(FIELD_KEY_MESSAGE, "All batch failed")
+            cmd_result.set_property_string(
+                FIELD_KEY_MESSAGE, "All batch failed"
+            )
             ten.log_error("All batch failed")
             return cmd_result
 

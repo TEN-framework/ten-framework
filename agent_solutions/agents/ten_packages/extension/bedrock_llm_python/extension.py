@@ -120,7 +120,10 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
             self.config = await BedrockLLMConfig.create_async(ten_env=ten_env)
             ten_env.log_info(f"Configuration: {self.config}")
 
-            if not self.config.access_key_id or not self.config.secret_access_key:
+            if (
+                not self.config.access_key_id
+                or not self.config.secret_access_key
+            ):
                 ten_env.log_error(
                     "AWS credentials (access_key_id and secret_access_key) are required"
                 )
@@ -154,8 +157,12 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"on_data name {data_name}")
 
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
 
             if not is_final:
                 ten_env.log_info("ignore non-final input")
@@ -185,11 +192,15 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         """Process video frames from the queue."""
         while True:
             try:
-                [image_data, image_width, image_height] = await self.image_queue.get()
+                [image_data, image_width, image_height] = (
+                    await self.image_queue.get()
+                )
 
                 # ten_env.log_info(f"image_width: {image_width}, image_height: {image_height}, image_size: {len(bytes(image_data)) / 1024 / 1024}MB")
 
-                frame_buffer = rgb2base64jpeg(image_data, image_width, image_height)
+                frame_buffer = rgb2base64jpeg(
+                    image_data, image_width, image_height
+                )
 
                 self.image_buffers.append(frame_buffer)
 
@@ -256,7 +267,9 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
             self.ten_env.log_info(f"Input truncated due to: {reason}")
 
             if self.text_buffer:
-                await self._call_nova_model(self.text_buffer, self.image_buffers)
+                await self._call_nova_model(
+                    self.text_buffer, self.image_buffers
+                )
 
             self._reset_state()
 
@@ -288,11 +301,15 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
     async def _greeting(self) -> None:
         """Send greeting message to the user."""
         if self.users_count == 1:
-            text = self.config.greeting or get_greeting_text(self.config.language)
+            text = self.config.greeting or get_greeting_text(
+                self.config.language
+            )
             self.ten_env.log_info(f"send greeting {text}")
             await self._send_text_data(text, True, Role.Assistant)
 
-    async def _send_text_data(self, text: str, end_of_segment: bool, role: Role):
+    async def _send_text_data(
+        self, text: str, end_of_segment: bool, role: Role
+    ):
         """Send text data to the user."""
         try:
             d = Data.create("text_data")
@@ -321,15 +338,24 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
 
             # Process images
             if image_buffers:
-                filtered_buffers = filter_images(image_buffers, ONE_BATCH_SEND_COUNT)
+                filtered_buffers = filter_images(
+                    image_buffers, ONE_BATCH_SEND_COUNT
+                )
                 for image_data in filtered_buffers:
                     contents.append(
-                        {"image": {"format": "jpeg", "source": {"bytes": image_data}}}
+                        {
+                            "image": {
+                                "format": "jpeg",
+                                "source": {"bytes": image_data},
+                            }
+                        }
                     )
             # Prepare memory
             while len(self.memory) > self.config.max_memory_length:
                 self.memory.pop(0)
-            while len(self.memory) > 0 and self.memory[0]["role"] == "assistant":
+            while (
+                len(self.memory) > 0 and self.memory[0]["role"] == "assistant"
+            ):
                 self.memory.pop(0)
             while len(self.memory) > 0 and self.memory[-1]["role"] == "user":
                 self.memory.pop(-1)
@@ -364,7 +390,9 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
                 inferenceConfig=inf_params,
                 additionalModelRequestFields=additional_config,
             )
-            full_content = await self._process_stream_response(response, start_time)
+            full_content = await self._process_stream_response(
+                response, start_time
+            )
 
             # async append memory
             async def async_append_memory():
@@ -374,12 +402,20 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
                 contents = []
                 if image:
                     contents.append(
-                        {"image": {"format": "jpeg", "source": {"bytes": image}}}
+                        {
+                            "image": {
+                                "format": "jpeg",
+                                "source": {"bytes": image},
+                            }
+                        }
                     )
                 contents.append({"text": input_text})
                 self.memory.append({"role": Role.User, "content": contents})
                 self.memory.append(
-                    {"role": Role.Assistant, "content": [{"text": full_content}]}
+                    {
+                        "role": Role.Assistant,
+                        "content": [{"text": full_content}],
+                    }
                 )
 
             asyncio.create_task(async_append_memory())
@@ -406,8 +442,12 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
                         if not sentence or not sentence_is_final:
                             break
 
-                        self.ten_env.log_info(f"Processing sentence: [{sentence}]")
-                        await self._send_text_data(sentence, False, Role.Assistant)
+                        self.ten_env.log_info(
+                            f"Processing sentence: [{sentence}]"
+                        )
+                        await self._send_text_data(
+                            sentence, False, Role.Assistant
+                        )
 
                         if not first_sentence_sent:
                             first_sentence_sent = True

@@ -41,7 +41,9 @@ class PollyTTS:
                 aws_secret_access_key=config.secret_key,
             )
         else:
-            self.client = boto3.client(service_name="polly", region_name=config.region)
+            self.client = boto3.client(
+                service_name="polly", region_name=config.region
+            )
 
         self.voice_metadata = None
         self.frame_size = int(

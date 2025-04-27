@@ -190,7 +190,9 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
         )
         return {"result": "success"}
 
-    async def _send_data(self, ten_env: AsyncTenEnv, action: str, data: Dict[str, Any]):
+    async def _send_data(
+        self, ten_env: AsyncTenEnv, action: str, data: Dict[str, Any]
+    ):
         try:
             action_data = json.dumps(
                 {"type": "action", "data": {"action": action, "data": data}}
@@ -198,7 +200,9 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
 
             output_data = Data.create(CONTENT_DATA_OUT_NAME)
             output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, action_data)
-            output_data.set_property_bool(DATA_OUT_PROPERTY_END_OF_SEGMENT, True)
+            output_data.set_property_bool(
+                DATA_OUT_PROPERTY_END_OF_SEGMENT, True
+            )
             await ten_env.send_data(output_data)
         except Exception as err:
             ten_env.log_warn(f"send data error {err}")

@@ -72,7 +72,9 @@ def create_graph(json_data):
             iports += f'<tr><td align="left" port="i_{port}">⊙ {port}</td></tr>'
         oports = ""
         for port in node["o_ports"]:
-            oports += f'<tr><td align="right" port="o_{port}">{port} ⊙</td></tr>'
+            oports += (
+                f'<tr><td align="right" port="o_{port}">{port} ⊙</td></tr>'
+            )
 
         # Use HTML-like label for nodes
         label = f"""<
@@ -86,7 +88,7 @@ def create_graph(json_data):
             <td>
                 <table border="0" cellspacing="0">{oports}</table>
             </td>
-        </tr>    
+        </tr>
         </table>>"""
         graph.node(node["name"], label)
 

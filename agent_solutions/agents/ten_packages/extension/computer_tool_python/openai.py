@@ -51,7 +51,9 @@ class OpenAIChatGPT:
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
         ten_env.log_info(f"apikey {config.api_key}, base_url {config.base_url}")
-        self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
+        self.client = AsyncOpenAI(
+            api_key=config.api_key, base_url=config.base_url
+        )
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {
@@ -93,7 +95,9 @@ class OpenAIChatGPT:
                 f"CreateChatCompletionStructured failed, err: {e}"
             ) from e
 
-    async def get_chat_completions_stream(self, messages, tools=None, listener=None):
+    async def get_chat_completions_stream(
+        self, messages, tools=None, listener=None
+    ):
         req = {
             "model": self.config.model,
             "messages": [
@@ -116,7 +120,9 @@ class OpenAIChatGPT:
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
-            raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
+            raise RuntimeError(
+                f"CreateChatCompletionStream failed, err: {e}"
+            ) from e
 
         full_content = ""
 

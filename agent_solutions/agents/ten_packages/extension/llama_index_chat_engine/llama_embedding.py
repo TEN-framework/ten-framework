@@ -35,7 +35,9 @@ class LlamaEmbedding(BaseEmbedding):
         return self._get_text_embedding(text)
 
     def _get_query_embedding(self, query: str) -> List[float]:
-        self.ten.log_info(f"LlamaEmbedding generate embeddings for the query: {query}")
+        self.ten.log_info(
+            f"LlamaEmbedding generate embeddings for the query: {query}"
+        )
         wait_event = threading.Event()
         resp: List[float]
 

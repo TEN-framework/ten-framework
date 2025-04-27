@@ -13,7 +13,9 @@
   },
   "black-formatter.args": [
     "--line-length",
-    "80"
+    "80",
+    "--exclude",
+    "third_party"
   ],
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {

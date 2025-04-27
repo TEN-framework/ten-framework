@@ -170,12 +170,16 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                 [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
                 if result.get_status_code() == StatusCode.OK:
                     try:
-                        history = json.loads(result.get_property_string("response"))
+                        history = json.loads(
+                            result.get_property_string("response")
+                        )
                         for i in history:
                             self.memory.put(i)
                         ten_env.log_info(f"on retrieve context {history}")
                     except Exception as e:
-                        ten_env.log_error(f"Failed to handle retrieve result {e}")
+                        ten_env.log_error(
+                            f"Failed to handle retrieve result {e}"
+                        )
                 else:
                     ten_env.log_warn("Failed to retrieve content")
 
@@ -204,7 +208,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.input_audio_queue.put_nowait(None)
         self.stopped = True
 
-    async def on_audio_frame(self, _: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, _: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         try:
             stream_id = audio_frame.get_property_int("stream_id")
             if self.channel_name == "":
@@ -326,7 +332,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                             )
                                         )
                                     )
-                            self.ten_env.log_info(f"Finish send history {history}")
+                            self.ten_env.log_info(
+                                f"Finish send history {history}"
+                            )
                             self.memory.clear()
 
                             if not self.connected:
@@ -336,7 +344,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On request transcript {message.transcript}"
                             )
-                            self._send_transcript(message.transcript, Role.User, True)
+                            self._send_transcript(
+                                message.transcript, Role.User, True
+                            )
                             self.memory.put(
                                 {
                                     "role": "user",
@@ -349,10 +359,14 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On request transcript failed {message.item_id} {message.error}"
                             )
                         case ItemCreated():
-                            self.ten_env.log_info(f"On item created {message.item}")
+                            self.ten_env.log_info(
+                                f"On item created {message.item}"
+                            )
                         case ResponseCreated():
                             response_id = message.response.id
-                            self.ten_env.log_info(f"On response created {response_id}")
+                            self.ten_env.log_info(
+                                f"On response created {response_id}"
+                            )
                         case ResponseDone():
                             msg_resp_id = message.response.id
                             status = message.response.status
@@ -378,7 +392,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                     f"On flushed transcript delta {message.output_index} {message.content_index} {message.delta}"
                                 )
                                 continue
-                            self._send_transcript(message.delta, Role.Assistant, False)
+                            self._send_transcript(
+                                message.delta, Role.Assistant, False
+                            )
                         case ResponseTextDelta():
                             self.ten_env.log_info(
                                 f"On response text delta {message.output_index} {message.content_index} {message.delta}"
@@ -393,14 +409,18 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             #     self.first_token_times.append(
                             #         time.time() - self.input_end
                             #     )
-                            self._send_transcript(message.delta, Role.Assistant, False)
+                            self._send_transcript(
+                                message.delta, Role.Assistant, False
+                            )
                         case ResponseAudioTranscriptDone():
                             # this is not triggering by GLM
                             self.ten_env.log_info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}"
                             )
                             if message.response_id in flushed:
-                                self.ten_env.log_warn("On flushed transcript done")
+                                self.ten_env.log_warn(
+                                    "On flushed transcript done"
+                                )
                                 continue
                             self.memory.put(
                                 {
@@ -420,11 +440,15 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             #         f"On flushed text done {message.response_id}"
                             #     )
                             #     continue
-                            self.completion_times.append(time.time() - self.input_end)
+                            self.completion_times.append(
+                                time.time() - self.input_end
+                            )
                             self.transcript = ""
                             self._send_transcript("", Role.Assistant, True)
                         case ResponseOutputItemDone():
-                            self.ten_env.log_info(f"Output item done {message.item}")
+                            self.ten_env.log_info(
+                                f"Output item done {message.item}"
+                            )
                         case ResponseOutputItemAdded():
                             self.ten_env.log_info(
                                 f"Output item added {message.output_index} {message.item}"
@@ -443,7 +467,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             # content_index = message.content_index
                             await self._on_audio_delta(message.delta)
                         case ResponseAudioDone():
-                            self.completion_times.append(time.time() - self.input_end)
+                            self.completion_times.append(
+                                time.time() - self.input_end
+                            )
                         case InputAudioBufferSpeechStarted():
                             self.ten_env.log_info(
                                 f"On server listening, in response {response_id}, last item {item_id}"
@@ -461,7 +487,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 await self._flush()
                             if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
-                                self._send_transcript(transcript, Role.Assistant, True)
+                                self._send_transcript(
+                                    transcript, Role.Assistant, True
+                                )
                                 self.transcript = ""
                                 # memory leak, change to lru later
                                 flushed.add(response_id)
@@ -469,7 +497,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                         case InputAudioBufferSpeechStopped():
                             # Only for server vad
                             self.input_end = time.time()
-                            relative_start_ms = get_time_ms() - message.audio_end_ms
+                            relative_start_ms = (
+                                get_time_ms() - message.audio_end_ms
+                            )
                             self.ten_env.log_info(
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}"
                             )
@@ -486,10 +516,14 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 f"Error message received: {message.error}"
                             )
                         case _:
-                            self.ten_env.log_debug(f"Not handled message {message}")
+                            self.ten_env.log_debug(
+                                f"Not handled message {message}"
+                            )
                 except Exception as e:
                     traceback.print_exc()
-                    self.ten_env.log_error(f"Error processing message: {message} {e}")
+                    self.ten_env.log_error(
+                        f"Error processing message: {message} {e}"
+                    )
 
             self.ten_env.log_info("Client loop finished")
         except Exception as e:
@@ -534,7 +568,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             d.set_property_int("stream_id", stream_id)
             asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
-            self.ten_env.log_error(f"Error send append_context data {message} {e}")
+            self.ten_env.log_error(
+                f"Error send append_context data {message} {e}"
+            )
 
     # Direction: IN
     def convert_to_wav_in_memory(self, buff: bytearray) -> bytes:
@@ -615,7 +651,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             )
         await self.conn.send_request(su)
 
-    async def on_tools_update(self, _: AsyncTenEnv, tool: LLMToolMetadata) -> None:
+    async def on_tools_update(
+        self, _: AsyncTenEnv, tool: LLMToolMetadata
+    ) -> None:
         """Called when a new tool is registered. Implement this method to process the new tool."""
         self.ten_env.log_info(f"on tools update {tool}")
         # await self._update_session()
@@ -646,7 +684,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         f.unlock_buf(buff)
         await self.ten_env.send_audio_frame(f)
 
-    def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
+    def _send_transcript(
+        self, content: str, role: Role, is_final: bool
+    ) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
                 return True
@@ -692,7 +732,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         stream_id = self.remote_stream_id if role == Role.User else 0
         try:
             if role == Role.Assistant and not is_final:
-                sentences, self.transcript = parse_sentences(self.transcript, content)
+                sentences, self.transcript = parse_sentences(
+                    self.transcript, content
+                )
                 for s in sentences:
                     send_data(self.ten_env, s, stream_id, role, is_final)
             else:
@@ -706,7 +748,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         if not self.config.dump:
             return
 
-        with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
+        with open(
+            "{}_{}.pcm".format(role, self.channel_name), "ab"
+        ) as dump_file:
             dump_file.write(buf)
 
     async def _handle_tool_call(self, name: str, arguments: str) -> None:
@@ -803,13 +847,17 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.total_usage.prompt_tokens += usage.get("input_tokens") or 0
         self.total_usage.total_tokens += usage.get("total_tokens") or 0
         if not self.total_usage.completion_tokens_details:
-            self.total_usage.completion_tokens_details = LLMCompletionTokensDetails()
+            self.total_usage.completion_tokens_details = (
+                LLMCompletionTokensDetails()
+            )
         if not self.total_usage.prompt_tokens_details:
             self.total_usage.prompt_tokens_details = LLMPromptTokensDetails()
 
         if usage.get("output_token_details"):
-            self.total_usage.completion_tokens_details.accepted_prediction_tokens += (
-                usage["output_token_details"].get("text_tokens")
+            self.total_usage.completion_tokens_details.accepted_prediction_tokens += usage[
+                "output_token_details"
+            ].get(
+                "text_tokens"
             )
             self.total_usage.completion_tokens_details.audio_tokens += usage[
                 "output_token_details"
@@ -829,20 +877,30 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"total usage: {self.total_usage}")
 
         data = Data.create("llm_stat")
-        data.set_property_from_json("usage", json.dumps(self.total_usage.model_dump()))
-        if self.connect_times and self.completion_times and self.first_token_times:
+        data.set_property_from_json(
+            "usage", json.dumps(self.total_usage.model_dump())
+        )
+        if (
+            self.connect_times
+            and self.completion_times
+            and self.first_token_times
+        ):
             data.set_property_from_json(
                 "latency",
                 json.dumps(
                     {
-                        "connection_latency_95": np.percentile(self.connect_times, 95),
+                        "connection_latency_95": np.percentile(
+                            self.connect_times, 95
+                        ),
                         "completion_latency_95": np.percentile(
                             self.completion_times, 95
                         ),
                         "first_token_latency_95": np.percentile(
                             self.first_token_times, 95
                         ),
-                        "connection_latency_99": np.percentile(self.connect_times, 99),
+                        "connection_latency_99": np.percentile(
+                            self.connect_times, 99
+                        ),
                         "completion_latency_99": np.percentile(
                             self.completion_times, 99
                         ),

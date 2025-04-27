@@ -28,7 +28,8 @@ class Model:
                 manager_account_password=account_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().init_vector_database_with_options(
                 request, runtime
@@ -40,7 +41,9 @@ class Model:
             self.ten_env.log_error(f"Error: {e}")
             return e
 
-    async def init_vector_database_async(self, account, account_password) -> None:
+    async def init_vector_database_async(
+        self, account, account_password
+    ) -> None:
         try:
             request = gpdb_20160503_models.InitVectorDatabaseRequest(
                 region_id=self.region_id,
@@ -49,10 +52,13 @@ class Model:
                 manager_account_password=account_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().init_vector_database_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().init_vector_database_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_debug(
                 f"init_vector_database response code: {response.status_code}, body:{response.body}"
@@ -74,9 +80,12 @@ class Model:
                 namespace_password=namespace_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = self.get_client().create_namespace_with_options(request, runtime)
+            response = self.get_client().create_namespace_with_options(
+                request, runtime
+            )
             self.ten_env.log_debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
             )
@@ -97,10 +106,13 @@ class Model:
                 namespace_password=namespace_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().create_namespace_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().create_namespace_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
@@ -140,7 +152,8 @@ class Model:
                 external_storage=external_storage,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().create_collection_with_options(
                 request, runtime
@@ -183,10 +196,13 @@ class Model:
                 external_storage=external_storage,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().create_collection_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().create_collection_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_debug(
                 f"create_document_collection response code: {response.status_code}, body:{response.body}"
@@ -195,7 +211,9 @@ class Model:
             self.ten_env.log_error(f"Error: {e}")
             return e
 
-    def delete_collection(self, namespace, namespace_password, collection) -> None:
+    def delete_collection(
+        self, namespace, namespace_password, collection
+    ) -> None:
         try:
             request = gpdb_20160503_models.DeleteCollectionRequest(
                 region_id=self.region_id,
@@ -205,7 +223,8 @@ class Model:
                 collection=collection,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().delete_collection_with_options(
                 request, runtime
@@ -229,10 +248,13 @@ class Model:
                 collection=collection,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().delete_collection_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().delete_collection_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_info(
                 f"delete_collection response code: {response.status_code}, body:{response.body}"
@@ -259,8 +281,10 @@ class Model:
                     "file_name": file_name,
                     "content": content,
                 }
-                request_row = gpdb_20160503_models.UpsertCollectionDataRequestRows(
-                    metadata=metadata, vector=vector
+                request_row = (
+                    gpdb_20160503_models.UpsertCollectionDataRequestRows(
+                        metadata=metadata, vector=vector
+                    )
                 )
                 request_rows.append(request_row)
             upsert_collection_data_request = (
@@ -274,7 +298,8 @@ class Model:
                 )
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().upsert_collection_data_with_options(
                 upsert_collection_data_request, runtime
@@ -304,8 +329,10 @@ class Model:
                     "file_name": file_name,
                     "content": content,
                 }
-                request_row = gpdb_20160503_models.UpsertCollectionDataRequestRows(
-                    metadata=metadata, vector=vector
+                request_row = (
+                    gpdb_20160503_models.UpsertCollectionDataRequestRows(
+                        metadata=metadata, vector=vector
+                    )
                 )
                 request_rows.append(request_row)
             upsert_collection_data_request = (
@@ -319,12 +346,11 @@ class Model:
                 )
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = (
-                await self.get_client().upsert_collection_data_with_options_async(
-                    upsert_collection_data_request, runtime
-                )
+            response = await self.get_client().upsert_collection_data_with_options_async(
+                upsert_collection_data_request, runtime
             )
             self.ten_env.log_debug(
                 f"upsert_collection response code: {response.status_code}, body:{response.body}"
@@ -369,7 +395,8 @@ class Model:
                 )
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().query_collection_data_with_options(
                 query_collection_data_request, runtime
@@ -418,7 +445,8 @@ class Model:
                 )
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = await self.get_client().query_collection_data_with_options_async(
                 query_collection_data_request, runtime
@@ -437,7 +465,10 @@ class Model:
         try:
             matches = body.to_map()["Matches"]["match"]
             results = [
-                {"content": match["Metadata"]["content"], "score": match["Score"]}
+                {
+                    "content": match["Metadata"]["content"],
+                    "score": match["Score"],
+                }
                 for match in matches
             ]
             results.sort(key=lambda x: x["score"], reverse=True)
@@ -449,7 +480,9 @@ class Model:
             )
             return "[]"
 
-    def list_collections(self, namespace, namespace_password) -> Tuple[List[str], Any]:
+    def list_collections(
+        self, namespace, namespace_password
+    ) -> Tuple[List[str], Any]:
         try:
             request = gpdb_20160503_models.ListCollectionsRequest(
                 region_id=self.region_id,
@@ -458,9 +491,12 @@ class Model:
                 namespace_password=namespace_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = self.get_client().list_collections_with_options(request, runtime)
+            response = self.get_client().list_collections_with_options(
+                request, runtime
+            )
             self.ten_env.log_debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
             )
@@ -481,10 +517,13 @@ class Model:
                 namespace_password=namespace_password,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().list_collections_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().list_collections_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
@@ -510,7 +549,8 @@ class Model:
                 pq_enable=0,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
             response = self.get_client().create_vector_index_with_options(
                 request, runtime
@@ -537,10 +577,13 @@ class Model:
                 pq_enable=0,
             )
             runtime = util_models.RuntimeOptions(
-                read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
+                read_timeout=self.read_timeout,
+                connect_timeout=self.connect_timeout,
             )
-            response = await self.get_client().create_vector_index_with_options_async(
-                request, runtime
+            response = (
+                await self.get_client().create_vector_index_with_options_async(
+                    request, runtime
+                )
             )
             self.ten_env.log_debug(
                 f"create_vector_index response code: {response.status_code}, body:{response.body}"

@@ -18,7 +18,10 @@ class ChatMemory:
 
             while True:
                 history_count = len(self.history)
-                if history_count > 0 and history_count > self.max_history_length:
+                if (
+                    history_count > 0
+                    and history_count > self.max_history_length
+                ):
                     self.history.pop(0)
                     continue
                 if history_count > 0 and self.history[0]["role"] == "assistant":

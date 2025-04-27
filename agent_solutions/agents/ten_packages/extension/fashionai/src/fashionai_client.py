@@ -30,7 +30,9 @@ class FashionAIClient:
                     self.ten_env.log_info(f"FASHION_AI Received: {message}")
                     # await self.handle_message(message)
             except websockets.exceptions.ConnectionClosedError as e:
-                self.ten_env.log_info(f"FASHION_AI Connection closed with error: {e}")
+                self.ten_env.log_info(
+                    f"FASHION_AI Connection closed with error: {e}"
+                )
                 await self.reconnect()
 
     async def stream_start(self, app_id, channel, stream_id):
@@ -93,7 +95,9 @@ class FashionAIClient:
                 # response = await asyncio.wait_for(self.websocket.recv(), timeout=2)
                 # self.ten_env.log_info(f"FASHION_AI Received: {response}")
             except websockets.exceptions.ConnectionClosedError as e:
-                self.ten_env.log_info(f"FASHION_AI Connection closed with error: {e}")
+                self.ten_env.log_info(
+                    f"FASHION_AI Connection closed with error: {e}"
+                )
                 await self.reconnect()
             except asyncio.TimeoutError:
                 self.ten_env.log_info("FASHION_AI Timeout waiting for response")

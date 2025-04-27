@@ -13,7 +13,9 @@ from ten import (
 )
 
 
-def format_node_result(ten: TenEnv, cmd_result: CmdResult) -> List[NodeWithScore]:
+def format_node_result(
+    ten: TenEnv, cmd_result: CmdResult
+) -> List[NodeWithScore]:
     ten.log_info(f"LlamaRetriever retrieve response {cmd_result.to_json()}")
     status = cmd_result.get_status_code()
     try:
@@ -70,7 +72,9 @@ class LlamaRetriever(BaseRetriever):
             wait_event.set()
             self.ten.log_debug("LlamaRetriever callback done")
 
-        embedding = self.embed_model.get_query_embedding(query=query_bundle.query_str)
+        embedding = self.embed_model.get_query_embedding(
+            query=query_bundle.query_str
+        )
 
         query_cmd = Cmd.create("query_vector")
         query_cmd.set_property_string("collection_name", self.collection_name)

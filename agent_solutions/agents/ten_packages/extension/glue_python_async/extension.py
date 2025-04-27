@@ -227,7 +227,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
     async def on_data_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
     ) -> None:
-        input_messages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
+        input_messages: LLMChatCompletionUserMessageParam = kargs.get(
+            "messages", []
+        )
 
         messages = []
         if self.config.prompt:
@@ -238,7 +240,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             if history[0].get("role") == "tool":
                 history = history[1:]
                 continue
-            if history[0].get("role") == "assistant" and history[0].get("tool_calls"):
+            if history[0].get("role") == "assistant" and history[0].get(
+                "tool_calls"
+            ):
                 history = history[1:]
                 continue
 
@@ -271,12 +275,16 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             }
 
             for param in tool.parameters:
-                json_dict["function"]["parameters"]["properties"][param.name] = {
+                json_dict["function"]["parameters"]["properties"][
+                    param.name
+                ] = {
                     "type": param.type,
                     "description": param.description,
                 }
                 if param.required:
-                    json_dict["function"]["parameters"]["required"].append(param.name)
+                    json_dict["function"]["parameters"]["required"].append(
+                        param.name
+                    )
 
             return json_dict
 
@@ -303,10 +311,14 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                     if c.choices[0].delta.content:
                         if first_token_time is None:
                             first_token_time = time.time()
-                            self.first_token_times.append(first_token_time - start_time)
+                            self.first_token_times.append(
+                                first_token_time - start_time
+                            )
 
                         content = c.choices[0].delta.content
-                        if self.config.ssml_enabled and content.startswith("<speak>"):
+                        if self.config.ssml_enabled and content.startswith(
+                            "<speak>"
+                        ):
                             content = trim_xml(content)
                         total_output += content
                         sentences, sentence_fragment = parse_sentences(
@@ -323,10 +335,14 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                                 calls[call.index] = ToolCall(
                                     id=call.id,
                                     index=call.index,
-                                    function=ToolCallFunction(name="", arguments=""),
+                                    function=ToolCallFunction(
+                                        name="", arguments=""
+                                    ),
                                 )
                             if call.function.name:
-                                calls[call.index].function.name += call.function.name
+                                calls[
+                                    call.index
+                                ].function.name += call.function.name
                             if call.function.arguments:
                                 calls[
                                     call.index
@@ -335,7 +351,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                     self.ten_env.log_info(f"usage: {c.usage}")
                     await self._update_usage(c.usage)
             except Exception as e:
-                self.ten_env.log_error(f"Failed to parse response: {message} {e}")
+                self.ten_env.log_error(
+                    f"Failed to parse response: {message} {e}"
+                )
                 traceback.print_exc()
         if sentence_fragment:
             await self._send_text(sentence_fragment)
@@ -404,14 +422,18 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         is_final = False
         input_text = ""
         try:
-            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(
+                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
 
         try:
-            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(
+                DATA_IN_TEXT_DATA_PROPERTY_TEXT
+            )
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
@@ -427,7 +449,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
+        message = LLMChatCompletionUserMessageParam(
+            role="user", content=input_text
+        )
         await self.queue_input_item(False, messages=[message])
 
     async def on_audio_frame(
@@ -462,7 +486,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                 }
                 if self.config.context_enabled:
                     payload["context"] = {**self.config.extra_context}
-                self.ten_env.log_info(f"payload before sending: {json.dumps(payload)}")
+                self.ten_env.log_info(
+                    f"payload before sending: {json.dumps(payload)}"
+                )
                 headers = {
                     "Authorization": f"Bearer {self.config.token}",
                     "Content-Type": "application/json",
@@ -508,7 +534,9 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         self.total_usage.total_tokens += usage.total_tokens
 
         if self.total_usage.completion_tokens_details is None:
-            self.total_usage.completion_tokens_details = LLMCompletionTokensDetails()
+            self.total_usage.completion_tokens_details = (
+                LLMCompletionTokensDetails()
+            )
         if self.total_usage.prompt_tokens_details is None:
             self.total_usage.prompt_tokens_details = LLMPromptTokensDetails()
 
@@ -537,20 +565,30 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"total usage: {self.total_usage}")
 
         data = Data.create("llm_stat")
-        data.set_property_from_json("usage", json.dumps(self.total_usage.model_dump()))
-        if self.connect_times and self.completion_times and self.first_token_times:
+        data.set_property_from_json(
+            "usage", json.dumps(self.total_usage.model_dump())
+        )
+        if (
+            self.connect_times
+            and self.completion_times
+            and self.first_token_times
+        ):
             data.set_property_from_json(
                 "latency",
                 json.dumps(
                     {
-                        "connection_latency_95": np.percentile(self.connect_times, 95),
+                        "connection_latency_95": np.percentile(
+                            self.connect_times, 95
+                        ),
                         "completion_latency_95": np.percentile(
                             self.completion_times, 95
                         ),
                         "first_token_latency_95": np.percentile(
                             self.first_token_times, 95
                         ),
-                        "connection_latency_99": np.percentile(self.connect_times, 99),
+                        "connection_latency_99": np.percentile(
+                            self.connect_times, 99
+                        ),
                         "completion_latency_99": np.percentile(
                             self.completion_times, 99
                         ),
@@ -576,4 +614,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             d.set_property_int("stream_id", stream_id)
             asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
-            self.ten_env.log_error(f"Error send append_context data {message} {e}")
+            self.ten_env.log_error(
+                f"Error send append_context data {message} {e}"
+            )

@@ -123,7 +123,9 @@ class MessageCollectorRTMExtension(AsyncExtension):
             pass
 
         try:
-            end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+            end_of_segment = data.get_property_bool(
+                TEXT_DATA_END_OF_SEGMENT_FIELD
+            )
         except Exception as e:
             self.ten_env.log_error(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
@@ -168,7 +170,9 @@ class MessageCollectorRTMExtension(AsyncExtension):
             data.set_property_bool("is_final", True)
             asyncio.create_task(self.ten_env.send_data(data))
         except Exception as e:
-            self.ten_env.log_error(f"Failed to handle on_rtm_message_event data: {e}")
+            self.ten_env.log_error(
+                f"Failed to handle on_rtm_message_event data: {e}"
+            )
 
     async def handle_user_state_changed(self, cmd: Cmd) -> None:
         try:

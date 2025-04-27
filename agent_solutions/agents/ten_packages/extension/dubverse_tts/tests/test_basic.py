@@ -40,7 +40,9 @@ class ExtensionTesterBasic(ExtensionTester):
         print("send hello_world")
         ten_env.send_cmd(
             new_cmd,
-            lambda ten_env, result, error: self.check_hello(ten_env, result, error),
+            lambda ten_env, result, error: self.check_hello(
+                ten_env, result, error
+            ),
         )
 
         print("tester on_start_done")

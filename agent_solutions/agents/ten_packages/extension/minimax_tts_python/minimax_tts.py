@@ -24,7 +24,9 @@ class MinimaxTTS:
     def __init__(self, config: MinimaxTTSConfig):
         self.config = config
 
-    async def get(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
+    async def get(
+        self, ten_env: AsyncTenEnv, text: str
+    ) -> AsyncIterator[bytes]:
         payload = json.dumps(
             {
                 "model": self.config.model,
@@ -58,7 +60,9 @@ class MinimaxTTS:
 
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.post(url, headers=headers, data=payload) as response:
+                async with session.post(
+                    url, headers=headers, data=payload
+                ) as response:
                     trace_id = ""
                     alb_receive_time = ""
 
@@ -67,7 +71,9 @@ class MinimaxTTS:
                     except Exception:
                         ten_env.log_warn("get response, no Trace-Id")
                     try:
-                        alb_receive_time = response.headers.get("alb_receive_time")
+                        alb_receive_time = response.headers.get(
+                            "alb_receive_time"
+                        )
                     except Exception:
                         ten_env.log_warn("get response, no alb_receive_time")
 
@@ -106,13 +112,20 @@ class MinimaxTTS:
                                         if audio:
                                             decoded_hex = bytes.fromhex(audio)
                                             yield decoded_hex
-                                except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                                except (
+                                    json.JSONDecodeError,
+                                    UnicodeDecodeError,
+                                ) as e:
                                     # Handle malformed JSON or decoding errors
-                                    ten_env.log_warn(f"Error decoding line: {e}")
+                                    ten_env.log_warn(
+                                        f"Error decoding line: {e}"
+                                    )
                                     continue
                         if not ttfb:
                             ttfb = self._duration_in_ms_since(start_time)
-                            ten_env.log_info(f"trace-id: {trace_id}, ttfb {ttfb}ms")
+                            ten_env.log_info(
+                                f"trace-id: {trace_id}, ttfb {ttfb}ms"
+                            )
             except aiohttp.ClientError as e:
                 ten_env.log_error(f"Client error occurred: {e}")
             except asyncio.TimeoutError:

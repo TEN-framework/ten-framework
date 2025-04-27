@@ -276,18 +276,24 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                                     bytes_per_sample=2,
                                                     number_of_channels=1,
                                                 )
-                                        elif response.server_content.turn_complete:
+                                        elif (
+                                            response.server_content.turn_complete
+                                        ):
                                             ten_env.log_info("Turn complete")
                                     elif response.setup_complete:
                                         ten_env.log_info("Setup complete")
                                     elif response.tool_call:
-                                        func_calls = response.tool_call.function_calls
+                                        func_calls = (
+                                            response.tool_call.function_calls
+                                        )
                                         self.loop.create_task(
                                             self._handle_tool_call(func_calls)
                                         )
                                 except Exception:
                                     traceback.print_exc()
-                                    ten_env.log_error("Failed to handle response")
+                                    ten_env.log_error(
+                                        "Failed to handle response"
+                                    )
 
                             await self._flush()
                             ten_env.log_info("Finish listen")
@@ -309,7 +315,10 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             combined_data = self.leftover_bytes + audio_data
 
             # Check if combined_data length is odd
-            if len(combined_data) % (bytes_per_sample * number_of_channels) != 0:
+            if (
+                len(combined_data) % (bytes_per_sample * number_of_channels)
+                != 0
+            ):
                 # Save the last incomplete frame
                 valid_length = len(combined_data) - (
                     len(combined_data) % (bytes_per_sample * number_of_channels)
@@ -326,7 +335,8 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 f.set_number_of_channels(number_of_channels)
                 f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
                 f.set_samples_per_channel(
-                    len(combined_data) // (bytes_per_sample * number_of_channels)
+                    len(combined_data)
+                    // (bytes_per_sample * number_of_channels)
                 )
                 f.alloc_buf(len(combined_data))
                 buff = f.lock_buf()
@@ -410,8 +420,12 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         while True:
 
             # Process the first frame from the queue
-            [image_data, image_width, image_height] = await self.image_queue.get()
-            self.video_buff = rgb2base64jpeg(image_data, image_width, image_height)
+            [image_data, image_width, image_height] = (
+                await self.image_queue.get()
+            )
+            self.video_buff = rgb2base64jpeg(
+                image_data, image_width, image_height
+            )
             media_chunks = [
                 {
                     "data": self.video_buff,
@@ -470,7 +484,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                         name=tool.name,
                         description=tool.description,
                         parameters=Schema(
-                            type="OBJECT", properties=properties, required=required
+                            type="OBJECT",
+                            properties=properties,
+                            required=required,
                         ),
                     )
                 ]
@@ -520,7 +536,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             result = result.replace("{" + token + "}", value)
         return result
 
-    def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
+    def _send_transcript(
+        self, content: str, role: Role, is_final: bool
+    ) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
                 return True
@@ -566,7 +584,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         stream_id = self.remote_stream_id if role == Role.User else 0
         try:
             if role == Role.Assistant and not is_final:
-                sentences, self.transcript = parse_sentences(self.transcript, content)
+                sentences, self.transcript = parse_sentences(
+                    self.transcript, content
+                )
                 for s in sentences:
                     asyncio.create_task(
                         send_data(self.ten_env, s, stream_id, role, is_final)
@@ -584,7 +604,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         if not self.config.dump:
             return
 
-        with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
+        with open(
+            "{}_{}.pcm".format(role, self.channel_name), "ab"
+        ) as dump_file:
             dump_file.write(buf)
 
     async def _handle_tool_call(self, func_calls: list[FunctionCall]) -> None:
@@ -602,7 +624,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             [result, _] = await self.ten_env.send_cmd(cmd)
 
             func_response = FunctionResponse(
-                id=tool_call_id, name=name, response={"error": "Failed to call tool"}
+                id=tool_call_id,
+                name=name,
+                response={"error": "Failed to call tool"},
             )
             if result.get_status_code() == StatusCode.OK:
                 tool_result: LLMToolResult = json.loads(
@@ -611,15 +635,21 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
                 result_content = tool_result["content"]
                 func_response = FunctionResponse(
-                    id=tool_call_id, name=name, response={"output": result_content}
+                    id=tool_call_id,
+                    name=name,
+                    response={"output": result_content},
                 )
-                self.ten_env.log_info(f"tool_result: {tool_call_id} {tool_result}")
+                self.ten_env.log_info(
+                    f"tool_result: {tool_call_id} {tool_result}"
+                )
             else:
                 self.ten_env.log_error("Tool call failed")
             function_responses.append(func_response)
             # await self.conn.send_request(tool_response)
             # await self.conn.send_request(ResponseCreate())
-            self.ten_env.log_info(f"_remote_tool_call finish {name} {arguments}")
+            self.ten_env.log_info(
+                f"_remote_tool_call finish {name} {arguments}"
+            )
         try:
             self.ten_env.log_info(f"send tool response {function_responses}")
             await self.session.send(
@@ -685,13 +715,17 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.total_usage.prompt_tokens += usage.get("input_tokens")
         self.total_usage.total_tokens += usage.get("total_tokens")
         if not self.total_usage.completion_tokens_details:
-            self.total_usage.completion_tokens_details = LLMCompletionTokensDetails()
+            self.total_usage.completion_tokens_details = (
+                LLMCompletionTokensDetails()
+            )
         if not self.total_usage.prompt_tokens_details:
             self.total_usage.prompt_tokens_details = LLMPromptTokensDetails()
 
         if usage.get("output_token_details"):
-            self.total_usage.completion_tokens_details.accepted_prediction_tokens += (
-                usage["output_token_details"].get("text_tokens")
+            self.total_usage.completion_tokens_details.accepted_prediction_tokens += usage[
+                "output_token_details"
+            ].get(
+                "text_tokens"
             )
             self.total_usage.completion_tokens_details.audio_tokens += usage[
                 "output_token_details"
@@ -711,20 +745,30 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"total usage: {self.total_usage}")
 
         data = Data.create("llm_stat")
-        data.set_property_from_json("usage", json.dumps(self.total_usage.model_dump()))
-        if self.connect_times and self.completion_times and self.first_token_times:
+        data.set_property_from_json(
+            "usage", json.dumps(self.total_usage.model_dump())
+        )
+        if (
+            self.connect_times
+            and self.completion_times
+            and self.first_token_times
+        ):
             data.set_property_from_json(
                 "latency",
                 json.dumps(
                     {
-                        "connection_latency_95": np.percentile(self.connect_times, 95),
+                        "connection_latency_95": np.percentile(
+                            self.connect_times, 95
+                        ),
                         "completion_latency_95": np.percentile(
                             self.completion_times, 95
                         ),
                         "first_token_latency_95": np.percentile(
                             self.first_token_times, 95
                         ),
-                        "connection_latency_99": np.percentile(self.connect_times, 99),
+                        "connection_latency_99": np.percentile(
+                            self.connect_times, 99
+                        ),
                         "completion_latency_99": np.percentile(
                             self.completion_times, 99
                         ),

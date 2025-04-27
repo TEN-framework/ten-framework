@@ -30,7 +30,9 @@ class OpenAIImageGenerateToolConfig(BaseConfig):
 class OpenAIImageGenerateClient:
     client = None
 
-    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIImageGenerateToolConfig):
+    def __init__(
+        self, ten_env: AsyncTenEnv, config: OpenAIImageGenerateToolConfig
+    ):
         self.config = config
         ten_env.log_info(
             f"OpenAIImageGenerateClient initialized with config: {config.api_key}"
@@ -45,7 +47,9 @@ class OpenAIImageGenerateClient:
                 f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}"
             )
         else:
-            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
+            self.client = AsyncOpenAI(
+                api_key=config.api_key, base_url=config.base_url
+            )
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {

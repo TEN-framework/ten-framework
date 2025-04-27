@@ -51,9 +51,7 @@ def _text_to_base64_chunks(_: TenEnv, text: str, msg_id: str) -> list:
 
     # We'll split the base64 string dynamically based on the final byte size
     part_index = 0
-    total_parts = (
-        None  # We'll calculate total parts once we know how many chunks we create
-    )
+    total_parts = None  # We'll calculate total parts once we know how many chunks we create
 
     # Process the base64-encoded content in chunks
     current_position = 0
@@ -63,7 +61,9 @@ def _text_to_base64_chunks(_: TenEnv, text: str, msg_id: str) -> list:
         part_index += 1
 
         # Start guessing the chunk size by limiting the base64 content part
-        estimated_chunk_size = MAX_CHUNK_SIZE_BYTES  # We'll reduce this dynamically
+        estimated_chunk_size = (
+            MAX_CHUNK_SIZE_BYTES  # We'll reduce this dynamically
+        )
         content_chunk = ""
         count = 0
         while True:
@@ -92,7 +92,9 @@ def _text_to_base64_chunks(_: TenEnv, text: str, msg_id: str) -> list:
 
     # Now that we know the total number of parts, update the chunks with correct total_parts
     total_parts = len(chunks)
-    updated_chunks = [chunk.replace("???", str(total_parts)) for chunk in chunks]
+    updated_chunks = [
+        chunk.replace("???", str(total_parts)) for chunk in chunks
+    ]
 
     return updated_chunks
 
@@ -178,7 +180,9 @@ class MessageCollectorExtension(Extension):
                 pass
 
             try:
-                end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+                end_of_segment = data.get_property_bool(
+                    TEXT_DATA_END_OF_SEGMENT_FIELD
+                )
             except Exception as e:
                 ten_env.log_warn(
                     f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
@@ -234,7 +238,9 @@ class MessageCollectorExtension(Extension):
                 )
 
             try:
-                end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+                end_of_segment = data.get_property_bool(
+                    TEXT_DATA_END_OF_SEGMENT_FIELD
+                )
             except Exception as e:
                 ten_env.log_warn(
                     f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"

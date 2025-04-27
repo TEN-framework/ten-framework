@@ -36,7 +36,8 @@ class ElevenLabsTTS:
 
         if not self.client:
             self.client = AsyncElevenLabs(
-                api_key=self.config.api_key, timeout=self.config.request_timeout_seconds
+                api_key=self.config.api_key,
+                timeout=self.config.request_timeout_seconds,
             )
 
         return self.client.generate(

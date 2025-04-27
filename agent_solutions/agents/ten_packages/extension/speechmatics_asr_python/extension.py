@@ -35,7 +35,9 @@ class SpeechmaticsASRExtension(AsyncExtension):
         self.client = SpeechmaticsASRClient(self.config, ten_env)
         await self.client.start()
 
-    async def on_audio_frame(self, _ten_env: AsyncTenEnv, frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, _ten_env: AsyncTenEnv, frame: AudioFrame
+    ) -> None:
         await self.client.recv_audio_frame(frame)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:

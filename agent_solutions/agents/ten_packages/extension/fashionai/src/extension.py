@@ -112,15 +112,23 @@ class FashionAIExtension(AsyncExtension):
         try:
             await self.queue.put(input_text)
         except asyncio.TimeoutError:
-            ten_env.log_warn(f"FASHION_AI put inputText={input_text} queue timed out")
+            ten_env.log_warn(
+                f"FASHION_AI put inputText={input_text} queue timed out"
+            )
         except Exception as e:
-            ten_env.log_warn(f"FASHION_AI put inputText={input_text} queue err: {e}")
+            ten_env.log_warn(
+                f"FASHION_AI put inputText={input_text} queue err: {e}"
+            )
         ten_env.log_info("FASHION_AI send_inputText %s", input_text)
 
-    async def on_audio_frame(self, _: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, _: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         pass
 
-    async def on_video_frame(self, _: AsyncTenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(
+        self, _: AsyncTenEnv, video_frame: VideoFrame
+    ) -> None:
         pass
 
     async def init_fashionai(self, app_id, channel, stream_id):
@@ -135,7 +143,9 @@ class FashionAIExtension(AsyncExtension):
                 ten_env.log_info("Stopping async_polly_handler...")
                 break
 
-            ten_env.log_info(f"async_polly_handler: loop fashion ai polly.{input_text}")
+            ten_env.log_info(
+                f"async_polly_handler: loop fashion ai polly.{input_text}"
+            )
 
             if len(input_text) > 0:
                 try:
