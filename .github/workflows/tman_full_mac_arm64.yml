@@ -8,6 +8,7 @@ on:
     paths:
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
+      - "agent_solutions/**"
 
 concurrency:
   group: tman-full-mac-arm64-${{ github.head_ref }}

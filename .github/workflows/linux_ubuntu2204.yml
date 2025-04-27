@@ -14,6 +14,7 @@ on:
       - "!.github/workflows/build_linux_ubuntu2204.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
+      - "agent_solutions/**"
 
 concurrency:
   group: linux-intel-ubuntu2204-${{ github.head_ref }}
