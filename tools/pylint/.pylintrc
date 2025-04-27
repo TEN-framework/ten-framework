@@ -21,7 +21,6 @@ jobs=1
 limit-inference-results=100
 load-plugins=
 persistent=yes
-prefer-stubs=no
 py-version=3.10
 recursive=no
 source-roots=
@@ -149,7 +148,6 @@ notes-rgx=
 [REFACTORING]
 max-nested-blocks=5
 never-returning-functions=sys.exit,argparse.parse_error
-suggest-join-with-non-empty-separator=yes
 
 [REPORTS]
 evaluation=max(0, 0 if fatal else 10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10))
