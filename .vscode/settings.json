@@ -1,8 +1,14 @@
 {
-  "C_Cpp.clang_format_sortIncludes": true,
-  "C_Cpp.clang_format_style": "file",
-  "C_Cpp.errorSquiggles": "enabled",
+  "C_Cpp.codeAnalysis.runAutomatically": false,
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.formatting": "disabled",
   "C_Cpp.intelliSenseEngine": "disabled",
+  "[c]": {
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+  },
   "[markdown]": {
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
@@ -17,9 +23,14 @@
     "--exclude",
     "third_party"
   ],
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=never"
+  ],
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll": "explicit"
   },
   "editor.defaultFormatter": null,
   "editor.formatOnSave": true,
@@ -76,13 +87,13 @@
   "python.analysis.completeFunctionParens": true,
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
-    "./tests/ten_runtime/integration",
+    "./tests/ten_runtime/integration"
   ],
   "python.analysis.typeCheckingMode": "basic",
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "${workspaceFolder}/core/src/ten_manager/Cargo.toml",
-    "${workspaceFolder}/core/src/ten_rust/Cargo.toml",
+    "${workspaceFolder}/core/src/ten_rust/Cargo.toml"
   ],
   "rust-analyzer.procMacro.attributes.enable": true,
   "rust-analyzer.procMacro.enable": true,
