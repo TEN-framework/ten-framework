@@ -1,0 +1,7 @@
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+0,       4410,       4410,     3782,    15128, 0xaafd7593
+0,       8192,       8192,      628,     2512, 0xda5ddff8

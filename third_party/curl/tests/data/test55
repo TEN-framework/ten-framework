@@ -1,0 +1,64 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+followlocation
+</keywords>
+</info>
+<reply>
+<data>
+HTTP/1.1 302 OK swsclose
+Location: %TESTNUMBER0002
+Date: Tue, 09 Nov 2010 14:50:00 GMT
+Connection: close
+
+</data>
+<data2>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:50:00 GMT
+Connection: close
+
+body
+</data2>
+<datacheck>
+HTTP/1.1 302 OK swsclose
+Location: %TESTNUMBER0002
+Date: Tue, 09 Nov 2010 14:50:00 GMT
+Connection: close
+
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:50:00 GMT
+Connection: close
+
+body
+</datacheck>
+</reply>
+
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP follow redirect with single slash in path
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER -L
+</command>
+</client>
+
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /%TESTNUMBER0002 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

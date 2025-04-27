@@ -1,0 +1,39 @@
+<testcase>
+<info>
+<keywords>
+SFTP
+zero-length
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data sendzero="yes">
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+sftp
+</server>
+ <name>
+SFTP retrieval of empty file
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: sftp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/file%TESTNUMBER.txt --insecure
+</command>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<valgrind>
+disable
+</valgrind>
+</verify>
+</testcase>

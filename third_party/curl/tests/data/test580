@@ -1,0 +1,55 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+multi
+Duplicate-header
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 302 eat this!
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Location: this-is-the-first.html
+Content-Length: 0
+Connection: close
+Location: and there's a second one too! / moo.html
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+<features>
+http
+</features>
+# tool is what to use instead of 'curl'
+<tool>
+lib507
+</tool>
+
+ <name>
+multi interface, multiple Location: headers
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

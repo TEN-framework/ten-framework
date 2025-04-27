@@ -1,0 +1,24 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+config("gmock_header") {
+  include_dirs = [
+    ".",
+    "include",
+    "../googletest",
+    "../googletest/include",
+  ]
+}
+
+source_set("googlemock") {
+  public_configs = [ ":gmock_header" ]
+  sources = [ "src/gmock-all.cc" ]
+}
+
+source_set("gmoke_main") {
+  public_configs = [ ":gmock_header" ]
+  sources = [ "src/gmock_main.cc" ]
+}

@@ -1,0 +1,47 @@
+<testcase>
+<info>
+<keywords>
+SFTP
+post-quote
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+Dummy test file for rmdir test
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+sftp
+</server>
+<precheck>
+perl %SRCDIR/libtest/test%TESTNUMBER.pl mkdir %PWD/%LOGDIR/test%TESTNUMBER.dir
+</precheck>
+ <name>
+SFTP post-quote rmdir
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: -Q "-rmdir %PWD/%LOGDIR/test%TESTNUMBER.dir" sftp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/file%TESTNUMBER.txt --insecure
+</command>
+<postcheck>
+perl %SRCDIR/libtest/test%TESTNUMBER.pl gone %PWD/%LOGDIR/test%TESTNUMBER.dir
+</postcheck>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+Dummy test file for rmdir test
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<valgrind>
+disable
+</valgrind>
+</verify>
+</testcase>

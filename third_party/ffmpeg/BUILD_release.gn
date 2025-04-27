@@ -1,0 +1,51 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+config("ffmpeg_common_libs") {
+  libs = [
+    "avcodec",
+    "avfilter",
+    "avutil",
+    "avformat",
+    "swresample",
+    "swscale",
+    "postproc",
+  ]
+}
+
+config("ffmpeg_common_config") {
+  configs = [ ":ffmpeg_common_libs" ]
+
+  include_dirs = [ "//ten_packages/system/ffmpeg/include" ]
+  lib_dirs = [ "//ten_packages/system/ffmpeg/lib" ]
+}
+
+config("config_for_app") {
+  configs = [ ":ffmpeg_common_config" ]
+
+  if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../ten_packages/system/ffmpeg/lib" ]
+  } else if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../ten_packages/system/ffmpeg/lib" ]
+  }
+}
+
+config("config_for_ten_packages") {
+  configs = [ ":ffmpeg_common_config" ]
+
+  if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../../../system/ffmpeg/lib" ]
+  } else if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../../../system/ffmpeg/lib" ]
+  }
+}
+
+config("config_for_standalone_ten_packages") {
+  configs = [ ":ffmpeg_common_libs" ]
+
+  include_dirs = [ "//.ten/app/ten_packages/system/ffmpeg/include" ]
+  lib_dirs = [ "//.ten/app/ten_packages/system/ffmpeg/lib" ]
+}

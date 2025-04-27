@@ -1,0 +1,105 @@
+#extradata 0:      100, 0xee3e15e9
+#extradata 1:      100, 0xee3e15e9
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 1280x720
+#sar 0: 0/1
+#tb 1: 1/1
+#media_type 1: video
+#codec_id 1: hevc
+#dimensions 1: 1280x720
+#sar 1: 0/1
+0,          0,          0,        1,   111554, 0xa0679859
+1,          0,          0,        1,   112393, 0xdf2b9da0
+[STREAM_GROUP]
+index=0
+id=0x3ee
+nb_streams=2
+type=Tile Grid
+[COMPONENT]
+nb_tiles=2
+coded_width=1440
+coded_height=960
+horizontal_offset=0
+vertical_offset=0
+width=1440
+height=960
+[SUBCOMPONENT]
+stream_index=0
+tile_horizontal_offset=0
+tile_vertical_offset=0
+[/SUBCOMPONENT]
+[SUBCOMPONENT]
+stream_index=1
+tile_horizontal_offset=160
+tile_vertical_offset=240
+[/SUBCOMPONENT]
+[/COMPONENT]
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+TAG:title=Derived image
+[STREAM]
+index=0
+id=0x3ea
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=1
+id=0x3ed
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[/STREAM_GROUP]

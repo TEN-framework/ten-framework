@@ -1,0 +1,41 @@
+<testcase>
+<info>
+<keywords>
+SCP
+NOBODY
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+scp
+</server>
+ <name>
+SCP --head retrieval
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: scp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/file%TESTNUMBER.txt --insecure --head
+</command>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+Test data
+for ssh test
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<valgrind>
+disable
+</valgrind>
+</verify>
+</testcase>

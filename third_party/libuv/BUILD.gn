@@ -1,0 +1,54 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+
+config("uv_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/uv_a/install/include" ]
+}
+
+# The codes of libuv will be statically linked into 'libten_utils.so', so
+# 'libuv.so' does not actually need to be generated.
+
+cmake_project("uv_a") {
+  public_configs = [ ":uv_header" ]
+
+  project_path = "."
+  project_name = "uv_a"
+  build_path = "${root_gen_dir}/cmake/uv_a/"
+  install_path = "${build_path}/install/"
+  library_path = [ "$install_path/lib/" ]
+
+  options = [ "LIBUV_BUILD_SHARED=OFF" ]
+
+  if (!is_win) {
+    # libuv is part of another shared library, so we have to enable -fPIC even if
+    # libuv is a static library.
+    #
+    # Otherwise, we will encounter the following error:
+    #
+    # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
+    # a shared object; recompile with -fPIC
+    cflags = [ "\"-fPIC\"" ]
+  }
+
+  if (is_win) {
+    libs = [
+      "iphlpapi.lib",
+      "userenv.lib",
+      "ole32.lib",
+    ]
+  }
+
+  hide_symbol = !is_win
+
+  outputs_seen_by_ag = []
+  if (is_win) {
+    outputs_seen_by_ag += [ "$install_path/lib/libuv.lib" ]
+  } else {
+    outputs_seen_by_ag += [ "$install_path/lib/libuv.a" ]
+  }
+}

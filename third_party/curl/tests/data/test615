@@ -1,0 +1,44 @@
+<testcase>
+<info>
+<keywords>
+SFTP
+SFTP put
+FAILURE
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+sftp
+</server>
+<precheck>
+perl %SRCDIR/libtest/test613.pl prepare %PWD/%LOGDIR/test%TESTNUMBER.dir
+</precheck>
+ <name>
+SFTP put remote failure
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: -T %LOGDIR/file%TESTNUMBER.txt sftp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/test%TESTNUMBER.dir/rofile.txt --insecure
+</command>
+<postcheck>
+perl %SRCDIR/libtest/test613.pl postprocess %PWD/%LOGDIR/test%TESTNUMBER.dir
+</postcheck>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+Test data
+for ssh upload test
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<errorcode>
+9
+</errorcode>
+<valgrind>
+disable
+</valgrind>
+</verify>
+</testcase>

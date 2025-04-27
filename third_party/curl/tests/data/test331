@@ -1,0 +1,69 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+cookies
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Content-Length: 4
+Set-Cookie: moo=yes;
+
+hej
+</data>
+<data2>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Content-Length: 0
+Funny-head: yesyes swsclose
+
+</data2>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP with cookie using host name 'moo'
+ </name>
+ <command>
+-x http://%HOSTIP:%HTTPPORT http://moo/we/want/%TESTNUMBER -b none http://moo/we/want/%TESTNUMBER0002
+</command>
+<features>
+cookies
+proxy
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://moo/we/want/%TESTNUMBER HTTP/1.1
+Host: moo
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://moo/we/want/%TESTNUMBER0002 HTTP/1.1
+Host: moo
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+Cookie: moo=yes
+
+</protocol>
+</verify>
+</testcase>

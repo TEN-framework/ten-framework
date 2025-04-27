@@ -1,0 +1,15 @@
+\input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
+
+@settitle General Documentation
+@titlepage
+@center @titlefont{General Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@include general_contents.texi
+
+@bye
