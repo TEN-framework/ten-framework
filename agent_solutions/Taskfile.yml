@@ -26,9 +26,9 @@ tasks:
       - task: build-server
 
   use:
-    desc: use agent, default 'agents/examples/default'
+    desc: use agent, default 'agent_solutions/agents/examples/default'
     vars:
-      AGENT: '{{.AGENT| default "agents/examples/default"}}'
+      AGENT: '{{.AGENT| default "agent_solutions/agents/examples/default"}}'
     cmds:
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agent_solutions/agents/
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agent_solutions/agents/
@@ -65,7 +65,7 @@ tasks:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
   clean-agents:
-    desc: clean up agents
+    desc: clean up agent_solutions/agents
     dir: ./agent_solutions/agents
     internal: true
     cmds:
@@ -99,10 +99,10 @@ tasks:
     desc: run standalone testing of extensions
     internal: true
     env:
-      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_ai_base/interface"
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_ai_base/interface"
     vars:
       EXTENSIONS:
-        sh: 'find agent-solutions/agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
+        sh: 'find agent_solutions/agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
     cmds:
       - for: { var: EXTENSIONS }
         task: test-extension
@@ -112,9 +112,9 @@ tasks:
   test-extension:
     desc: run standalone testing of one single extension
     vars:
-      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+      EXTENSION: '{{.EXTENSION| default "agent_solutions/agents/ten_packages/extension/elevenlabs_tts_python"}}'
     env:
-      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent-solutions/agents/ten_packages/system/ten_ai_base/interface"
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_ai_base/interface"
     dotenv: ['.env']
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
