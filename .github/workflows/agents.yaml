@@ -2,7 +2,7 @@ name: Agents CI
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
       - ".devcontainer/**"
       - ".github/**"
@@ -24,7 +24,12 @@ jobs:
       image: ghcr.io/ten-framework/ten_agent_build:0.6.1
     strategy:
       matrix:
-        agent: [agent_solutions/agents/examples/default, agent_solutions/agents/examples/demo, agent_solutions/agents/examples/experimental]
+        agent:
+          [
+            agents/examples/default,
+            agents/examples/demo,
+            agents/examples/experimental,
+          ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,18 +37,22 @@ jobs:
           submodules: "true"
 
       - name: Use agent
+        working-directory: agent_solutions
         run: |
           git config --global --add safe.directory $(pwd)
-          task agent-use AGENT=${{ matrix.agent }}
+          task use AGENT=${{ matrix.agent }}
 
       - name: Run format check
+        working-directory: agent_solutions
         run: |
-          task agent-check
+          task check
 
       - name: Run lint
+        working-directory: agent_solutions
         run: |
-          task agent-lint
+          task lint
 
       - name: Run tests
+        working-directory: agent_solutions
         run: |
-          task agent-test -- -s -v
+          task test -- -s -v

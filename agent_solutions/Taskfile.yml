@@ -10,9 +10,9 @@ tasks:
   lint:
     desc: lint-agent
     env:
-      PYTHONPATH: "./agent_solutions/agents/ten_packages/system/ten_runtime_python/lib:./agent_solutions/agents/ten_packages/system/ten_runtime_python/interface:./agent_solutions/agents/ten_packages/system/ten_ai_base/interface"
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
     cmds:
-      - ./agent_solutions/agents/scripts/pylint.sh
+      - ./agents/scripts/pylint.sh
 
   install-tools:
     desc: install tools
@@ -26,12 +26,12 @@ tasks:
       - task: build-server
 
   use:
-    desc: use agent, default 'agent_solutions/agents/examples/default'
+    desc: use agent, default 'agents/examples/default'
     vars:
-      AGENT: '{{.AGENT| default "agent_solutions/agents/examples/default"}}'
+      AGENT: '{{.AGENT| default "agents/examples/default"}}'
     cmds:
-      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agent_solutions/agents/
-      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agent_solutions/agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
       - task: build
 
   run-server:
@@ -41,7 +41,7 @@ tasks:
 
   run-gd-server:
     desc: run tman dev http server for graph designer
-    dir: ./agent_solutions/agents
+    dir: ./agents
     cmds:
       - tman designer
 
@@ -53,20 +53,20 @@ tasks:
 
   build-agent:
     desc: build agent
-    dir: ./agent_solutions/agents
+    dir: ./agents
     internal: true
     cmds:
       - ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
 
   build-server:
     desc: build server
-    dir: ./agent_solutions/server
+    dir: ./server
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
   clean-agents:
-    desc: clean up agent_solutions/agents
-    dir: ./agent_solutions/agents
+    desc: clean up agents
+    dir: ./agents
     internal: true
     cmds:
       - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader
@@ -77,7 +77,7 @@ tasks:
 
   clean-server:
     desc: clean up server
-    dir: ./agent_solutions/server
+    dir: ./server
     internal: true
     cmds:
       - rm -rf bin
@@ -90,7 +90,7 @@ tasks:
 
   test-server:
     desc: test server
-    dir: ./agent_solutions/server
+    dir: ./server
     internal: true
     cmds:
       - go test -v ./...
@@ -99,10 +99,10 @@ tasks:
     desc: run standalone testing of extensions
     internal: true
     env:
-      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_ai_base/interface"
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
     vars:
       EXTENSIONS:
-        sh: 'find agent_solutions/agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
+        sh: 'find agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
     cmds:
       - for: { var: EXTENSIONS }
         task: test-extension
@@ -112,9 +112,9 @@ tasks:
   test-extension:
     desc: run standalone testing of one single extension
     vars:
-      EXTENSION: '{{.EXTENSION| default "agent_solutions/agents/ten_packages/extension/elevenlabs_tts_python"}}'
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
     env:
-      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agent_solutions/agents/ten_packages/system/ten_ai_base/interface"
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
     dotenv: ['.env']
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
@@ -128,7 +128,7 @@ tasks:
     desc: format python code with black
     internal: true
     cmds:
-      - black --exclude "third_party/|agent_solutions/agents/ten_packages/extension/http_server_python/|agent_solutions/agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 . {{ .CLI_ARGS }}
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 . {{ .CLI_ARGS }}
 
   check:
     desc: check code
@@ -144,4 +144,4 @@ tasks:
     desc: check code formatting with black
     internal: true
     cmds:
-      - black --check --exclude "third_party/|agent_solutions/agents/ten_packages/extension/http_server_python/|agent_solutions/agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 . {{ .CLI_ARGS }}
+      - black --check --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 . {{ .CLI_ARGS }}

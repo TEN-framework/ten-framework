@@ -1,25 +1,2 @@
 version: '3'
-
-includes:
-  agent-solutions: ./agent_solutions/Taskfile.yml
-
-tasks:
-  agent-build:
-    cmds:
-      - task: agent-solutions:build
-
-  agent-lint:
-    cmds:
-      - task: agent-solutions:lint
-
-  agent-test:
-    cmds:
-      - task: agent-solutions:test
-
-  agent-use:
-    cmds:
-      - task: agent-solutions:use
-
-  agent-check:
-    cmds:
-      - task: agent-solutions:check
+tasks: {}
