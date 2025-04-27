@@ -37,22 +37,22 @@ jobs:
           submodules: "true"
 
       - name: Use agent
-        working-directory: agent_solutions
         run: |
           git config --global --add safe.directory $(pwd)
+          cd agent_solutions
           task use AGENT=${{ matrix.agent }}
 
       - name: Run format check
-        working-directory: agent_solutions
         run: |
+          cd agent_solutions
           task check
 
       - name: Run lint
-        working-directory: agent_solutions
         run: |
+          cd agent_solutions
           task lint
 
       - name: Run tests
-        working-directory: agent_solutions
         run: |
+          cd agent_solutions
           task test -- -s -v
