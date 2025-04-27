@@ -9,12 +9,12 @@ on:
       - "!.github/workflows/agents.yaml"
       - ".vscode/**"
       - "**.md"
-      - "agent_solutions/docs/**"
-      - "agent_solutions/esp32-client/**"
-      - "agent_solutions/Dockerfile"
-      - "agent_solutions/docker-compose.yml"
-      - "agent_solutions/demo/**"
-      - "agent_solutions/playground/**"
+      - "ai_agents/docs/**"
+      - "ai_agents/esp32-client/**"
+      - "ai_agents/Dockerfile"
+      - "ai_agents/docker-compose.yml"
+      - "ai_agents/demo/**"
+      - "ai_agents/playground/**"
   workflow_dispatch:
 
 permissions:
@@ -43,20 +43,20 @@ jobs:
       - name: Use agent
         run: |
           git config --global --add safe.directory $(pwd)
-          cd agent_solutions
+          cd ai_agents
           task use AGENT=${{ matrix.agent }}
 
       - name: Run format check
         run: |
-          cd agent_solutions
+          cd ai_agents
           task check
 
       - name: Run lint
         run: |
-          cd agent_solutions
+          cd ai_agents
           task lint
 
       - name: Run tests
         run: |
-          cd agent_solutions
+          cd ai_agents
           task test -- -s -v

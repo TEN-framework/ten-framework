@@ -9,7 +9,7 @@ on:
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
       - ".vscode/**"
-      - "agent_solutions/docs/**"
+      - "ai_agents/docs/**"
       - "**.md"
   pull_request:
     branches: ["main"]
@@ -18,7 +18,7 @@ on:
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
       - ".vscode/**"
-      - "agent_solutions/docs/**"
+      - "ai_agents/docs/**"
       - "**.md"
   workflow_dispatch:
 
@@ -54,7 +54,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: ./agent_solutions/
+          workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
 
@@ -67,7 +67,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: ./agent_solutions/playground
+          workdir: ./ai_agents/playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
           buildargs: EDIT_GRAPH_MODE
@@ -81,7 +81,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: ./agent_solutions/playground
+          workdir: ./ai_agents/playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
           buildargs: EDIT_GRAPH_MODE
@@ -93,6 +93,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          workdir: ./agent_solutions/demo
+          workdir: ./ai_agents/demo
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}

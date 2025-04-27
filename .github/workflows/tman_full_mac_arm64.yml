@@ -8,7 +8,7 @@ on:
     paths:
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
-      - "agent_solutions/**"
+      - "ai_agents/**"
 
 permissions:
   contents: read

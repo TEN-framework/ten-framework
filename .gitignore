@@ -99,40 +99,40 @@ core/src/ten_manager/tests/test_data/cmd_builtin_function_install_all/manifest-l
 .cursorindexingignore
 
 # ===============================
-# agent_solutions
+# ai_agents
 
 # next.js
-agent_solutions/.next/
+ai_agents/.next/
 
-agent_solutions/out/
-agent_solutions/.pnpm-store
-agent_solutions/addon/extension_group/
-agent_solutions/agoradns.dat
-agent_solutions/agorartmdns.dat
-agent_solutions/agora_rtm_cache.db
-agent_solutions/agorareport.dat
-agent_solutions/server/bin/
-agent_solutions/BUILD.gn
-agent_solutions/.cache/
-agent_solutions/compile_commands.json
-agent_solutions/core
-agent_solutions/crash_context_v1
-agent_solutions/.deps/
-agent_solutions/.DS_Store
-agent_solutions/.env
-agent_solutions/.gn
-agent_solutions/.gnfiles
-agent_solutions/include/
-agent_solutions/interface/
-agent_solutions/lib64
-agent_solutions/node_modules/
-agent_solutions/.release
-agent_solutions/session_control.conf.agora
-agent_solutions/.vscode/
-agent_solutions/speechsdk/
-agent_solutions/SpeechSDK-Linux.tar.gz
-agent_solutions/pyvenv.cfg
-agent_solutions/xdump_config
-agent_solutions/.idea
-agent_solutions/*.log
-agent_solutions/*.pcm
+ai_agents/out/
+ai_agents/.pnpm-store
+ai_agents/addon/extension_group/
+ai_agents/agoradns.dat
+ai_agents/agorartmdns.dat
+ai_agents/agora_rtm_cache.db
+ai_agents/agorareport.dat
+ai_agents/server/bin/
+ai_agents/BUILD.gn
+ai_agents/.cache/
+ai_agents/compile_commands.json
+ai_agents/core
+ai_agents/crash_context_v1
+ai_agents/.deps/
+ai_agents/.DS_Store
+ai_agents/.env
+ai_agents/.gn
+ai_agents/.gnfiles
+ai_agents/include/
+ai_agents/interface/
+ai_agents/lib64
+ai_agents/node_modules/
+ai_agents/.release
+ai_agents/session_control.conf.agora
+ai_agents/.vscode/
+ai_agents/speechsdk/
+ai_agents/SpeechSDK-Linux.tar.gz
+ai_agents/pyvenv.cfg
+ai_agents/xdump_config
+ai_agents/.idea
+ai_agents/*.log
+ai_agents/*.pcm

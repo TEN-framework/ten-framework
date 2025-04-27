@@ -14,7 +14,7 @@ on:
       - "!.github/workflows/build_win.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
-      - "agent_solutions/**"
+      - "ai_agents/**"
 
 permissions:
   contents: read
