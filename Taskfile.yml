@@ -19,3 +19,7 @@ tasks:
   agent-use:
     cmds:
       - task: agent-solutions:use
+
+  agent-check:
+    cmds:
+      - task: agent-solutions:check
