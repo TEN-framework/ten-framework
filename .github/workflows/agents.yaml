@@ -1,4 +1,4 @@
-name: CI
+name: Agents
 
 on:
   pull_request:
