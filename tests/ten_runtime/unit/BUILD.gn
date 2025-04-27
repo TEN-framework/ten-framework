@@ -1,0 +1,50 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_runtime_glob("ten_unit_tests") {
+  file_list = [
+    "ten_error_test.cc",
+    "ten_msg_test.cc",
+    "ten_schema_test.cc",
+  ]
+
+  public_deps = [
+    "//core/src/ten_utils",
+    "//third_party/googlemock",
+    "//third_party/googletest",
+  ]
+  include_dirs = [ "//core/include" ]
+}
+
+ten_executable("ten_runtime_unit_test") {
+  output_dir = "${root_out_dir}/tests/standalone"
+
+  deps = [
+    ":ten_unit_tests",
+    "//core/src/ten_runtime",
+    "//core/src/ten_utils",
+    "//tests/ten_runtime:copy_libraries_for_test",
+  ]
+
+  if (enable_sanitizer) {
+    if (!is_clang) {
+      deps += [ "//build/ten_common/asan:package_asan_lib_for_ten_framework_standalone_test" ]
+    }
+  }
+
+  public_deps = [
+    "//third_party/googlemock",
+    "//third_party/googletest",
+    "//third_party/googletest:gtest_main",
+  ]
+}
+
+group("unit") {
+  deps = [ ":ten_runtime_unit_test" ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "extension",
+  "name": "simple_http_server_go",
+  "version": "0.10.1",
+  "tags": [
+    "go"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.10.1"
+    }
+  ],
+  "api": {}
+}

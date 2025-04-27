@@ -1,0 +1,57 @@
+//
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file for more information.
+//
+// Note that this is just an example extension written in the GO programming
+// language, so the package name does not equal to the containing directory
+// name. However, it is not common in Go.
+//
+
+package {{package_name}}
+
+import (
+	"fmt"
+
+	ten "ten_framework/ten_runtime"
+)
+
+type {{class_name_prefix}}Extension struct {
+	ten.DefaultExtension
+}
+
+func newExtension(name string) ten.Extension {
+	return &{{class_name_prefix}}Extension{}
+}
+
+func (e *{{class_name_prefix}}Extension) OnStart(tenEnv ten.TenEnv) {
+	tenEnv.LogDebug("OnStart")
+
+	tenEnv.OnStartDone()
+}
+
+func (e *{{class_name_prefix}}Extension) OnStop(tenEnv ten.TenEnv) {
+	tenEnv.LogDebug("OnStop")
+
+	tenEnv.OnStopDone()
+}
+
+func (e *{{class_name_prefix}}Extension) OnCmd(
+	tenEnv ten.TenEnv,
+	cmd ten.Cmd,
+) {
+	tenEnv.LogDebug("OnCmd")
+
+	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
+	tenEnv.ReturnResult(cmdResult, nil)
+}
+
+func init() {
+	fmt.Println("{{package_name}} extension init")
+
+	// Register addon
+	ten.RegisterAddonAsExtension(
+		"{{package_name}}",
+		ten.NewDefaultExtensionAddon(newExtension),
+	)
+}

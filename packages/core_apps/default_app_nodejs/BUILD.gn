@@ -1,0 +1,34 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+
+ten_package("default_app_nodejs") {
+  package_kind = "app"
+
+  resources = [
+    "bin/start",
+    "manifest.json",
+    "manifest.json.tent",
+    "package.json",
+    "property.json",
+    "src/start.ts",
+    "tsconfig.json",
+  ]
+
+  deps = [ "//core/src/ten_runtime/binding/nodejs" ]
+  if (ten_enable_ten_manager) {
+    deps +=
+        [ "//core/src/ten_runtime:upload_ten_runtime_system_package_to_server" ]
+  }
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_default_app_nodejs_to_server") {
+    base_dir = rebase_path("${root_out_dir}/app/default_app_nodejs")
+    deps = [ ":default_app_nodejs" ]
+  }
+}

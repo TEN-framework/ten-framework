@@ -1,0 +1,87 @@
+{
+  "type": "extension",
+  "name": "extension_addon_3",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "cmd_in": [
+      {
+        "name": "test_cmd",
+        "property": {
+          "test_property": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "test_cmd_2",
+        "property": {
+          "test_property": {
+            "type": "int64"
+          }
+        }
+      },
+      {
+        "name": "cmd_incompatible",
+        "property": {
+          "param1": {
+            "type": "int32"
+          }
+        }
+      },
+      {
+        "name": "cmd1",
+        "property": {
+          "param1": {
+            "type": "int8"
+          }
+        },
+        "result": {
+          "property": {
+            "detail": {
+              "type": "bool"
+            }
+          },
+          "required": [
+            "detail"
+          ]
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data_has_required",
+        "property": {
+          "foo": {
+            "type": "int8"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      },
+      {
+        "name": "data_incompatible",
+        "property": {
+          "value": {
+            "type": "int64"
+          }
+        }
+      },
+      {
+        "name": "data1",
+        "property": {
+          "text_data": {
+            "type": "buf"
+          }
+        }
+      }
+    ]
+  }
+}

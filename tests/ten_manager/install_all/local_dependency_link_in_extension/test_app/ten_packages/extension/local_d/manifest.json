@@ -1,0 +1,10 @@
+{
+  "type": "extension",
+  "name": "local_d",
+  "version": "3.0.0",
+  "dependencies": [
+    {
+      "path": "../../../local_c"
+    }
+  ]
+}

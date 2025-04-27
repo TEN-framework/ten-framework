@@ -1,0 +1,51 @@
+<testcase>
+<info>
+<keywords>
+FTP
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<servercmd>
+REPLY SIZE 500 command not understood
+</servercmd>
+</reply>
+
+# Client-side
+<client>
+<server>
+ftp
+</server>
+ <name>
+FTP resumed upload but no file present remotely
+ </name>
+ <command>
+ftp://%HOSTIP:%FTPPORT/%TESTNUMBER -T %LOGDIR/upload%TESTNUMBER -C -
+</command>
+<file name="%LOGDIR/upload%TESTNUMBER">
+this is the *****crap******** that we're gonna upload
+
+worx?
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+USER anonymous
+PASS ftp@example.com
+PWD
+EPSV
+TYPE I
+SIZE %TESTNUMBER
+STOR %TESTNUMBER
+QUIT
+</protocol>
+<upload>
+this is the *****crap******** that we're gonna upload
+
+worx?
+</upload>
+</verify>
+</testcase>

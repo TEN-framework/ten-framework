@@ -1,0 +1,32 @@
+{
+  "type": "extension",
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "property": {
+      "foo": {
+        "type": "string"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "hello",
+        "property": {
+          "foo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      }
+    ]
+  }
+}

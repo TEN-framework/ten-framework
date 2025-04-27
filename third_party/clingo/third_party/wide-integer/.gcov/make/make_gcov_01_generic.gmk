@@ -1,0 +1,114 @@
+﻿# ------------------------------------------------------------------------------
+#  Copyright Christopher Kormanyos 2022.
+#  Distributed under the Boost Software License,
+#  Version 1.0. (See accompanying file LICENSE_1_0.txt
+#  or copy at http://www.boost.org/LICENSE_1_0.txt)
+# ------------------------------------------------------------------------------
+
+PATH_MAKE        = $(CURDIR)
+PATH_PRJ         = $(PATH_MAKE)/../..
+PATH_SRC         = $(PATH_PRJ)
+PATH_BIN         = $(PATH_MAKE)/bin
+PATH_ERR         = $(PATH_MAKE)/err
+PATH_OBJ         = $(PATH_MAKE)/obj
+
+CAT              = cat
+GNUECHO          = echo
+LS               = ls
+MKDIR            = mkdir
+GCOV             = gcov
+LCOV             = lcov
+GENHTML          = genhtml
+RM               = rm
+SED              = sed
+
+include make_gcov_02_files.gmk
+include make_gcov_03_flags.gmk
+
+FILES_ALL        = $(FILES_PRJ)
+FILES_O          = $(addprefix $(PATH_OBJ)/, $(notdir $(addsuffix .o, $(FILES_ALL))))
+FILES_GCOV       = $(addprefix $(PATH_OBJ)/, $(notdir $(addsuffix .gcov, $(FILES_ALL))))
+
+# ------------------------------------------------------------------------------
+# VPATH definition: VPATH is required for make to find the source files.
+# ------------------------------------------------------------------------------
+VPATH    := $(sort $(dir $(FILES_ALL)))
+
+
+# ------------------------------------------------------------------------------
+# Executable file:
+# ------------------------------------------------------------------------------
+
+.PHONY: $(PATH_BIN)/wide_integer.exe
+$(PATH_BIN)/wide_integer.exe: $(FILES_O)
+  # Link coverage-instrumented executable
+	@$(GNUECHO) +++ link object files to $(PATH_BIN)/wide_integer.exe
+	@$(CC) -x none $(CXXFLAGS) $(FILES_O) -o $(PATH_BIN)/wide_integer.exe
+	@$(GNUECHO)
+
+
+# ------------------------------------------------------------------------------
+# Main dependency:
+#   Compile all files and link them.
+#   Run gcov and get results.
+#   (See also https://github.com/codecov/example-cpp11-cmake)
+# ------------------------------------------------------------------------------
+
+.PHONY: gcov
+gcov: $(PATH_BIN)/wide_integer.exe
+  # Obtain results
+	@$(GNUECHO) +++ execute $(PATH_BIN)/wide_integer.exe
+	@$(PATH_BIN)/wide_integer.exe
+	@$(GNUECHO)
+	@$(GNUECHO) +++ running gcov
+	@$(GCOV) $(GCOV_FLAGS) $(addsuffix .cpp,$(FILES_PRJ))
+	@$(GNUECHO)
+	@$(GNUECHO) +++ running lcov
+	@$(LCOV) $(LCOV_BRANCH) -c --directory obj --output-file coverage_unfiltered.info
+	@$(LCOV) $(LCOV_BRANCH) --remove coverage_unfiltered.info $(LCOV_REMOVES) --output-file coverage.info
+	@$(GNUECHO)
+	@$(GNUECHO) +++ running genhtml
+	@$(GENHTML) coverage.info $(LCOV_BRANCH) --demangle-cpp --output-directory $(PATH_BIN)/report
+	@$(GNUECHO)
+
+# ------------------------------------------------------------------------------
+# Clean temporary files.
+# ------------------------------------------------------------------------------
+
+.PHONY: clean
+clean:
+  # creating output directories
+	@$(GNUECHO) +++ cleaning output directories
+	@-$(RM) -rf $(PATH_BIN)* || uname -r
+	@-$(RM) -rf $(PATH_ERR)* || uname -r
+	@-$(RM) -rf $(PATH_OBJ)* || uname -r
+	@-$(RM) -f *.gcov || uname -r
+	@-$(RM) -f coverage* || uname -r
+	@$(GNUECHO)
+
+
+# ------------------------------------------------------------------------------
+# Prepare the gcov build.
+# ------------------------------------------------------------------------------
+
+.PHONY: prepare
+prepare: clean
+	@$(GNUECHO) +++ creating output directories
+	@-$(MKDIR) -p $(PATH_BIN)
+	@-$(MKDIR) -p $(PATH_ERR)
+	@-$(MKDIR) -p $(PATH_OBJ)
+	@$(GNUECHO)
+	@$(GNUECHO) +++ print gcov version
+	@$(GCOV) --version
+	@$(GNUECHO)
+	@$(GNUECHO) +++ print include paths
+	@$(GNUECHO) $(C_INCLUDES)
+	@$(GNUECHO)
+
+# ------------------------------------------------------------------------------
+# pattern rule for compilation of cpp-files
+# ------------------------------------------------------------------------------
+$(PATH_OBJ)/%.o : %.cpp
+	@-$(GNUECHO) +++ compiling: $(notdir $<) to $(notdir $(PATH_OBJ)/$(basename $(@F)).o)
+	@-$(CC) $(CXXFLAGS) -x c++ -c $(C_INCLUDES) $(C_DEFINES) $< -o $(PATH_OBJ)/$(basename $(@F)).o 2> $(PATH_ERR)/$(basename $(@F)).err
+	@-$(SED) -e 's|.h:\([0-9]*\),|.h(\1) :|' -e 's|:\([0-9]*\):|(\1) :|' $(PATH_ERR)/$(basename $(@F)).err

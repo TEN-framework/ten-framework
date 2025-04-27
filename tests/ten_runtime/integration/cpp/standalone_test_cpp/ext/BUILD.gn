@@ -1,0 +1,48 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/feature/ten_package_test.gni")
+import("//build/options.gni")
+
+ten_package("ext") {
+  package_kind = "extension"
+  enable_build = true
+
+  resources = [
+    "manifest.json",
+    "property.json",
+  ]
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [
+    "include",
+    "include/nlohmann_json",
+  ]
+}
+
+if (ten_enable_standalone_test) {
+  # Note: To perform gtest standalone testing, need to first install the
+  # googletest system package.
+  #
+  # ```shell
+  # tman install system googletest
+  # ```
+  ten_package_test("ext_test") {
+    package_kind = "extension"
+
+    sources = [
+      ".ten/app/ten_packages/system/googletest/src/gtest-all.cc",
+      "tests/basic.cc",
+      "tests/gtest_main.cc",
+    ]
+
+    include_dirs = [
+      ".ten/app/ten_packages/system/googletest",
+      ".ten/app/ten_packages/system/googletest/include",
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+FTP
+PASV
+FILE
+multiprotocol
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data1 nocheck="yes">
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+ETag: "21025-dc7-39462498"
+Accept-Ranges: bytes
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+Funny-head: yesyes
+
+-foo-
+</data1>
+<data2 nocheck="yes">
+data
+    to
+      see
+that FTP
+works
+  so does it?
+</data2>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+ftp
+file
+</server>
+ <name>
+HTTP GET followed by FTP RETR followed by FILE
+ </name>
+<command option="no-include">
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER0001 ftp://%HOSTIP:%FTPPORT/%TESTNUMBER0002 file://localhost%FILE_PWD/%LOGDIR/test%TESTNUMBER.txt
+</command>
+<file name="%LOGDIR/test%TESTNUMBER.txt">
+foo
+   bar
+bar
+   foo
+moo
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER0001 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+USER anonymous
+PASS ftp@example.com
+PWD
+EPSV
+TYPE I
+SIZE %TESTNUMBER0002
+RETR %TESTNUMBER0002
+QUIT
+</protocol>
+<stdout>
+-foo-
+data
+    to
+      see
+that FTP
+works
+  so does it?
+foo
+   bar
+bar
+   foo
+moo
+</stdout>
+</verify>
+</testcase>

@@ -1,0 +1,43 @@
+Source: clingo
+Section: devel
+Priority: optional
+Maintainer: Roland Kaminski <kaminski@cs.uni-potsdam.de>
+Build-Depends: debhelper-compat (= 11), dh-python, cmake, python3-dev, liblua5.3-dev, python3-cffi, bison, re2c
+Standards-Version: 4.4.1
+Homepage: https://potassco.org/clingo
+Vcs-Browser: https://github.com/potassco/clingo
+Vcs-Git: https://github.com/potassco/clingo.git
+
+Package: clingo
+Architecture: any
+Section: devel
+Depends: ${shlibs:Depends}, ${misc:Depends}, liblua5.3-0, libclingo (= ${binary:Version}), python3-clingo
+Description: A solver for logic programs
+ Clingo is part of the Potassco project for Answer Set Programming (ASP). ASP
+ offers a simple and powerful modeling language to describe combinatorial
+ problems as logic programs. The clingo system then takes such a logic program
+ and computes answer sets representing solutions to the given problem. To get
+ an idea, check our Getting Started page and the online version of clingo.
+ .
+ This package contains the executables.
+
+Package: python3-clingo
+Section: python
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libclingo (= ${binary:Version}), python3-cffi-backend
+Description: A solver for logic programs
+ This package contains python bindings for clingo.
+
+Package: libclingo
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A solver for logic programs
+ This package contains the shared library.
+
+Package: libclingo-dev
+Section: libdevel
+Architecture: any
+Depends: ${misc:Depends}, libclingo (= ${binary:Version})
+Description: A solver for logic programs
+ This package contains the development files.

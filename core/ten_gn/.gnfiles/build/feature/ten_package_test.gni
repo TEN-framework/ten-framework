@@ -1,0 +1,154 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//.gnfiles/build/feature/base_options.gni")
+
+template("ten_package_test") {
+  _target_name = target_name
+  package_deps = []
+
+  build_output_name = _target_name
+  if (defined(invoker.output_name) && invoker.output_name != "") {
+    build_output_name = invoker.output_name
+  }
+
+  if (is_linux || is_mac) {
+    real_build_output_file_name = "${build_output_name}"
+  } else if (is_win) {
+    real_build_output_file_name = "${build_output_name}.exe"
+  }
+
+  output_dir_related_to_package_output_root_dir = "bin"
+  build_output_dir =
+      "${root_out_dir}/${output_dir_related_to_package_output_root_dir}"
+
+  unique_build_target_name = "${_target_name}_executable"
+
+  executable(unique_build_target_name) {
+    output_dir = "${build_output_dir}"
+    output_name = "${build_output_name}"
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+
+    sources = []
+    if (defined(invoker.sources) && invoker.sources != []) {
+      sources += invoker.sources
+    }
+    if (defined(invoker.configs) && invoker.configs != []) {
+      configs += invoker.configs
+    }
+    defines = common_defines
+    if (defined(invoker.defines) && invoker.defines != []) {
+      defines += invoker.defines
+    }
+    include_dirs = common_includes
+    if (defined(invoker.include_dirs) && invoker.include_dirs != []) {
+      include_dirs += invoker.include_dirs
+    }
+    cflags = common_cflags
+    if (defined(invoker.cflags) && invoker.cflags != []) {
+      cflags += invoker.cflags
+    }
+    cflags_c = common_cflags_c
+    if (defined(invoker.cflags_c) && invoker.cflags_c != []) {
+      cflags_c += invoker.cflags_c
+    }
+    cflags_cc = common_cflags_cc
+    if (defined(invoker.cflags_cc) && invoker.cflags_cc != []) {
+      cflags_cc += invoker.cflags_cc
+    }
+    cflags_objc = common_cflags_objc
+    if (defined(invoker.cflags_objc) && invoker.cflags_objc != []) {
+      cflags_objc += invoker.cflags_objc
+    }
+    cflags_objcc = common_cflags_objcc
+    if (defined(invoker.cflags_objcc) && invoker.cflags_objcc != []) {
+      cflags_objcc += invoker.cflags_objcc
+    }
+    libs = common_libs
+    if (defined(invoker.libs) && invoker.libs != []) {
+      libs += invoker.libs
+    }
+    lib_dirs = common_lib_dirs
+    if (defined(invoker.lib_dirs) && invoker.lib_dirs != []) {
+      lib_dirs += invoker.lib_dirs
+    }
+    ldflags = common_ldflags
+    if (defined(invoker.ldflags) && invoker.ldflags != []) {
+      ldflags += invoker.ldflags
+    }
+
+    # Setup relevant variables for the installed system package.
+    if (invoker.package_kind == "extension") {
+      pkg_base_dir = get_path_info(_target_name, "dir")
+      app_base_dir = "${pkg_base_dir}/../../../"
+
+      used_system_pkgs = exec_script(
+              "//.gnfiles/build/scripts/get_dependent_and_buildable_pkgs.py",
+              [
+                "--pkg-base-dir",
+                rebase_path("${pkg_base_dir}"),
+                "--app-base-dir",
+                rebase_path("${app_base_dir}"),
+                "--pkg-type",
+                "system",
+              ],
+              "list lines")
+
+      foreach(used_pkg, used_system_pkgs) {
+        configs +=
+            [ "${app_base_dir}${used_pkg}:config_for_standalone_ten_packages" ]
+      }
+    }
+  }
+
+  # Copy the build results to the final destination.
+  unique_copy_build_result_target_name = "${_target_name}_copy_build_result"
+  unique_copy_build_result_tg_timestamp_proxy_file =
+      "${target_gen_dir}/${unique_copy_build_result_target_name}"
+  action("${unique_copy_build_result_target_name}") {
+    script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+    inputs = [ "${build_output_dir}/${real_build_output_file_name}" ]
+    outputs = [ unique_copy_build_result_tg_timestamp_proxy_file ]
+
+    target_dir = get_label_info(":${unique_build_target_name}", "dir")
+
+    args = [
+      "--source",
+      rebase_path("${build_output_dir}/${real_build_output_file_name}"),
+      "--destination",
+      rebase_path(
+          "${target_dir}/${output_dir_related_to_package_output_root_dir}/${real_build_output_file_name}"),
+      "--tg-timestamp-proxy-file",
+      rebase_path(unique_copy_build_result_tg_timestamp_proxy_file),
+      "--files-only",
+    ]
+
+    deps = [ ":${unique_build_target_name}" ]
+  }
+
+  package_deps += [ ":${unique_copy_build_result_target_name}" ]
+
+  group(_target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "public_configs",
+                           ])
+
+    if (defined(public_deps)) {
+      public_deps += package_deps
+    } else {
+      public_deps = package_deps
+    }
+  }
+}

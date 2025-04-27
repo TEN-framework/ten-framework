@@ -1,0 +1,27 @@
+{
+  "type": "extension",
+  "name": "http_server_extension_nodejs",
+  "version": "0.10.1",
+  "tags": [
+    "nodejs"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.10.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "src/**",
+      "tsconfig.json",
+      "package.json",
+      "LICENSE"
+    ]
+  },
+  "api": {}
+}

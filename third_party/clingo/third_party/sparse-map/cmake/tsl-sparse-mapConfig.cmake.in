@@ -1,0 +1,9 @@
+# This module sets the following variables:
+# * tsl-sparse-map_FOUND - true if tsl-sparse-map found on the system
+# * tsl-sparse-map_INCLUDE_DIRS - the directory containing tsl-sparse-map headers
+@PACKAGE_INIT@
+
+if(NOT TARGET tsl::sparse_map)
+  include("${CMAKE_CURRENT_LIST_DIR}/tsl-sparse-mapTargets.cmake")
+  get_target_property(tsl-sparse-map_INCLUDE_DIRS tsl::sparse_map INTERFACE_INCLUDE_DIRECTORIES)
+endif()

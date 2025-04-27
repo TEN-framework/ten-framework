@@ -1,0 +1,76 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+</keywords>
+</info>
+
+#
+<reply>
+<data nocheck="yes">
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+
+12345
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+<name>
+HTTP GET -o fname -i without Content-Disposition, -D file
+</name>
+<command option="no-output,no-include">
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER -i -o %LOGDIR/outfile%TESTNUMBER -D %LOGDIR/heads%TESTNUMBER
+</command>
+<postcheck>
+perl %SRCDIR/libtest/notexists.pl %LOGDIR/%TESTNUMBER
+</postcheck>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+
+<file1 name="%LOGDIR/outfile%TESTNUMBER">
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+
+12345
+</file1>
+
+<file2 name="%LOGDIR/heads%TESTNUMBER">
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+
+</file2>
+
+<file3 name="%LOGDIR/stdout%TESTNUMBER">
+</file3>
+
+</verify>
+</testcase>

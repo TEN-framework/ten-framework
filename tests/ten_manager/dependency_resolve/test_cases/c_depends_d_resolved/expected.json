@@ -1,0 +1,20 @@
+{
+  "extension": [
+    {
+      "name": "ext_a",
+      "version": "1.0.0"
+    },
+    {
+      "name": "ext_b",
+      "version": "0.2.4"
+    },
+    {
+      "name": "ext_c",
+      "version": "0.3.0"
+    },
+    {
+      "name": "ext_d",
+      "version": "1.0.0"
+    }
+  ]
+}

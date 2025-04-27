@@ -1,0 +1,39 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+ten_package("simple_echo_cpp") {
+  package_kind = "extension"
+
+  resources = [
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+  ]
+
+  sources = [ "src/main.cc" ]
+
+  enable_build = true
+  include_dirs = [
+    "//core/src",
+    "//core",
+  ]
+  deps = [
+    "//core/src/ten_runtime",
+    "//third_party/nlohmann_json",
+  ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_simple_echo_cpp_to_server") {
+    base_dir =
+        rebase_path("${root_out_dir}/ten_packages/extension/simple_echo_cpp")
+    deps = [ ":simple_echo_cpp" ]
+  }
+}

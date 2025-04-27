@@ -1,0 +1,302 @@
+{
+  "tenFramework": "TEN Framework",
+  "ten": "TEN",
+  "header": {
+    "title": "Ten Manager",
+    "menuApp": {
+      "title": "App",
+      "loadApp": "Load App",
+      "loadAppSuccess": "App loaded successfully",
+      "loadAppFailed": "Failed to load app",
+      "reloadApp": "Reload App",
+      "reloadAppDescription": "Reload app(s) will close the current workspace. All unsaved changes will be lost.",
+      "reloadAppConfirmation": "Are you sure you want to reload the app {{name}}?",
+      "reloadAppSuccess": "App reloaded successfully",
+      "reloadAppFailed": "Failed to reload app",
+      "reloadAllApps": "Reload All Apps",
+      "reloadAllAppsSuccess": "All apps reloaded successfully",
+      "reloadAllAppsFailed": "Failed to reload all apps",
+      "reloadAllAppsConfirmation": "Are you sure you want to reload all apps?",
+      "unloadApp": "Unload App",
+      "unloadAppSuccess": "App unloaded successfully",
+      "unloadAppFailed": "Failed to unload app",
+      "installAll": "Install All",
+      "manageLoadedApps": "Manage Loaded App(s)",
+      "runApp": "Run App",
+      "openAppFolder": "Open App Folder",
+      "createApp": "Create App",
+      "about": "About App"
+    },
+    "menuGraph": {
+      "title": "Graph",
+      "loadGraph": "Load Graph",
+      "autoLayout": "Auto Layout",
+      "selectLoadedApp": "Select a Loaded App",
+      "addNode": "Add Node",
+      "addConnection": "Add Connection",
+      "addConnectionFromNode": "Add Connection from {{node}}",
+      "addConnectionToNode": "Add Connection to {{node}}",
+      "about": "About Graph"
+    },
+    "menuHelp": {
+      "title": "Help",
+      "about": "About TEN Manager Designer"
+    },
+    "menuDesigner": {
+      "title": "Designer",
+      "about": "About Designer",
+      "preferences": "Preferences"
+    },
+    "menuExtension": {
+      "title": "Extensions",
+      "openExtensionStore": "Open Extension Store",
+      "about": "About Extensions"
+    },
+    "language": {
+      "title": "Language",
+      "enUS": "English",
+      "zhCN": "中文(简体)",
+      "zhTW": "中文(繁體)",
+      "jaJP": "日本語"
+    },
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "officialSite": "Official Site",
+    "poweredBy": "Powered by",
+    "poweredByTenFramework": "Powered by <0></0>",
+    "github": "GitHub",
+    "tryTENAgent": "Try TEN Agent",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "currentIsLatest": "Current is the latest version",
+    "currentIsLatestDescription": "You are using the latest version of TEN Framework.\nMore information about the latest version can be found on the <0>TEN Framework GitHub Release Page</0>.",
+    "newVersionAvailable": "New version available",
+    "newVersionAvailableDescription": "A new version of TEN Framework is available.\nMore information about the new version can be found on the <0>TEN Framework GitHub Release Page</0>."
+  },
+  "action": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "pinToDock": "Pin to Dock",
+    "save": "Save",
+    "discard": "Discard",
+    "launchTerminal": "Launch terminal",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "selected": "Selected",
+    "autoStart": "Auto Start",
+    "confirm": "Confirm",
+    "upstream": "Upstream",
+    "downstream": "Downstream",
+    "popout": "Popout",
+    "close": "Close",
+    "closeAllTabs": "Close All Tabs",
+    "unsaved": "unsaved",
+    "launchLogViewer": "View Logs",
+    "stop": "Stop",
+    "search": "Search",
+    "current": "Current",
+    "run": "Run",
+    "viewDetails": "View Details",
+    "reset": "Reset",
+    "chooseBaseDir": "Choose Base Dir",
+    "deleteNodeConfirmationWithName": "Are you sure you want to delete the node {{name}}?",
+    "update": "Update",
+    "create": "Create",
+    "deleteConnectionConfirmation": "Are you sure you want to delete the connection?",
+    "deleteConnectionSuccess": "Connection deleted successfully",
+    "deleteConnectionFailed": "Failed to delete connection",
+    "replaceNode": "Replace Node with ..."
+  },
+  "toast": {
+    "saveFileSuccess": "File saved successfully",
+    "saveFileFailed": "Failed to save file",
+    "fetchFileContentFailed": "Failed to fetch file content"
+  },
+  "popup": {
+    "editor": {
+      "confirmSaveFile": "Are you sure you want to save the file?",
+      "confirmSaveChanges": "Do you want to save the changes?",
+      "confirmCloseAllTabs": "Are you sure you want to close all tabs? All unsaved changes will be lost.",
+      "confirmChangePosition": "Are you sure you want to change the position? All unsaved changes will be lost."
+    },
+    "selectGraph": {
+      "title": "Select a App/Graph",
+      "app": "App",
+      "graph": "Graph",
+      "unspecified": "<Unspecified>",
+      "updateSuccess": "App/Graph updated successfully"
+    },
+    "customNodeConn": {
+      "srcTitle": "Node[{{source}}] Connection",
+      "connectTitle": "Connection Details",
+      "title": "Connection",
+      "filters": "Filters"
+    },
+    "node": {
+      "properties": "Properties"
+    },
+    "logViewer": {
+      "title": "Log Viewer",
+      "appInstall": "App Install"
+    },
+    "default": {
+      "defaultLabelForAppRun": "Default label for app run",
+      "errorFolderPathEmpty": "The folder path cannot be empty.",
+      "errorGetBaseDir": "Failed to get base dir",
+      "errorOpenAppFolder": "Failed to open app folder",
+      "errorUnknown": "An unknown error occurred."
+    },
+    "apps": {
+      "manager": "Apps Manager",
+      "tableCaption": "A list of your loaded apps.",
+      "baseDir": "Base Dir",
+      "run": "Run App",
+      "runScript": "Run Script",
+      "runScriptPlaceholder": "Enter the script to run",
+      "create": "Create App",
+      "createAppSuccess": "App created successfully",
+      "createAppFailed": "Failed to create app",
+      "templateType": "Template Type",
+      "templateTypeDescription": "Select the template type for the app.",
+      "templateLanguage": "Template Language",
+      "templateLanguageDescription": "Select the language for the app.",
+      "templateName": "Template Name",
+      "templateNameDescription": "Select the template name for the app.",
+      "appName": "App Name",
+      "appNameDescription": "Enter the name for the app.",
+      "baseDirDescription": "Select the base directory for the app."
+    },
+    "graph": {
+      "title": "Node",
+      "titleAddNode": "Add Node",
+      "graphId": "Graph ID",
+      "nodeName": "Node Name",
+      "addonName": "Addon Name",
+      "searchAddon": "Search Addon",
+      "noAddonFound": "No addon found",
+      "useInputAddon": "Use '{{addonName}}'",
+      "property": "Property",
+      "addNode": "Add Node",
+      "addNodeSuccess": "Node added successfully",
+      "addNodeError": "Failed to add node",
+      "graphError": "Failed to load graph",
+      "addonError": "Failed to load addon",
+      "deleteNodeSuccess": "Node deleted successfully",
+      "deleteNodeFailed": "Failed to delete node",
+      "titleAddConnection": "Add Connection",
+      "sameNodeError": "Source and destination nodes cannot be the same",
+      "srcExtension": "Source Extension",
+      "destExtension": "Destination Extension",
+      "messageType": "Message Type",
+      "messageName": "Message Name",
+      "addConnection": "Add Connection",
+      "titleUpdateNodePropertyByName": "Update [{{name}}] Property",
+      "updateNodeProperty": "Update Property",
+      "graphName": "Graph Name",
+      "updateNodePropertySuccess": "Node property updated successfully",
+      "updateNodePropertyFailed": "Failed to update node property",
+      "noPropertySchema": "No property schema found",
+      "titleReplaceNode": "Replace Node[{{name}}] with ...",
+      "replaceNode": "Replace Node",
+      "replaceNodeSuccess": "Node replaced successfully",
+      "replaceNodeFailed": "Failed to replace node"
+    },
+    "doc": {
+      "title": "{{name}}"
+    }
+  },
+  "dock": {
+    "notSelected": "Not Tab Selected",
+    "dockSide": "Dock Side",
+    "left": "Left",
+    "right": "Right",
+    "bottom": "Bottom"
+  },
+  "dataTable": {
+    "no": "No.",
+    "name": "Name",
+    "upstream": "Upstream",
+    "downstream": "Downstream",
+    "type": "Type",
+    "source": "Source",
+    "target": "Target",
+    "actions": "Actions",
+    "viewDetails": "View Details",
+    "delete": "Delete",
+    "openMenu": "Open Menu",
+    "noResults": "No results."
+  },
+  "extensionStore": {
+    "extension": "Extension",
+    "title": "Extension Store",
+    "readOnly": "Read Only",
+    "compatible": "Compatible",
+    "dependencies": "Dependencies",
+    "searchPlaceholder": "Search Extensions...",
+    "installedWithSum": "{{count}} of {{total}} Installed",
+    "openAGraphToInstall": "Open a graph to install extensions",
+    "noMatchResult": "No match results",
+    "matchResult": "{{count}} match results",
+    "install": "Install",
+    "installed": "Installed",
+    "filter": {
+      "showUninstalled": "Uninstalled",
+      "showInstalled": "Installed",
+      "sort": "Sort",
+      "sort-default": "Default",
+      "sort-name": "Name",
+      "sort-name-desc": "Name (Desc)",
+      "type": "Type"
+    },
+    "extensionTitle": "Extension: {{name}}",
+    "os-arch": "OS/Arch",
+    "selectOsArch": "Select OS/Arch",
+    "os-arch-default": "Default",
+    "version": "Version",
+    "hash": "HASH",
+    "versionHistory": "Version History",
+    "selectVersion": "Select a version",
+    "versionLatest": "Latest",
+    "localAddonTip": "(local)"
+  },
+  "statusBar": {
+    "appsLoadedWithCount": "{{count}} app(s) loaded",
+    "appsError": "Failed to get apps",
+    "workspace": {
+      "title": "Currently Working in",
+      "baseDir": "Base Dir",
+      "graphName": "Graph Name"
+    },
+    "feedback": {
+      "title": "Feedback"
+    }
+  },
+  "preferences": {
+    "general": {
+      "title": "General",
+      "language": "Language",
+      "theme": "Theme"
+    },
+    "log": {
+      "title": "Log",
+      "maxLines": "Max Lines",
+      "maxLinesDescription": "The maximum number of lines to display in the log viewer."
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved",
+    "savedSuccess": "Preferences {{key}} saved successfully"
+  },
+  "components": {
+    "combobox": {
+      "create": "Create {{query}}",
+      "placeholder": "Search or create new",
+      "noItems": "No items",
+      "enterValueToCreate": "Enter a value to create a new one"
+    }
+  }
+}

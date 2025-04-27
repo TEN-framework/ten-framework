@@ -1,0 +1,769 @@
+clasp 3.3.10: Wednesday, 7th February 2024
+  * fixed issue https://github.com/potassco/clasp/issues/88
+  * fixed issue https://github.com/potassco/clasp/issues/90
+  * fixed issue https://github.com/potassco/clasp/issues/91
+  * fixed issue https://github.com/potassco/clasp/issues/93
+  * fixed issue https://github.com/potassco/clasp/issues/95
+  * fixed issue https://github.com/potassco/clasp/issues/96
+  * fixed issue https://github.com/potassco/clasp/issues/98
+  * fixed deprecation warnings (cf. https://github.com/potassco/clasp/pull/94)
+  * fixed build error with VS 2022 17.8 (cf. https://github.com/potassco/clasp/pull/97)
+  * dropped incorrect ConstString optimization (cf. https://github.com/potassco/clingo/issues/475)
+  * clingo: added support for propagator undo mode
+
+clasp 3.3.9: Saturday, 10th September 2022
+  * fixed issue https://github.com/potassco/clasp/issues/80
+  * fixed issue https://github.com/potassco/clasp/issues/81
+  * fixed issue https://github.com/potassco/clasp/issues/84
+  * fixed issue https://github.com/potassco/clasp/issues/85
+  * refined overflow checks in LogicProgram
+
+clasp 3.3.8: Tuesday, 3rd May 2022
+  * fixed issue https://github.com/potassco/clasp/issues/75
+  * fixed issue https://github.com/potassco/clasp/issues/76
+  * fixed issue https://github.com/potassco/clingcon/issues/85
+  * updated catch2 (https://github.com/potassco/clasp/issues/73)
+  * adjusted TextOutput (https://github.com/potassco/clingo/issues/355)
+  * moved clasp app to cli part of library
+
+clasp 3.3.7: Tuesday, 16th November 2021
+  * fixed issue https://github.com/potassco/clingo/issues/342
+  * fixed issue https://github.com/potassco/clingcon/issues/81
+  * fixed issue https://github.com/potassco/clasp/issues/72
+  * fixed issue https://github.com/potassco/clasp/issues/71
+
+clasp 3.3.6: Sunday, 18th April 2021
+  * fixed a regression in preprocessing of disjunctions
+  * fixed issue https://github.com/potassco/clasp/issues/48
+  * fixed issue https://github.com/potassco/clasp/issues/51
+  * fixed issue https://github.com/potassco/clasp/issues/52
+  * fixed issue https://github.com/potassco/clasp/issues/54
+  * fixed issue https://github.com/potassco/clasp/issues/55
+  * fixed issue https://github.com/potassco/clasp/issues/57
+  * fixed issue https://github.com/potassco/clasp/issues/65
+  * fixed issue https://github.com/potassco/clasp/issues/65
+  * fixed issue https://github.com/potassco/clasp/issues/69
+  * fixed an issue in optimal model enumeration
+    (see: https://github.com/potassco/clingcon/issues/58)
+  * added support for single shot solving while keeping the logic program
+    (https://github.com/potassco/clasp/issues/64)
+  * added support for getting final conflict
+    (https://github.com/potassco/clasp/issues/59)
+  * added lower bounds to clingo statistics
+  * added support for accessing trail from Potassco::Assignment
+    (https://github.com/potassco/clasp/issues/49)
+
+clasp 3.3.5: Friday, 23rd August 2019
+  * added support for clingo heuristic
+  * fixed issue https://github.com/potassco/clasp/issues/36
+	* fixed issue https://github.com/potassco/clasp/issues/39
+	* fixed issue https://github.com/potassco/clasp/issues/41
+	* fixed issue https://github.com/potassco/clasp/issues/45
+	* fixed a couple of warnings
+
+clasp 3.3.4: Wednesday, 27th June 2018
+  * fixed: https://github.com/potassco/clasp/pull/22
+  * fixed: https://github.com/potassco/clasp/issues/16
+  * fixed: https://github.com/potassco/clasp/issues/18
+  * fixed: https://github.com/potassco/clasp/issues/33
+  * fixed: https://github.com/potassco/clasp/issues/34
+  * fixed: possible infinite loop in detection of problem type from input.
+  * fixed: Atoms of incremental programs not always marked as frozen.
+  * added internal interface for user-defined statistics
+    (https://github.com/potassco/clasp/pull/23)
+  * extended ClingoPropagatorInit to support both global and per-solver watches.
+
+clasp 3.3.3: Sunday, 5th November 2017
+  * fixed: possible race condition in Windows alarm handling (libpotassco)
+  * fixed: state not fully reset in incremental acyc check
+  * fixed: facade progress state not reset after solving step
+  * fixed: https://github.com/potassco/clasp/issues/11
+  * fixed: https://github.com/potassco/clasp/issues/13
+  * https://github.com/potassco/clasp/issues/12
+
+clasp 3.3.2: Saturday, 29th July 2017
+  * fixed: missing lower bound output in unsat-core optimization for bounds < 0
+  * fixed: conflict clauses not always tagged with assumptions in unsat-core optimization
+  * fixed: invalid reallocation of vector during theory propagation
+  * fixed: https://github.com/potassco/clingo/issues/45
+  * fixed: https://github.com/potassco/clasp/issues/10
+  * added workaround for bug #81365 in gcc 7.1
+    (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81365)
+  * added support for <EOL> as terminator for minweight constraint in dimacs input
+
+clasp 3.3.1: Wednesday, May 3rd 2017 (internal only)
+  * added support for partial checks in clingo propagator
+
+clasp 3.3.0: Friday, 28th April 2017
+  * switched to MIT license
+  * added support for unsatisfiable core shrinking via option "--opt-usc-shrink"
+  * added support for core-guided optimization algorithms K and ONE
+  * CLI changes:
+    - changed syntax of option  "--opt-strategy" (old syntax is still supported but deprecated)
+      - First argument selects the overall strategy, i.e. model- or core-guided optimization
+      - Second argument selects the algorithm, e.g. "K" or "OLL" for core-guided optimization
+      - Further arguments enable additional tactics, e.g. "disjoint" for disjoint core 
+        preprocessing in core-guided optimization
+    - option "--pre" now prints aspif by default (use "--pre=smodels" for smodels)
+	- merged option "--opt-bound" into "--opt-mode"
+    - merged option "--counter-bump" into "--counter-restarts"
+    - replaced option "--opt-sat" with "--parse-maxsat"
+    - merged option "--dist-mode" into "--distribute"
+    - merged option "--del-protect" into "--update-lbd"
+    - replaced numbers with named constants in various options
+    - added support for specifying bitmask arguments as list of named constants, e.g.
+      "--forget-on-step=varScores,signs,lemmaScores" instead of "--forget-on-step=7"
+  * Integration/clingo:
+    - removed dependency to Intel TBB (multithreading now only uses C++11 threads)
+    - switched to CMake for building clasp
+    - moved libprogram_opts to libpotassco, which is now a submodule of clasp
+    - added support for step-specific true var to simplify implementation of multishot propagators
+    - simplified ClaspFacade solving interface
+
+clasp 3.2.3: Monday, 24th April 2017
+  * fixed: possible crash on Cygwin-32 because of non-increasing wall clock time
+  * fixed: PB constraints not correctly initialized if added on levels > 0
+  * fixed regression: unsupported atoms in minimize statements not added to program
+  * fixed regression in enum mode "domRec" in case of complementary atoms
+  * fixed spurious backtracking on integrating sat clauses from theory propagator
+  * fixed regression: model heuristic ("--opt-heuristic=2") not applied
+  
+clasp 3.2.2: Monday, 23rd January 2017
+  * added experimental support for MiniCard's CNF+ format
+  * added missing stats key "summary.winner" for getting id of winner thread from clingo
+  * fixed regression in sat/pb reader
+  * fixed regression in handling of unsatisfiable optimization problems
+  * fixed regression in component-wise shifting and preprocessing of disjunctive rules
+  * fixed: ClaspFacade::startSolve() could produce duplicate and/or miss models
+  * fixed: failed to handle empty clauses added from theory propagator
+  * fixed: invalid logged lemmas due to buggy minimization in Solver::resolveToFlagged()
+  * fixed: LogicProgram::dispose() must reset pointers
+  * fixed compilation problems on Cygwin and Alpha
+  
+clasp 3.2.1: Thursday, 13th October 2016
+  * added support for adding variables from theory propagator
+  * fixed output of "--pre" wrt to externals in incremental setting
+  * fixed regression in projective enumeration in incremental setting
+  * fixed regression in handling of minimize statements containing only zero-weighted literals
+  * fixed possible invalid access to empty input vector in ClaspAppBase::run()
+  * added workaround to fix emcc code-gen bug
+  * fixed type mismatch and warnings when compiled with x64 and _DEBUG
+  * fixed compilation problems on MacOS and ARM
+
+clasp 3.2.0: Thursday, 8th September 2016
+  * added experimental support for new asp format and changed "--pre" option to use it
+  * added propagator for acyclicity constraint (#edge-directive)
+  * added option "--parse-ext" for enabling input extentions:
+    - acyc constraints in smodels, dimacs, and opb format,
+    - objective function in dimacs format,
+    - projection, assumption, output, heuristic directives in dimacs and opb format
+  * added stratification heuristic for weights in core-guided optimization enabled via
+    "--opt-strategy=usc,{8-15}"
+  * added support for parallel solving via C++11 threads instead of Intel TBB (see README)
+  * added ClaspFacade::startSolve() for synchronous (possibly single-threaded) model generation
+  * added option "--vsids-acids" for enabling average conflict-index decision scoring in vsids
+  * added option "--vsids-progress" for enabling Glucose-style decreasing decay scheme
+  * added option "--block-restarts" for enabling Glucose-style blocking of restarts
+  * added option "--del-protect" for enabling Glucose-style temporary freezing of learnt nogods
+  * option "--dom-mod" now also supports modifiers "factor" and "init" and also
+    applies to problems in dimacs and opb format
+  * added support for updating heuristic options in multishot solving
+    (init-moms, score-res, score-other, berk-huang, dom-mod)
+  * added support for config inheritance in portfolio configurations
+  * changed default configuration of tester in disjunctive asp solving
+  * improved handling of extended rules in computation of loop nogoods
+  * improved handling of equivalent and complementary atoms in domain heuristic
+  * option "--nant" now also applies to lookback heuristics
+  * option "--lemma-out" now resolves lemmas to problem variables
+    - added "--lemma-out-dom" for setting variable domain to either input or output
+    - added "--lemma-out-txt" for logging lemmas in ground lp format
+    - added "--lemma-out-max" for limiting number of logged lemmas
+  * replaced "--sign-def=4" with "--sign-def-disj=<x>" for setting default sign of disjunctive atoms
+  * made lower bound updates in parallel optimization lock-free
+  * switched to a more compact representation of input facts in smodels format
+  * replaced old symbol table with simple output list
+
+clasp 3.1.5: Friday, 5th August 2016 (updated: 11th August 2016)
+  * fixed: projective enumeration failed to work with option "--no-lookback"
+  * fixed: invalid models in parallel disjunctive solving due to unsynchronized simplifications
+  * fixed: Json output sometimes failed to report correct number of optimal models
+  * fixed: SAT-frontend must retain pure literals for cautious/brave reasoning
+  * fixed: ClaspFacade::start() sometimes failed to reset SharedContext  
+  * fixed: Sat-Preprocessor failed to propagate resolution of empty clause
+  * fixed: simplifications after end of incremental step not always propagated to all threads
+  * fixed too strong assertion in eq-preprocessor
+  
+clasp 3.1.4: Thursday, 10th December 2015
+  * fixed: "--pre" failed to handle choice/disjunctive heads defined by extended bodies
+  * fixed: "--backprop" failed to backpropagte certain constraints when used with "--eq=0"
+  * fixed: potential deadlock during shutdown/join() in async solving
+  * fixed: DomainHeuristic failed to handle nested heuristic predicates
+  * fixed: invalid delete in DomainHeuristic destructor
+  * fixed: configuration sometimes failed to initialize solver id
+  * rewrote Clause::updateWatch() loop to workaround bug #67892 in gcc 5
+    (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67892)
+
+clasp 3.1.3: Friday, 31th July 2015
+  * fixed: possible livelock in multi-threaded enumeration of optimal models
+  * fixed: parser for _heuristic atoms failed to handle atoms containing strings
+  * fixed: over-satisfied PB constraints not always handled correctly
+  * fixed: incorrect handling of aux vars in Solver::numWatches()
+  * fixed: C++11 isnan issue on Mac
+  
+clasp 3.1.2: Tuesday, 5th May 2015
+  * fixed: Option "--heuristic" failed to accept decay factor for domain heuristic
+  * fixed: LogicProgram::getDisjFor() failed to handle hash collisions correctly
+  * fixed: facts in disjunctions not always correctly handled
+  * fixed: domain heuristic failed to distinguish atom names sharing a common prefix
+  * fixed: domain heuristic failed to handle atoms with complementary literals correctly
+  * fixed: LogicProgram::write() must not output gamma rules and/or atoms that are false
+  * fixed regression in handling of sign modifier in domain heuristic
+  * fixed regression in backpropagation during preprocessing
+
+clasp 3.1.1: Wednesday, 12th November 2014
+  * LparseReader now handles "external statement"
+  * fixed: low-level config interface failed to correctly handle successive changes of "opt-bound"
+  * fixed: wrong completition nogoods with option "--no-gamma"
+  * fixed regression in rule simplification (regression in 3.0.x)
+  * fixed regression in "--configuration=jumpy"
+  * fixed regression in handling of modifiers true/false in domain heuristic
+  
+clasp 3.1.0: Friday, 15th August 2014
+  * added new strategies for unsatisfiable-core based optimization
+  * added alternative distribution mode via thread-local queues (option " --dist-mode")
+  * generators now propagate top-level assignment to testers
+  * removed optimization options from default configurations
+  * CLI changes:
+    - option "--sat-prepro" now expects the algorithm followed by an optional list of limits
+    - option "--opt-strategy" now takes two arguments; the first mandatory argument selects the 
+      major strategy (i.e. branch and bound or unsat-core), while the optional second argument
+      controls fine tuning of said strategy
+    - combined options "--dom-mod" and "--dom-pref" and added enum mode "domRec" for 
+      enabling subset optimization via domain heuristic
+    - added "--forget-on-step=2" for discarding previously set variable phases and changed
+      value for discarding nogood activities and learnt nogoods to 4 and 8, respectively
+    - replaced option "--hparam" (and its aliases) with second argument for "--heuristic"
+    - replaced "--berk-once" with more general "--score-res"
+    - renamed option "--number" to "--models"
+  * Integration/clingo:
+    - added support for open (i.e. unassigned) externals
+    - added support for adding constraints via model callback
+    - added low-level interface for accessing a clasp configuration
+    - cleaned up some stats keys and replaced "camelCase" with "snake_case" in keys
+
+clasp 3.0.6: Monday, 21st July 2014
+  * fixed: parallel unsat-core based enumeration of optimal models could skip valid models
+  * fixed: possible race condition in signal handling
+  * fixed: ABA-problem in parallel cb-enumerator could lead to duplicate models  (regression in 3.0.x)
+  * fixed: "--share=auto" (default) failed to enable physical sharing in mt-mode (regression in 3.0.x)
+  * fixed: eq over complementary atoms not always correctly handled              (regression in 3.0.x)
+  * fixed: incremental domain heuristic failed to apply values to atoms from previous steps
+  * fixed: eq over bodies of size 1 not always correctly handled
+  * fixed: typo in description of "--quiet"
+  
+clasp 3.0.5: Monday, 19th May 2014
+  * added support for ThreadTime::getTime() on MacOS X
+  * removed pointless "--del-init" option from config tweety
+  * fixed: non-hcf components not always correctly added in incremental disjunctive programs (clingo)
+  * fixed: empty soft clauses not correctly handled in MaxSAT frontend
+  * fixed: unfounded sets from 2nd level test not always correctly handled 
+  * fixed: json output must not print NaN
+  * fixed: asp options not correctly set on configuration update (from clingo)
+  * fixed: regression in handling of (incremental) projection
+  
+clasp 3.0.4: Thursday, 24th April 2014
+  * replaced "s SATISFIABLE" with "s UNKNOWN" when called with option "--opt-sat"
+  * improved handling of weight constraints containing incremental assumptions
+  * fixed: typo in output of "--help"
+  * fixed: unsatisfiable-core based optimization sometimes fails to assign all active assumptions
+  * fixed: superfluous rules for facts not always correctly handled
+  * fixed: assigned values for external atoms not always carried over to next step
+  * fixed: clasp sometimes fails on incremental problems if "--lookahead" is used with "--forget-on-step"
+
+clasp 3.0.3: Friday, 28th March 2014
+  * fixed: AsyncResult destructor fails if called after destruction of ClaspFacade
+  * fixed: projective enumeration sometimes fails when used with option "--restart-on-model"
+  * fixed: regression in handling of negative lower bound in optimization
+  
+clasp 3.0.2: Monday, 17th March 2014
+  * patch 1 (March 19th, 2014): fixed regression in projective enumeration
+  * added ClaspFacade::startSolveAsync() for enumerating models in an iterator-like fashion
+  * added "--forget-on-step" for simulating iclingo's "--ilearnt" and "--iheuristic"
+  * added "--dom-mod=6" for simulating hclasp's subset minimization
+  * fixed: DefaultUnfoundedCheck sometimes fails with assertion in incremental setting
+  * fixed: wcnf frontend fails if top weight >= 2^31
+  * fixed: unit cores not always correctly handled in unsatisfiable-core based optimization
+  * fixed: negative lower bound not correctly handled in hierarchical optimization
+  * fixed: projection not correctly handled in incremental setting
+  * fixed: clasp sometimes reports bogus timing values when interrupted via Ctrl-C on Windows
+  * fixed: lookahead fails on non-asp problems if combined with option "--nant"
+  * fixed: wrong/missing models because of incorrect backpropagation with option "--backprop"
+
+clasp 3.0.1: Friday, 21th February 2014
+  * added support for disabling "--opt-bound" via "--opt-bound=no"
+  * added support for passing on/off values for option flags on config update
+  * fixed: multiple occurrences of literal with negative weight not correctly merged
+    (see also: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=739628)
+  * fixed: negative literals not correctly formatted in PB output
+  * fixed: excess bounds in "--opt-bound" not correctly handled
+  * fixed: negatable otions like "[no]-init-moms" not recognized
+  * fixed libprogram_opts: string to long long conversion fails
+
+clasp 3.0.0: Friday, 14th February 2014
+  1. Integrated support for disjunctive solving from claspD-2
+  2. Integrated domain heuristic from hclasp via option "--heuristic=domain"
+    * added "--dom-pref" and "--dom-mod" for applying domain modifications to certain subsets of atoms
+  3. Optimization
+    * replaced global "--opt-hierarch" option with more general per thread option "--opt-strategy"
+      to enable competition-based optimization during parallel solving
+    * integrated unsatisfiable-core based optimization from unclasp via "--opt-strategy={4,5}"
+    * replaced "--opt-ignore", "--opt-all", "--opt-best" with option "--opt-mode" and
+      added new reasoning mode for enumerating optimal models via option "--opt-mode=optN"
+    * renamed "--opt-value" to "--opt-bound"
+  4. Misc
+    * added a new configuration "tweety" and made it the default for asp problems
+    * removed option "--portfolio" in favour of "--configuration=<file>"
+    * added second argument to "--contraction" for replacing long nogoods with decision sequence/all uip clause
+    * added option "--out-hide-aux" for hiding atoms starting with "_" in models
+    * added option "--out-atomf" for setting atom output format
+    * added "--outf=3" for disabling output
+    * simplified deletion options
+  5. Internals & Integration with clingo
+    * implemented new configuration class
+    * moved option handling and output classes to libclasp
+    * simplified/cleaned up major interfaces
+    * added support for asynchronous solving
+    * added support for incremental/volatile enumeration/optimization
+    * added support for adding/removing aux variables during solving
+    * added low-level interface for accessing statistics
+
+clasp 2.1.5: Tuesday, 28th January 2014
+  * fixed a bug in the handling of unary projection nogoods
+  * fixed a bug in the interplay between lookahead and minimization
+
+clasp 2.1.4: Tuesday, 26th November 2013
+  * fixed a possible crash bug in handling of conditional constraints
+  * fixed a regression in handling of physically shared clauses
+  * fixed compilation issues with clang-500.2.79 on Mac
+
+clasp 2.1.3: Friday, 12th April 2013
+  * fixed a regression in the handling of choice rules in the unfounded set checker
+
+clasp 2.1.2: Friday, 5th April 2013
+  * updated "--outf=1" to ASP-Comp'13 format and added corresponding exit codes
+  * fixed: Wrong/missing models because of incorrect handling of recursive aggregates
+  * fixed: Counter implication restart on root level could introduce an invalid conflict
+  * fixed: clasp does not compile in C++11 mode
+  * fixed regression: Inconsistent behaviour in dimacs front-end when running
+                      with or without option "--number=1"
+clasp 2.1.1: Thursday, 22th November 2012
+  * fixed regression: MaxSAT-frontend must not assert pure literals / relaxation variables
+  * fixed: spurious warning when using option "--no-lookback"
+  * fixed: "--shuffle" and "--counter-restarts" not working as intended with hierarchical optimization
+  * fixed: Backslashes in JSON output not correctly quoted
+
+clasp 2.1.0: Monday, 27th August 2012
+  * restructured help and revised options and their defaults
+    * added "--help[={1..3}]" for showing basic, advanced, or all options
+    * added "--configuration" for selecting between prefabricated default configurations
+    * revised deletion options and grouped them via common prefix "--del-"
+    * revised thread options and added options for size-/topology-based lemma exchange
+    * added support for dynamic restarts via "--restarts=D,<args>"
+    * added "--sign-def" for setting default sign used in decision heuristic
+    * added "--sign-fix" for disabling sign-heuristic
+    * added "--init-moms" for enabling/disabling initialization of heuristic with MOMS-score
+    * added "--fast-exit" for forcing app exit without cleanup
+    * added "--update-act" for enabling LBD-based activity bumping
+    * added "--update-mode" for configuring when update/integrate messages are handled in parallel-search
+    * added "--learn-explicit" to disable usage of implication graph for learnt constraints
+    * added "--share" for configuring physical constraint sharing
+    * added "--init-watches" for controlling initialization of watched literals
+    * added "--counter-restarts" and "--counter-bump" for enabling counter implication restarts
+    * added "--lemma-out-lbd" for restricting lemmas written via "--lemma-out"
+    * added "--lemma-in-lbd" for setting initial lbd of lemmas read via "--lemma-in"
+    * replaced "--loops-in-heu" with more general "--score-other"
+    * replaced "--rand-watches" with more general "--init-watches"
+    * replaced "--initial-lookahead" with "--lookahead=<type>[,<num>]"
+    * replaced "--recursive-str" with "--strengthen=<mode>[,<antes>]"
+    * replaced "--copy-problem" with more general "--share"
+    * removed options "--brave", "--cautious", "--solution-recording": all superseded by "--enum-mode=<type>"
+    * option "--restarts" now always requires a type;
+      and the "limit" parameter now sets the (initial) length of the sequence
+  * disbaled signal handling during printing of models
+  * fixed: Overflow on parsing large opt-values (issue 3528852)
+  * fixed: Parallel bt-enumerator enumerated duplicate models under certain conditions
+  * fixed: Sat-Preprocessor failed to expand models correctly under very rare conditions
+  * fixed: Erroneous interplay between "otfs=2" and "reverse-arcs" could lead to the
+           unjustified removal of problem constraints
+  * fixed: Incorrect ordering-predicate in MinimizeConstraint could lead to wrong optima
+  * fixed: Solve loop failed to handle restart on total assignment correctly resulting
+           in an infinite loop on some optimization problems
+  * fixed: Duplicate key in JSON-Output of lemma stats
+
+clasp 2.0.6: Tuesday, 3rd April 2012
+  * added better error detection to portfolio parser and fixed a bug
+    in the initialization of thread configs
+  * first attempt at decoupling learnt db growing from restart schedule using
+    independent grow schedule configurable via (hidden) option "--dgrowS"
+  * added "--update-lbd=2" to enable usage of "strict" lbds
+  * added (experimental) support for counter implication restarts and dynamic restarts
+    via hidden options
+  * fixed bugs in code for shared clause integration that could led to unpleasant
+    results ranging from duplicate/missing models in enumeration to crashing if
+    option "--otfs" was used
+
+clasp 2.0.5: Sunday, 29th January 2012
+  * fixed: Input parser for opb and (w)cnf failed to read 64bit integers.
+  * fixed: Outer bound of inner-outer-restarts sometimes remained constant because of integer arithmetic.
+  * fixed: Minimize constraint must not update optimum in enumeration-mode (opt-all).
+           Bug introduced in version 2.0.3
+  * fixed: Minimize constraint must not update initial (user-set) bound until a model is found.
+           Bug introduced in version 2.0.3
+  * fixed: Right hand side of minimize constraint not correctly initialized if "--opt-hierarch" was used.
+  * fixed: SharedMinimizeData assumed monotonicity of individual levels - could fail
+           after merging complementary literals in multi-level minimize constraints.
+           Added extra "adjustment"-values to represent values resulting from such merges.
+
+clasp 2.0.4: Tuesday, 29th November 2011
+  * some cleanup in help output
+    * moved general ASP-specific options to separate group
+    * moved "--opt-sat" to basic options
+    * simplified default command-line and made "input-dependent" defaults more explicit
+  * updated interface spec of ProgramBuilder to make it more robust w.r.t incremental update
+  * fixed parsing of "--global-restarts"
+  * fixed: default value for option "--rand-watches" was not applied
+  * fixed: Enumerator did not broadcast last model/optimum of current GP in parallel search
+  * fixed: clauses simplified to binary/ternary are no longer counted twice in stats
+  * fixed: eq-preprocessor sometimes did not reorder head list after merging two bodies
+  * fixed: dimacs front-end failed to read empty dimacs file
+
+clasp 2.0.3: Tuesday, 23rd August 2011
+  * added option "--enum-mode" for setting enumeration algorithm and
+    deprecated superseded options "--solution-recording", "--brave", and "cautious"
+  * made "--enum-mode=record" the default for optimization
+  * added default portfolio settable via "--portfolio=default"
+  * added support for arithmetic restarts
+  * moved "--opt-heuristic" to "Search Options" to allow for different settings in portfolios
+  * fixed: clasp crashes with --pre (issue 3393095)
+  * fixed: value given via "--opt-val" not checked against initial inconsistency
+  * fixed: command line options not applied to portfolio configurations
+  * fixed: parallel enumeration of models did not always respect "--number"
+  * fixed: possible deadlock in parallel hierarchical optimization
+  * fixed: failed to always propagate literals enqueued by PostPropagator::isModel()
+  * fixed: possible crash bug because ReasonStore32::value_type did not decode stored data
+
+clasp 2.0.2: Thursday, 30th June 2011
+  * applied fixes from version 1.3.9
+  * fixed problem in call to linker (issue 3324430)
+  * fixed a bug in "otfs" which could not handle unsimplified lemmas
+  * fixed a potential invalid memory access in ImplicationList::hasLearnt()
+  * fixed potential underflow in output of solved guiding paths
+  * fixed a problem in UnitHeuristic which failed to handle stop conflicts in parallel solving
+  * fixed various exception-related issues in parallel solving and made
+    it more robust in the face of exceptions
+  * re-enabled optimized unit clause handling for MaxSAT
+
+clasp 2.0.1: Wednesday, 27th April 2011
+  * fixed various (spurious) warnings
+  * updated ProgramOptions to circumvent tellg() bug in g++-4.{4,5,6} under Debian
+  (see also: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=623850)
+  * fixed some issues in build scripts (many thanks to Thomas Krennwallner)
+    * configure.sh no longer sets RPATH unless "--set-rpath" is given
+    * check for libtbb now also works on Mac OS
+    * added code for finding TBB in default paths
+    * fixed argument order in calls to compiler
+    * removed spaces in specification of include/library directories
+
+clasp 2.0.0: Thursday, 21st April 2011
+  1. Support for parallel (multithreaded) solving (requires Intel(R) Threading Building Blocks)
+    * configurable number of threads via option "--threads"
+    * splitting-based search via guiding path and dynamic load-balancing
+    * global restarts via option "--global-restarts" to escape from bad initial splits
+    * competition-based search via freely configurable portfolios (option "--portfolio")
+    * combination of splitting-based and portfolio-based search (option "--force-gp")
+    * configurable lemma exchange via Distributor interface and options "--distribute" and "--integrate"
+    * support for parallel enumeration, optimization, and computation of brave-/cautious consequences
+  2. Optimization
+    * hierarchical (multi-level) optimization via option "--opt-hierarch=1"
+    * hierarchical optimization with varying step lengths via option "--opt-hierarch={2,3}"
+    * changed switch "--opt-heu" to option "--opt-heuristic={1,2,3}", where
+      * 1: use optimize statements in sign heuristic
+      * 2: use optimize statements in model heuristic
+      * 3: use optimize statements in both sign and model heuristic
+    * changed switch "--opt-all" to option "--opt-all=value"; now enumerates
+      all models with optimize value less than or equal to given value
+  3. New language front-ends
+    * added support for MaxSAT via optimization (option "--opt-sat")
+    * added support for weighted partial MaxSAT problems in wcnf format
+    * added support for weighted boolean optimization (WBO) problems
+    * added support for non-linear constraints to pseudo-Boolean parser
+  4. New output handling
+    * option "--outf={0,1,2}" for selecting between (0) default output format, (1) competition output format,
+      and (2) output in JSON format
+    * option "--quiet" now accepts a pair <m,o> for configuring printing of models and optimize values
+    * added verbosity level 3 to enable printing of progress messages
+    * new (hidden) option "--ifs" for setting separator used when printing models
+  5. Preprocessing & Learning
+      * added (optional) support for blocked clause elimination to SAT-preprocessor
+      * added option "--reverse-arcs" for ManySAT-like conflict analysis with "reverse arcs"
+      * added option "--otfs" for enabling "on the fly subsumption"
+      * added (optional) support for secondary nogood reduction schedule via option "--dsched"
+      * added option "--dinit=min,max" for limiting initial learnt db size to range [min,max]
+      * added option "--dglue=x" to prevent deletion of nogoods with lbd <= x
+      * added option "--update-lbd" for enabling dynamic updates of lbds of learnt nogoods
+  6. Internals
+    * reimplemented constraints to enable sharing (and cloning); forced clear distinction between
+      read-only, shared, and thread-local data
+      * separated read-only program dependency graph from thread-local unfounded set checker so that
+        the former can be shared between multiple threads
+      * added SharedContext object for hosting information to be shared between solving threads
+      * added shareable weight constraints
+      * updated clause representation and added a shared clause constraint
+      * splitted binary-/ternary implication graph into shared read-only static and fine-grained lock-protected dynamic part
+    * implemented lock-free MultiQueue as first concrete nogood distributor (passive, global distribution)
+    * implemented linear-time recursive-strengthen algorithm
+    * switched to new version of ProgramOptions library
+    * added support for "tagged" knowledge, i.e. nogoods tagged with an initial assumption
+    * separated local (solver & search related) from global (enumeration & preprocessing) options in ClaspFacade
+    * implemented more cache-efficient left_right_sequence for storing and distinguishing between clause
+      and general watches
+    * added (hidden) option "--dfrac" to set fraction of nogoods to delete on reduction
+    * added new deletion algorithms and hidden option "--dalgo" for selecting between them
+    * added hidden option "--dscore" for selecting between different nogood activity scoring schemes
+    * added (hidden) option "--berk-once" for switching between multiset and set-based scoring in BerkMin
+
+clasp 1.3.6: Friday, 19th November 2010
+  * added missing copyright information to tests and examples
+  * fixed a bug in preprocessing of weight rules where only literals but not their weights were swapped
+  * fixed: lookahead accessed unitialized memory in incremental setting (concerns iclingo only)
+  * fixed: inner-outer restart sequence always used hard-coded grow-factor
+
+clasp 1.3.5: Friday, 24th September 2010
+  * Removed warning for minimization under projection if safe
+  * fixed inconsequent output format in time and statistics output
+  * fixed bug in output of choice rules with empty head
+  * fixed: truth-value of complementary eq-atom not correctly set
+  * fixed: SAT-preprocessor must not reuse clause ids from previous incremental steps
+
+clasp 1.3.4: Monday, 14th June 2010
+  * moved claspre functionality to clasp (run configure with "--with-claspre" to enable it)
+  * added "--search-limit" to limit search to a certain number of conflicts or restarts
+  * calling clasp with "--stats=2" now prints jump statistics
+  * long loop nogoods are now replaced with decision sequence if the latter is considerably shorter
+  * sat-based preprocessing is now again enabled by default if input format is dimacs or OPB
+  * fixed: option "--rand-prob" not always correctly parsed
+  * fixed: lookahead not correctly initialized in incremental setting (only concerns iclingo)
+  * fixed: enumerators not always correctly terminated when solving under assumptions
+  * fixed: sat-output failed to '0'-terminate models
+  * fixed: "--opt-value" did not work with negative numbers
+  * simplified some code to avoid internal compiler error in gcc-3.4.3
+
+clasp 1.3.3: Thursday, 1st April 2010 (April Fools' Day)
+  * added "--trans-ext=card" and "--trans-ext=integ" for transforming cardinality rules resp. extended integrity constraints
+  * added "--lemma-out=<file>" and "--lemma-in=<file>" for writing lemmas to resp. reading lemmas from <file>
+  * clasp now prints suboptimal models in PB-mode if called with "--verbosity=2"
+  * added more timing statistics
+  * application now reports actual average size of learnt lemmas instead of average contracted size
+  * fixed: "--del=no" did not fully disable nogood deletion
+  * fixed: "--opt-value" not checked against initial sum of minimize constraint
+  * fixed: dimacs parser must not assign undefined literals to false if more than one model is requested
+  * fixed: possible double-deletion in option "--pre"
+  * fixed: unfounded set checker sometimes too lazy w.r.t heads of recursive extended rules
+  * fixed a minor bug in eq-preprocessing
+  * changed some code to avoid code generation bug in Visual C++ 2008 x64
+    see: https://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=526921
+
+clasp 1.3.2: Friday, 15th January 2010
+  * fixed a 64-bit portability problem; clasp should now also run under Mac OS X 10.6
+  * fixed option "--pre"
+  * fixed: SAT-preprocessor not correctly initialized on SAT-problems with more than 4 Mio. clauses
+
+clasp 1.3.1: Tuesday, 8th December 2009
+  * changed some internal interface to simplify integration of clasp
+    in clingo/iclingo/clingcon
+  * fixed a couple of bugs in the eq-preprocessing
+  * fixed a bug in transformation of weight rules in incremental setting
+  * fixed a crash bug in experimental "--backprop" preprocessor
+  * fixed a bug that made clasp exit with code S_UNKNOWN (0) instead of S_UNSAT (20)
+    on unsat problems (computation was correct, though)
+  * fixed a command-line problem: option "--recursive-str" wrongly required an argument
+  * fixed a small problem in PB-frontend that led to wrong optima
+
+clasp 1.3.0: Tuesday, 20th October 2009
+  * added an OPB front-end for solving linear Pseudo-Boolean constraint problems
+    and removed switch "--dimacs": the input format (Smodels-input, dimacs, or OPB)
+    is now automatically detected
+  * added switch "--opt-ignore" and "--opt-heu" for ignoring optimize statements during search,
+    resp. for setting the preferred value of literals occurring in minimize statements to false
+  * added switch "--estimate" for initializing size of learnt DB based on estimated problem complexity
+  * added switch "--reset-restart" for resetting restart schedule after each model found
+  * added switch "--asp09" for enabling ASP'09 competition output format
+  * added switch "--pre" for only printing preprocessed program
+  * added switch "--backprop" for enabling backpropagation in ASP-preprocessor. Note: EXPERIMENTAL FEATURE
+  * added option "--time-limit=<n>" for setting a solving time limit of <n> seconds
+  * added option "--verbose=<level>" for controlling status messages, where
+    "--verbose=0" disables all status messages
+    "--verbose=1" is the default and prints basic status information
+    "--verbose=2" prints more status messages
+  * option "--quiet" no longer controls status messages; it only disables printing of models
+  * replaced option "--lookback=<yes/no>" with switch "--no-lookback"
+  * option "--save-progress" now takes an int <n> to enable progress saving only on jumps >= <n> > 0
+  * default heuristic now disables MOMs-based top-level heuristic on large problems
+  * removed auto_lookahead option
+  * internal: added better interfaces for users of clasp library (iClingo, Clingcon, ...)
+  * fixed an optimization that violated gcc's strict aliasing rules and could led to crashes
+  * fixed a bug in the interplay of projective enumeration and sat-preprocessing that could
+    led to the enumeration of duplicate models (w.r.t the projection variables)
+  * fixed two bugs w.r.t optimization: first, clasp sometimes reported unknown optimum
+    although last model was optimal. Second, reported optima for minimize statements
+    containing facts were too low (optimality of models was correct, though)
+  * fixed a lookahead bug which occurred only together with sat-preprocessing
+  * fixed a small glitch in the recursive nogood minimization (switch "--recursive-str")
+
+clasp 1.2.1: Tuesday, 14th April 2009
+  * fixed a crash bug in handling of weight rules with bound 0 (introduced in 1.2.0)
+  * added warning for minimization under projection
+  * reverted behaviour of "--number" to pre 1.2.0, i.e.
+    "--number" is again considered during optimization/computation of consequences
+  * removed spurious warning when "--number" is not explicitly set on optimization
+  * disabled printing of cautious consequences and optimization for UNSAT problems
+  * clasp now also prints current optimum on interrupt
+
+clasp 1.2.0: Tuesday, 10th March 2009
+  * added "--project" for enabling projective enumeration
+  * added "--solution-recording" for enabling alternative enumeration mode based on (solution) nogoods
+  * added "--restart-on-model" for restarting search after each model (randomize enumeration)
+  * changed "--initial-lookahead" to "--initial-lookahead=<x>", where <x> gives the number of choices
+    to be selected by lookahead. If 0, lookahead is only used during preprocessing.
+  * removed "--opt-restart", which is now superseded by "--restart-on-model"
+  * added support for minimization during consequence computation
+  * added new (platform specific) timer which won't overflow after merely 36 minutes
+  * improved algorithm for handling recursive weight constraints
+  * fixed a bug where B+ atoms were falsely removed during preprocessing
+  * fixed a crash bug where clasp created bogus minimize statements for trivially UNSAT programs
+  * fixed a bug in the unfounded set checker where multiple SCCs were not always handled correctly
+    (bug was introduced in version 1.1.0)
+  * fixed ProgramBuilder::writeProgram so that it now correctly writes integrity constraints (internal)
+
+clasp 1.1.3: Monday, 24th November 2008
+  * fixed handling of zero weighted atoms in minimize statements
+  * fixed a bug that caused "--deletion=no" to constantly delete all learnt nogoods
+
+clasp 1.1.2: Saturday, 25th October 2008
+  * fixed a bug in the unfounded set checker (bug introduced in version 1.1.0)
+
+clasp 1.1.1: Monday, 13th October 2008
+  * revised option names, help text, and error messages
+  * fixed a bug in the preprocessing/simplification of weight rules
+  * fixed several bugs in the handling of incremental programs
+
+clasp 1.1.0: Thursday, 31th July 2008
+  * added "--sat-prepro" for SatElite-like preprocessing
+  * improved eq-Preprocessing and updated "--eq" to reflect new iterative algorithm
+  * added "--cautious" and "--brave" for cautious resp. brave reasoning
+  * added new optimization mode "--opt-rand": similar to optimize-one but restarts after each enumerated model
+  * added "--local-restarts" for local restarts as described in "Local Restarts" by Ryvchin and Strichman
+  * added new inner-outer restart strategy from PicoSat; quadratic-scheme remains default for now
+  * added "--expensiveccm" for expensive conflict clause minimization a la MiniSat; old Beame-scheme remains default for now
+  * replaced old VSIDS heuristic with MiniSat-like VSIDS heuristic
+  * changed growth strategy of learnt db
+  * changed default value of "--contraction" to 250
+  * added support for incremental program update (internal)
+
+clasp 1.0.5: Monday, 31th December 2007
+  * added "--minimization=all" for conflict clause minimization over all antecedent types
+  * changed default of "--minimization" from "bin" to "all".
+  * added "--save-progress" for RSat-like progress saving
+  * added "--optimize-value" for setting initial value(s) of optimize function
+  * optimized implementation of cardinality-/weight-rules
+  * simplified and improved implementation of ProgramBuilder and preprocessing
+  * unfounded set checker is now also backtrack-free for extended rules
+  * if "--rand-watches" is not used, watches in clauses are initialized to the two least watched literals
+  * fixed a bug regarding lookahead: if lookahead was not used as heuristic, literal dependencies were
+    not cleared; failed-literal detection skipped literals and thus did not always find all conflicts.
+  * fixed a bug that led to wrong answers/crashes if "loops=no" was used
+  * fixed a bug in preprocessing of minimize rules
+
+clasp 1.0.4: Wednesday, 22th August 2007 (updated: 24th August 2007)
+  * improved equivalence-preprocessing w.r.t bodies of size > 1 and slightly decreased memory usage
+  * improved look-back heuristics
+  * changed default value of "--trans-ext" to "no", i.e. extended rules are now handled natively by default
+  * simplified output and added "--stats" for enabling printing of extended statistics
+  * implemented non-recursive version of Tarjan's SCC algorithm to prevent stack overflows on large SCCs
+  * fixed another bug in handling of minimize rules
+  * fixed a bug in the command-line interface that led to a crash when an unknown heuristic was given
+  * fixed a bug concerning preprocessing/simplification of weight rules
+  * 08/24/2007: fixed a bug in preprocessing of cardinality/weight rules containing duplicate literals
+  * 10/25/2007: fixed a bug in preprocessing of satisfied bodies
+  * 10/27/2007: fixed a bug where weight constraints were inadvertently handled as cardinality constraints whenever the second weight equaled 1
+  * 11/09/2007: fixed a bug in preprocessing of unsupported bodies
+
+clasp 1.0.3: Monday, 16th July 2007
+  * added a new parameter "no" to "--loops" which disables learning of loop formulas
+  * improved performance of the equivalence-preprocessing algorithm on certain inputs
+  * adapted lookahead so that it can distinguish equivalent variables
+  * fixed a bug in the dimacs front-end that led to incorrect results on certain inputs
+  * if "--loops=shared" was used, learnt loop formulas were not added to the learnt db and thus not subject to nogood deletion
+  * fixed a bug that led to an infinite loop on certain optimization problems (bug was introduced in version 1.0.2)
+  * added signal handler to intercept standard signals like SIGTERM
+
+clasp 1.0.2: Friday, 15th June 2007
+  * added "--eq" for equivalence-based preprocessing; added "--eq" to default command line
+  * "--contraction" expects threshold length for dynamic compression of long learnt clauses (default: 60)
+  * added a second (optional) grow factor to "--deletion" that is applied after every reduction
+  * added "--reduce-on-restart" that removes some of the learnt nogoods on every restart
+  * added "--optimize" for computing either one or all optimal solutions
+  * fixed a bug that led to a crash when "--evaluate-loops=false" was used together with
+    the default heuristic
+  * fixed a bug that led to a crash on certain problems when lookahead was used
+    in lookback mode
+
+
+clasp 1.0.1: Wednesday, 28th March 2007
+  * some fixes to make clasp compile on gcc 4.1 and gcc 4.2
+  * fixed a bug in the RNG that led to array-out-of-bounds accesses using certain
+    standard library implementations
+  * fixed a bug in the (native) handling of constraint-rules - clasp treated
+    their bodies as sets and spuriously removed duplicate atoms
+  * fixed a bug in the handling of compute-statements - clasp failed to produce
+    a conflict if the compute-statement forced an unsupported atom to be true.
+
+clasp 1.0: Wednesday, 7th March 2007
+  * added native support for extended rules (disabled by default)
+  * added support for optimize statements
+  * added "--dimacs" for reading CNF-problems in dimacs-format
+  * added "--contraction": dynamic clause compression for very long learnt clauses
+  * added "--minimize": (weak) conflict clause minimization
+  * added "--lookahead" for (configurable) failed-literal-detection
+  * added "--rand-watches" for random initialization of watches
+  * added "--rand-prop" for support of occasional random-choices
+  * added "--supp-models" for computation of supported models
+  * added "--bounded-restarts" for allowing (bounded) restarts afer solution was found
+  * new and more dynamic VSIDS heuristic
+  * new smodels-like lookahead heuristic
+  * changed nogood deletion heuristic
+  * removed -s option (replaced with --initial-lookahead)
+  * renamed --no-learn option (now: --lookback=no)
+
+clasp Asp-Comp: Revision: Wednesday, 20th December 2006
+  * scaled-down version for the ASP-competition
+
+clasp RC4: Wednesday, 25th October 2006
+  * added new restart strategies
+  * addad a randomization strategy similar to satzoo's "Burst of random variable orders"
+  * added an option to initialize the random number generator
+  * fixed bug in LparseReader that caused an infinite loop on bad input
+  * fixed implementation of BerkMin heuristic
+  * fixed potential memory-leak in clause deletion code
+
+clasp RC3: Friday, 29th September 2006
+ * transformation of extended rules to normal rules
+ * some low-level stuff to improve performance
+
+clasp RC2: Monday, 19th June 2006
+ * version produced for paper
+ * major bug fixes
+
+clasp RC1: Friday, 16th June 2006
+ * initial version
+

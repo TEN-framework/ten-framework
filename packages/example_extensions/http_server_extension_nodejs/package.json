@@ -1,0 +1,16 @@
+{
+  "name": "ten-http-server-extension",
+  "version": "1.0.0",
+  "main": "./build/index.js",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.13.5"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../../../ten_packages/system/ten_runtime_nodejs"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles"
+  }
+}

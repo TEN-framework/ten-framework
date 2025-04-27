@@ -1,0 +1,36 @@
+{
+  "type": "extension",
+  "name": "ext",
+  "version": "0.6.2",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    },
+    {
+      "type": "system",
+      "name": "googletest",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {
+    "cmd_in": [
+      {
+        "name": "hello_world"
+      }
+    ],
+    "cmd_out": [],
+    "data_in": [],
+    "data_out": [],
+    "video_frame_in": [],
+    "video_frame_out": [],
+    "audio_frame_in": [],
+    "audio_frame_out": []
+  }
+}

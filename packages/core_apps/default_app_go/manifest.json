@@ -1,0 +1,25 @@
+{
+  "type": "app",
+  "name": "default_app_go",
+  "version": "0.10.1",
+  "tags": [
+    "go",
+    "template"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.10.1"
+    }
+  ],
+  "scripts": {
+    "start": "bin/start",
+    "build": "go run ten_packages/system/ten_runtime_go/tools/build/main.go"
+  }
+}

@@ -1,0 +1,176 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+if (target_os == "") {
+  target_os = host_os
+}
+if (target_cpu == "") {
+  target_cpu = host_cpu
+}
+
+if (current_cpu == "") {
+  current_cpu = target_cpu
+}
+if (current_os == "") {
+  current_os = target_os
+}
+
+if (current_os == "win") {
+  is_linux = false
+  is_mac = false
+  is_posix = false
+  is_win = true
+} else if (current_os == "mac") {
+  is_linux = false
+  is_mac = true
+  is_posix = true
+  is_win = false
+} else if (current_os == "linux") {
+  is_linux = true
+  is_mac = false
+  is_posix = true
+  is_win = false
+}
+
+if (target_cpu == "arm" || target_cpu == "arm64") {
+  target_cpu_family = "arm"
+  target_cpu_bigendian = false
+} else if (target_cpu == "x86" || target_cpu == "x64") {
+  target_cpu_family = "x86"
+  target_cpu_bigendian = false
+}
+
+declare_args() {
+  is_clang = true
+  is_debug = false
+
+  enable_cxx_exception = true
+  enable_c_extensions = true
+
+  cxx_standard = 14
+  c_standard = 11
+}
+
+if (is_win) {
+  declare_args() {
+    vs_version = 2019
+  }
+}
+
+declare_args() {
+  enable_cxx_rtti = false
+  enable_sanitizer = !is_win && is_debug
+
+  # Turn this on to have the compiler output extra timing information.
+  enable_build_time_report = false
+
+  # log_level = 0: just show gn + ninja native log
+  # log_level = 1: display more logs
+  log_level = 0
+
+  # If set true, all actions which pool is 'serialized_action_pool' will show
+  # log serialized.
+  enable_serialized_actions = false
+}
+
+_default_toolchain = ""
+_default_config = []
+_default_config_name = "release"
+if (is_debug) {
+  _default_config_name = "debug"
+}
+
+if (is_win) {
+  _default_config = [
+    "//.gnfiles/build/platform/win:specific",
+    "//.gnfiles/build/toolchain/msvc:${_default_config_name}",
+  ]
+
+  if (host_os != "win") {
+    _default_config +=
+        [ "//.gnfiles/build/toolchain/clang_cross/$target_os:cross" ]
+
+    _default_toolchain = "//.gnfiles/build/toolchain/clang_cross/win:clang"
+  } else {
+    if (is_clang) {
+      _default_toolchain = "//.gnfiles/build/platform/win:clang"
+    } else {
+      _default_toolchain = "//.gnfiles/build/platform/win:msvc"
+    }
+  }
+} else if (is_mac) {
+  _default_config = [
+    "//.gnfiles/build/toolchain/clang:${_default_config_name}",
+    "//.gnfiles/build/platform/mac:specific",
+  ]
+
+  _default_toolchain = "//.gnfiles/build/platform/mac:clang"
+} else if (is_linux) {
+  if (is_clang) {
+    _default_config =
+        [ "//.gnfiles/build/toolchain/clang:${_default_config_name}" ]
+
+    _default_toolchain = "//.gnfiles/build/platform/linux:clang"
+  } else {
+    _default_config =
+        [ "//.gnfiles/build/toolchain/gcc:${_default_config_name}" ]
+
+    _default_toolchain = "//.gnfiles/build/platform/linux:gcc"
+  }
+  _default_config += [ "//.gnfiles/build/platform/linux:specific" ]
+}
+
+set_default_toolchain(_default_toolchain)
+
+common_configs = [
+  "//.gnfiles/build/toolchain/common:common",
+  "//.gnfiles/build/toolchain/common:compiler_cpu_abi",
+]
+if (!is_linux || target_cpu == host_cpu) {
+  common_configs += [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
+} else {
+  common_configs += [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
+}
+if (enable_sanitizer) {
+  common_configs += [ "//.gnfiles/build/toolchain/common:sanitizer_config" ]
+}
+if (enable_build_time_report) {
+  common_configs += [ "//.gnfiles/build/toolchain/common:compiler_timing" ]
+}
+if (cxx_standard < 14) {
+  common_configs += [ "//.gnfiles/build/feature/cpp:cxx_11_hack" ]
+}
+if (is_mac) {
+  common_configs +=
+      [ "//.gnfiles/build/toolchain/common:framework_search_config" ]
+}
+common_configs += _default_config
+
+set_defaults("static_library") {
+  configs = common_configs
+}
+
+set_defaults("source_set") {
+  configs = common_configs
+}
+
+set_defaults("shared_library") {
+  configs = common_configs
+  if (is_mac) {
+    configs += [ "//.gnfiles/build/platform/mac:mac_dynamic_flags" ]
+  }
+}
+
+set_defaults("loadable_module") {
+  configs = common_configs
+}
+
+set_defaults("executable") {
+  configs = common_configs
+  if (is_mac) {
+    configs += [ "//.gnfiles/build/platform/mac:mac_dynamic_flags" ]
+  }
+}

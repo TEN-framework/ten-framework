@@ -1,0 +1,19 @@
+{
+  "name": "ten-websocket-server-extension",
+  "version": "1.0.0",
+  "main": "./build/index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ten-runtime-nodejs": "file:../../../ten_packages/system/ten_runtime_nodejs",
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles"
+  }
+}

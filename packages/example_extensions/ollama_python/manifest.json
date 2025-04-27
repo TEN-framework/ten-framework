@@ -1,0 +1,29 @@
+{
+  "type": "extension",
+  "name": "ollama_python",
+  "version": "0.10.1",
+  "tags": [
+    "python"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "tests/**",
+      "**.py",
+      "requirements.txt",
+      "LICENSE"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "type": "extension",
+  "name": "addon_2",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.1.0"
+    }
+  ],
+  "api": {
+    "cmd_in": [
+      {
+        "name": "cmd_1",
+        "property": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "object",
+            "properties": {
+              "c": {
+                "type": "int32"
+              }
+            }
+          }
+        },
+        "required": [
+          "a"
+        ]
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data_1",
+        "property": {
+          "a": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "video_frame_1",
+        "property": {
+          "width": {
+            "type": "int32"
+          }
+        },
+        "required": [
+          "width"
+        ]
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "audio_frame_1",
+        "property": {
+          "sample_rate": {
+            "type": "int32"
+          }
+        }
+      }
+    ]
+  }
+}

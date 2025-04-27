@@ -1,0 +1,28 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+action("create_tman_config") {
+  script = "//build/ten_manager/scripts/create_tman_config.py"
+
+  base_path = rebase_path("${root_out_dir}/tests/local_registry")
+
+  args = [
+    "--tman-config-file-path",
+    rebase_path("${root_out_dir}/tests/local_registry/config.json"),
+    "--registry-path",
+  ]
+  if (is_win) {
+    args += [ "file:///${base_path}" ]
+  } else {
+    args += [ "file://${base_path}" ]
+  }
+  args += [
+    "--log-level",
+    "${log_level}",
+  ]
+
+  outputs = [ "${root_out_dir}/tests/local_registry/config.json" ]
+}

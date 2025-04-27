@@ -1,0 +1,47 @@
+sudo: false
+language: cpp
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - george-edison55-precise-backports
+          packages:
+            - g++-4.9
+            - cmake
+            - cmake-data
+      env:
+        - COMPILER='g++-4.9'
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - george-edison55-precise-backports
+          packages:
+            - g++-5
+            - cmake
+            - cmake-data
+      env:
+        - COMPILER='g++-5'
+    - os: osx
+      osx_image: xcode8
+      env:
+        - COMPILER='clang++'
+
+install:
+  - export CMAKE=cmake  
+  - export CXX=$COMPILER
+  - $CMAKE --version
+  - $CXX --version
+script:
+  - mkdir $CXX && cd $CXX
+  - $CMAKE -DCMAKE_CXX_COMPILER=$CXX -DLIB_POTASSCO_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra" ../
+  - make -j3 && make test CTEST_OUTPUT_ON_FAILURE=1
+  - $CMAKE -DCMAKE_CXX_COMPILER=$CXX -DLIB_POTASSCO_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wextra" ../
+  - make -j3 && make test CTEST_OUTPUT_ON_FAILURE=1
+

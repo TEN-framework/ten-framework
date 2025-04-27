@@ -1,0 +1,76 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+followlocation
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 301 OK swsbounce
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 4
+Location: http://yet.another.host/%TESTNUMBER
+
+moo
+</data>
+<data1>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 4
+
+moo
+</data1>
+<datacheck>
+HTTP/1.1 301 OK swsbounce
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 4
+Location: http://yet.another.host/%TESTNUMBER
+
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 4
+
+moo
+</datacheck>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP replace Host: when following Location: to new host
+ </name>
+ <command>
+http://deathstar.another.galaxy/%TESTNUMBER -L -H "Host: another.visitor.stay.a.while.stay.foreeeeeever" --proxy http://%HOSTIP:%HTTPPORT
+</command>
+<features>
+proxy
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://deathstar.another.galaxy/%TESTNUMBER HTTP/1.1
+Host: another.visitor.stay.a.while.stay.foreeeeeever
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://yet.another.host/%TESTNUMBER HTTP/1.1
+Host: yet.another.host
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+</protocol>
+
+</verify>
+</testcase>

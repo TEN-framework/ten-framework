@@ -1,0 +1,16 @@
+{
+  "type": "extension",
+  "name": "pil_demo_python",
+  "version": "0.10.1",
+  "tags": [
+    "python"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10.1"
+    }
+  ],
+  "api": {}
+}

@@ -1,0 +1,158 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+if (is_mac) {
+  import("//.gnfiles/build/feature/apple.gni")
+}
+
+# ==============
+# common defines
+# ==============
+
+if (!defined(common_defines)) {
+  common_defines = []
+}
+
+common_defines += [ "TEN_PLATFORM" ]
+
+if (target_os == "linux") {
+  common_defines += [ "OS_LINUX" ]
+} else if (target_os == "win") {
+  common_defines += [
+    "OS_WINDOWS",
+    "TEN_RUNTIME_EXPORT",
+    "WIN32_LEAN_AND_MEAN",
+    "_CRT_SECURE_NO_WARNINGS",
+  ]
+} else if (target_os == "mac") {
+  common_defines += [ "OS_MACOS" ]
+}
+
+# TEN_LOG runtime log level could _only_ be larger than TEN_LOG_DEF_LEVEL, so we
+# need to set TEN_LOG_DEF_LEVEL to the most widely log level, i.e.,
+# TEN_LOG_VERBOSE, so that we can turn on/off any log level at runtime.
+common_defines += [ "TEN_LOG_DEF_LEVEL=TEN_LOG_DEBUG" ]
+
+# =============
+# common cflags
+# =============
+
+common_cflags = []
+
+if (!is_win) {
+  common_cflags += [
+    "-pthread",
+    "-Wall",
+    "-Wno-missing-braces",
+    "-Wmissing-field-initializers",
+  ]
+
+  if (is_clang) {
+    common_cflags += [
+      "-fdiagnostics-absolute-paths",  # Absolute path for error message.
+      "-fdiagnostics-color",
+    ]
+
+    if (is_debug) {
+      common_cflags += [
+        "-g3",
+        "-fdebug-macro",
+        "-Wthread-safety",
+        "-fno-limit-debug-info",
+        "-fstack-protector-all",
+
+        # Necessary for usable stack traces.
+        "-fno-omit-frame-pointer",
+      ]
+    }
+  }
+} else {
+  common_cflags += [
+    "/wd4312",  # Pointer cast to void*
+    "/wd4305",  # int cast to bool
+    "/wd5105",  # macro expands to 'defined'
+    "/wd5103",  # _WINSOCK_DEPRECATED_BY warning
+    "/wd4996",  # Deprecated POSIX call (open/close/etc)
+    "/FC",  # Absolute path for error message
+  ]
+
+  if (is_debug) {
+    common_cflags += [ "/MTd" ]
+  } else {
+    common_cflags += [ "/MT" ]
+  }
+}
+
+# ===============
+# common c cflags
+# ===============
+
+common_cflags_c = []
+
+# =================
+# common c++ cflags
+# =================
+
+common_cflags_cc = []
+
+# ==================
+# common objc cflags
+# ==================
+
+common_cflags_objc = []
+
+# ====================
+# common objc++ cflags
+# ====================
+
+common_cflags_objcc = []
+
+# ==============
+# common ldflags
+# ==============
+
+common_ldflags = []
+
+if (!is_win) {
+  common_ldflags += [ "-pthread" ]
+
+  if (is_clang && is_debug) {
+    common_ldflags += [ "-Wthread-safety" ]
+  }
+
+  if (is_mac) {
+    common_ldflags += [ "-w" ]
+  }
+} else {
+  common_ldflags += [ "/ignore:4217" ]
+}
+
+# ===========
+# common libs
+# ===========
+
+common_libs = []
+
+if (is_mac || is_linux) {
+  common_libs += [
+    "pthread",
+    "dl",
+  ]
+} else if (is_win) {
+  common_libs += [ "bcrypt.lib" ]
+}
+
+# ===============
+# common lib_dirs
+# ===============
+
+common_lib_dirs = []
+
+# ===============
+# common includes
+# ===============
+
+common_includes = []

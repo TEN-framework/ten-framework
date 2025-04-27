@@ -1,0 +1,350 @@
+﻿---
+Checks: >
+  *,
+  -altera-struct-pack-align,
+  -altera-unroll-loops,
+  -fuchsia-*,
+  -llvmlibc-*
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+User:            john
+CheckOptions:
+  - key:             cert-dcl16-c.NewSuffixes
+    value:           'L;LL;LU;LLU'
+  - key:             cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value:           '1'
+  - key:             google-readability-braces-around-statements.ShortStatementLines
+    value:           '1'
+  - key:             google-readability-function-size.StatementThreshold
+    value:           '800'
+  - key:             google-readability-namespace-comments.ShortNamespaceLines
+    value:           '10'
+  - key:             google-readability-namespace-comments.SpacesBeforeComments
+    value:           '2'
+  - key:             modernize-loop-convert.MaxCopySize
+    value:           '16'
+  - key:             modernize-loop-convert.MinConfidence
+    value:           reasonable
+  - key:             modernize-loop-convert.NamingStyle
+    value:           CamelCase
+  - key:             modernize-pass-by-value.IncludeStyle
+    value:           llvm
+  - key:             modernize-replace-auto-ptr.IncludeStyle
+    value:           llvm
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+
+
+  # because _impl isn't technically lower_case
+  # - key:             readability-identifier-naming.NamespaceCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.InlineNamespaceCase
+    value:           lower_case
+  - key:             readability-identifier-naming.EnumConstantCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ConstexprVariableCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.ConstantMemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.PrivateMemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ProtectedMemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.PublicMemberCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MemberCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ClassConstantCase
+  #   value:           lower_case
+  # - key:             readability-identifier-naming.ClassMemberCase
+  #   value:           lower_case
+  # - key:             readability-identifier-naming.GlobalConstantCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.GlobalConstantPointerCase
+    value:           lower_case
+  - key:             readability-identifier-naming.GlobalPointerCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.GlobalVariableCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.LocalConstantCase
+    value:           lower_case
+  - key:             readability-identifier-naming.LocalConstantPointerCase
+    value:           lower_case
+  - key:             readability-identifier-naming.LocalPointerCase
+    value:           lower_case
+  - key:             readability-identifier-naming.LocalVariableCase
+    value:           lower_case
+  - key:             readability-identifier-naming.StaticConstantCase
+    value:           lower_case
+  - key:             readability-identifier-naming.StaticVariableCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ConstantCase
+  #   value:           lower_case
+  # - key:             readability-identifier-naming.VariableCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.ConstantParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ParameterPackCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.PointerParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ConstantPointerParameterCase
+    value:           lower_case
+  - key:             readability-identifier-naming.AbstractClassCase
+    value:           lower_case
+  - key:             readability-identifier-naming.StructCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ClassCase
+    value:           lower_case
+  - key:             readability-identifier-naming.UnionCase
+    value:           lower_case
+  - key:             readability-identifier-naming.EnumCase
+    value:           lower_case
+  - key:             readability-identifier-naming.GlobalFunctionCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ConstexprFunctionCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.FunctionCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ConstexprMethodCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.VirtualMethodCase
+    value:           lower_case
+  # - key:             readability-identifier-naming.ClassMethodCase
+  #   value:           lower_case
+  - key:             readability-identifier-naming.PrivateMethodCase
+    value:           lower_case
+  - key:             readability-identifier-naming.ProtectedMethodCase
+    value:           lower_case
+  - key:             readability-identifier-naming.PublicMethodCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MethodCase
+    value:           lower_case
+  - key:             readability-identifier-naming.TypedefCase
+    value:           lower_case
+  # https://bugs.llvm.org/show_bug.cgi?id=46752
+  # - key:             readability-identifier-naming.TypeTemplateParameterCase
+  #   value:           CamelCase
+  - key:             readability-identifier-naming.ValueTemplateParameterCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.TemplateTemplateParameterCase
+    value:           CamelCase
+  # https://bugs.llvm.org/show_bug.cgi?id=46752
+  # - key:             readability-identifier-naming.TemplateParameterCase
+  #   value:           CamelCase
+  - key:             readability-identifier-naming.TypeAliasCase
+    value:           lower_case
+  - key:             readability-identifier-naming.MacroDefinitionCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.ObjcIvarCase
+    value:           lower_case
+  - key:             readability-identifier-naming.NamespacePrefix
+    value:           ''
+  - key:             readability-identifier-naming.InlineNamespacePrefix
+    value:           ''
+  - key:             readability-identifier-naming.EnumConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprVariablePrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantMemberPrefix
+    value:           ''
+  - key:             readability-identifier-naming.PrivateMemberPrefix
+    value:           '_'
+  - key:             readability-identifier-naming.ProtectedMemberPrefix
+    value:           '_'
+  - key:             readability-identifier-naming.PublicMemberPrefix
+    value:           ''
+  - key:             readability-identifier-naming.MemberPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ClassConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ClassMemberPrefix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalConstantPointerPrefix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalPointerPrefix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalVariablePrefix
+    value:           ''
+  - key:             readability-identifier-naming.LocalConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.LocalConstantPointerPrefix
+    value:           ''
+  - key:             readability-identifier-naming.LocalPointerPrefix
+    value:           ''
+  - key:             readability-identifier-naming.LocalVariablePrefix
+    value:           ''
+  - key:             readability-identifier-naming.StaticConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.StaticVariablePrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantPrefix
+    value:           ''
+  - key:             readability-identifier-naming.VariablePrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ParameterPackPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.PointerParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantPointerParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.AbstractClassPrefix
+    value:           ''
+  - key:             readability-identifier-naming.StructPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ClassPrefix
+    value:           ''
+  - key:             readability-identifier-naming.UnionPrefix
+    value:           ''
+  - key:             readability-identifier-naming.EnumPrefix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalFunctionPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprFunctionPrefix
+    value:           ''
+  - key:             readability-identifier-naming.FunctionPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.VirtualMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ClassMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.PrivateMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ProtectedMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.PublicMethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.MethodPrefix
+    value:           ''
+  - key:             readability-identifier-naming.TypedefPrefix
+    value:           ''
+  - key:             readability-identifier-naming.TypeTemplateParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ValueTemplateParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.TemplateTemplateParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.TemplateParameterPrefix
+    value:           ''
+  - key:             readability-identifier-naming.TypeAliasPrefix
+    value:           ''
+  - key:             readability-identifier-naming.MacroDefinitionPrefix
+    value:           ''
+  - key:             readability-identifier-naming.ObjcIvarPrefix
+    value:           ''
+  - key:             readability-identifier-naming.NamespaceSuffix
+    value:           ''
+  - key:             readability-identifier-naming.InlineNamespaceSuffix
+    value:           ''
+  - key:             readability-identifier-naming.EnumConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprVariableSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantMemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.PrivateMemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ProtectedMemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.PublicMemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.MemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ClassConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ClassMemberSuffix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalConstantPointerSuffix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalPointerSuffix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalVariableSuffix
+    value:           ''
+  - key:             readability-identifier-naming.LocalConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.LocalConstantPointerSuffix
+    value:           ''
+  - key:             readability-identifier-naming.LocalPointerSuffix
+    value:           ''
+  - key:             readability-identifier-naming.LocalVariableSuffix
+    value:           ''
+  - key:             readability-identifier-naming.StaticConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.StaticVariableSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantSuffix
+    value:           ''
+  - key:             readability-identifier-naming.VariableSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ParameterPackSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.PointerParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstantPointerParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.AbstractClassSuffix
+    value:           ''
+  - key:             readability-identifier-naming.StructSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ClassSuffix
+    value:           ''
+  - key:             readability-identifier-naming.UnionSuffix
+    value:           ''
+  - key:             readability-identifier-naming.EnumSuffix
+    value:           ''
+  - key:             readability-identifier-naming.GlobalFunctionSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprFunctionSuffix
+    value:           ''
+  - key:             readability-identifier-naming.FunctionSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ConstexprMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.VirtualMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ClassMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.PrivateMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ProtectedMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.PublicMethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.MethodSuffix
+    value:           ''
+  - key:             readability-identifier-naming.TypedefSuffix
+    value:           ''
+  - key:             readability-identifier-naming.TypeTemplateParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ValueTemplateParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.TemplateTemplateParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.TemplateParameterSuffix
+    value:           ''
+  - key:             readability-identifier-naming.TypeAliasSuffix
+    value:           ''
+  - key:             readability-identifier-naming.MacroDefinitionSuffix
+    value:           ''
+  - key:             readability-identifier-naming.ObjcIvarSuffix
+    value:           ''
+...

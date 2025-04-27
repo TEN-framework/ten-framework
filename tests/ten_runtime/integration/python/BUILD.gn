@@ -1,0 +1,72 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/options.gni")
+
+copy("copy_pytest_ini_for_ten_runtime_python_integration_test") {
+  sources = [ "//tests/ten_runtime/integration/pytest.ini" ]
+  outputs = [ "${root_out_dir}/tests/ten_runtime/integration/pytest.ini" ]
+}
+
+group("python") {
+  deps = []
+
+  if (ten_enable_python_binding) {
+    deps += [
+      "standalone_test_async_python",
+      "standalone_test_python",
+    ]
+
+    if (ten_enable_advanced_python_integration_tests) {
+      deps += [
+        "aio_http_server_python",
+        "async_extension_basic_python",
+        "async_get_set_prop_1_python",
+        "async_get_set_prop_2_python",
+        "async_io_basic_python",
+        "call_api_after_closing_python",
+        "call_api_during_closing_python",
+        "cpp_app_multi_process_python",
+        "cpp_app_python",
+        "get_set_prop_1_python",
+        "get_set_prop_2_python",
+        "go_app_async_extension_python",
+        "go_app_log_rotate_python",
+        "large_json_python",
+        "msg_clone_python",
+        "multi_process_python",
+        "multiple_results_python_1",
+        "multiple_results_python_2",
+        "multiple_results_python_3",
+        "no_dest_async_python",
+        "no_dest_python",
+        "resp_handler_yield_python",
+        "send_cmd_discard_result_python",
+        "send_cmd_python",
+        "send_cmd_set_object_python",
+        "send_data_python",
+        "send_recv_image_python",
+        "send_recv_pcm_python",
+        "standalone_ollama_python",
+        "two_async_exts_one_group_python",
+        "two_async_exts_python",
+        "websocket_server_python",
+      ]
+
+      if (ten_enable_python_binding && ten_enable_go_binding) {
+        deps += [
+          "go_app_cythonize",
+          "go_app_partially_cythonize",
+          "go_app_python",
+          "unused_addon_python",
+        ]
+      }
+    }
+  }
+
+  deps += [ "//tests/ten_runtime/integration/python:copy_pytest_ini_for_ten_runtime_python_integration_test" ]
+}

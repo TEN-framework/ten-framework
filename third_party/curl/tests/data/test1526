@@ -1,0 +1,80 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP PUT
+HTTP CONNECT
+HTTP proxy
+proxytunnel
+CURLOPT_PROXYHEADER
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<connect>
+HTTP/1.1 200 OK
+Server: present
+
+</connect>
+<data>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+ETag: "21025-dc7-39462498"
+
+</data>
+<datacheck>
+HTTP/1.1 200 OK
+Server: present
+
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+ETag: "21025-dc7-39462498"
+
+</datacheck>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+http-proxy
+</server>
+<tool>
+lib%TESTNUMBER
+</tool>
+ <name>
+CURLOPT_PROXYHEADER: separate host/proxy headers
+ </name>
+ <command>
+ http://the.old.moo.%TESTNUMBER:%HTTPPORT/%TESTNUMBER %HOSTIP:%PROXYPORT
+</command>
+<features>
+proxy
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<proxy>
+CONNECT the.old.moo.%TESTNUMBER:%HTTPPORT HTTP/1.1
+Host: the.old.moo.%TESTNUMBER:%HTTPPORT
+Proxy-Connection: Keep-Alive
+User-Agent: Proxy Agent
+
+</proxy>
+<protocol>
+PUT /%TESTNUMBER HTTP/1.1
+Host: the.old.moo.%TESTNUMBER:%HTTPPORT
+Accept: */*
+User-Agent: Http Agent
+Content-Length: 13
+
+Hello Cloud!
+</protocol>
+</verify>
+</testcase>

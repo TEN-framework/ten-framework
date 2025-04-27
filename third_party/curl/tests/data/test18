@@ -1,0 +1,85 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+globbing
+{} list
+</keywords>
+</info>
+# Server-side
+<reply>
+<data nocheck="yes">
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+moo
+</data>
+<data2>
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+foo
+</data2>
+<data3>
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+hoo
+</data3>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+multiple requests using {} in URL
+ </name>
+ <command>
+"%HOSTIP:%HTTPPORT/{%TESTNUMBER,%TESTNUMBER0002,%TESTNUMBER0003}"
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /%TESTNUMBER0002 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /%TESTNUMBER0003 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+<stdout>
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+moo
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+foo
+HTTP/1.1 200 OK
+Funny-head: yesyes
+Content-Length: 4
+
+hoo
+</stdout>
+</verify>
+</testcase>

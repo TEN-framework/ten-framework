@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TmanConfig",
+  "type": "object",
+  "properties": {
+    "registry": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index"
+        ]
+      }
+    },
+    "admin_token": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "user_token": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "enable_package_cache": {
+      "type": "boolean",
+      "default": true
+    },
+    "designer": {
+      "$ref": "designer.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

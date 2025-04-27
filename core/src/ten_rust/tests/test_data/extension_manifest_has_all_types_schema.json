@@ -1,0 +1,90 @@
+{
+  "type": "extension",
+  "name": "default_extension_go",
+  "version": "0.1.0",
+  "api": {
+    "property": {
+      "app_id": {
+        "type": "string"
+      },
+      "app_version": {
+        "type": "uint8"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "cmd1",
+        "property": {
+          "param1": {
+            "type": "int8"
+          }
+        },
+        "result": {
+          "property": {
+            "detail": {
+              "type": "bool"
+            }
+          },
+          "required": [
+            "detail"
+          ]
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "cmd1",
+        "property": {
+          "param2": {
+            "type": "int16"
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data1"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "data2",
+        "property": {
+          "text_data": {
+            "type": "buf"
+          }
+        }
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "image_frame",
+        "property": {
+          "width": {
+            "type": "uint64"
+          }
+        }
+      }
+    ],
+    "video_frame_out": [
+      {
+        "name": "image_frame"
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "format": {
+            "type": "uint8"
+          }
+        }
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}

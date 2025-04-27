@@ -1,0 +1,22 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+xcode_target_sdk = ""
+xcode_target_platform = ""
+
+assert(is_mac)
+
+if (is_mac) {
+  if (target_cpu == "x64") {
+    xcode_target_sdk = "macosx"
+    xcode_target_platform = "x86_64-apple-macosx10.9"
+  } else if (target_cpu == "arm64") {
+    xcode_target_sdk = "macosx"
+    xcode_target_platform = "arm64-apple-macosx10.9"
+  } else {
+    assert(false, "Not support")
+  }
+}

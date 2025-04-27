@@ -1,0 +1,6 @@
+This example shows how to use gringo's abstract syntax tree to append an
+additional parameter to all symbolic atoms occurring in a program.
+
+Example calls:
+    gringo --text visitor.lp
+

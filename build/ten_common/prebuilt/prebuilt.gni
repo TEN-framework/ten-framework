@@ -1,0 +1,118 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+template("ten_prebuilt_library") {
+  assert(defined(invoker.url), "Must provide dist url")
+
+  _dir_path = "prebuilt/${invoker.name}/lib"
+  _zip_path = "${_dir_path}/${invoker.name}.zip"
+
+  _download_target = "${target_name}_lib_download"
+  action(_download_target) {
+    script = "//build/ten_common/scripts/download.py"
+
+    _source_file = "${invoker.url}"
+    _dest_file = "${root_out_dir}/${_zip_path}"
+
+    args = [
+      _source_file,
+      rebase_path(_dest_file),
+    ]
+
+    inputs = [ "//build/ten_common/scripts/download.py" ]
+    outputs = [ _dest_file ]
+  }
+
+  _is_shared_library =
+      defined(invoker.is_shared_library) && invoker.is_shared_library
+
+  _lib_prefix = "lib"
+  _lib_postfix = ""
+  if (_is_shared_library) {
+    if (is_linux) {
+      if (defined(invoker.lib_version)) {
+        lib_version = invoker.lib_version
+        _lib_postfix = ".so.${lib_version}"
+      } else {
+        _lib_postfix = ".so"
+      }
+    } else if (is_win) {
+      _lib_postfix = ".dll"
+    } else if (is_mac) {
+      _lib_postfix = ".dylib"
+    } else {
+      assert(0, "Unsupported platform.")
+    }
+  } else {
+    _lib_postfix = ".a"
+  }
+
+  # Construct the actual library file name.
+  _lib_file_paths = []
+  foreach(lib, invoker.libs) {
+    _lib_file_paths +=
+        [ "${root_out_dir}/${_dir_path}/${_lib_prefix}${lib}${_lib_postfix}" ]
+  }
+
+  _unzip_target = "${target_name}_lib_unzip"
+  action(_unzip_target) {
+    script = "//build/ten_common/scripts/unzip.py"
+
+    _source_file = "${root_out_dir}/${_zip_path}"
+
+    args = [
+      rebase_path(_source_file),
+      rebase_path(_dir_path),
+    ]
+
+    inputs = [
+      _source_file,
+      "//build/ten_common/scripts/unzip.py",
+    ]
+
+    outputs = _lib_file_paths
+
+    # Need to complete the downloading first.
+    deps = [ ":${_download_target}" ]
+  }
+
+  config("${target_name}_config") {
+    libs = invoker.libs
+    lib_dirs = [ rebase_path("${root_out_dir}/${_dir_path}") ]
+
+    if (defined(invoker.extra_ldflags) && invoker.extra_ldflags != []) {
+      if (!defined(ldflags)) {
+        ldflags = []
+      }
+
+      ldflags += invoker.extra_ldflags
+    }
+  }
+
+  group(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "data_deps",
+                           ])
+
+    if (!defined(deps)) {
+      deps = []
+    }
+
+    # Need to complete the unzip.
+    deps += [ ":${_unzip_target}" ]
+
+    # To enable the caller to 'depends' on the prebuilt libraries.
+    public_deps = [ ":${_unzip_target}" ]
+
+    # Inject the header file inclusion path into the caller.
+    public_configs = [ ":${target_name}_config" ]
+  }
+}

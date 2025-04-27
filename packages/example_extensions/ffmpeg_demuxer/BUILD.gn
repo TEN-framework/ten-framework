@@ -1,0 +1,46 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+ten_package("ffmpeg_demuxer") {
+  package_kind = "extension"
+  enable_build = true
+
+  resources = [
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+    "res/test.mp4",
+  ]
+
+  sources = [
+    "src/demuxer.cc",
+    "src/demuxer.h",
+    "src/demuxer_thread.cc",
+    "src/demuxer_thread.h",
+    "src/main.cc",
+  ]
+
+  include_dirs = [
+    "//core/src",
+    "//core",
+  ]
+  deps = [
+    "//core/src/ten_runtime",
+    "//third_party/ffmpeg:ffmpeg_for_ten_packages",
+  ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_ffmpeg_demuxer_to_server") {
+    base_dir =
+        rebase_path("${root_out_dir}/ten_packages/extension/ffmpeg_demuxer")
+    deps = [ "//packages/example_extensions/ffmpeg_demuxer" ]
+  }
+}

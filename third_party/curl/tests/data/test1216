@@ -1,0 +1,66 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+cookies
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/4.0
+Date: Tue, 25 Sep 2001 19:37:44 GMT
+Content-Type: text/html
+Connection: close
+Content-Length: 21
+
+This server says moo
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP cookie domains tailmatching the host name
+ </name>
+ <command>
+http://example.fake/c/%TESTNUMBER http://bexample.fake/c/%TESTNUMBER -b %LOGDIR/injar%TESTNUMBER -x %HOSTIP:%HTTPPORT
+</command>
+<file name="%LOGDIR/injar%TESTNUMBER">
+example.fake	FALSE	/a	FALSE	2139150993	mooo	indeed
+example.fake	FALSE	/b	FALSE	0		moo1	indeed
+example.fake	FALSE	/c	FALSE	2139150993	moo2	indeed
+example.fake	TRUE	/c	FALSE	2139150993	moo3	indeed
+</file>
+<features>
+cookies
+proxy
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://example.fake/c/%TESTNUMBER HTTP/1.1
+Host: example.fake
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+Cookie: moo3=indeed; moo2=indeed
+
+GET http://bexample.fake/c/%TESTNUMBER HTTP/1.1
+Host: bexample.fake
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+</protocol>
+</verify>
+</testcase>

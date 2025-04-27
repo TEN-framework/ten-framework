@@ -1,0 +1,15 @@
+{
+  "base_url": "xxx",
+  "api_key": "yyy",
+  "model": "qwen2.5-duplex-beta250106",
+  "temperature": 0.8,
+  "top_p": 0.8,
+  "prompt_version": "",
+  "language": "zh-CN",
+  "max_history": 50,
+  "force_threshold_ms": 3000,
+  "vendor": "openai",
+  "params": {
+    "billing_type": "agent_billing"
+  }
+}

@@ -1,0 +1,98 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//third_party/curl/output_libs.gni")
+import("//third_party/mbedtls/output_libs.gni")
+
+config("curl_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/curl/install/include" ]
+}
+
+cmake_project("curl") {
+  public_configs = [ ":curl_header" ]
+
+  project_path = "."
+  project_name = "libcurl"
+  build_path = "${root_gen_dir}/cmake/curl/"
+  install_path = "${build_path}/install/"
+  library_path = [ "$install_path/lib/" ]
+
+  public_deps = [ "//third_party/mbedtls" ]
+
+  if (defined(mbedtls_output_libs) && mbedtls_output_libs != []) {
+    # Because the generated 'curl' library depends on the 'mbedtls' libraries at
+    # runtime, so we need to copy the 'mbedtls' libraries to the same folder of
+    # the generated 'curl' library, so that the 'curl' library can find those
+    # mbedtls libraries at runtime without needing to add the 'mbedtls' library
+    # folder to the 'rpath' of the 'curl' library.
+    copy("mbedtls_libraries") {
+      sources = mbedtls_output_libs
+      outputs = [ "$install_path/lib/{{source_file_part}}" ]
+    }
+
+    deps = [ ":mbedtls_libraries" ]
+  }
+
+  options = [ "CMAKE_PREFIX_PATH=" +
+              rebase_path("${root_gen_dir}/cmake/mbedtls/install") ]
+
+  cflags = [
+    # Please refer to https://github.com/curl/curl/issues/2196
+    # "\"-DCURL_STATICLIB\"",
+
+    # libcurl might be part of another shared library, so we have to enable -fPIC
+    # even if libcurl is a static library.
+    "\"-fPIC\"",
+  ]
+
+  if (is_debug) {
+    options += [
+      "ENABLE_DEBUG=ON",
+      "ENABLE_CURLDEBUG=ON",
+    ]
+  }
+
+  options += [
+    "BUILD_CURL_EXE=OFF",
+    "CURL_ENABLE_SSL=ON",
+    "CURL_USE_MBEDTLS=ON",
+    "CURL_DISABLE_LDAP=ON",
+    "CURL_DISABLE_LDAPS=ON",
+    "CURL_USE_LIBSSH2=OFF",
+    "CURL_USE_LIBPSL=OFF",
+    "USE_LIBIDN2=OFF",
+    "ENABLE_WEBSOCKETS=ON",
+    "ENABLE_IPV6=OFF",
+  ]
+
+  if (is_mac) {
+    # The curl framework uses the 'select' system call in the multiplexed I/O
+    # handling by default. But the 'select' system call has a limitation that it
+    # can only handle file descriptors up to FD_SETSIZE (1024) on macOS.
+    #
+    # libcurl will be used in the concurrent test cases, so it can _not_ use
+    # the default 'select' system call. Instead, it should use the 'poll'
+    # system call to avoid the file descriptors limitation. The following flag
+    # will enable 'poll' system call in the libcurl.
+    options += [ "HAVE_POLL_FINE=1" ]
+  }
+
+  if (is_win) {
+    options += [ "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE" ]
+  }
+
+  if (curl_use_shared_lib) {
+    options += [ "BUILD_SHARED_LIBS=ON" ]
+  } else {
+    options += [ "BUILD_SHARED_LIBS=OFF" ]
+
+    # libcurl.a needs libz.a
+    public_deps += [ "//third_party/zlib" ]
+  }
+
+  outputs_seen_by_ag = curl_output_libs
+}

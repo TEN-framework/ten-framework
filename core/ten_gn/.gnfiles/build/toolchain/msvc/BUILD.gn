@@ -1,0 +1,87 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+default_libs = [
+  "advapi32.lib",
+  "comdlg32.lib",
+  "dbghelp.lib",
+  "dnsapi.lib",
+  "gdi32.lib",
+  "msimg32.lib",
+  "odbc32.lib",
+  "odbccp32.lib",
+  "oleaut32.lib",
+  "psapi.lib",
+  "shell32.lib",
+  "shlwapi.lib",
+  "user32.lib",
+  "usp10.lib",
+  "uuid.lib",
+  "version.lib",
+  "wininet.lib",
+  "winmm.lib",
+  "winspool.lib",
+  "ws2_32.lib",
+  "oldnames.lib",
+  "userenv.lib",
+  "ntdll.lib",
+  "synchronization.lib",
+]
+
+declare_args() {
+  use_static_crt = true
+}
+
+config("debug") {
+  defines = [ "_DEBUG" ]
+  cflags_cc = []
+  cflags = []
+
+  if (host_os == "win") {
+    ldflags = [
+      "/DEBUG",
+      "/ignore:4098",
+    ]
+  }
+  libs = default_libs
+  libs += [
+    "msvcrtd.lib",
+    "ucrtd.lib",
+    "vcruntimed.lib",
+  ]
+
+  if (use_static_crt) {
+    cflags += [ "/MTd" ]
+  } else {
+    cflags += [ "/MDd" ]
+  }
+}
+
+config("release") {
+  defines = [ "NDEBUG" ]
+  cflags_cc = []
+  cflags = []
+
+  # Linker symbols for backtraces only.
+  if (host_os == "win") {
+    ldflags = [
+      "/DEBUG",
+      "/ignore:4098",
+    ]
+  }
+  libs = default_libs
+  libs += [
+    "msvcrt.lib",
+    "ucrt.lib",
+    "vcruntime.lib",
+  ]
+
+  if (use_static_crt) {
+    cflags += [ "/MT" ]
+  } else {
+    cflags += [ "/MD" ]
+  }
+}

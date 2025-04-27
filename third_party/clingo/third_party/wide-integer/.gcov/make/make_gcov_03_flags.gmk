@@ -1,0 +1,81 @@
+﻿# ------------------------------------------------------------------------------
+#  Copyright Christopher Kormanyos 2022.
+#  Distributed under the Boost Software License,
+#  Version 1.0. (See accompanying file LICENSE_1_0.txt
+#  or copy at http://www.boost.org/LICENSE_1_0.txt)
+# ------------------------------------------------------------------------------
+
+BOOST_ROOT_FOR_GCOV = /mnt/c/boost/boost_1_78_0
+CC                  = g++
+STD                 = c++14
+ALL_COV             = 0
+
+ifneq ($(MY_BOOST_ROOT),)
+BOOST_ROOT_FOR_GCOV := $(MY_BOOST_ROOT)
+endif
+
+ifneq ($(MY_CC),)
+CC                  := $(MY_CC)
+endif
+
+ifneq ($(MY_STD),)
+STD                 := $(MY_STD)
+endif
+
+ifneq ($(MY_STD),)
+STD                 := $(MY_STD)
+endif
+
+ifneq ($(MY_ALL_COV),)
+ALL_COV             := $(MY_ALL_COV)
+endif
+
+CXXFLAGS     = -march=native                                                   \
+               -mtune=native                                                   \
+               -O2                                                             \
+               -Wall                                                           \
+               -Wextra                                                         \
+               -Wconversion                                                    \
+               -Wsign-conversion                                               \
+               -std=$(STD)                                                     \
+               -pthread                                                        \
+               -lpthread                                                       \
+               -fno-inline-functions                                           \
+               -fprofile-arcs                                                  \
+               -ftest-coverage
+
+C_DEFINES    = WIDE_INTEGER_HAS_COVERAGE                                       \
+               WIDE_INTEGER_HAS_LIMB_TYPE_UINT64                               \
+               WIDE_INTEGER_HAS_MUL_8_BY_8_UNROLL
+
+C_INCLUDES   = $(PATH_SRC)                                                     \
+               $(BOOST_ROOT_FOR_GCOV)
+
+C_DEFINES   :=$(addprefix -D,$(C_DEFINES))
+C_INCLUDES  :=$(addprefix -I,$(C_INCLUDES))
+
+GCOV_FLAGS   = --object-directory obj                                          \
+               --demangled-names
+
+
+# ------------------------------------------------------------------------------
+# All gcov flags: The GCOV_FLAGS below are equivalent to -abcfu
+# ------------------------------------------------------------------------------
+
+ifneq ($(ALL_COV),0)
+GCOV_FLAGS  := $(GCOV_FLAGS)                                                   \
+               --all-blocks                                                    \
+               --branch-counts                                                 \
+               --branch-probabilities                                          \
+               --function-summaries                                            \
+               --unconditional-branches
+endif
+
+LCOV_BRANCH  =
+
+ifneq ($(ALL_COV),0)
+LCOV_BRANCH := --rc lcov_branch_coverage=1
+endif
+
+LCOV_REMOVES = '/usr/*'                                                       \
+               '*boost/*'

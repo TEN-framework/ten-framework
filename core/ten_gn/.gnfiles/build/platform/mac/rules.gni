@@ -1,0 +1,292 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//.gnfiles/build/platform/mac/base_rules.gni")
+
+template("mac_info_plist") {
+  if (defined(invoker.info_plist)) {
+    _info_plist = invoker.info_plist
+  } else {
+    _info_plist = "//.gnfiles/build/platform/mac/Info.plist"
+  }
+  info_plist(target_name) {
+    format = "xml1"
+    extra_substitutions = []
+    if (defined(invoker.extra_substitutions)) {
+      extra_substitutions = invoker.extra_substitutions
+    }
+    plist_templates = [ _info_plist ]
+    if (defined(invoker.info_plist_target)) {
+      deps = [ invoker.info_plist_target ]
+    }
+    forward_variables_from(invoker,
+                           [
+                             "testonly",
+                             "executable_name",
+                           ])
+  }
+}
+
+template("framework_bundle") {
+  assert(defined(invoker.deps) || defined(invoker.public_deps),
+         "Dependencies must be specified for $target_name")
+  assert(invoker.framework_version != "", "framework_version is required")
+
+  #   assert(defined(invoker.framework_contents), "framework_contents is required")
+
+  _info_plist_target = target_name + "_info_plist"
+
+  mac_info_plist(_info_plist_target) {
+    forward_variables_from(invoker,
+                           [
+                             "extra_substitutions",
+                             "info_plist",
+                             "info_plist_target",
+                             "testonly",
+                           ])
+  }
+
+  _info_plist_bundle_data = _info_plist_target + "_bundle_data"
+
+  bundle_data(_info_plist_bundle_data) {
+    forward_variables_from(invoker, [ "testonly" ])
+    sources = get_target_outputs(":$_info_plist_target")
+    outputs = [ "{{bundle_resources_dir}}/Info.plist" ]
+    public_deps = [ ":$_info_plist_target" ]
+  }
+
+  _target_name = target_name
+  _output_name = target_name
+  if (defined(invoker.output_name)) {
+    _output_name = invoker.output_name
+  }
+
+  # Create a file to track the build dependency on the framework_version and
+  # framework_contents variables.
+  _framework_toc = [
+    "Version=" + invoker.framework_version,
+    _output_name,
+  ]
+  _framework_contents = [
+    _output_name,
+    "Resources",
+  ]
+  if (defined(invoker.framework_contents) && invoker.framework_contents != []) {
+    _framework_toc += invoker.framework_contents
+    _framework_contents += invoker.framework_contents
+  }
+  _framework_toc_file = "$target_out_dir/${target_name}.toc"
+  write_file(_framework_toc_file, _framework_toc)
+
+  # Create local variables for referencing different parts of the bundle.
+  _framework_target = _target_name
+  _framework_name = _output_name + ".framework"
+  _framework_base_dir = "${root_out_dir}/$_framework_name"
+  _framework_root_dir =
+      _framework_base_dir + "/Versions/${invoker.framework_version}"
+
+  # Clean the entire framework if the framework_version changes.
+  _version_file = "$target_out_dir/${target_name}_version"
+  exec_script("//.gnfiles/build/platform/mac/prepare_framework_version.py",
+              [
+                rebase_path(_version_file),
+                rebase_path(_framework_base_dir),
+                invoker.framework_version,
+              ])
+
+  # Create the symlinks.
+  _framework_package_target = target_name + "_package"
+  action(_framework_package_target) {
+    script = "//.gnfiles/build/platform/mac/package_framework.py"
+
+    # The TOC file never needs to be read, since its contents are the values
+    # of GN variables. It is only used to trigger this rule when the values
+    # change.
+    inputs = [ _framework_toc_file ]
+
+    _stamp_file = "$target_out_dir/run_${_framework_package_target}.stamp"
+    outputs = [
+      _stamp_file,
+      "${_framework_base_dir}/${_output_name}",
+    ]
+
+    visibility = [ ":$_framework_target" ]
+    args = []
+    if (defined(invoker.public_headers) && invoker.public_headers != []) {
+      headers = ""
+      inputs += invoker.public_headers
+      foreach(h, invoker.public_headers) {
+        if ("$headers" == "") {
+          headers = "$h"
+        } else {
+          headers = "$headers,$h"
+        }
+      }
+      args += [
+        "--headers",
+        "$headers",
+      ]
+    }
+    args += [
+              "--framework",
+              rebase_path(_framework_base_dir, root_build_dir),
+              "--stamp",
+              rebase_path(_stamp_file, root_build_dir),
+              "--version",
+              invoker.framework_version,
+              "--contents",
+            ] + _framework_contents
+
+    # It is not possible to list _framework_contents as outputs, since
+    # ninja does not properly stat symbolic links.
+    # https://github.com/ninja-build/ninja/issues/1186
+  }
+
+  _link_shared_library_target = target_name + "_shared_library"
+  _shared_library_bundle_data = target_name + "_shared_library_bundle_data"
+  _framework_private_config = _target_name + "_private_config"
+  config(_framework_private_config) {
+    cflags = [
+      "-F",
+      rebase_path("${root_out_dir}/.", root_build_dir),
+    ]
+    ldflags = [
+      "-F",
+      rebase_path("${root_out_dir}/.", root_build_dir),
+    ]
+    if (host_os == "mac") {
+      ldflags += [
+        "-Xlinker",
+        "-rpath",
+        "-Xlinker",
+        rebase_path("${root_out_dir}"),
+      ]
+    } else {
+      ldflags += [
+        "-rpath",
+        rebase_path("${root_out_dir}"),
+      ]
+    }
+    ldflags += [
+      "-Xlinker",
+      "-install_name",
+      "-Xlinker",
+      "@rpath/${invoker.output_name}.framework/Versions/A/${invoker.output_name}",
+    ]
+    if (host_os == "mac") {
+      ldflags += [
+        "-Xlinker",
+        "-dead_strip",
+      ]
+    } else {
+      ldflags += [ "-dead_strip" ]
+    }
+    if (defined(invoker.ld_script) && invoker.ld_script != "") {
+      if (host_os == "mac") {
+        ldflags += [
+          "-Xlinker",
+          "-exported_symbols_lis",
+          "-Xlinker",
+        ]
+      } else {
+        ldflags += [ "-exported_symbols_list" ]
+      }
+      ldflags += [ "${invoker.ld_script}" ]
+    }
+  }
+
+  shared_library(_link_shared_library_target) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "assert_no_deps",
+                             "bundle_deps",
+                             "code_signing_enabled",
+                             "data_deps",
+                             "info_plist",
+                             "info_plist_target",
+                             "output_name",
+                             "visibility",
+                           ])
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ ":${_framework_private_config}" ]
+    visibility = [ ":$_shared_library_bundle_data" ]
+    output_name = _output_name
+    output_prefix_override = true
+    output_extension = ""
+    output_dir = "$target_out_dir/$_link_shared_library_target"
+  }
+
+  bundle_data(_shared_library_bundle_data) {
+    visibility = [ ":$_framework_target" ]
+    forward_variables_from(invoker, [ "testonly" ])
+    sources = [ "$target_out_dir/$_link_shared_library_target/$_output_name" ]
+    outputs = [ "{{bundle_executable_dir}}/$_output_name" ]
+    public_deps = [ ":$_link_shared_library_target" ]
+  }
+
+  _framework_public_config = _target_name + "_public_config"
+  config(_framework_public_config) {
+    # TODO(sdefresne): should we have a framework_dirs similar to lib_dirs
+    # and include_dirs to avoid duplicate values on the command-line.
+    visibility = [ ":$_framework_target" ]
+    cflags = [
+      "-F",
+      rebase_path("${root_out_dir}/.", root_build_dir),
+    ]
+    ldflags = [
+      "-F",
+      rebase_path("${root_out_dir}/.", root_build_dir),
+    ]
+    lib_dirs = [ root_out_dir ]
+    libs = [ _framework_name ]
+  }
+
+  create_bundle(_framework_target) {
+    forward_variables_from(invoker,
+                           [
+                             "data_deps",
+                             "deps",
+                             "public_deps",
+                             "public_configs",
+                             "testonly",
+                           ])
+
+    if (defined(invoker.visibility)) {
+      visibility = invoker.visibility
+      visibility += [ ":$_target_name+link" ]
+    }
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    if (host_os == "mac") {
+      deps += [ ":$_info_plist_bundle_data" ]
+    }
+
+    if (defined(invoker.bundle_deps)) {
+      deps += invoker.bundle_deps
+    }
+
+    if (!defined(public_deps)) {
+      public_deps = []
+    }
+    public_deps += [
+      ":$_framework_package_target",
+      ":$_shared_library_bundle_data",
+    ]
+    if (!defined(public_configs)) {
+      public_configs = []
+    }
+    public_configs += [ ":$_framework_public_config" ]
+    bundle_root_dir = _framework_base_dir
+    bundle_contents_dir = _framework_root_dir
+    bundle_resources_dir = "$bundle_contents_dir/Resources"
+    bundle_executable_dir = bundle_contents_dir
+  }
+}

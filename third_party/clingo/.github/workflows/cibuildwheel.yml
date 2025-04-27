@@ -1,0 +1,133 @@
+name: Build and upload to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      wip:
+        description: 'Publish work in progress package.'
+        required: false
+        default: 'true'
+
+jobs:
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Adjust version (wip)
+        if: ${{ github.event.inputs.wip == 'true' }}
+        run: python .github/adjust_version.py
+
+      - name: Adjust version (release)
+        if: ${{ github.event.inputs.wip == 'false' }}
+        run: python .github/adjust_version.py --release
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: dist/*.tar.gz
+
+  build_wheels:
+    needs: [build_sdist]
+    name: Build ${{ matrix.cfg.name }} wheels
+    runs-on: ${{ matrix.cfg.os }}
+    strategy:
+      matrix:
+        cfg:
+          - os: ubuntu-20.04
+            name: "*-manylinux_x86_64"
+            env:
+              CIBW_ARCHS_LINUX: x86_64
+              CIBW_BUILD: "*-manylinux*"
+          - os: ubuntu-20.04
+            name: "*-musllinux_x86_64"
+            env:
+              CIBW_ARCHS_LINUX: x86_64
+              CIBW_BUILD: "*-musllinux*"
+          - os: ubuntu-20.04
+            name: "*-manylinux_i686"
+            env:
+              CIBW_ARCHS_LINUX: i686
+              CIBW_BUILD: "*-manylinux*"
+          - os: ubuntu-20.04
+            name: "*-musllinux-i686"
+            env:
+              CIBW_ARCHS_LINUX: i686
+              CIBW_BUILD: "*-musllinux*"
+          - os: ubuntu-20.04
+            name: "cp*-manylinux-aarch64"
+            env:
+              CIBW_ARCHS_LINUX: aarch64
+              CIBW_BUILD: "cp*-manylinux*"
+          - os: ubuntu-20.04
+            name: "pp*-manylinux-aarch64"
+            env:
+              CIBW_ARCHS_LINUX: aarch64
+              CIBW_BUILD: "pp*-manylinux*"
+          - os: ubuntu-20.04
+            name: "*-manylinux-ppc64le"
+            env:
+              CIBW_ARCHS_LINUX: ppc64le
+              CIBW_BUILD: "*-manylinux*"
+          - os: windows-2019
+            name: "cp*-win*"
+            env:
+              CIBW_BUILD: "cp*-win*"
+          - os: macos-11
+            name: "*-macos_{x86_64,arm64}"
+            env:
+              CIBW_ARCHS_MACOS: x86_64 arm64
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Adjust version (wip)
+        if: ${{ github.event.inputs.wip == 'true' }}
+        run: python .github/adjust_version.py
+
+      - name: Adjust version (release)
+        if: ${{ github.event.inputs.wip == 'false' }}
+        run: python .github/adjust_version.py --release
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.5
+        env: ${{ matrix.cfg.env }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        if: ${{ github.event.inputs.wip == 'true' }}
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        if: ${{ github.event.inputs.wip == 'false' }}
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN_RELEASE }}

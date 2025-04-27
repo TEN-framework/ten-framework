@@ -1,0 +1,6 @@
+{
+  "type": "extension",
+  "name": "ext_c",
+  "version": "0.1.2",
+  "dependencies": []
+}

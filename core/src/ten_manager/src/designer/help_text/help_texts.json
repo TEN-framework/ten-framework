@@ -1,0 +1,12 @@
+{
+  "ten_agent": {
+    "en-US": "TEN Agent is an AI agent built on the TEN Framework, providing a tangible demonstration of the framework's real-world application and functionality.",
+    "zh-CN": "TEN Agent 是基于 TEN Framework 构建的智能代理 (AI Agent), 用于直观展示 TEN Framework 的实际应用和运行效果.",
+    "zh-TW": "TEN Agent 是基於 TEN Framework 構建的智能代理 (AI Agent), 用於直觀展示 TEN Framework 的實際應用和運行效果."
+  },
+  "ten_framework": {
+    "en-US": "TEN Framework is a platform for building real-time AI agents. With TEN Framework, developers can efficiently create cross-language, edge-cloud collaborative real-time AI agents, enabling intelligent interactions and seamless integration.",
+    "zh-CN": "TEN Framework 是一个用于构建实时 AI Agent 的平台. 借助 TEN Framework, 开发者可以高效创建端云协同, 跨语言的实时 AI Agent, 实现智能交互与无缝集成.",
+    "zh-TW": "TEN Framework 是一個用於構建實時 AI Agent 的平台. 借助 TEN Framework, 開發者可以高效創建端雲協同, 跨語言的實時 AI Agent, 實現智能交互與無縫集成."
+  }
+}

@@ -1,0 +1,42 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+</keywords>
+</info>
+# Server-side
+<reply>
+<data>
+HTTP/1.0 200 Mooo swsclose
+Server: test-server/fake
+Connection: close
+
+*flopp*
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+specify more -o than URLs
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/want/%TESTNUMBER -o - -o -
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

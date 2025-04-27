@@ -1,0 +1,13 @@
+{
+  "extension": [
+    {
+      "name": "ext_d",
+      "version": "1.0.0",
+      "supports": [
+        {
+          "os": "linux"
+        }
+      ]
+    }
+  ]
+}

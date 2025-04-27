@@ -1,0 +1,37 @@
+{
+  "type": "start_graph",
+  "seq_id": "55",
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "addon": "addon_a",
+      "extension_group": "some_group",
+      "app": "http://localhost:8001"
+    },
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "addon": "addon_b",
+      "extension_group": "some_group",
+      "app": "http://localhost:8002"
+    }
+  ],
+  "connections": [
+    {
+      "app": "http://localhost:8001",
+      "extension": "ext_a",
+      "cmd": [
+        {
+          "name": "cmd_1",
+          "dest": [
+            {
+              "app": "http://localhost:8002",
+              "extension": "ext_b"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+name: CI tests
+
+on:
+  push:
+    branches:
+      - master
+      - wip
+  pull_request:
+
+jobs:
+  build:
+    name: clingo ${{ matrix.python-version }} ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        python-version: ['3.10']
+        include:
+          - os: 'ubuntu-latest'
+            generator: 'Ninja'
+            build_type: 'Debug'
+            channels: 'potassco/label/dev'
+            env_file: '.github/tests/linux-env.yml'
+          - os: 'macos-latest'
+            generator: 'Ninja'
+            build_type: 'Debug'
+            env_file: '.github/tests/macos-env.yml'
+          - os: 'windows-latest'
+            generator: 'Visual Studio 17 2022'
+            build_type: 'Release'
+            env_file: '.github/tests/windows-env.yml'
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: setup miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        activate-environment: clingo
+        python-version: ${{ matrix.python-version }}
+        environment-file: ${{ matrix.env_file }}
+
+    - name: print info
+      shell: bash -l {0}
+      run: |
+        env
+        conda info
+        conda list
+        python -m site
+
+    - name: build and test
+      shell: bash -l {0}
+      run: >
+        PYTHONHOME=$CONDA_PREFIX
+        ctest
+        --build-config "${{ matrix.build_type }}"
+        --build-generator "${{ matrix.generator }}"
+        --build-and-test . build
+        --build-options -DCLINGO_BUILD_TESTS=On -DCLASP_BUILD_TESTS=ON -DLIB_POTASSCO_BUILD_TESTS=On -DCLINGO_BUILD_EXAMPLES=On
+        --test-command ctest -V --build-config "${{ matrix.build_type }}"

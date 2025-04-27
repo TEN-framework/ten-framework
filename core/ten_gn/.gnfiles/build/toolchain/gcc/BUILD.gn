@@ -1,0 +1,25 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+config("debug") {
+  defines = [ "_DEBUG" ]
+  cflags = [ "-g" ]
+  ldflags = [
+    # Enable the debugger to display more meaningful debug information.
+    "-rdynamic",
+  ]
+}
+
+config("release") {
+  defines = [ "NDEBUG" ]
+  cflags = [ "-O2" ]
+
+  # TODO(Wei): Remove this in the future. Currently, because we want to have
+  # more information in the release build, such as the backtrace, so enable
+  # '-g' in the release build. If we have more confidence about the release
+  # build quality, we have to disable '-g' in the release build.
+  cflags += [ "-g" ]
+}

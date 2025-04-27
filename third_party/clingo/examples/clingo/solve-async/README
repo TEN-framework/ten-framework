@@ -1,0 +1,6 @@
+This example shows how to asynchronously solve and perform some other task
+while the search runs in the background. The other task here is a crude
+approximation of Pi.
+
+Example calls:
+  clingo solve-async-py.lp program.lp

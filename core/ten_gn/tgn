@@ -1,0 +1,14 @@
+#!/bin/bash
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# Specify additional directories where the Python should look for modules and
+# packages.
+export PYTHONPATH=$DIR/.gnfiles
+
+export TGN_PATH=$DIR
+
+# Doesn't generate .pyc files.
+export PYTHONDONTWRITEBYTECODE=False
+
+python3 "$DIR"/build.py "$@"

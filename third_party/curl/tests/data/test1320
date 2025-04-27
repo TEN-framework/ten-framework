@@ -1,0 +1,71 @@
+<testcase>
+<info>
+<keywords>
+SMTP
+HTTP
+HTTP CONNECT
+HTTP proxy
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<connect>
+HTTP/1.1 200 Mighty fine indeed
+smtp: sure hit me
+
+</connect>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+smtp
+http-proxy
+</server>
+<features>
+http
+proxy
+</features>
+ <name>
+SMTP send tunneled through HTTP proxy
+ </name>
+<stdin>
+From: different
+To: another
+
+body
+</stdin>
+ <command>
+smtp://smtp.%TESTNUMBER:%SMTPPORT/%TESTNUMBER --mail-rcpt recipient@example.com --mail-from sender@example.com -T - -p -x %HOSTIP:%PROXYPORT
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+EHLO %TESTNUMBER
+MAIL FROM:<sender@example.com>
+RCPT TO:<recipient@example.com>
+DATA
+QUIT
+</protocol>
+<upload>
+From: different
+To: another
+
+body
+.
+</upload>
+<proxy>
+CONNECT smtp.%TESTNUMBER:%SMTPPORT HTTP/1.1
+Host: smtp.%TESTNUMBER:%SMTPPORT
+User-Agent: curl/%VERSION
+Proxy-Connection: Keep-Alive
+
+</proxy>
+</verify>
+</testcase>

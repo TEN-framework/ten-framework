@@ -1,0 +1,5 @@
+# This file lists reviewers that are auto-assigned when a pull request modifies
+# certain files or directories. If you add yourself to this file, you commit to
+# reviewing a large fraction of pull requests in the relevant area.
+
+* @Halajohn

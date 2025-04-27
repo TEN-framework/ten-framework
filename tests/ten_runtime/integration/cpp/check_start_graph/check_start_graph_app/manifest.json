@@ -1,0 +1,18 @@
+{
+  "type": "app",
+  "name": "default_app_cpp",
+  "version": "0.10.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    },
+    {
+      "type": "extension",
+      "name": "default_extension_cpp",
+      "version": "0.10.1"
+    }
+  ],
+  "api": {}
+}

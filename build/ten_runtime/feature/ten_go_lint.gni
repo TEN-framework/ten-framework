@@ -1,0 +1,37 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("ten_go_lint") {
+  # The lint_dir must contain .go files. However, the lint_dir maybe not the
+  # root path of the go module, in other words, the go.mod file is not
+  # required in the lint_dir. We will try to find the go.mod file in the
+  # lint_dir, and retry in the parent directory if not found.
+  assert(defined(invoker.lint_dir), "lint_dir is required.")
+
+  _target_name = target_name
+
+  tg_timestamp_proxy_file = "${target_gen_dir}/${_target_name}"
+
+  action(_target_name) {
+    script = rebase_path("//build/ten_runtime/feature/ten_go_lint.py")
+
+    go_exec = "go"
+    if (defined(invoker.go_exec)) {
+      go_exec = invoker.go_exec
+    }
+
+    args = [
+      "--go",
+      go_exec,
+      "--lint-dir",
+      rebase_path(invoker.lint_dir),
+      "--tg-timestamp-proxy-file",
+      rebase_path(tg_timestamp_proxy_file),
+    ]
+
+    outputs = [ tg_timestamp_proxy_file ]
+  }
+}

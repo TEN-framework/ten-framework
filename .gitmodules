@@ -1,4 +1,4 @@
-[submodule "esp32-client/components/esp32-camera"]
+[submodule "agent_solutions/esp32-client/components/esp32-camera"]
 	path = agent_solutions/esp32-client/components/esp32-camera
 	url = https://github.com/espressif/esp32-camera.git
 [submodule "portal"]

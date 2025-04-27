@@ -1,0 +1,5 @@
+Example showcasing the #project directive.
+
+Example calls:
+    clingo --project 0 example.lp
+

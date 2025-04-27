@@ -1,0 +1,175 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("msvc_toolchain") {
+  object_subdir = "{{target_out_dir}}/{{label_name}}"
+  env = invoker.environment
+  ninja_path =
+      exec_script("//.gnfiles/build/scripts/get_ninja_path.py", [], "string")
+  use_clang = invoker.use_clang
+  compiler = "cl.exe"
+  if (use_clang) {
+    compiler = "clang-cl.exe"
+  }
+
+  toolchain(target_name) {
+    lib_switch = ""
+    lib_dir_switch = "/LIBPATH:"
+
+    tool("cc") {
+      precompiled_header_type = "msvc"
+      pdbname = "{{target_out_dir}}/{{label_name}}_c.pdb"
+      depsformat = "msvc"
+      description = "CC  {{output}}"
+      outputs = [ "$object_subdir/{{source_name_part}}.obj" ]
+      command = "${ninja_path} -t msvc -e $env -- $compiler /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
+    }
+
+    tool("cxx") {
+      precompiled_header_type = "msvc"
+      pdbname = "{{target_out_dir}}/{{label_name}}_cc.pdb"
+      depsformat = "msvc"
+      description = "CC  {{output}}"
+      outputs = [ "$object_subdir/{{source_name_part}}.obj" ]
+      command = "${ninja_path} -t msvc -e $env -- $compiler /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
+    }
+
+    tool("rc") {
+      command = "${ninja_path} -t msvc -e $env -- rc.exe /nologo {{defines}} {{include_dirs}} /fo{{output}} {{source}}"
+      depsformat = "msvc"
+      outputs = [ "$object_subdir/{{source_name_part}}.res" ]
+      description = "CC  {{output}}"
+    }
+
+    tool("asm") {
+      if (target_cpu == "x86") {
+        ml = "ml.exe"
+      } else if (target_cpu == "x64") {
+        ml = "ml64.exe"
+      } else if (target_cpu == "arm64") {
+        m1 = "asmarm64.exe"
+      }
+      command = "${ninja_path} -t msvc -e $env -- $ml {{defines}} {{include_dirs}} {{asmflags}} /c /Fo{{output}} {{source}}"
+      description = "CC  {{output}}"
+      outputs = [ "$object_subdir/{{source_name_part}}.obj" ]
+    }
+
+    tool("alink") {
+      rspfile = "{{output}}.rsp"
+      command = "${ninja_path} -t msvc -e $env -- lib.exe /nologo {{arflags}} /OUT:{{output}} @$rspfile"
+      description = "AR  {{output}}"
+      outputs = [ "{{output_dir}}/{{target_output_name}}.lib" ]
+      default_output_extension = ".lib"
+      default_output_dir = "{{target_out_dir}}"
+      rspfile_content = "{{inputs_newline}}"
+    }
+
+    tool("solink") {
+      dllname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      libname = "${dllname}.lib"
+      pdbname = "${dllname}.pdb"
+      rspfile = "${dllname}.rsp"
+      pool = "//.gnfiles/build/toolchain:link_pool"
+      command = "${ninja_path} -t msvc -e $env -- link.exe /nologo /IMPLIB:$libname /DLL /OUT:$dllname /PDB:$pdbname @$rspfile"
+      default_output_extension = ".dll"
+      default_output_dir = "{{root_out_dir}}"
+      description = "LD  {{output}}"
+      outputs = [
+        dllname,
+        libname,
+        pdbname,
+      ]
+      link_output = libname
+      depend_output = libname
+      runtime_outputs = [
+        dllname,
+        pdbname,
+      ]
+
+      # Since the above commands only updates the .lib file when it changes, ask
+      # Ninja to check if the timestamp actually changed to know if downstream
+      # dependencies should be recompiled.
+      restat = true
+
+      # The use of inputs_newline is to work around a fixed per-line buffer
+      # size in the linker.
+      rspfile_content = "{{libs}} {{solibs}} {{inputs_newline}} {{ldflags}}"
+    }
+
+    tool("solink_module") {
+      dllname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      libname = "${dllname}.lib"
+      pdbname = "${dllname}.pdb"
+      rspfile = "${dllname}.rsp"
+      pool = "//.gnfiles/build/toolchain:link_pool"
+      command = "${ninja_path} -t msvc -e $env -- link.exe /nologo /IMPLIB:$libname /DLL /OUT:$dllname /PDB:$pdbname @$rspfile"
+      default_output_extension = ".dll"
+      default_output_dir = "{{root_out_dir}}"
+      description = "LD  {{output}}"
+      outputs = [
+        dllname,
+        libname,
+        pdbname,
+      ]
+      link_output = libname
+      depend_output = libname
+      runtime_outputs = [
+        dllname,
+        pdbname,
+      ]
+
+      # Since the above commands only updates the .lib file when it changes, ask
+      # Ninja to check if the timestamp actually changed to know if downstream
+      # dependencies should be recompiled.
+      restat = true
+
+      # The use of inputs_newline is to work around a fixed per-line buffer
+      # size in the linker.
+      rspfile_content = "{{libs}} {{solibs}} {{inputs_newline}} {{ldflags}}"
+    }
+
+    tool("link") {
+      exename = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      pdbname = "$exename.pdb"
+      rspfile = "$exename.rsp"
+      pool = "//.gnfiles/build/toolchain:link_pool"
+
+      command = "${ninja_path} -t msvc -e $env -- link.exe /nologo /OUT:$exename /PDB:$pdbname @$rspfile"
+
+      default_output_extension = ".exe"
+      default_output_dir = "{{root_out_dir}}"
+      description = "LD  {{output}}"
+      outputs = [
+        exename,
+        pdbname,
+      ]
+      runtime_outputs = outputs
+
+      # The use of inputs_newline is to work around a fixed per-line buffer
+      # size in the linker.
+      rspfile_content = "{{inputs_newline}} {{libs}} {{solibs}} {{ldflags}}"
+    }
+
+    tool("stamp") {
+      command = "cmd /c type nul > \"{{output}}\""
+      description = "GEN {{output}}"
+      pool = "//.gnfiles/build/toolchain:action_pool"
+    }
+
+    _copy_tool_wrapper =
+        rebase_path("//.gnfiles/build/scripts/copy_fs_entry.py", root_build_dir)
+    tool("copy") {
+      command = "$python_path $_copy_tool_wrapper --source {{source}} --destination {{output}}"
+      description = "CP  {{source}} {{output}}"
+      pool = "//.gnfiles/build/toolchain:action_pool"
+    }
+
+    tool("action") {
+      pool = "//.gnfiles/build/toolchain:action_pool"
+      description = "CC  {{output}}"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "extension",
+  "name": "ffmpeg_demuxer",
+  "version": "0.10.1",
+  "tags": [
+    "cpp"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ffmpeg",
+      "version": "7.1.0"
+    }
+  ],
+  "api": {}
+}

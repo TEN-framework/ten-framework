@@ -1,0 +1,231 @@
+# do not edit the workflows, they are generated from this file
+cibw:
+    version: |
+        with open('libclingo/clingo.h') as fh:
+            for line in fh:
+                m = match(r'#define CLINGO_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"', line)
+                if m is not None:
+                    version = m.group(1)
+
+conda:
+    package_name:
+        'clingo'
+    os: 
+        - 'ubuntu-latest'
+        - 'macos-latest'
+        - 'windows-latest'
+    macosx-sdk:
+      'MacOSX10.9.sdk.tar.xz'
+    channels_release:
+      - 'potassco'
+    channels_dev:
+      - 'potassco/label/dev'
+      - 'potassco'
+    version: |
+      version = None
+      with open('libclingo/clingo.h') as fh:
+          for line in fh:
+              m = match(r'#define CLINGO_VERSION "([0-9]+\.[0-9]+\.[0-9]+)"', line)
+              if m is not None:
+                  version = m.group(1)
+    meta:
+      url: https://github.com/potassco/clingo/archive/v{{ version }}.tar.gz
+      git_url: https://github.com/potassco/{{ name }}.git
+      requirements:
+        build:
+          - cmake
+          - ninja
+          - "{{ compiler('c') }}"
+          - "{{ compiler('cxx') }}"
+        build_dev:
+          - win_flex_bison [win]
+          - bison [not win]
+          - m4 [not win]
+          - re2c
+        host: 
+          - python
+        run:
+          - python
+          - cffi
+      build:
+        skip: True [win and vc<14]
+      test:
+        commands:
+          - 'clingo --version'
+          - 'clasp --version'
+          - 'reify --version'
+          - 'lpconvert --version'
+          - 'gringo --version'
+      about:
+        home: https://potassco.org/
+        license: MIT
+        summary: A grounder and solver for logic programs.
+        description: Clingo is an answer set programming (ASP) system that takes a logic program as input and calculates its answer sets.
+        license_file: LICENSE.md
+        doc_url: https://potassco.org/
+        dev_url: https://github.com/potassco/{{ name }}
+
+    build_sh: |
+      #!/bin/bash
+
+      mkdir build
+      cd build
+
+      export M4="$(command -v m4)"
+
+      if [ -z "${PYTHON}" ]; then
+          PYTHON="$(which python)"
+      fi
+
+      cmake .. \
+          -DCMAKE_CXX_COMPILER="${CXX}" \
+          -DCMAKE_C_COMPILER="${CC}" \
+          -DPython_ROOT_DIR="${PREFIX}" \
+          -DPython_EXECUTABLE="${PYTHON}" \
+          -DCLINGO_BUILD_WITH_PYTHON=ON \
+          -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+          -DCLINGO_BUILD_WITH_LUA=OFF \
+          -DCLINGO_MANAGE_RPATH=OFF \
+          -DPYCLINGO_INSTALL_DIR="${SP_DIR}" \
+          -DCMAKE_INSTALL_LIBDIR="lib" \
+          -DCMAKE_BUILD_TYPE=Release
+
+      make -j${CPU_COUNT}
+      make install
+
+    build_bat: |
+      mkdir build
+
+      cmake -G "Ninja" -H. -Bbuild ^
+          -DCMAKE_CXX_COMPILER="%CXX%" ^
+          -DCMAKE_C_COMPILER="%CC%" ^
+          -DCMAKE_BUILD_TYPE=Release ^
+          -DCMAKE_INSTALL_PREFIX="%LIBRARY_PREFIX%" ^
+          -DPython_ROOT_DIR="%PREFIX%" ^
+          -DPython_EXECUTABLE="%PYTHON%" ^
+          -DCLINGO_BUILD_WITH_PYTHON=ON ^
+          -DCLINGO_BUILD_WITH_LUA=OFF ^
+          -DCLINGO_MANAGE_RPATH=OFF ^
+          -DPYCLINGO_INSTALL="system"
+
+      cmake --build build
+      cmake --build build --target install
+
+    build_config: |
+      python:
+      - 3.8
+      - 3.9
+      - 3.10
+      - 3.11
+      - 3.12
+
+      # from https://github.com/phracker/MacOSX-SDKs
+      CONDA_BUILD_SYSROOT:
+      - /opt/MacOSX10.9.sdk # [osx]
+
+ppa:
+    package_name:
+        'clingo'
+    upstream_name:
+        'clingo'
+    initial_version:
+        '5.5.0'
+    initial_date:
+        'Fri, 02 Jan 2021 13:32:11 +0100'
+    contact_url:
+        'https://github.com/potassco/clingo/issues'
+    source_url:
+        'https://github.com/potassco/clingo'
+    version: |-
+        $(sed -n '/#define CLINGO_VERSION "/s/.*"\([0-9]\+\.[0-9\+]\.[0-9]\+\)".*/\1/p' ../../libclingo/clingo.h)
+    build_depends:
+        - 'dh-python'
+    create_depends: []
+    exclude_patterns:
+        - 'third_party/catch'
+    sync_patterns:
+        - 'app'
+        - 'cmake'
+        - 'clasp'
+        - 'lib*'
+        - 'third_party'
+        - 'CMakeLists.txt'
+        - 'README.md'
+        - 'INSTALL.md'
+        - 'LICENSE.md'
+        - 'CHANGES.md'
+    sync_script: |
+        sed -i "s/export CLINGO_BUILD_REVISION =.*/export CLINGO_BUILD_REVISION = $(git rev-parse --short HEAD)/" ${rep}/debian/rules
+    distributions:
+        jammy:
+        focal:
+        bionic:
+            source:
+                Build-Depends: 'debhelper-compat (= 11), dh-python, cmake, python3-dev, liblua5.3-dev, python3-cffi, bison, re2c'
+    source:
+        Source: 'clingo'
+        Section: 'devel'
+        Priority: 'optional'
+        Maintainer: 'Roland Kaminski <kaminski@cs.uni-potsdam.de>'
+        Build-Depends: 'debhelper-compat (= 12), dh-python, cmake, python3-dev, liblua5.3-dev, python3-cffi, bison, re2c'
+        Standards-Version: '4.4.1'
+        Homepage: 'https://potassco.org/clingo'
+        Vcs-Browser: 'https://github.com/potassco/clingo'
+        Vcs-Git: 'https://github.com/potassco/clingo.git'
+    packages:
+        clingo:
+            Architecture: 'any'
+            Section: 'devel'
+            Depends: '${shlibs:Depends}, ${misc:Depends}, liblua5.3-0, libclingo (= ${binary:Version}), python3-clingo'
+            Description: |
+                A solver for logic programs
+                 Clingo is part of the Potassco project for Answer Set Programming (ASP). ASP
+                 offers a simple and powerful modeling language to describe combinatorial
+                 problems as logic programs. The clingo system then takes such a logic program
+                 and computes answer sets representing solutions to the given problem. To get
+                 an idea, check our Getting Started page and the online version of clingo.
+                 .
+                 This package contains the executables.
+        python3-clingo:
+            Section: 'python'
+            Architecture: 'any'
+            Depends: '${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libclingo (= ${binary:Version}), python3-cffi-backend'
+            Description: |
+                A solver for logic programs
+                 This package contains python bindings for clingo.
+        libclingo:
+            Section: 'libs'
+            Architecture: 'any'
+            Depends: '${shlibs:Depends}, ${misc:Depends}'
+            Description: |
+                A solver for logic programs
+                 This package contains the shared library.
+        libclingo-dev:
+            Section: 'libdevel'
+            Architecture: 'any'
+            Depends: '${misc:Depends}, libclingo (= ${binary:Version})'
+            Description: |
+                A solver for logic programs
+                 This package contains the development files.
+    files:
+        docs: |
+            README.md
+        clingo.install: |
+            /usr/bin/*
+        python3-clingo.install: |
+            /usr/lib/python3/dist-packages/*
+        libclingo.install: |
+            /usr/lib/*/*.so*
+        libclingo-dev.install: |
+            /usr/include/*
+            /usr/lib/*/cmake/*
+        rules: |
+            #!/usr/bin/make -f
+            
+            export CLINGO_BUILD_REVISION =
+            
+            %:
+            	dh $@ --with python3
+
+            override_dh_auto_configure:
+            	dh_auto_configure -- -DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH) -DCLINGO_BUILD_REVISION=$(CLINGO_BUILD_REVISION) -DCLINGO_BUILD_WITH_LUA=On -DCLINGO_BUILD_WITH_PYTHON=On -DCLINGO_MANAGE_RPATH=Off -DPYCLINGO_INSTALL_DIR=/usr/lib/python3/dist-packages

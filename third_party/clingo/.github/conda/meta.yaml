@@ -1,0 +1,51 @@
+{% set name = 'clingo' %}
+{% set dev = not environ.get('BUILD_RELEASE', false) %}
+{% set version = environ.get('VERSION_NUMBER') %}
+{% set revision = environ.get('GITHUB_SHA', 'wip') %}
+{% set build = environ.get('BUILD_NUMBER', "0") %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  path: ../..
+
+requirements:
+  build:
+  - cmake
+  - ninja
+  - {{ compiler('c') }}
+  - {{ compiler('cxx') }}
+{% if dev %}
+  - win_flex_bison [win]
+  - bison [not win]
+  - m4 [not win]
+  - re2c
+{% endif %}
+  host:
+  - python
+  run:
+  - python
+  - cffi
+
+build:
+  number: {{ build }}
+  skip: True [win and vc<14]
+
+test:
+  commands:
+  - clingo --version
+  - clasp --version
+  - reify --version
+  - lpconvert --version
+  - gringo --version
+
+about:
+  home: https://potassco.org/
+  license: MIT
+  summary: A grounder and solver for logic programs.
+  description: Clingo is an answer set programming (ASP) system that takes a logic program as input and calculates its answer sets.
+  license_file: LICENSE.md
+  doc_url: https://potassco.org/
+  dev_url: https://github.com/potassco/{{ name }}

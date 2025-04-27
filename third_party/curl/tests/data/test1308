@@ -1,0 +1,31 @@
+<testcase>
+<info>
+<keywords>
+unittest
+curl_formadd
+curl_formget
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+http
+Mime
+</features>
+ <name>
+formpost unit tests
+ </name>
+<command>
+%LOGDIR/test-%TESTNUMBER
+</command>
+<file name="%LOGDIR/test-%TESTNUMBER">
+Piece of the file that is to uploaded as a formpost
+</file>
+</client>
+</testcase>

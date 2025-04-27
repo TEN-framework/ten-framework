@@ -1,0 +1,37 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+import("//third_party/nlohmann_json/output.gni")
+
+copy_nlohmann_headers("copy_nlohmann_headers_for_ffmpeg_client") {
+  dest_dir = rebase_path(
+          "${root_out_dir}/ten_packages/extension/ffmpeg_client/include")
+}
+
+ten_package("ffmpeg_client") {
+  package_kind = "extension"
+
+  resources = [
+    "BUILD_release.gn=>BUILD.gn",
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+    "src/main.cc",
+  ]
+
+  deps = [ ":copy_nlohmann_headers_for_ffmpeg_client" ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_ffmpeg_client_to_server") {
+    base_dir =
+        rebase_path("${root_out_dir}/ten_packages/extension/ffmpeg_client")
+    deps = [ ":ffmpeg_client" ]
+  }
+}
