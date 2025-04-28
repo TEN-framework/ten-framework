@@ -5,6 +5,9 @@ on:
     branches: ["**"]
     tags: ["**"]
     paths-ignore:
+      - "tools/**"
+      - "portal/**"
+      - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
@@ -14,6 +17,9 @@ on:
   pull_request:
     branches: ["main"]
     paths-ignore:
+      - "tools/**"
+      - "portal/**"
+      - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
