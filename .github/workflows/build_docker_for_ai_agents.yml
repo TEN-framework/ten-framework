@@ -1,4 +1,4 @@
-name: Build Docker Image for Agents
+name: Build Docker Image for AI Agents
 
 on:
   push:
@@ -11,14 +11,6 @@ on:
       - ".vscode/**"
       - "ai_agents/docs/**"
       - "**.md"
-      - "build/**"
-      - "core/**"
-      - "packages/**"
-      - "portal/**"
-      - "tests/**"
-      - "third_party/**"
-      - "tools/**"
-      - "BUILD.gn"
   pull_request:
     branches: ["main"]
     paths-ignore:
@@ -28,14 +20,6 @@ on:
       - ".vscode/**"
       - "ai_agents/docs/**"
       - "**.md"
-      - "build/**"
-      - "core/**"
-      - "packages/**"
-      - "portal/**"
-      - "tests/**"
-      - "third_party/**"
-      - "tools/**"
-      - "BUILD.gn"
   workflow_dispatch:
 
 permissions:
