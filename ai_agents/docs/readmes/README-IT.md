@@ -29,7 +29,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Guida Iniziale](https://theten.ai/docs/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Repository TEN Framework](https://github.com/TEN-framework/ten_framework)
+[Repository TEN Framework](https://github.com/TEN-framework/ten-framework)
 
 </div>
 
@@ -83,9 +83,9 @@ TEN Agent ora funziona sulla scheda di sviluppo Espressif ESP32-S3 Korvo V3, un 
 
 </details>
 
-  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)
 
-  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)
 
 TEN offre un grande supporto per migliorare l'esperienza interattiva in tempo reale anche su altre piattaforme LLM, consulta i documenti per maggiori informazioni.
 
@@ -138,11 +138,11 @@ Descrivi un argomento e chiedi a TEN Agent di raccontarti una storia generando a
 
 ### Prerequisiti
 
-| Categoria | Requisiti |
-|-----------|------------|
-| **Chiavi** | • ID App Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) e Certificato App [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (minuti gratuiti ogni mese) <br> • Chiave API [OpenAI](https://openai.com/index/openai-api/) (qualsiasi LLM compatibile con OpenAI) <br> • ASR [Deepgram](https://deepgram.com/) (crediti gratuiti disponibili con la registrazione) <br> • TTS [Elevenlabs](https://elevenlabs.io/) (crediti gratuiti disponibili con la registrazione) |
-| **Installazione** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br> • [Node.js(LTS) v18](https://nodejs.org/en) |
-| **Requisiti minimi di sistema** | • CPU >= 2 Core<br> • RAM >= 4 GB |
+| Categoria                       | Requisiti                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Chiavi**                      | • ID App Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) e Certificato App [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (minuti gratuiti ogni mese) <br> • Chiave API [OpenAI](https://openai.com/index/openai-api/) (qualsiasi LLM compatibile con OpenAI) <br> • ASR [Deepgram](https://deepgram.com/) (crediti gratuiti disponibili con la registrazione) <br> • TTS [Elevenlabs](https://elevenlabs.io/) (crediti gratuiti disponibili con la registrazione) |
+| **Installazione**               | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br> • [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Requisiti minimi di sistema** | • CPU >= 2 Core<br> • RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 <br>
 

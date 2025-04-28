@@ -16,6 +16,6 @@ pub const GITHUB_RELEASE_URL: &str =
     "https://api.github.com/repos/TEN-framework/ten_framework/releases/latest";
 
 pub const GITHUB_RELEASE_PAGE: &str =
-    "https://github.com/TEN-framework/ten_framework/releases/latest";
+    "https://github.com/TEN-framework/ten-framework/releases/latest";
 
 pub const ADMIN_TOKEN: &str = "admin-token";

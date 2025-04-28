@@ -29,7 +29,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Commencer](https://theten.ai/docs/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Répertoire TEN Framework](https://github.com/TEN-framework/ten_framework)
+[Répertoire TEN Framework](https://github.com/TEN-framework/ten-framework)
 
 </div>
 
@@ -83,9 +83,9 @@ TEN Agent fonctionne maintenant sur la carte de développement Espressif ESP32-S
 
 </details>
 
-  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)
 
-  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)
 
 TEN offre un excellent support pour rendre l'expérience interactive en temps réel encore meilleure sur d'autres plateformes LLM également, consultez la documentation pour plus d'informations.
 
@@ -138,11 +138,11 @@ Décrivez un sujet et demandez à TEN Agent de vous raconter une histoire tout e
 
 ### Prérequis
 
-| Catégorie | Exigences |
-|----------|-------------|
-| **Clés** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) et [Certificat d'App](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (minutes gratuites chaque mois) <br>• Clé API [OpenAI](https://openai.com/index/openai-api/) (tout LLM compatible avec OpenAI)<br>• ASR [Deepgram](https://deepgram.com/) (crédits gratuits disponibles à l'inscription)<br>• TTS [Elevenlabs](https://elevenlabs.io/) (crédits gratuits disponibles à l'inscription)|
-| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **Exigences minimales du système** | • CPU >= 2 Core<br>• RAM >= 4 GB |
+| Catégorie                          | Exigences                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Clés**                           | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) et [Certificat d'App](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (minutes gratuites chaque mois) <br>• Clé API [OpenAI](https://openai.com/index/openai-api/) (tout LLM compatible avec OpenAI)<br>• ASR [Deepgram](https://deepgram.com/) (crédits gratuits disponibles à l'inscription)<br>• TTS [Elevenlabs](https://elevenlabs.io/) (crédits gratuits disponibles à l'inscription) |
+| **Installation**                   | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Exigences minimales du système** | • CPU >= 2 Core<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 <br>
 
