@@ -7,6 +7,7 @@
 #include "ten_utils/io/general/transport/backend/base.h"
 
 #include "include_internal/ten_utils/io/runloop.h"
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "ten_utils/io/stream.h"
 #include "ten_utils/io/transport.h"
 #include "ten_utils/macro/check.h"
@@ -19,7 +20,13 @@ void ten_transportbackend_init(ten_transportbackend_t *self,
 
   ten_atomic_store(&self->is_close, false);
   self->transport = transport;
-  self->name = ten_string_create_formatted("%.*s", name->buf_size, name->buf);
+
+  int int_name_len = 0;
+  bool rc = safe_cast_size_t_to_int(name->buf_size, &int_name_len);
+  TEN_ASSERT(rc, "Name length overflow detected.");
+
+  self->name = ten_string_create_formatted("%.*s", int_name_len, name->buf);
+
   self->impl = TEN_STRDUP(transport->loop->impl);
 }
 

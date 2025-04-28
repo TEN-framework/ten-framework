@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <time.h>
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "include_internal/ten_utils/lib/time.h"
 #include "include_internal/ten_utils/log/level.h"
 #include "include_internal/ten_utils/log/log.h"
@@ -72,11 +73,15 @@ void ten_log_default_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
   int64_t tid = 0;
   ten_get_pid_tid(&pid, &tid);
 
-  ten_string_append_formatted(buf, " %d(%d) %c", pid, tid,
+  ten_string_append_formatted(buf, " %" PRId64 "(%" PRId64 ") %c", pid, tid,
                               ten_log_level_char(level));
 
   if (func_name_len) {
-    ten_string_append_formatted(buf, " %.*s", (int)func_name_len, func_name);
+    int int_func_name_len = 0;
+    bool rc = safe_cast_size_t_to_int(func_name_len, &int_func_name_len);
+    TEN_ASSERT(rc, "Function name length overflow detected.");
+
+    ten_string_append_formatted(buf, " %.*s", int_func_name_len, func_name);
   }
 
   size_t actual_file_name_len = 0;

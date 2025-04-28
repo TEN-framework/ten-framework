@@ -80,7 +80,7 @@ static bool ten_value_object_to_string(ten_value_t *self, ten_string_t *str,
       return false;
     }
 
-    ten_string_append_formatted(str, "%s", item_str);
+    ten_string_append_formatted(str, "%s", ten_string_get_raw_str(item_str));
     ten_string_destroy(item_str);
   }
 
@@ -132,10 +132,10 @@ bool ten_value_to_string(ten_value_t *self, ten_string_t *str,
   case TEN_TYPE_NULL:
     break;
   case TEN_TYPE_PTR:
-    ten_string_append_formatted(str, "0x%" PRIXPTR, self->content.ptr);
+    ten_string_append_formatted(str, "%p", self->content.ptr);
     break;
   case TEN_TYPE_BUF:
-    ten_string_append_formatted(str, "0x%" PRIXPTR, self->content.buf.data);
+    ten_string_append_formatted(str, "%p", self->content.buf.data);
     break;
   case TEN_TYPE_BOOL:
     ten_string_append_formatted(

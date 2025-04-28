@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_utils/value/value_set.h"
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
@@ -115,7 +116,11 @@ bool ten_value_set_string(ten_value_t *self, const char *str) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_is_string(self), "Invalid argument.");
 
-  ten_string_set_formatted(&self->content.string, "%.*s", strlen(str), str);
+  int int_len = 0;
+  bool rc = safe_cast_size_t_to_int(strlen(str), &int_len);
+  TEN_ASSERT(rc, "Length overflow detected.");
+
+  ten_string_set_formatted(&self->content.string, "%.*s", int_len, str);
 
   return true;
 }
@@ -127,7 +132,11 @@ bool ten_value_set_string_with_size(ten_value_t *self, const char *str,
   TEN_ASSERT(ten_value_is_string(self), "Invalid argument.");
   TEN_ASSERT(str, "Invalid argument.");
 
-  ten_string_set_formatted(&self->content.string, "%.*s", len, str);
+  int int_len = 0;
+  bool rc = safe_cast_size_t_to_int(len, &int_len);
+  TEN_ASSERT(rc, "Length overflow detected.");
+
+  ten_string_set_formatted(&self->content.string, "%.*s", int_len, str);
 
   return true;
 }

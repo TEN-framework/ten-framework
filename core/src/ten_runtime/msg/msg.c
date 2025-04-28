@@ -23,6 +23,7 @@
 #include "include_internal/ten_runtime/msg/field/field_info.h"
 #include "include_internal/ten_runtime/msg/msg_info.h"
 #include "include_internal/ten_runtime/schema_store/msg.h"
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "include_internal/ten_utils/value/value_path.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
@@ -1336,8 +1337,12 @@ bool ten_raw_msg_set_name_with_len(ten_msg_t *self, const char *msg_name,
     return false;
   }
 
+  int int_msg_name_len = 0;
+  bool rc = safe_cast_size_t_to_int(msg_name_len, &int_msg_name_len);
+  TEN_ASSERT(rc, "Message name length overflow detected.");
+
   ten_string_set_formatted(ten_value_peek_string(&self->name), "%.*s",
-                           msg_name_len, msg_name);
+                           int_msg_name_len, msg_name);
   return true;
 }
 
