@@ -35,9 +35,9 @@ jobs:
           - language: go
             build-mode: autobuild
           - language: javascript-typescript
-            build-mode: autobuild
+            build-mode: none
           - language: python
-            build-mode: autobuild
+            build-mode: none
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
