@@ -95,7 +95,7 @@ TEN, the world’s first real-time, distributed, cloud-edge collaborative multim
 <details>
   <summary><kbd>Star History</kbd></summary>
   <picture>
-    <img width="100%" src="https://api.star-history.com/svg?repos=ten-framework/ten_framework&type=Date">
+    <img width="100%" src="https://api.star-history.com/svg?repos=ten-framework/ten-framework&type=Date">
   </picture>
 </details>
 
@@ -333,11 +333,11 @@ TEN seamlessly integrates with Coze platform to enhance real-time interactive ex
 
 #### Step ⓵ - Prerequisites
 
-| Category                        | Requirements                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Keys**                        | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (any LLM that is compatible with OpenAI)<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (free credits available with signup) |
-| **Installation**                | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Category | Requirements |
+| --- | --- |
+| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (any LLM that is compatible with OpenAI)<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (free credits available with signup) |
+| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
 <br>
 
@@ -349,7 +349,7 @@ TEN seamlessly integrates with Coze platform to enhance real-time interactive ex
 
 <br>
 
-#### Step ⓷ - Build agent in VM
+#### Step ⓶ - Build agent in VM
 
 ##### 1. Clone down the repo and create `.env` file from `.env.example`
 
@@ -501,12 +501,12 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 ## 🌍 TEN Framework Ecosystem
 
-| Project                                                                                                                                                                                                                                                                                                                               | Preview                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield]                                                                                                                                                            | ![][ten-framework-banner] |
-| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner]     |
-| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield]                                                | ![][tman-designer-banner] |
-| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield]                                                                                                                                                                                                         | ![][ten-docs-banner]      |
+| Project | Preview |
+| ------- | ------- |
+| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner] |
+| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield] | ![][tman-designer-banner] |
+| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield] | ![][ten-docs-banner] |
 
 <div align="right">
 
@@ -546,7 +546,7 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 
 2. The components within the `packages` directory are released under the Apache License, Version 2.0. For details, please refer to the `LICENSE` file located in each package's root directory.
 
-3. The third-party libraries used by the TEN framework are listed and described in detail. For more information, please refer to the [dependencies.md](./docs/ten_framework/dependencies.md) file located in the `docs/ten_framework` directory.
+3. The third-party libraries used by the TEN framework are listed and described in detail. For more information, please refer to the [third_party](./third_party/) folder.
 
 <div align="right">
 
