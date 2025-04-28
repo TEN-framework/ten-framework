@@ -117,3 +117,4 @@ export {
 export { ENDPOINT_GH } from "@/api/endpoints/github";
 export { ENDPOINT_HELP_TEXT, EHelpTextKey } from "@/api/endpoints/help-text";
 export { ENDPOINT_DOC_LINK } from "@/api/endpoints/doc";
+export { ENDPOINT_MESSAGES } from "@/api/endpoints/messages";

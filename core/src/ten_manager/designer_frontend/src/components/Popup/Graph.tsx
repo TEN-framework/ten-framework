@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 
 import { useWidgetStore } from "@/store/widget";
 import {
-  GraphAddConnectionWidget,
+  GraphConnectionCreationWidget,
   GraphAddNodeWidget,
   GraphUpdateNodePropertyWidget,
 } from "@/components/Widget/GraphsWidget";
@@ -75,7 +75,7 @@ export const GraphPopupContent = (props: { widget: IGraphWidget }) => {
         />
       )}
       {type === EGraphActions.ADD_CONNECTION && (
-        <GraphAddConnectionWidget
+        <GraphConnectionCreationWidget
           {...widget.metadata}
           postAddConnectionActions={() => {
             removeWidget(widget.widget_id);

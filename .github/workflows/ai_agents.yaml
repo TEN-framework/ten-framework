@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: ["main"]
     paths-ignore:
+      - "core/**"
+      - "portal/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
       - ".devcontainer/**"
       - ".github/**"
       - "!.github/workflows/agents.yaml"
