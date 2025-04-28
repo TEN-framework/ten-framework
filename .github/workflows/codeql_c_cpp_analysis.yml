@@ -61,5 +61,12 @@ jobs:
 
           tgn build:ten_runtime_smoke_test linux x64 debug
 
+      - name: Free up disk space
+        run: |
+          sudo apt-get clean
+          sudo rm -rf /usr/local/share/dotnet
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune --all --force --volumes
+
       - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@v3
