@@ -142,3 +142,26 @@ export const SetGraphUiPayloadSchema = z.object({
     nodes_geometry: z.array(GraphUiNodeGeometrySchema),
   }),
 });
+
+export enum EMsgDirection {
+  IN = "in",
+  OUT = "out",
+}
+
+export const MsgCompatiblePayloadSchema = z.object({
+  graph_id: z.string(),
+  app: z.string().optional(),
+  extension_group: z.string().optional(),
+  extension: z.string(),
+  msg_type: z.nativeEnum(EConnectionType),
+  msg_direction: z.nativeEnum(EMsgDirection),
+  msg_name: z.string(),
+});
+
+export const MsgCompatibleResponseItemSchema = z.object({
+  extension_group: z.string().optional(),
+  extension: z.string(),
+  msg_type: z.nativeEnum(EConnectionType),
+  msg_direction: z.nativeEnum(EMsgDirection),
+  msg_name: z.string().optional(),
+});
