@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: codeql-c-cpp-analysis-${{ github.head_ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   security-events: write
@@ -13,6 +17,8 @@ permissions:
 jobs:
   codeql:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
