@@ -12,7 +12,7 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use ten_manager::fs::{watch_file, FileWatchOptions};
+    use ten_manager::fs::file_watcher::{watch_file, FileWatchOptions};
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
