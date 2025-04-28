@@ -28,7 +28,7 @@ mod create;
 mod dep_and_candidate;
 pub mod designer;
 mod file_type;
-mod fs;
+pub mod fs;
 pub mod graph;
 pub mod http;
 mod install;
