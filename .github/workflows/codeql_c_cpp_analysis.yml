@@ -63,10 +63,7 @@ jobs:
 
       - name: Free up disk space
         run: |
-          sudo apt-get clean
-          sudo rm -rf /usr/local/share/dotnet
-          sudo rm -rf /opt/hostedtoolcache
-          docker system prune --all --force --volumes
+          apt-get clean
 
       - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@v3
