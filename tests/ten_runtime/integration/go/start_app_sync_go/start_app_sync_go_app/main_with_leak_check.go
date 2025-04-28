@@ -1,8 +1,7 @@
 // Copyright © 2025 Agora
 // This file is part of TEN Framework, an open source project.
 // Licensed under the Apache License, Version 2.0, with certain conditions.
-// Refer to https://github.com/TEN-framework/ten_framework/LICENSE for more
-// information.
+// Refer to the "LICENSE" file in the root directory for more information.
 package main
 
 // void __lsan_do_leak_check(void);

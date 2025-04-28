@@ -3,10 +3,10 @@
 ![TEN Agent banner](https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-banner.jpg)
 
 [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
-[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten_framework/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten_framework/graphs/commit-activity)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften_framework%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten_framework/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten_framework/pulls)
+[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften_framework%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-framework/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/tten_framework/blob/main/LICENSE)
 
 [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
@@ -74,10 +74,10 @@ TEN, the world’s first real-time, distributed, cloud-edge collaborative multim
 
 <br>
 
-| Community Channel | Purpose |
-| ---------------- | ------- |
-| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | Join our Discord community to connect with developers |
-| [![Follow on X](https://img.shields.io/badge/TenFramework-721_Followers-07C160?logo=x&labelColor=blue&color=gray)](https://twitter.com/intent/follow?screen_name=TenFramework) | Follow TEN Framework on X for updates and announcements |
+| Community Channel                                                                                                                                                                     | Purpose                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ)                                   | Join our Discord community to connect with developers   |
+| [![Follow on X](https://img.shields.io/badge/TenFramework-721_Followers-07C160?logo=x&labelColor=blue&color=gray)](https://twitter.com/intent/follow?screen_name=TenFramework)        | Follow TEN Framework on X for updates and announcements |
 | [![WeChat](https://img.shields.io/badge/TEN_Framework-~1K_members-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | Join our WeChat group for Chinese community discussions |
 
 <br>
@@ -333,11 +333,11 @@ TEN seamlessly integrates with Coze platform to enhance real-time interactive ex
 
 #### Step ⓵ - Prerequisites
 
-| Category | Requirements |
-| --- | --- |
-| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (any LLM that is compatible with OpenAI)<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (free credits available with signup) |
-| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
+| Category                        | Requirements                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keys**                        | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (any LLM that is compatible with OpenAI)<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (free credits available with signup) |
+| **Installation**                | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 <br>
 
@@ -501,12 +501,12 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 ## 🌍 TEN Framework Ecosystem
 
-| Project | Preview |
-| ------- | ------- |
-| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
-| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield] | ![][tman-designer-banner] |
-| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield] | ![][ten-docs-banner] |
+| Project                                                                                                                                                                                                                                                                                                                               | Preview                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield]                                                                                                                                                            | ![][ten-framework-banner] |
+| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner]     |
+| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield]                                                | ![][tman-designer-banner] |
+| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield]                                                                                                                                                                                                         | ![][ten-docs-banner]      |
 
 <div align="right">
 
