@@ -33,6 +33,10 @@ permissions:
   packages: write
   security-events: write
 
+concurrency:
+  group: build-docker-for-ai-agents-${{ github.head_ref }}
+  cancel-in-progress: true
+
 env:
   SERVER_IMAGE_NAME: ten_agent_server
   PLAYGROUND_IMAGE_NAME: ten_agent_playground

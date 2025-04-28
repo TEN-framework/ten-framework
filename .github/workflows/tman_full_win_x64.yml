@@ -16,7 +16,8 @@ on:
       - "ai_agents/**"
 
 permissions:
-  contents: read
+  contents: write
+  discussions: write
   security-events: write
 
 concurrency:
