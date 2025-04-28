@@ -1146,9 +1146,6 @@ export const GraphConnectionCreationWidget = (props: {
     );
   };
 
-  console.log("srcNodes", srcNodes);
-  console.log("destNodes", destNodes);
-
   return (
     <>
       <Form {...form}>
