@@ -14,7 +14,7 @@ use serde_json::Value;
 
 use ten_rust::{_0_8_compatible::get_ten_field_string, graph::node::GraphNode};
 
-use crate::json::write_property_json_file;
+use crate::fs::json::write_property_json_file;
 
 /// Update a graph node in the property.json file, handling both adding new
 /// nodes and removing existing ones.

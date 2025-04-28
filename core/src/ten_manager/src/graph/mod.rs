@@ -18,7 +18,7 @@ use uuid::Uuid;
 pub use connections::update_graph_connections_all_fields;
 pub use nodes::update_graph_node_all_fields;
 
-use crate::json::write_property_json_file;
+use crate::fs::json::write_property_json_file;
 use ten_rust::graph::graph_info::GraphInfo;
 use ten_rust::graph::{connection::GraphConnection, node::GraphNode, Graph};
 

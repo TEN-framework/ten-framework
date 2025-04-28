@@ -5,8 +5,10 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod file_watcher;
+pub mod json;
 
 pub use file_watcher::*;
+pub use json::*;
 
 use std::env;
 use std::path::{Path, PathBuf};
