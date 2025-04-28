@@ -1,0 +1,62 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_package_test_prepare_app("call_api_after_closing_nodejs_app") {
+  src_app = "default_app_nodejs"
+  src_app_language = "nodejs"
+  generated_app_src_root_dir_name = "call_api_after_closing_nodejs_app"
+
+  replace_paths_after_install_app = [
+    "call_api_after_closing_nodejs_app/manifest.json",
+    "call_api_after_closing_nodejs_app/property.json",
+  ]
+
+  replace_paths_after_install_all = [ "call_api_after_closing_nodejs_app/ten_packages/extension/default_extension_nodejs/src/index.ts" ]
+
+  if (ten_enable_ten_manager) {
+    deps = [
+      "//core/src/ten_manager",
+      "//packages/core_apps/default_app_nodejs:upload_default_app_nodejs_to_server",
+      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_ts_to_server",
+      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
+      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
+    ]
+  }
+}
+
+ten_package_test_prepare_auxiliary_resources("call_api_after_closing_nodejs_test_files") {
+  resources = [
+    "__init__.py",
+    "test_case.py",
+  ]
+
+  utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("//tests/utils/**/*"),
+                              "--dir-base",
+                              rebase_path("//tests/utils"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(utils_file, utils_files) {
+    utils_file_rel_path = utils_file.relative_path
+    resources +=
+        [ "//tests/utils/${utils_file_rel_path}=>utils/${utils_file_rel_path}" ]
+  }
+}
+
+group("call_api_after_closing_nodejs") {
+  deps = [
+    ":call_api_after_closing_nodejs_app",
+    ":call_api_after_closing_nodejs_test_files",
+  ]
+}

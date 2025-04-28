@@ -1,0 +1,70 @@
+name: Deploy conda packages (wip)
+
+on:
+  workflow_dispatch:
+    inputs:
+      wip:
+        description: 'Publish work in progress package.'
+        required: false
+        default: 'true'
+
+jobs:
+  build:
+    name: deploy on ${{ matrix.os }} using python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+        python-version: ['3.8']
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: setup miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+        activate-environment: build
+
+    - name: Install prerequisites
+      shell: pwsh
+      run: |
+        conda config --set anaconda_upload yes
+        conda install conda-build anaconda-client
+
+    - name: Install macos SDK
+      if: ${{ matrix.os == 'macos-latest' }}
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri 'https://github.com/phracker/MacOSX-SDKs/releases/download/10.15/MacOSX10.9.sdk.tar.xz' -OutFile 'MacOSX10.9.sdk.tar.xz'
+        sudo tar xf MacOSX10.9.sdk.tar.xz -C /opt
+
+    - name: print info
+      shell: pwsh
+      run: |
+        conda info
+        conda list
+
+    - name: publish conda package (wip)
+      if: ${{ github.event.inputs.wip == 'true' }}
+      shell: pwsh
+      run: |
+        python .github/conda.py
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+
+    - name: publish conda package (release)
+      if: ${{ github.event.inputs.wip == 'false' }}
+      shell: pwsh
+      run: |
+        python .github/conda.py --release
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}

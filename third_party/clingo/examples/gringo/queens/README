@@ -1,0 +1,6 @@
+Two examples that encode the n-queens problem.
+
+Example calls:
+    clingo queens1.lp
+    clingo queens2.lp
+

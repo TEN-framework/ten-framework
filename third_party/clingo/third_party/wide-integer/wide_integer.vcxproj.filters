@@ -1,0 +1,282 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\test">
+      <UniqueIdentifier>{2ab8711c-4632-4af5-8345-b408e6ed36bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\boost">
+      <UniqueIdentifier>{48a97642-b509-4ac8-b6d5-6a19a897bacf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\boost\multiprecision">
+      <UniqueIdentifier>{340a3a17-d99f-441d-abba-fc9db2aaafa9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\examples">
+      <UniqueIdentifier>{249d1a53-43c3-4a48-9fb9-c3a477ddf025}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".github">
+      <UniqueIdentifier>{038c20dc-264e-432d-9c1d-d92bea2d31ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".github\workflows">
+      <UniqueIdentifier>{26852f75-5102-4d51-a876-48fadc8bc7dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="_doc">
+      <UniqueIdentifier>{2fd84722-7a2f-490d-80e6-9961207cee67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\math">
+      <UniqueIdentifier>{7ea96594-9256-4fd5-8e0e-04b187aa45c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\math\wide_integer">
+      <UniqueIdentifier>{8460bf03-d727-4c68-8f29-e2acf7b95386}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".tidy">
+      <UniqueIdentifier>{ceebef52-f03f-4437-8256-8bf8301cf498}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".tidy\make">
+      <UniqueIdentifier>{c8663027-03cc-43d3-a3bc-927bbbdb3b3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".gcov">
+      <UniqueIdentifier>{d3d4d6ad-0796-4bd5-b015-cd9c948caccf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".gcov\make">
+      <UniqueIdentifier>{09bf1894-26c1-40a4-870e-f338f0940b7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".props">
+      <UniqueIdentifier>{78812fa7-c747-46fb-861d-bb6cfe3070ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target">
+      <UniqueIdentifier>{5e008254-9733-4d69-99e2-8d2f93c4b374}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target\build">
+      <UniqueIdentifier>{67bbe456-ef04-4dd3-8fbe-d20ffe14c2dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target\micros">
+      <UniqueIdentifier>{27be7d17-0d98-431e-bea5-96948075efef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target\micros\stm32f429">
+      <UniqueIdentifier>{0bfd6ce7-a9b6-4847-9b45-f4cd69735e04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target\micros\stm32f429\make">
+      <UniqueIdentifier>{e181fa1c-901d-4680-9c9b-62a576f135d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target\micros\stm32f429\make\single">
+      <UniqueIdentifier>{083f53f0-1b7d-4be6-8adf-c6a9ab7671c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\examples\build">
+      <UniqueIdentifier>{24de4171-df89-40f3-87b7-3dfdee251467}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="boost\multiprecision\uintwide_t_backend.hpp">
+      <Filter>Source Files\boost\multiprecision</Filter>
+    </ClInclude>
+    <ClInclude Include="test\parallel_for.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_binary_ops_template.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_binary_ops_base.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_binary_ops_mul_n_by_m_template.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_number_theory_funcs_template.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_base.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_binary_ops_mul_div_4_by_4_template.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="math\wide_integer\uintwide_t.h">
+      <Filter>Source Files\math\wide_integer</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t_n_binary_ops_template_signed.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_uintwide_t.h">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="examples\example_uintwide_t.h">
+      <Filter>Source Files\examples</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test.hpp">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\test_arithmetic.hpp">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="test\test.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example001_mul_div.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example001a_div_mod.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example002_shl_shr.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example003_sqrt.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example004_rootk_pow.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example005_powm.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example006_gcd.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example007_random_generator.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example008_miller_rabin_prime.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_examples.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_boost_backend.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example010_uint48_t.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example003a_cbrt.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_edge_cases.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example011_uint24_t.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_spot_values.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example008a_miller_rabin_prime.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_n_binary_ops_base.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_n_base.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example009_timed_mul.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example009a_timed_mul_4_by_4.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example009b_timed_mul_8_by_8.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example000_numeric_limits.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example000a_builtin_convert.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_float_convert.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_int_convert.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example005a_pow_factors_of_p99.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example012_rsa_crypto.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_boost_backend_via_test_arithmetic.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\coverity.c">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="target\micros\stm32f429\make\single\crt.cpp">
+      <Filter>target\micros\stm32f429\make\single</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test_uintwide_t_xtra_from_issue_335.cpp">
+      <Filter>Source Files\test</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example013_ecdsa_sign_verify.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+    <ClCompile Include="examples\example014_pi_spigot_wide.cpp">
+      <Filter>Source Files\examples</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".github\workflows\wide_integer.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+    <None Include="README.md">
+      <Filter>_doc</Filter>
+    </None>
+    <None Include=".clang-tidy" />
+    <None Include=".tidy\make\make_tidy_01_generic.gmk">
+      <Filter>.tidy\make</Filter>
+    </None>
+    <None Include=".tidy\make\make_tidy_02_files.gmk">
+      <Filter>.tidy\make</Filter>
+    </None>
+    <None Include=".tidy\make\make_tidy_03_flags.gmk">
+      <Filter>.tidy\make</Filter>
+    </None>
+    <None Include=".github\workflows\wide_integer_sonar.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+    <None Include="sonar-project.properties" />
+    <None Include=".gcov\make\make_gcov_01_generic.gmk">
+      <Filter>.gcov\make</Filter>
+    </None>
+    <None Include=".gcov\make\make_gcov_02_files.gmk">
+      <Filter>.gcov\make</Filter>
+    </None>
+    <None Include=".gcov\make\make_gcov_03_flags.gmk">
+      <Filter>.gcov\make</Filter>
+    </None>
+    <None Include=".github\workflows\wide_integer_codecov.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+    <None Include=".props\Directory.Build.props">
+      <Filter>.props</Filter>
+    </None>
+    <None Include="codecov.yml" />
+    <None Include="target\micros\stm32f429\make\stm32f429.ld">
+      <Filter>target\micros\stm32f429\make</Filter>
+    </None>
+    <None Include="target\build\test_examples_emulator.py">
+      <Filter>target\build</Filter>
+    </None>
+    <None Include="examples\build\test_examples.sh">
+      <Filter>Source Files\examples\build</Filter>
+    </None>
+    <None Include=".github\workflows\CodeQL.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="examples\CMakeLists.txt">
+      <Filter>Source Files\examples</Filter>
+    </Text>
+    <Text Include="test\CMakeLists.txt">
+      <Filter>Source Files\test</Filter>
+    </Text>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

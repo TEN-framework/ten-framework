@@ -1,0 +1,101 @@
+@font-face {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/roboto-latin-300-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/roboto-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/roboto-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/roboto-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/roboto-mono-latin-300-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/roboto-mono-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/roboto-mono-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Mono;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/roboto-mono-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Condensed;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/roboto-condensed-latin-300-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Condensed;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/roboto-condensed-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Condensed;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/roboto-condensed-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Roboto Condensed;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/roboto-condensed-latin-600-normal.woff2") format("woff2");
+}
+
+@theme {
+  --font-roboto: "Roboto", "sans-serif";
+  --font-roboto-mono: "Roboto Mono", "monospace";
+  --font-roboto-condensed: "Roboto Condensed", "sans-serif";
+}

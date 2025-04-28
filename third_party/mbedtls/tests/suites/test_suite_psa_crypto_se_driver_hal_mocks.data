@@ -1,0 +1,59 @@
+SE init mock test: success
+mock_init:1:PSA_SUCCESS:PSA_SUCCESS:PSA_SUCCESS:1
+
+SE init mock test: failure
+mock_init:1:PSA_SUCCESS:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE:1
+
+SE init mock test: invalid location (0)
+mock_init:0:PSA_ERROR_INVALID_ARGUMENT:PSA_ERROR_BAD_STATE:PSA_SUCCESS:0
+
+SE init mock test: location not supported (INT_MAX)
+mock_init:INT_MAX:PSA_ERROR_NOT_SUPPORTED:PSA_ERROR_BAD_STATE:PSA_SUCCESS:0
+
+SE key importing mock test
+mock_import:PSA_SUCCESS:PSA_SUCCESS:0:PSA_SUCCESS
+
+SE key importing mock test: max key bits
+mock_import:PSA_SUCCESS:PSA_SUCCESS:PSA_MAX_KEY_BITS:PSA_SUCCESS
+
+SE key importing mock test: more than max key bits
+mock_import:PSA_SUCCESS:PSA_ERROR_NOT_SUPPORTED:PSA_MAX_KEY_BITS+1:PSA_ERROR_NOT_SUPPORTED
+
+SE key importing mock test: alloc failed
+mock_import:PSA_ERROR_HARDWARE_FAILURE:PSA_SUCCESS:0:PSA_ERROR_HARDWARE_FAILURE
+
+SE key importing mock test: import failed
+mock_import:PSA_SUCCESS:PSA_ERROR_HARDWARE_FAILURE:0:PSA_ERROR_HARDWARE_FAILURE
+
+SE key exporting mock test
+mock_export:PSA_SUCCESS:PSA_SUCCESS
+
+SE key exporting mock test: export failed
+mock_export:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE
+
+SE public key exporting mock test
+mock_export_public:PSA_SUCCESS:PSA_SUCCESS
+
+SE public key exporting mock test: export failed
+mock_export_public:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE
+
+SE key generating mock test
+mock_generate:PSA_SUCCESS:PSA_SUCCESS:PSA_SUCCESS
+
+SE key generating mock test: alloc failed
+mock_generate:PSA_ERROR_HARDWARE_FAILURE:PSA_SUCCESS:PSA_ERROR_HARDWARE_FAILURE
+
+SE key generating mock test: generating failed
+mock_generate:PSA_SUCCESS:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE
+
+SE signing mock test
+mock_sign:PSA_SUCCESS:PSA_SUCCESS
+
+SE signing mock test: sign failed
+mock_sign:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE
+
+SE verification mock test
+mock_verify:PSA_SUCCESS:PSA_SUCCESS
+
+SE verification mock test: verify failed
+mock_verify:PSA_ERROR_HARDWARE_FAILURE:PSA_ERROR_HARDWARE_FAILURE

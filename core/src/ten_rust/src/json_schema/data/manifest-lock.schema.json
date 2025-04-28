@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "os": {
+      "type": "string",
+      "enum": [
+        "linux",
+        "win",
+        "mac"
+      ]
+    },
+    "arch": {
+      "type": "string",
+      "enum": [
+        "x86",
+        "x64",
+        "arm",
+        "arm64"
+      ]
+    },
+    "supportItem": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "$ref": "#/$defs/os"
+        },
+        "arch": {
+          "$ref": "#/$defs/arch"
+        }
+      }
+    },
+    "packageIdentity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "extension",
+            "system",
+            "protocol",
+            "addon_loader"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ]
+    },
+    "packageExtraInfo": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/packageIdentity"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "supports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/supportItem"
+          }
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "hash"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/$defs/packageIdentity"
+          },
+          {
+            "$ref": "#/$defs/packageExtraInfo"
+          }
+        ]
+      },
+      "additionalProperties": false,
+      "uniqueItems": true
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "packages",
+    "version"
+  ],
+  "additionalProperties": false
+}

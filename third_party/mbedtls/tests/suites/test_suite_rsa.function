@@ -1,0 +1,1387 @@
+/* BEGIN_HEADER */
+#include "mbedtls/rsa.h"
+#include "rsa_alt_helpers.h"
+#include "mbedtls/md5.h"
+#include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
+#include "mbedtls/sha512.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_RSA_C:MBEDTLS_BIGNUM_C:MBEDTLS_GENPRIME
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE */
+void rsa_invalid_param( )
+{
+    mbedtls_rsa_context ctx;
+    const int invalid_padding = 42;
+    const int invalid_hash_id = 0xff;
+
+    mbedtls_rsa_init( &ctx );
+
+    TEST_EQUAL( mbedtls_rsa_set_padding( &ctx,
+                                         invalid_padding,
+                                         MBEDTLS_MD_NONE ),
+                MBEDTLS_ERR_RSA_INVALID_PADDING );
+
+    TEST_EQUAL( mbedtls_rsa_set_padding( &ctx,
+                                         MBEDTLS_RSA_PKCS_V21,
+                                         invalid_hash_id ),
+                MBEDTLS_ERR_RSA_INVALID_PADDING );
+
+#if !defined(MBEDTLS_PKCS1_V15)
+    TEST_EQUAL( mbedtls_rsa_set_padding( &ctx,
+                                         MBEDTLS_RSA_PKCS_V15,
+                                         MBEDTLS_MD_NONE ),
+                MBEDTLS_ERR_RSA_INVALID_PADDING );
+#endif
+
+#if !defined(MBEDTLS_PKCS1_V21)
+    TEST_EQUAL( mbedtls_rsa_set_padding( &ctx,
+                                         MBEDTLS_RSA_PKCS_V21,
+                                         MBEDTLS_MD_NONE ),
+                MBEDTLS_ERR_RSA_INVALID_PADDING );
+#endif
+
+exit:
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void rsa_init_free( int reinit )
+{
+    mbedtls_rsa_context ctx;
+
+    /* Double free is not explicitly documented to work, but we rely on it
+     * even inside the library so that you can call mbedtls_rsa_free()
+     * unconditionally on an error path without checking whether it has
+     * already been called in the success path. */
+
+    mbedtls_rsa_init( &ctx );
+    mbedtls_rsa_free( &ctx );
+
+    if( reinit )
+        mbedtls_rsa_init( &ctx );
+    mbedtls_rsa_free( &ctx );
+
+    /* This test case always succeeds, functionally speaking. A plausible
+     * bug might trigger an invalid pointer dereference or a memory leak. */
+    goto exit;
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_pkcs1_sign( data_t * message_str, int padding_mode,
+                             int digest, int mod, int radix_P, char * input_P,
+                             int radix_Q, char * input_Q, int radix_N,
+                             char * input_N, int radix_E, char * input_E,
+                             data_t * result_str, int result )
+{
+    unsigned char hash_result[MBEDTLS_MD_MAX_SIZE];
+    const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type( digest );
+    unsigned char output[256];
+    mbedtls_rsa_context ctx;
+    mbedtls_mpi N, P, Q, E;
+    mbedtls_test_rnd_pseudo_info rnd_info;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &P );
+    mbedtls_mpi_init( &Q ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx,padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+
+    memset( hash_result, 0x00, sizeof( hash_result ) );
+    memset( output, 0x00, sizeof( output ) );
+    memset( &rnd_info, 0, sizeof( mbedtls_test_rnd_pseudo_info ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, &P, &Q, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == 0 );
+
+    if( md_info != NULL )
+        TEST_ASSERT( mbedtls_md( md_info, message_str->x, message_str->len, hash_result ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_sign(
+                     &ctx, &mbedtls_test_rnd_pseudo_rand, &rnd_info,
+                     digest, mbedtls_md_get_size( md_info ), hash_result,
+                     output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx.len, result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P );
+    mbedtls_mpi_free( &Q ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_pkcs1_verify( data_t * message_str, int padding_mode,
+                               int digest, int mod, int radix_N,
+                               char * input_N, int radix_E, char * input_E,
+                               data_t * result_str, int result )
+{
+    unsigned char hash_result[MBEDTLS_MD_MAX_SIZE];
+    const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type( digest );
+    mbedtls_rsa_context ctx;
+    mbedtls_mpi N, E;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+    memset( hash_result, 0x00, sizeof( hash_result ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == 0 );
+
+    if( md_info != NULL )
+        TEST_ASSERT( mbedtls_md( md_info, message_str->x, message_str->len, hash_result ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_verify( &ctx, digest, mbedtls_md_get_size( md_info ), hash_result, result_str->x ) == result );
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+
+/* BEGIN_CASE */
+void rsa_pkcs1_sign_raw( data_t * hash_result,
+                         int padding_mode, int mod, int radix_P,
+                         char * input_P, int radix_Q, char * input_Q,
+                         int radix_N, char * input_N, int radix_E,
+                         char * input_E, data_t * result_str )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx;
+    mbedtls_mpi N, P, Q, E;
+    mbedtls_test_rnd_pseudo_info rnd_info;
+
+    mbedtls_rsa_init( &ctx );
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &P );
+    mbedtls_mpi_init( &Q ); mbedtls_mpi_init( &E );
+
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+
+    memset( output, 0x00, sizeof( output ) );
+    memset( &rnd_info, 0, sizeof( mbedtls_test_rnd_pseudo_info ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, &P, &Q, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == 0 );
+
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_sign( &ctx, &mbedtls_test_rnd_pseudo_rand,
+                                         &rnd_info, MBEDTLS_MD_NONE,
+                                         hash_result->len,
+                                         hash_result->x, output ) == 0 );
+
+
+    TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                      ctx.len, result_str->len ) == 0 );
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P );
+    mbedtls_mpi_free( &Q ); mbedtls_mpi_free( &E );
+
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void rsa_pkcs1_verify_raw( data_t * hash_result,
+                           int padding_mode, int mod, int radix_N,
+                           char * input_N, int radix_E, char * input_E,
+                           data_t * result_str, int correct )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx;
+
+    mbedtls_mpi N, E;
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+    memset( output, 0x00, sizeof( output ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == 0 );
+
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_verify( &ctx, MBEDTLS_MD_NONE, hash_result->len, hash_result->x, result_str->x ) == correct );
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_pkcs1_encrypt( data_t * message_str, int padding_mode,
+                                int mod, int radix_N, char * input_N,
+                                int radix_E, char * input_E,
+                                data_t * result_str, int result )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx;
+    mbedtls_test_rnd_pseudo_info rnd_info;
+
+    mbedtls_mpi N, E;
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+
+    memset( &rnd_info, 0, sizeof( mbedtls_test_rnd_pseudo_info ) );
+
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+    memset( output, 0x00, sizeof( output ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == 0 );
+
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_encrypt( &ctx,
+                                            &mbedtls_test_rnd_pseudo_rand,
+                                            &rnd_info, message_str->len,
+                                            message_str->x,
+                                            output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx.len, result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void rsa_pkcs1_encrypt_bad_rng( data_t * message_str, int padding_mode,
+                                int mod, int radix_N, char * input_N,
+                                int radix_E, char * input_E,
+                                data_t * result_str, int result )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx;
+
+    mbedtls_mpi N, E;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+    memset( output, 0x00, sizeof( output ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == 0 );
+
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_encrypt( &ctx, &mbedtls_test_rnd_zero_rand,
+                                            NULL, message_str->len,
+                                            message_str->x,
+                                            output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx.len, result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_pkcs1_decrypt( data_t * message_str, int padding_mode,
+                                int mod, int radix_P, char * input_P,
+                                int radix_Q, char * input_Q, int radix_N,
+                                char * input_N, int radix_E, char * input_E,
+                                int max_output, data_t * result_str,
+                                int result )
+{
+    unsigned char output[32];
+    mbedtls_rsa_context ctx;
+    size_t output_len;
+    mbedtls_test_rnd_pseudo_info rnd_info;
+    mbedtls_mpi N, P, Q, E;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &P );
+    mbedtls_mpi_init( &Q ); mbedtls_mpi_init( &E );
+
+    mbedtls_rsa_init( &ctx );
+    TEST_ASSERT( mbedtls_rsa_set_padding( &ctx, padding_mode,
+                                          MBEDTLS_MD_NONE ) == 0 );
+
+    memset( output, 0x00, sizeof( output ) );
+    memset( &rnd_info, 0, sizeof( mbedtls_test_rnd_pseudo_info ) );
+
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, &P, &Q, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == 0 );
+
+    output_len = 0;
+
+    TEST_ASSERT( mbedtls_rsa_pkcs1_decrypt( &ctx, mbedtls_test_rnd_pseudo_rand,
+                                            &rnd_info,
+                                            &output_len, message_str->x, output,
+                                            max_output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          output_len,
+                                          result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P );
+    mbedtls_mpi_free( &Q ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_public( data_t * message_str, int mod, int radix_N,
+                         char * input_N, int radix_E, char * input_E,
+                         data_t * result_str, int result )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx, ctx2; /* Also test mbedtls_rsa_copy() while at it */
+
+    mbedtls_mpi N, E;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+    mbedtls_rsa_init( &ctx2 );
+    memset( output, 0x00, sizeof( output ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+
+    /* Check test data consistency */
+    TEST_ASSERT( message_str->len == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_public( &ctx, message_str->x, output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx.len, result_str->len ) == 0 );
+    }
+
+    /* And now with the copy */
+    TEST_ASSERT( mbedtls_rsa_copy( &ctx2, &ctx ) == 0 );
+    /* clear the original to be sure */
+    mbedtls_rsa_free( &ctx );
+
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx2 ) == 0 );
+
+    memset( output, 0x00, sizeof( output ) );
+    TEST_ASSERT( mbedtls_rsa_public( &ctx2, message_str->x, output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx.len, result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+    mbedtls_rsa_free( &ctx2 );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_private( data_t * message_str, int mod, int radix_P,
+                          char * input_P, int radix_Q, char * input_Q,
+                          int radix_N, char * input_N, int radix_E,
+                          char * input_E, data_t * result_str,
+                          int result )
+{
+    unsigned char output[256];
+    mbedtls_rsa_context ctx, ctx2; /* Also test mbedtls_rsa_copy() while at it */
+    mbedtls_mpi N, P, Q, E;
+    mbedtls_test_rnd_pseudo_info rnd_info;
+    int i;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &P );
+    mbedtls_mpi_init( &Q ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+    mbedtls_rsa_init( &ctx2 );
+
+    memset( &rnd_info, 0, sizeof( mbedtls_test_rnd_pseudo_info ) );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, &P, &Q, NULL, &E ) == 0 );
+
+    /* Check test data consistency */
+    TEST_ASSERT( message_str->len == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_get_len( &ctx ) == (size_t) ( mod / 8 ) );
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == 0 );
+
+    /* repeat three times to test updating of blinding values */
+    for( i = 0; i < 3; i++ )
+    {
+        memset( output, 0x00, sizeof( output ) );
+        TEST_ASSERT( mbedtls_rsa_private( &ctx, mbedtls_test_rnd_pseudo_rand,
+                                          &rnd_info, message_str->x,
+                                          output ) == result );
+        if( result == 0 )
+        {
+
+            TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                              ctx.len,
+                                              result_str->len ) == 0 );
+        }
+    }
+
+    /* And now one more time with the copy */
+    TEST_ASSERT( mbedtls_rsa_copy( &ctx2, &ctx ) == 0 );
+    /* clear the original to be sure */
+    mbedtls_rsa_free( &ctx );
+
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx2 ) == 0 );
+
+    memset( output, 0x00, sizeof( output ) );
+    TEST_ASSERT( mbedtls_rsa_private( &ctx2, mbedtls_test_rnd_pseudo_rand,
+                                      &rnd_info, message_str->x,
+                                      output ) == result );
+    if( result == 0 )
+    {
+
+        TEST_ASSERT( mbedtls_test_hexcmp( output, result_str->x,
+                                          ctx2.len,
+                                          result_str->len ) == 0 );
+    }
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &P );
+    mbedtls_mpi_free( &Q ); mbedtls_mpi_free( &E );
+
+    mbedtls_rsa_free( &ctx ); mbedtls_rsa_free( &ctx2 );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void rsa_check_privkey_null(  )
+{
+    mbedtls_rsa_context ctx;
+    memset( &ctx, 0x00, sizeof( mbedtls_rsa_context ) );
+
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == MBEDTLS_ERR_RSA_KEY_CHECK_FAILED );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_check_pubkey( int radix_N, char * input_N, int radix_E,
+                               char * input_E, int result )
+{
+    mbedtls_rsa_context ctx;
+    mbedtls_mpi N, E;
+
+    mbedtls_mpi_init( &N ); mbedtls_mpi_init( &E );
+    mbedtls_rsa_init( &ctx );
+
+    if( strlen( input_N ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    }
+    if( strlen( input_E ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+    }
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx, &N, NULL, NULL, NULL, &E ) == 0 );
+    TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == result );
+
+exit:
+    mbedtls_mpi_free( &N ); mbedtls_mpi_free( &E );
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_check_privkey( int mod, int radix_P, char * input_P,
+                                int radix_Q, char * input_Q, int radix_N,
+                                char * input_N, int radix_E, char * input_E,
+                                int radix_D, char * input_D, int radix_DP,
+                                char * input_DP, int radix_DQ,
+                                char * input_DQ, int radix_QP,
+                                char * input_QP, int result )
+{
+    mbedtls_rsa_context ctx;
+
+    mbedtls_rsa_init( &ctx );
+
+    ctx.len = mod / 8;
+    if( strlen( input_P ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.P, radix_P, input_P ) == 0 );
+    }
+    if( strlen( input_Q ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.Q, radix_Q, input_Q ) == 0 );
+    }
+    if( strlen( input_N ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.N, radix_N, input_N ) == 0 );
+    }
+    if( strlen( input_E ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.E, radix_E, input_E ) == 0 );
+    }
+    if( strlen( input_D ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.D, radix_D, input_D ) == 0 );
+    }
+#if !defined(MBEDTLS_RSA_NO_CRT)
+    if( strlen( input_DP ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.DP, radix_DP, input_DP ) == 0 );
+    }
+    if( strlen( input_DQ ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.DQ, radix_DQ, input_DQ ) == 0 );
+    }
+    if( strlen( input_QP ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &ctx.QP, radix_QP, input_QP ) == 0 );
+    }
+#else
+    ((void) radix_DP); ((void) input_DP);
+    ((void) radix_DQ); ((void) input_DQ);
+    ((void) radix_QP); ((void) input_QP);
+#endif
+
+    TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == result );
+
+exit:
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void rsa_check_pubpriv( int mod, int radix_Npub, char * input_Npub,
+                        int radix_Epub, char * input_Epub, int radix_P,
+                        char * input_P, int radix_Q, char * input_Q,
+                        int radix_N, char * input_N, int radix_E,
+                        char * input_E, int radix_D, char * input_D,
+                        int radix_DP, char * input_DP, int radix_DQ,
+                        char * input_DQ, int radix_QP, char * input_QP,
+                        int result )
+{
+    mbedtls_rsa_context pub, prv;
+
+    mbedtls_rsa_init( &pub );
+    mbedtls_rsa_init( &prv );
+
+    pub.len = mod / 8;
+    prv.len = mod / 8;
+
+    if( strlen( input_Npub ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &pub.N, radix_Npub, input_Npub ) == 0 );
+    }
+    if( strlen( input_Epub ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &pub.E, radix_Epub, input_Epub ) == 0 );
+    }
+
+    if( strlen( input_P ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.P, radix_P, input_P ) == 0 );
+    }
+    if( strlen( input_Q ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.Q, radix_Q, input_Q ) == 0 );
+    }
+    if( strlen( input_N ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.N, radix_N, input_N ) == 0 );
+    }
+    if( strlen( input_E ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.E, radix_E, input_E ) == 0 );
+    }
+    if( strlen( input_D ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.D, radix_D, input_D ) == 0 );
+    }
+#if !defined(MBEDTLS_RSA_NO_CRT)
+    if( strlen( input_DP ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.DP, radix_DP, input_DP ) == 0 );
+    }
+    if( strlen( input_DQ ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.DQ, radix_DQ, input_DQ ) == 0 );
+    }
+    if( strlen( input_QP ) )
+    {
+        TEST_ASSERT( mbedtls_test_read_mpi( &prv.QP, radix_QP, input_QP ) == 0 );
+    }
+#else
+    ((void) radix_DP); ((void) input_DP);
+    ((void) radix_DQ); ((void) input_DQ);
+    ((void) radix_QP); ((void) input_QP);
+#endif
+
+    TEST_ASSERT( mbedtls_rsa_check_pub_priv( &pub, &prv ) == result );
+
+exit:
+    mbedtls_rsa_free( &pub );
+    mbedtls_rsa_free( &prv );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_CTR_DRBG_C:MBEDTLS_ENTROPY_C:ENTROPY_HAVE_STRONG */
+void mbedtls_rsa_gen_key( int nrbits, int exponent, int result)
+{
+    mbedtls_rsa_context ctx;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    const char *pers = "test_suite_rsa";
+
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
+    mbedtls_rsa_init ( &ctx );
+
+    TEST_ASSERT( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func,
+                                        &entropy, (const unsigned char *) pers,
+                                        strlen( pers ) ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_gen_key( &ctx, mbedtls_ctr_drbg_random, &ctr_drbg, nrbits, exponent ) == result );
+    if( result == 0 )
+    {
+        TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_cmp_mpi( &ctx.P, &ctx.Q ) > 0 );
+    }
+
+exit:
+    mbedtls_rsa_free( &ctx );
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_CTR_DRBG_C:MBEDTLS_ENTROPY_C */
+void mbedtls_rsa_deduce_primes( int radix_N, char *input_N,
+                                int radix_D, char *input_D,
+                                int radix_E, char *input_E,
+                                int radix_P, char *output_P,
+                                int radix_Q, char *output_Q,
+                                int corrupt, int result )
+{
+    mbedtls_mpi N, P, Pp, Q, Qp, D, E;
+
+    mbedtls_mpi_init( &N );
+    mbedtls_mpi_init( &P );  mbedtls_mpi_init( &Q  );
+    mbedtls_mpi_init( &Pp ); mbedtls_mpi_init( &Qp );
+    mbedtls_mpi_init( &D ); mbedtls_mpi_init( &E );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &D, radix_D, input_D ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Qp, radix_P, output_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Pp, radix_Q, output_Q ) == 0 );
+
+    if( corrupt )
+        TEST_ASSERT( mbedtls_mpi_add_int( &D, &D, 2 ) == 0 );
+
+    /* Try to deduce P, Q from N, D, E only. */
+    TEST_ASSERT( mbedtls_rsa_deduce_primes( &N, &D, &E, &P, &Q ) == result );
+
+    if( !corrupt )
+    {
+        /* Check if (P,Q) = (Pp, Qp) or (P,Q) = (Qp, Pp) */
+        TEST_ASSERT( ( mbedtls_mpi_cmp_mpi( &P, &Pp ) == 0 && mbedtls_mpi_cmp_mpi( &Q, &Qp ) == 0 ) ||
+                     ( mbedtls_mpi_cmp_mpi( &P, &Qp ) == 0 && mbedtls_mpi_cmp_mpi( &Q, &Pp ) == 0 ) );
+    }
+
+exit:
+    mbedtls_mpi_free( &N );
+    mbedtls_mpi_free( &P  ); mbedtls_mpi_free( &Q  );
+    mbedtls_mpi_free( &Pp ); mbedtls_mpi_free( &Qp );
+    mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_deduce_private_exponent( int radix_P, char *input_P,
+                                          int radix_Q, char *input_Q,
+                                          int radix_E, char *input_E,
+                                          int radix_D, char *output_D,
+                                          int corrupt, int result )
+{
+    mbedtls_mpi P, Q, D, Dp, E, R, Rp;
+
+    mbedtls_mpi_init( &P ); mbedtls_mpi_init( &Q );
+    mbedtls_mpi_init( &D ); mbedtls_mpi_init( &Dp );
+    mbedtls_mpi_init( &E );
+    mbedtls_mpi_init( &R ); mbedtls_mpi_init( &Rp );
+
+    TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+    TEST_ASSERT( mbedtls_test_read_mpi( &Dp, radix_D, output_D ) == 0 );
+
+    if( corrupt )
+    {
+        /* Make E even */
+        TEST_ASSERT( mbedtls_mpi_set_bit( &E, 0, 0 ) == 0 );
+    }
+
+    /* Try to deduce D from N, P, Q, E. */
+    TEST_ASSERT( mbedtls_rsa_deduce_private_exponent( &P, &Q,
+                                                      &E, &D ) == result );
+
+    if( !corrupt )
+    {
+        /*
+         * Check that D and Dp agree modulo LCM(P-1, Q-1).
+         */
+
+        /* Replace P,Q by P-1, Q-1 */
+        TEST_ASSERT( mbedtls_mpi_sub_int( &P, &P, 1 ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_sub_int( &Q, &Q, 1 ) == 0 );
+
+        /* Check D == Dp modulo P-1 */
+        TEST_ASSERT( mbedtls_mpi_mod_mpi( &R,  &D,  &P ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_mod_mpi( &Rp, &Dp, &P ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_cmp_mpi( &R,  &Rp )     == 0 );
+
+        /* Check D == Dp modulo Q-1 */
+        TEST_ASSERT( mbedtls_mpi_mod_mpi( &R,  &D,  &Q ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_mod_mpi( &Rp, &Dp, &Q ) == 0 );
+        TEST_ASSERT( mbedtls_mpi_cmp_mpi( &R,  &Rp )     == 0 );
+    }
+
+exit:
+
+    mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q  );
+    mbedtls_mpi_free( &D ); mbedtls_mpi_free( &Dp );
+    mbedtls_mpi_free( &E );
+    mbedtls_mpi_free( &R ); mbedtls_mpi_free( &Rp );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_CTR_DRBG_C:MBEDTLS_ENTROPY_C:ENTROPY_HAVE_STRONG */
+void mbedtls_rsa_import( int radix_N, char *input_N,
+                         int radix_P, char *input_P,
+                         int radix_Q, char *input_Q,
+                         int radix_D, char *input_D,
+                         int radix_E, char *input_E,
+                         int successive,
+                         int is_priv,
+                         int res_check,
+                         int res_complete )
+{
+    mbedtls_mpi N, P, Q, D, E;
+    mbedtls_rsa_context ctx;
+
+    /* Buffers used for encryption-decryption test */
+    unsigned char *buf_orig = NULL;
+    unsigned char *buf_enc  = NULL;
+    unsigned char *buf_dec  = NULL;
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    const char *pers = "test_suite_rsa";
+
+    const int have_N = ( strlen( input_N ) > 0 );
+    const int have_P = ( strlen( input_P ) > 0 );
+    const int have_Q = ( strlen( input_Q ) > 0 );
+    const int have_D = ( strlen( input_D ) > 0 );
+    const int have_E = ( strlen( input_E ) > 0 );
+
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
+    mbedtls_rsa_init( &ctx );
+
+    mbedtls_mpi_init( &N );
+    mbedtls_mpi_init( &P ); mbedtls_mpi_init( &Q );
+    mbedtls_mpi_init( &D ); mbedtls_mpi_init( &E );
+
+    TEST_ASSERT( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy,
+                                (const unsigned char *) pers, strlen( pers ) ) == 0 );
+
+    if( have_N )
+        TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+
+    if( have_P )
+        TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+
+    if( have_Q )
+        TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+
+    if( have_D )
+        TEST_ASSERT( mbedtls_test_read_mpi( &D, radix_D, input_D ) == 0 );
+
+    if( have_E )
+        TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    if( !successive )
+    {
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                             have_N ? &N : NULL,
+                             have_P ? &P : NULL,
+                             have_Q ? &Q : NULL,
+                             have_D ? &D : NULL,
+                             have_E ? &E : NULL ) == 0 );
+    }
+    else
+    {
+        /* Import N, P, Q, D, E separately.
+         * This should make no functional difference. */
+
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                               have_N ? &N : NULL,
+                               NULL, NULL, NULL, NULL ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                               NULL,
+                               have_P ? &P : NULL,
+                               NULL, NULL, NULL ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                               NULL, NULL,
+                               have_Q ? &Q : NULL,
+                               NULL, NULL ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                               NULL, NULL, NULL,
+                               have_D ? &D : NULL,
+                               NULL ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                               NULL, NULL, NULL, NULL,
+                               have_E ? &E : NULL ) == 0 );
+    }
+
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == res_complete );
+
+    /* On expected success, perform some public and private
+     * key operations to check if the key is working properly. */
+    if( res_complete == 0 )
+    {
+        if( is_priv )
+            TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == res_check );
+        else
+            TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == res_check );
+
+        if( res_check != 0 )
+            goto exit;
+
+        buf_orig = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        buf_enc  = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        buf_dec  = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        if( buf_orig == NULL || buf_enc == NULL || buf_dec == NULL )
+            goto exit;
+
+        TEST_ASSERT( mbedtls_ctr_drbg_random( &ctr_drbg,
+                              buf_orig, mbedtls_rsa_get_len( &ctx ) ) == 0 );
+
+        /* Make sure the number we're generating is smaller than the modulus */
+        buf_orig[0] = 0x00;
+
+        TEST_ASSERT( mbedtls_rsa_public( &ctx, buf_orig, buf_enc ) == 0 );
+
+        if( is_priv )
+        {
+            TEST_ASSERT( mbedtls_rsa_private( &ctx, mbedtls_ctr_drbg_random,
+                                              &ctr_drbg, buf_enc,
+                                              buf_dec ) == 0 );
+
+            TEST_ASSERT( memcmp( buf_orig, buf_dec,
+                                 mbedtls_rsa_get_len( &ctx ) ) == 0 );
+        }
+    }
+
+exit:
+
+    mbedtls_free( buf_orig );
+    mbedtls_free( buf_enc  );
+    mbedtls_free( buf_dec  );
+
+    mbedtls_rsa_free( &ctx );
+
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+
+    mbedtls_mpi_free( &N );
+    mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q );
+    mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void mbedtls_rsa_export( int radix_N, char *input_N,
+                         int radix_P, char *input_P,
+                         int radix_Q, char *input_Q,
+                         int radix_D, char *input_D,
+                         int radix_E, char *input_E,
+                         int is_priv,
+                         int successive )
+{
+    /* Original MPI's with which we set up the RSA context */
+    mbedtls_mpi N, P, Q, D, E;
+
+    /* Exported MPI's */
+    mbedtls_mpi Ne, Pe, Qe, De, Ee;
+
+    const int have_N = ( strlen( input_N ) > 0 );
+    const int have_P = ( strlen( input_P ) > 0 );
+    const int have_Q = ( strlen( input_Q ) > 0 );
+    const int have_D = ( strlen( input_D ) > 0 );
+    const int have_E = ( strlen( input_E ) > 0 );
+
+    mbedtls_rsa_context ctx;
+
+    mbedtls_rsa_init( &ctx );
+
+    mbedtls_mpi_init( &N );
+    mbedtls_mpi_init( &P ); mbedtls_mpi_init( &Q );
+    mbedtls_mpi_init( &D ); mbedtls_mpi_init( &E );
+
+    mbedtls_mpi_init( &Ne );
+    mbedtls_mpi_init( &Pe ); mbedtls_mpi_init( &Qe );
+    mbedtls_mpi_init( &De ); mbedtls_mpi_init( &Ee );
+
+    /* Setup RSA context */
+
+    if( have_N )
+        TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+
+    if( have_P )
+        TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+
+    if( have_Q )
+        TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+
+    if( have_D )
+        TEST_ASSERT( mbedtls_test_read_mpi( &D, radix_D, input_D ) == 0 );
+
+    if( have_E )
+        TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_import( &ctx,
+                                     strlen( input_N ) ? &N : NULL,
+                                     strlen( input_P ) ? &P : NULL,
+                                     strlen( input_Q ) ? &Q : NULL,
+                                     strlen( input_D ) ? &D : NULL,
+                                     strlen( input_E ) ? &E : NULL ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+
+    /*
+     * Export parameters and compare to original ones.
+     */
+
+    /* N and E must always be present. */
+    if( !successive )
+    {
+        TEST_ASSERT( mbedtls_rsa_export( &ctx, &Ne, NULL, NULL, NULL, &Ee ) == 0 );
+    }
+    else
+    {
+        TEST_ASSERT( mbedtls_rsa_export( &ctx, &Ne, NULL, NULL, NULL, NULL ) == 0 );
+        TEST_ASSERT( mbedtls_rsa_export( &ctx, NULL, NULL, NULL, NULL, &Ee ) == 0 );
+    }
+    TEST_ASSERT( mbedtls_mpi_cmp_mpi( &N, &Ne ) == 0 );
+    TEST_ASSERT( mbedtls_mpi_cmp_mpi( &E, &Ee ) == 0 );
+
+    /* If we were providing enough information to setup a complete private context,
+     * we expect to be able to export all core parameters. */
+
+    if( is_priv )
+    {
+        if( !successive )
+        {
+            TEST_ASSERT( mbedtls_rsa_export( &ctx, NULL, &Pe, &Qe,
+                                             &De, NULL ) == 0 );
+        }
+        else
+        {
+            TEST_ASSERT( mbedtls_rsa_export( &ctx, NULL, &Pe, NULL,
+                                             NULL, NULL ) == 0 );
+            TEST_ASSERT( mbedtls_rsa_export( &ctx, NULL, NULL, &Qe,
+                                             NULL, NULL ) == 0 );
+            TEST_ASSERT( mbedtls_rsa_export( &ctx, NULL, NULL, NULL,
+                                             &De, NULL ) == 0 );
+        }
+
+        if( have_P )
+            TEST_ASSERT( mbedtls_mpi_cmp_mpi( &P, &Pe ) == 0 );
+
+        if( have_Q )
+            TEST_ASSERT( mbedtls_mpi_cmp_mpi( &Q, &Qe ) == 0 );
+
+        if( have_D )
+            TEST_ASSERT( mbedtls_mpi_cmp_mpi( &D, &De ) == 0 );
+
+        /* While at it, perform a sanity check */
+        TEST_ASSERT( mbedtls_rsa_validate_params( &Ne, &Pe, &Qe, &De, &Ee,
+                                                       NULL, NULL ) == 0 );
+    }
+
+exit:
+
+    mbedtls_rsa_free( &ctx );
+
+    mbedtls_mpi_free( &N );
+    mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q );
+    mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E );
+
+    mbedtls_mpi_free( &Ne );
+    mbedtls_mpi_free( &Pe ); mbedtls_mpi_free( &Qe );
+    mbedtls_mpi_free( &De ); mbedtls_mpi_free( &Ee );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_ENTROPY_C:ENTROPY_HAVE_STRONG:MBEDTLS_ENTROPY_C:MBEDTLS_CTR_DRBG_C */
+void mbedtls_rsa_validate_params( int radix_N, char *input_N,
+                                  int radix_P, char *input_P,
+                                  int radix_Q, char *input_Q,
+                                  int radix_D, char *input_D,
+                                  int radix_E, char *input_E,
+                                  int prng, int result )
+{
+    /* Original MPI's with which we set up the RSA context */
+    mbedtls_mpi N, P, Q, D, E;
+
+    const int have_N = ( strlen( input_N ) > 0 );
+    const int have_P = ( strlen( input_P ) > 0 );
+    const int have_Q = ( strlen( input_Q ) > 0 );
+    const int have_D = ( strlen( input_D ) > 0 );
+    const int have_E = ( strlen( input_E ) > 0 );
+
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    const char *pers = "test_suite_rsa";
+
+    mbedtls_mpi_init( &N );
+    mbedtls_mpi_init( &P ); mbedtls_mpi_init( &Q );
+    mbedtls_mpi_init( &D ); mbedtls_mpi_init( &E );
+
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
+    TEST_ASSERT( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func,
+                                        &entropy, (const unsigned char *) pers,
+                                        strlen( pers ) ) == 0 );
+
+    if( have_N )
+        TEST_ASSERT( mbedtls_test_read_mpi( &N, radix_N, input_N ) == 0 );
+
+    if( have_P )
+        TEST_ASSERT( mbedtls_test_read_mpi( &P, radix_P, input_P ) == 0 );
+
+    if( have_Q )
+        TEST_ASSERT( mbedtls_test_read_mpi( &Q, radix_Q, input_Q ) == 0 );
+
+    if( have_D )
+        TEST_ASSERT( mbedtls_test_read_mpi( &D, radix_D, input_D ) == 0 );
+
+    if( have_E )
+        TEST_ASSERT( mbedtls_test_read_mpi( &E, radix_E, input_E ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_validate_params( have_N ? &N : NULL,
+                                        have_P ? &P : NULL,
+                                        have_Q ? &Q : NULL,
+                                        have_D ? &D : NULL,
+                                        have_E ? &E : NULL,
+                                        prng ? mbedtls_ctr_drbg_random : NULL,
+                                        prng ? &ctr_drbg : NULL ) == result );
+exit:
+
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+
+    mbedtls_mpi_free( &N );
+    mbedtls_mpi_free( &P ); mbedtls_mpi_free( &Q );
+    mbedtls_mpi_free( &D ); mbedtls_mpi_free( &E );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_CTR_DRBG_C:MBEDTLS_ENTROPY_C */
+void mbedtls_rsa_export_raw( data_t *input_N, data_t *input_P,
+                             data_t *input_Q, data_t *input_D,
+                             data_t *input_E, int is_priv,
+                             int successive )
+{
+    /* Exported buffers */
+    unsigned char bufNe[256];
+    unsigned char bufPe[128];
+    unsigned char bufQe[128];
+    unsigned char bufDe[256];
+    unsigned char bufEe[1];
+
+    mbedtls_rsa_context ctx;
+
+    mbedtls_rsa_init( &ctx );
+
+    /* Setup RSA context */
+    TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               input_N->len ? input_N->x : NULL, input_N->len,
+                               input_P->len ? input_P->x : NULL, input_P->len,
+                               input_Q->len ? input_Q->x : NULL, input_Q->len,
+                               input_D->len ? input_D->x : NULL, input_D->len,
+                               input_E->len ? input_E->x : NULL, input_E->len ) == 0 );
+
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == 0 );
+
+    /*
+     * Export parameters and compare to original ones.
+     */
+
+    /* N and E must always be present. */
+    if( !successive )
+    {
+        TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, bufNe, input_N->len,
+                                             NULL, 0, NULL, 0, NULL, 0,
+                                             bufEe, input_E->len ) == 0 );
+    }
+    else
+    {
+        TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, bufNe, input_N->len,
+                                             NULL, 0, NULL, 0, NULL, 0,
+                                             NULL, 0 ) == 0 );
+        TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, NULL, 0,
+                                             NULL, 0, NULL, 0, NULL, 0,
+                                             bufEe, input_E->len ) == 0 );
+    }
+    TEST_ASSERT( memcmp( input_N->x, bufNe, input_N->len ) == 0 );
+    TEST_ASSERT( memcmp( input_E->x, bufEe, input_E->len ) == 0 );
+
+    /* If we were providing enough information to setup a complete private context,
+     * we expect to be able to export all core parameters. */
+
+    if( is_priv )
+    {
+        if( !successive )
+        {
+            TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, NULL, 0,
+                                         bufPe, input_P->len ? input_P->len : sizeof( bufPe ),
+                                         bufQe, input_Q->len ? input_Q->len : sizeof( bufQe ),
+                                         bufDe, input_D->len ? input_D->len : sizeof( bufDe ),
+                                         NULL, 0 ) == 0 );
+        }
+        else
+        {
+            TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, NULL, 0,
+                                         bufPe, input_P->len ? input_P->len : sizeof( bufPe ),
+                                         NULL, 0, NULL, 0,
+                                         NULL, 0 ) == 0 );
+
+            TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, NULL, 0, NULL, 0,
+                                         bufQe, input_Q->len ? input_Q->len : sizeof( bufQe ),
+                                         NULL, 0, NULL, 0 ) == 0 );
+
+            TEST_ASSERT( mbedtls_rsa_export_raw( &ctx, NULL, 0, NULL, 0, NULL, 0,
+                                         bufDe, input_D->len ? input_D->len : sizeof( bufDe ),
+                                         NULL, 0 ) == 0 );
+        }
+
+        if( input_P->len )
+            TEST_ASSERT( memcmp( input_P->x, bufPe, input_P->len ) == 0 );
+
+        if( input_Q->len )
+            TEST_ASSERT( memcmp( input_Q->x, bufQe, input_Q->len ) == 0 );
+
+        if( input_D->len )
+            TEST_ASSERT( memcmp( input_D->x, bufDe, input_D->len ) == 0 );
+
+    }
+
+exit:
+    mbedtls_rsa_free( &ctx );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_CTR_DRBG_C:MBEDTLS_ENTROPY_C:ENTROPY_HAVE_STRONG */
+void mbedtls_rsa_import_raw( data_t *input_N,
+                             data_t *input_P, data_t *input_Q,
+                             data_t *input_D, data_t *input_E,
+                             int successive,
+                             int is_priv,
+                             int res_check,
+                             int res_complete )
+{
+    /* Buffers used for encryption-decryption test */
+    unsigned char *buf_orig = NULL;
+    unsigned char *buf_enc  = NULL;
+    unsigned char *buf_dec  = NULL;
+
+    mbedtls_rsa_context ctx;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+
+    const char *pers = "test_suite_rsa";
+
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
+    mbedtls_rsa_init( &ctx );
+
+    TEST_ASSERT( mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func,
+                                        &entropy, (const unsigned char *) pers,
+                                        strlen( pers ) ) == 0 );
+
+    if( !successive )
+    {
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               ( input_N->len > 0 ) ? input_N->x : NULL, input_N->len,
+                               ( input_P->len > 0 ) ? input_P->x : NULL, input_P->len,
+                               ( input_Q->len > 0 ) ? input_Q->x : NULL, input_Q->len,
+                               ( input_D->len > 0 ) ? input_D->x : NULL, input_D->len,
+                               ( input_E->len > 0 ) ? input_E->x : NULL, input_E->len ) == 0 );
+    }
+    else
+    {
+        /* Import N, P, Q, D, E separately.
+         * This should make no functional difference. */
+
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               ( input_N->len > 0 ) ? input_N->x : NULL, input_N->len,
+                               NULL, 0, NULL, 0, NULL, 0, NULL, 0 ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               NULL, 0,
+                               ( input_P->len > 0 ) ? input_P->x : NULL, input_P->len,
+                               NULL, 0, NULL, 0, NULL, 0 ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               NULL, 0, NULL, 0,
+                               ( input_Q->len > 0 ) ? input_Q->x : NULL, input_Q->len,
+                               NULL, 0, NULL, 0 ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               NULL, 0, NULL, 0, NULL, 0,
+                               ( input_D->len > 0 ) ? input_D->x : NULL, input_D->len,
+                               NULL, 0 ) == 0 );
+
+        TEST_ASSERT( mbedtls_rsa_import_raw( &ctx,
+                               NULL, 0, NULL, 0, NULL, 0, NULL, 0,
+                               ( input_E->len > 0 ) ? input_E->x : NULL, input_E->len ) == 0 );
+    }
+
+    TEST_ASSERT( mbedtls_rsa_complete( &ctx ) == res_complete );
+
+    /* On expected success, perform some public and private
+     * key operations to check if the key is working properly. */
+    if( res_complete == 0 )
+    {
+        if( is_priv )
+            TEST_ASSERT( mbedtls_rsa_check_privkey( &ctx ) == res_check );
+        else
+            TEST_ASSERT( mbedtls_rsa_check_pubkey( &ctx ) == res_check );
+
+        if( res_check != 0 )
+            goto exit;
+
+        buf_orig = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        buf_enc  = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        buf_dec  = mbedtls_calloc( 1, mbedtls_rsa_get_len( &ctx ) );
+        if( buf_orig == NULL || buf_enc == NULL || buf_dec == NULL )
+            goto exit;
+
+        TEST_ASSERT( mbedtls_ctr_drbg_random( &ctr_drbg,
+                              buf_orig, mbedtls_rsa_get_len( &ctx ) ) == 0 );
+
+        /* Make sure the number we're generating is smaller than the modulus */
+        buf_orig[0] = 0x00;
+
+        TEST_ASSERT( mbedtls_rsa_public( &ctx, buf_orig, buf_enc ) == 0 );
+
+        if( is_priv )
+        {
+            TEST_ASSERT( mbedtls_rsa_private( &ctx, mbedtls_ctr_drbg_random,
+                                              &ctr_drbg, buf_enc,
+                                              buf_dec ) == 0 );
+
+            TEST_ASSERT( memcmp( buf_orig, buf_dec,
+                                 mbedtls_rsa_get_len( &ctx ) ) == 0 );
+        }
+    }
+
+exit:
+
+    mbedtls_free( buf_orig );
+    mbedtls_free( buf_enc  );
+    mbedtls_free( buf_dec  );
+
+    mbedtls_rsa_free( &ctx );
+
+    mbedtls_ctr_drbg_free( &ctr_drbg );
+    mbedtls_entropy_free( &entropy );
+
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_SELF_TEST */
+void rsa_selftest(  )
+{
+    TEST_ASSERT( mbedtls_rsa_self_test( 1 ) == 0 );
+}
+/* END_CASE */

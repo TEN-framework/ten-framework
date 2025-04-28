@@ -1,0 +1,38 @@
+<testcase>
+<info>
+<keywords>
+SCP
+FAILURE
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+scp
+</server>
+ <name>
+SCP retrieval of missing file followed by good file
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: scp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/not-a-valid-file-moooo scp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/file%TESTNUMBER.txt --insecure
+</command>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+Test data
+for ssh test
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<valgrind>
+disable
+</valgrind>
+<stdout>
+Test data
+for ssh test
+</stdout>
+</verify>
+</testcase>

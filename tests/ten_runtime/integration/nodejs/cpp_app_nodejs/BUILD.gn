@@ -1,0 +1,68 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_package_test_prepare_app("cpp_app_nodejs_app") {
+  src_app = "default_app_cpp"
+  src_app_language = "cpp"
+  generated_app_src_root_dir_name = "cpp_app_nodejs_app"
+
+  replace_paths_after_install_app = [
+    "cpp_app_nodejs_app/manifest.json",
+    "cpp_app_nodejs_app/property.json",
+  ]
+
+  replace_paths_after_install_all = [
+    "cpp_app_nodejs_app/ten_packages/extension/default_extension_nodejs/src/index.ts",
+    "cpp_app_nodejs_app/BUILD.gn",
+    "cpp_app_nodejs_app/bin",
+  ]
+
+  if (ten_enable_ten_manager) {
+    deps = [
+      "//core/src/ten_manager",
+      "//core/src/ten_runtime/binding/nodejs",
+      "//packages/core_addon_loaders/nodejs_addon_loader:upload_nodejs_addon_loader_to_server",
+      "//packages/core_apps/default_app_cpp:upload_default_app_cpp_to_server",
+      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_ts_to_server",
+      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
+      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
+    ]
+  }
+}
+
+ten_package_test_prepare_auxiliary_resources("cpp_app_nodejs_test_files") {
+  resources = [
+    "__init__.py",
+    "test_case.py",
+  ]
+
+  utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("//tests/utils/**/*"),
+                              "--dir-base",
+                              rebase_path("//tests/utils"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(utils_file, utils_files) {
+    utils_file_rel_path = utils_file.relative_path
+    resources +=
+        [ "//tests/utils/${utils_file_rel_path}=>utils/${utils_file_rel_path}" ]
+  }
+}
+
+group("cpp_app_nodejs") {
+  deps = [
+    ":cpp_app_nodejs_app",
+    ":cpp_app_nodejs_test_files",
+  ]
+}

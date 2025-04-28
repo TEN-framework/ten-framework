@@ -1,0 +1,54 @@
+<testcase>
+<info>
+<keywords>
+HTTPS
+HTTP GET
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 16 Jan 2007 18:00:14 GMT
+Server: test-server/fake
+Content-Length: 7
+
+MooMoo
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<features>
+OpenSSL
+</features>
+<server>
+https
+</server>
+<precheck>
+perl %SRCDIR/libtest/test%TESTNUMBER.pl %CURL
+</precheck>
+
+ <name>
+simple HTTPS GET with openssl engine
+ </name>
+ <command>
+--engine openssl -k https://%HOSTIP:%HTTPSPORT/%TESTNUMBER
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPSPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

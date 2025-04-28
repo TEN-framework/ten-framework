@@ -1,0 +1,23 @@
+{
+  "type": "extension",
+  "name": "default_async_extension_python",
+  "version": "0.10.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {}
+}

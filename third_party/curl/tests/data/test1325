@@ -1,0 +1,79 @@
+<testcase>
+# https://greenbytes.de/tech/webdav/draft-reschke-http-status-308-latest.html
+<info>
+<keywords>
+HTTP
+HTTP GET
+308
+followlocation
+</keywords>
+</info>
+#
+# Server-side
+<reply>
+<data>
+HTTP/1.1 308 OK swsclose
+Location: %TESTNUMBER0002
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Connection: close
+
+</data>
+<data2>
+HTTP/1.1 200 OK swsclose
+Location: this should be ignored
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Connection: close
+
+body
+</data2>
+<datacheck>
+HTTP/1.1 308 OK swsclose
+Location: %TESTNUMBER0002
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Connection: close
+
+HTTP/1.1 200 OK swsclose
+Location: this should be ignored
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Connection: close
+
+body
+</datacheck>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP 308-redirect with POST
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/we/%TESTNUMBER -L -d "moo"
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol nonewline="yes">
+POST /we/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 3
+Content-Type: application/x-www-form-urlencoded
+
+mooPOST /we/%TESTNUMBER0002 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 3
+Content-Type: application/x-www-form-urlencoded
+
+moo
+</protocol>
+</verify>
+</testcase>

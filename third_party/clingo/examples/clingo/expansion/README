@@ -1,0 +1,33 @@
+The script in main.py gradually expands logic programs structured into the parts:
+
+- base         : rules instantiated initially
+- object(m,k)  : rules instantiated when an m-th object is introduced at step k
+- horizon(n,k) : rules instantiated when the horizon is turned up to n at step k
+- expand(k)    : rules instantiated along with object(m,k)/horizon(n,k) at step k
+
+For example, in GraphColouring (see GraphColouring/encodings/encoding.lp) objects
+correspond to nodes of a graph and the horizon is given by colors. Both nodes and
+colors are labeled by consecutive integers starting from 1, the parts object(m,k)
+and horizon(n,k) specify auxiliary predicates controlling the instances of rules
+in expand(k) that will be generated at step k, and the base part consists of the
+facts of an instance. Then, main.py takes care of expanding objects (nodes), as
+long as there is any, and extending the number of colors on demand, whenever an
+unsatisfiable problem is encountered. The two major operation modes of main.py
+are multi-shot solving or repeated single-shot solving (via option --scratch).
+For a summary of all options, run:
+
+./main.py --help
+
+The script main.py requires the clingo Python library shipped with clingo (see
+https://potassco.org).
+
+Examples invocations:
+
+$ ./main.py --verbose --option solver.forget_on_step 1 \
+    GraphColouring/encodings/encoding.lp \
+    GraphColouring/instances/0004-graph_colouring-125-0.lp
+
+$ ./main.py --verbose --option solver.forget_on_step 1 --maxobj 40 \
+    PartnerUnits/encodings/encoding.lp \
+    PartnerUnits/instances/180-partner_units_polynomial-47-0.lp
+

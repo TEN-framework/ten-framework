@@ -1,0 +1,25 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+
+ten_runtime_glob("binding") {
+  file_list = all_native_files
+
+  deps = []
+
+  if (ten_enable_go_binding) {
+    deps += [ "go" ]
+  }
+
+  if (ten_enable_python_binding) {
+    deps += [ "python" ]
+  }
+
+  if (ten_enable_nodejs_binding) {
+    deps += [ "nodejs" ]
+  }
+}

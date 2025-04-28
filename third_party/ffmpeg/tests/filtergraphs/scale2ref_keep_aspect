@@ -1,0 +1,4 @@
+sws_flags=+accurate_rnd+bitexact;
+testsrc=size=320x240 [main];
+testsrc=size=640x360 [ref];
+[main][ref] scale=rw/4:ow/dar [main]

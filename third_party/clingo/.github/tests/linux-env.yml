@@ -1,0 +1,12 @@
+name: clingo
+channels:
+  - conda-forge
+dependencies:
+  - cmake
+  - ninja
+  - bison
+  - re2c
+  - cxx-compiler
+  - lua
+  - cffi
+  - python

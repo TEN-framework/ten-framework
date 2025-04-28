@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "ext_not_listed",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "ext_not_existed",
+      "version": "10000.0.0"
+    }
+  ]
+}

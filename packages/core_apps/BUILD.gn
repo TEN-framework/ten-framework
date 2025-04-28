@@ -1,0 +1,21 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+group("core_apps") {
+  deps = []
+  if (is_linux || is_mac || is_win) {
+    deps += [ "default_app_cpp" ]
+  }
+
+  if (ten_enable_go_binding) {
+    deps += [ "default_app_go" ]
+  }
+
+  if (ten_enable_python_binding) {
+    deps += [ "default_app_python" ]
+  }
+}

@@ -1,0 +1,42 @@
+<testcase>
+<info>
+<keywords>
+unittest
+URLAPI
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<setenv>
+LANG=en_US.UTF-8
+</setenv>
+<features>
+file
+https
+http
+pop3
+smtp
+imap
+ldap
+dict
+ftp
+</features>
+ <name>
+URL API
+ </name>
+<tool>
+lib%TESTNUMBER
+</tool>
+</client>
+
+<verify>
+<stdout>
+success
+</stdout>
+</verify>
+</testcase>

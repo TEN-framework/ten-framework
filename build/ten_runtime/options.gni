@@ -1,0 +1,81 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//.gnfiles/build/feature/base_options.gni")
+import("//build/options.gni")
+
+declare_args() {
+  # If set, build TEN runtime as shared library, otherwise static library
+  ten_build_shared = true
+
+  # If set, enable libwebsockets dependency, it will be used in http/websocket
+  # client and protocol.
+  ten_enable_libwebsockets = true
+
+  ten_enable_curl = true
+}
+
+# ten_runtime binding
+declare_args() {
+  ten_enable_go_binding = true
+  ten_enable_python_binding = true
+  ten_enable_nodejs_binding = true
+}
+
+# ten_runtime extensions
+declare_args() {
+  # If set, enable example extensions
+  # The original value is: (is_linux || is_mac || is_win) && target_cpu == "x64"
+  ten_enable_example_packages = true
+
+  # If set, build native ffmpeg relevant extension and app
+  ten_enable_ffmpeg_extensions = false
+}
+
+declare_args() {
+  # The go lint only depends on GO SDK which is platform independent, so only
+  # one CI node is enough to run the lint.
+  ten_enable_go_lint = false
+
+  # Whether to call apis in the ten_rust library from ten_runtime.
+  ten_enable_ten_rust_apis = true
+}
+
+declare_args() {
+  ten_enable_tests = true
+  ten_enable_unit_tests = true
+  ten_enable_smoke_tests = true
+  ten_enable_integration_tests = true
+
+  ten_enable_advanced_python_integration_tests = ten_enable_python_binding
+}
+
+declare_args() {
+  # If set, enable memory leak checking in TEN go app.
+  ten_enable_go_app_leak_check = is_linux && is_debug && target_cpu == "x64"
+}
+
+ten_runtime_common_defines = common_defines
+if (ten_enable_memory_check) {
+  ten_runtime_common_defines += [ "TEN_ENABLE_MEMORY_CHECK" ]
+}
+
+if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
+  ten_runtime_common_defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
+}
+
+common_deps = []
+common_public_deps = []
+
+ten_runtime_common_includes = common_includes
+ten_runtime_common_includes += [
+  "$root_build_dir/src",
+  "${root_out_dir}",
+  "${root_out_dir}/obj",
+  "//core",
+  "//core/src",
+  "//core/include",
+]

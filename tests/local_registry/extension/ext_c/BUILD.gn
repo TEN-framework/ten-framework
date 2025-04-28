@@ -1,0 +1,116 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/packaging.gni")
+
+ten_package_packaging("0.0.1") {
+  sources = [ "0.0.1/manifest.json" ]
+
+  target_path = get_label_info("0.0.1", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.0.1_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.0.1_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.0.2") {
+  sources = [ "0.0.2/manifest.json" ]
+
+  target_path = get_label_info("0.0.2", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.0.2_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.0.2_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.1.2") {
+  sources = [ "0.1.2/manifest.json" ]
+
+  target_path = get_label_info("0.1.2", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.1.2_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.1.2_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.2.0") {
+  sources = [ "0.2.0/manifest.json" ]
+
+  target_path = get_label_info("0.2.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.2.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.2.0_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.3.0") {
+  sources = [ "0.3.0/manifest.json" ]
+
+  target_path = get_label_info("0.3.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.3.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.3.0_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.4.0") {
+  sources = [ "0.4.0/manifest.json" ]
+
+  target_path = get_label_info("0.4.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.4.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.4.0_all.all.all_manifest.json"
+}
+
+ten_package_packaging("0.5.0") {
+  sources = [ "0.5.0/manifest.json" ]
+
+  target_path = get_label_info("0.5.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_0.5.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_0.5.0_all.all.all_manifest.json"
+}
+
+ten_package_packaging("2.0.0") {
+  sources = [ "2.0.0/manifest.json" ]
+
+  target_path = get_label_info("2.0.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_c_2.0.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_c_2.0.0_all.all.all_manifest.json"
+}
+
+group("ext_c") {
+  deps = [
+    ":0.0.1",
+    ":0.0.2",
+    ":0.1.2",
+    ":0.2.0",
+    ":0.3.0",
+    ":0.4.0",
+    ":0.5.0",
+    ":2.0.0",
+  ]
+}

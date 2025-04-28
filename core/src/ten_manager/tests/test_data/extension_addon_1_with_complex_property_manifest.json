@@ -1,0 +1,24 @@
+{
+  "type": "extension",
+  "name": "extension_addon_1",
+  "version": "1.0.0",
+  "api": {
+    "property": {
+      "key": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "int32"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ]
+      }
+    }
+  }
+}

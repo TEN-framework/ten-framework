@@ -1,0 +1,81 @@
+<testcase>
+<info>
+<keywords>
+POP3
+RETR
+HTTP
+HTTP CONNECT
+HTTP proxy
+</keywords>
+</info>
+#
+# Server-side
+<reply>
+
+<connect>
+HTTP/1.1 200 Mighty fine indeed
+pop3: sure hit me
+
+</connect>
+
+# When doing LIST, we get the default list output hard-coded in the test
+# FTP server
+<data>
+From: me@somewhere
+To: fake@nowhere
+
+body
+
+--
+  yours sincerely
+</data>
+
+<datacheck>
+From: me@somewhere
+To: fake@nowhere
+
+body
+
+--
+  yours sincerely
+</datacheck>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+pop3
+http-proxy
+</server>
+<features>
+http
+proxy
+</features>
+ <name>
+POP3 fetch tunneled through HTTP proxy
+ </name>
+ <command>
+pop3://pop.%TESTNUMBER:%POP3PORT/%TESTNUMBER -p -x %HOSTIP:%PROXYPORT -u user:secret
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+CAPA
+USER user
+PASS secret
+RETR %TESTNUMBER
+QUIT
+</protocol>
+<proxy>
+CONNECT pop.%TESTNUMBER:%POP3PORT HTTP/1.1
+Host: pop.%TESTNUMBER:%POP3PORT
+User-Agent: curl/%VERSION
+Proxy-Connection: Keep-Alive
+
+</proxy>
+</verify>
+</testcase>

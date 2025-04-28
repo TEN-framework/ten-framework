@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "version": "1.0.0",
+      "hash": "0f4a9dcb25a07765abd9869b9b591efbf9be549b712cd48d73c4465213530a6d",
+      "dependencies": [
+        {
+          "type": "extension",
+          "name": "ext_a"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "version": "1.2.3",
+      "hash": "7527e7758d3d3c2147047698a17d4d02f22750a105f74e5523f536ebdb9d2e4c"
+    }
+  ]
+}

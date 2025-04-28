@@ -1,0 +1,22 @@
+<testcase>
+<info>
+<keywords>
+unittest
+Curl_cert_hostcheck
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+</features>
+<name>
+Curl_cert_hostcheck unit tests
+</name>
+</client>
+</testcase>

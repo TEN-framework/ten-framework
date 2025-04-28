@@ -1,0 +1,185 @@
+name: Linux (Arm64)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - "portal/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/build_linux_arm64.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: linux-arm64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc]
+        build_type: [release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Update supports
+        run: |
+          UPDATE_SUPPORTS_SCRIPT=$(pwd)/tools/supports/update_supports_in_manifest_json.py
+
+          ARRAY=(
+            "core/src/ten_runtime"
+            "core/src/ten_runtime/binding/go"
+            "core/src/ten_runtime/binding/python"
+            "packages/core_addon_loaders/python_addon_loader"
+          )
+
+          for item in "${ARRAY[@]}"; do
+            python3 ${UPDATE_SUPPORTS_SCRIPT} --os-arch-pairs linux:arm64 --input-file ${item}/manifest.json --output-file ${item}/manifest.json --log-level 1
+            cat ${item}/manifest.json
+          done
+
+          # Due to the use of QEMU, running as root inside the Docker container
+          # is required. However, outside the container, the user is not root.
+          # This causes issues when trying to handle the contents of the out/
+          # folder from outside the container. To resolve this, the out/ folder
+          # is first created by a regular non-root user to prevent it from being
+          # created during the build stage, thus avoiding permission issues with
+          # the out/ folder being created by the root user.
+          mkdir -p out/linux/arm64
+        shell: bash
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
+            ghcr.io/ten-framework/ten_building_ubuntu2204 \
+            bash -c "\
+              export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
+              echo $PATH && \
+              go env -w GOFLAGS="-buildvcs=false" && \
+              go1.20.12 download && \
+              apt-get install -y curl && \
+              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+              bash nodesource_setup.sh && \
+              apt-get install -y nodejs && \
+              rustup default nightly && \
+              df -h . && \
+              tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false && \
+              tgn build linux arm64 ${{ matrix.build_type }} && \
+              df -h . && \
+              tree -I 'gen|obj' out \
+            "
+
+      - name: Upload tman
+        uses: actions/upload-artifact@v4
+        with:
+          name: tman-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}
+          path: out/linux/arm64/ten_manager/bin/tman
+
+      - name: Upload ten_packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}
+          path: |
+            out/linux/arm64/ten_packages/system/ten_runtime
+            out/linux/arm64/ten_packages/system/ten_runtime_go
+            out/linux/arm64/ten_packages/system/ten_runtime_python
+            out/linux/arm64/ten_packages/extension/default_extension_cpp
+            out/linux/arm64/ten_packages/extension/default_extension_go
+            out/linux/arm64/ten_packages/extension/default_extension_python
+            out/linux/arm64/ten_packages/extension/default_async_extension_python
+            out/linux/arm64/ten_packages/addon_loader/python_addon_loader
+
+      - name: Package assets
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd out/linux/arm64
+          zip -vr tman-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip ten_manager/bin/tman
+          zip -vr ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip \
+            ten_packages/system/ten_runtime \
+            ten_packages/system/ten_runtime_go \
+            ten_packages/system/ten_runtime_python \
+            ten_packages/extension/default_extension_cpp \
+            ten_packages/extension/default_extension_go \
+            ten_packages/extension/default_extension_python \
+            ten_packages/extension/default_async_extension_python \
+            ten_packages/addon_loader/python_addon_loader
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            out/linux/arm64/tman-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip
+            out/linux/arm64/ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip
+
+      - name: Publish release to TEN cloud store
+        if: ${{ startsWith(github.ref, 'refs/tags/') && matrix.compiler == 'gcc' && matrix.build_type == 'release' }}
+        run: |
+          docker run --rm --platform linux/arm64 \
+              -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} --entrypoint /bin/bash \
+              ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
+              set -x && \
+              cd out/linux/arm64/ten_packages && \
+              cd system/ten_runtime && \
+              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
+              echo \$identity && \
+              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
+              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
+              cd system/ten_runtime_go && \
+              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
+              echo \$identity && \
+              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
+              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
+              cd system/ten_runtime_python && \
+              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
+              echo \$identity && \
+              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
+              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
+              cd addon_loader/python_addon_loader && \
+              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
+              echo \$identity && \
+              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
+              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - \
+          "
+        shell: bash

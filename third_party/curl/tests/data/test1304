@@ -1,0 +1,29 @@
+<testcase>
+<info>
+<keywords>
+unittest
+netrc
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+</features>
+ <name>
+netrc parsing unit tests
+ </name>
+<command>
+%LOGDIR/netrc%TESTNUMBER
+</command>
+<file name="%LOGDIR/netrc%TESTNUMBER">
+machine example.com login admin password passwd
+machine curl.example.com login none password none
+</file>
+</client>
+</testcase>

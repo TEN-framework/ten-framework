@@ -1,3 +1,9 @@
-[submodule "esp32-client/components/esp32-camera"]
-	path = esp32-client/components/esp32-camera
+[submodule "ai_agents/esp32-client/components/esp32-camera"]
+	path = ai_agents/esp32-client/components/esp32-camera
 	url = https://github.com/espressif/esp32-camera.git
+[submodule "portal"]
+	path = portal
+	url = https://github.com/TEN-framework/portal.git
+[submodule "core/ten_gn"]
+	path = core/ten_gn
+	url = https://github.com/TEN-framework/ten_gn.git

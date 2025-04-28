@@ -1,0 +1,161 @@
+language: cpp
+
+dist: xenial
+
+matrix:
+  include:
+    - compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-4.8 } }
+      env: COMPILER=g++-4.8 CXXSTD=11
+    - compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-4.9 } }
+      env: COMPILER=g++-4.9 CXXSTD=11
+    - &gcc-5
+      compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-5 } }
+      env: COMPILER=g++-5 CXXSTD=11
+    - &gcc-6
+      compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-6 } }
+      env: COMPILER=g++-6 CXXSTD=11
+    - &gcc-7
+      compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-7 } }
+      env: COMPILER=g++-7 CXXSTD=11
+    - &gcc-8
+      compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-8 } }
+      env: COMPILER=g++-8 CXXSTD=11
+    - &gcc-9
+      compiler: gcc
+      addons: { apt: { sources: ubuntu-toolchain-r-test, packages: g++-9 } }
+      env: COMPILER=g++-9 CXXSTD=11
+    - &clang-35
+      compiler: clang
+      addons:
+        apt: 
+          sources: [llvm-toolchain-precise-3.5, ubuntu-toolchain-r-test]
+          packages: [clang++-3.5, libc++-dev]
+      env: COMPILER=clang++-3.5 CXXSTD=11
+    - &clang-36
+      compiler: clang
+      addons:
+        apt: 
+          sources: [llvm-toolchain-precise-3.6, ubuntu-toolchain-r-test]
+          packages: [clang++-3.6, libc++-dev]
+      env: COMPILER=clang++-3.6 CXXSTD=11
+    - &clang-37
+      compiler: clang
+      addons:
+        apt: 
+          sources: [llvm-toolchain-precise-3.7, ubuntu-toolchain-r-test]
+          packages: [clang++-3.7, libc++-dev]
+      env: COMPILER=clang++-3.7 CXXSTD=11
+    - &clang-38
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - &xenial-clang
+              sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.8 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages: [clang++-3.8, libc++-dev]
+      env: COMPILER=clang++-3.8 CXXSTD=11
+    - &clang-39
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - <<: *xenial-clang
+              sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main'
+            - ubuntu-toolchain-r-test
+          packages: [clang++-3.9, libc++-dev]
+      env: COMPILER=clang++-3.9 CXXSTD=11
+    - &clang-4
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - <<: *xenial-clang
+              sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-4.0 main'
+            - ubuntu-toolchain-r-test
+          packages: [clang++-4.0, libc++-dev] 
+      env: COMPILER=clang++-4.0 CXXSTD=11
+    - &clang-5
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - <<: *xenial-clang
+              sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main'
+            - ubuntu-toolchain-r-test
+          packages: [clang++-5.0, libc++-dev]
+      env: COMPILER=clang++-5.0 CXXSTD=11
+    - &clang-6
+      compiler: clang
+      addons:
+        apt:
+          sources: [llvm-toolchain-xenial-6.0, ubuntu-toolchain-r-test]
+          packages: [clang++-6.0, libc++-dev]
+      env: COMPILER=clang++-6.0 CXXSTD=11
+    - &clang-7
+      compiler: clang
+      addons:
+        apt:
+          sources: [llvm-toolchain-xenial-7, ubuntu-toolchain-r-test]
+          packages: [clang++-7, libc++-7-dev, libc++abi-7-dev]
+      env: COMPILER=clang++-7 CXXSTD=11
+    - &clang-8
+      compiler: clang
+      addons:
+        apt:
+          sources: [llvm-toolchain-xenial-8, ubuntu-toolchain-r-test]
+          packages: [clang++-8, libc++-8-dev, libc++abi-8-dev]
+      env: COMPILER=clang++-8 CXXSTD=11
+    - &clang-9
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - <<: *xenial-clang
+              sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+            - ubuntu-toolchain-r-test
+          packages: [clang++-9, libc++-9-dev, libc++abi-9-dev]
+      env: COMPILER=clang++-9 CXXSTD=11
+    - { <<: *gcc-5, env: COMPILER=g++-5 CXXSTD=14 }
+    - { <<: *gcc-6, env: COMPILER=g++-6 CXXSTD=14 }
+    - { <<: *gcc-7, env: COMPILER=g++-7 CXXSTD=14 }
+    - { <<: *gcc-8, env: COMPILER=g++-8 CXXSTD=14 }
+    - { <<: *gcc-9, env: COMPILER=g++-9 CXXSTD=14 }
+    - { <<: *gcc-7, env: COMPILER=g++-7 CXXSTD=17 }
+    - { <<: *gcc-8, env: COMPILER=g++-8 CXXSTD=17 }
+    - { <<: *gcc-9, env: COMPILER=g++-9 CXXSTD=17 }
+    - { <<: *clang-35, env: COMPILER=clang++-3.5 CXXSTD=14 }
+    - { <<: *clang-36, env: COMPILER=clang++-3.6 CXXSTD=14 }
+    - { <<: *clang-37, env: COMPILER=clang++-3.7 CXXSTD=14 }
+    - { <<: *clang-38, env: COMPILER=clang++-3.8 CXXSTD=14 }
+    - { <<: *clang-39, env: COMPILER=clang++-3.9 CXXSTD=14 }
+    - { <<: *clang-4, env: COMPILER=clang++-4.0 CXXSTD=14 }
+    - { <<: *clang-5, env: COMPILER=clang++-5.0 CXXSTD=14 }
+    - { <<: *clang-6, env: COMPILER=clang++-6.0 CXXSTD=14 }
+    - { <<: *clang-7, env: COMPILER=clang++-7 CXXSTD=14 }
+    - { <<: *clang-8, env: COMPILER=clang++-8 CXXSTD=14 }
+    - { <<: *clang-9, env: COMPILER=clang++-9 CXXSTD=14 }
+    - { <<: *clang-7, env: COMPILER=clang++-7 CXXSTD=17 }
+    - { <<: *clang-8, env: COMPILER=clang++-8 CXXSTD=17 }
+    - { <<: *clang-9, env: COMPILER=clang++-9 CXXSTD=17 }
+
+before_install:
+  - sudo apt update
+  - sudo apt install -y apt-transport-https ca-certificates gnupg software-properties-common 
+  - curl -L https://apt.kitware.com/keys/kitware-archive-latest.asc | sudo apt-key add -
+  - sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main' 
+  - sudo apt update
+
+install:
+  - sudo apt install -y cmake
+
+script:
+  - /usr/bin/cmake -B build -S . "-DCMAKE_CXX_STANDARD=$CXXSTD" "-DCMAKE_CXX_COMPILER=$COMPILER"
+  - /usr/bin/cmake --build build
+  - /usr/bin/cmake --build build --target test

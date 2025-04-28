@@ -1,0 +1,17 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+clingo_output_libs = []
+
+if (is_linux || is_mac) {
+  clingo_output_libs +=
+      [ "${root_gen_dir}/cmake/clingo/install/lib/libclingo.a" ]
+} else if (is_win) {
+  clingo_output_libs +=
+      [ "${root_gen_dir}/cmake/clingo/install/bin/clingo.dll" ]
+}

@@ -1,0 +1,11 @@
+This example shows how clingo's asynchronous solving capabilities can be used
+in a client server scenario.
+
+To start the server, execute: 
+    python server.py
+
+Afterwards, start the client:
+    python client.py
+
+The client can then be controlled from the server. An overview of the available
+commands is printed on the screen.

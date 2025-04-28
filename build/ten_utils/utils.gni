@@ -1,0 +1,76 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_common/general/glob.gni")
+
+template("ten_utils_glob") {
+  glob(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "file_list",
+                             "no_current",
+                           ])
+
+    if (defined(invoker.configs)) {
+      configs += [ "//build/ten_utils:utils_private_config" ]
+    } else {
+      configs = [ "//build/ten_utils:utils_private_config" ]
+    }
+
+    if (defined(invoker.public_configs)) {
+      public_configs += [ "//build/ten_utils:utils_public_config" ]
+    } else {
+      public_configs = [ "//build/ten_utils:utils_public_config" ]
+    }
+
+    configs += common_configs
+    file_list = []
+    if (!defined(invoker.no_current) || !invoker.no_current) {
+      file_list += all_native_files
+    }
+    if (defined(invoker.file_list)) {
+      file_list += invoker.file_list
+    }
+  }
+}
+
+template("agora_target") {
+  target(invoker.type, target_name) {
+    forward_variables_from(invoker, "*")
+
+    if (invoker.type != "group") {
+      configs += [ "//build/ten_utils:utils_private_config" ]
+
+      if (defined(public_configs)) {
+        public_configs += [ "//build/ten_utils:utils_public_config" ]
+      } else {
+        public_configs = [ "//build/ten_utils:utils_public_config" ]
+      }
+    }
+  }
+}
+
+template("ten_utils_source_set") {
+  agora_target(target_name) {
+    forward_variables_from(invoker, "*")
+    type = "source_set"
+  }
+}
+
+template("ten_utils_group") {
+  agora_target(target_name) {
+    forward_variables_from(invoker, "*")
+    type = "group"
+  }
+}
+
+template("ten_utils_test") {
+  agora_target(target_name) {
+    forward_variables_from(invoker, "*")
+    type = "executable"
+  }
+}

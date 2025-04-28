@@ -1,37 +1,138 @@
-# next.js
-/.next/
-/out/
-.pnpm-store
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
 
-*.log
-addon/extension_group/
-agoradns.dat
-agorartmdns.dat
-agora_rtm_cache.db
-agorareport.dat
-server/bin/
-/BUILD.gn
-.cache/
-/compile_commands.json
-core
-crash_context_v1
-.deps/
+# Python venv
+.python_venv/*
+
+# pytest cache
+.pytest_cache
+
+# macOS trush files
 .DS_Store
-.env
-/.gn
-/.gnfiles
-include/
-interface/
-lib64
+
+# Library files
+*.dll
+*.dylib
+*.so
+*.so.*
+*.a
+*.o
+
+# Log
+*.log
+
+# configure generated files
+config.nice
+config.status
+
+# Distribution / packaging
+dist/
+
+# bundle install
+vendor/
+
+# cocoapods
+Pods/
+Podfile.lock
+*.xcuserstate
+
+# Installed files
+out/
+
+# Ignore all .gnfiles/ directories
+.gnfiles
+# Do not ignore core/ten_gn/.gnfiles/ directory
+!core/ten_gn/.gnfiles/
+
+# Ignore all .gn files
+.gn
+# Do not ignore core/ten_gn/.gnfiles/.gn file
+!core/ten_gn/.gnfiles/.gn
+
+# Ignore all .ten/ directories
+.ten/
+
+# cmake generated files
+**/compile_commands.json
+
+# Javascript/Typescript generated files
 node_modules/
-/out/
-*.pcm
-.release
-session_control.conf.agora
-xdump_config
-.vscode/
-speechsdk/
-SpeechSDK-Linux.tar.gz
-pyvenv.cfg
-xdump_config
-.idea
+*.tsbuildinfo
+
+# Package lock files
+core/src/ten_manager/designer_frontend/package-lock.json
+
+# Nodejs binding
+core/src/ten_runtime/binding/nodejs/build
+
+# Cache files
+.cache
+*.code-workspace
+
+# ccls cache files
+.ccls-cache/
+
+# idea files
+**/.idea/*
+
+# Clangd index file
+.clangd/
+
+# Rust generated files
+core/src/ten_manager/target/
+core/src/ten_rust/target/
+/.cargo
+
+# zlib auto-generated files
+third_party/zlib/zconf.h.included
+
+# Test data
+core/src/ten_manager/tests/test_data/cmd_builtin_function_install/ten_packages/
+core/src/ten_manager/tests/test_data/cmd_builtin_function_install/manifest-lock.json
+core/src/ten_manager/tests/test_data/cmd_builtin_function_install_all/ten_packages/
+core/src/ten_manager/tests/test_data/cmd_builtin_function_install_all/manifest-lock.json
+
+# Cursor files
+.cursorrules
+.cursorignore
+.cursorindexingignore
+
+# ===============================
+# ai_agents
+
+# next.js
+ai_agents/.next/
+
+ai_agents/out/
+ai_agents/.pnpm-store
+ai_agents/addon/extension_group/
+ai_agents/agoradns.dat
+ai_agents/agorartmdns.dat
+ai_agents/agora_rtm_cache.db
+ai_agents/agorareport.dat
+ai_agents/server/bin/
+ai_agents/BUILD.gn
+ai_agents/.cache/
+ai_agents/compile_commands.json
+ai_agents/core
+ai_agents/crash_context_v1
+ai_agents/.deps/
+ai_agents/.DS_Store
+ai_agents/.env
+ai_agents/.gn
+ai_agents/.gnfiles
+ai_agents/include/
+ai_agents/interface/
+ai_agents/lib64
+ai_agents/node_modules/
+ai_agents/.release
+ai_agents/session_control.conf.agora
+ai_agents/.vscode/
+ai_agents/speechsdk/
+ai_agents/SpeechSDK-Linux.tar.gz
+ai_agents/pyvenv.cfg
+ai_agents/xdump_config
+ai_agents/.idea
+ai_agents/*.log
+ai_agents/*.pcm

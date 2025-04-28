@@ -1,0 +1,9 @@
+This is a benchmark that requires a grounder based on semi-naïve evaluation or
+related methods. That is, gringo prior to version three will not be able to
+instantiate this. The benchmark has been taken from the 2011 ASP-Competition:
+
+https://www.mat.unical.it/aspcomp2011/
+
+Example calls:
+    clingo gbie1.lp instances/sat_01.lp
+    clingo gbie2.lp instances/sat_01.lp

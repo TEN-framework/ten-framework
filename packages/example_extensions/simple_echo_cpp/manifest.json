@@ -1,0 +1,16 @@
+{
+  "type": "extension",
+  "name": "simple_echo_cpp",
+  "version": "0.10.1",
+  "tags": [
+    "cpp"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    }
+  ],
+  "api": {}
+}

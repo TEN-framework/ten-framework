@@ -1,0 +1,86 @@
+//
+// Copyright (c) 2006-2017 Benjamin Kaufmann
+//
+// This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+//
+//! \file
+//! \brief Active configuration.
+#ifndef CLASP_CONFIG_H_INCLUDED
+#define CLASP_CONFIG_H_INCLUDED
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+//! Library version.
+#define CLASP_VERSION      "@CLASP_VERSION@"
+#define CLASP_VERSION_MAJOR @CLASP_VERSION_MAJOR@
+#define CLASP_VERSION_MINOR @CLASP_VERSION_MINOR@
+#define CLASP_VERSION_PATCH @CLASP_VERSION_PATCH@
+#define CLASP_LEGAL         "Copyright (C) Benjamin Kaufmann"
+
+//! Single or multi-threaded version of clasp.
+#cmakedefine01 CLASP_HAS_THREADS
+
+//! Use std::vector instead of pod_vector.
+#define CLASP_USE_STD_VECTOR @CLASP_USE_STD_VECTOR@
+
+#include <potassco/platform.h>
+#if CLASP_HAS_THREADS
+#include <atomic>
+#endif
+
+namespace Clasp {
+@CLASP_DEFINE_ATOMIC@
+template <class T> struct Atomic_t { typedef @CLASP_ATOMIC_TYPE@<T> type; };
+template <class T>
+T compare_and_swap(@CLASP_ATOMIC_TYPE@<T>& in, T oldVal, T newVal) {
+	in.compare_exchange_strong(oldVal, newVal);
+	return oldVal;
+}
+typedef uint64_t  uint64;
+typedef uint32_t  uint32;
+typedef uint16_t  uint16;
+typedef uint8_t   uint8;
+typedef uintptr_t uintp;
+typedef int64_t   int64;
+typedef int32_t   int32;
+typedef int16_t   int16;
+typedef int8_t    int8;
+inline void* alignedAlloc(size_t size, size_t align) {
+#if defined(__CYGWIN__)
+	return memalign(align, size);
+#elif defined(_WIN32) || defined(_WIN64)
+	return _aligned_malloc(size, align);
+#else
+	void* result = 0;
+	return posix_memalign(&result, align, size) == 0 ? result : static_cast<void*>(0);
+#endif
+}
+inline void alignedFree(void* p) {
+#if defined(_WIN32) || defined(_WIN64)
+	_aligned_free(p);
+#else
+	free(p);
+#endif
+}
+} // namespace Clasp
+
+#endif

@@ -1,0 +1,11 @@
+{
+  "type": "extension",
+  "name": "ext_a",
+  "version": "3.0.2",
+  "dependencies": [],
+  "supports": [
+    {
+      "os": "mac"
+    }
+  ]
+}

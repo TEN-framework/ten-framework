@@ -1,0 +1,17 @@
+{
+  "graph": {
+    "en-US": "docs/ten_framework/graph",
+    "zh-CN": "cn/docs/ten_framework/graph",
+    "zh-TW": "cn/docs/ten_framework/graph"
+  },
+  "app": {
+    "en-US": "docs/ten_framework/ten_packages/app",
+    "zh-CN": "cn/docs/ten_framework/ten_packages/app",
+    "zh-TW": "cn/docs/ten_framework/ten_packages/app"
+  },
+  "extension": {
+    "en-US": "docs/ten_framework/ten_packages/extension",
+    "zh-CN": "cn/docs/ten_framework/ten_packages/extension",
+    "zh-TW": "cn/docs/ten_framework/ten_packages/extension"
+  }
+}

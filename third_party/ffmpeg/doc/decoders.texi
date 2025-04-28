@@ -1,0 +1,699 @@
+@chapter Decoders
+@c man begin DECODERS
+
+Decoders are configured elements in FFmpeg which allow the decoding of
+multimedia streams.
+
+When you configure your FFmpeg build, all the supported native decoders
+are enabled by default. Decoders requiring an external library must be enabled
+manually via the corresponding @code{--enable-lib} option. You can list all
+available decoders using the configure option @code{--list-decoders}.
+
+You can disable all the decoders with the configure option
+@code{--disable-decoders} and selectively enable / disable single decoders
+with the options @code{--enable-decoder=@var{DECODER}} /
+@code{--disable-decoder=@var{DECODER}}.
+
+The option @code{-decoders} of the ff* tools will display the list of
+enabled decoders.
+
+@c man end DECODERS
+
+@chapter Video Decoders
+@c man begin VIDEO DECODERS
+
+A description of some of the currently available video decoders
+follows.
+
+@section av1
+
+AOMedia Video 1 (AV1) decoder.
+
+@subsection Options
+
+@table @option
+
+@item operating_point
+Select an operating point of a scalable AV1 bitstream (0 - 31). Default is 0.
+
+@end table
+
+@section hevc
+HEVC (AKA ITU-T H.265 or ISO/IEC 23008-2) decoder.
+
+The decoder supports MV-HEVC multiview streams with at most two views. Views to
+be output are selected by supplying a list of view IDs to the decoder (the
+@option{view_ids} option). This option may be set either statically before
+decoder init, or from the @code{get_format()} callback - useful for the case
+when the view count or IDs change dynamically during decoding.
+
+Only the base layer is decoded by default.
+
+Note that if you are using the @code{ffmpeg} CLI tool, you should be using view
+specifiers as documented in its manual, rather than the options documented here.
+
+@subsection Options
+
+@table @option
+
+@item view_ids (MV-HEVC)
+Specify a list of view IDs that should be output. This option can also be set to
+a single '-1', which will cause all views defined in the VPS to be decoded and
+output.
+
+@item view_ids_available (MV-HEVC)
+This option may be read by the caller to retrieve an array of view IDs available
+in the active VPS. The array is empty for single-layer video.
+
+The value of this option is guaranteed to be accurate when read from the
+@code{get_format()} callback. It may also be set at other times (e.g. after
+opening the decoder), but the value is informational only and may be incorrect
+(e.g. when the stream contains multiple distinct VPS NALUs).
+
+@item view_pos_available (MV-HEVC)
+This option may be read by the caller to retrieve an array of view positions
+(left, right, or unspecified) available in the active VPS, as
+@code{AVStereo3DView} values. When the array is available, its elements apply to
+the corresponding elements of @option{view_ids_available}, i.e.
+@code{view_pos_available[i]} contains the position of view with ID
+@code{view_ids_available[i]}.
+
+Same validity restrictions as for @option{view_ids_available} apply to
+this option.
+
+@end table
+
+@section rawvideo
+
+Raw video decoder.
+
+This decoder decodes rawvideo streams.
+
+@subsection Options
+
+@table @option
+@item top @var{top_field_first}
+Specify the assumed field type of the input video.
+@table @option
+@item -1
+the video is assumed to be progressive (default)
+@item 0
+bottom-field-first is assumed
+@item 1
+top-field-first is assumed
+@end table
+
+@end table
+
+@section libdav1d
+
+dav1d AV1 decoder.
+
+libdav1d allows libavcodec to decode the AOMedia Video 1 (AV1) codec.
+Requires the presence of the libdav1d headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libdav1d}.
+
+@subsection Options
+
+The following options are supported by the libdav1d wrapper.
+
+@table @option
+
+@item framethreads
+Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
+option @code{max_frame_delay} and the global option @code{threads} instead.
+
+@item tilethreads
+Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
+This option is deprecated for libdav1d >= 1.0 and will be removed in the future. Use the
+global option @code{threads} instead.
+
+@item max_frame_delay
+Set max amount of frames the decoder may buffer internally. The default value is 0
+(autodetect).
+
+@item filmgrain
+Apply film grain to the decoded video if present in the bitstream. Defaults to the
+internal default of the library.
+This option is deprecated and will be removed in the future. See the global option
+@code{export_side_data} to export Film Grain parameters instead of applying it.
+
+@item oppoint
+Select an operating point of a scalable AV1 bitstream (0 - 31). Defaults to the
+internal default of the library.
+
+@item alllayers
+Output all spatial layers of a scalable AV1 bitstream. The default value is false.
+
+@end table
+
+@section libdavs2
+
+AVS2-P2/IEEE1857.4 video decoder wrapper.
+
+This decoder allows libavcodec to decode AVS2 streams with davs2 library.
+
+@c man end VIDEO DECODERS
+
+@section libuavs3d
+
+AVS3-P2/IEEE1857.10 video decoder.
+
+libuavs3d allows libavcodec to decode AVS3 streams.
+Requires the presence of the libuavs3d headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libuavs3d}.
+
+@subsection Options
+
+The following option is supported by the libuavs3d wrapper.
+
+@table @option
+
+@item frame_threads
+Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+
+@end table
+
+@section libxevd
+
+eXtra-fast Essential Video Decoder (XEVD) MPEG-5 EVC decoder wrapper.
+
+This decoder requires the presence of the libxevd headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-libxevd}.
+
+The xevd project website is at @url{https://github.com/mpeg5/xevd}.
+
+@subsection Options
+
+The following options are supported by the libxevd wrapper.
+The xevd-equivalent options or values are listed in parentheses for easy migration.
+
+To get a more accurate and extensive documentation of the libxevd options,
+invoke the command  @code{xevd_app --help} or consult the libxevd documentation.
+
+@table @option
+@item threads (@emph{threads})
+Force to use a specific number of threads
+
+@end table
+
+@section QSV Decoders
+
+The family of Intel QuickSync Video decoders (VC1, MPEG-2, H.264, HEVC,
+JPEG/MJPEG, VP8, VP9, AV1, VVC).
+
+@subsection Common Options
+
+The following options are supported by all qsv decoders.
+
+@table @option
+
+@item @var{async_depth}
+Internal parallelization depth, the higher the value the higher the latency.
+
+@item @var{gpu_copy}
+A GPU-accelerated copy between video and system memory
+@table @samp
+@item default
+@item on
+@item off
+@end table
+
+@end table
+
+@subsection HEVC Options
+Extra options for hevc_qsv.
+
+@table @option
+
+@item @var{load_plugin}
+A user plugin to load in an internal session
+@table @samp
+@item none
+@item hevc_sw
+@item hevc_hw
+@end table
+
+@item @var{load_plugins}
+A :-separate list of hexadecimal plugin UIDs to load in an internal session
+
+@end table
+
+@section v210
+
+Uncompressed 4:2:2 10-bit decoder.
+
+@subsection Options
+
+@table @option
+
+@item custom_stride
+Set the line size of the v210 data in bytes. The default value is 0
+(autodetect). You can use the special -1 value for a strideless v210 as seen in
+BOXX files.
+
+@end table
+
+@c man end VIDEO DECODERS
+
+@chapter Audio Decoders
+@c man begin AUDIO DECODERS
+
+A description of some of the currently available audio decoders
+follows.
+
+@section ac3
+
+AC-3 audio decoder.
+
+This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
+the undocumented RealAudio 3 (a.k.a. dnet).
+
+@subsection AC-3 Decoder Options
+
+@table @option
+
+@item -drc_scale @var{value}
+Dynamic Range Scale Factor. The factor to apply to dynamic range values
+from the AC-3 stream. This factor is applied exponentially. The default value is 1.
+There are 3 notable scale factor ranges:
+@table @option
+@item drc_scale == 0
+DRC disabled. Produces full range audio.
+@item 0 < drc_scale <= 1
+DRC enabled.  Applies a fraction of the stream DRC value.
+Audio reproduction is between full range and full compression.
+@item drc_scale > 1
+DRC enabled. Applies drc_scale asymmetrically.
+Loud sounds are fully compressed.  Soft sounds are enhanced.
+@end table
+
+@end table
+
+@section flac
+
+FLAC audio decoder.
+
+This decoder aims to implement the complete FLAC specification from Xiph.
+
+@subsection FLAC Decoder options
+
+@table @option
+
+@item -use_buggy_lpc
+The lavc FLAC encoder used to produce buggy streams with high lpc values
+(like the default value). This option makes it possible to decode such streams
+correctly by using lavc's old buggy lpc logic for decoding.
+
+@end table
+
+@section ffwavesynth
+
+Internal wave synthesizer.
+
+This decoder generates wave patterns according to predefined sequences. Its
+use is purely internal and the format of the data it accepts is not publicly
+documented.
+
+@section libcelt
+
+libcelt decoder wrapper.
+
+libcelt allows libavcodec to decode the Xiph CELT ultra-low delay audio codec.
+Requires the presence of the libcelt headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libcelt}.
+
+@section libgsm
+
+libgsm decoder wrapper.
+
+libgsm allows libavcodec to decode the GSM full rate audio codec. Requires
+the presence of the libgsm headers and library during configuration. You need
+to explicitly configure the build with @code{--enable-libgsm}.
+
+This decoder supports both the ordinary GSM and the Microsoft variant.
+
+@section libilbc
+
+libilbc decoder wrapper.
+
+libilbc allows libavcodec to decode the Internet Low Bitrate Codec (iLBC)
+audio codec. Requires the presence of the libilbc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libilbc}.
+
+@subsection Options
+
+The following option is supported by the libilbc wrapper.
+
+@table @option
+@item enhance
+
+Enable the enhancement of the decoded audio when set to 1. The default
+value is 0 (disabled).
+
+@end table
+
+@section libopencore-amrnb
+
+libopencore-amrnb decoder wrapper.
+
+libopencore-amrnb allows libavcodec to decode the Adaptive Multi-Rate
+Narrowband audio codec. Using it requires the presence of the
+libopencore-amrnb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrnb}.
+
+An FFmpeg native decoder for AMR-NB exists, so users can decode AMR-NB
+without this library.
+
+@section libopencore-amrwb
+
+libopencore-amrwb decoder wrapper.
+
+libopencore-amrwb allows libavcodec to decode the Adaptive Multi-Rate
+Wideband audio codec. Using it requires the presence of the
+libopencore-amrwb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrwb}.
+
+An FFmpeg native decoder for AMR-WB exists, so users can decode AMR-WB
+without this library.
+
+@section libopus
+
+libopus decoder wrapper.
+
+libopus allows libavcodec to decode the Opus Interactive Audio Codec.
+Requires the presence of the libopus headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopus}.
+
+An FFmpeg native decoder for Opus exists, so users can decode Opus
+without this library.
+
+@c man end AUDIO DECODERS
+
+@chapter Subtitles Decoders
+@c man begin SUBTILES DECODERS
+
+@section libaribb24
+
+ARIB STD-B24 caption decoder.
+
+Implements profiles A and C of the ARIB STD-B24 standard.
+
+@subsection libaribb24 Decoder Options
+
+@table @option
+
+@item -aribb24-base-path @var{path}
+Sets the base path for the libaribb24 library. This is utilized for reading of
+configuration files (for custom unicode conversions), and for dumping of
+non-text symbols as images under that location.
+
+Unset by default.
+
+@item -aribb24-skip-ruby-text @var{boolean}
+Tells the decoder wrapper to skip text blocks that contain half-height ruby
+text.
+
+Enabled by default.
+
+@end table
+
+@section libaribcaption
+
+Yet another ARIB STD-B24 caption decoder using external @dfn{libaribcaption}
+library.
+
+Implements profiles A and C of the Japanse ARIB STD-B24 standard,
+Brazilian ABNT NBR 15606-1, and Philippines version of ISDB-T.
+
+Requires the presence of the libaribcaption headers and library
+(@url{https://github.com/xqq/libaribcaption}) during configuration.
+You need to explicitly configure the build with @code{--enable-libaribcaption}.
+If both @dfn{libaribb24} and @dfn{libaribcaption} are enabled, @dfn{libaribcaption}
+decoder precedes.
+
+@subsection libaribcaption Decoder Options
+
+@table @option
+
+@item -sub_type @var{subtitle_type}
+Specifies the format of the decoded subtitles.
+
+@table @samp
+@item bitmap
+Graphical image.
+@item ass
+ASS formatted text.
+@item text
+Simple text based output without formatting.
+@end table
+
+The default is @dfn{ass} as same as @dfn{libaribb24} decoder.
+Some present players (e.g., @dfn{mpv}) expect ASS format for ARIB caption.
+
+@item -caption_encoding @var{encoding_scheme}
+Specifies the encoding scheme of input subtitle text.
+
+@table @samp
+@item auto
+Automatically detect text encoding (default).
+@item jis
+8bit-char JIS encoding defined in ARIB STD B24.
+This encoding used in Japan for ISDB captions.
+@item utf8
+UTF-8 encoding defined in ARIB STD B24.
+This encoding is used in Philippines for ISDB-T captions.
+@item latin
+Latin character encoding defined in ABNT NBR 15606-1.
+This encoding is used in South America for SBTVD / ISDB-Tb captions.
+@end table
+
+@item -font @var{font_name[,font_name2,...]}
+Specify comma-separated list of font family names to be used for @dfn{bitmap}
+or @dfn{ass} type subtitle rendering.
+Only first font name is used for @dfn{ass} type subtitle.
+
+If not specified, use internaly defined default font family.
+
+@item -ass_single_rect @var{boolean}
+ARIB STD-B24 specifies that some captions may be displayed at different
+positions at a time (multi-rectangle subtitle).
+Since some players (e.g., old @dfn{mpv}) can't handle multiple ASS rectangles
+in a single AVSubtitle, or multiple ASS rectangles of indeterminate duration
+with the same start timestamp, this option can change the behavior so that
+all the texts are displayed in a single ASS rectangle.
+
+The default is @var{false}.
+
+If your player cannot handle AVSubtitles with multiple ASS rectangles properly,
+set this option to @var{true} or define @env{ASS_SINGLE_RECT=1} to change
+default behavior at compilation.
+
+@item -force_outline_text @var{boolean}
+Specify whether always render outline text for all characters regardless of
+the indication by charactor style.
+
+The default is @var{false}.
+
+@item -outline_width @var{number} (0.0 - 3.0)
+Specify width for outline text, in dots (relative).
+
+The default is @var{1.5}.
+
+@item -ignore_background @var{boolean}
+Specify whether to ignore background color rendering.
+
+The default is @var{false}.
+
+@item -ignore_ruby @var{boolean}
+Specify whether to ignore rendering for ruby-like (furigana) characters.
+
+The default is @var{false}.
+
+@item -replace_drcs @var{boolean}
+Specify whether to render replaced DRCS characters as Unicode characters.
+
+The default is @var{true}.
+
+@item -replace_msz_ascii @var{boolean}
+Specify whether to replace MSZ (Middle Size; half width) fullwidth
+alphanumerics with halfwidth alphanumerics.
+
+The default is @var{true}.
+
+@item -replace_msz_japanese @var{boolean}
+Specify whether to replace some MSZ (Middle Size; half width) fullwidth
+japanese special characters with halfwidth ones.
+
+The default is @var{true}.
+
+@item -replace_msz_glyph @var{boolean}
+Specify whether to replace MSZ (Middle Size; half width) characters
+with halfwidth glyphs if the fonts supports it.
+This option works under FreeType or DirectWrite renderer
+with Adobe-Japan1 compliant fonts.
+e.g., IBM Plex Sans JP, Morisawa BIZ UDGothic, Morisawa BIZ UDMincho,
+Yu Gothic, Yu Mincho, and Meiryo.
+
+The default is @var{true}.
+
+@item -canvas_size @var{image_size}
+Specify the resolution of the canvas to render subtitles to; usually, this
+should be frame size of input video.
+This only applies when @code{-subtitle_type} is set to @var{bitmap}.
+
+The libaribcaption decoder assumes input frame size for bitmap rendering as below:
+@enumerate
+@item
+PROFILE_A : 1440 x 1080 with SAR (PAR) 4:3
+@item
+PROFILE_C : 320 x 180 with SAR (PAR) 1:1
+@end enumerate
+
+If actual frame size of input video does not match above assumption,
+the rendered captions may be distorted.
+To make the captions undistorted, add @code{-canvas_size} option to specify
+actual input video size.
+
+Note that the @code{-canvas_size} option is not required for video with
+different size but same aspect ratio.
+In such cases, the caption will be stretched or shrunk to actual video size
+if @code{-canvas_size} option is not specified.
+If @code{-canvas_size} option is specified with different size,
+the caption will be stretched or shrunk as specified size with calculated SAR.
+
+@end table
+
+@subsection libaribcaption decoder usage examples
+
+Display MPEG-TS file with ARIB subtitle by @code{ffplay} tool:
+@example
+ffplay -sub_type bitmap MPEG.TS
+@end example
+
+Display MPEG-TS file with input frame size 1920x1080 by @code{ffplay} tool:
+@example
+ffplay -sub_type bitmap -canvas_size 1920x1080 MPEG.TS
+@end example
+
+Embed ARIB subtitle in transcoded video:
+@example
+ffmpeg -sub_type bitmap -i src.m2t -filter_complex "[0:v][0:s]overlay" -vcodec h264 dest.mp4
+@end example
+
+@section dvbsub
+
+@subsection Options
+
+@table @option
+@item compute_clut
+@table @option
+@item -2
+Compute clut once if no matching CLUT is in the stream.
+@item -1
+Compute clut if no matching CLUT is in the stream.
+@item 0
+Never compute CLUT
+@item 1
+Always compute CLUT and override the one provided in the stream.
+@end table
+@item dvb_substream
+Selects the dvb substream, or all substreams if -1 which is default.
+
+@end table
+
+@section dvdsub
+
+This codec decodes the bitmap subtitles used in DVDs; the same subtitles can
+also be found in VobSub file pairs and in some Matroska files.
+
+@subsection Options
+
+@table @option
+@item palette
+Specify the global palette used by the bitmaps. When stored in VobSub, the
+palette is normally specified in the index file; in Matroska, the palette is
+stored in the codec extra-data in the same format as in VobSub. In DVDs, the
+palette is stored in the IFO file, and therefore not available when reading
+from dumped VOB files.
+
+The format for this option is a string containing 16 24-bits hexadecimal
+numbers (without 0x prefix) separated by commas, for example @code{0d00ee,
+ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
+7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+
+@item ifo_palette
+Specify the IFO file from which the global palette is obtained.
+(experimental)
+
+@item forced_subs_only
+Only decode subtitle entries marked as forced. Some titles have forced
+and non-forced subtitles in the same track. Setting this flag to @code{1}
+will only keep the forced subtitles. Default value is @code{0}.
+@end table
+
+@section libzvbi-teletext
+
+Libzvbi allows libavcodec to decode DVB teletext pages and DVB teletext
+subtitles. Requires the presence of the libzvbi headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libzvbi}.
+
+@subsection Options
+
+@table @option
+@item txt_page
+List of teletext page numbers to decode. Pages that do not match the specified
+list are dropped. You may use the special @code{*} string to match all pages,
+or @code{subtitle} to match all subtitle pages.
+Default value is *.
+@item txt_default_region
+Set default character set used for decoding, a value between 0 and 87 (see
+ETS 300 706, Section 15, Table 32). Default value is -1, which does not
+override the libzvbi default. This option is needed for some legacy level 1.0
+transmissions which cannot signal the proper charset.
+@item txt_chop_top
+Discards the top teletext line. Default value is 1.
+@item txt_format
+Specifies the format of the decoded subtitles.
+@table @option
+@item bitmap
+The default format, you should use this for teletext pages, because certain
+graphics and colors cannot be expressed in simple text or even ASS.
+@item text
+Simple text based output without formatting.
+@item ass
+Formatted ASS output, subtitle pages and teletext pages are returned in
+different styles, subtitle pages are stripped down to text, but an effort is
+made to keep the text alignment and the formatting.
+@end table
+@item txt_left
+X offset of generated bitmaps, default is 0.
+@item txt_top
+Y offset of generated bitmaps, default is 0.
+@item txt_chop_spaces
+Chops leading and trailing spaces and removes empty lines from the generated
+text. This option is useful for teletext based subtitles where empty spaces may
+be present at the start or at the end of the lines or empty lines may be
+present between the subtitle lines because of double-sized teletext characters.
+Default value is 1.
+@item txt_duration
+Sets the display duration of the decoded teletext pages or subtitles in
+milliseconds. Default value is -1 which means infinity or until the next
+subtitle event comes.
+@item txt_transparent
+Force transparent background of the generated teletext bitmaps. Default value
+is 0 which means an opaque background.
+@item txt_opacity
+Sets the opacity (0-255) of the teletext background. If
+@option{txt_transparent} is not set, it only affects characters between a start
+box and an end box, typically subtitles. Default value is 0 if
+@option{txt_transparent} is set, 255 otherwise.
+
+@end table
+
+@c man end SUBTILES DECODERS

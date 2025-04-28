@@ -1,0 +1,24 @@
+{
+  "type": "app",
+  "name": "{{package_name}}",
+  "version": "0.10.1",
+  "tags": [
+    "nodejs",
+    "template"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.10.1"
+    }
+  ],
+  "scripts": {
+    "start": "bin/start"
+  }
+}

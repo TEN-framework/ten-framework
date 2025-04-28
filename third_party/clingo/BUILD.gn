@@ -1,0 +1,49 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+
+config("clingo_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/clingo/install/include" ]
+  lib_dirs = [ "${root_gen_dir}/cmake/clingo/install/lib" ]
+}
+
+cmake_project("clingo") {
+  public_configs = [ ":clingo_header" ]
+
+  project_path = "."
+  if (is_win) {
+    project_name = "ALL_BUILD"
+  } else {
+    project_name = "all"
+  }
+  build_path = "${root_gen_dir}/cmake/clingo/"
+  install_path = "${build_path}/install/"
+
+  options = [
+    "CLINGO_BUILD_WITH_PYTHON=OFF",
+    "CLINGO_BUILD_WITH_LUA=OFF",
+    "CLINGO_BUILD_APPS=OFF",
+  ]
+
+  if (is_linux || is_mac) {
+    options += [
+      "CLINGO_BUILD_SHARED=OFF",
+      "CLINGO_BUILD_STATIC=ON",
+      "CLINGO_INSTALL_LIB=ON",
+    ]
+  }
+
+  outputs_seen_by_ag = []
+  if (is_win) {
+    outputs_seen_by_ag += [
+      "$install_path/bin/clingo.dll",
+      "$install_path/lib/import_clingo.lib",
+    ]
+  } else if (is_linux || is_mac) {
+    outputs_seen_by_ag += [ "$install_path/lib/libclingo.a" ]
+  }
+}

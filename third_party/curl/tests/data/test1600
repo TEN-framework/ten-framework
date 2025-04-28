@@ -1,0 +1,23 @@
+<testcase>
+<info>
+<keywords>
+unittest
+NTLM
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+NTLM
+</features>
+ <name>
+NTLM unit tests
+ </name>
+</client>
+</testcase>

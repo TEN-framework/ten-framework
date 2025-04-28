@@ -1,0 +1,5 @@
+{
+  "ten": {
+    "uri": "msgpack://localhost:8000"
+  }
+}

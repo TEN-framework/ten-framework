@@ -1,0 +1,340 @@
+// {{{ MIT License
+
+// Copyright 2017 Roland Kaminski
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+
+// }}}
+
+#define YYCTYPE     char
+#define YYCURSOR    cursor()
+#define YYLIMIT     limit()
+#define YYMARKER    marker()
+#define YYFILL(n)   {fill(n);}
+#define YYCTXMARKER ctxmarker()
+#define YYGETCONDITION condition
+#define YYSETCONDITION condition
+
+// Note: THEORYOP is also used in output/backends.cc
+/*!re2c
+    re2c:cond:goto = "continue;";
+
+    DEC        = "0"|([1-9][0-9]*);
+    HEX        = "0x"([0-9A-Fa-f]+);
+    OCT        = "0o"([1-7]+);
+    BIN        = "0b"([0-1]+);
+    NUMBER     = DEC | HEX | OCT | BIN;
+    ANY        = [\000-\377];
+    NOWSNL     = [^\n ];
+    SKIP       = [\t\r ]*;
+    WS         = " ";
+    NL         = "\n";
+    IDENTIFIER = [_']*[a-z]['A-Za-z0-9_]*;
+    VARIABLE   = [_']*[A-Z]['A-Za-z0-9_]*;
+    ANONYMOUS  = "_";
+    STRING     = "\"" ([^\\"\n]|"\\\""|"\\\\"|"\\n")* "\"";
+    WSNL       = [\t\r\n ]*;
+    SIG        = WSNL ([-$])? WSNL IDENTIFIER WSNL "/" WSNL NUMBER WSNL ".";
+    SCRIPT     = "#script";
+    THEORYOP   = [/!<=>+\-*\\?&@|:;~\^\.]+;
+    SUP        = "#sup"("remum")?;
+    INF        = "#inf"("imum")?;
+    KEYWORD    = "#" [a-zA-Z0-9_]*;
+*/
+
+namespace Gringo { namespace Input {
+
+int NonGroundParser::lex_impl(void *pValue, Location &loc) {
+    int bc = 0;
+    auto &value = *static_cast<NonGroundGrammar::parser::semantic_type*>(pValue);
+    start(loc);
+    for (;;) {
+        /*!re2c
+        <start> "asp" / " " DEC                      => aspif { aspif_(loc); continue; }
+        <start> "" / ANY                             :=> normal
+        <normal,theory,definition,script> SKIP       { start(loc); continue; }
+        <normal,theory,definition,script> NL         { if(eof()) return 0; step(); start(loc); continue; }
+        <normal,theory> INF                          { return NonGroundGrammar::parser::token::INFIMUM; }
+        <normal,theory> SUP                          { return NonGroundGrammar::parser::token::SUPREMUM; }
+        <normal> SCRIPT                              => script { return NonGroundGrammar::parser::token::SCRIPT; }
+        <normal> "#include"                          { return NonGroundGrammar::parser::token::INCLUDE; }
+        <normal> "#edge"                             { return NonGroundGrammar::parser::token::EDGE; }
+        <normal> "#heuristic"                        { return NonGroundGrammar::parser::token::HEURISTIC; }
+        <normal> "#project"                          { return NonGroundGrammar::parser::token::PROJECT; }
+        <normal> "#show"                             { return NonGroundGrammar::parser::token::SHOW; }
+        <normal> "#show"/SIG                         { return NonGroundGrammar::parser::token::SHOWSIG; }
+        <normal> "#const"                            { return NonGroundGrammar::parser::token::CONST; }
+        <normal> "#minimi"[zs]"e"                    { return NonGroundGrammar::parser::token::MINIMIZE; }
+        <normal> "#maximi"[zs]"e"                    { return NonGroundGrammar::parser::token::MAXIMIZE; }
+        <normal> "#program"                          { return NonGroundGrammar::parser::token::BLOCK; }
+        <normal> "#external"                         { return NonGroundGrammar::parser::token::EXTERNAL; }
+        <normal> "#defined"                          { return NonGroundGrammar::parser::token::DEFINED; }
+        <definition> "left"                          { return NonGroundGrammar::parser::token::LEFT; }
+        <definition> "right"                         { return NonGroundGrammar::parser::token::RIGHT; }
+        <definition> "head"                          { return NonGroundGrammar::parser::token::HEAD; }
+        <definition> "body"                          { return NonGroundGrammar::parser::token::BODY; }
+        <definition> "any"                           { return NonGroundGrammar::parser::token::ANY; }
+        <definition> "binary"                        { return NonGroundGrammar::parser::token::BINARY; }
+        <definition> "unary"                         { return NonGroundGrammar::parser::token::UNARY; }
+        <definition> "directive"                     { return NonGroundGrammar::parser::token::DIRECTIVE; }
+
+        <normal,theory> "not"                        { value.str = String::toRep(not_); return NonGroundGrammar::parser::token::NOT; }
+        <normal> "default"                           { value.str = String::toRep(string()); return NonGroundGrammar::parser::token::DEFAULT; }
+        <normal> "override"                          { value.str = String::toRep(string()); return NonGroundGrammar::parser::token::OVERRIDE; }
+        <normal> ANONYMOUS                           { return NonGroundGrammar::parser::token::ANONYMOUS; }
+        <normal,theory,definition,script> IDENTIFIER { value.str = String::toRep(string()); return NonGroundGrammar::parser::token::IDENTIFIER; }
+        <normal,theory,definition> NUMBER            { value.num = clingo_number(); return NonGroundGrammar::parser::token::NUMBER; }
+        <normal,theory> VARIABLE                     { value.str = String::toRep(string()); return NonGroundGrammar::parser::token::VARIABLE; }
+        <normal,theory> STRING                       { value.str = String::toRep(unquote(string(1, 1)).c_str()); return NonGroundGrammar::parser::token::STRING; }
+
+        <normal> "#true"                             { return NonGroundGrammar::parser::token::TRUE; }
+        <normal> "#false"                            { return NonGroundGrammar::parser::token::FALSE; }
+        <normal> "#sum"                              { return NonGroundGrammar::parser::token::SUM; }
+        <normal> "#sum+"                             { return NonGroundGrammar::parser::token::SUMP; }
+        <normal> "#count"                            { return NonGroundGrammar::parser::token::COUNT; }
+        <normal> "#min"                              { return NonGroundGrammar::parser::token::MIN; }
+        <normal> "#max"                              { return NonGroundGrammar::parser::token::MAX; }
+        <normal> "#theory"                           { return NonGroundGrammar::parser::token::THEORY; }
+        <normal,theory,definition> ";"               { return NonGroundGrammar::parser::token::SEM; }
+        <normal> ".."                                { return NonGroundGrammar::parser::token::DOTS; }
+        <normal,theory,definition> "."               { return NonGroundGrammar::parser::token::DOT; }
+        <normal,theory,definition> ":"               { return NonGroundGrammar::parser::token::COLON; }
+        <normal,theory> ":-"                         { return NonGroundGrammar::parser::token::IF; }
+        <normal> ":~"                                { return NonGroundGrammar::parser::token::WIF; }
+        <normal,theory,definition> ","               { return NonGroundGrammar::parser::token::COMMA; }
+        <normal> "|"                                 { return NonGroundGrammar::parser::token::VBAR; }
+        <normal,theory> "["                          { return NonGroundGrammar::parser::token::LBRACK; }
+        <normal,theory> "]"                          { return NonGroundGrammar::parser::token::RBRACK; }
+        <normal,theory,script> "("                   { return NonGroundGrammar::parser::token::LPAREN; }
+        <normal,theory> ")"                          { return NonGroundGrammar::parser::token::RPAREN; }
+        <script> ")" SKIP                            => script_body { start(loc); return NonGroundGrammar::parser::token::RPAREN; }
+        <normal,theory,definition> "{"               { return NonGroundGrammar::parser::token::LBRACE; }
+        <normal,theory,definition> "}"               { return NonGroundGrammar::parser::token::RBRACE; }
+        <normal> "+"                                 { return NonGroundGrammar::parser::token::ADD; }
+        <normal> "-"                                 { return NonGroundGrammar::parser::token::SUB; }
+        <normal> "**"                                { return NonGroundGrammar::parser::token::POW; }
+        <normal> "\\"                                { return NonGroundGrammar::parser::token::MOD; }
+        <normal> "*"                                 { return NonGroundGrammar::parser::token::MUL; }
+        <normal> ">"                                 { return NonGroundGrammar::parser::token::GT; }
+        <normal> "<"                                 { return NonGroundGrammar::parser::token::LT; }
+        <normal> ">="                                { return NonGroundGrammar::parser::token::GEQ; }
+        <normal> "<="                                { return NonGroundGrammar::parser::token::LEQ; }
+        <normal> "=="                                { return NonGroundGrammar::parser::token::EQ; }
+        <normal> "!="                                { return NonGroundGrammar::parser::token::NEQ; }
+        <normal> "<>"                                { return NonGroundGrammar::parser::token::NEQ; }
+        <normal> "="                                 { return NonGroundGrammar::parser::token::EQ; }
+        <normal,definition> "/"                      { return NonGroundGrammar::parser::token::SLASH; }
+        <normal> "@"                                 { return NonGroundGrammar::parser::token::AT; }
+        <normal,definition> "&"                      { return NonGroundGrammar::parser::token::AND; }
+        <normal> "^"                                 { return NonGroundGrammar::parser::token::XOR; }
+        <normal> "~"                                 { return NonGroundGrammar::parser::token::BNOT; }
+        <normal> "?"                                 { return NonGroundGrammar::parser::token::QUESTION; }
+        <theory> THEORYOP                            { value.str = String::toRep(string()); return NonGroundGrammar::parser::token::THEORY_OP; }
+        <normal,theory,definition,script> "%*"       => blockcomment { bc++; continue; }
+        <normal,theory,definition,script> "%"        :=> comment
+        <normal,theory,definition,script> "#!"       :=> comment
+        <normal,theory,definition,script> KEYWORD    { lexerError(end(loc), string()); continue; }
+        <normal,theory,definition,script> ANY        { lexerError(end(loc), string()); continue; }
+
+        <script_body> SKIP "#end" => normal {
+            auto span = string();
+            size_t size = span.size - 4;
+            for (; size > 0; --size) {
+                char c = span[size - 1];
+                if (c != ' ' && c != '\t' && c != '\r') {
+                    break;
+                }
+            }
+            std::string s(span.first, span.first + size);
+            value.str = String::toRep(s.c_str());
+            return NonGroundGrammar::parser::token::CODE;
+        }
+        <script_body> NL {
+            if(eof()) {
+                lexerError(eof(loc), Potassco::toSpan("<EOF>", 5));
+                return 0;
+            }
+            step();
+            continue;
+        }
+        <script_body> ANY { continue; }
+
+        <blockcomment> "*%" {
+            if(--bc == 0) {
+                if (pb_.reportComment()) {
+                    reportComment(end(loc), string(), true);
+                }
+                condition(yycnormal);
+                start(loc);
+            }
+            continue;
+        }
+        <blockcomment> "%*" { bc++; continue; }
+        <blockcomment> "%"  :=> comment
+        <blockcomment> NL   { if(eof()) { lexerError(eof(loc), Potassco::toSpan("<EOF>", 5)); return 0; } step(); continue; }
+        <blockcomment> ANY  { continue; }
+
+        <comment> NL {
+            if(eof()) {
+                if(bc > 0) { lexerError(eof(loc), Potassco::toSpan("<EOF>", 5)); }
+                return 0;
+            }
+            step();
+            if (bc > 0) { condition(yycblockcomment); }
+            else {
+                if (pb_.reportComment()) {
+                    // trim newline characters from end of string
+                    int offset = 0;
+                    for (char *last = cursor() - 1; *last == '\n' || *last == '\r'; --last, ++offset);
+                    auto val = string(0, offset);
+                    // compute end to avoid including newline characters
+                    loc.endFilename = loc.beginFilename;
+                    loc.endLine     = loc.beginLine;
+                    loc.endColumn   = loc.beginColumn + val.size;
+                    reportComment(loc, val, false);
+                }
+                condition(yycnormal);
+                start(loc);
+            }
+            continue;
+        }
+        <comment> ANY { continue; }
+        */
+    }
+    assert(false);
+    return 0;
+}
+
+StringSpan NonGroundParser::aspif_string_(Location &loc) {
+    auto n = aspif_unsigned_(loc);
+    aspif_ws_(loc);
+    start(loc);
+    char yych;
+    for (uint32_t i = 0; i < n; ++i) {
+        /*!re2c
+        <aspif> NL  { aspif_error_(loc, format("expected non-newline character but got ", eof() ? "<EOF>" : "<EOL>").c_str()); }
+        <aspif> ANY { continue; }
+        */
+    }
+    return string();
+}
+
+StringSpan NonGroundParser::aspif_nonl_string_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> [^\n]* { return string(); }
+    */
+    return string();
+}
+
+void NonGroundParser::aspif_preamble_(Location &loc) {
+    aspif_ws_(loc);
+    auto major = aspif_unsigned_(loc);
+    aspif_ws_(loc);
+    auto minor = aspif_unsigned_(loc);
+    aspif_ws_(loc);
+    auto revision = aspif_unsigned_(loc);
+    bool incremental = false;
+    char yych;
+    for (;;) {
+        /*!re2c
+        <aspif> " incremental" / (NL | WS) { incremental = true; break; }
+        <aspif> "" / ANY                  { break; }
+        */
+    }
+    aspif_nl_(loc);
+}
+
+void NonGroundParser::aspif_ws_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> WS       { return; }
+    <aspif> NL       { aspif_error_(loc, format("expected <SPACE> but got ", eof() ? "<EOF>" : "<EOL>").c_str()); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected <SPACE> but got ", string()).c_str()); }
+    */
+}
+
+void NonGroundParser::aspif_eof_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> NL {
+        if (eof()) {
+           return;
+        }
+        aspif_error_(loc, format("expected <EOF> but got <EOL>").c_str());
+    }
+    <aspif> WS       { aspif_error_(loc, format("expected <EOF> but got <SPACE>").c_str()); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected <EOF> but got ", string()).c_str()); }
+    */
+}
+
+void NonGroundParser::aspif_nl_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> NL {
+        if (eof()) {
+           aspif_error_(loc, format("expected <EOL> but got <EOF>").c_str());
+        }
+        step();
+        return;
+    }
+    <aspif> WS       { aspif_error_(loc, format("expected <EOL> but got <SPACE>").c_str()); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected <EOL> but got ", string()).c_str()); }
+    */
+}
+
+int32_t NonGroundParser::aspif_signed_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> "-"? DEC { return signed_integer(); }
+    <aspif> NL       { aspif_error_(loc, format("expected unsigned integer but got ", eof() ? "<EOF>" : "<EOL>").c_str()); }
+    <aspif> WS       { aspif_error_(loc, "expected unsigned integer but got <SPACE>"); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected unsigned integer but got token ", string()).c_str()); }
+    */
+    return 0;
+}
+
+uint32_t NonGroundParser::aspif_unsigned_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> DEC      { return unsigned_integer(); }
+    <aspif> NL       { aspif_error_(loc, format("expected integer but got ", eof() ? "<EOF>" : "<EOL>").c_str()); }
+    <aspif> WS       { aspif_error_(loc, "expected integer but got <SPACE>"); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected integer but got token ", string()).c_str()); }
+    */
+    return 0;
+
+}
+
+} } // namespace Input Gringo
+
+#undef YYCTYPE
+#undef YYCURSOR
+#undef YYLIMIT
+#undef YYMARKER
+#undef YYFILL
+#undef YYCTXMARKER
+#undef YYGETCONDITION
+#undef YYSETCONDITION

@@ -1,0 +1,83 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP POST
+HTTP Digest auth
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 beng swsclose swsbounce
+Server: Microsoft-IIS/6.0
+Authentication-Info: Passport1.4 tname=MSPAuth,tname=MSPProf,tname=MSPConsent,tname=MSPSecAuth
+Content-Type: text/html; charset=iso-8859-1
+
+This is not the real page
+</data>
+
+<data1>
+HTTP/1.1 200 moo swsclose
+Server: Microsoft-IIS/6.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 16
+
+content for you
+</data1>
+
+<datacheck>
+HTTP/1.1 200 beng swsclose swsbounce
+Server: Microsoft-IIS/6.0
+Authentication-Info: Passport1.4 tname=MSPAuth,tname=MSPProf,tname=MSPConsent,tname=MSPSecAuth
+Content-Type: text/html; charset=iso-8859-1
+
+HTTP/1.1 200 moo swsclose
+Server: Microsoft-IIS/6.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 16
+
+content for you
+</datacheck>
+
+</reply>
+
+# Client-side
+<client>
+#
+<server>
+http
+</server>
+<features>
+crypto
+</features>
+ <name>
+HTTP POST --digest to server not requiring any auth at all
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER -u auser:apasswd --digest -d "junkelijunk"
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol nonewline="yes">
+POST /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 0
+Content-Type: application/x-www-form-urlencoded
+
+POST /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 11
+Content-Type: application/x-www-form-urlencoded
+
+junkelijunk
+</protocol>
+</verify>
+</testcase>

@@ -1,0 +1,9 @@
+# This module sets the following variables:
+# * tsl-ordered-map_FOUND - true if tsl-ordered-map found on the system
+# * tsl-ordered-map_INCLUDE_DIRS - the directory containing tsl-ordered-map headers
+@PACKAGE_INIT@
+
+if(NOT TARGET tsl::ordered_map)
+  include("${CMAKE_CURRENT_LIST_DIR}/tsl-ordered-mapTargets.cmake")
+  get_target_property(tsl-ordered-map_INCLUDE_DIRS tsl::ordered_map INTERFACE_INCLUDE_DIRECTORIES)
+endif()

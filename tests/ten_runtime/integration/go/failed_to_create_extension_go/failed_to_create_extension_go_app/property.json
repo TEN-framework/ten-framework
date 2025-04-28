@@ -1,0 +1,26 @@
+{
+  "ten": {
+    "uri": "msgpack://127.0.0.1:8007/",
+    "log": {
+      "level": 2
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "A",
+            "addon": "extension_a",
+            "extension_group": "nodetest",
+            "property": {
+              "env_not_set_has_default": "${env:ENV_NOT_SET|}"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

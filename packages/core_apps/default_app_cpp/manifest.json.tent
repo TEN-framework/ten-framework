@@ -1,0 +1,20 @@
+{
+  "type": "app",
+  "name": "{{package_name}}",
+  "version": "0.10.1",
+  "tags": [
+    "cpp",
+    "template"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    }
+  ],
+  "scripts": {
+    "start": "python3 tools/run_script.py start",
+    "build": "python3 tools/run_script.py build"
+  }
+}

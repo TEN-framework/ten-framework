@@ -1,0 +1,12 @@
+{
+  "cmd": [
+    {
+      "name": "hello",
+      "property": {
+        "a": {
+          "type": "uint8"
+        }
+      }
+    }
+  ]
+}

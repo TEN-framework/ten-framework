@@ -1,0 +1,75 @@
+name: Cancel Workflows on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  cancel_workflows:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      # Wait a moment to ensure that all the CI actions we want to cancel have
+      # been initiated. In the future, consider whether a more precise mechanism
+      # is needed to ensure that all actions that should be canceled can be
+      # properly canceled.
+      - name: Wait for workflows to be initiated
+        run: sleep 30
+
+      - name: Cancel Related Workflow Runs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const headSha = context.payload.pull_request.head.sha;
+
+            // Get the current workflow's run ID.
+            const currentRunId = process.env.GITHUB_RUN_ID;
+            console.log(`Current Run ID: ${currentRunId}`);
+
+            console.log(`Cancelling workflows related to PR #${prNumber} (SHA: ${headSha})`);
+
+            // Retrieve all workflow runs associated with the head SHA of the PR.
+
+            // Query and cancel workflows in the in_progress status.
+            const inProgressRuns = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              head_sha: headSha,
+              status: 'in_progress',
+            });
+
+            // Query and cancel workflows in the queued status.
+            const queuedRuns = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              head_sha: headSha,
+              status: 'queued',
+            });
+
+            // Merge the two results and then proceed with cancellation.
+            const runsToCancel = [...inProgressRuns.data.workflow_runs, ...queuedRuns.data.workflow_runs];
+
+            // Cancel all related workflow runs.
+            for (const run of runsToCancel) {
+              if (run.id.toString() === currentRunId) {
+                console.log(`Skipping current run: ${run.id} (${run.name})`);
+                continue;
+              }
+
+              console.log(`Cancelling workflow run: ${run.id} (${run.name})`);
+              await github.rest.actions.cancelWorkflowRun({
+                owner,
+                repo,
+                run_id: run.id,
+              });
+            }
+
+            console.log('All related workflow runs have been canceled.');

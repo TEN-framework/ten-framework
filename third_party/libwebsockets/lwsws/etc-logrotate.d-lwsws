@@ -1,0 +1,10 @@
+/var/log/lwsws/*log {
+    copytruncate
+    missingok
+    notifempty
+    delaycompress
+    postrotate
+        /bin/systemctl reload lwsws.service > /dev/null 2>/dev/null || true
+    endscript
+}
+

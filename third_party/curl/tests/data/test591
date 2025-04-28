@@ -1,0 +1,73 @@
+<testcase>
+#
+# For this test the server rejects the EPRT command,
+# code in lib%TESTNUMBER makes use of curl_multi_timeout()
+# and server does not establish data connection.
+#
+<info>
+<keywords>
+FTP
+PORT
+STOR
+multi
+EPRT refused
+NODATACONN425
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+</data>
+<servercmd>
+NODATACONN425
+REPLY EPRT 500 we don't like EPRT now
+</servercmd>
+</reply>
+
+# Client-side
+<client>
+<server>
+ftp
+</server>
+<tool>
+lib%TESTNUMBER
+</tool>
+ <name>
+FTP multi PORT and 425 on upload
+ </name>
+ <command>
+ftp://%HOSTIP:%FTPPORT/path/%TESTNUMBER %FTPTIME2 %LOGDIR/upload%TESTNUMBER
+</command>
+<file name="%LOGDIR/upload%TESTNUMBER">
+Moooooooooooo for %TESTNUMBER
+ upload this
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+# Strip off parts of the PORT and EPRT commands that might differ
+<strippart>
+s/^PORT (.*)/PORT/
+s/^EPRT \|1\|(.*)/EPRT \|1\|/
+</strippart>
+<protocol>
+USER anonymous
+PASS ftp@example.com
+PWD
+CWD path
+EPRT |1|
+PORT
+TYPE I
+STOR %TESTNUMBER
+QUIT
+</protocol>
+# CURLE_FTP_ACCEPT_FAILED = 10
+<errorcode>
+10
+</errorcode>
+<upload>
+</upload>
+</verify>
+</testcase>

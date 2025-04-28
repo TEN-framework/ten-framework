@@ -1,0 +1,26 @@
+name: Lint PR Name
+
+on:
+  pull_request:
+    types: ["opened", "edited", "reopened", "synchronize"]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          npm install @commitlint/config-conventional
+          echo "module.exports = { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
+
+      - name: Lint the PR Title
+        run: |
+          echo "${PR_TITLE}" | npx --yes commitlint
+        env:
+          PR_TITLE: "${{ github.event.pull_request.title }}"

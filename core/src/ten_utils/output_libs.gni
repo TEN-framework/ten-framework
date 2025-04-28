@@ -1,0 +1,18 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+ten_utils_output_libs = []
+
+if (is_win) {
+  ten_utils_output_libs += [
+    "${root_out_dir}/ten_utils.dll",
+    "${root_out_dir}/ten_utils.dll.lib",
+  ]
+} else if (is_mac) {
+  ten_utils_output_libs += [ "${root_out_dir}/libten_utils.dylib" ]
+} else if (is_linux) {
+  ten_utils_output_libs += [ "${root_out_dir}/libten_utils.so" ]
+}

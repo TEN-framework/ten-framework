@@ -1,0 +1,38 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//build/ten_runtime/options.gni")
+
+config("third_party_config") {
+  cflags = []
+
+  if (!is_win) {
+    cflags += [
+      "-Wno-stringop-overflow",
+      "-Wno-cast-function-type",
+      "-Wno-error=conversion",
+    ]
+  }
+}
+
+group("third_party") {
+  deps = [ "googletest:googletest_system_package" ]
+
+  public_deps = [
+    "msgpack:msgpackc",
+    "nlohmann_json",
+    "yyjson",
+  ]
+
+  if (ten_enable_libwebsockets) {
+    public_deps += [ "libwebsockets" ]
+  }
+
+  if (ten_enable_ffmpeg_extensions) {
+    public_deps += [ "ffmpeg" ]
+  }
+}

@@ -1,0 +1,24 @@
+<html>
+ <head>
+  <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+  <script src="/example.js"></script>
+ </head>
+	<body>
+		<img src="libwebsockets.org-logo.svg">
+		<img src="strict-csp.svg"><br>
+
+		Hello from the <b>minimal http server + mimetypes example</b>.
+		<br>
+		This shows how to teach a mount new bindings between file<br>
+		suffix and mimetype used to serve it.<p>
+
+		Lws has a bunch of built-in ones, but you can add as many<br>
+		as you like when defining the mount.<p>
+
+		For example, lws doesn't know the suffix <b>[.tar].bz2</b><br>
+		implies the mimetype <i>application/x-bzip2</i>, but we taught<br>
+		this mount about that relationship in the example code, so it<br>
+		knows how to serve <a href="test.tar.bz2">this example test.tar.bz2</a>.
+	</body>
+</html>
+

@@ -1,0 +1,145 @@
+/* BEGIN_HEADER */
+#include "mbedtls/hkdf.h"
+#include "md_wrap.h"
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_HKDF_C
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE */
+void test_hkdf( int md_alg, data_t *ikm, data_t *salt, data_t *info,
+                data_t *expected_okm )
+{
+    int ret;
+    unsigned char okm[128] = { '\0' };
+
+    const mbedtls_md_info_t *md = mbedtls_md_info_from_type( md_alg );
+    TEST_ASSERT( md != NULL );
+
+    TEST_ASSERT( expected_okm->len <= sizeof( okm ) );
+
+    ret = mbedtls_hkdf( md, salt->x, salt->len, ikm->x, ikm->len,
+                        info->x, info->len, okm, expected_okm->len );
+    TEST_ASSERT( ret == 0 );
+
+    ASSERT_COMPARE( okm            , expected_okm->len,
+                    expected_okm->x, expected_okm->len );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void test_hkdf_extract( int md_alg,
+                        data_t *ikm,
+                        data_t *salt,
+                        data_t *prk )
+{
+    int ret;
+    unsigned char *output_prk = NULL;
+    size_t output_prk_len;
+
+    const mbedtls_md_info_t *md = mbedtls_md_info_from_type( md_alg );
+    TEST_ASSERT( md != NULL );
+
+    output_prk_len = mbedtls_md_get_size( md );
+    ASSERT_ALLOC( output_prk, output_prk_len );
+
+    ret = mbedtls_hkdf_extract( md, salt->x, salt->len,
+                                ikm->x, ikm->len, output_prk );
+    TEST_ASSERT( ret == 0 );
+
+    ASSERT_COMPARE( output_prk, output_prk_len, prk->x, prk->len );
+
+exit:
+    mbedtls_free(output_prk);
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void test_hkdf_expand( int md_alg,
+                       data_t *info,
+                       data_t *prk,
+                       data_t *okm )
+{
+    enum { OKM_LEN  = 1024 };
+    int ret;
+    unsigned char *output_okm = NULL;
+
+    const mbedtls_md_info_t *md = mbedtls_md_info_from_type( md_alg );
+    TEST_ASSERT( md != NULL );
+
+    ASSERT_ALLOC( output_okm, OKM_LEN );
+
+    TEST_ASSERT( prk->len == mbedtls_md_get_size( md ) );
+    TEST_ASSERT( okm->len < OKM_LEN );
+
+    ret = mbedtls_hkdf_expand( md, prk->x, prk->len,
+                               info->x, info->len,
+                               output_okm, OKM_LEN );
+    TEST_ASSERT( ret == 0 );
+    ASSERT_COMPARE( output_okm, okm->len, okm->x, okm->len );
+
+exit:
+    mbedtls_free(output_okm);
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void test_hkdf_extract_ret( int hash_len, int ret )
+{
+    int output_ret;
+    unsigned char *salt = NULL;
+    unsigned char *ikm = NULL;
+    unsigned char *prk = NULL;
+    size_t salt_len, ikm_len;
+    struct mbedtls_md_info_t fake_md_info;
+
+    memset( &fake_md_info, 0, sizeof( fake_md_info ) );
+    fake_md_info.type = MBEDTLS_MD_NONE;
+    fake_md_info.size = hash_len;
+
+    ASSERT_ALLOC( prk, MBEDTLS_MD_MAX_SIZE);
+    salt_len = 0;
+    ikm_len = 0;
+
+    output_ret = mbedtls_hkdf_extract( &fake_md_info, salt, salt_len,
+                                       ikm, ikm_len, prk );
+    TEST_ASSERT( output_ret == ret );
+
+exit:
+    mbedtls_free(prk);
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void test_hkdf_expand_ret( int hash_len, int prk_len, int okm_len, int ret )
+{
+    int output_ret;
+    unsigned char *info = NULL;
+    unsigned char *prk = NULL;
+    unsigned char *okm = NULL;
+    size_t info_len;
+    struct mbedtls_md_info_t fake_md_info;
+
+    memset( &fake_md_info, 0, sizeof( fake_md_info ) );
+    fake_md_info.type = MBEDTLS_MD_NONE;
+    fake_md_info.size = hash_len;
+
+    info_len = 0;
+
+    if (prk_len > 0)
+        ASSERT_ALLOC( prk, prk_len );
+
+    if (okm_len > 0)
+        ASSERT_ALLOC( okm, okm_len );
+
+    output_ret = mbedtls_hkdf_expand( &fake_md_info, prk, prk_len,
+                                      info, info_len, okm, okm_len );
+    TEST_ASSERT( output_ret == ret );
+
+exit:
+    mbedtls_free(prk);
+    mbedtls_free(okm);
+}
+/* END_CASE */

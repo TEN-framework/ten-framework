@@ -1,0 +1,62 @@
+name: AI Agents (Build & Test)
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/agents.yaml"
+      - ".vscode/**"
+      - "**.md"
+      - "ai_agents/docs/**"
+      - "ai_agents/esp32-client/**"
+      - "ai_agents/Dockerfile"
+      - "ai_agents/docker-compose.yml"
+      - "ai_agents/demo/**"
+      - "ai_agents/playground/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.1
+    strategy:
+      matrix:
+        agent:
+          [
+            agents/examples/default,
+            agents/examples/demo,
+            agents/examples/experimental,
+          ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+
+      - name: Use agent
+        run: |
+          git config --global --add safe.directory $(pwd)
+          cd ai_agents
+          task use AGENT=${{ matrix.agent }}
+
+      - name: Run format check
+        run: |
+          cd ai_agents
+          task check
+
+      - name: Run lint
+        run: |
+          cd ai_agents
+          task lint
+
+      - name: Run tests
+        run: |
+          cd ai_agents
+          task test -- -s -v

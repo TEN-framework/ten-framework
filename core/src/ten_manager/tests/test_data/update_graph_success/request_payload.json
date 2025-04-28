@@ -1,0 +1,41 @@
+{
+  "base_dir": "test_dir",
+  "graph_name": "default",
+  "auto_start": false,
+  "nodes": [
+    {
+      "name": "extension_1",
+      "addon": "extension_addon_1",
+      "extension_group": "extension_group_1",
+      "app": "localhost",
+      "is_installed": true
+    },
+    {
+      "name": "extension_2",
+      "addon": "extension_addon_2",
+      "extension_group": "extension_group_1",
+      "app": "localhost",
+      "property": {
+        "a": 1
+      },
+      "is_installed": true
+    }
+  ],
+  "connections": [
+    {
+      "app": "localhost",
+      "extension": "extension_1",
+      "cmd": [
+        {
+          "name": "hello_world",
+          "dest": [
+            {
+              "app": "localhost",
+              "extension": "extension_2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

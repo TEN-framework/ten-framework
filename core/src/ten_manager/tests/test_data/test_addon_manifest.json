@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "test_addon",
+  "version": "1.0.0",
+  "api": {
+    "property": {
+      "test_property": {
+        "type": "string"
+      }
+    }
+  }
+}

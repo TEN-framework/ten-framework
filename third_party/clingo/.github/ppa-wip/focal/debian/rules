@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+export CLINGO_BUILD_REVISION =
+
+%:
+	dh $@ --with python3
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH) -DCLINGO_BUILD_REVISION=$(CLINGO_BUILD_REVISION) -DCLINGO_BUILD_WITH_LUA=On -DCLINGO_BUILD_WITH_PYTHON=On -DCLINGO_MANAGE_RPATH=Off -DPYCLINGO_INSTALL_DIR=/usr/lib/python3/dist-packages

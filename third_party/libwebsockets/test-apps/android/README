@@ -1,0 +1,51 @@
+/*
+ * libwebsockets Android client - libwebsockets test application for Android
+ *
+ * Copyright (C) 2016 Alexander Bruines <alexander.bruines@gmail.com>
+ *
+ * This file is made available under the Creative Commons CC0 1.0
+ * Universal Public Domain Dedication.
+ *
+ * The person who associated a work with this deed has dedicated
+ * the work to the public domain by waiving all of his or her rights
+ * to the work worldwide under copyright law, including all related
+ * and neighboring rights, to the extent allowed by law. You can copy,
+ * modify, distribute and perform the work, even for commercial purposes,
+ * all without asking permission.
+ *
+ * The test apps are intended to be adapted for use in your code, which
+ * may be proprietary.  So unlike the library itself, they are licensed
+ * Public Domain.
+ */
+
+This directory contains an Android Studio (2.1.1) project that builds
+libwebsockets (+ openssl + zlib) and an Android application that is able
+to connect to the 'dumb-increment-protocol' of the libwebsockets test server.
+
+Building the native libraries requires the Android NDK which can be
+installed using the SDK manager.
+
+The app/src/main/jni/NativeLibs.mk is fully integraded with Gradle but will
+only work on Linux and requires the following applications to be available
+in addition to the NDK:
+
+   awk cmake egrep git tar wget makedepend
+
+(makedepend can be installed from (Debian) xutils-dev)
+
+To build the project:
+
+- Open an 'existing project' with Android Studio and select this directory.
+  (answer yes/ok to the question to integrate with Gradle).
+
+- Open the file app/src/main/jni/Application.mk and make sure NDK_ROOT
+  is set correctly and that APP_PLATFORM is set to the appropriate API level.
+
+- Build the project with CTRL+F9
+  (open the gradle console to follow the build progress).
+
+- Install APK to device and run.
+
+- Connect to libwebsockets test server.
+
+

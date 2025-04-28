@@ -1,0 +1,77 @@
+<testcase>
+<info>
+<keywords>
+IMAP
+FETCH
+HTTP
+HTTP CONNECT
+HTTP proxy
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<connect>
+HTTP/1.1 200 Mighty fine indeed
+imap: sure hit me
+
+</connect>
+<data>
+From: me@somewhere
+To: fake@nowhere
+
+body
+
+--
+  yours sincerely
+</data>
+<datacheck>
+From: me@somewhere
+To: fake@nowhere
+
+body
+
+--
+  yours sincerely
+</datacheck>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+imap
+http-proxy
+</server>
+<features>
+http
+proxy
+</features>
+ <name>
+IMAP FETCH tunneled through HTTP proxy
+ </name>
+ <command>
+'imap://imap.%TESTNUMBER:%IMAPPORT/%TESTNUMBER/;MAILINDEX=1' -u user:secret -p -x %HOSTIP:%PROXYPORT
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+A001 CAPABILITY
+A002 LOGIN user secret
+A003 SELECT %TESTNUMBER
+A004 FETCH 1 BODY[]
+A005 LOGOUT
+</protocol>
+<proxy>
+CONNECT imap.%TESTNUMBER:%IMAPPORT HTTP/1.1
+Host: imap.%TESTNUMBER:%IMAPPORT
+User-Agent: curl/%VERSION
+Proxy-Connection: Keep-Alive
+
+</proxy>
+</verify>
+</testcase>

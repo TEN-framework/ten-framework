@@ -1,0 +1,166 @@
+#line 2 "suites/helpers.function"
+/*----------------------------------------------------------------------------*/
+/* Headers */
+
+#include <test/helpers.h>
+#include <test/macros.h>
+#include <test/random.h>
+#include <test/psa_crypto_helpers.h>
+
+#include <stdlib.h>
+
+#if defined (MBEDTLS_ERROR_C)
+#include "mbedtls/error.h"
+#endif
+#if defined(MBEDTLS_PLATFORM_C)
+#include "mbedtls/platform.h"
+#else
+#include <stdio.h>
+#define mbedtls_fprintf    fprintf
+#define mbedtls_snprintf   snprintf
+#define mbedtls_calloc     calloc
+#define mbedtls_free       free
+#define mbedtls_exit       exit
+#define mbedtls_time       time
+#define mbedtls_time_t     time_t
+#define MBEDTLS_EXIT_SUCCESS EXIT_SUCCESS
+#define MBEDTLS_EXIT_FAILURE EXIT_FAILURE
+#endif
+
+#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
+#include "mbedtls/memory_buffer_alloc.h"
+#endif
+
+#ifdef _MSC_VER
+#include <basetsd.h>
+typedef UINT8 uint8_t;
+typedef INT32 int32_t;
+typedef UINT32 uint32_t;
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#else
+#include <stdint.h>
+#endif
+
+#include <string.h>
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__)) || defined(__MINGW32__)
+#include <strings.h>
+#endif
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include <unistd.h>
+#endif
+
+/* Type for Hex parameters */
+typedef struct data_tag
+{
+    uint8_t *   x;
+    uint32_t    len;
+} data_t;
+
+/*----------------------------------------------------------------------------*/
+/* Status and error constants */
+
+#define DEPENDENCY_SUPPORTED            0   /* Dependency supported by build */
+#define KEY_VALUE_MAPPING_FOUND         0   /* Integer expression found */
+#define DISPATCH_TEST_SUCCESS           0   /* Test dispatch successful */
+
+#define KEY_VALUE_MAPPING_NOT_FOUND     -1  /* Integer expression not found */
+#define DEPENDENCY_NOT_SUPPORTED        -2  /* Dependency not supported */
+#define DISPATCH_TEST_FN_NOT_FOUND      -3  /* Test function not found */
+#define DISPATCH_INVALID_TEST_DATA      -4  /* Invalid test parameter type.
+                                               Only int, string, binary data
+                                               and integer expressions are
+                                               allowed */
+#define DISPATCH_UNSUPPORTED_SUITE      -5  /* Test suite not supported by the
+                                               build */
+
+/*----------------------------------------------------------------------------*/
+/* Global variables */
+
+/*----------------------------------------------------------------------------*/
+/* Helper flags for complex dependencies */
+
+/* Indicates whether we expect mbedtls_entropy_init
+ * to initialize some strong entropy source. */
+#if !defined(MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES) && \
+    ( !defined(MBEDTLS_NO_PLATFORM_ENTROPY) ||      \
+        defined(MBEDTLS_ENTROPY_HARDWARE_ALT) ||    \
+        defined(ENTROPY_NV_SEED) )
+#define ENTROPY_HAVE_STRONG
+#endif
+
+
+/*----------------------------------------------------------------------------*/
+/* Helper Functions */
+
+#if defined(MBEDTLS_PSA_CRYPTO_C)
+/** Check that no PSA Crypto key slots are in use.
+ *
+ * If any slots are in use, mark the current test as failed.
+ *
+ * \return 0 if the key store is empty, 1 otherwise.
+ */
+int test_fail_if_psa_leaking( int line_no, const char *filename )
+{
+    const char *msg = mbedtls_test_helper_is_psa_leaking( );
+    if( msg == NULL )
+        return 0;
+    else
+    {
+        mbedtls_test_fail( msg, line_no, filename );
+        return 1;
+    }
+}
+#endif /* defined(MBEDTLS_PSA_CRYPTO_C) */
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+static int redirect_output( FILE* out_stream, const char* path )
+{
+    int out_fd, dup_fd;
+    FILE* path_stream;
+
+    out_fd = fileno( out_stream );
+    dup_fd = dup( out_fd );
+
+    if( dup_fd == -1 )
+    {
+        return( -1 );
+    }
+
+    path_stream = fopen( path, "w" );
+    if( path_stream == NULL )
+    {
+        close( dup_fd );
+        return( -1 );
+    }
+
+    fflush( out_stream );
+    if( dup2( fileno( path_stream ), out_fd ) == -1 )
+    {
+        close( dup_fd );
+        fclose( path_stream );
+        return( -1 );
+    }
+
+    fclose( path_stream );
+    return( dup_fd );
+}
+
+static int restore_output( FILE* out_stream, int dup_fd )
+{
+    int out_fd = fileno( out_stream );
+
+    fflush( out_stream );
+    if( dup2( dup_fd, out_fd ) == -1 )
+    {
+        close( out_fd );
+        close( dup_fd );
+        return( -1 );
+    }
+
+    close( dup_fd );
+    return( 0 );
+}
+#endif /* __unix__ || __APPLE__ __MACH__ */

@@ -1,0 +1,85 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+action("copy_node_shared_lib") {
+  script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+  args = [
+    "--source",
+    rebase_path("${root_out_dir}/prebuilt/node_shared/lib/libnode.so.127"),
+    "--destination",
+    rebase_path(
+        "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127"),
+  ]
+
+  sources = [ "${root_out_dir}/prebuilt/node_shared/lib/libnode.so.127" ]
+  outputs = [ "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127" ]
+
+  deps = [ "//third_party/node" ]
+}
+
+action("create_symlink") {
+  script = "//build/ten_common/scripts/create_symlink.py"
+
+  args = [
+    rebase_path(
+        "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127"),
+    rebase_path(
+        "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so"),
+  ]
+
+  sources = [ "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127" ]
+  outputs = [ "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so" ]
+
+  deps = [ ":copy_node_shared_lib" ]
+}
+
+config("nodejs_addon_loader_config") {
+  cflags_cc = [ "-std=c++17" ]
+
+  if (is_clang) {
+    cflags_cc += [ "-stdlib=libstdc++" ]
+    libs = [ "stdc++" ]
+  }
+}
+
+ten_package("nodejs_addon_loader") {
+  package_kind = "addon_loader"
+  enable_build = true
+
+  resources = [
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+  ]
+
+  configs = [ ":nodejs_addon_loader_config" ]
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [ "//core" ]
+
+  deps = [
+    ":create_symlink",
+    "//core/src/ten_runtime",
+    "//third_party/node",
+  ]
+
+  lib_dirs =
+      [ "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib" ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_nodejs_addon_loader_to_server") {
+    base_dir = rebase_path(
+            "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader")
+    deps = [ ":nodejs_addon_loader" ]
+  }
+}

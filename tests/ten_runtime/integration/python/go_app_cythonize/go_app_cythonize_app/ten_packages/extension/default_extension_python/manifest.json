@@ -1,0 +1,24 @@
+{
+  "type": "extension",
+  "name": "default_extension_python",
+  "version": "0.10.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "manifest.json.tent",
+      "property.json",
+      "BUILD.gn",
+      "BUILD.gn.tent",
+      "**.py",
+      "**.pyx"
+    ]
+  },
+  "api": {}
+}

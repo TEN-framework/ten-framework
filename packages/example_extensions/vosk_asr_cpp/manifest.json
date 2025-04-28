@@ -1,0 +1,30 @@
+{
+  "type": "extension",
+  "name": "vosk_asr_cpp",
+  "version": "0.10.1",
+  "tags": [
+    "cpp"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.1"
+    },
+    {
+      "type": "system",
+      "name": "googletest",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "bin/vosk_asr_cpp_test",
+    "build": "sh -c cd .ten/app && tgn gen linux x64 debug -- ten_enable_standalone_test=true && tgn build linux x64 debug"
+  }
+}

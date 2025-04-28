@@ -1,0 +1,32 @@
+menu "Libwebsockets"
+
+config LWS_MODEL_NAME
+	string "Model name of device firmware is for"
+	default "lws"
+
+config LWS_IS_FACTORY_APPLICATION
+	bool "Is this application is designed for the FACTORY flash slot"
+	default "n"
+
+config LWS_OTA_SERVER_FQDN
+	depends on LWS_IS_FACTORY_APPLICATION
+	string "Domain name of OTA update server, eg, warmcat.com"
+	default ""
+
+config LWS_OTA_SERVER_BASE_URL
+	depends on LWS_IS_FACTORY_APPLICATION
+	string "Base URL on OTA update server, eg, /esp32-ota (model is added)"
+	default "/esp32-ota"
+
+config LWS_OTA_SERVER_UPLOAD_USER
+	depends on LWS_IS_FACTORY_APPLICATION
+	string "User to scp to upload server with"
+	default "root"
+
+config LWS_OTA_SERVER_UPLOAD_PATH
+	depends on LWS_IS_FACTORY_APPLICATION
+	string "Path served in upload server (eg, \"/var/www/libwebsockets.org\""
+	default "/var/www/libwebsockets.org"
+
+endmenu
+

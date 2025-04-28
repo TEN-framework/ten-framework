@@ -1,0 +1,62 @@
+name: CI tests
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    name: clasp tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        include:
+          - os: 'ubuntu-latest'
+            generator: 'Ninja'
+            build_type: 'Debug'
+          - os: 'macos-latest'
+            generator: 'Ninja'
+            build_type: 'Debug'
+          - os: 'windows-latest'
+            generator: 'Visual Studio 17 2022'
+            build_type: 'Debug'
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: setup (ubuntu)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run:
+        sudo apt install ninja-build
+
+    - name: setup (macos)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        brew update
+        brew install ninja
+
+    - name: Configure
+      run: >
+        cmake
+        -G "${{ matrix.generator }}"
+        -B "${{github.workspace}}/build"
+        -DCMAKE_BUILD_TYPE="${{matrix.build_type}}"
+        -DCLASP_BUILD_TESTS="On"
+        -DLIB_POTASSCO_BUILD_TESTS="On"
+        -DCMAKE_CXX_STANDARD="14"
+
+    - name: Build
+      run: >
+        cmake
+        --build "${{github.workspace}}/build"
+        --config "${{matrix.build_type}}"
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: >
+        ctest
+        -C "${{matrix.build_type}}"
