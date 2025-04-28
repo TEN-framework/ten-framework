@@ -5,8 +5,12 @@ on:
     branches: ["**"]
     tags: ["**"]
     paths-ignore:
-      - "tools/**"
+      - "core/**"
       - "portal/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
@@ -17,8 +21,12 @@ on:
   pull_request:
     branches: ["main"]
     paths-ignore:
-      - "tools/**"
+      - "core/**"
       - "portal/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
