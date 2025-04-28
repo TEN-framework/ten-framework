@@ -496,7 +496,7 @@
       ],
     },
     {
-      "name": "app (C/C++) (lldb, launch)",
+      "name": "app (c/c++) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/check_start_graph/check_start_graph_app/bin/check_start_graph_app",
@@ -507,7 +507,7 @@
       },
     },
     {
-      "name": "app (C/C++) (cppdbg, launch)",
+      "name": "app (c/c++) (cppdbg, launch)",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/nodejs/cpp_app_nodejs/cpp_app_nodejs_app/bin/cpp_app_nodejs_app",
@@ -527,7 +527,7 @@
       ]
     },
     {
-      "name": "app (C/C++) (cppdbg, attach)",
+      "name": "app (c/c++) (cppdbg, attach)",
       "type": "cppdbg",
       "request": "attach",
       "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/restful/wrk_concurrent/http_benchmark_app/bin/restful_app_source",
@@ -547,7 +547,7 @@
       }
     },
     {
-      "name": "app (C/C++) ffmpeg (lldb, launch)",
+      "name": "app (c/c++) ffmpeg (lldb, launch)",
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/restful/http_basic/restful/http_basic_app/bin/restful/http_basic_app_source",
@@ -784,7 +784,7 @@
       "pid": "${command:pickMyProcess}"
     },
     {
-      "name": "standalone test (C/C++) (lldb, launch)",
+      "name": "standalone test (c/c++) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/standalone_test_cpp/ext/bin/ext_test",
@@ -877,7 +877,7 @@
       ]
     },
     {
-      "name": "(agents) debug go",
+      "name": "(AI agents) debug go",
       "type": "go",
       "request": "launch",
       "mode": "exec",
@@ -889,17 +889,17 @@
       }
     },
     {
-      "name": "(agents) debug python",
+      "name": "(AI agents) debug python",
       "type": "debugpy",
       "request": "attach",
       "connect": {
         "host": "localhost",
         "port": 5678
       },
-      "preLaunchTask": "start app"
+      "preLaunchTask": "start python AI agent"
     },
     {
-      "name": "(agents) debug cpp",
+      "name": "(AI agents) debug cpp",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/ai_agents/agents/bin/worker",
@@ -918,7 +918,7 @@
   ],
   "compounds": [
     {
-      "name": "mixed (Golang + Python + C++)",
+      "name": "mixed (golang + python + c++)",
       "configurations": [
         "app (golang) (lldb, launch)",
         "app (python) (debugpy, remote attach)"

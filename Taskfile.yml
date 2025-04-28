@@ -1,2 +1,8 @@
-version: '3'
+version: "3"
+
+includes:
+  ai_agents:
+    taskfile: ai_agents/Taskfile.yml
+    dir: ai_agents
+
 tasks: {}
