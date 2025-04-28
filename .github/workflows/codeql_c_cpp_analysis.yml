@@ -45,7 +45,7 @@ jobs:
           node-version: 20
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: c-cpp
           build-mode: manual
@@ -67,4 +67,4 @@ jobs:
           tgn build linux x64 debug
 
       - name: Analyze with CodeQL
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
