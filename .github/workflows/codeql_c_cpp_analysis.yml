@@ -57,14 +57,9 @@ jobs:
           go1.20.12 download
           rustup default nightly
 
-          tgn gen linux x64 debug -- \
-            is_clang=false log_level=1 enable_serialized_actions=true \
-            ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false \
-            ten_enable_cargo_clean=true ten_enable_go_lint=true \
-            ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false \
-            ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
+          tgn gen linux x64 debug -- enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_ten_rust_apis=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false
 
-          tgn build linux x64 debug
+          tgn build:ten_runtime_smoke_test linux x64 debug
 
       - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@v3
