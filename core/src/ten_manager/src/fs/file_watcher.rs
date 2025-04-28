@@ -120,11 +120,26 @@ async fn watch_file_task(
     let mut last_metadata: Option<Metadata> = None;
     let mut eof_reached = false;
     let mut eof_time: Option<Instant> = None;
+    let mut last_file_size: u64 = 0;
+    let mut file_was_deleted = false;
 
     'outer: loop {
         // Check if we should stop.
         if stop_rx.try_recv().is_ok() {
             break;
+        }
+
+        // Check if file exists.
+        if !path.exists() {
+            file_was_deleted = true;
+
+            // Wait a bit and retry, file might reappear after rotation.
+            match time::timeout(options.check_interval, &mut stop_rx).await {
+                Ok(Ok(())) => break, // Stop received during wait.
+                Ok(Err(_)) => {}     // Timeout elapsed normally.
+                Err(_) => {}         // Timeout elapsed.
+            }
+            continue;
         }
 
         // Try to open the file.
@@ -148,22 +163,55 @@ async fn watch_file_task(
                     }
                 };
 
-                let file_rotated = match &last_metadata {
-                    Some(last_meta) => {
-                        !same_file_metadata(last_meta, &metadata)
-                    }
-                    None => false,
-                };
+                let current_file_size = metadata.len();
+                let mut file_rotated = false;
+
+                // Detect rotation through different means.
+                if let Some(last_meta) = &last_metadata {
+                    file_rotated = !same_file_metadata(last_meta, &metadata);
+                }
+
+                // If the file was previously deleted and now exists again,
+                // consider it rotated.
+                if file_was_deleted {
+                    file_rotated = true;
+                    file_was_deleted = false; // Reset the flag.
+                }
 
                 // Update metadata for next comparison.
                 last_metadata = Some(metadata);
 
-                // If the file was rotated, reset position to the beginning.
+                // Handle different file state scenarios.
                 if file_rotated {
+                    // File was rotated, reset position tracking.
                     last_position = 0;
                     eof_reached = false;
                     eof_time = None;
+
+                    // No need to update last_file_size yet, it will be updated
+                    // by last_file_size = current_file_size below.
+                } else if current_file_size < last_file_size {
+                    // File was truncated, reset position tracking.
+                    last_position = 0;
+                    eof_reached = false;
+                    eof_time = None;
+
+                    // No need to update last_file_size yet, it will be updated
+                    // by last_file_size = current_file_size below.
+                } else {
+                    // Platform-specific handling for detecting new content.
+                    #[cfg(windows)]
+                    if current_file_size > last_file_size {
+                        // Windows: Use file size to determine if there's new
+                        // data.
+                        last_position = last_file_size;
+                        eof_reached = false;
+                        eof_time = None;
+                    }
                 }
+
+                // Update last known file size.
+                last_file_size = current_file_size;
 
                 // Seek to the last position.
                 if let Err(e) = file.seek(SeekFrom::Start(last_position)) {
@@ -225,6 +273,9 @@ async fn watch_file_task(
                             let data = buffer[..n].to_vec();
                             last_position += n as u64;
 
+                            // Keep file size in sync with position.
+                            last_file_size = last_position;
+
                             if let Err(e) = content_tx.send(Ok(data)).await {
                                 eprintln!("Failed to send data: {}", e);
                                 break 'outer;
@@ -251,16 +302,9 @@ async fn watch_file_task(
             Err(e) => {
                 // If the file doesn't exist but did before, it might have been
                 // deleted during rotation.
-                if path.exists() {
-                    // It exists but we can't open it for some reason.
-                    if let Err(e) = content_tx
-                        .send(Err(anyhow!("Failed to open file: {}", e)))
-                        .await
-                    {
-                        eprintln!("Failed to send error: {}", e);
-                    }
-                    break;
-                } else {
+                if !path.exists() {
+                    file_was_deleted = true;
+
                     // Wait a bit and retry, file might reappear after rotation.
                     match time::timeout(options.check_interval, &mut stop_rx)
                         .await
@@ -269,6 +313,15 @@ async fn watch_file_task(
                         Ok(Err(_)) => {}     // Timeout elapsed normally.
                         Err(_) => {}         // Timeout elapsed.
                     }
+                } else {
+                    // It exists but we can't open it for some reason.
+                    if let Err(e) = content_tx
+                        .send(Err(anyhow!("Failed to open file: {}", e)))
+                        .await
+                    {
+                        eprintln!("Failed to send error: {}", e);
+                    }
+                    break;
                 }
             }
         }
