@@ -21,6 +21,10 @@ permissions:
   contents: read
   security-events: write
 
+concurrency:
+  group: ai-agents-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
