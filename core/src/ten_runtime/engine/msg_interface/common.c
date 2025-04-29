@@ -373,8 +373,8 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
              "destination remaining in the message's dest.");
 
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(msg);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_app_t *app = self->app;
   TEN_ASSERT(app, "Invalid argument.");

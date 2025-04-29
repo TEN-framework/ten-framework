@@ -70,8 +70,8 @@ static void ten_engine_close_sync(ten_engine_t *self) {
     ten_hashhandle_t *hh = iter.node;
     ten_remote_t *remote =
         CONTAINER_OF_FROM_OFFSET(hh, self->remotes.hh_offset);
-    TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-               "Should not happen.");
+    TEN_ASSERT(remote, "Should not happen.");
+    TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
     ten_remote_close(remote);
 
@@ -198,8 +198,8 @@ static size_t ten_engine_unclosed_remotes_cnt(ten_engine_t *self) {
     ten_hashhandle_t *hh = iter.node;
     ten_remote_t *remote =
         CONTAINER_OF_FROM_OFFSET(hh, self->remotes.hh_offset);
-    TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-               "Should not happen.");
+    TEN_ASSERT(remote, "Should not happen.");
+    TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
     if (remote->state != TEN_REMOTE_STATE_CLOSED) {
       unclosed_remotes++;

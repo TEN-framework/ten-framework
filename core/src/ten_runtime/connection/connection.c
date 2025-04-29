@@ -519,8 +519,8 @@ void ten_connection_attach_to_remote(ten_connection_t *self,
   TEN_ASSERT(ten_connection_check_integrity(self, true),
              "Invalid use of connection %p.", self);
 
-  TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-             "Should not happen.");
+  TEN_ASSERT(remote, "Should not happen.");
+  TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
   ten_atomic_store(&self->attach_to, TEN_CONNECTION_ATTACH_TO_REMOTE);
   self->attached_target.remote = remote;

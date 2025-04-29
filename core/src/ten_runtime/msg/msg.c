@@ -389,8 +389,9 @@ void ten_raw_msg_clear_and_set_dest_to_loc(ten_msg_t *self, ten_loc_t *loc) {
 }
 
 void ten_msg_clear_and_set_dest_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
-  TEN_ASSERT(self && ten_msg_check_integrity(self) && loc,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(loc, "Should not happen.");
 
   ten_raw_msg_clear_and_set_dest_to_loc(ten_shared_ptr_get_data(self), loc);
 }
@@ -401,7 +402,8 @@ static void ten_msg_clear_dest_graph_id(ten_shared_ptr_t *self) {
 
   ten_list_foreach (ten_msg_get_dest(self), iter) {
     ten_loc_t *loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(loc && ten_loc_check_integrity(loc), "Should not happen.");
+    TEN_ASSERT(loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(loc), "Should not happen.");
 
     ten_string_clear(&loc->graph_id);
   }
@@ -416,8 +418,8 @@ void ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
 
   ten_list_foreach (ten_msg_get_dest(self), iter) {
     ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-               "Should not happen.");
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     if (ten_string_is_empty(&dest_loc->graph_id)) {
       ten_string_copy(&dest_loc->graph_id, &engine->graph_id);

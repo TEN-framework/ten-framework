@@ -317,8 +317,8 @@ static bool ten_app_handle_stop_graph_cmd(ten_app_t *self,
   // to the engine.
   ten_list_foreach (ten_msg_get_dest(cmd), iter) {
     ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-               "Should not happen.");
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     ten_string_set_formatted(&dest_loc->graph_id, "%s",
                              ten_string_get_raw_str(&dest_engine->graph_id));
@@ -354,8 +354,8 @@ static bool ten_app_handle_cmd_result(ten_app_t *self,
 
 #if defined(_DEBUG)
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(cmd_result);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_string_t loc_str;
   TEN_STRING_INIT(loc_str);

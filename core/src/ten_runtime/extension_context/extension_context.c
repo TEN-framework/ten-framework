@@ -458,13 +458,13 @@ bool ten_extension_context_start_extension_group(ten_extension_context_t *self,
 
   bool result = true;
 
-  ten_list_t *extension_info =
+  ten_list_t *extensions_info =
       ten_cmd_start_graph_get_extensions_info(original_start_graph_cmd);
   ten_list_t *extension_groups_info =
       ten_cmd_start_graph_get_extension_groups_info(original_start_graph_cmd);
 
   if (ten_list_is_empty(extension_groups_info)) {
-    ten_extension_context_add_extensions_info_from_graph(self, extension_info);
+    ten_extension_context_add_extensions_info_from_graph(self, extensions_info);
 
     ten_extension_context_add_extension_groups_info_from_graph(
         self, extension_groups_info);
