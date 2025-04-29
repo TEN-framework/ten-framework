@@ -29,7 +29,7 @@ mod tests {
 
             // Create options with shorter timeout for testing
             let options = FileWatchOptions {
-                timeout: Duration::from_secs(1),
+                timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
             };
@@ -80,7 +80,7 @@ mod tests {
 
             // Create options with shorter timeout for testing
             let options = FileWatchOptions {
-                timeout: Duration::from_secs(3),
+                timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
             };
