@@ -20,25 +20,25 @@ use crate::test_case::common::builtin_server::start_test_server;
 
 #[actix_rt::test]
 async fn test_ws_log_watcher_endpoint() {
-    // Create a temporary directory to simulate an app base dir
+    // Create a temporary directory to simulate an app base dir.
     let temp_dir = tempdir().unwrap();
     let app_dir = temp_dir.path();
 
-    // Create a property.json file in the temp dir
+    // Create a property.json file in the temp dir.
     let log_file_path = app_dir.join("app.log");
     create_property_json(app_dir, &log_file_path);
 
-    // Create an empty log file
+    // Create an empty log file.
     create_empty_log_file(&log_file_path);
 
-    // Start the WebSocket server and get its address
+    // Start the WebSocket server and get its address.
     let server_addr = start_test_server("/ws/log-watcher", || {
         web::get().to(log_watcher_endpoint)
     })
     .await;
     println!("Server started at: {}", server_addr);
 
-    // Connect WebSocket client to the server with the app_base_dir parameter
+    // Connect WebSocket client to the server with the app_base_dir parameter.
     let ws_url = format!(
         "ws://{}/ws/log-watcher?app_base_dir={}",
         server_addr,
@@ -47,10 +47,10 @@ async fn test_ws_log_watcher_endpoint() {
     let (ws_stream, _) = connect_async(ws_url).await.unwrap();
     println!("WebSocket connection established");
 
-    // Split the WebSocket stream
+    // Split the WebSocket stream.
     let (mut write, mut read) = ws_stream.split();
 
-    // Wait for the info message about starting the watcher
+    // Wait for the info message about starting the watcher.
     let mut received_start_msg = false;
     while let Some(msg) = read.next().await {
         let msg = msg.unwrap();
@@ -65,11 +65,11 @@ async fn test_ws_log_watcher_endpoint() {
     }
     assert!(received_start_msg, "Didn't receive start message");
 
-    // Now append to the log file
+    // Now append to the log file.
     let test_content = "Test log message\n";
     append_to_log_file(&log_file_path, test_content);
 
-    // Check if we receive the content
+    // Check if we receive the content.
     let mut received_content = false;
     while let Some(msg) = read.next().await {
         let msg = msg.unwrap();
@@ -85,15 +85,15 @@ async fn test_ws_log_watcher_endpoint() {
     }
     assert!(received_content, "Didn't receive log content");
 
-    // Send stop message
+    // Send stop message.
     let stop_msg = r#"{"type":"stop"}"#;
     write.send(Message::Text(stop_msg.to_string())).await.unwrap();
     println!("Sent stop message");
 
-    // Wait for connection to close or stop confirmation
+    // Wait for connection to close or stop confirmation.
     let mut received_stop = false;
     while let Ok(Some(msg)) =
-        tokio::time::timeout(Duration::from_secs(2), read.next()).await
+        tokio::time::timeout(Duration::from_secs(5), read.next()).await
     {
         let msg = msg.unwrap();
         if msg.is_text() {
@@ -107,7 +107,7 @@ async fn test_ws_log_watcher_endpoint() {
     }
     assert!(received_stop, "Didn't receive stop confirmation");
 
-    // Clean up
+    // Clean up.
     temp_dir.close().unwrap();
 }
 

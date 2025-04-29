@@ -45,7 +45,7 @@ pub struct InfoMessage(pub String);
 #[rtype(result = "()")]
 pub struct StoreWatcher(pub FileContentStream);
 
-// WebSocket actor for log file watching
+// WebSocket actor for log file watching.
 struct WsLogWatcher {
     app_base_dir: String,
     file_watcher: Option<Arc<Mutex<FileContentStream>>>,
@@ -73,13 +73,13 @@ impl Actor for WsLogWatcher {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        // Clone what we need for the async task
+        // Clone what we need for the async task.
         let app_base_dir = self.app_base_dir.clone();
         let addr = ctx.address();
 
-        // Spawn a task to handle the async file watching
+        // Spawn a task to handle the async file watching.
         ctx.spawn(fut::wrap_future(async move {
-            // Get the log file path from property.json
+            // Get the log file path from property.json.
             let log_file_path = match get_log_file_path(&app_base_dir) {
                 Some(path) => path,
                 None => {
@@ -91,10 +91,10 @@ impl Actor for WsLogWatcher {
                 }
             };
 
-            // Create file watch options
+            // Create file watch options.
             let options = FileWatchOptions::default();
 
-            // Start watching the file
+            // Start watching the file.
             match crate::fs::file_watcher::watch_file(
                 &log_file_path,
                 Some(options),
@@ -102,12 +102,12 @@ impl Actor for WsLogWatcher {
             .await
             {
                 Ok(stream) => {
-                    // Successfully started watching
+                    // Successfully started watching.
                     let _ = addr.try_send(InfoMessage(
                         "Started watching log file".to_string(),
                     ));
 
-                    // Send the stream to the actor to store
+                    // Send the stream to the actor to store.
                     let _ = addr.try_send(StoreWatcher(stream));
                 }
                 Err(e) => {
@@ -119,8 +119,8 @@ impl Actor for WsLogWatcher {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        // Just set file_watcher to None to release our reference to it
-        // The tokio runtime will clean up any remaining tasks
+        // Just set file_watcher to None to release our reference to it.
+        // The tokio runtime will clean up any remaining tasks.
         self.file_watcher = None;
     }
 }
@@ -133,7 +133,7 @@ impl Handler<FileContent> for WsLogWatcher {
         msg: FileContent,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the file content to the WebSocket client
+        // Send the file content to the WebSocket client.
         ctx.binary(msg.0);
     }
 }
@@ -146,7 +146,7 @@ impl Handler<ErrorMessage> for WsLogWatcher {
         msg: ErrorMessage,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the error message to the WebSocket client
+        // Send the error message to the WebSocket client.
         ctx.text(
             json!({
                 "type": "error",
@@ -165,7 +165,7 @@ impl Handler<InfoMessage> for WsLogWatcher {
         msg: InfoMessage,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the info message to the WebSocket client
+        // Send the info message to the WebSocket client.
         ctx.text(
             json!({
                 "type": "info",
@@ -184,7 +184,7 @@ impl Handler<CloseConnection> for WsLogWatcher {
         _: CloseConnection,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Stop watching and close the connection
+        // Stop watching and close the connection.
         self.stop_watching();
         ctx.close(None);
     }
@@ -198,7 +198,7 @@ impl Handler<StopWatching> for WsLogWatcher {
         _: StopWatching,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Stop watching the file but keep the connection open
+        // Stop watching the file but keep the connection open.
         self.stop_watching();
         ctx.text(
             json!({
@@ -218,21 +218,21 @@ impl Handler<StoreWatcher> for WsLogWatcher {
         msg: StoreWatcher,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Set up a task to read from the stream and send to WebSocket
+        // Set up a task to read from the stream and send to WebSocket.
         let stream = Arc::new(Mutex::new(msg.0));
         self.file_watcher = Some(stream.clone());
 
-        // Spawn a task to read from the stream and send to WebSocket
+        // Spawn a task to read from the stream and send to WebSocket.
         let addr = ctx.address();
         tokio::spawn(async move {
             loop {
-                // Lock the mutex only for a short time to get the next item
+                // Lock the mutex only for a short time to get the next item.
                 let content = {
                     let mut stream_guard = stream.lock().await;
                     stream_guard.next().await
                 };
 
-                // Process the content outside the lock
+                // Process the content outside the lock.
                 match content {
                     Some(Ok(data)) => {
                         if addr.try_send(FileContent(data)).is_err() {
@@ -246,7 +246,7 @@ impl Handler<StoreWatcher> for WsLogWatcher {
                     }
                     None => {
                         // If we exit the loop normally, the file watching has
-                        // ended
+                        // ended.
                         let _ = addr.try_send(CloseConnection);
                         break;
                     }
@@ -265,7 +265,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
-                // Try to parse the received message as JSON
+                // Try to parse the received message as JSON.
                 if let Ok(json) =
                     serde_json::from_str::<serde_json::Value>(&text)
                 {
@@ -280,7 +280,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
                                 );
                             }
                             _ => {
-                                // Unknown message type
+                                // Unknown message type.
                                 ctx.text(
                                     json!({
                                         "type": "error",
@@ -294,7 +294,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
                 }
             }
             Ok(ws::Message::Binary(_)) => {
-                // Binary messages are not expected
+                // Binary messages are not expected.
                 ctx.text(
                     json!({
                         "type": "error",
@@ -314,7 +314,7 @@ pub async fn log_watcher_endpoint(
     stream: web::Payload,
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<HttpResponse, Error> {
-    // Extract 'app_base_dir' from query parameters
+    // Extract 'app_base_dir' from query parameters.
     let query = req.query_string();
     let params: HashMap<_, _> =
         url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
@@ -327,6 +327,6 @@ pub async fn log_watcher_endpoint(
         }
     };
 
-    // Start the WebSocket connection
+    // Start the WebSocket connection.
     ws::start(WsLogWatcher::new(app_base_dir), &req, stream)
 }
