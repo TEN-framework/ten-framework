@@ -13,8 +13,8 @@ mod tests {
     use serde_json::{json, Map, Value};
     use tempfile::TempDir;
 
+    use ten_manager::fs::json::write_property_json_file;
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_manager::json::write_property_json_file;
     use ten_rust::graph::node::GraphNode;
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
     use ten_rust::pkg_info::pkg_type::PkgType;

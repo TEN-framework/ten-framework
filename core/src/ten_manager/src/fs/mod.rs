@@ -4,6 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+pub mod file_type;
+pub mod file_watcher;
+pub mod json;
+
 use std::env;
 use std::path::{Path, PathBuf};
 

@@ -6,6 +6,7 @@
 //
 pub mod get_all_pkgs;
 pub mod manifest;
+pub mod property;
 
 use std::{collections::HashMap, path::Path, sync::Arc};
 

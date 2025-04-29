@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "ten_utils/lib/file.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
@@ -69,7 +70,11 @@ ten_string_t *ten_path_get_dirname(const ten_string_t *path) {
   }
 
   size_t dir_len = last_slash - raw_path;
-  return ten_string_create_formatted("%.*s", dir_len, raw_path);
+  int int_dir_len = 0;
+  bool rc = safe_cast_size_t_to_int(dir_len, &int_dir_len);
+  TEN_ASSERT(rc, "Directory length overflow detected.");
+
+  return ten_string_create_formatted("%.*s", int_dir_len, raw_path);
 }
 
 ten_string_t *ten_path_get_last_part(const ten_string_t *path) {
@@ -90,8 +95,14 @@ ten_string_t *ten_path_get_last_part(const ten_string_t *path) {
   ten_string_t *last_part = NULL;
   if (last_slash && *(last_slash + 1) == '\0') {
     ten_string_t temp;
-    ten_string_init_formatted(&temp, "%.*s", ten_string_len(path) - 1,
+
+    int int_path_len = 0;
+    bool rc = safe_cast_size_t_to_int(ten_string_len(path), &int_path_len);
+    TEN_ASSERT(rc, "Path length overflow detected.");
+
+    ten_string_init_formatted(&temp, "%.*s", int_path_len,
                               ten_string_get_raw_str(path));
+
     last_part = ten_path_get_last_part(&temp);
     ten_string_deinit(&temp);
   } else {

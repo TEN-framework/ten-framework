@@ -1,0 +1,247 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+use std::fs::{File, Metadata};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+/// Platform‐specific metadata extensions
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
+
+use anyhow::{anyhow, Result};
+use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::oneshot;
+
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
+const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
+const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
+
+/// Stream of file content changes.
+pub struct FileContentStream {
+    // Channel for receiving file content.
+    content_rx: Receiver<Result<Vec<u8>>>,
+
+    // Sender to signal stop request.
+    stop_tx: Option<oneshot::Sender<()>>,
+}
+
+impl FileContentStream {
+    /// Create a new FileContentStream.
+    fn new(
+        content_rx: Receiver<Result<Vec<u8>>>,
+        stop_tx: oneshot::Sender<()>,
+    ) -> Self {
+        Self { content_rx, stop_tx: Some(stop_tx) }
+    }
+
+    /// Get the next chunk of data from the file.
+    pub async fn next(&mut self) -> Option<Result<Vec<u8>>> {
+        self.content_rx.recv().await
+    }
+
+    /// Stop the file watching process.
+    pub fn stop(&mut self) {
+        if let Some(tx) = self.stop_tx.take() {
+            let _ = tx.send(());
+        }
+    }
+}
+
+impl Drop for FileContentStream {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+/// Options for watching a file.
+#[derive(Clone)]
+pub struct FileWatchOptions {
+    /// Timeout for waiting for new content after reaching EOF.
+    pub timeout: Duration,
+
+    /// Size of buffer for reading.
+    pub buffer_size: usize,
+
+    /// Interval to check for new content when at EOF.
+    pub check_interval: Duration,
+}
+
+impl Default for FileWatchOptions {
+    fn default() -> Self {
+        Self {
+            timeout: DEFAULT_TIMEOUT,
+            buffer_size: DEFAULT_BUFFER_SIZE,
+            check_interval: DEFAULT_CHECK_INTERVAL,
+        }
+    }
+}
+
+/// Compare two metadata to determine if they point to the same file (used to
+/// detect rotation).
+fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
+    #[cfg(unix)]
+    {
+        a.dev() == b.dev() && a.ino() == b.ino()
+    }
+    #[cfg(windows)]
+    {
+        a.volume_serial_number() == b.volume_serial_number()
+            && a.file_index() == b.file_index()
+    }
+}
+
+/// Watch a file for changes and stream its content.
+///
+/// Returns a FileContentStream that can be used to read the content of the file
+/// as it changes. The stream will end when either:
+/// 1. The caller stops it by calling `stop()` or dropping the stream.
+/// 2. No new content is available after reaching EOF and the timeout is
+///    reached.
+pub async fn watch_file<P: AsRef<Path>>(
+    path: P,
+    options: Option<FileWatchOptions>,
+) -> Result<FileContentStream> {
+    let path = path.as_ref().to_path_buf();
+
+    // Ensure the file exists before we start watching it.
+    if !path.exists() {
+        return Err(anyhow!("File does not exist: {}", path.display()));
+    }
+
+    let options = options.unwrap_or_default();
+
+    // Create channels.
+    let (content_tx, content_rx) = mpsc::channel(32);
+    let (stop_tx, stop_rx) = oneshot::channel();
+
+    // Spawn a task to watch the file.
+    tokio::spawn(async move {
+        watch_file_task(path, content_tx, stop_rx, options).await;
+    });
+
+    Ok(FileContentStream::new(content_rx, stop_tx))
+}
+
+/// Actual file watch task running in the background.
+async fn watch_file_task(
+    path: PathBuf,
+    content_tx: Sender<Result<Vec<u8>>>,
+    mut stop_rx: oneshot::Receiver<()>,
+    options: FileWatchOptions,
+) {
+    // Open the file, position it to the current EOF.
+    let mut file = match File::open(&path) {
+        Ok(f) => f,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+            return;
+        }
+    };
+    let mut last_meta = match file.metadata() {
+        Ok(m) => m,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+            return;
+        }
+    };
+
+    // Read all existing content when the file is first opened and send it.
+    if let Err(e) = file.seek(SeekFrom::Start(0)) {
+        let _ = content_tx.send(Err(anyhow!(e))).await;
+        return;
+    }
+    let mut init_buf = Vec::new();
+    match file.read_to_end(&mut init_buf) {
+        Ok(n) => {
+            if n > 0 {
+                let _ = content_tx.send(Ok(init_buf)).await;
+            }
+        }
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow!(e))).await;
+            return;
+        }
+    }
+
+    // Reset last_pos to the current EOF.
+    let mut last_pos = match file.seek(SeekFrom::End(0)) {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow!(e))).await;
+            return;
+        }
+    };
+
+    let mut last_activity = Instant::now();
+
+    loop {
+        // Wait for stop or the next check interval.
+        tokio::select! {
+            _ = &mut stop_rx => break,
+            _ = tokio::time::sleep(options.check_interval) => {
+                // Check if the file has been rotated or truncated.
+                match std::fs::metadata(&path) {
+                    Ok(meta) => {
+                        if !is_same_file(&last_meta, &meta) || meta.len() < last_pos {
+                            // The file has been rotated or truncated, reopen it.
+                            if let Ok(mut newf) = File::open(&path) {
+                                let _ = newf.seek(SeekFrom::Start(0));
+                                file = newf;
+                                last_meta = meta.clone();
+                                last_pos = 0;
+                            } else {
+                                // Cannot open the new file, wait for the next round.
+                                continue;
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Cannot get metadata, skip this round.
+                        continue;
+                    }
+                }
+
+                // If there is new content, read and send it.
+                let curr_len = match file.metadata() {
+                    Ok(m) => m.len(),
+                    Err(_) => continue,
+                };
+
+                if curr_len > last_pos {
+                    // Read the new part.
+                    if let Err(e) = file.seek(SeekFrom::Start(last_pos)) {
+                        let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                        break;
+                    }
+
+                    let mut reader = BufReader::with_capacity(options.buffer_size, &file);
+                    let mut buf = Vec::with_capacity(options.buffer_size);
+                    match reader.read_until(0, &mut buf) {
+                        Ok(n) if n > 0 => {
+                            last_pos += n as u64;
+                            let _ = content_tx.send(Ok(buf)).await;
+                            last_activity = Instant::now();
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            break;
+                        }
+                    }
+                } else {
+                    // Reached EOF, check if the timeout has been reached.
+                    if Instant::now().duration_since(last_activity) > options.timeout {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}

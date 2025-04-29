@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "ten_utils/container/list_node.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/macro/check.h"
@@ -45,7 +46,11 @@ ten_listnode_t *ten_str_listnode_create_with_size(const char *str,
   ten_signature_set(&self->signature,
                     (ten_signature_t)TEN_STR_LISTNODE_SIGNATURE);
 
-  ten_string_init_formatted(&self->str, "%.*s", size, str);
+  int int_size = 0;
+  bool rc = safe_cast_size_t_to_int(size, &int_size);
+  TEN_ASSERT(rc, "Size overflow detected.");
+
+  ten_string_init_formatted(&self->str, "%.*s", int_size, str);
 
   return (ten_listnode_t *)self;
 }

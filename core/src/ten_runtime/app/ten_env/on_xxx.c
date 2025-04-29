@@ -114,7 +114,8 @@ static void ten_app_on_endpoint_protocol_created(ten_env_t *ten_env,
 
   if (!ten_app_endpoint_listen(self)) {
     TEN_LOGW("[%s] Failed to listen on endpoint protocol, %s.",
-             ten_string_get_raw_str(&self->uri));
+             ten_app_get_uri(self), ten_string_get_raw_str(&self->uri));
+
     ten_app_close(self, NULL);
     return;
   }

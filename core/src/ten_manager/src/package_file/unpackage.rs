@@ -18,7 +18,7 @@ use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
 use crate::constants::BUF_WRITER_BUF_SIZE;
-use crate::file_type::detect_file_type;
+use crate::fs::file_type::detect_file_type;
 use crate::install::installed_paths::{sort_installed_paths, InstalledPaths};
 use crate::install::template::{
     extract_and_process_tar_gz_template_part,
@@ -315,12 +315,12 @@ pub fn extract_and_process_tpkg_file(
     template_ctx: Option<&serde_json::Value>,
 ) -> Result<InstalledPaths> {
     let installed_paths = match detect_file_type(tpkg_path)? {
-        crate::file_type::FileType::TarGz => extract_and_process_tar_gz(
+        crate::fs::file_type::FileType::TarGz => extract_and_process_tar_gz(
             &tpkg_path.to_string_lossy(),
             output_dir,
             template_ctx,
         )?,
-        crate::file_type::FileType::Zip => extract_and_process_zip(
+        crate::fs::file_type::FileType::Zip => extract_and_process_zip(
             &tpkg_path.to_string_lossy(),
             output_dir,
             template_ctx,

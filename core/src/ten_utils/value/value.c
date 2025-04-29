@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "include_internal/ten_utils/value/value.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/container/list_node.h"
@@ -386,7 +387,12 @@ bool ten_value_init_string_with_size(ten_value_t *self, const char *str,
   TEN_ASSERT(str, "Invalid argument.");
 
   ten_value_init_string(self);
-  ten_string_set_formatted(&self->content.string, "%.*s", len, str);
+
+  int int_len = 0;
+  bool rc = safe_cast_size_t_to_int(len, &int_len);
+  TEN_ASSERT(rc, "Length overflow detected.");
+
+  ten_string_set_formatted(&self->content.string, "%.*s", int_len, str);
 
   return true;
 }
