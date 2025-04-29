@@ -136,7 +136,7 @@ async fn watch_file_task(
     mut stop_rx: oneshot::Receiver<()>,
     options: FileWatchOptions,
 ) {
-    // Open the file, position it to the current EOF.
+    // Open the file.
     let mut file = match File::open(&path) {
         Ok(f) => f,
         Err(e) => {
