@@ -206,7 +206,9 @@
       "additionalProperties": false,
       "required": [
         "type",
-        "name"
+        "name",
+        "addon",
+        "extension_group"
       ],
       "properties": {
         "type": {

@@ -20,7 +20,7 @@ mod tests {
             "test_extension",
             "test_addon",
             &Some("http://test-app-uri.com".to_string()),
-            &None,
+            "custom_group",
             &None,
         );
         eprintln!("result: {:?}", result);
@@ -39,7 +39,7 @@ mod tests {
             "test_extension2",
             "test_addon2",
             &Some("http://test-app-uri.com".to_string()), // Same app URI.
-            &Some("custom_group".to_string()),
+            "custom_group",
             &None,
         );
         assert!(result.is_ok());
@@ -57,7 +57,7 @@ mod tests {
             "test_extension3",
             "test_addon3",
             &Some(localhost().to_string()), // This is not allowed.
-            &None,
+            "custom_group",
             &None,
         );
         assert!(result.is_err());
@@ -71,7 +71,7 @@ mod tests {
             "test_extension4",
             "test_addon4",
             &Some("http://different-uri.com".to_string()), // Different URI.
-            &None,
+            "custom_group",
             &None,
         );
         // This should be ok as mixed URIs are valid.
@@ -86,7 +86,7 @@ mod tests {
             "test_extension4",
             "test_addon4",
             &Some("http://different-uri.com".to_string()),
-            &None,
+            "custom_group",
             &None,
         );
         // This should fail because the node already exists.
@@ -102,7 +102,7 @@ mod tests {
             "test_extension5",
             "test_addon5",
             &None, // No app URI.
-            &None,
+            "custom_group",
             &None,
         );
         assert!(result.is_err());

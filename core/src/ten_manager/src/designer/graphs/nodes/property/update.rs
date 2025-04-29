@@ -33,7 +33,7 @@ pub struct UpdateGraphNodePropertyRequestPayload {
 
     pub name: String,
     pub addon: String,
-    pub extension_group: Option<String>,
+    pub extension_group: String,
     pub app: Option<String>,
 
     pub property: Option<serde_json::Value>,
@@ -52,7 +52,8 @@ fn update_node_property_in_graph(
     let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
         node.type_and_name.name == request_payload.name
             && node.addon == request_payload.addon
-            && node.extension_group == request_payload.extension_group
+            && node.extension_group
+                == Some(request_payload.extension_group.clone())
             && node.app == request_payload.app
     });
 

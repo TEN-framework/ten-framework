@@ -20,7 +20,7 @@ mod tests {
         name: &str,
         addon: &str,
         app: Option<&str>,
-        extension_group: Option<&str>,
+        extension_group: &str,
     ) -> GraphNode {
         GraphNode {
             type_and_name: PkgTypeAndName {
@@ -28,7 +28,7 @@ mod tests {
                 name: name.to_string(),
             },
             addon: addon.to_string(),
-            extension_group: extension_group.map(|s| s.to_string()),
+            extension_group: Some(extension_group.to_string()),
             app: app.map(|s| s.to_string()),
             property: None,
         }
@@ -65,24 +65,9 @@ mod tests {
         // Create a graph with multiple nodes and connections.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "addon1",
-                    Some("app1"),
-                    Some("group1"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "addon2",
-                    Some("app1"),
-                    Some("group2"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "addon3",
-                    Some("app2"),
-                    Some("group3"),
-                ),
+                create_test_node("ext1", "addon1", Some("app1"), "group1"),
+                create_test_node("ext2", "addon2", Some("app1"), "group2"),
+                create_test_node("ext3", "addon3", Some("app2"), "group3"),
             ],
             connections: Some(vec![
                 create_test_connection(
@@ -115,7 +100,7 @@ mod tests {
             "non_existent".to_string(),
             "addon1".to_string(),
             Some("app1".to_string()),
-            None,
+            "custom_group",
         );
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 3);
@@ -128,7 +113,7 @@ mod tests {
             "ext1".to_string(),
             "addon1".to_string(),
             Some("app1".to_string()),
-            Some("group1".to_string()),
+            "group1",
         );
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 2);
@@ -152,7 +137,7 @@ mod tests {
             "ext3".to_string(),
             "addon3".to_string(),
             Some("app2".to_string()),
-            Some("group3".to_string()),
+            "group3",
         );
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
@@ -170,7 +155,7 @@ mod tests {
             "ext2".to_string(),
             "addon2".to_string(),
             Some("app1".to_string()),
-            Some("group2".to_string()),
+            "group2",
         );
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 0);
@@ -182,8 +167,8 @@ mod tests {
         // Create a graph with multiple message types in connections.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node("ext1", "addon1", Some("app1"), None),
-                create_test_node("ext2", "addon2", Some("app1"), None),
+                create_test_node("ext1", "addon1", Some("app1"), "a"),
+                create_test_node("ext2", "addon2", Some("app1"), "a"),
             ],
             connections: Some(vec![]),
         };
@@ -237,7 +222,7 @@ mod tests {
             "ext2".to_string(),
             "addon2".to_string(),
             Some("app1".to_string()),
-            None,
+            "a",
         );
 
         assert!(result.is_ok());

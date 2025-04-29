@@ -178,7 +178,7 @@ pub fn update_graph_node_in_property_all_fields(
     graph_info: &mut GraphInfo,
     node_name: &str,
     addon_name: &str,
-    extension_group_name: &Option<String>,
+    extension_group_name: &str,
     app_uri: &Option<String>,
     property: &Option<serde_json::Value>,
     action: GraphNodeUpdateAction,
@@ -193,7 +193,7 @@ pub fn update_graph_node_in_property_all_fields(
                 name: node_name.to_string(),
             },
             addon: addon_name.to_string(),
-            extension_group: extension_group_name.clone(),
+            extension_group: Some(extension_group_name.to_string()),
             app: app_uri.clone(),
             property: property.clone(),
         };

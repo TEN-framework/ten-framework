@@ -33,7 +33,7 @@ pub struct DeleteGraphNodeRequestPayload {
 
     pub name: String,
     pub addon: String,
-    pub extension_group: Option<String>,
+    pub extension_group: String,
     pub app: Option<String>,
 }
 
@@ -47,7 +47,7 @@ pub fn graph_delete_extension_node(
     pkg_name: String,
     addon: String,
     app: Option<String>,
-    extension_group: Option<String>,
+    extension_group: &str,
 ) -> Result<()> {
     // Find and remove the matching node.
     let original_nodes_len = graph.nodes.len();
@@ -56,7 +56,7 @@ pub fn graph_delete_extension_node(
             && node.type_and_name.name == pkg_name
             && node.addon == addon
             && node.app == app
-            && node.extension_group == extension_group)
+            && node.extension_group == Some(extension_group.to_string()))
     });
 
     // If no node was removed, return early.
@@ -167,7 +167,7 @@ pub async fn delete_graph_node_endpoint(
         request_payload.name.clone(),
         request_payload.addon.clone(),
         request_payload.app.clone(),
-        request_payload.extension_group.clone(),
+        &request_payload.extension_group,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
@@ -183,7 +183,7 @@ pub async fn delete_graph_node_endpoint(
         graph_info,
         &request_payload.name,
         &request_payload.addon,
-        request_payload.extension_group.as_deref(),
+        &request_payload.extension_group,
         request_payload.app.as_deref(),
     );
 
@@ -202,7 +202,7 @@ fn update_property_json_if_needed(
     graph_info: &mut GraphInfo,
     node_name: &str,
     addon: &str,
-    extension_group: Option<&str>,
+    extension_group: &str,
     app: Option<&str>,
 ) {
     // Try to find the belonging package info
@@ -222,7 +222,7 @@ fn update_property_json_if_needed(
                 name: node_name.to_string(),
             },
             addon: addon.to_string(),
-            extension_group: extension_group.map(String::from),
+            extension_group: Some(extension_group.to_string()),
             app: app.map(String::from),
             property: None,
         };

@@ -99,7 +99,21 @@ pub async fn replace_graph_node_endpoint(
 
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
-    let extension_group = graph_node.extension_group.clone();
+
+    let extension_group =
+        if let Some(extension_group) = &graph_node.extension_group {
+            extension_group.to_string()
+        } else {
+            let error_response = ErrorResponse {
+                status: Status::Fail,
+                message: "The replacing extension node does not belong to any \
+                          extension group"
+                    .to_string(),
+                error: None,
+            };
+            return Ok(HttpResponse::BadRequest().json(error_response));
+        };
+
     graph_node.addon = request_payload.addon.clone();
     graph_node.property = request_payload.property.clone();
 

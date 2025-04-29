@@ -45,8 +45,14 @@ pub struct GetTemplateRequestPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct GetTemplateResponsePayload {
+    pub pkg_name: String,
+    pub pkg_version: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetTemplateResponseData {
-    pub template_name: Vec<String>,
+    pub templates: Vec<GetTemplateResponsePayload>,
 }
 
 pub async fn get_template_endpoint(
@@ -85,13 +91,16 @@ pub async fn get_template_endpoint(
     match result {
         Ok(packages) => {
             // Extract the package names from the PkgRegistryInfo structs.
-            let template_names: Vec<String> = packages
+            let templates: Vec<GetTemplateResponsePayload> = packages
                 .iter()
-                .map(|pkg| pkg.basic_info.type_and_name.name.clone())
+                .map(|pkg| GetTemplateResponsePayload {
+                    pkg_name: pkg.basic_info.type_and_name.name.clone(),
+                    pkg_version: pkg.basic_info.version.to_string(),
+                })
                 .collect();
 
             // Handle case where no packages were found.
-            if template_names.is_empty() {
+            if templates.is_empty() {
                 let error_message = format!(
                     "Unsupported template combination: pkg_type={}, \
                      language={}",
@@ -109,7 +118,7 @@ pub async fn get_template_endpoint(
 
             let response = ApiResponse {
                 status: Status::Ok,
-                data: GetTemplateResponseData { template_name: template_names },
+                data: GetTemplateResponseData { templates },
                 meta: None,
             };
 

@@ -12,23 +12,34 @@ use ten_rust::{
 };
 
 /// Checks if a node exists in the graph.
-fn check_node_exist(
+fn check_extension_node_exist(
     graph: &Graph,
     app: &Option<String>,
     extension: &str,
+    extension_group: &str,
 ) -> Result<()> {
-    // Validate that source node exists.
-    let src_node_exists = graph
-        .nodes
-        .iter()
-        .any(|node| node.type_and_name.name == extension && node.app == *app);
+    // Validate that extension node exists.
+    let node_exists = graph.nodes.iter().any(|node| {
+        node.type_and_name.name == extension
+            && node.app == *app
+            && node.extension_group == Some(extension_group.to_string())
+    });
 
-    if src_node_exists {
+    if node_exists {
+        if let Some(app) = app {
+            return Err(anyhow::anyhow!(
+                "Node with app '{}' and extension group '{}' and extension \
+                 '{}' already exists in the graph",
+                app,
+                extension_group,
+                extension
+            ));
+        }
         return Err(anyhow::anyhow!(
-            "Node with extension '{}' and app '{:?}' already exists in the \
-             graph",
-            extension,
-            app
+            "Node with extension group '{}' and extension '{}' already exists \
+             in the graph",
+            extension_group,
+            extension
         ));
     }
 
@@ -40,10 +51,10 @@ pub fn graph_add_extension_node(
     pkg_name: &str,
     addon: &str,
     app: &Option<String>,
-    extension_group: &Option<String>,
+    extension_group: &str,
     property: &Option<serde_json::Value>,
 ) -> Result<()> {
-    check_node_exist(graph, app, pkg_name)?;
+    check_extension_node_exist(graph, app, pkg_name, extension_group)?;
 
     // Store the original state in case validation fails.
     let original_graph = graph.clone();
@@ -55,7 +66,7 @@ pub fn graph_add_extension_node(
             name: pkg_name.to_string(),
         },
         addon: addon.to_string(),
-        extension_group: extension_group.clone(),
+        extension_group: Some(extension_group.to_string()),
         app: app.clone(),
         property: property.clone(),
     };

@@ -130,7 +130,7 @@ mod tests {
             graph_id,
             name: "extension_1".to_string(),
             addon: "extension_addon_1".to_string(),
-            extension_group: Some("extension_group_1".to_string()),
+            extension_group: "extension_group_1".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": "updated_value"
@@ -223,7 +223,7 @@ mod tests {
             graph_id: Uuid::new_v4(),
             name: "node1".to_string(),
             addon: "addon1".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": "updated_value"
@@ -300,7 +300,7 @@ mod tests {
             graph_id,
             name: "non_existent_node".to_string(),
             addon: "addon1".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": "updated_value"
@@ -421,7 +421,7 @@ mod tests {
             graph_id,
             name: "extension_1".to_string(),
             addon: "extension_addon_1".to_string(),
-            extension_group: Some("extension_group_1".to_string()),
+            extension_group: "extension_group_1".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": "updated_value"
@@ -563,7 +563,7 @@ mod tests {
             graph_id,
             name: "extension_1".to_string(),
             addon: "extension_addon_1".to_string(),
-            extension_group: Some("extension_group_1".to_string()),
+            extension_group: "extension_group_1".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": 32
@@ -698,7 +698,7 @@ mod tests {
             graph_id,
             name: "extension_1".to_string(),
             addon: "extension_addon_1".to_string(),
-            extension_group: Some("extension_group_1".to_string()),
+            extension_group: "extension_group_1".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": {
@@ -842,7 +842,7 @@ mod tests {
             graph_id,
             name: "extension_1".to_string(),
             addon: "extension_addon_1".to_string(),
-            extension_group: Some("extension_group_1".to_string()),
+            extension_group: "extension_group_1".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(json!({
                 "key": {

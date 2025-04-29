@@ -33,7 +33,7 @@ pub struct AddGraphNodeRequestPayload {
 
     pub name: String,
     pub addon: String,
-    pub extension_group: Option<String>,
+    pub extension_group: String,
     pub app: Option<String>,
 
     pub property: Option<serde_json::Value>,

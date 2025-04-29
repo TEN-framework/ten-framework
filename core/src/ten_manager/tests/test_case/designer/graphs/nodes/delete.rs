@@ -76,7 +76,7 @@ mod tests {
             graph_id: Uuid::new_v4(),
             name: "test_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://test-app-uri.com".to_string()),
         };
 
@@ -151,7 +151,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "non_existent_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
         };
 
@@ -257,7 +257,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_delete_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(serde_json::json!({
                 "test_property": "test_value_for_delete"
@@ -308,7 +308,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_delete_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
         };
 

@@ -74,7 +74,7 @@ mod tests {
             graph_id: Uuid::new_v4(),
             name: "test_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://test-app-uri.com".to_string()),
             property: None,
         };
@@ -147,7 +147,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some(localhost().to_string()),
             property: None,
         };
@@ -225,7 +225,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: None,
         };
@@ -303,7 +303,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: None,
             property: None,
         };
@@ -413,7 +413,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "new_node".to_string(),
             addon: "new_addon".to_string(),
-            extension_group: None,
+            extension_group: "b".to_string(),
             app: None,
             property: None,
         };
@@ -525,7 +525,6 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        // First add a node, then delete it.
         // Setup the add endpoint.
         let app_add = test::init_service(
             App::new().app_data(web::Data::new(designer_state.clone())).route(
@@ -540,7 +539,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_delete_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(serde_json::json!({
                 "test_property": "test_value_for_delete"
@@ -673,7 +672,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "test_delete_node".to_string(),
             addon: "test_addon".to_string(),
-            extension_group: None,
+            extension_group: "custom_group".to_string(),
             app: Some("http://example.com:8000".to_string()),
             property: Some(serde_json::json!({
                 "test_property": 13
