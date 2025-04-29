@@ -5,14 +5,13 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::fs::{File, Metadata};
-use std::io::{self, Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
-use tokio::time;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
@@ -78,6 +77,26 @@ impl Default for FileWatchOptions {
     }
 }
 
+/// Platform‐specific metadata extensions
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
+
+/// Compare two metadata to determine if they point to the same file (used to
+/// detect rotation).
+fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
+    #[cfg(unix)]
+    {
+        a.dev() == b.dev() && a.ino() == b.ino()
+    }
+    #[cfg(windows)]
+    {
+        a.volume_serial_number() == b.volume_serial_number()
+            && a.file_index() == b.file_index()
+    }
+}
+
 /// Watch a file for changes and stream its content.
 ///
 /// Returns a FileContentStream that can be used to read the content of the file
@@ -110,245 +129,119 @@ pub async fn watch_file<P: AsRef<Path>>(
     Ok(FileContentStream::new(content_rx, stop_tx))
 }
 
+/// Actual file watch task running in the background.
 async fn watch_file_task(
     path: PathBuf,
     content_tx: Sender<Result<Vec<u8>>>,
     mut stop_rx: oneshot::Receiver<()>,
     options: FileWatchOptions,
 ) {
-    let mut last_position: u64 = 0;
-    let mut last_metadata: Option<Metadata> = None;
-    let mut eof_reached = false;
-    let mut eof_time: Option<Instant> = None;
-    let mut last_file_size: u64 = 0;
-    let mut file_was_deleted = false;
-
-    'outer: loop {
-        // Check if we should stop.
-        if stop_rx.try_recv().is_ok() {
-            break;
+    // Open the file, position it to the current EOF.
+    let mut file = match File::open(&path) {
+        Ok(f) => f,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+            return;
         }
+    };
+    let mut last_meta = match file.metadata() {
+        Ok(m) => m,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+            return;
+        }
+    };
 
-        // Check if file exists.
-        if !path.exists() {
-            file_was_deleted = true;
-
-            // Wait a bit and retry, file might reappear after rotation.
-            match time::timeout(options.check_interval, &mut stop_rx).await {
-                Ok(Ok(())) => break, // Stop received during wait.
-                Ok(Err(_)) => {}     // Timeout elapsed normally.
-                Err(_) => {}         // Timeout elapsed.
+    // Read all existing content when the file is first opened and send it.
+    if let Err(e) = file.seek(SeekFrom::Start(0)) {
+        let _ = content_tx.send(Err(anyhow!(e))).await;
+        return;
+    }
+    let mut init_buf = Vec::new();
+    match file.read_to_end(&mut init_buf) {
+        Ok(n) => {
+            if n > 0 {
+                let _ = content_tx.send(Ok(init_buf)).await;
             }
-            continue;
         }
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow!(e))).await;
+            return;
+        }
+    }
 
-        // Try to open the file.
-        let file_result = File::open(&path);
-        match file_result {
-            Ok(mut file) => {
-                // Check if the file has been rotated by comparing metadata.
-                let metadata = match file.metadata() {
-                    Ok(meta) => meta,
-                    Err(e) => {
-                        if let Err(e) = content_tx
-                            .send(Err(anyhow!(
-                                "Failed to get file metadata: {}",
-                                e
-                            )))
-                            .await
-                        {
-                            eprintln!("Failed to send error: {}", e);
+    // Reset last_pos to the current EOF.
+    let mut last_pos = match file.seek(SeekFrom::End(0)) {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = content_tx.send(Err(anyhow!(e))).await;
+            return;
+        }
+    };
+
+    let mut last_activity = Instant::now();
+
+    loop {
+        // Wait for stop or the next check interval.
+        tokio::select! {
+            _ = &mut stop_rx => break,
+            _ = tokio::time::sleep(options.check_interval) => {
+                // Check if the file has been rotated or truncated.
+                match std::fs::metadata(&path) {
+                    Ok(meta) => {
+                        if !is_same_file(&last_meta, &meta) || meta.len() < last_pos {
+                            // The file has been rotated or truncated, reopen it.
+                            if let Ok(mut newf) = File::open(&path) {
+                                let _ = newf.seek(SeekFrom::Start(0));
+                                file = newf;
+                                last_meta = meta.clone();
+                                last_pos = 0;
+                            } else {
+                                // Cannot open the new file, wait for the next round.
+                                continue;
+                            }
                         }
-                        break;
                     }
+                    Err(_) => {
+                        // Cannot get metadata, skip this round.
+                        continue;
+                    }
+                }
+
+                // If there is new content, read and send it.
+                let curr_len = match file.metadata() {
+                    Ok(m) => m.len(),
+                    Err(_) => continue,
                 };
 
-                let current_file_size = metadata.len();
-                let mut file_rotated = false;
-
-                // Detect rotation through different means.
-                if let Some(last_meta) = &last_metadata {
-                    file_rotated = !same_file_metadata(last_meta, &metadata);
-                }
-
-                // If the file was previously deleted and now exists again,
-                // consider it rotated.
-                if file_was_deleted {
-                    file_rotated = true;
-                    file_was_deleted = false; // Reset the flag.
-                }
-
-                // Update metadata for next comparison.
-                last_metadata = Some(metadata);
-
-                // Handle different file state scenarios.
-                if file_rotated {
-                    // File was rotated, reset position tracking.
-                    last_position = 0;
-                    eof_reached = false;
-                    eof_time = None;
-
-                    // No need to update last_file_size yet, it will be updated
-                    // by last_file_size = current_file_size below.
-                } else if current_file_size < last_file_size {
-                    // File was truncated, reset position tracking.
-                    last_position = 0;
-                    eof_reached = false;
-                    eof_time = None;
-
-                    // No need to update last_file_size yet, it will be updated
-                    // by last_file_size = current_file_size below.
-                } else {
-                    // Platform-specific handling for detecting new content.
-                    #[cfg(windows)]
-                    if current_file_size > last_file_size {
-                        // Windows: Use file size to determine if there's new
-                        // data.
-                        last_position = last_file_size;
-                        eof_reached = false;
-                        eof_time = None;
-                    }
-                }
-
-                // Update last known file size.
-                last_file_size = current_file_size;
-
-                // Seek to the last position.
-                if let Err(e) = file.seek(SeekFrom::Start(last_position)) {
-                    if let Err(e) = content_tx
-                        .send(Err(anyhow!("Failed to seek in file: {}", e)))
-                        .await
-                    {
-                        eprintln!("Failed to send error: {}", e);
-                    }
-                    break;
-                }
-
-                // Read new content.
-                let mut buffer = vec![0; options.buffer_size];
-
-                // Continuously read until we reach EOF or error.
-                loop {
-                    // Check if we should stop.
-                    if stop_rx.try_recv().is_ok() {
-                        break 'outer;
+                if curr_len > last_pos {
+                    // Read the new part.
+                    if let Err(e) = file.seek(SeekFrom::Start(last_pos)) {
+                        let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                        break;
                     }
 
-                    match file.read(&mut buffer) {
-                        Ok(0) => {
-                            // EOF reached.
-                            if !eof_reached {
-                                eof_reached = true;
-                                eof_time = Some(Instant::now());
-                            }
-
-                            // If we've been at EOF for too long, exit.
-                            if let Some(time) = eof_time {
-                                if time.elapsed() > options.timeout {
-                                    // Send EOF marker and exit.
-                                    break 'outer;
-                                }
-                            }
-
-                            // Wait a bit before checking again.
-                            match time::timeout(
-                                options.check_interval,
-                                &mut stop_rx,
-                            )
-                            .await
-                            {
-                                Ok(Ok(())) => break 'outer, /* Stop received during wait */
-                                Ok(Err(_)) => {} // Timeout elapsed normally
-                                Err(_) => {}     // Timeout elapsed
-                            }
-
-                            break; // Break inner loop to reopen the file.
+                    let mut reader = BufReader::with_capacity(options.buffer_size, &file);
+                    let mut buf = Vec::with_capacity(options.buffer_size);
+                    match reader.read_until(0, &mut buf) {
+                        Ok(n) if n > 0 => {
+                            last_pos += n as u64;
+                            let _ = content_tx.send(Ok(buf)).await;
+                            last_activity = Instant::now();
                         }
-                        Ok(n) => {
-                            // Reset EOF flags since we got new data.
-                            eof_reached = false;
-                            eof_time = None;
-
-                            // Send the data we read.
-                            let data = buffer[..n].to_vec();
-                            last_position += n as u64;
-
-                            // Keep file size in sync with position.
-                            last_file_size = last_position;
-
-                            if let Err(e) = content_tx.send(Ok(data)).await {
-                                eprintln!("Failed to send data: {}", e);
-                                break 'outer;
-                            }
-                        }
+                        Ok(_) => {}
                         Err(e) => {
-                            // Handle other read errors.
-                            if e.kind() != io::ErrorKind::Interrupted {
-                                if let Err(e) = content_tx
-                                    .send(Err(anyhow!(
-                                        "Failed to read from file: {}",
-                                        e
-                                    )))
-                                    .await
-                                {
-                                    eprintln!("Failed to send error: {}", e);
-                                }
-                                break 'outer;
-                            }
+                            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            break;
                         }
                     }
-                }
-            }
-            Err(e) => {
-                // If the file doesn't exist but did before, it might have been
-                // deleted during rotation.
-                if !path.exists() {
-                    file_was_deleted = true;
-
-                    // Wait a bit and retry, file might reappear after rotation.
-                    match time::timeout(options.check_interval, &mut stop_rx)
-                        .await
-                    {
-                        Ok(Ok(())) => break, // Stop received during wait.
-                        Ok(Err(_)) => {}     // Timeout elapsed normally.
-                        Err(_) => {}         // Timeout elapsed.
-                    }
                 } else {
-                    // It exists but we can't open it for some reason.
-                    if let Err(e) = content_tx
-                        .send(Err(anyhow!("Failed to open file: {}", e)))
-                        .await
-                    {
-                        eprintln!("Failed to send error: {}", e);
+                    // Reached EOF, check if the timeout has been reached.
+                    if Instant::now().duration_since(last_activity) > options.timeout {
+                        break;
                     }
-                    break;
                 }
             }
         }
-    }
-}
-
-// Helper function to compare file metadata.
-fn same_file_metadata(a: &Metadata, b: &Metadata) -> bool {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        a.dev() == b.dev() && a.ino() == b.ino()
-    }
-
-    #[cfg(windows)]
-    {
-        // On Windows, we can't reliably determine if two file handles point to
-        // the same file. Best approximation is comparing file sizes and
-        // modification times.
-        use std::os::windows::fs::MetadataExt;
-        a.file_size() == b.file_size()
-            && a.last_write_time() == b.last_write_time()
-    }
-
-    #[cfg(not(any(unix, windows)))]
-    {
-        // For other platforms, just compare size and modification time.
-        a.len() == b.len() && a.modified().ok() == b.modified().ok()
     }
 }
