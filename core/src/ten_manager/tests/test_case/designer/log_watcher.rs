@@ -52,19 +52,15 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Wait for the info message about starting the watcher
     let mut received_start_msg = false;
-    loop {
-        if let Some(msg) = read.next().await {
-            let msg = msg.unwrap();
-            if msg.is_text() {
-                let text = msg.to_text().unwrap();
-                println!("Received: {}", text);
-                if text.contains("Started watching log file") {
-                    received_start_msg = true;
-                    break;
-                }
+    while let Some(msg) = read.next().await {
+        let msg = msg.unwrap();
+        if msg.is_text() {
+            let text = msg.to_text().unwrap();
+            println!("Received: {}", text);
+            if text.contains("Started watching log file") {
+                received_start_msg = true;
+                break;
             }
-        } else {
-            break;
         }
     }
     assert!(received_start_msg, "Didn't receive start message");
@@ -75,20 +71,16 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Check if we receive the content
     let mut received_content = false;
-    loop {
-        if let Some(msg) = read.next().await {
-            let msg = msg.unwrap();
-            if msg.is_binary() {
-                let binary = msg.into_data();
-                let content = String::from_utf8_lossy(&binary);
-                println!("Received binary: {}", content);
-                if content.contains(test_content) {
-                    received_content = true;
-                    break;
-                }
+    while let Some(msg) = read.next().await {
+        let msg = msg.unwrap();
+        if msg.is_binary() {
+            let binary = msg.into_data();
+            let content = String::from_utf8_lossy(&binary);
+            println!("Received binary: {}", content);
+            if content.contains(test_content) {
+                received_content = true;
+                break;
             }
-        } else {
-            break;
         }
     }
     assert!(received_content, "Didn't receive log content");
@@ -100,22 +92,17 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Wait for connection to close or stop confirmation
     let mut received_stop = false;
-    loop {
-        let msg =
-            tokio::time::timeout(Duration::from_secs(2), read.next()).await;
-        if let Ok(Some(msg)) = msg {
-            let msg = msg.unwrap();
-            if msg.is_text() {
-                let text = msg.to_text().unwrap();
-                println!("Received: {}", text);
-                if text.contains("Stopped watching log file") {
-                    received_stop = true;
-                    break;
-                }
+    while let Ok(Some(msg)) =
+        tokio::time::timeout(Duration::from_secs(2), read.next()).await
+    {
+        let msg = msg.unwrap();
+        if msg.is_text() {
+            let text = msg.to_text().unwrap();
+            println!("Received: {}", text);
+            if text.contains("Stopped watching log file") {
+                received_stop = true;
+                break;
             }
-        } else {
-            // Timeout or stream closed
-            break;
         }
     }
     assert!(received_stop, "Didn't receive stop confirmation");
