@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use actix::fut;
@@ -24,6 +23,12 @@ use crate::pkg_info::property::get_log_file_path;
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
 pub struct StopWatching;
+
+#[derive(Message, Debug, Serialize, Deserialize)]
+#[rtype(result = "()")]
+pub struct SetAppBaseDir {
+    pub app_base_dir: String,
+}
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
@@ -47,13 +52,13 @@ pub struct StoreWatcher(pub FileContentStream);
 
 // WebSocket actor for log file watching.
 struct WsLogWatcher {
-    app_base_dir: String,
+    app_base_dir: Option<String>,
     file_watcher: Option<Arc<Mutex<FileContentStream>>>,
 }
 
 impl WsLogWatcher {
-    fn new(app_base_dir: String) -> Self {
-        Self { app_base_dir, file_watcher: None }
+    fn new() -> Self {
+        Self { app_base_dir: None, file_watcher: None }
     }
 
     fn stop_watching(&mut self) {
@@ -73,8 +78,36 @@ impl Actor for WsLogWatcher {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        // Send a welcome message that we're ready to receive the app_base_dir.
+        ctx.text(
+            json!({
+                "type": "ready",
+                "message": "Ready to receive app_base_dir"
+            })
+            .to_string(),
+        );
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        // Just set file_watcher to None to release our reference to it.
+        // The tokio runtime will clean up any remaining tasks.
+        self.file_watcher = None;
+    }
+}
+
+impl Handler<SetAppBaseDir> for WsLogWatcher {
+    type Result = ();
+
+    fn handle(
+        &mut self,
+        msg: SetAppBaseDir,
+        ctx: &mut Self::Context,
+    ) -> Self::Result {
+        // Store the app_base_dir.
+        self.app_base_dir = Some(msg.app_base_dir.clone());
+
         // Clone what we need for the async task.
-        let app_base_dir = self.app_base_dir.clone();
+        let app_base_dir = msg.app_base_dir;
         let addr = ctx.address();
 
         // Spawn a task to handle the async file watching.
@@ -116,12 +149,6 @@ impl Actor for WsLogWatcher {
                 }
             }
         }));
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        // Just set file_watcher to None to release our reference to it.
-        // The tokio runtime will clean up any remaining tasks.
-        self.file_watcher = None;
     }
 }
 
@@ -279,6 +306,42 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
                                     self, stop_msg, ctx,
                                 );
                             }
+                            "set_app_base_dir" => {
+                                if let Some(app_base_dir) = json
+                                    .get("app_base_dir")
+                                    .and_then(|v| v.as_str())
+                                {
+                                    // Check if we already have an app_base_dir.
+                                    if self.app_base_dir.is_some() {
+                                        ctx.text(
+                                            json!({
+                                                "type": "error",
+                                                "message": "App base directory already set"
+                                            })
+                                            .to_string(),
+                                        );
+                                    } else {
+                                        // Set the app base directory and start
+                                        // watching.
+                                        let set_app_base_dir_msg =
+                                            SetAppBaseDir {
+                                                app_base_dir: app_base_dir
+                                                    .to_string(),
+                                            };
+                                        <Self as Handler<SetAppBaseDir>>::handle(
+                                            self, set_app_base_dir_msg, ctx,
+                                        );
+                                    }
+                                } else {
+                                    ctx.text(
+                                        json!({
+                                            "type": "error",
+                                            "message": "Missing app_base_dir field"
+                                        })
+                                        .to_string(),
+                                    );
+                                }
+                            }
                             _ => {
                                 // Unknown message type.
                                 ctx.text(
@@ -314,19 +377,6 @@ pub async fn log_watcher_endpoint(
     stream: web::Payload,
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<HttpResponse, Error> {
-    // Extract 'app_base_dir' from query parameters.
-    let query = req.query_string();
-    let params: HashMap<_, _> =
-        url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
-
-    let app_base_dir = match params.get("app_base_dir") {
-        Some(dir) => dir.clone(),
-        None => {
-            return Ok(HttpResponse::BadRequest()
-                .body("Missing app_base_dir parameter"));
-        }
-    };
-
     // Start the WebSocket connection.
-    ws::start(WsLogWatcher::new(app_base_dir), &req, stream)
+    ws::start(WsLogWatcher::new(), &req, stream)
 }

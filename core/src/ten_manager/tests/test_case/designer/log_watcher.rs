@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
+use serde_json::json;
 use tempfile::tempdir;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
@@ -39,16 +40,35 @@ async fn test_ws_log_watcher_endpoint() {
     println!("Server started at: {}", server_addr);
 
     // Connect WebSocket client to the server with the app_base_dir parameter.
-    let ws_url = format!(
-        "ws://{}/ws/log-watcher?app_base_dir={}",
-        server_addr,
-        app_dir.to_string_lossy()
-    );
+    let ws_url = format!("ws://{}/ws/log-watcher", server_addr);
     let (ws_stream, _) = connect_async(ws_url).await.unwrap();
     println!("WebSocket connection established");
 
     // Split the WebSocket stream.
     let (mut write, mut read) = ws_stream.split();
+
+    // Wait for the "ready" message from the server.
+    let mut ready_received = false;
+    while let Some(msg) = read.next().await {
+        let msg = msg.unwrap();
+        if msg.is_text() {
+            let text = msg.to_text().unwrap();
+            println!("Received: {}", text);
+            if text.contains("Ready to receive app_base_dir") {
+                ready_received = true;
+                break;
+            }
+        }
+    }
+    assert!(ready_received, "Didn't receive ready message");
+
+    // Send the app_base_dir to the server.
+    let app_base_dir_msg = json!({
+        "type": "set_app_base_dir",
+        "app_base_dir": app_dir.to_string_lossy().to_string()
+    });
+    write.send(Message::Text(app_base_dir_msg.to_string())).await.unwrap();
+    println!("Sent app_base_dir message");
 
     // Wait for the info message about starting the watcher.
     let mut received_start_msg = false;
