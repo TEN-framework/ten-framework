@@ -26,26 +26,41 @@ impl Graph {
         // Iterate through all nodes in the graph to find extensions
         for (node_idx, node) in self.nodes.iter().enumerate() {
             if node.type_and_name.pkg_type == PkgType::Extension {
+                let extension_group =
+                    if let Some(extension_group) = &node.extension_group {
+                        extension_group
+                    } else {
+                        return Err(anyhow::anyhow!(
+                            "Extension group is not set for extension node \
+                             nodes[{}], addon: {}, name: {}.",
+                            node_idx,
+                            node.addon,
+                            node.type_and_name.name
+                        ));
+                    };
+
                 // Create a unique identifier by combining app URI and extension
-                // name
+                // name.
                 let unique_ext_name = format!(
-                    "{}:{}",
+                    "{}:{}:{}",
                     node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
+                    extension_group,
                     node.type_and_name.name
                 );
 
-                // Check if this extension already exists in our tracking list
+                // Check if this extension already exists in our tracking list.
                 if all_extensions.contains(&unique_ext_name) {
                     return Err(anyhow::anyhow!(
                         "Duplicated extension was found in nodes[{}], addon: \
-                         {}, name: {}.",
+                         {}, name: {}, extension_group: {}.",
                         node_idx,
                         node.addon,
-                        node.type_and_name.name
+                        node.type_and_name.name,
+                        extension_group
                     ));
                 }
 
-                // Add this extension to our tracking list
+                // Add this extension to our tracking list.
                 all_extensions.push(unique_ext_name);
             }
         }
