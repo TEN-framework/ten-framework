@@ -17,6 +17,7 @@ pub mod frontend;
 pub mod graphs;
 pub mod help_text;
 pub mod locale;
+pub mod log_watcher;
 pub mod manifest;
 pub mod messages;
 pub mod metadata;
@@ -115,6 +116,7 @@ pub fn configure_routes(
             .service(web::resource("/ws/builtin-function").route(web::get().to(builtin_function::builtin_function_endpoint)))
             .service(web::resource("/ws/exec").route(web::get().to(exec::exec_endpoint)))
             .service(web::resource("/ws/terminal").route(web::get().to(terminal::ws_terminal_endpoint)))
+            .service(web::resource("/ws/log-watcher").route(web::get().to(log_watcher::log_watcher_endpoint)))
             // Doc endpoints.
             .service(web::resource("/help-text").route(web::post().to(help_text::get_help_text_endpoint)))
             .service(web::resource("/doc-link").route(web::post().to(doc_link::get_doc_link_endpoint)))
