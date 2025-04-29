@@ -20,6 +20,8 @@
 // Because of the existence of this `lib.rs` file, the unit test will be
 // compiled with the `lib.rs`, but not `main.rs`, and some common settings such
 // as the allocator below should be added to the `lib.rs` file.
+#![cfg_attr(target_os = "windows", feature(windows_by_handle))]
+
 pub mod cmd;
 pub mod cmd_line;
 pub mod config;
