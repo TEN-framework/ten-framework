@@ -181,8 +181,8 @@ static void ten_engine_on_all_extension_threads_are_ready(
 
     if (error_occurred) {
       ten_app_t *app = self->app;
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid argument.");
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       // This graph/engine will not be functioning properly, so it will be shut
       // down directly.

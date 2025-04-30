@@ -528,7 +528,9 @@ const char *ten_extension_context_get_extension_group_name(
   ten_extension_info_t *extension_info =
       ten_extension_context_get_extension_info_by_name(self, app_uri, graph_id,
                                                        extension_name);
-  TEN_ASSERT(extension_info, "Should not happen.");
+  if (!extension_info) {
+    return NULL;
+  }
 
   return ten_string_get_raw_str(&extension_info->loc.extension_group_name);
 }

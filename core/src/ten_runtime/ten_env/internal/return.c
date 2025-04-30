@@ -11,7 +11,6 @@
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
-#include "include_internal/ten_runtime/extension_group/msg_interface/common.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -68,20 +67,10 @@ static bool ten_env_return_result_internal(
     break;
   }
 
-  case TEN_ENV_ATTACH_TO_EXTENSION_GROUP: {
-    ten_extension_group_t *extension_group =
-        ten_env_get_attached_extension_group(self);
-    TEN_ASSERT(extension_group &&
-                   ten_extension_group_check_integrity(extension_group, true),
-               "Invalid use of extension_group %p.", extension_group);
-
-    result = ten_extension_group_dispatch_msg(extension_group, cmd_result, err);
-    break;
-  }
-
   case TEN_ENV_ATTACH_TO_ENGINE: {
     ten_engine_t *engine = ten_env_get_attached_engine(self);
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, true),
+    TEN_ASSERT(engine, "Invalid argument.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, true),
                "Invalid use of engine %p.", engine);
 
     result = ten_engine_dispatch_msg(engine, cmd_result);

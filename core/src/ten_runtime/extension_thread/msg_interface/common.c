@@ -219,8 +219,8 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
              "destination remaining in the message's dest.");
 
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(msg);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_extension_group_t *extension_group = self->extension_group;
   TEN_ASSERT(extension_group, "Should not happen.");
@@ -259,7 +259,7 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
         // handle this message.
 
         ten_engine_append_to_in_msgs_queue(engine, msg);
-      } else {
+      } else {  // =-=-=
         if (!ten_string_is_equal(&dest_loc->extension_group_name,
                                  &extension_group->name)) {
           // Find the correct extension thread to handle this message.

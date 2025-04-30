@@ -416,8 +416,8 @@ void ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
 
   ten_list_foreach (ten_msg_get_dest(self), iter) {
     ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-               "Should not happen.");
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     if (ten_string_is_empty(&dest_loc->graph_id)) {
       ten_string_copy(&dest_loc->graph_id, &engine->graph_id);

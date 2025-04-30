@@ -134,8 +134,9 @@ void ten_connection_upgrade_migration_state_to_done(ten_connection_t *self,
   if (engine) {
     // The message is sent to the app, not an engine.
 
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, true),
-               "Access across threads.");
+    TEN_ASSERT(engine, "Invalid argument.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, true),
+               "Invalid use of engine %p.", engine);
 
     // @{
     // Attach to engine.

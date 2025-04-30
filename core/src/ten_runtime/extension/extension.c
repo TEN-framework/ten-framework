@@ -289,8 +289,8 @@ static void ten_extension_determine_out_msg_dest_from_msg(
 
   ten_list_foreach (&dests, iter) {
     ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-               "Should not happen.");
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     bool need_to_clone_msg = need_to_clone_msg_when_sending(msg, iter.index);
 
