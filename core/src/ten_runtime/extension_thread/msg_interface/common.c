@@ -254,16 +254,23 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
 
       ten_app_push_to_in_msgs_queue(app, msg);
     } else {
-      if (ten_string_is_empty(&dest_loc->extension_group_name)) {
+      if (ten_string_is_empty(&dest_loc->extension_name)) {
         // Because the destination is the current engine, so ask the engine to
         // handle this message.
 
         ten_engine_append_to_in_msgs_queue(engine, msg);
-      } else {  // =-=-=
-        if (!ten_string_is_equal(&dest_loc->extension_group_name,
-                                 &extension_group->name)) {
-          // Find the correct extension thread to handle this message.
+      } else {
+        const char *extension_group_name =
+            ten_extension_context_get_extension_group_name(
+                self->extension_context,
+                ten_string_get_raw_str(&dest_loc->app_uri),
+                ten_string_get_raw_str(&dest_loc->graph_id),
+                ten_string_get_raw_str(&dest_loc->extension_name));
+        TEN_ASSERT(extension_group_name, "Should not happen.");
 
+        if (!ten_string_is_equal_c_str(&extension_group->name,
+                                       extension_group_name)) {
+          // Find the correct extension thread to handle this message.
           ten_engine_append_to_in_msgs_queue(engine, msg);
         } else {
           // The message should be handled in the current extension thread, so
