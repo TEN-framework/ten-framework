@@ -67,8 +67,8 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va_llama4",
   },
   {
-    label: "Voice Agent with QWQ-32B Reasoning",
-    value: "qwq_32b",
+    label: "Voice Agent with Qwen3 Reasoning",
+    value: "qwen3",
   },
   {
     label: "Voice Agent with DeepSeek R1 Reasoning",
