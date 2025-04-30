@@ -265,7 +265,7 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
                 self->extension_context,
                 ten_string_get_raw_str(&dest_loc->app_uri),
                 ten_string_get_raw_str(&dest_loc->graph_id),
-                ten_string_get_raw_str(&dest_loc->extension_name));
+                ten_string_get_raw_str(&dest_loc->extension_name), false);
         TEN_ASSERT(extension_group_name, "Should not happen.");
 
         if (!ten_string_is_equal_c_str(&extension_group->name,

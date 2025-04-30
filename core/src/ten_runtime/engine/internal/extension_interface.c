@@ -236,7 +236,7 @@ void ten_engine_find_extension_info_for_all_extensions_of_extension_thread_task(
         ten_extension_context_get_extension_info_by_name(
             extension_context, ten_app_get_uri(extension_context->engine->app),
             ten_engine_get_id(extension_context->engine, true),
-            ten_extension_get_name(extension, false));
+            ten_extension_get_name(extension, false), true);
   }
 
   if (extension_thread->is_close_triggered) {

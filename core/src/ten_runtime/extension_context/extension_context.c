@@ -214,7 +214,7 @@ void ten_extension_context_set_on_closed(
 
 ten_extension_info_t *ten_extension_context_get_extension_info_by_name(
     ten_extension_context_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_name) {
+    const char *extension_name, bool check_thread) {
   TEN_ASSERT(self, "Invalid argument.");
 
   // TEN_NOLINTNEXTLINE(thread-check)
@@ -227,7 +227,7 @@ ten_extension_info_t *ten_extension_context_get_extension_info_by_name(
   // here to use asynchronous operations (i.e., add a task to the
   // extension_context, and add a task to the extension_thread when the result
   // is found) here.
-  TEN_ASSERT(ten_extension_context_check_integrity(self, false),
+  TEN_ASSERT(ten_extension_context_check_integrity(self, check_thread),
              "Invalid use of extension_context %p.", self);
 
   TEN_ASSERT(app_uri && extension_name, "Should not happen.");
@@ -520,14 +520,14 @@ done:
 
 const char *ten_extension_context_get_extension_group_name(
     ten_extension_context_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_name) {
+    const char *extension_name, bool check_thread) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(ten_extension_context_check_integrity(self, true),
+  TEN_ASSERT(ten_extension_context_check_integrity(self, check_thread),
              "Invalid use of extension_context %p.", self);
 
   ten_extension_info_t *extension_info =
-      ten_extension_context_get_extension_info_by_name(self, app_uri, graph_id,
-                                                       extension_name);
+      ten_extension_context_get_extension_info_by_name(
+          self, app_uri, graph_id, extension_name, check_thread);
   if (!extension_info) {
     return NULL;
   }

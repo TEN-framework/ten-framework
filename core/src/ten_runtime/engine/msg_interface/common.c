@@ -444,7 +444,7 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
                   self->extension_context,
                   ten_string_get_raw_str(&dest_loc->app_uri),
                   ten_string_get_raw_str(&dest_loc->graph_id),
-                  ten_string_get_raw_str(&dest_loc->extension_name));
+                  ten_string_get_raw_str(&dest_loc->extension_name), true);
 
           if (extension_group_name) {
             ten_list_foreach (&self->extension_context->extension_threads,
