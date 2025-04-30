@@ -239,7 +239,7 @@
         ]
       },
       {
-        "name": "qwq_32b",
+        "name": "qwen3",
         "auto_start": true,
         "nodes": [
           {
@@ -276,9 +276,8 @@
               "greeting": "TEN Agent connected. How can I help you today?",
               "max_memory_length": 10,
               "max_tokens": 512,
-              "model": "qwq-plus",
-              "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL}"
+              "model": "qwen3-235b-a22b",
+              "prompt": ""
             }
           },
           {

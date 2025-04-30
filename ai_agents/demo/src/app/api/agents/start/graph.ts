@@ -261,7 +261,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName === "qwq_32b") {
+    } else if (graphName === "qwen3") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
