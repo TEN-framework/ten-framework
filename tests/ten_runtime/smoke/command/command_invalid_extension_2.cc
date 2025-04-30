@@ -110,8 +110,7 @@ TEST(ExtensionTest, CommandInvalidExtension2) {  // NOLINT
                             "test_extension_group", "test_extension");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_ERROR);
-  ten_test::check_detail_with_string(cmd_result,
-                                     "The extension[a] is invalid.");
+  ten_test::check_detail_with_string(cmd_result, "Failed to find destination.");
 
   delete client;
 

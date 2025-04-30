@@ -266,16 +266,28 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
                 ten_string_get_raw_str(&dest_loc->app_uri),
                 ten_string_get_raw_str(&dest_loc->graph_id),
                 ten_string_get_raw_str(&dest_loc->extension_name), false);
-        TEN_ASSERT(extension_group_name, "Should not happen.");
 
-        if (!ten_string_is_equal_c_str(&extension_group->name,
-                                       extension_group_name)) {
-          // Find the correct extension thread to handle this message.
-          ten_engine_append_to_in_msgs_queue(engine, msg);
+        if (extension_group_name) {
+          if (!ten_string_is_equal_c_str(&extension_group->name,
+                                         extension_group_name)) {
+            // Find the correct extension thread to handle this message.
+            ten_engine_append_to_in_msgs_queue(engine, msg);
+          } else {
+            // The message should be handled in the current extension thread, so
+            // dispatch the message to the current extension thread.
+            ten_extension_thread_handle_in_msg_sync(self, msg);
+          }
         } else {
-          // The message should be handled in the current extension thread, so
-          // dispatch the message to the current extension thread.
-          ten_extension_thread_handle_in_msg_sync(self, msg);
+          if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD) {
+            ten_string_t detail;
+            ten_string_init_formatted(&detail, "Failed to find destination.");
+
+            ten_extension_thread_create_cmd_result_and_dispatch(
+                self, msg, TEN_STATUS_CODE_ERROR,
+                ten_string_get_raw_str(&detail));
+
+            ten_string_deinit(&detail);
+          }
         }
       }
     }
