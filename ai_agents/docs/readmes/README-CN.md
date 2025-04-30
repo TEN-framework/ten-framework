@@ -27,7 +27,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [快速开始](https://theten.ai/docs/ten_agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[TEN 框架仓库](https://github.com/TEN-framework/ten_framework)
+[TEN 框架仓库](https://github.com/TEN-framework/ten-framework)
 
 <a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2FTEN-Agent | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
@@ -287,7 +287,7 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 ```bash
 # 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
 # export 的有效期为一个 session
-export https_proxy=http://127.0.0.1:<port> 
+export https_proxy=http://127.0.0.1:<port>
 export http_proxy=http://127.0.0.1:<port>
 export all_proxy=socks5://127.0.0.1:<port>
 
@@ -452,7 +452,7 @@ _即将推出..._
 ## 🌍 TEN Framework 生态系统
 
 | [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN，一个支持实时对话的 AI 代理框架，用于创建各种 AI 代理。<br/><br/>![][ten-framework-shield]                                                                                                                   | ![][ten-framework-banner] |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------ |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------ |
 | [**🎙️ TEN Agent**][ten-agent-link]<br/>TEN Agent 是一个由 TEN 提供支持的会话式语音 AI 代理，集成了 Deepseek、Gemini、OpenAI、RTC 和 ESP32 等硬件设备。它支持实时 AI 功能，如视觉、听觉和语音，并与 Dify 和 Coze 等平台完全兼容。<br/><br/>![][ten-agent-shield] | ![][ten-agent-banner]     |
 | **🎨 TMAN Designer** `alpha`<br/>TMAN Designer 是一个低/无代码选项，用于制作酷炫的语音代理。凭借其易于使用的工作流 UI，您可以轻松构建各种功能。它带有运行时、暗/亮主题、集成编辑器和集成终端。<br/><br/>![][tman-designer-shield]                               | ![][tman-designer-banner] |
 | **📒 TEN Portal**<br/>TEN 框架的官方网站，包含文档、博客和展示内容。<br/><br/>![][ten-docs-shield]                                                                                                                                                              | ![][ten-docs-banner]      |

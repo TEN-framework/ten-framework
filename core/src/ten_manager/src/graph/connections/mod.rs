@@ -15,7 +15,7 @@ use ten_rust::{
     graph::connection::{GraphConnection, GraphMessageFlow},
 };
 
-use crate::json::write_property_json_file;
+use crate::fs::json::write_property_json_file;
 
 /// Update the connections of a graph in the property.json file.
 ///

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "include_internal/ten_utils/lib/safe_cast.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/signature.h"
@@ -177,7 +178,11 @@ void ten_string_init_from_c_str_with_size(ten_string_t *self, const char *str,
   TEN_STRING_INIT(*self);
 
   if (str) {
-    ten_string_set_formatted(self, "%.*s", size, str);
+    int int_size = 0;
+    bool rc = safe_cast_size_t_to_int(size, &int_size);
+    TEN_ASSERT(rc, "Size overflow detected.");
+
+    ten_string_set_formatted(self, "%.*s", int_size, str);
   }
 }
 
@@ -187,7 +192,11 @@ void ten_string_set_from_c_str_with_size(ten_string_t *self, const char *str,
   TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
 
   if (str) {
-    ten_string_set_formatted(self, "%.*s", size, str);
+    int int_size = 0;
+    bool rc = safe_cast_size_t_to_int(size, &int_size);
+    TEN_ASSERT(rc, "Size overflow detected.");
+
+    ten_string_set_formatted(self, "%.*s", int_size, str);
   }
 }
 
@@ -751,7 +760,11 @@ void ten_string_slice(ten_string_t *self, ten_string_t *other, char sep) {
   size_t plen = strlen(pr);
 
   // Copy from self into 'other' string.
-  ten_string_init_formatted(other, "%.*s", plen, pr + 1);
+  int int_plen = 0;
+  bool rc = safe_cast_size_t_to_int(plen, &int_plen);
+  TEN_ASSERT(rc, "Length overflow detected.");
+
+  ten_string_init_formatted(other, "%.*s", int_plen, pr + 1);
 
   *pr = '\0';
   self->first_unused_idx = (pr - self->buf);

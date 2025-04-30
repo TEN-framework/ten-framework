@@ -7,6 +7,7 @@
 mod cmd;
 mod common;
 mod designer;
+mod fs;
 mod graph;
 mod registry;
 mod schema;

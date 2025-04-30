@@ -8,9 +8,7 @@
 
 #include <stdlib.h>
 
-#include "ten_utils/lib/alloc.h"
-#include "ten_utils/lib/json.h"
-#include "ten_utils/value/value.h"
+#include "include_internal/ten_utils/lib/safe_cast.h"
 
 ten_string_t *ten_uri_get_protocol(const char *uri) {
   if (!uri) {
@@ -22,7 +20,11 @@ ten_string_t *ten_uri_get_protocol(const char *uri) {
     return NULL;
   }
 
-  return ten_string_create_formatted("%.*s", protocol_length, uri);
+  int int_protocol_length = 0;
+  bool rc = safe_cast_size_t_to_int(protocol_length, &int_protocol_length);
+  TEN_ASSERT(rc, "Protocol length overflow detected.");
+
+  return ten_string_create_formatted("%.*s", int_protocol_length, uri);
 }
 
 bool ten_uri_is_protocol_equal(const char *uri, const char *protocol) {
@@ -54,7 +56,12 @@ ten_string_t *ten_uri_get_host(const char *uri) {
     return ten_string_create_formatted(host);
   }
 
-  return ten_string_create_formatted("%.*s", host_length_with_port, host);
+  int int_host_length_with_port = 0;
+  bool rc = safe_cast_size_t_to_int(host_length_with_port,
+                                    &int_host_length_with_port);
+  TEN_ASSERT(rc, "Host length with port overflow detected.");
+
+  return ten_string_create_formatted("%.*s", int_host_length_with_port, host);
 }
 
 uint16_t ten_uri_get_port(const char *uri) {

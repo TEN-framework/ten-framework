@@ -108,5 +108,8 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
   }
 }

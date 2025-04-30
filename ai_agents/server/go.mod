@@ -1,6 +1,6 @@
 module app
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20241016072020-3226f86a4488

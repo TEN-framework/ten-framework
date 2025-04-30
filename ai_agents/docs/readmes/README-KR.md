@@ -29,7 +29,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Getting Started](https://theten.ai/docs/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
+[TEN Framework Repository](https://github.com/TEN-framework/ten-framework)
 
 </div>
 
@@ -83,9 +83,9 @@ TEN Agent는 이제 Espressif ESP32-S3 Korvo V3 개발 보드에서 실행되며
 
 </details>
 
-  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_dify)
 
-  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+  [TEN Agent + Coze](https://theten.ai/docs/ten-agent/quickstart-1/use-cases/run_va/run_coze)
 
 TEN은 다른 LLM 플랫폼에서도 실시간 인터랙티브 경험을 더욱 향상시키기 위해 뛰어난 지원을 제공합니다. 더 많은 정보를 원하시면 문서를 확인하세요.
 
@@ -138,11 +138,11 @@ TEN은 다른 LLM 플랫폼에서도 실시간 인터랙티브 경험을 더욱 
 
 ### 사전 요구 사항
 
-| 카테고리 | 요구 사항 |
-|----------|-------------|
-| **키** | • Agora [앱 ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) 및 [앱 인증서](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (매월 무료 분 제공) <br>• [OpenAI](https://openai.com/index/openai-api/) API 키 (OpenAI와 호환되는 모든 LLM)<br>• [Deepgram](https://deepgram.com/) ASR (가입 시 무료 크레딧 제공)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (가입 시 무료 크레딧 제공)|
-| **설치** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **최소 시스템 요구 사항** | • CPU >= 2 코어<br>• RAM >= 4 GB |
+| 카테고리                  | 요구 사항                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **키**                    | • Agora [앱 ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) 및 [앱 인증서](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (매월 무료 분 제공) <br>• [OpenAI](https://openai.com/index/openai-api/) API 키 (OpenAI와 호환되는 모든 LLM)<br>• [Deepgram](https://deepgram.com/) ASR (가입 시 무료 크레딧 제공)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (가입 시 무료 크레딧 제공) |
+| **설치**                  | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                |
+| **최소 시스템 요구 사항** | • CPU >= 2 코어<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 <br>
 

@@ -6,12 +6,18 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
+      - "tools/**"
+      - "portal/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
       - "ai_agents/**"
 
 permissions:
-  contents: read
+  contents: write
+  discussions: write
   security-events: write
 
 concurrency:

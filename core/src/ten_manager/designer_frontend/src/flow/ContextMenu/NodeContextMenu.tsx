@@ -229,12 +229,9 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
             type: EGraphActions.ADD_CONNECTION,
             base_dir: baseDir,
             graph_id: graphId,
-            node: node,
-            src_extension: node.data.name,
+            src_node: node,
           },
-          popup: {
-            width: 340,
-          },
+          popup: {},
         });
         onClose();
       },
@@ -264,12 +261,9 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
             type: EGraphActions.ADD_CONNECTION,
             base_dir: baseDir,
             graph_id: graphId,
-            node: node,
-            dest_extension: node.data.name,
+            dest_node: node,
           },
-          popup: {
-            width: 340,
-          },
+          popup: {},
         });
         onClose();
       },

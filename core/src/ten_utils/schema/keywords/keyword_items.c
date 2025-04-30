@@ -65,7 +65,8 @@ static bool ten_schema_keyword_items_validate_value(
 
     if (!ten_schema_validate_value_with_schema_error(self->item_schema,
                                                      value_field, schema_err)) {
-      ten_string_prepend_formatted(&schema_err->path, "[%d]", value_iter.index);
+      ten_string_prepend_formatted(&schema_err->path, "[%zu]",
+                                   value_iter.index);
       return false;
     }
   }
@@ -118,7 +119,8 @@ static bool ten_schema_keyword_items_adjust_value(
 
     if (!ten_schema_adjust_value_type_with_schema_error(
             self->item_schema, value_field, schema_err)) {
-      ten_string_prepend_formatted(&schema_err->path, "[%d]", value_iter.index);
+      ten_string_prepend_formatted(&schema_err->path, "[%zu]",
+                                   value_iter.index);
       return false;
     }
   }

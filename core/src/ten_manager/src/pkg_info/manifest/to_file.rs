@@ -14,7 +14,7 @@ use serde_json::Value;
 
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 
-use crate::json::write_manifest_json_file;
+use crate::fs::json::write_manifest_json_file;
 
 /// Load a JSON file into a deserializable object.
 pub fn load_from_file<T: DeserializeOwned>(file_path: &Path) -> Result<T> {

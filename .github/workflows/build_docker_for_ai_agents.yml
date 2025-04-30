@@ -5,6 +5,13 @@ on:
     branches: ["**"]
     tags: ["**"]
     paths-ignore:
+      - "core/**"
+      - "portal/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
+      - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
@@ -14,6 +21,13 @@ on:
   pull_request:
     branches: ["main"]
     paths-ignore:
+      - "core/**"
+      - "portal/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
+      - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
       - "!.github/workflows/build-docker.yaml"
@@ -26,6 +40,10 @@ permissions:
   contents: read
   packages: write
   security-events: write
+
+concurrency:
+  group: build-docker-for-ai-agents-${{ github.head_ref }}
+  cancel-in-progress: true
 
 env:
   SERVER_IMAGE_NAME: ten_agent_server
