@@ -409,7 +409,7 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
       // current TEN app.
       ten_app_push_to_in_msgs_queue(app, msg);
     } else {
-      if (ten_string_is_empty(&dest_loc->extension_group_name)) {
+      if (ten_string_is_empty(&dest_loc->extension_name)) {
         // It means the destination is the current engine, so ask the current
         // engine to handle this message.
         ten_engine_handle_msg(self, msg);
@@ -418,6 +418,13 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
 
         if (self->extension_context) {
           bool found = false;
+
+          const char *extension_group_name =
+              ten_extension_context_get_extension_group_name(
+                  self->extension_context,
+                  ten_string_get_raw_str(&dest_loc->app_uri),
+                  ten_string_get_raw_str(&dest_loc->graph_id),
+                  ten_string_get_raw_str(&dest_loc->extension_name));
 
           ten_list_foreach (&self->extension_context->extension_threads, iter) {
             ten_extension_thread_t *extension_thread =
@@ -439,8 +446,8 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
             ten_extension_group_t *extension_group =
                 extension_thread->extension_group;
 
-            if (ten_string_is_equal(&extension_group->name,
-                                    &dest_loc->extension_group_name)) {
+            if (ten_string_is_equal_c_str(&extension_group->name,
+                                          extension_group_name)) {
               // Find the correct extension thread, ask it to handle the
               // message.
               found = true;
