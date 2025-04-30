@@ -13,6 +13,7 @@ on:
       - ".github/**"
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
+    paths-ignore:
       - "ai_agents/**"
 
 permissions:
