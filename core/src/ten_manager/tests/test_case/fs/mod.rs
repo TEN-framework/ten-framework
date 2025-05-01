@@ -60,6 +60,7 @@ mod tests {
             }
 
             // Stop watching.
+            println!("Stopping stream");
             stream.stop();
 
             Ok(())
