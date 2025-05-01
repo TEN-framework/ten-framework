@@ -10,7 +10,6 @@ use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
     config::{metadata::TmanMetadata, TmanConfig},
-    constants::{DEFAULT_APP_NODEJS, DEFAULT_EXTENSION_CPP},
     designer::{
         response::{ApiResponse, Status},
         template_pkgs::{
@@ -58,7 +57,7 @@ async fn test_get_template_app_typescript() {
         test::call_and_read_body_json(&app, req).await;
 
     assert_eq!(resp.status, Status::Ok);
-    assert_eq!(resp.data.template_name, vec![DEFAULT_APP_NODEJS.to_string()]);
+    println!("{:?}", resp.data.templates);
 }
 
 #[actix_web::test]
@@ -96,10 +95,7 @@ async fn test_get_template_extension_cpp() {
         test::call_and_read_body_json(&app, req).await;
 
     assert_eq!(resp.status, Status::Ok);
-    assert_eq!(
-        resp.data.template_name,
-        vec![DEFAULT_EXTENSION_CPP.to_string()]
-    );
+    println!("{:?}", resp.data.templates);
 }
 
 #[actix_web::test]

@@ -12,7 +12,6 @@ ten_runtime_glob("extension_group") {
     "builtin",
     "extension_group_info",
     "internal",
-    "msg_interface",
     "ten_env",
   ]
 }

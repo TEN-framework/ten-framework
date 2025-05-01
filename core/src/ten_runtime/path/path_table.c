@@ -687,8 +687,10 @@ ten_string_t *ten_path_table_get_graph_id(ten_path_table_t *self) {
     return &engine->graph_id;
   } else {
     ten_engine_t *engine = self->attached_target.engine;
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, true),
-               "Invalid argument.");
+    TEN_ASSERT(engine, "Invalid argument.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, true),
+               "Invalid use of engine %p.", engine);
+
     return &engine->graph_id;
   }
 }

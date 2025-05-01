@@ -335,58 +335,59 @@ ten_app_t *ten_env_get_belonging_app(ten_env_t *self) {
 
     ten_extension_context_t *extension_context =
         extension_thread->extension_context;
-    TEN_ASSERT(extension_context && ten_extension_context_check_integrity(
-                                        extension_context, false),
+    TEN_ASSERT(extension_context, "Should not happen.");
+    TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
                "Should not happen.");
 
     ten_engine_t *engine = extension_context->engine;
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, false),
-               "Should not happen.");
+    TEN_ASSERT(engine, "Should not happen.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
 
     ten_app_t *app = engine->app;
-    TEN_ASSERT(app && ten_app_check_integrity(app, false),
-               "Should not happen.");
+    TEN_ASSERT(app, "Should not happen.");
+    TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
     return app;
   }
   case TEN_ENV_ATTACH_TO_EXTENSION_GROUP: {
     ten_extension_group_t *extension_group =
         ten_env_get_attached_extension_group(self);
-    TEN_ASSERT(extension_group &&
-                   ten_extension_group_check_integrity(extension_group, true),
+    TEN_ASSERT(extension_group, "Should not happen.");
+    TEN_ASSERT(ten_extension_group_check_integrity(extension_group, true),
                "Should not happen.");
 
     ten_extension_thread_t *extension_thread =
         extension_group->extension_thread;
-    TEN_ASSERT(extension_thread &&
-                   ten_extension_thread_check_integrity(extension_thread, true),
+    TEN_ASSERT(extension_thread, "Should not happen.");
+    TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
                "Should not happen.");
 
     ten_extension_context_t *extension_context =
         extension_thread->extension_context;
-    TEN_ASSERT(extension_context && ten_extension_context_check_integrity(
-                                        extension_context, false),
+    TEN_ASSERT(extension_context, "Should not happen.");
+    TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
                "Should not happen.");
 
     ten_engine_t *engine = extension_context->engine;
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, false),
-               "Should not happen.");
+    TEN_ASSERT(engine, "Should not happen.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
 
     ten_app_t *app = engine->app;
-    TEN_ASSERT(app && ten_app_check_integrity(app, false),
-               "Should not happen.");
+    TEN_ASSERT(app, "Should not happen.");
+    TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
     return app;
   }
 
   case TEN_ENV_ATTACH_TO_ENGINE: {
     ten_engine_t *engine = ten_env_get_attached_engine(self);
-    TEN_ASSERT(engine && ten_engine_check_integrity(engine, true),
-               "Should not happen.");
+    TEN_ASSERT(engine, "Invalid argument.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, true),
+               "Invalid use of engine %p.", engine);
 
     ten_app_t *app = engine->app;
-    TEN_ASSERT(app && ten_app_check_integrity(app, false),
-               "Should not happen.");
+    TEN_ASSERT(app, "Should not happen.");
+    TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
     return app;
   }

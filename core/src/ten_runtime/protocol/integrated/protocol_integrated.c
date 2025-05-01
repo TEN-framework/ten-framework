@@ -918,9 +918,11 @@ static void ten_protocol_integrated_clean(ten_protocol_integrated_t *self) {
 
 static void ten_stream_migrated(ten_stream_t *stream, void **user_data) {
   ten_engine_t *engine = user_data[0];
-  TEN_ASSERT(engine && ten_engine_check_integrity(engine, true),
-             "The 'stream' has already been migrated to the engine thread. "
-             "Therefore, this function is called in the engine thread.");
+  TEN_ASSERT(engine, "Invalid argument.");
+  // The 'stream' has already been migrated to the engine thread. Therefore,
+  // this function is called in the engine thread.
+  TEN_ASSERT(ten_engine_check_integrity(engine, true),
+             "Invalid use of engine %p.", engine);
 
   ten_connection_t *connection = user_data[1];
   // The connection is created in the app thread, and _before_ the cleaning is

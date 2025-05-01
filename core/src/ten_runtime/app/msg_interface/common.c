@@ -52,8 +52,8 @@ void ten_app_do_connection_migration_or_push_to_engine_queue(
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: We are in the app thread, and all the uses of the engine in
   // this function would not cause thread safety issues.
-  TEN_ASSERT(engine && ten_engine_check_integrity(engine, false),
-             "This function is called in the app thread.");
+  TEN_ASSERT(engine, "Should not happen.");
+  TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
 
   if (connection && ten_connection_needs_to_migrate(connection, engine)) {
     ten_connection_migrate(connection, engine, msg);
@@ -317,8 +317,8 @@ static bool ten_app_handle_stop_graph_cmd(ten_app_t *self,
   // to the engine.
   ten_list_foreach (ten_msg_get_dest(cmd), iter) {
     ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-               "Should not happen.");
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     ten_string_set_formatted(&dest_loc->graph_id, "%s",
                              ten_string_get_raw_str(&dest_engine->graph_id));
@@ -354,8 +354,8 @@ static bool ten_app_handle_cmd_result(ten_app_t *self,
 
 #if defined(_DEBUG)
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(cmd_result);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_string_t loc_str;
   TEN_STRING_INIT(loc_str);
@@ -405,9 +405,9 @@ static bool ten_app_handle_cmd_result(ten_app_t *self,
 bool ten_app_dispatch_msg(ten_app_t *self, ten_shared_ptr_t *msg,
                           ten_error_t *err) {
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(msg);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc) &&
-                 ten_msg_get_dest_cnt(msg) == 1,
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_dest_cnt(msg) == 1, "Should not happen.");
   TEN_ASSERT(!ten_string_is_empty(&dest_loc->app_uri),
              "App URI should not be empty.");
 

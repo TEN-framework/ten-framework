@@ -181,8 +181,8 @@ static void ten_engine_on_all_extension_threads_are_ready(
 
     if (error_occurred) {
       ten_app_t *app = self->app;
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid argument.");
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       // This graph/engine will not be functioning properly, so it will be shut
       // down directly.
@@ -236,9 +236,7 @@ void ten_engine_find_extension_info_for_all_extensions_of_extension_thread_task(
         ten_extension_context_get_extension_info_by_name(
             extension_context, ten_app_get_uri(extension_context->engine->app),
             ten_engine_get_id(extension_context->engine, true),
-            ten_extension_group_get_name(extension_thread->extension_group,
-                                         false),
-            ten_extension_get_name(extension, false));
+            ten_extension_get_name(extension, false), true);
   }
 
   if (extension_thread->is_close_triggered) {

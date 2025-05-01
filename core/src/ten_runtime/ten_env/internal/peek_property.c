@@ -231,8 +231,8 @@ ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension, that is,
       // from the extension thread.
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid use of app %p", app);
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       if (ten_app_thread_call_by_me(app)) {
         res = ten_app_peek_property(app, path);
@@ -282,8 +282,8 @@ ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension group,
       // that is, from the extension thread.
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid use of app %p", app);
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       if (ten_app_thread_call_by_me(app)) {
         res = ten_app_peek_property(app, path);
@@ -395,8 +395,8 @@ bool ten_env_peek_property_async(ten_env_t *self, const char *path,
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension, that
       // is, from the extension thread.
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid use of app %p", app);
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       context->from.extension = extension;
 
@@ -438,8 +438,8 @@ bool ten_env_peek_property_async(ten_env_t *self, const char *path,
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension group,
       // that is, from the extension thread.
-      TEN_ASSERT(app && ten_app_check_integrity(app, false),
-                 "Invalid use of app %p", app);
+      TEN_ASSERT(app, "Should not happen.");
+      TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
       context->from.extension_group = extension_group;
 

@@ -10,21 +10,16 @@
 #include <time.h>
 
 #include "include_internal/ten_runtime/addon/addon_host.h"
-#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
-#include "include_internal/ten_utils/log/log.h"
-#include "include_internal/ten_utils/value/value.h"
 #include "ten_runtime/binding/common.h"
-#include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/container/list_node.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/ref.h"
-#include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/sanitizer/thread_check.h"
 #include "ten_utils/value/value.h"
@@ -224,27 +219,6 @@ void ten_extension_group_set_addon(ten_extension_group_t *self,
   TEN_ASSERT(!self->addon_host, "Should not happen.");
   self->addon_host = addon_host;
   ten_ref_inc_ref(&addon_host->ref);
-}
-
-ten_shared_ptr_t *ten_extension_group_create_cmd_result_for_invalid_dest(
-    ten_shared_ptr_t *origin_cmd, ten_string_t *target_group_name) {
-  TEN_ASSERT(origin_cmd, "Should not happen.");
-  TEN_ASSERT(target_group_name, "Should not happen.");
-
-  if (!ten_msg_is_cmd_and_result(origin_cmd)) {
-    ten_msg_dump(origin_cmd, NULL, "Unexpected message: ^m");
-    TEN_ASSERT(0, "Should not happen.");
-  }
-
-  ten_shared_ptr_t *cmd_result =
-      ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, origin_cmd);
-  ten_msg_set_property(
-      cmd_result, TEN_STR_DETAIL,
-      ten_value_create_vstring("The extension group[%s] is invalid.",
-                               ten_string_get_raw_str(target_group_name)),
-      NULL);
-
-  return cmd_result;
 }
 
 ten_runloop_t *ten_extension_group_get_attached_runloop(

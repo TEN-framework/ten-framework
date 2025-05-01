@@ -219,8 +219,8 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
              "destination remaining in the message's dest.");
 
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(msg);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_extension_group_t *extension_group = self->extension_group;
   TEN_ASSERT(extension_group, "Should not happen.");
@@ -254,21 +254,40 @@ void ten_extension_thread_dispatch_msg(ten_extension_thread_t *self,
 
       ten_app_push_to_in_msgs_queue(app, msg);
     } else {
-      if (ten_string_is_empty(&dest_loc->extension_group_name)) {
+      if (ten_string_is_empty(&dest_loc->extension_name)) {
         // Because the destination is the current engine, so ask the engine to
         // handle this message.
 
         ten_engine_append_to_in_msgs_queue(engine, msg);
       } else {
-        if (!ten_string_is_equal(&dest_loc->extension_group_name,
-                                 &extension_group->name)) {
-          // Find the correct extension thread to handle this message.
+        const char *extension_group_name =
+            ten_extension_context_get_extension_group_name(
+                self->extension_context,
+                ten_string_get_raw_str(&dest_loc->app_uri),
+                ten_string_get_raw_str(&dest_loc->graph_id),
+                ten_string_get_raw_str(&dest_loc->extension_name), false);
 
-          ten_engine_append_to_in_msgs_queue(engine, msg);
+        if (extension_group_name) {
+          if (!ten_string_is_equal_c_str(&extension_group->name,
+                                         extension_group_name)) {
+            // Find the correct extension thread to handle this message.
+            ten_engine_append_to_in_msgs_queue(engine, msg);
+          } else {
+            // The message should be handled in the current extension thread, so
+            // dispatch the message to the current extension thread.
+            ten_extension_thread_handle_in_msg_sync(self, msg);
+          }
         } else {
-          // The message should be handled in the current extension thread, so
-          // dispatch the message to the current extension thread.
-          ten_extension_thread_handle_in_msg_sync(self, msg);
+          if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD) {
+            ten_string_t detail;
+            ten_string_init_formatted(&detail, "Failed to find destination.");
+
+            ten_extension_thread_create_cmd_result_and_dispatch(
+                self, msg, TEN_STATUS_CODE_ERROR,
+                ten_string_get_raw_str(&detail));
+
+            ten_string_deinit(&detail);
+          }
         }
       }
     }

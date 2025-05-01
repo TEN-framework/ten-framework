@@ -13,7 +13,6 @@
 #include "include_internal/ten_runtime/common/loc.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/container/list.h"
-#include "ten_utils/lib/atomic.h"
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/sanitizer/thread_check.h"
@@ -71,9 +70,18 @@ TEN_RUNTIME_PRIVATE_API void ten_extension_context_on_close(
     ten_extension_context_t *self);
 
 TEN_RUNTIME_PRIVATE_API ten_extension_info_t *
-ten_extension_context_get_extension_info_by_name(
-    ten_extension_context_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_group_name, const char *extension_name);
+ten_extension_context_get_extension_info_by_name(ten_extension_context_t *self,
+                                                 const char *app_uri,
+                                                 const char *graph_id,
+                                                 const char *extension_name,
+                                                 bool check_thread);
 
 TEN_RUNTIME_PRIVATE_API bool ten_extension_context_start_extension_group(
     ten_extension_context_t *self, ten_error_t *err);
+
+TEN_RUNTIME_PRIVATE_API const char *
+ten_extension_context_get_extension_group_name(ten_extension_context_t *self,
+                                               const char *app_uri,
+                                               const char *graph_id,
+                                               const char *extension_name,
+                                               bool check_thread);

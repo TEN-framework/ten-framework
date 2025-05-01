@@ -24,6 +24,7 @@
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/msg/msg_info.h"
 #include "include_internal/ten_runtime/remote/remote.h"
+#include "include_internal/ten_utils/value/value.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_runtime/msg/msg.h"
@@ -363,9 +364,28 @@ static void ten_engine_post_msg_to_extension_thread(
   }
 }
 
+ten_shared_ptr_t *ten_engine_create_cmd_result_for_invalid_dest(
+    ten_shared_ptr_t *origin_cmd) {
+  TEN_ASSERT(origin_cmd, "Should not happen.");
+
+  if (!ten_msg_is_cmd_and_result(origin_cmd)) {
+    ten_msg_dump(origin_cmd, NULL, "Unexpected message: ^m");
+    TEN_ASSERT(0, "Should not happen.");
+  }
+
+  ten_shared_ptr_t *cmd_result =
+      ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, origin_cmd);
+  ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
+                       ten_value_create_vstring("Failed to find destination."),
+                       NULL);
+
+  return cmd_result;
+}
+
 bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
+
   TEN_ASSERT(msg, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
   TEN_ASSERT(ten_msg_get_dest_cnt(msg) == 1,
@@ -373,8 +393,8 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
              "destination remaining in the message's dest.");
 
   ten_loc_t *dest_loc = ten_msg_get_first_dest_loc(msg);
-  TEN_ASSERT(dest_loc && ten_loc_check_integrity(dest_loc),
-             "Should not happen.");
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
   ten_app_t *app = self->app;
   TEN_ASSERT(app, "Invalid argument.");
@@ -409,7 +429,7 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
       // current TEN app.
       ten_app_push_to_in_msgs_queue(app, msg);
     } else {
-      if (ten_string_is_empty(&dest_loc->extension_group_name)) {
+      if (ten_string_is_empty(&dest_loc->extension_name)) {
         // It means the destination is the current engine, so ask the current
         // engine to handle this message.
         ten_engine_handle_msg(self, msg);
@@ -419,34 +439,45 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
         if (self->extension_context) {
           bool found = false;
 
-          ten_list_foreach (&self->extension_context->extension_threads, iter) {
-            ten_extension_thread_t *extension_thread =
-                ten_ptr_listnode_get(iter.node);
-            TEN_ASSERT(
-                extension_thread &&
-                    // TEN_NOLINTNEXTLINE(thread-check)
-                    // thread-check: We are in the engine thread, _not_ in the
-                    // extension thread. However, before the engine is closed,
-                    // the pointer of the extension group and the pointer of the
-                    // extension thread will not be changed, and the closing of
-                    // the entire engine must start from the engine, so the
-                    // execution to this position means that the engine has not
-                    // been closed, so there will be no thread safety issue.
-                    ten_extension_thread_check_integrity(extension_thread,
-                                                         false),
-                "Should not happen.");
+          const char *extension_group_name =
+              ten_extension_context_get_extension_group_name(
+                  self->extension_context,
+                  ten_string_get_raw_str(&dest_loc->app_uri),
+                  ten_string_get_raw_str(&dest_loc->graph_id),
+                  ten_string_get_raw_str(&dest_loc->extension_name), true);
 
-            ten_extension_group_t *extension_group =
-                extension_thread->extension_group;
+          if (extension_group_name) {
+            ten_list_foreach (&self->extension_context->extension_threads,
+                              iter) {
+              ten_extension_thread_t *extension_thread =
+                  ten_ptr_listnode_get(iter.node);
+              TEN_ASSERT(
+                  extension_thread &&
+                      // TEN_NOLINTNEXTLINE(thread-check)
+                      // thread-check: We are in the engine thread, _not_ in the
+                      // extension thread. However, before the engine is closed,
+                      // the pointer of the extension group and the pointer of
+                      // the extension thread will not be changed, and the
+                      // closing of the entire engine must start from the
+                      // engine, so the execution to this position means that
+                      // the engine has not been closed, so there will be no
+                      // thread safety issue.
+                      ten_extension_thread_check_integrity(extension_thread,
+                                                           false),
+                  "Should not happen.");
 
-            if (ten_string_is_equal(&extension_group->name,
-                                    &dest_loc->extension_group_name)) {
-              // Find the correct extension thread, ask it to handle the
-              // message.
-              found = true;
-              ten_engine_post_msg_to_extension_thread(self, extension_thread,
-                                                      msg);
-              break;
+              ten_extension_group_t *extension_group =
+                  extension_thread->extension_group;
+
+              if (ten_string_is_equal_c_str(&extension_group->name,
+                                            extension_group_name)) {
+                // Find the correct extension thread, ask it to handle the
+                // message.
+                found = true;
+                ten_engine_post_msg_to_extension_thread(self, extension_thread,
+                                                        msg);
+                break;
+              }
             }
           }
 
@@ -457,8 +488,7 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
 
             if (ten_msg_is_cmd(msg)) {
               ten_shared_ptr_t *cmd_result =
-                  ten_extension_group_create_cmd_result_for_invalid_dest(
-                      msg, &dest_loc->extension_group_name);
+                  ten_engine_create_cmd_result_for_invalid_dest(msg);
 
               ten_engine_dispatch_msg(self, cmd_result);
 
