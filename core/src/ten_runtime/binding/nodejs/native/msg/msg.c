@@ -126,9 +126,8 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
 
   bool rc = ten_msg_clear_and_set_dest(
       msg_bridge->msg, ten_string_get_raw_str(&app_uri),
-      ten_string_get_raw_str(&graph_id),
-      ten_string_get_raw_str(&extension_group),
-      ten_string_get_raw_str(&extension), &err);
+      ten_string_get_raw_str(&graph_id), ten_string_get_raw_str(&extension),
+      &err);
   if (!rc) {
     ten_string_t code_str;
     ten_string_init_formatted(&code_str, "%d", ten_error_code(&err));

@@ -127,8 +127,8 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_msg_clear_and_set_dest(
-      c_msg, app_uri, graph_id, extension_group_name, extension_name, &err);
+  bool rc = ten_msg_clear_and_set_dest(c_msg, app_uri, graph_id, extension_name,
+                                       &err);
 
   if (!rc) {
     ten_py_raise_py_value_error_exception(ten_error_message(&err));

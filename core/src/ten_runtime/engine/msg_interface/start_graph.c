@@ -106,7 +106,7 @@ void ten_engine_handle_cmd_start_graph(ten_engine_t *self,
         // Correct the destination information of the 'start_graph' command.
         ten_msg_clear_and_set_dest(child_cmd, dest_uri_c_str,
                                    ten_string_get_raw_str(&self->graph_id),
-                                   NULL, NULL, err);
+                                   NULL, err);
 
         ten_path_t *out_path = (ten_path_t *)ten_path_table_add_out_path(
             self->path_table, child_cmd);

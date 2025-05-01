@@ -188,8 +188,7 @@ static void ten_engine_on_all_extension_threads_are_ready(
       // down directly.
       ten_shared_ptr_t *stop_graph_cmd = ten_cmd_stop_graph_create();
       ten_msg_clear_and_set_dest(stop_graph_cmd, ten_app_get_uri(app),
-                                 ten_engine_get_id(self, false), NULL, NULL,
-                                 NULL);
+                                 ten_engine_get_id(self, false), NULL, NULL);
 
       ten_env_send_cmd(self->ten_env, stop_graph_cmd, NULL, NULL, NULL, NULL);
 

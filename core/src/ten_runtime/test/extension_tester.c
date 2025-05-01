@@ -283,8 +283,8 @@ static void test_app_ten_env_send_start_graph_cmd(ten_env_t *ten_env,
   // result handler specified below.
   ten_msg_set_src(cmd, ten_app_get_uri(app), NULL, NULL, NULL);
 
-  bool rc = ten_msg_clear_and_set_dest(cmd, ten_app_get_uri(app), NULL, NULL,
-                                       NULL, NULL);
+  bool rc =
+      ten_msg_clear_and_set_dest(cmd, ten_app_get_uri(app), NULL, NULL, NULL);
   TEN_ASSERT(rc, "Should not happen.");
 
   // Set up a result handler so that the returned `cmd_result` can be

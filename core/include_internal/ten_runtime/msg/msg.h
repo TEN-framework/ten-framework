@@ -91,9 +91,10 @@ TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_to_extension_group(
 TEN_RUNTIME_PRIVATE_API void ten_msg_clear_and_set_dest_from_msg_src(
     ten_shared_ptr_t *self, ten_shared_ptr_t *cmd);
 
-TEN_RUNTIME_PRIVATE_API void ten_raw_msg_add_dest(
-    ten_msg_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_group_name, const char *extension_name);
+TEN_RUNTIME_PRIVATE_API void ten_raw_msg_add_dest(ten_msg_t *self,
+                                                  const char *app_uri,
+                                                  const char *graph_id,
+                                                  const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_raw_msg_clear_dest(ten_msg_t *self);
 

@@ -70,7 +70,7 @@ class msg_t {
     }
 
     return ten_msg_clear_and_set_dest(
-        c_msg, uri, graph, extension_group_name, extension_name,
+        c_msg, uri, graph, extension_name,
         err != nullptr ? err->get_c_error() : nullptr);
   }
 

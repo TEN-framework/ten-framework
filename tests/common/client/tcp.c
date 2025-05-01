@@ -191,7 +191,7 @@ bool ten_test_tcp_client_send_msg(ten_test_tcp_client_t *self,
 
   if (ten_msg_get_dest_cnt(msg) == 0) {
     ten_msg_clear_and_set_dest(msg, ten_string_get_raw_str(&self->app_id), NULL,
-                               NULL, NULL, NULL);
+                               NULL, NULL);
   }
 
   ten_list_t msgs = TEN_LIST_INIT_VAL;
@@ -291,8 +291,7 @@ bool ten_test_tcp_client_send_data(ten_test_tcp_client_t *self,
   ten_data_set_buf_with_move(msg, &buf);
 
   ten_msg_clear_and_set_dest(msg, ten_string_get_raw_str(&self->app_id),
-                             graph_id, extension_group_name, extension_name,
-                             NULL);
+                             graph_id, extension_name, NULL);
 
   bool rc = ten_test_tcp_client_send_msg(self, msg);
   ten_shared_ptr_destroy(msg);

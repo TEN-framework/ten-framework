@@ -846,7 +846,6 @@ ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
   bool rc = ten_msg_clear_and_set_dest(
       ten_go_msg_c_msg(self), ten_string_get_raw_str(&app_uri_str),
       ten_string_get_raw_str(&graph_id_str),
-      ten_string_get_raw_str(&extension_group_str),
       ten_string_get_raw_str(&extension_str), &err);
 
   if (!rc) {
