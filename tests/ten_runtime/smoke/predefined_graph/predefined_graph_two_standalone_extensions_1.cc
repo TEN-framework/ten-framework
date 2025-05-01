@@ -96,7 +96,6 @@ TEST(PredefinedGraphTest, PredefinedGraphTwoStandaloneExtensions1) {  // NOLINT
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "two_extensions_same_group",
                      "two_extensions_same_group_extension_2");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

@@ -182,7 +182,6 @@ TEST(CmdConversionTest, CmdConversionData) {  // NOLINT
   // Send a user-defined 'send_data' command.
   auto send_data_cmd = ten::cmd_t::create("send_data");
   send_data_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                          "cmd_mapping_data_extension_group",
                           "test_extension_1");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(send_data_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
@@ -191,7 +190,6 @@ TEST(CmdConversionTest, CmdConversionData) {  // NOLINT
   // Send 'data_received_check' command.
   auto data_received_check_cmd = ten::cmd_t::create("data_received_check");
   data_received_check_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                                    "cmd_mapping_data_extension_group",
                                     "test_extension_2");
   cmd_result =
       client->send_cmd_and_recv_result(std::move(data_received_check_cmd));

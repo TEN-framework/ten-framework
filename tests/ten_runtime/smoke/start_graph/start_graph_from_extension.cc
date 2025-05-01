@@ -22,7 +22,7 @@ class test_predefined_graph : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+    start_graph_cmd->set_dest("localhost", nullptr, nullptr);
     start_graph_cmd->set_graph_from_json(R"({
       "nodes": [{
         "type": "extension",
@@ -45,7 +45,7 @@ class test_predefined_graph : public ten::extension_t {
           // Shut down the graph; otherwise, the app won't be able to close
           // because there is still a running engine/graph.
           auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-          stop_graph_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+          stop_graph_cmd->set_dest("localhost", nullptr, nullptr);
           stop_graph_cmd->set_graph_id(graph_id.c_str());
 
           ten_env.send_cmd(
@@ -164,7 +164,6 @@ TEST(StartGraphTest, StartGraphFromExtension) {  // NOLINT
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "start_graph_from_extension__predefined_graph_group",
                      "predefined_graph");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

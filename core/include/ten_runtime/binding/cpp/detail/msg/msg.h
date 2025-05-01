@@ -56,8 +56,7 @@ class msg_t {
     return ten_msg_get_name(c_msg);
   }
 
-  bool set_dest(const char *uri, const char *graph,
-                const char *extension_group_name, const char *extension_name,
+  bool set_dest(const char *uri, const char *graph, const char *extension_name,
                 error_t *err = nullptr) const {
     TEN_ASSERT(c_msg, "Should not happen.");
 

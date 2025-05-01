@@ -115,7 +115,6 @@ TEST(PropertyTest, AccessAppStore) {  // NOLINT
   // it has been initted.
   auto test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "default_extension_group_1",
                      "test_property_access_app_store_1");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
@@ -126,7 +125,6 @@ TEST(PropertyTest, AccessAppStore) {  // NOLINT
   // request to predefined graph.
   test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "default_extension_group_2",
                      "test_property_access_app_store_2");
   cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

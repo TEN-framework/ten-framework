@@ -69,7 +69,7 @@ class test_extension_4 : public ten::extension_t {
       ten_env.return_result(std::move(cmd_result));
 
       auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-      stop_graph_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+      stop_graph_cmd->set_dest("localhost", nullptr, nullptr);
       ten_env.send_cmd(std::move(stop_graph_cmd));
     }
   }
@@ -273,7 +273,6 @@ TEST(ExtensionTest, CommandStopGraphActivelyThroughCmd) {  // NOLINT
 
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "command_stop_graph_actively_through_cmd_1",
                             "test_extension_1");
   client->send_cmd_and_recv_result(std::move(hello_world_cmd));
 

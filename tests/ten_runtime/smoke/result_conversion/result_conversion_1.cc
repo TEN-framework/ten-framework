@@ -164,7 +164,6 @@ TEST(ResultConversionTest, ResultConversion1) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                            "result_mapping_1__extension_group",
                             "test_extension_1");
   hello_world_cmd->set_property("test_property", 32);
 

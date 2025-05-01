@@ -57,7 +57,6 @@ class test_predefined_graph : public ten::extension_t {
             auto hello_world_cmd = ten::cmd_t::create("hello_world");
             hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/",
                                       json["detail"].get<std::string>().c_str(),
-                                      "normal_extension_group",
                                       "normal_extension");
             ten_env.send_cmd(
                 std::move(hello_world_cmd),
@@ -189,7 +188,7 @@ TEST(PredefinedGraphTest, PredefinedGraphBasic2) {  // NOLINT
   // request to predefined graph.
   auto command_1_cmd = ten::cmd_t::create("command_1");
   command_1_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                          "predefined_graph_group", "predefined_graph");
+                          "predefined_graph");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(command_1_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_json(cmd_result, R"({"id": 1, "name": "a"})");

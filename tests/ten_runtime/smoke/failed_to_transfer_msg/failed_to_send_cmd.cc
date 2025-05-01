@@ -74,7 +74,7 @@ class test_extension_1 : public ten::extension_t {
       EXPECT_EQ(rc, true);
 
       auto close_app_cmd = ten::cmd_close_app_t::create();
-      close_app_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+      close_app_cmd->set_dest("localhost", nullptr, nullptr);
       ten_env.send_cmd(std::move(close_app_cmd));
     }
   }
@@ -172,7 +172,6 @@ TEST(FailedToTransferMsgTest, FailedToSendCmd) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "basic_extension_group_1",
                             "failed_to_send_cmd__extension_1");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   TEN_ASSERT(!cmd_result, "Should not happen");

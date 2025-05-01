@@ -43,7 +43,7 @@ class test_predefined_graph : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+    start_graph_cmd->set_dest("localhost", nullptr, nullptr);
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
         std::move(start_graph_cmd),
@@ -56,10 +56,8 @@ class test_predefined_graph : public ten::extension_t {
           auto graph_id = cmd_result->get_property_string("detail");
 
           auto hello_world_cmd = ten::cmd_t::create("hello_world");
-          hello_world_cmd->set_dest(
-              "msgpack://127.0.0.1:8001/", graph_id.c_str(),
-              "start_predefined_graph_cross_app__normal_extension_group",
-              "normal_extension_1");
+          hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/",
+                                    graph_id.c_str(), "normal_extension_1");
 
           ten_env.send_cmd(
               std::move(hello_world_cmd),
@@ -252,7 +250,6 @@ TEST(StartGraphTest, StartPredefinedGraphCrossApp) {  // NOLINT
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "start_predefined_graph_cross_app__predefined_graph_group",
                      "predefined_graph");
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

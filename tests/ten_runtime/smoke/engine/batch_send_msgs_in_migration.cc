@@ -95,8 +95,7 @@ TEST(ExtensionTest, BatchSendMsgsInMigration) {  // NOLINT
   // completed.
   for (int i = 0; i < size; i++) {
     auto test_cmd = ten::cmd_t::create("test");
-    test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                       "migration_group", "migration");
+    test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default", "migration");
     client->send_cmd(std::move(test_cmd));
   }
 
