@@ -6,6 +6,7 @@
 //
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use strum_macros::{Display, EnumString};
@@ -45,8 +46,14 @@ pub struct GetTemplateRequestPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct TemplateInfo {
+    pub pkg_name: String,
+    pub pkg_version: Version,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetTemplateResponseData {
-    pub template_name: Vec<String>,
+    pub templates: Vec<TemplateInfo>,
 }
 
 pub async fn get_template_endpoint(
@@ -85,13 +92,16 @@ pub async fn get_template_endpoint(
     match result {
         Ok(packages) => {
             // Extract the package names from the PkgRegistryInfo structs.
-            let template_names: Vec<String> = packages
+            let templates: Vec<TemplateInfo> = packages
                 .iter()
-                .map(|pkg| pkg.basic_info.type_and_name.name.clone())
+                .map(|pkg| TemplateInfo {
+                    pkg_name: pkg.basic_info.type_and_name.name.clone(),
+                    pkg_version: pkg.basic_info.version.clone(),
+                })
                 .collect();
 
             // Handle case where no packages were found.
-            if template_names.is_empty() {
+            if templates.is_empty() {
                 let error_message = format!(
                     "Unsupported template combination: pkg_type={}, \
                      language={}",
@@ -109,7 +119,7 @@ pub async fn get_template_endpoint(
 
             let response = ApiResponse {
                 status: Status::Ok,
-                data: GetTemplateResponseData { template_name: template_names },
+                data: GetTemplateResponseData { templates },
                 meta: None,
             };
 
