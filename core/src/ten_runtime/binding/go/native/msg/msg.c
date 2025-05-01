@@ -816,10 +816,8 @@ ten_go_error_t ten_go_msg_get_name(uintptr_t bridge_addr, const char **name) {
 
 ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
                                    int app_uri_len, const void *graph_id,
-                                   int graph_id_len,
-                                   const void *extension_group,
-                                   int extension_group_len,
-                                   const void *extension, int extension_len) {
+                                   int graph_id_len, const void *extension,
+                                   int extension_len) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
   TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
 
@@ -831,10 +829,6 @@ ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
 
   ten_string_t graph_id_str;
   ten_string_init_from_c_str_with_size(&graph_id_str, graph_id, graph_id_len);
-
-  ten_string_t extension_group_str;
-  ten_string_init_from_c_str_with_size(&extension_group_str, extension_group,
-                                       extension_group_len);
 
   ten_string_t extension_str;
   ten_string_init_from_c_str_with_size(&extension_str, extension,
@@ -856,7 +850,6 @@ ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
   ten_error_deinit(&err);
   ten_string_deinit(&app_uri_str);
   ten_string_deinit(&graph_id_str);
-  ten_string_deinit(&extension_group_str);
   ten_string_deinit(&extension_str);
 
   return cgo_error;

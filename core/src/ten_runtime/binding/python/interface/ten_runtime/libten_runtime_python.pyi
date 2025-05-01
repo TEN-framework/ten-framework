@@ -28,7 +28,6 @@ class _Msg:
         self,
         app_uri: Optional[str],
         graph_id: Optional[str],
-        extension_group: Optional[str],
         extension: Optional[str],
     ) -> None: ...
     def set_property_from_json(

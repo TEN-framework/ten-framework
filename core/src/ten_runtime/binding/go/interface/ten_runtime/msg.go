@@ -46,9 +46,8 @@ type Msg interface {
 
 	GetName() (string, error)
 	SetDest(
-		appUri string,
-		graphId string,
-		extensionGroup string,
+		appURI string,
+		graphID string,
 		extension string,
 	) error
 
@@ -205,9 +204,8 @@ func (p *msg) GetName() (string, error) {
 }
 
 func (p *msg) SetDest(
-	appUri string,
-	graphId string,
-	extensionGroup string,
+	appURI string,
+	graphID string,
 	extension string,
 ) error {
 	defer p.keepAlive()
@@ -215,12 +213,10 @@ func (p *msg) SetDest(
 	err := withCGOLimiter(func() error {
 		apiStatus := C.ten_go_msg_set_dest(
 			p.cPtr,
-			unsafe.Pointer(unsafe.StringData(appUri)),
-			C.int(len(appUri)),
-			unsafe.Pointer(unsafe.StringData(graphId)),
-			C.int(len(graphId)),
-			unsafe.Pointer(unsafe.StringData(extensionGroup)),
-			C.int(len(extensionGroup)),
+			unsafe.Pointer(unsafe.StringData(appURI)),
+			C.int(len(appURI)),
+			unsafe.Pointer(unsafe.StringData(graphID)),
+			C.int(len(graphID)),
 			unsafe.Pointer(unsafe.StringData(extension)),
 			C.int(len(extension)),
 		)

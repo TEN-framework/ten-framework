@@ -98,9 +98,6 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
   ten_string_t graph_id;
   TEN_STRING_INIT(graph_id);
 
-  ten_string_t extension_group;
-  TEN_STRING_INIT(extension_group);
-
   ten_string_t extension;
   TEN_STRING_INIT(extension);
 
@@ -115,12 +112,7 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
   }
 
   if (!is_js_undefined(env, args[3])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[3], &extension_group);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get extension group", NULL);
-  }
-
-  if (!is_js_undefined(env, args[4])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[4], &extension);
+    bool rc = ten_nodejs_get_str_from_js(env, args[3], &extension);
     RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get extension", NULL);
   }
 
@@ -140,7 +132,6 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
 
   ten_string_deinit(&app_uri);
   ten_string_deinit(&graph_id);
-  ten_string_deinit(&extension_group);
   ten_string_deinit(&extension);
   ten_error_deinit(&err);
 

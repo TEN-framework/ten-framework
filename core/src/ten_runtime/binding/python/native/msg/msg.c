@@ -117,10 +117,8 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
 
   const char *app_uri = NULL;
   const char *graph_id = NULL;
-  const char *extension_group_name = NULL;
   const char *extension_name = NULL;
-  if (!PyArg_ParseTuple(args, "zzzz", &app_uri, &graph_id,
-                        &extension_group_name, &extension_name)) {
+  if (!PyArg_ParseTuple(args, "zzz", &app_uri, &graph_id, &extension_name)) {
     return ten_py_raise_py_value_error_exception("Failed to parse arguments.");
   }
 
