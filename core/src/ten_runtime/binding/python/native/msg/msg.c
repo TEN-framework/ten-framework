@@ -104,7 +104,7 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
 
   TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
-  if (PyTuple_GET_SIZE(args) != 4) {
+  if (PyTuple_GET_SIZE(args) != 3) {
     return ten_py_raise_py_value_error_exception(
         "Invalid argument count when set_dest.");
   }
