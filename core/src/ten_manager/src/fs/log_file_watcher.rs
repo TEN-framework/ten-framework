@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::fs::{File, Metadata};
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -19,6 +19,9 @@ use anyhow::{anyhow, Result};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 
+use crate::log::{extract_extension_from_log_line, parse_graph_resources_log};
+use crate::log::{GraphResourcesLog, LogLineInfo, LogLineMetadata};
+
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
 const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
@@ -26,7 +29,7 @@ const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
 /// Stream of UTF-8 text file content changes.
 pub struct LogFileContentStream {
     // Channel for receiving file content as UTF-8 text.
-    content_rx: Receiver<Result<String>>,
+    content_rx: Receiver<Result<LogLineInfo>>,
 
     // Sender to signal stop request.
     stop_tx: Option<oneshot::Sender<()>>,
@@ -35,14 +38,14 @@ pub struct LogFileContentStream {
 impl LogFileContentStream {
     /// Create a new FileContentStream.
     fn new(
-        content_rx: Receiver<Result<String>>,
+        content_rx: Receiver<Result<LogLineInfo>>,
         stop_tx: oneshot::Sender<()>,
     ) -> Self {
         Self { content_rx, stop_tx: Some(stop_tx) }
     }
 
     /// Get the next chunk of text from the file.
-    pub async fn next(&mut self) -> Option<Result<String>> {
+    pub async fn next(&mut self) -> Option<Result<LogLineInfo>> {
         self.content_rx.recv().await
     }
 
@@ -132,10 +135,19 @@ pub async fn watch_log_file<P: AsRef<Path>>(
 /// Actual file watch task running in the background.
 async fn watch_log_file_task(
     path: PathBuf,
-    content_tx: Sender<Result<String>>,
+    content_tx: Sender<Result<LogLineInfo>>,
     mut stop_rx: oneshot::Receiver<()>,
     options: LogFileWatchOptions,
 ) {
+    // Create a GraphResourcesLog instance that will be used throughout this
+    // task's lifetime.
+    let mut graph_resources_log = GraphResourcesLog {
+        graph_id: String::new(),
+        graph_name: String::new(),
+        app_uri: None,
+        extension_threads: std::collections::HashMap::new(),
+    };
+
     // Open the file.
     let mut file = match File::open(&path) {
         Ok(f) => f,
@@ -158,19 +170,21 @@ async fn watch_log_file_task(
         return;
     }
 
-    let mut init_content = String::new();
-    match file.read_to_string(&mut init_content) {
-        Ok(n) => {
-            if n > 0 {
-                let _ = content_tx.send(Ok(init_content)).await;
-            }
+    // Instead of reading the entire file at once, read it line by line.
+    let mut reader = BufReader::new(&file);
+    let mut line = String::new();
+    while let Ok(bytes_read) = reader.read_line(&mut line) {
+        if bytes_read == 0 {
+            break; // End of file.
         }
-        Err(e) => {
-            let _ = content_tx
-                .send(Err(anyhow!("Failed to read file as UTF-8 text: {}", e)))
-                .await;
-            return;
-        }
+
+        // Process each line.
+        let metadata = process_log_line(&line, &mut graph_resources_log);
+
+        let log_line_info = LogLineInfo { line: line.clone(), metadata };
+
+        let _ = content_tx.send(Ok(log_line_info)).await;
+        line.clear(); // Clear for the next line.
     }
 
     // Reset last_pos to the current EOF.
@@ -233,7 +247,15 @@ async fn watch_log_file_task(
                     match reader.read_line(&mut line) {
                         Ok(n) if n > 0 => {
                             last_pos += n as u64;
-                            let _ = content_tx.send(Ok(line)).await;
+
+                            // Process the new line.
+                            let metadata = process_log_line(&line, &mut graph_resources_log);
+
+                            let log_line_info = LogLineInfo {
+                                line,
+                                metadata,
+                            };
+                            let _ = content_tx.send(Ok(log_line_info)).await;
                             last_activity = Instant::now();
                         }
                         Ok(_) => {}
@@ -259,6 +281,26 @@ async fn watch_log_file_task(
                     }
                 }
             }
+        }
+    }
+}
+
+/// Process a log line: try to parse as graph resources log first, then try to
+/// extract extension information.
+fn process_log_line(
+    log_line: &str,
+    graph_resources_log: &mut GraphResourcesLog,
+) -> Option<LogLineMetadata> {
+    // First try to parse as graph resources log.
+    match parse_graph_resources_log(log_line, graph_resources_log) {
+        Ok(_) => {
+            // Successfully parsed as graph resources log, but no metadata to
+            // return.
+            None
+        }
+        Err(_) => {
+            // Not a graph resources log, try to extract extension information.
+            extract_extension_from_log_line(log_line, graph_resources_log)
         }
     }
 }

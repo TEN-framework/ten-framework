@@ -16,6 +16,7 @@ use tempfile::tempdir;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use ten_manager::designer::log_watcher::log_watcher_endpoint;
+use ten_manager::log::LogLineInfo;
 
 use crate::test_case::common::builtin_server::start_test_server;
 
@@ -89,16 +90,26 @@ async fn test_ws_log_watcher_endpoint() {
     let test_content = "Test log message\n";
     append_to_log_file(&log_file_path, test_content);
 
-    // Check if we receive the content.
+    // Check if we receive the content - with timeout of 10 seconds.
     let mut received_content = false;
-    while let Some(msg) = read.next().await {
+    if let Ok(Some(msg)) =
+        tokio::time::timeout(Duration::from_secs(10), read.next()).await
+    {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
             println!("Received text: {}", text);
-            if text.contains(test_content) {
+
+            // Try to parse the JSON response.
+            if let Ok(log_line_info) = serde_json::from_str::<LogLineInfo>(text)
+            {
+                if log_line_info.line.contains(test_content.trim()) {
+                    received_content = true;
+                }
+            } else if text.contains(test_content.trim()) {
+                // Fallback to direct text comparison (for backward
+                // compatibility).
                 received_content = true;
-                break;
             }
         }
     }
