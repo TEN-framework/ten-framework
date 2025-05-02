@@ -23,26 +23,26 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
 const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
 
-/// Stream of file content changes.
-pub struct FileContentStream {
-    // Channel for receiving file content.
-    content_rx: Receiver<Result<Vec<u8>>>,
+/// Stream of UTF-8 text file content changes.
+pub struct LogFileContentStream {
+    // Channel for receiving file content as UTF-8 text.
+    content_rx: Receiver<Result<String>>,
 
     // Sender to signal stop request.
     stop_tx: Option<oneshot::Sender<()>>,
 }
 
-impl FileContentStream {
+impl LogFileContentStream {
     /// Create a new FileContentStream.
     fn new(
-        content_rx: Receiver<Result<Vec<u8>>>,
+        content_rx: Receiver<Result<String>>,
         stop_tx: oneshot::Sender<()>,
     ) -> Self {
         Self { content_rx, stop_tx: Some(stop_tx) }
     }
 
-    /// Get the next chunk of data from the file.
-    pub async fn next(&mut self) -> Option<Result<Vec<u8>>> {
+    /// Get the next chunk of text from the file.
+    pub async fn next(&mut self) -> Option<Result<String>> {
         self.content_rx.recv().await
     }
 
@@ -54,7 +54,7 @@ impl FileContentStream {
     }
 }
 
-impl Drop for FileContentStream {
+impl Drop for LogFileContentStream {
     fn drop(&mut self) {
         self.stop();
     }
@@ -62,7 +62,7 @@ impl Drop for FileContentStream {
 
 /// Options for watching a file.
 #[derive(Clone)]
-pub struct FileWatchOptions {
+pub struct LogFileWatchOptions {
     /// Timeout for waiting for new content after reaching EOF.
     pub timeout: Duration,
 
@@ -73,7 +73,7 @@ pub struct FileWatchOptions {
     pub check_interval: Duration,
 }
 
-impl Default for FileWatchOptions {
+impl Default for LogFileWatchOptions {
     fn default() -> Self {
         Self {
             timeout: DEFAULT_TIMEOUT,
@@ -97,17 +97,17 @@ fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
     }
 }
 
-/// Watch a file for changes and stream its content.
+/// Watch a UTF-8 text file for changes and stream its content.
 ///
 /// Returns a FileContentStream that can be used to read the content of the file
 /// as it changes. The stream will end when either:
 /// 1. The caller stops it by calling `stop()` or dropping the stream.
 /// 2. No new content is available after reaching EOF and the timeout is
 ///    reached.
-pub async fn watch_file<P: AsRef<Path>>(
+pub async fn watch_log_file<P: AsRef<Path>>(
     path: P,
-    options: Option<FileWatchOptions>,
-) -> Result<FileContentStream> {
+    options: Option<LogFileWatchOptions>,
+) -> Result<LogFileContentStream> {
     let path = path.as_ref().to_path_buf();
 
     // Ensure the file exists before we start watching it.
@@ -123,18 +123,18 @@ pub async fn watch_file<P: AsRef<Path>>(
 
     // Spawn a task to watch the file.
     tokio::spawn(async move {
-        watch_file_task(path, content_tx, stop_rx, options).await;
+        watch_log_file_task(path, content_tx, stop_rx, options).await;
     });
 
-    Ok(FileContentStream::new(content_rx, stop_tx))
+    Ok(LogFileContentStream::new(content_rx, stop_tx))
 }
 
 /// Actual file watch task running in the background.
-async fn watch_file_task(
+async fn watch_log_file_task(
     path: PathBuf,
-    content_tx: Sender<Result<Vec<u8>>>,
+    content_tx: Sender<Result<String>>,
     mut stop_rx: oneshot::Receiver<()>,
-    options: FileWatchOptions,
+    options: LogFileWatchOptions,
 ) {
     // Open the file.
     let mut file = match File::open(&path) {
@@ -157,15 +157,18 @@ async fn watch_file_task(
         let _ = content_tx.send(Err(anyhow!(e))).await;
         return;
     }
-    let mut init_buf = Vec::new();
-    match file.read_to_end(&mut init_buf) {
+
+    let mut init_content = String::new();
+    match file.read_to_string(&mut init_content) {
         Ok(n) => {
             if n > 0 {
-                let _ = content_tx.send(Ok(init_buf)).await;
+                let _ = content_tx.send(Ok(init_content)).await;
             }
         }
         Err(e) => {
-            let _ = content_tx.send(Err(anyhow!(e))).await;
+            let _ = content_tx
+                .send(Err(anyhow!("Failed to read file as UTF-8 text: {}", e)))
+                .await;
             return;
         }
     }
@@ -226,17 +229,25 @@ async fn watch_file_task(
                     }
 
                     let mut reader = BufReader::with_capacity(options.buffer_size, &file);
-                    let mut buf = Vec::with_capacity(options.buffer_size);
-                    match reader.read_until(0, &mut buf) {
+                    let mut line = String::with_capacity(options.buffer_size);
+                    match reader.read_line(&mut line) {
                         Ok(n) if n > 0 => {
                             last_pos += n as u64;
-                            let _ = content_tx.send(Ok(buf)).await;
+                            let _ = content_tx.send(Ok(line)).await;
                             last_activity = Instant::now();
                         }
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!("Error reading from file: {}", e);
-                            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            // Specific error for UTF-8 decoding failures.
+                            if e.kind() == std::io::ErrorKind::InvalidData {
+                                eprintln!("Error: Invalid UTF-8 data in file");
+                                let _ = content_tx
+                                    .send(Err(anyhow!("Invalid UTF-8 data in file")))
+                                    .await;
+                            } else {
+                                eprintln!("Error reading from file: {}", e);
+                                let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            }
                             break;
                         }
                     }

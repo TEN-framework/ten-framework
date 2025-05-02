@@ -16,7 +16,7 @@ use serde_json::json;
 use tokio::sync::Mutex;
 
 use crate::designer::DesignerState;
-use crate::fs::file_watcher::{FileContentStream, FileWatchOptions};
+use crate::fs::log_file_watcher::{LogFileContentStream, LogFileWatchOptions};
 use crate::pkg_info::property::get_log_file_path;
 
 // Message types for WebSocket communication
@@ -32,7 +32,7 @@ pub struct SetAppBaseDir {
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
-pub struct FileContent(pub Vec<u8>);
+pub struct FileContent(pub String);
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
@@ -48,12 +48,12 @@ pub struct InfoMessage(pub String);
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct StoreWatcher(pub FileContentStream);
+pub struct StoreWatcher(pub LogFileContentStream);
 
 // WebSocket actor for log file watching.
 struct WsLogWatcher {
     app_base_dir: Option<String>,
-    file_watcher: Option<Arc<Mutex<FileContentStream>>>,
+    file_watcher: Option<Arc<Mutex<LogFileContentStream>>>,
 }
 
 impl WsLogWatcher {
@@ -125,10 +125,10 @@ impl Handler<SetAppBaseDir> for WsLogWatcher {
             };
 
             // Create file watch options.
-            let options = FileWatchOptions::default();
+            let options = LogFileWatchOptions::default();
 
             // Start watching the file.
-            match crate::fs::file_watcher::watch_file(
+            match crate::fs::log_file_watcher::watch_log_file(
                 &log_file_path,
                 Some(options),
             )
@@ -160,8 +160,8 @@ impl Handler<FileContent> for WsLogWatcher {
         msg: FileContent,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the file content to the WebSocket client.
-        ctx.binary(msg.0);
+        // Send the file content as text to the WebSocket client.
+        ctx.text(msg.0);
     }
 }
 

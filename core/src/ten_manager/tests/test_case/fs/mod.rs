@@ -12,7 +12,9 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use ten_manager::fs::file_watcher::{watch_file, FileWatchOptions};
+    use ten_manager::fs::log_file_watcher::{
+        watch_log_file, LogFileWatchOptions,
+    };
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
@@ -23,12 +25,12 @@ mod tests {
         rt.block_on(async {
             // Create a temporary file for testing
             let mut temp_file = NamedTempFile::new()?;
-            let test_content = b"Hello, World!";
-            temp_file.write_all(test_content)?;
+            let test_content = "Hello, World!";
+            temp_file.write_all(test_content.as_bytes())?;
             temp_file.flush()?;
 
             // Create options with shorter timeout for testing.
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
@@ -36,15 +38,15 @@ mod tests {
 
             // Start watching the file.
             let mut stream =
-                watch_file(temp_file.path(), Some(options)).await?;
+                watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
             assert_eq!(chunk, test_content);
 
             // Write more content to the file.
-            let more_content = b"More content!";
-            temp_file.write_all(more_content)?;
+            let more_content = "More content!";
+            temp_file.write_all(more_content.as_bytes())?;
             temp_file.flush()?;
 
             // Get the second chunk.
@@ -82,23 +84,23 @@ mod tests {
                     .create(true)
                     .truncate(true)
                     .open(&path_str)?;
-                file.write_all(b"Initial content")?;
+                file.write_all("Initial content".as_bytes())?;
                 file.flush()?;
             }
 
             // Create options with shorter timeout for testing
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
             };
 
             // Start watching the file
-            let mut stream = watch_file(&path_str, Some(options)).await?;
+            let mut stream = watch_log_file(&path_str, Some(options)).await?;
 
             // Get the first chunk
             let chunk = stream.next().await.expect("Should receive data")?;
-            assert_eq!(chunk, b"Initial content");
+            assert_eq!(chunk, "Initial content");
 
             // Simulate log rotation - delete and recreate file
             std::fs::remove_file(&path_str)?;
@@ -112,14 +114,14 @@ mod tests {
                     .create(true)
                     .truncate(true)
                     .open(&path_str)?;
-                file.write_all(b"Rotated content")?;
+                file.write_all("Rotated content".as_bytes())?;
                 file.flush()?;
             }
 
             // Get the content after rotation
             let chunk =
                 stream.next().await.expect("Should receive rotated data")?;
-            assert_eq!(chunk, b"Rotated content");
+            assert_eq!(chunk, "Rotated content");
 
             // Stop watching
             stream.stop();
@@ -134,11 +136,11 @@ mod tests {
         rt.block_on(async {
             // Create a temporary file for testing.
             let mut temp_file = NamedTempFile::new()?;
-            temp_file.write_all(b"Test content")?;
+            temp_file.write_all("Test content".as_bytes())?;
             temp_file.flush()?;
 
             // Create options with very short timeout for testing.
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_millis(500),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
@@ -146,11 +148,11 @@ mod tests {
 
             // Start watching the file.
             let mut stream =
-                watch_file(temp_file.path(), Some(options)).await?;
+                watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            assert_eq!(chunk, b"Test content");
+            assert_eq!(chunk, "Test content");
 
             // Wait for the timeout to occur (no new content being written).
             let next_result = stream.next().await;
