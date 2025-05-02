@@ -73,8 +73,8 @@ static napi_value ten_nodejs_msg_get_name(napi_env env,
 
 static napi_value ten_nodejs_msg_set_dest(napi_env env,
                                           napi_callback_info info) {
-  const size_t argc = 5;
-  napi_value args[argc];  // this, app_uri, graph_id, extension_group, extension
+  const size_t argc = 4;
+  napi_value args[argc];  // this, app_uri, graph_id, extension
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
