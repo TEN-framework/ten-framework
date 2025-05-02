@@ -5,8 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod file_type;
-pub mod file_watcher;
 pub mod json;
+pub mod log_file_watcher;
 
 use std::env;
 use std::path::{Path, PathBuf};

@@ -24,7 +24,7 @@ const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
 const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Stream of UTF-8 text file content changes.
-pub struct FileContentStream {
+pub struct LogFileContentStream {
     // Channel for receiving file content as UTF-8 text.
     content_rx: Receiver<Result<String>>,
 
@@ -32,7 +32,7 @@ pub struct FileContentStream {
     stop_tx: Option<oneshot::Sender<()>>,
 }
 
-impl FileContentStream {
+impl LogFileContentStream {
     /// Create a new FileContentStream.
     fn new(
         content_rx: Receiver<Result<String>>,
@@ -54,7 +54,7 @@ impl FileContentStream {
     }
 }
 
-impl Drop for FileContentStream {
+impl Drop for LogFileContentStream {
     fn drop(&mut self) {
         self.stop();
     }
@@ -62,7 +62,7 @@ impl Drop for FileContentStream {
 
 /// Options for watching a file.
 #[derive(Clone)]
-pub struct FileWatchOptions {
+pub struct LogFileWatchOptions {
     /// Timeout for waiting for new content after reaching EOF.
     pub timeout: Duration,
 
@@ -73,7 +73,7 @@ pub struct FileWatchOptions {
     pub check_interval: Duration,
 }
 
-impl Default for FileWatchOptions {
+impl Default for LogFileWatchOptions {
     fn default() -> Self {
         Self {
             timeout: DEFAULT_TIMEOUT,
@@ -104,10 +104,10 @@ fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
 /// 1. The caller stops it by calling `stop()` or dropping the stream.
 /// 2. No new content is available after reaching EOF and the timeout is
 ///    reached.
-pub async fn watch_file<P: AsRef<Path>>(
+pub async fn watch_log_file<P: AsRef<Path>>(
     path: P,
-    options: Option<FileWatchOptions>,
-) -> Result<FileContentStream> {
+    options: Option<LogFileWatchOptions>,
+) -> Result<LogFileContentStream> {
     let path = path.as_ref().to_path_buf();
 
     // Ensure the file exists before we start watching it.
@@ -123,18 +123,18 @@ pub async fn watch_file<P: AsRef<Path>>(
 
     // Spawn a task to watch the file.
     tokio::spawn(async move {
-        watch_file_task(path, content_tx, stop_rx, options).await;
+        watch_log_file_task(path, content_tx, stop_rx, options).await;
     });
 
-    Ok(FileContentStream::new(content_rx, stop_tx))
+    Ok(LogFileContentStream::new(content_rx, stop_tx))
 }
 
 /// Actual file watch task running in the background.
-async fn watch_file_task(
+async fn watch_log_file_task(
     path: PathBuf,
     content_tx: Sender<Result<String>>,
     mut stop_rx: oneshot::Receiver<()>,
-    options: FileWatchOptions,
+    options: LogFileWatchOptions,
 ) {
     // Open the file.
     let mut file = match File::open(&path) {

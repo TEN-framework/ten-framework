@@ -12,7 +12,9 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use ten_manager::fs::file_watcher::{watch_file, FileWatchOptions};
+    use ten_manager::fs::log_file_watcher::{
+        watch_log_file, LogFileWatchOptions,
+    };
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
@@ -28,7 +30,7 @@ mod tests {
             temp_file.flush()?;
 
             // Create options with shorter timeout for testing.
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
@@ -36,7 +38,7 @@ mod tests {
 
             // Start watching the file.
             let mut stream =
-                watch_file(temp_file.path(), Some(options)).await?;
+                watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
@@ -87,14 +89,14 @@ mod tests {
             }
 
             // Create options with shorter timeout for testing
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
             };
 
             // Start watching the file
-            let mut stream = watch_file(&path_str, Some(options)).await?;
+            let mut stream = watch_log_file(&path_str, Some(options)).await?;
 
             // Get the first chunk
             let chunk = stream.next().await.expect("Should receive data")?;
@@ -138,7 +140,7 @@ mod tests {
             temp_file.flush()?;
 
             // Create options with very short timeout for testing.
-            let options = FileWatchOptions {
+            let options = LogFileWatchOptions {
                 timeout: Duration::from_millis(500),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
@@ -146,7 +148,7 @@ mod tests {
 
             // Start watching the file.
             let mut stream =
-                watch_file(temp_file.path(), Some(options)).await?;
+                watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
