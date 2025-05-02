@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "include_internal/ten_runtime/addon/addon.h"
@@ -25,6 +26,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
+#include "include_internal/ten_utils/log/log.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/ten_env/ten_env.h"
@@ -329,6 +331,27 @@ static void ten_extension_context_add_extension_groups_info_from_graph(
   ten_list_swap(&self->extension_groups_info_from_graph, extension_groups_info);
 }
 
+static void ten_extension_context_log_graph_resources(
+    ten_extension_context_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_context_check_integrity(self, true),
+             "Invalid use of extension_context %p.", self);
+
+  // Get the required information.
+  const char *app_uri = ten_app_get_uri(self->engine->app);
+  const char *graph_id = ten_engine_get_id(self->engine, true);
+  const char *graph_name = ten_string_get_raw_str(&self->engine->graph_name);
+
+  // Log the complete JSON in a single call.
+  TEN_LOGM(
+      "[graph resources] {"
+      "\"app_uri\": \"%s\", "
+      "\"graph name\": \"%s\", "
+      "\"graph id\": \"%s\" "
+      "}",
+      app_uri, graph_name, graph_id);
+}
+
 static void ten_extension_context_create_extension_group_done(
     ten_env_t *ten_env, ten_extension_group_t *extension_group) {
   TEN_ASSERT(extension_group, "Should not happen.");
@@ -430,9 +453,7 @@ static void ten_extension_context_create_extension_group_done(
             ten_extension_group_get_name(extension_group, true));
     TEN_ASSERT(extension_group->extension_group_info, "Should not happen.");
 
-    TEN_LOGV(
-        "[%s] graph info: ", ten_engine_get_id(extension_context->engine, true),
-        ten_extension_group_get_name(extension_group, true));
+    ten_extension_context_log_graph_resources(extension_context);
 
     ten_extension_context_start(extension_context);
   }

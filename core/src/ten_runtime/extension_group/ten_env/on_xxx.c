@@ -78,8 +78,8 @@ void ten_extension_group_on_init_done(ten_env_t *self) {
            ten_extension_group_get_name(extension_group, true));
 
   ten_extension_thread_t *extension_thread = extension_group->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   int rc = ten_runloop_post_task_tail(
@@ -131,8 +131,8 @@ bool ten_extension_group_on_deinit_done(ten_env_t *self) {
   }
 
   ten_extension_thread_t *extension_thread = extension_group->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   // All extensions belong to this extension thread (group) are deleted, notify
@@ -160,8 +160,8 @@ void ten_extension_group_on_create_extensions_done(ten_extension_group_t *self,
            ten_string_get_raw_str(&self->name));
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   // Remove the extensions that were not successfully created from the list of
@@ -212,8 +212,8 @@ void ten_extension_group_on_destroy_extensions_done(
            ten_string_get_raw_str(&self->name));
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   int rc = ten_runloop_post_task_tail(

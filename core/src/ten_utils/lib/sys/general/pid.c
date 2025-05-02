@@ -11,6 +11,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include "ten_utils/lib/thread.h"
+
 #if defined(__linux__)
 
 #include <sys/prctl.h>
@@ -51,13 +53,5 @@ void ten_get_pid_tid(int64_t *pid, int64_t *tid) {
   *pid = getpid();
 #endif
 
-#if defined(OS_WINDOWS)
-  *tid = GetCurrentThreadId();
-#elif defined(OS_LINUX)
-  *tid = syscall(SYS_gettid);
-#elif defined(OS_MACOS)
-  *tid = (int)pthread_mach_thread_np(pthread_self());
-#else
-#error Platform not supported
-#endif
+  *tid = ten_thread_get_id(NULL);
 }

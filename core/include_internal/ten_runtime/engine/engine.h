@@ -61,6 +61,8 @@ struct ten_engine_t {
   // into the engine until it is fully prepared.
   bool is_ready_to_handle_msg;
 
+  ten_string_t graph_name;
+
   // When app creates an engine, it will create a randomized graph ID for the
   // engine. It _must_ be a UUID4 string.
   ten_string_t graph_id;
@@ -117,6 +119,9 @@ TEN_RUNTIME_PRIVATE_API bool ten_engine_is_ready_to_handle_msg(
 
 TEN_RUNTIME_PRIVATE_API const char *ten_engine_get_id(ten_engine_t *self,
                                                       bool check_thread);
+
+TEN_RUNTIME_PRIVATE_API void ten_engine_set_graph_name(ten_engine_t *self,
+                                                       const char *name);
 
 TEN_RUNTIME_PRIVATE_API void ten_engine_add_orphan_connection(
     ten_engine_t *self, ten_connection_t *connection);

@@ -16,6 +16,54 @@
 
 #define TEN_LOG_SIGNATURE 0xC0EE0CE92149D61AU
 
+#define TEN_LOGM(...)                                                         \
+  do {                                                                        \
+    ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_MANDATORY, __func__, \
+                          __FILE__, __LINE__, __VA_ARGS__);                   \
+  } while (0)
+
+#define TEN_LOGV_AUX(log, ...)                                            \
+  do {                                                                    \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_VERBOSE, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                         \
+  } while (0)
+
+#define TEN_LOGD_AUX(log, ...)                                          \
+  do {                                                                  \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                       \
+  } while (0)
+
+#define TEN_LOGI_AUX(log, ...)                                         \
+  do {                                                                 \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_INFO, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                      \
+  } while (0)
+
+#define TEN_LOGW_AUX(log, ...)                                         \
+  do {                                                                 \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_WARN, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                      \
+  } while (0)
+
+#define TEN_LOGE_AUX(log, ...)                                          \
+  do {                                                                  \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_ERROR, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                       \
+  } while (0)
+
+#define TEN_LOGF_AUX(log, ...)                                          \
+  do {                                                                  \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_FATAL, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                       \
+  } while (0)
+
+#define TEN_LOGM_AUX(log, ...)                                              \
+  do {                                                                      \
+    ten_log_log_formatted(log, TEN_LOG_LEVEL_MANDATORY, __func__, __FILE__, \
+                          __LINE__, __VA_ARGS__);                           \
+  } while (0)
+
 typedef struct ten_string_t ten_string_t;
 
 TEN_UTILS_PRIVATE_API bool ten_log_check_integrity(ten_log_t *self);
