@@ -53,7 +53,7 @@ static void ten_extension_in_path_timer_on_triggered(ten_timer_t *self,
   }
 
   if (removed_count > 0) {
-    TEN_LOGE("[%s] %zu in paths timeout.",
+    TEN_LOGE("[%s] %zu in paths timeout",
              ten_extension_get_name(extension, true), removed_count);
   }
 }
@@ -98,7 +98,7 @@ static void ten_extension_out_path_timer_on_triggered(ten_timer_t *self,
   }
 
   if (!ten_list_is_empty(&timeout_cmd_result_list)) {
-    TEN_LOGE("[%s] %zu paths timeout.", ten_extension_get_name(extension, true),
+    TEN_LOGE("[%s] %zu paths timeout", ten_extension_get_name(extension, true),
              ten_list_size(&timeout_cmd_result_list));
   }
 

@@ -37,7 +37,7 @@ static void ten_extension_adjust_and_validate_property_on_configure_done(
   bool success = ten_schema_store_adjust_properties(&self->schema_store,
                                                     &self->property, &err);
   if (!success) {
-    TEN_LOGW("[%s] Failed to adjust property type: %s.",
+    TEN_LOGW("[%s] Failed to adjust property type: %s",
              ten_extension_get_name(self, true), ten_error_message(&err));
     goto done;
   }
@@ -45,7 +45,7 @@ static void ten_extension_adjust_and_validate_property_on_configure_done(
   success = ten_schema_store_validate_properties(&self->schema_store,
                                                  &self->property, &err);
   if (!success) {
-    TEN_LOGW("[%s] Invalid property: %s.", ten_extension_get_name(self, true),
+    TEN_LOGW("[%s] Invalid property: %s", ten_extension_get_name(self, true),
              ten_error_message(&err));
     goto done;
   }
@@ -92,8 +92,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_configure() done.",
-           ten_extension_get_name(extension, true));
+  TEN_LOGD("[%s] on_configure() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
@@ -122,7 +121,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
       &extension->manifest_info, ten_extension_get_base_dir(extension),
       &extension->manifest, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load extension manifest data, FATAL ERROR.");
+    TEN_LOGW("Failed to load extension manifest data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
@@ -131,7 +130,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
       &extension->property_info, ten_extension_get_base_dir(extension),
       &extension->property, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load extension property data, FATAL ERROR.");
+    TEN_LOGW("Failed to load extension property data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
@@ -245,7 +244,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_init() done.", ten_extension_get_name(extension, true));
+  TEN_LOGD("[%s] on_init() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
 
@@ -304,7 +303,7 @@ bool ten_extension_on_start_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGI("[%s] on_start() done.", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_start() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_START_DONE;
 
@@ -337,7 +336,7 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(extension, true),
              "Invalid use of extension %p.", extension);
 
-  TEN_LOGI("[%s] on_stop() done.", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_stop() done", ten_extension_get_name(extension, true));
 
   if (extension->state != TEN_EXTENSION_STATE_ON_STOP) {
     TEN_LOGI("[%s] Failed to on_stop_done() because of incorrect timing: %d",
@@ -365,7 +364,7 @@ static void ten_extension_thread_del_extension(void *self_, void *extension_) {
   TEN_ASSERT(ten_extension_check_integrity(extension, true),
              "Invalid use of extension %p.", extension);
 
-  TEN_LOGD("[%s] Deleted from extension thread (%s).",
+  TEN_LOGD("[%s] Deleted from extension thread (%s)",
            ten_extension_get_name(extension, true),
            ten_string_get_raw_str(&self->extension_group->name));
 
@@ -440,7 +439,7 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
 
   extension->state = TEN_EXTENSION_STATE_ON_DEINIT_DONE;
 
-  TEN_LOGD("[%s] on_deinit() done.", ten_extension_get_name(extension, true));
+  TEN_LOGD("[%s] on_deinit() done", ten_extension_get_name(extension, true));
 
   // Close the ten_env so that any apis called on the ten_env will return
   // TEN_ERROR_ENV_CLOSED.

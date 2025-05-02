@@ -331,7 +331,7 @@ static void ten_app_addon_loaded_using_all_addon_loaders(ten_env_t *ten_env,
       manager, addon_context->addon_type,
       ten_string_get_raw_str(&addon_context->addon_name), register_ctx);
   if (!success) {
-    TEN_LOGE("Failed to load the addon %s using all addon loaders.",
+    TEN_LOGE("Failed to load the addon %s using all addon loaders",
              ten_string_get_raw_str(&addon_context->addon_name));
     ten_addon_register_ctx_destroy(register_ctx);
 
@@ -376,7 +376,7 @@ static void ten_app_create_addon_instance(ten_app_t *app,
   if (addon_context->flow ==
       TEN_ADDON_CONTEXT_FLOW_ENGINE_CREATE_EXTENSION_GROUP) {
     if (ten_c_string_is_empty(addon_name)) {
-      TEN_LOGI("The addon name is empty, will not create the extension group.");
+      TEN_LOGI("The addon name is empty, will not create the extension group");
 
       ten_app_notify_create_addon_instance_failed(app, addon_context);
       return;
@@ -399,7 +399,7 @@ static void ten_app_create_addon_instance(ten_app_t *app,
       ten_addon_store_find_by_type(app, addon_type, addon_name);
   if (addon_host) {
     // The addon already exists; create an instance of it.
-    TEN_LOGI("The addon %s already exists; create an instance of it.",
+    TEN_LOGI("The addon %s already exists; create an instance of it",
              addon_name);
     ten_addon_host_create_instance_async(addon_host, instance_name,
                                          addon_context);
@@ -432,7 +432,7 @@ static void ten_app_create_addon_instance(ten_app_t *app,
     return;
   }
 
-  TEN_LOGD("Try to load the addon %s using all installed addon loaders.",
+  TEN_LOGD("Try to load the addon %s using all installed addon loaders",
            addon_name);
 
   ten_addon_try_load_specific_addon_using_all_addon_loaders(
@@ -510,7 +510,7 @@ ten_addon_host_t *ten_addon_register(TEN_ADDON_TYPE addon_type,
   TEN_ASSERT(addon_type != TEN_ADDON_TYPE_INVALID, "Invalid argument.");
 
   if (!addon_name || strlen(addon_name) == 0) {
-    TEN_LOGE("The addon name is required.");
+    TEN_LOGE("The addon name is required");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }

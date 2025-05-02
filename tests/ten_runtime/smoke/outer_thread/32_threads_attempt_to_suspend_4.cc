@@ -369,7 +369,7 @@ class test_extension_2 : public ten::extension_t {
     data_received_count++;
 
     if (data_received_count % 200 == 0) {
-      TEN_LOGD("extension_2 received %d data(s).", data_received_count);
+      TEN_LOGD("extension_2 received %d data(s)", data_received_count);
     }
 
     if (hello_cmd != nullptr &&

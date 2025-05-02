@@ -95,7 +95,7 @@ bool ten_msg_add_locked_res_buf(ten_shared_ptr_t *self, const uint8_t *data,
   TEN_ASSERT(ten_msg_check_integrity(self), "Invalid argument.");
 
   if (!data) {
-    TEN_LOGE("Failed to lock res, the data is null.");
+    TEN_LOGE("Failed to lock res, the data is null");
     if (err) {
       ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
                     "Try to lock a NULL buf.");
@@ -117,7 +117,7 @@ bool ten_msg_remove_locked_res_buf(ten_shared_ptr_t *self, const uint8_t *data,
       ten_raw_msg_remove_locked_res_buf(ten_msg_get_raw_msg(self), data);
 
   if (!result) {
-    TEN_LOGE("Fatal, the locked res %p is not found.", data);
+    TEN_LOGE("Fatal, the locked res %p is not found", data);
     if (err) {
       ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
                     "Failed to remove locked res.");

@@ -26,7 +26,7 @@ bool ten_test_curl_connect_with_retry(CURL *curl, uint16_t max_retries,
     ten_sleep_ms(delay_in_ms);
   } while (++count < max_retries);
 
-  TEN_LOGE("Failed to connect to server, error code: %d.", res);
+  TEN_LOGE("Failed to connect to server, error code: %d", res);
 
   return false;
 }

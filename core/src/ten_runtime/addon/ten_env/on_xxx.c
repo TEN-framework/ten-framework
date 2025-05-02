@@ -47,7 +47,7 @@ void ten_addon_on_init_done(ten_env_t *self) {
   bool rc = ten_handle_manifest_info_when_on_configure_done(
       &addon_host->manifest_info, NULL, &addon_host->manifest, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load addon manifest data, FATAL ERROR.");
+    TEN_LOGW("Failed to load addon manifest data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
@@ -55,7 +55,7 @@ void ten_addon_on_init_done(ten_env_t *self) {
   rc = ten_handle_property_info_when_on_configure_done(
       &addon_host->property_info, NULL, &addon_host->property, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load addon property data, FATAL ERROR.");
+    TEN_LOGW("Failed to load addon property data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
@@ -77,7 +77,7 @@ void ten_addon_on_init_done(ten_env_t *self) {
         !ten_string_is_equal_c_str(&addon_host->name, manifest_name)) {
       TEN_LOGW(
           "The registered extension name (%s) is not equal to the name (%s) in "
-          "the manifest.",
+          "the manifest",
           ten_string_get_raw_str(&addon_host->name), manifest_name);
 
       // Get 'name' from manifest, and check the consistency between the name

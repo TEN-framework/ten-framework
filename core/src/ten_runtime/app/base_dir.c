@@ -62,7 +62,7 @@ void ten_app_find_and_set_base_dir(ten_app_t *self) {
 
   ten_string_t *app_base_dir = ten_find_app_base_dir();
   if (!app_base_dir) {
-    TEN_LOGD("Failed to determine app base directory.");
+    TEN_LOGD("Failed to determine app base directory");
     return;
   }
 

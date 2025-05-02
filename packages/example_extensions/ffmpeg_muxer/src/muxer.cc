@@ -315,7 +315,7 @@ bool muxer_t::encode_audio_frame(AVFrame *av_frame) {
       TEN_LOGD("Failed to encode a audio frame: %s", err_msg);
     }
     if (ffmpeg_rc == AVERROR_EOF) {
-      TEN_LOGD("encode an EOF audio packet.");
+      TEN_LOGD("encode an EOF audio packet");
       return true;
     }
     return false;
@@ -337,7 +337,7 @@ bool muxer_t::encode_audio_frame(AVFrame *av_frame) {
       return true;
     }
     if (ffmpeg_rc == AVERROR_EOF) {
-      TEN_LOGD("encode an EOF audio packet.");
+      TEN_LOGD("encode an EOF audio packet");
       return true;
     }
     return false;
@@ -370,7 +370,7 @@ bool muxer_t::encode_audio_silent_frame() {
   if (audio_frame == nullptr) {
     audio_frame = av_frame_alloc();
     if (audio_frame == nullptr) {
-      TEN_LOGE("Failed to allocate audio frame.");
+      TEN_LOGE("Failed to allocate audio frame");
       return false;
     }
 
@@ -892,7 +892,7 @@ ENCODE_STATUS muxer_t::encode_video_frame(
     }
 
     if (ffmpeg_rc == AVERROR_EOF) {
-      TEN_LOGD("encode an EOF video packet.");
+      TEN_LOGD("encode an EOF video packet");
       return ENCODE_STATUS_ERROR;
     }
     return ENCODE_STATUS_ERROR;
@@ -918,7 +918,7 @@ ENCODE_STATUS muxer_t::encode_video_frame(
     }
 
     if (ffmpeg_rc == AVERROR_EOF) {
-      TEN_LOGD("encode an EOF video packet.");
+      TEN_LOGD("encode an EOF video packet");
       return ENCODE_STATUS_ERROR;
     }
 
@@ -961,7 +961,7 @@ bool muxer_t::allocate_audio_fifo(AVCodecParameters *encoded_stream_params) {
         encoded_stream_params->ch_layout.nb_channels,
         encoded_stream_params->frame_size);
     if (audio_fifo == nullptr) {
-      TEN_LOGW("Failed to create audio FIFO.");
+      TEN_LOGW("Failed to create audio FIFO");
       return false;
     }
   }
@@ -972,7 +972,7 @@ bool muxer_t::allocate_audio_frame(AVCodecParameters *encoded_stream_params) {
   if (audio_frame == nullptr) {
     audio_frame = av_frame_alloc();
     if (audio_frame == nullptr) {
-      TEN_LOGW("Failed to allocate audio frame.");
+      TEN_LOGW("Failed to allocate audio frame");
       return false;
     }
 
@@ -981,7 +981,7 @@ bool muxer_t::allocate_audio_frame(AVCodecParameters *encoded_stream_params) {
     av_channel_layout_copy(&audio_frame->ch_layout,
                            &encoded_stream_params->ch_layout);
     if (av_frame_get_buffer(audio_frame, 32) < 0) {
-      TEN_LOGW("Failed to allocate audio frame.");
+      TEN_LOGW("Failed to allocate audio frame");
       return false;
     }
   }
@@ -994,7 +994,7 @@ bool muxer_t::create_audio_converter(AVCodecParameters *encoded_stream_params,
   if (audio_converter_ctx == nullptr) {
     audio_converter_ctx = swr_alloc();
     if (audio_converter_ctx == nullptr) {
-      TEN_LOGW("Failed to create audio resampler.");
+      TEN_LOGW("Failed to create audio resampler");
       return false;
     }
 
@@ -1095,7 +1095,7 @@ bool muxer_t::convert_audio_frame(AVCodecParameters *encoded_stream_params,
       av_audio_fifo_realloc(audio_fifo, av_audio_fifo_size(audio_fifo) +
                                             static_cast<int>(dst_nb_samples));
   if (ffmpeg_rc < 0) {
-    TEN_LOGD("Failed to reallocate FIFO.");
+    TEN_LOGD("Failed to reallocate FIFO");
     return false;
   }
 
@@ -1103,7 +1103,7 @@ bool muxer_t::convert_audio_frame(AVCodecParameters *encoded_stream_params,
       av_audio_fifo_write(audio_fifo, reinterpret_cast<void **>(dst_channels),
                           static_cast<int>(dst_nb_samples));
   if (ffmpeg_rc < static_cast<int>(dst_nb_samples)) {
-    TEN_LOGD("Failed to write audio sample to FIFO.");
+    TEN_LOGD("Failed to write audio sample to FIFO");
     return false;
   }
 
@@ -1121,7 +1121,7 @@ ENCODE_STATUS muxer_t::encode_audio_frame(
   }
 
   if (ten_audio_frame->is_eof()) {
-    TEN_LOGD("Encode EOF audio frame.");
+    TEN_LOGD("Encode EOF audio frame");
     flush_remaining_audio_frames();
     return ENCODE_STATUS_EOF;
   }
@@ -1152,7 +1152,7 @@ ENCODE_STATUS muxer_t::encode_audio_frame(
       dst_nb_samples,
       static_cast<enum AVSampleFormat>(encoded_stream_params->format), 0);
   if (ffmpeg_rc < 0) {
-    TEN_LOGD("Failed to allocate audio sample.");
+    TEN_LOGD("Failed to allocate audio sample");
     return ENCODE_STATUS_ERROR;
   }
 
@@ -1179,7 +1179,7 @@ ENCODE_STATUS muxer_t::encode_audio_frame(
       av_audio_fifo_realloc(audio_fifo, av_audio_fifo_size(audio_fifo) +
                                             static_cast<int>(dst_nb_samples));
   if (ffmpeg_rc < 0) {
-    TEN_LOGD("Failed to reallocate FIFO.");
+    TEN_LOGD("Failed to reallocate FIFO");
     return ENCODE_STATUS_ERROR;
   }
 
@@ -1187,7 +1187,7 @@ ENCODE_STATUS muxer_t::encode_audio_frame(
       av_audio_fifo_write(audio_fifo, reinterpret_cast<void **>(dst_channels),
                           static_cast<int>(dst_nb_samples));
   if (ffmpeg_rc < static_cast<int>(dst_nb_samples)) {
-    TEN_LOGD("Failed to write audio sample to FIFO.");
+    TEN_LOGD("Failed to write audio sample to FIFO");
     return ENCODE_STATUS_ERROR;
   }
 

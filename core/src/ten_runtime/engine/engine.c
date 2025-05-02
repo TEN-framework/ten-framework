@@ -63,7 +63,7 @@ static void ten_engine_destroy(ten_engine_t *self) {
       (self->extension_context == NULL) && ten_list_is_empty(&self->timers),
       "Should not happen.");
 
-  TEN_LOGD("[%s] Destroy engine.", ten_engine_get_id(self, false));
+  TEN_LOGD("[%s] Destroy engine", ten_engine_get_id(self, false));
 
   ten_env_destroy(self->ten_env);
 
@@ -123,7 +123,7 @@ static void ten_engine_set_graph_id(ten_engine_t *self, ten_shared_ptr_t *cmd) {
   // command to be the graph_id of the newly created engine.
   if (!ten_string_is_equal(src_uri, &self->app->uri) &&
       !ten_string_is_empty(src_graph_id)) {
-    TEN_LOGD("[%s] Inherit engine's name from previous node.",
+    TEN_LOGD("[%s] Inherit engine's name from previous node",
              ten_string_get_raw_str(src_graph_id));
     ten_string_init_formatted(&self->graph_id, "%s",
                               ten_string_get_raw_str(src_graph_id));
@@ -175,7 +175,7 @@ ten_engine_t *ten_engine_create(ten_app_t *app, ten_shared_ptr_t *cmd) {
                  ten_cmd_base_check_integrity(cmd),
              "Should not happen.");
 
-  TEN_LOGD("Create engine.");
+  TEN_LOGD("Create engine");
 
   ten_engine_t *self = (ten_engine_t *)TEN_MALLOC(sizeof(ten_engine_t));
   TEN_ASSERT(self, "Failed to allocate memory.");
@@ -288,7 +288,7 @@ static void ten_engine_on_orphan_connection_closed(
 
   // Check if the app is in the closing phase.
   if (self->is_closing) {
-    TEN_LOGD("[%s] Engine is closing, check to see if it could proceed.",
+    TEN_LOGD("[%s] Engine is closing, check to see if it could proceed",
              ten_engine_get_id(self, true));
     ten_engine_on_close(self);
   } else {

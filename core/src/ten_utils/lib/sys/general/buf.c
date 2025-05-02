@@ -167,7 +167,7 @@ bool ten_buf_reserve(ten_buf_t *self, size_t len) {
   size_t req_size = self->content_size + len;
   if (req_size >= self->size) {
     if (self->is_fixed_size) {
-      TEN_LOGE("Attempt to reserve more memory for a fixed-sized ten_buf_t.");
+      TEN_LOGE("Attempt to reserve more memory for a fixed-sized ten_buf_t");
       TEN_ASSERT(0, "Should not happen.");
       return false;
     }
@@ -224,7 +224,7 @@ bool ten_buf_pop(ten_buf_t *self, uint8_t *dest, size_t size) {
   }
 
   if (size > self->content_size) {
-    TEN_LOGW("Attempt to pop too many bytes from ten_buf_t.");
+    TEN_LOGW("Attempt to pop too many bytes from ten_buf_t");
     return false;
   }
 
@@ -256,7 +256,7 @@ bool ten_buf_get_back(ten_buf_t *self, uint8_t *dest, size_t size) {
   }
 
   if (size > self->content_size) {
-    TEN_LOGW("Attempt to peek too many bytes from ten_buf_t.");
+    TEN_LOGW("Attempt to peek too many bytes from ten_buf_t");
     return false;
   }
 

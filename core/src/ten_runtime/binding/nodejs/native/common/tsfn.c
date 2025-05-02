@@ -38,7 +38,7 @@ static void ten_nodejs_tsfn_finalize(napi_env env, void *finalize_data,
   TEN_ASSERT(tsfn_bridge && ten_nodejs_tsfn_check_integrity(tsfn_bridge, true),
              "Should not happen.");
 
-  TEN_LOGD("TSFN %s is finalized.", ten_string_get_raw_str(&tsfn_bridge->name));
+  TEN_LOGD("TSFN %s is finalized", ten_string_get_raw_str(&tsfn_bridge->name));
 
   // The tsfn would be accessed from the native part, so we need to protect the
   // operations of it.
@@ -199,7 +199,7 @@ bool ten_nodejs_tsfn_invoke(ten_nodejs_tsfn_t *self, void *data) {
   ten_mutex_lock(self->lock);
 
   if (self->tsfn == NULL) {
-    TEN_LOGW("Failed to call tsfn %s, because it has been finalized.",
+    TEN_LOGW("Failed to call tsfn %s, because it has been finalized",
              ten_string_get_raw_str(&self->name));
 
     result = false;
@@ -210,7 +210,7 @@ bool ten_nodejs_tsfn_invoke(ten_nodejs_tsfn_t *self, void *data) {
       napi_call_threadsafe_function(self->tsfn, data, napi_tsfn_blocking);
   if (status != napi_ok) {
     if (status == napi_closing) {
-      TEN_LOGE("Failed to call a destroyed JS thread-safe function %s.",
+      TEN_LOGE("Failed to call a destroyed JS thread-safe function %s",
                ten_string_get_raw_str(&self->name));
     } else {
       TEN_LOGE("Failed to call a JS thread-safe function %s: status: %d",

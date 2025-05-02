@@ -227,7 +227,7 @@ TEST(ExtensionTest,
       nlohmann::json::parse(cmd_result->get_property_to_json("detail"));
   EXPECT_EQ((1 + 2 + 3) * LOOP_CNT, detail["total"].get<std::int32_t>());
 
-  TEN_LOGI("xxxx prepare to stop graph.");
+  TEN_LOGI("xxxx prepare to stop graph");
 
   delete client;
 

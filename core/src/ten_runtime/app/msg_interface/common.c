@@ -270,7 +270,7 @@ static bool ten_app_handle_close_app_cmd(ten_app_t *self,
     ten_connection_upgrade_migration_state_to_done(connection, NULL);
   }
 
-  TEN_LOGI("[%s] Close app due to 'close_app' cmd.", ten_app_get_uri(self));
+  TEN_LOGI("[%s] Close app due to 'close_app' cmd", ten_app_get_uri(self));
 
   ten_app_close(self, err);
 

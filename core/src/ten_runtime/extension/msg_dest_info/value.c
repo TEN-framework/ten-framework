@@ -91,7 +91,7 @@ ten_value_t *ten_msg_dest_info_to_value(
                 msg_conversion_context->msg_and_result_conversion, err);
 
         if (!msg_and_result_conversion_operation_value) {
-          TEN_LOGE("Failed to convert msg_and_result_conversion_operation.");
+          TEN_LOGE("Failed to convert msg_and_result_conversion_operation");
           continue;
         }
 

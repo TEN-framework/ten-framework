@@ -180,7 +180,7 @@ static void ten_streambackend_pipe_destroy(
 static void ten_streambackend_pipe_on_close(uv_handle_t *uv_handle) {
   TEN_ASSERT(uv_handle && uv_handle->data, "Invalid argument.");
 
-  // TEN_LOGD("Close stream.");
+  // TEN_LOGD("Close stream");
 
   ten_streambackend_pipe_t *pipe_stream =
       (ten_streambackend_pipe_t *)uv_handle->data;
@@ -200,7 +200,7 @@ static int ten_streambackend_pipe_close(ten_streambackend_t *backend) {
              "Invalid argument.");
 
   if (ten_atomic_bool_compare_swap(&backend->is_close, 0, 1)) {
-    // TEN_LOGD("Try to close stream PIPE backend.");
+    // TEN_LOGD("Try to close stream PIPE backend");
     uv_close((uv_handle_t *)pipe_stream->uv_stream,
              ten_streambackend_pipe_on_close);
   }

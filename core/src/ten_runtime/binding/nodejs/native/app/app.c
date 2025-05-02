@@ -97,7 +97,7 @@ static void invoke_app_js_on_configure(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS app on_configure().");
+  TEN_LOGE("Failed to call JS app on_configure()");
 
 done:
   TEN_FREE(call_info);
@@ -144,7 +144,7 @@ static void invoke_app_js_on_init(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS app on_init().");
+  TEN_LOGE("Failed to call JS app on_init()");
 
 done:
   TEN_FREE(call_info);
@@ -191,7 +191,7 @@ static void invoke_app_js_on_deinit(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS app on_deinit().");
+  TEN_LOGE("Failed to call JS app on_deinit()");
   TEN_ASSERT(0, "Should not happen.");
 
 done:
@@ -224,7 +224,7 @@ static void proxy_on_configure(ten_app_t *app, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(app_bridge->js_on_configure, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call app on_init().");
+    TEN_LOGE("Failed to call app on_init()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_init(), so that we need to call on_init_done() here
@@ -262,7 +262,7 @@ static void proxy_on_init(ten_app_t *app, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(app_bridge->js_on_init, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call app on_init().");
+    TEN_LOGE("Failed to call app on_init()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_init(), so that we need to call on_init_done() here
@@ -368,7 +368,7 @@ static void ten_nodejs_app_destroy(ten_nodejs_app_t *self) {
 
 // Invoked when the JS app finalizes.
 static void ten_nodejs_app_finalize(napi_env env, void *data, void *hint) {
-  TEN_LOGI("TEN JS app is finalized.");
+  TEN_LOGI("TEN JS app is finalized");
 
   ten_nodejs_app_t *app_bridge = data;
   TEN_ASSERT(app_bridge && ten_nodejs_app_check_integrity(app_bridge, true),
@@ -473,7 +473,7 @@ static void ten_nodejs_app_run_async_work_complete(napi_env env,
 static napi_value ten_nodejs_app_run(napi_env env, napi_callback_info info) {
   TEN_ASSERT(env && info, "Should not happen.");
 
-  TEN_LOGD("App run.");
+  TEN_LOGD("App run");
 
   const size_t argc = 1;
   napi_value args[1];  // this
@@ -531,7 +531,7 @@ static napi_value ten_nodejs_app_run(napi_env env, napi_callback_info info) {
 static napi_value ten_nodejs_app_close(napi_env env, napi_callback_info info) {
   TEN_ASSERT(env && info, "Should not happen.");
 
-  TEN_LOGD("App close.");
+  TEN_LOGD("App close");
 
   const size_t argc = 1;
   napi_value args[argc];  // this

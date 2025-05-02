@@ -77,7 +77,7 @@ class addon_t : public binding_handle_t {
     try {
       on_init(ten_env);
     } catch (...) {
-      TEN_LOGW("Caught a exception of type '%s' in addon on_init().",
+      TEN_LOGW("Caught a exception of type '%s' in addon on_init()",
                curr_exception_type_name().c_str());
     }
   }
@@ -86,7 +86,7 @@ class addon_t : public binding_handle_t {
     try {
       on_deinit(ten_env);
     } catch (...) {
-      TEN_LOGW("Caught a exception '%s' in addon on_deinit().",
+      TEN_LOGW("Caught a exception '%s' in addon on_deinit()",
                curr_exception_type_name().c_str());
     }
   }
@@ -96,7 +96,7 @@ class addon_t : public binding_handle_t {
     try {
       on_create_instance(ten_env, name, context);
     } catch (...) {
-      TEN_LOGW("Caught a exception '%s' in addon on_create_instance(%s).",
+      TEN_LOGW("Caught a exception '%s' in addon on_create_instance(%s)",
                curr_exception_type_name().c_str(), name);
     }
   }
@@ -106,7 +106,7 @@ class addon_t : public binding_handle_t {
     try {
       on_destroy_instance(ten_env, instance, context);
     } catch (...) {
-      TEN_LOGW("Caught a exception '%s' in addon on_destroy_instance().",
+      TEN_LOGW("Caught a exception '%s' in addon on_destroy_instance()",
                curr_exception_type_name().c_str());
     }
   }

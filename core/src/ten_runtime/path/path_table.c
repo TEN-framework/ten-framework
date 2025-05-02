@@ -131,7 +131,7 @@ static ten_listnode_t *ten_path_table_find_path_from_cmd_id(
 
   // Some simple sanity check.
   if (path_cnt > PATH_TABLE_REASONABLE_MAX_CNT) {
-    TEN_LOGE("Too many paths, there might be some issues.");
+    TEN_LOGE("Too many paths, there might be some issues");
   }
 
   ten_list_foreach (list, paths_iter) {

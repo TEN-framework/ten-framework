@@ -174,7 +174,7 @@ bool ten_value_set_from_json(ten_value_t *self, ten_json_t *json) {
     break;
   case TEN_TYPE_PTR:
   case TEN_TYPE_BUF:
-    TEN_LOGE("Not implemented yet.");
+    TEN_LOGE("Not implemented yet");
     break;
   }
 

@@ -168,7 +168,7 @@ void ten_extension_destroy(ten_extension_t *self) {
 
   TEN_ASSERT(self->ten_env, "Should not happen.");
 
-  TEN_LOGI("[%s] Destroyed.", ten_extension_get_name(self, false));
+  TEN_LOGI("[%s] Destroyed", ten_extension_get_name(self, false));
 
   ten_sanitizer_thread_check_deinit(&self->thread_check);
   ten_signature_set(&self->signature, 0);
@@ -518,11 +518,11 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
     bool proceed = ten_path_table_process_cmd_result(
         self->path_table, TEN_PATH_IN, msg, &processed_cmd_result);
     if (!proceed) {
-      // TEN_LOGD("[%s] IN path is missing, discard cmd_result.",
+      // TEN_LOGD("[%s] IN path is missing, discard cmd_result",
       //          ten_extension_get_name(self, true));
       return true;
     } else {
-      // TEN_LOGD("[%s] IN path is found, proceed cmd_result.",
+      // TEN_LOGD("[%s] IN path is found, proceed cmd_result",
       //          ten_extension_get_name(self, true));
 
       if (msg != processed_cmd_result) {
@@ -625,7 +625,7 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
     return;
   }
 
-  TEN_LOGD("[%s] on_configure().", ten_extension_get_name(self, true));
+  TEN_LOGD("[%s] on_configure()", ten_extension_get_name(self, true));
 
   self->manifest_info =
       ten_metadata_info_create(TEN_METADATA_ATTACH_TO_MANIFEST, self->ten_env);
@@ -641,7 +641,7 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_configure() took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_configure() took %" PRId64 " ms",
                ten_extension_get_name(self, true), end - begin);
     }
   } else {
@@ -662,7 +662,7 @@ void ten_extension_on_init(ten_extension_t *self) {
     return;
   }
 
-  TEN_LOGD("[%s] on_init().", ten_extension_get_name(self, true));
+  TEN_LOGD("[%s] on_init()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_INIT;
 
@@ -673,7 +673,7 @@ void ten_extension_on_init(ten_extension_t *self) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_init() took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_init() took %" PRId64 " ms",
                ten_extension_get_name(self, true), end - begin);
     }
   } else {
@@ -694,7 +694,7 @@ void ten_extension_on_start(ten_extension_t *self) {
     return;
   }
 
-  TEN_LOGI("[%s] on_start().", ten_extension_get_name(self, true));
+  TEN_LOGI("[%s] on_start()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_START;
 
@@ -705,7 +705,7 @@ void ten_extension_on_start(ten_extension_t *self) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_start() took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_start() took %" PRId64 " ms",
                ten_extension_get_name(self, true), end - begin);
     }
   } else {
@@ -726,12 +726,12 @@ void ten_extension_on_stop(ten_extension_t *self) {
   // Therefore, it is necessary to check here that if the `on_stop` process has
   // already started, it should not be entered again.
   if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
-    TEN_LOGD("[%s] Extension is stopping, do not stop again.",
+    TEN_LOGD("[%s] Extension is stopping, do not stop again",
              ten_extension_get_name(self, true));
     return;
   }
 
-  TEN_LOGI("[%s] on_stop().", ten_extension_get_name(self, true));
+  TEN_LOGI("[%s] on_stop()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_STOP;
 
@@ -742,7 +742,7 @@ void ten_extension_on_stop(ten_extension_t *self) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_stop() took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_stop() took %" PRId64 " ms",
                ten_extension_get_name(self, true), end - begin);
     }
   } else {
@@ -755,7 +755,7 @@ void ten_extension_on_deinit(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGD("[%s] on_deinit().", ten_extension_get_name(self, true));
+  TEN_LOGD("[%s] on_deinit()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_DEINIT;
 
@@ -766,7 +766,7 @@ void ten_extension_on_deinit(ten_extension_t *self) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_deinit() took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_deinit() took %" PRId64 " ms",
                ten_extension_get_name(self, true), end - begin);
     }
   } else {
@@ -779,7 +779,7 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_cmd(%s).", ten_extension_get_name(self, true),
+  TEN_LOGV("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_cmd) {
@@ -789,7 +789,7 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_cmd(%s) took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_cmd(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
                end - begin);
     }
@@ -808,7 +808,7 @@ void ten_extension_on_data(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_data(%s).", ten_extension_get_name(self, true),
+  TEN_LOGV("[%s] on_data(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_data) {
@@ -818,7 +818,7 @@ void ten_extension_on_data(ten_extension_t *self, ten_shared_ptr_t *msg) {
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_data(%s) took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_data(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
                end - begin);
     }
@@ -834,7 +834,7 @@ void ten_extension_on_video_frame(ten_extension_t *self,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_video_frame(%s).", ten_extension_get_name(self, true),
+  TEN_LOGV("[%s] on_video_frame(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_video_frame) {
@@ -844,7 +844,7 @@ void ten_extension_on_video_frame(ten_extension_t *self,
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_video_frame(%s) took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_video_frame(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
                end - begin);
     }
@@ -860,7 +860,7 @@ void ten_extension_on_audio_frame(ten_extension_t *self,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_audio_frame(%s).", ten_extension_get_name(self, true),
+  TEN_LOGV("[%s] on_audio_frame(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_audio_frame) {
@@ -870,7 +870,7 @@ void ten_extension_on_audio_frame(ten_extension_t *self,
 
     int64_t end = ten_current_time_ms();
     if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_audio_frame(%s) took %" PRId64 " ms.",
+      TEN_LOGW("[%s] on_audio_frame(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
                end - begin);
     }
@@ -885,7 +885,7 @@ void ten_extension_load_metadata(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGD("[%s] Load metadata.", ten_extension_get_name(self, true));
+  TEN_LOGD("[%s] Load metadata", ten_extension_get_name(self, true));
 
   // This function is safe to be called from the extension main threads, because
   // all the resources it accesses are not be modified after the app
@@ -962,7 +962,7 @@ bool ten_extension_validate_msg_schema(ten_extension_t *self,
   bool validated =
       ten_msg_validate_schema(msg, &self->schema_store, is_msg_out, err);
   if (!validated) {
-    TEN_LOGW("[%s] See %s %s::%s with invalid schema: %s.",
+    TEN_LOGW("[%s] See %s %s::%s with invalid schema: %s",
              ten_extension_get_name(self, true), is_msg_out ? "out" : "in",
              ten_msg_get_type_string(msg), ten_msg_get_name(msg),
              ten_error_message(err));

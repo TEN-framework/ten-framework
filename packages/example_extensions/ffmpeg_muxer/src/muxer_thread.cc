@@ -47,7 +47,7 @@ muxer_thread_t::~muxer_thread_t() {
   delete muxer;
   delete ten_env_proxy;
 
-  TEN_LOGD("All the muxer resources have been cleaned.");
+  TEN_LOGD("All the muxer resources have been cleaned");
 }
 
 void muxer_thread_t::wait_for_the_first_av_frame() {
@@ -74,7 +74,7 @@ void muxer_thread_t::wait_for_the_first_av_frame() {
 }
 
 void *muxer_thread_main(void *self_) {
-  TEN_LOGD("Muxer thread is started.");
+  TEN_LOGD("Muxer thread is started");
 
   auto *self = static_cast<muxer_thread_t *>(self_);
   TEN_ASSERT(self, "Invalid argument.");
@@ -164,7 +164,7 @@ void *muxer_thread_main(void *self_) {
 
   self->notify_completed(status);
 
-  TEN_LOGD("Muxer thread is stopped.");
+  TEN_LOGD("Muxer thread is stopped");
   return nullptr;
 }
 
@@ -178,7 +178,7 @@ void muxer_thread_t::wait_for_start() {
 }
 
 void muxer_thread_t::stop() {
-  TEN_LOGD("Signal muxer thread to close.");
+  TEN_LOGD("Signal muxer thread to close");
 
   ten_atomic_store(&is_stop, 1);
 
@@ -203,7 +203,7 @@ void muxer_thread_t::wait_for_stop() {
   int rc = ten_thread_join(muxer_thread, -1);
   TEN_ASSERT(!rc, "Invalid argument.");
 
-  TEN_LOGD("Muxer thread has been reclaimed.");
+  TEN_LOGD("Muxer thread has been reclaimed");
 }
 
 void muxer_thread_t::create_muxer() {

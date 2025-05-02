@@ -74,7 +74,7 @@ void ten_extension_group_on_init_done(ten_env_t *self) {
   TEN_ASSERT(ten_extension_group_check_integrity(extension_group, true),
              "Should not happen.");
 
-  TEN_LOGD("[%s] on_init() done.",
+  TEN_LOGD("[%s] on_init() done",
            ten_extension_group_get_name(extension_group, true));
 
   ten_extension_thread_t *extension_thread = extension_group->extension_thread;
@@ -112,7 +112,7 @@ bool ten_extension_group_on_deinit_done(ten_env_t *self) {
 
   extension_group->state = TEN_EXTENSION_GROUP_STATE_DEINIT_DONE;
 
-  TEN_LOGD("[%s] on_deinit() done.",
+  TEN_LOGD("[%s] on_deinit() done",
            ten_extension_group_get_name(extension_group, true));
 
   // Close the ten_env so that any apis called on the ten_env will return
@@ -156,7 +156,7 @@ void ten_extension_group_on_create_extensions_done(ten_extension_group_t *self,
              "Should not happen.");
   TEN_ASSERT(self->extension_thread, "Should not happen.");
 
-  TEN_LOGD("[%s] create_extensions() done.",
+  TEN_LOGD("[%s] create_extensions() done",
            ten_string_get_raw_str(&self->name));
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
@@ -208,7 +208,7 @@ void ten_extension_group_on_destroy_extensions_done(
              "Should not happen.");
   TEN_ASSERT(self->extension_thread, "Should not happen.");
 
-  TEN_LOGD("[%s] destroy_extensions() done.",
+  TEN_LOGD("[%s] destroy_extensions() done",
            ten_string_get_raw_str(&self->name));
 
   ten_extension_thread_t *extension_thread = self->extension_thread;

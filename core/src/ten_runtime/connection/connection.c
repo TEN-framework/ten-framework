@@ -163,12 +163,12 @@ static void ten_connection_on_close(ten_connection_t *self) {
              "Invalid use of connection %p.", self);
 
   if (ten_connection_could_be_close(self) == false) {
-    TEN_LOGD("[%s] Could not close alive connection.",
+    TEN_LOGD("[%s] Could not close alive connection",
              ten_string_get_raw_str(&self->uri));
     return;
   }
 
-  TEN_LOGD("[%s] Connection can be closed now.",
+  TEN_LOGD("[%s] Connection can be closed now",
            ten_string_get_raw_str(&self->uri));
 
   ten_connection_do_close(self);
@@ -192,11 +192,11 @@ void ten_connection_close(ten_connection_t *self) {
              "Invalid use of connection %p.", self);
 
   if (self->state >= TEN_CONNECTION_STATE_CLOSING) {
-    TEN_LOGD("Connection is closing, do not close again.");
+    TEN_LOGD("Connection is closing, do not close again");
     return;
   }
 
-  TEN_LOGD("Try to close connection.");
+  TEN_LOGD("Try to close connection");
 
   self->state = TEN_CONNECTION_STATE_CLOSING;
 
@@ -309,7 +309,7 @@ void ten_connection_send_msg(ten_connection_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(msg && ten_msg_get_dest_cnt(msg) == 1, "Should not happen.");
 
   if (self->state >= TEN_CONNECTION_STATE_CLOSING) {
-    TEN_LOGD("Connection is closing, do not send msgs.");
+    TEN_LOGD("Connection is closing, do not send msgs");
     return;
   }
 

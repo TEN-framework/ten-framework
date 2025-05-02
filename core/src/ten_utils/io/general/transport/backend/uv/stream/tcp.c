@@ -247,7 +247,7 @@ static void ten_streambackend_tcp_destroy(ten_streambackend_tcp_t *tcp_stream) {
 static void ten_streambackend_tcp_on_close(uv_handle_t *uv_handle) {
   TEN_ASSERT(uv_handle && uv_handle->data, "Invalid argument.");
 
-  // TEN_LOGD("Close stream.");
+  // TEN_LOGD("Close stream");
 
   ten_streambackend_tcp_t *tcp_stream =
       (ten_streambackend_tcp_t *)uv_handle->data;
@@ -267,7 +267,7 @@ static int ten_streambackend_tcp_close(ten_streambackend_t *backend) {
              "Invalid argument.");
 
   if (ten_atomic_bool_compare_swap(&backend->is_close, 0, 1)) {
-    // TEN_LOGD("Try to close stream TCP backend.");
+    // TEN_LOGD("Try to close stream TCP backend");
     uv_close((uv_handle_t *)tcp_stream->uv_stream,
              ten_streambackend_tcp_on_close);
   }

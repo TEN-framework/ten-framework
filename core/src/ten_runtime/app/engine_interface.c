@@ -106,7 +106,7 @@ ten_engine_t *ten_app_create_engine(ten_app_t *self, ten_shared_ptr_t *cmd) {
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
-  TEN_LOGD("[%s] App creates an engine.", ten_app_get_uri(self));
+  TEN_LOGD("[%s] App creates an engine", ten_app_get_uri(self));
 
   ten_engine_t *engine = ten_engine_create(self, cmd);
   TEN_ASSERT(engine, "Should not happen.");
@@ -136,7 +136,7 @@ void ten_app_del_engine(ten_app_t *self, ten_engine_t *engine) {
   TEN_ASSERT(self && ten_app_check_integrity(self, true) && engine,
              "Should not happen.");
 
-  TEN_LOGD("[%s:%s] Remove engine from app.", ten_app_get_uri(self),
+  TEN_LOGD("[%s:%s] Remove engine from app", ten_app_get_uri(self),
            ten_engine_get_id(engine, false));
 
   // This operation must be performed in the app's main thread.

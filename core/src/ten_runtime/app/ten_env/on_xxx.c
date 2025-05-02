@@ -50,14 +50,14 @@ static void ten_app_adjust_and_validate_property_on_configure_done(
   bool success = ten_schema_store_adjust_properties(&self->schema_store,
                                                     &self->property, &err);
   if (!success) {
-    TEN_LOGW("Failed to adjust property type, %s.", ten_error_message(&err));
+    TEN_LOGW("Failed to adjust property type, %s", ten_error_message(&err));
     goto done;
   }
 
   success = ten_schema_store_validate_properties(&self->schema_store,
                                                  &self->property, &err);
   if (!success) {
-    TEN_LOGW("Invalid property, %s.", ten_error_message(&err));
+    TEN_LOGW("Invalid property, %s", ten_error_message(&err));
     goto done;
   }
 
@@ -98,7 +98,7 @@ static void ten_app_on_endpoint_protocol_created(ten_env_t *ten_env,
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
 
   if (!protocol) {
-    TEN_LOGE("Failed to create app endpoint protocol, FATAL ERROR.");
+    TEN_LOGE("Failed to create app endpoint protocol, FATAL ERROR");
     ten_app_close(self, NULL);
     return;
   }
@@ -113,7 +113,7 @@ static void ten_app_on_endpoint_protocol_created(ten_env_t *ten_env,
                              ten_app_on_protocol_closed, self);
 
   if (!ten_app_endpoint_listen(self)) {
-    TEN_LOGW("[%s] Failed to listen on endpoint protocol, %s.",
+    TEN_LOGW("[%s] Failed to listen on endpoint protocol, %s",
              ten_app_get_uri(self), ten_string_get_raw_str(&self->uri));
 
     ten_app_close(self, NULL);
@@ -135,7 +135,7 @@ static void ten_app_continue_run_after_load_all_extensions_if_specified(
   TEN_ERROR_INIT(err);
 
   if (!ten_app_get_predefined_graphs_from_property(self)) {
-    TEN_LOGW("[%s] Failed to get predefined graphs from property.",
+    TEN_LOGW("[%s] Failed to get predefined graphs from property",
              ten_app_get_uri(self));
     goto error;
   }
@@ -148,7 +148,7 @@ static void ten_app_continue_run_after_load_all_extensions_if_specified(
         TEN_PROTOCOL_ROLE_LISTEN, ten_app_on_endpoint_protocol_created, NULL,
         &err);
     if (!rc) {
-      TEN_LOGW("Failed to create app endpoint protocol, %s.",
+      TEN_LOGW("Failed to create app endpoint protocol, %s",
                ten_error_message(&err));
       goto error;
     }
@@ -233,7 +233,7 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
   bool rc = ten_handle_manifest_info_when_on_configure_done(
       &self->manifest_info, ten_app_get_base_dir(self), &self->manifest, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load app manifest data, FATAL ERROR.");
+    TEN_LOGW("Failed to load app manifest data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
@@ -241,13 +241,13 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
   rc = ten_handle_property_info_when_on_configure_done(
       &self->property_info, ten_app_get_base_dir(self), &self->property, &err);
   if (!rc) {
-    TEN_LOGW("Failed to load app property data, FATAL ERROR.");
+    TEN_LOGW("Failed to load app property data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
 
   if (!ten_app_handle_ten_namespace_properties(self)) {
-    TEN_LOGW("Failed to determine app default property.");
+    TEN_LOGW("Failed to determine app default property");
   }
 
   ten_metadata_init_schema_store(&self->manifest, &self->schema_store);

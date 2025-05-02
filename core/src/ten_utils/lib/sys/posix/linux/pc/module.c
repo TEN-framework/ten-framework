@@ -14,7 +14,7 @@
 
 void *ten_module_load(const ten_string_t *name, int as_local) {
   if (!name || !ten_string_check_integrity(name)) {
-    TEN_LOGE("Invalid argument: module name is null.");
+    TEN_LOGE("Invalid argument: module name is null");
     return NULL;
   }
 
@@ -37,7 +37,7 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
 
 int ten_module_close(void *handle) {
   if (!handle) {
-    TEN_LOGE("Invalid argument: handle is null.");
+    TEN_LOGE("Invalid argument: handle is null");
     return -1;
   }
 
@@ -60,12 +60,12 @@ int ten_module_close(void *handle) {
 
 void *ten_module_get_symbol(void *handle, const char *symbol_name) {
   if (!handle) {
-    TEN_LOGE("Invalid argument: handle is null.");
+    TEN_LOGE("Invalid argument: handle is null");
     return NULL;
   }
 
   if (!symbol_name) {
-    TEN_LOGE("Invalid argument: symbol name is null or corrupted.");
+    TEN_LOGE("Invalid argument: symbol name is null or corrupted");
     return NULL;
   }
 

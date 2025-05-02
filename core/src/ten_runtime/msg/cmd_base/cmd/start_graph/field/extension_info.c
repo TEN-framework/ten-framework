@@ -71,7 +71,7 @@ static ten_value_t *ten_cmd_start_graph_extensions_info_to_value(
 
     if (ten_list_find_string(&unique_extension_list,
                              ten_string_get_raw_str(&loc_str)) != NULL) {
-      TEN_LOGE("Extension %s is duplicated.", ten_string_get_raw_str(&loc_str));
+      TEN_LOGE("Extension %s is duplicated", ten_string_get_raw_str(&loc_str));
 
       if (err) {
         ten_error_set(err, TEN_ERROR_CODE_GENERIC,

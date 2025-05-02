@@ -112,8 +112,7 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
   } else {
     // Handle the case where the addon is already added.
     // For now, log a warning.
-    TEN_LOGW("Addon '%s:%s' is already registered.", addon_type_str,
-             addon_name);
+    TEN_LOGW("Addon '%s:%s' is already registered", addon_type_str, addon_name);
   }
 
   ten_mutex_unlock(self->mutex);
@@ -239,7 +238,7 @@ bool ten_addon_manager_register_specific_addon(ten_addon_manager_t *self,
   }
 
   if (!success) {
-    TEN_LOGI("Unable to find '%s:%s' in registry.",
+    TEN_LOGI("Unable to find '%s:%s' in registry",
              ten_addon_type_to_string(addon_type), addon_name);
   }
 

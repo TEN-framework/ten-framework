@@ -168,7 +168,7 @@ bool ten_ref_inc_ref(ten_ref_t *self) {
   // Increment the reference count.
   int64_t old_ref_cnt = ten_atomic_inc_if_non_zero(&self->ref_cnt);
   if (old_ref_cnt == 0) {
-    TEN_LOGE("Add a reference to an object that is already dead.");
+    TEN_LOGE("Add a reference to an object that is already dead");
     TEN_ASSERT(0, "Should not happen.");
     return false;
   }
@@ -192,7 +192,7 @@ bool ten_ref_dec_ref(ten_ref_t *self) {
 
   int64_t old_ref_cnt = ten_atomic_dec_if_non_zero(&self->ref_cnt);
   if (old_ref_cnt == 0) {
-    TEN_LOGE("Delete a reference to an object that is already dead.");
+    TEN_LOGE("Delete a reference to an object that is already dead");
     TEN_ASSERT(0, "Should not happen.");
     return false;
   }

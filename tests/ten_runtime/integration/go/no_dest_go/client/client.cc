@@ -19,7 +19,7 @@ int main(TEN_UNUSED int argc, TEN_UNUSED char **argv) {
   TEN_ASSERT(TEN_STATUS_CODE_OK == cmd_result->get_status_code(),
              "Should not happen.");
 
-  TEN_LOGD("Got graph result.");
+  TEN_LOGD("Got graph result");
 
   std::string detail_str = cmd_result->get_property_string("detail");
   TEN_LOGD("Got result: %s", detail_str.c_str());

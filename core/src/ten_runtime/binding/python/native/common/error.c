@@ -81,11 +81,11 @@ static void ten_py_print_py_error(void) {
   if (pvalue != NULL) {
     PyObject *py_err_msg = PyObject_Str(pvalue);
     if (!py_err_msg) {
-      TEN_LOGE("Failed to convert exception value to string.");
+      TEN_LOGE("Failed to convert exception value to string");
     } else {
       const char *err_msg = PyUnicode_AsUTF8(py_err_msg);
       if (!err_msg) {
-        TEN_LOGE("Failed to encode exception message as UTF-8.");
+        TEN_LOGE("Failed to encode exception message as UTF-8");
       } else {
         const char *py_exception_type = PyExceptionClass_Name(ptype);
         if (!py_exception_type) {
@@ -96,7 +96,7 @@ static void ten_py_print_py_error(void) {
       Py_DECREF(py_err_msg);
     }
   } else {
-    TEN_LOGE("Failed to get exception value.");
+    TEN_LOGE("Failed to get exception value");
   }
 
   if (ptraceback) {
@@ -105,7 +105,7 @@ static void ten_py_print_py_error(void) {
       // Dump the call stack of python codes to stderr.
       PyTraceBack_Print(ptraceback, stderr_file);
     } else {
-      TEN_LOGW("Failed to get stderr to dump backtrace.");
+      TEN_LOGW("Failed to get stderr to dump backtrace");
     }
   }
 

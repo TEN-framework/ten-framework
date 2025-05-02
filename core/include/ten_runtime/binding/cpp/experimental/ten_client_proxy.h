@@ -107,7 +107,7 @@ class ten_client_proxy_internal_impl_t : public ten::extension_tester_t {
     TEN_ASSERT(ten_env_tester_proxy_, "Invalid state.");
 
     if (ten_env_tester_proxy_ == nullptr) {
-      TEN_LOGE("Failed to send_cmd: %s before started.",
+      TEN_LOGE("Failed to send_cmd: %s before started",
                cmd->get_name().c_str());
       return false;
     }
@@ -132,7 +132,7 @@ class ten_client_proxy_internal_impl_t : public ten::extension_tester_t {
     TEN_ASSERT(ten_env_tester_proxy_, "Invalid state.");
 
     if (ten_env_tester_proxy_ == nullptr) {
-      TEN_LOGE("Failed to send_data before started.");
+      TEN_LOGE("Failed to send_data before started");
       return false;
     }
 
@@ -150,7 +150,7 @@ class ten_client_proxy_internal_impl_t : public ten::extension_tester_t {
     TEN_ASSERT(ten_env_tester_proxy_, "Invalid state.");
 
     if (ten_env_tester_proxy_ == nullptr) {
-      TEN_LOGE("Failed to send_audio_frame before started.");
+      TEN_LOGE("Failed to send_audio_frame before started");
       return false;
     }
 
@@ -169,7 +169,7 @@ class ten_client_proxy_internal_impl_t : public ten::extension_tester_t {
     TEN_ASSERT(ten_env_tester_proxy_, "Invalid state.");
 
     if (ten_env_tester_proxy_ == nullptr) {
-      TEN_LOGE("Failed to send_video_frame before started.");
+      TEN_LOGE("Failed to send_video_frame before started");
       return false;
     }
 
@@ -186,7 +186,7 @@ class ten_client_proxy_internal_impl_t : public ten::extension_tester_t {
 
   bool stop() {
     if (ten_env_tester_proxy_ == nullptr) {
-      TEN_LOGE("Failed to stop before started.");
+      TEN_LOGE("Failed to stop before started");
       return false;
     }
 

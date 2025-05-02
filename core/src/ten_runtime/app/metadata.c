@@ -94,7 +94,7 @@ bool ten_app_init_uri(ten_app_t *self, ten_value_t *value) {
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
 
   if (!ten_value_is_string(value)) {
-    TEN_LOGW("Invalid uri.");
+    TEN_LOGW("Invalid uri");
     return false;
   }
 
@@ -175,7 +175,7 @@ bool ten_app_init_log(ten_app_t *self, ten_value_t *value) {
 
         bool success = ten_value_to_json(params, &json_params);
         if (!success) {
-          TEN_LOGE("Failed to convert log encryption params to JSON.");
+          TEN_LOGE("Failed to convert log encryption params to JSON");
           return false;
         }
 

@@ -83,7 +83,7 @@ static bool load_all_dynamic_libraries_under_path(const char *path) {
   ten_string_t *short_name = NULL;
 
   if (!path || !strlen(path)) {
-    TEN_LOGE("Failed to load dynamic library: invalid parameter.");
+    TEN_LOGE("Failed to load dynamic library: invalid parameter");
     goto done;
   }
 
@@ -169,7 +169,7 @@ static void ten_addon_load_from_base_dir(const char *path) {
 
   if (!ten_path_exists(ten_string_get_raw_str(&lib_dir)) ||
       !ten_path_is_dir(&lib_dir)) {
-    TEN_LOGD("The dynamic library path(%s) does not exist.",
+    TEN_LOGD("The dynamic library path(%s) does not exist",
              ten_string_get_raw_str(&lib_dir));
     goto done;
   }
@@ -575,7 +575,7 @@ bool ten_addon_load_all_extensions_from_app_base_dir(
         if (ten_addon_manager_is_addon_loaded(
                 ten_addon_manager_get_instance(), TEN_ADDON_TYPE_EXTENSION,
                 ten_string_get_raw_str(short_name))) {
-          TEN_LOGD("Addon %s:%s is already loaded, skipping.",
+          TEN_LOGD("Addon %s:%s is already loaded, skipping",
                    ten_addon_type_to_string(TEN_ADDON_TYPE_EXTENSION),
                    ten_string_get_raw_str(short_name));
 
@@ -595,13 +595,13 @@ bool ten_addon_load_all_extensions_from_app_base_dir(
             ten_addon_manager_is_addon_loaded(
                 ten_addon_manager_get_instance(), TEN_ADDON_TYPE_EXTENSION,
                 ten_string_get_raw_str(short_name))) {
-          TEN_LOGD("Addon %s:%s is loaded successfully.",
+          TEN_LOGD("Addon %s:%s is loaded successfully",
                    ten_addon_type_to_string(TEN_ADDON_TYPE_EXTENSION),
                    ten_string_get_raw_str(short_name));
         } else {
           TEN_LOGD(
               "Failed to load addon %s:%s using native addon loader, will try "
-              "other methods.",
+              "other methods",
               ten_addon_type_to_string(TEN_ADDON_TYPE_EXTENSION),
               ten_string_get_raw_str(short_name));
 

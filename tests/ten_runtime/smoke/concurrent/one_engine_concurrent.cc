@@ -108,7 +108,7 @@ std::string graph_id;
 void *client_thread_main(TEN_UNUSED void *args) {
   auto seq_id = (size_t)args;
 
-  TEN_LOGD("Client[%zu]: start.", seq_id);
+  TEN_LOGD("Client[%zu]: start", seq_id);
 
   auto seq_id_str = std::to_string(seq_id);
 

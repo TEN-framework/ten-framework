@@ -937,7 +937,7 @@ class test_extension_2 : public ten::extension_t {
       if (is_received_all_data() &&
           (received_from_extension_2_cmd_result ==
            expected_received_from_extension_2_cmd_result)) {
-        TEN_LOGI("extension_2 received all data, return result.");
+        TEN_LOGI("extension_2 received all data, return result");
 
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
         cmd_result->set_property("detail", "ok");
@@ -969,7 +969,7 @@ class test_extension_2 : public ten::extension_t {
     if ((hello_cmd != nullptr) && is_received_all_data() &&
         (received_from_extension_2_cmd_result ==
          expected_received_from_extension_2_cmd_result)) {
-      TEN_LOGI("extension_2 received all data, return result.");
+      TEN_LOGI("extension_2 received all data, return result");
 
       auto cmd_result =
           ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *hello_cmd);

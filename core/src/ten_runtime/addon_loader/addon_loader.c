@@ -309,7 +309,7 @@ static void ten_addon_loader_init_done(ten_env_t *ten_env, void *cb_data) {
                                       ten_app_thread_on_addon_loader_init_done,
                                       app, on_addon_loader_init_done_ctx);
   if (rc) {
-    TEN_LOGE("Failed to post task to app runloop.");
+    TEN_LOGE("Failed to post task to app runloop");
     TEN_ASSERT(0, "Should not happen.");
   }
 }
@@ -414,7 +414,7 @@ void ten_addon_loader_addons_create_singleton_instance(
         &err);
 
     if (!res) {
-      TEN_LOGE("Failed to create addon_loader instance %s, %s.",
+      TEN_LOGE("Failed to create addon_loader instance %s, %s",
                ten_string_get_raw_str(&loader_addon_host->name),
                ten_error_message(&err));
 #if defined(_DEBUG)
@@ -473,7 +473,7 @@ static void ten_addon_loader_deinit_done(ten_env_t *ten_env, void *cb_data) {
                                  ten_app_thread_on_addon_loader_deinit_done,
                                  app, on_addon_loader_deinit_done_ctx);
   if (rc) {
-    TEN_LOGE("Failed to post task to app runloop.");
+    TEN_LOGE("Failed to post task to app runloop");
     TEN_ASSERT(0, "Should not happen.");
   }
 }

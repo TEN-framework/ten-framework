@@ -94,7 +94,7 @@ static void ten_nodejs_addon_destroy(ten_nodejs_addon_t *self) {
 
 static void ten_nodejs_addon_finalize(napi_env env, void *data,
                                       TEN_UNUSED void *hint) {
-  TEN_LOGI("TEN JS Addon is finalized.");
+  TEN_LOGI("TEN JS Addon is finalized");
 
   ten_nodejs_addon_t *addon_bridge = data;
   TEN_ASSERT(
@@ -155,7 +155,7 @@ void ten_nodejs_invoke_addon_js_on_init(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS addon on_init().");
+  TEN_LOGE("Failed to call JS addon on_init()");
 
 done:
   TEN_FREE(call_info);
@@ -207,7 +207,7 @@ void ten_nodejs_invoke_addon_js_on_deinit(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS addon on_deinit().");
+  TEN_LOGE("Failed to call JS addon on_deinit()");
 
   // Call on_deinit_done() here to release the addon.
   ten_env_on_deinit_done(call_info->ten_env, NULL);
@@ -276,7 +276,7 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS addon on_create_instance().");
+  TEN_LOGE("Failed to call JS addon on_create_instance()");
 
 done:
   addon_on_create_instance_callback_ctx_destroy(call_info);
@@ -304,7 +304,7 @@ static void proxy_on_init(ten_addon_t *addon, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_init, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call addon on_init().");
+    TEN_LOGE("Failed to call addon on_init()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_init(), so that we need to call on_init_done() here
@@ -335,7 +335,7 @@ static void proxy_on_deinit(ten_addon_t *addon, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_deinit, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call addon on_deinit().");
+    TEN_LOGE("Failed to call addon on_deinit()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_deinit(), so that we need to call on_deinit_done()

@@ -85,7 +85,7 @@ static void *pthread_routine(void *args) {
   ten_thread_t *t = (ten_thread_t *)args;
   void *routine_result = NULL;
 
-  // TEN_LOGD("pthread_routine (%s) start.", t->name);
+  // TEN_LOGD("pthread_routine (%s) start", t->name);
 
   if (!args) {
     // So not possible but just in case
@@ -137,7 +137,7 @@ static void *pthread_routine(void *args) {
     }
   }
 
-  // TEN_LOGD("pthread_routine end.");
+  // TEN_LOGD("pthread_routine end");
 
   return 0;
 }
@@ -161,7 +161,7 @@ ten_thread_t *ten_thread_create(const char *name,
   memset(thread, 0, sizeof(*thread));
 
   if (ten_thread_once(&__tcb_once, __setup_tcb_callback) != 0) {
-    TEN_LOGE("Failed to ten_thread_once.");
+    TEN_LOGE("Failed to ten_thread_once");
     return NULL;
   }
 
@@ -202,7 +202,7 @@ ten_thread_t *ten_thread_create(const char *name,
   }
 
 #if defined(_DEBUG) && defined(__linux__)
-  TEN_LOGV("New thread is created, id(%lu), name(%s).", syscall(__NR_gettid),
+  TEN_LOGV("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
            name);
 #endif
 
@@ -219,12 +219,12 @@ error:
 
 int ten_thread_join(ten_thread_t *thread, int wait_ms) {
   if (!thread) {
-    TEN_LOGE("Invalid argument: thread is NULL.");
+    TEN_LOGE("Invalid argument: thread is NULL");
     return -1;
   }
 
   if (!thread->exit) {
-    TEN_LOGE("Failed to join thead because it's exit is 0.");
+    TEN_LOGE("Failed to join thead because it's exit is 0");
     TEN_ASSERT(0, "Should not happen.");
     return -1;
   }
@@ -270,7 +270,7 @@ ten_thread_t *ten_thread_create_fake(const char *name) {
   t->aux = (void *)pthread_self();
 
 #if defined(_DEBUG) && defined(__linux__)
-  TEN_LOGV("New thread is created, id(%lu), name(%s).", syscall(__NR_gettid),
+  TEN_LOGV("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
            name);
 #endif
 

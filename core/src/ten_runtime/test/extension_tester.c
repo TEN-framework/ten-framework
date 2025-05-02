@@ -204,7 +204,7 @@ void ten_extension_tester_destroy(ten_extension_tester_t *self) {
   // triggered by the `deinit` of `test_app`.
   TEN_ASSERT(self->test_app_ten_env_proxy == NULL, "Should not happen.");
 
-  TEN_LOGI("Destroying extension_tester.");
+  TEN_LOGI("Destroying extension_tester");
 
   if (self->test_app_ten_env_proxy_create_completed) {
     ten_event_destroy(self->test_app_ten_env_proxy_create_completed);
@@ -243,7 +243,7 @@ static void test_app_start_graph_result_handler(ten_env_t *ten_env,
   TEN_STATUS_CODE status_code = ten_cmd_result_get_status_code(cmd_result);
 
   if (status_code == TEN_STATUS_CODE_OK) {
-    TEN_LOGI("Successfully started standalone testing graph.");
+    TEN_LOGI("Successfully started standalone testing graph");
   } else {
     TEN_LOGE("Failed to start standalone testing graph, status_code: %d",
              status_code);
@@ -482,7 +482,7 @@ void ten_extension_tester_on_init_done(ten_extension_tester_t *self) {
   TEN_ASSERT(self->test_extension_ten_env_proxy,
              "The test extension should have been created its ten_env_proxy.");
 
-  TEN_LOGI("tester on_init() done.");
+  TEN_LOGI("tester on_init() done");
 
   bool rc = ten_env_proxy_notify(
       self->test_extension_ten_env_proxy,
@@ -498,7 +498,7 @@ void ten_extension_tester_on_start_done(ten_extension_tester_t *self) {
   TEN_ASSERT(self->test_extension_ten_env_proxy,
              "The test extension should have been created its ten_env_proxy.");
 
-  TEN_LOGI("tester on_start() done.");
+  TEN_LOGI("tester on_start() done");
 
   bool rc = ten_env_proxy_notify(
       self->test_extension_ten_env_proxy,
@@ -514,7 +514,7 @@ void ten_extension_tester_on_stop_done(ten_extension_tester_t *self) {
   TEN_ASSERT(self->test_extension_ten_env_proxy,
              "The test extension should have been created its ten_env_proxy.");
 
-  TEN_LOGI("tester on_stop() done.");
+  TEN_LOGI("tester on_stop() done");
 
   bool rc = ten_env_proxy_notify(
       self->test_extension_ten_env_proxy,
@@ -530,7 +530,7 @@ void ten_extension_tester_on_deinit_done(ten_extension_tester_t *self) {
   TEN_ASSERT(self->test_extension_ten_env_proxy,
              "The test extension should have been created its ten_env_proxy.");
 
-  TEN_LOGI("tester on_deinit() done.");
+  TEN_LOGI("tester on_deinit() done");
 
   bool rc = ten_env_proxy_notify(
       self->test_extension_ten_env_proxy,
@@ -547,7 +547,7 @@ void ten_extension_tester_on_deinit_done(ten_extension_tester_t *self) {
   // the `ten_env_proxy` exists, the extension will not be destroyed.), ensuring
   // that all operations using the extension's `ten_env_proxy` before the
   // releasing of ten_env_proxy are valid.
-  TEN_LOGI("Releasing test extension's ten_env_proxy.");
+  TEN_LOGI("Releasing test extension's ten_env_proxy");
   rc = ten_env_proxy_release(self->test_extension_ten_env_proxy, NULL);
   TEN_ASSERT(rc, "Should not happen.");
 
