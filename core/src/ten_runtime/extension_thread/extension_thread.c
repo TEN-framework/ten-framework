@@ -507,9 +507,15 @@ static void ten_extension_thread_log_graph_resources(
   const char *graph_name =
       ten_string_get_raw_str(&self->extension_context->engine->graph_name);
 
-  // Build extension list entries.
-  ten_string_t extensions_json;
-  ten_string_init(&extensions_json);
+  // Build extension thread entry.
+  ten_string_t extension_threads_json;
+  ten_string_init(&extension_threads_json);
+
+  // Extensions by thread ID
+  ten_string_t thread_entry;
+  ten_string_init(&thread_entry);
+  ten_string_t extensions_array;
+  ten_string_init(&extensions_array);
 
   bool first_extension = true;
 
@@ -521,36 +527,47 @@ static void ten_extension_thread_log_graph_resources(
 
     // Add comma for all but the first extension.
     if (!first_extension) {
-      ten_string_append_formatted(&extensions_json, "%s", ", ");
+      ten_string_append_formatted(&extensions_array, "%s", ", ");
     }
     first_extension = false;
 
-    // Add extension entry with thread_id.
-    char entry[256];
-    int written =
-        snprintf(entry, sizeof(entry), "\"%s\": {\"thread_id\": %lld}",
-                 ten_extension_get_name(extension, true), (long long)self->tid);
-
-    if (written < 0 || written >= (int)sizeof(entry)) {
-      TEN_LOGE("Error formatting extension entry or buffer too small");
-      continue;
-    }
-
-    ten_string_append_formatted(&extensions_json, "%s", entry);
+    // Add extension name to the array
+    ten_string_append_formatted(&extensions_array, "\"%s\"",
+                                ten_extension_get_name(extension, true));
   }
 
+  ten_string_append_formatted(&thread_entry, "\"%lld\": {\"extensions\": [%s]}",
+                              (long long)self->tid,
+                              ten_string_get_raw_str(&extensions_array));
+
+  ten_string_append_formatted(&extension_threads_json, "%s",
+                              ten_string_get_raw_str(&thread_entry));
+
   // Log the complete JSON in a single call.
-  TEN_LOGM(
-      "[graph resources] {"
-      "\"app_uri\": \"%s\", "
-      "\"graph name\": \"%s\", "
-      "\"graph id\": \"%s\", "
-      "\"extensions\": {%s}"
-      "}",
-      app_uri, graph_name, graph_id, ten_string_get_raw_str(&extensions_json));
+  if (app_uri != NULL && app_uri[0] != '\0') {
+    TEN_LOGM(
+        "[graph resources] {"
+        "\"app_uri\": \"%s\", "
+        "\"graph name\": \"%s\", "
+        "\"graph id\": \"%s\", "
+        "\"extension_threads\": {%s}"
+        "}",
+        app_uri, graph_name, graph_id,
+        ten_string_get_raw_str(&extension_threads_json));
+  } else {
+    TEN_LOGM(
+        "[graph resources] {"
+        "\"graph name\": \"%s\", "
+        "\"graph id\": \"%s\", "
+        "\"extension_threads\": {%s}"
+        "}",
+        graph_name, graph_id, ten_string_get_raw_str(&extension_threads_json));
+  }
 
   // Clean up.
-  ten_string_deinit(&extensions_json);
+  ten_string_deinit(&thread_entry);
+  ten_string_deinit(&extensions_array);
+  ten_string_deinit(&extension_threads_json);
 }
 
 void ten_extension_thread_add_all_created_extensions(

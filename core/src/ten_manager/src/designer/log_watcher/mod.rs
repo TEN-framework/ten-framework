@@ -32,7 +32,7 @@ pub struct SetAppBaseDir {
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
-pub struct FileContent(pub Vec<u8>);
+pub struct FileContent(pub String);
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
@@ -160,8 +160,8 @@ impl Handler<FileContent> for WsLogWatcher {
         msg: FileContent,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the file content to the WebSocket client.
-        ctx.binary(msg.0);
+        // Send the file content as text to the WebSocket client.
+        ctx.text(msg.0);
     }
 }
 

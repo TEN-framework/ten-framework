@@ -93,11 +93,10 @@ async fn test_ws_log_watcher_endpoint() {
     let mut received_content = false;
     while let Some(msg) = read.next().await {
         let msg = msg.unwrap();
-        if msg.is_binary() {
-            let binary = msg.into_data();
-            let content = String::from_utf8_lossy(&binary);
-            println!("Received binary: {}", content);
-            if content.contains(test_content) {
+        if msg.is_text() {
+            let text = msg.to_text().unwrap();
+            println!("Received text: {}", text);
+            if text.contains(test_content) {
                 received_content = true;
                 break;
             }

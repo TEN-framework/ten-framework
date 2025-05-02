@@ -9,6 +9,7 @@ mod common;
 mod designer;
 mod fs;
 mod graph;
+mod log;
 mod registry;
 mod schema;
 mod version_utils;

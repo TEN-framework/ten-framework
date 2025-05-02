@@ -23,10 +23,10 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
 const DEFAULT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
 
-/// Stream of file content changes.
+/// Stream of UTF-8 text file content changes.
 pub struct FileContentStream {
-    // Channel for receiving file content.
-    content_rx: Receiver<Result<Vec<u8>>>,
+    // Channel for receiving file content as UTF-8 text.
+    content_rx: Receiver<Result<String>>,
 
     // Sender to signal stop request.
     stop_tx: Option<oneshot::Sender<()>>,
@@ -35,14 +35,14 @@ pub struct FileContentStream {
 impl FileContentStream {
     /// Create a new FileContentStream.
     fn new(
-        content_rx: Receiver<Result<Vec<u8>>>,
+        content_rx: Receiver<Result<String>>,
         stop_tx: oneshot::Sender<()>,
     ) -> Self {
         Self { content_rx, stop_tx: Some(stop_tx) }
     }
 
-    /// Get the next chunk of data from the file.
-    pub async fn next(&mut self) -> Option<Result<Vec<u8>>> {
+    /// Get the next chunk of text from the file.
+    pub async fn next(&mut self) -> Option<Result<String>> {
         self.content_rx.recv().await
     }
 
@@ -97,7 +97,7 @@ fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
     }
 }
 
-/// Watch a file for changes and stream its content.
+/// Watch a UTF-8 text file for changes and stream its content.
 ///
 /// Returns a FileContentStream that can be used to read the content of the file
 /// as it changes. The stream will end when either:
@@ -132,7 +132,7 @@ pub async fn watch_file<P: AsRef<Path>>(
 /// Actual file watch task running in the background.
 async fn watch_file_task(
     path: PathBuf,
-    content_tx: Sender<Result<Vec<u8>>>,
+    content_tx: Sender<Result<String>>,
     mut stop_rx: oneshot::Receiver<()>,
     options: FileWatchOptions,
 ) {
@@ -157,15 +157,18 @@ async fn watch_file_task(
         let _ = content_tx.send(Err(anyhow!(e))).await;
         return;
     }
-    let mut init_buf = Vec::new();
-    match file.read_to_end(&mut init_buf) {
+
+    let mut init_content = String::new();
+    match file.read_to_string(&mut init_content) {
         Ok(n) => {
             if n > 0 {
-                let _ = content_tx.send(Ok(init_buf)).await;
+                let _ = content_tx.send(Ok(init_content)).await;
             }
         }
         Err(e) => {
-            let _ = content_tx.send(Err(anyhow!(e))).await;
+            let _ = content_tx
+                .send(Err(anyhow!("Failed to read file as UTF-8 text: {}", e)))
+                .await;
             return;
         }
     }
@@ -226,17 +229,25 @@ async fn watch_file_task(
                     }
 
                     let mut reader = BufReader::with_capacity(options.buffer_size, &file);
-                    let mut buf = Vec::with_capacity(options.buffer_size);
-                    match reader.read_until(0, &mut buf) {
+                    let mut line = String::with_capacity(options.buffer_size);
+                    match reader.read_line(&mut line) {
                         Ok(n) if n > 0 => {
                             last_pos += n as u64;
-                            let _ = content_tx.send(Ok(buf)).await;
+                            let _ = content_tx.send(Ok(line)).await;
                             last_activity = Instant::now();
                         }
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!("Error reading from file: {}", e);
-                            let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            // Specific error for UTF-8 decoding failures.
+                            if e.kind() == std::io::ErrorKind::InvalidData {
+                                eprintln!("Error: Invalid UTF-8 data in file");
+                                let _ = content_tx
+                                    .send(Err(anyhow!("Invalid UTF-8 data in file")))
+                                    .await;
+                            } else {
+                                eprintln!("Error reading from file: {}", e);
+                                let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
+                            }
                             break;
                         }
                     }
