@@ -97,8 +97,8 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   if (extension_thread->is_close_triggered) {
@@ -249,8 +249,8 @@ bool ten_extension_on_init_done(ten_env_t *self) {
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   if (extension_thread->is_close_triggered) {
@@ -308,8 +308,8 @@ bool ten_extension_on_start_done(ten_env_t *self) {
   extension->state = TEN_EXTENSION_STATE_ON_START_DONE;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   if (extension_thread->is_close_triggered) {

@@ -94,8 +94,8 @@ static void ten_extension_do_close(ten_extension_t *self) {
              "Should not happen.");
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
-  TEN_ASSERT(extension_thread &&
-                 ten_extension_thread_check_integrity(extension_thread, true),
+  TEN_ASSERT(extension_thread, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
   ten_extension_on_deinit(self);

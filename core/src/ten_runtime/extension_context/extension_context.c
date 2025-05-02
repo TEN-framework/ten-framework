@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "include_internal/ten_runtime/addon/addon.h"
@@ -336,7 +337,19 @@ static void ten_extension_context_log_graph_resources(
   TEN_ASSERT(ten_extension_context_check_integrity(self, true),
              "Invalid use of extension_context %p.", self);
 
-  TEN_LOGM("[graph resources] %s, ", ten_engine_get_id(self->engine, true));
+  // Get the required information.
+  const char *app_uri = ten_app_get_uri(self->engine->app);
+  const char *graph_id = ten_engine_get_id(self->engine, true);
+  const char *graph_name = ten_string_get_raw_str(&self->engine->graph_name);
+
+  // Log the complete JSON in a single call.
+  TEN_LOGM(
+      "[graph resources] {"
+      "\"app_uri\": \"%s\", "
+      "\"graph name\": \"%s\", "
+      "\"graph id\": \"%s\" "
+      "}",
+      app_uri, graph_name, graph_id);
 }
 
 static void ten_extension_context_create_extension_group_done(
