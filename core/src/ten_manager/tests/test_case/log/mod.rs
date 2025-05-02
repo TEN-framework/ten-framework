@@ -22,7 +22,8 @@ mod tests {
         let mut graph_resources_log = GraphResourcesLog {
             graph_id: String::new(),
             graph_name: String::new(),
-            apps: HashMap::new(),
+            app_uri: None,
+            extension_threads: HashMap::new(),
         };
 
         let result =
@@ -34,9 +35,10 @@ mod tests {
             "b99a15fb-1db6-4257-a13f-f3584e892e29"
         );
         assert_eq!(graph_resources_log.graph_name, "");
-
-        let app_uri = Some("msgpack://127.0.0.1:8001/".to_string());
-        assert!(graph_resources_log.apps.contains_key(&app_uri));
+        assert_eq!(
+            graph_resources_log.app_uri,
+            Some("msgpack://127.0.0.1:8001/".to_string())
+        );
     }
 
     #[test]
@@ -52,7 +54,8 @@ mod tests {
         let mut graph_resources_log = GraphResourcesLog {
             graph_id: String::new(),
             graph_name: String::new(),
-            apps: HashMap::new(),
+            app_uri: None,
+            extension_threads: HashMap::new(),
         };
 
         let result =
@@ -64,14 +67,15 @@ mod tests {
             "b99a15fb-1db6-4257-a13f-f3584e892e29"
         );
         assert_eq!(graph_resources_log.graph_name, "");
+        assert_eq!(
+            graph_resources_log.app_uri,
+            Some("msgpack://127.0.0.1:8001/".to_string())
+        );
 
-        let app_uri = Some("msgpack://127.0.0.1:8001/".to_string());
-        assert!(graph_resources_log.apps.contains_key(&app_uri));
+        assert!(graph_resources_log.extension_threads.contains_key("1565927"));
 
-        let app_info = graph_resources_log.apps.get(&app_uri).unwrap();
-        assert!(app_info.extension_threads.contains_key("1565927"));
-
-        let thread_info = app_info.extension_threads.get("1565927").unwrap();
+        let thread_info =
+            graph_resources_log.extension_threads.get("1565927").unwrap();
         assert_eq!(thread_info.extensions.len(), 1);
         assert_eq!(thread_info.extensions[0], "test_extension");
     }
@@ -85,17 +89,83 @@ mod tests {
         let mut graph_resources_log = GraphResourcesLog {
             graph_id: String::new(),
             graph_name: String::new(),
-            apps: HashMap::new(),
+            app_uri: None,
+            extension_threads: HashMap::new(),
         };
 
         let result =
             parse_graph_resources_log(log_message, &mut graph_resources_log);
-        assert!(result.is_ok());
+        assert!(result.is_err());
 
         // The log should be ignored, so the graph_resources_log should remain
         // unchanged
         assert_eq!(graph_resources_log.graph_id, "");
         assert_eq!(graph_resources_log.graph_name, "");
-        assert!(graph_resources_log.apps.is_empty());
+        assert!(graph_resources_log.extension_threads.is_empty());
+    }
+
+    #[test]
+    fn test_parse_log_with_extension_metadata() {
+        let log_message = "05-02 22:23:37.460 1713000(1713045) D \
+                           ten_extension_on_configure_done@on_xxx.c:95 \
+                           [test_extension] on_configure() done";
+
+        let extension_name = log_message
+            .split_once('[')
+            .and_then(|(_, rest)| rest.split_once(']'))
+            .map(|(extension_name, _)| extension_name.trim().to_string());
+
+        assert_eq!(extension_name, Some("test_extension".to_string()));
+    }
+
+    #[test]
+    fn test_parse_log_without_extension_metadata() {
+        let log_message = "05-02 22:23:37.329 1713000(1713045) W \
+                           pthread_routine@thread.c:114 Failed to set thread \
+                           name: ";
+
+        let extension_name = log_message
+            .split_once('[')
+            .and_then(|(_, rest)| rest.split_once(']'))
+            .map(|(extension_name, _)| extension_name.trim().to_string());
+
+        assert_eq!(extension_name, None);
+    }
+
+    #[test]
+    fn test_parse_multiple_logs_with_extension_metadata() {
+        let log_messages = [
+            "05-02 22:23:37.460 1713000(1713045) D \
+             ten_extension_on_configure_done@on_xxx.c:95 [test_extension] \
+             on_configure() done",
+            "05-02 22:23:37.460 1713000(1713045) I \
+             ten_extension_handle_ten_namespace_properties@metadata.c:314 \
+             [test_extension] `ten` section is not found in the property, skip",
+            "05-02 22:23:37.366 1713000(1713045) D \
+             ten_extension_group_on_init_done@on_xxx.c:78 [] on_init() done",
+            "05-02 22:23:37.329 1713000(1713045) W \
+             pthread_routine@thread.c:114 Failed to set thread name: ",
+        ];
+
+        let extension_names: Vec<Option<String>> = log_messages
+            .iter()
+            .map(|log| {
+                log.split_once('[')
+                    .and_then(|(_, rest)| rest.split_once(']'))
+                    .map(|(extension_name, _)| {
+                        extension_name.trim().to_string()
+                    })
+            })
+            .collect();
+
+        assert_eq!(
+            extension_names,
+            vec![
+                Some("test_extension".to_string()),
+                Some("test_extension".to_string()),
+                Some("".to_string()),
+                None
+            ]
+        );
     }
 }

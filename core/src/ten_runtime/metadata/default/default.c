@@ -20,8 +20,8 @@ void ten_set_default_manifest_info(const char *base_dir,
     const char *instance_name =
         ten_env_get_attached_instance_name(manifest->belonging_to, true);
     TEN_LOGI(
-        "Skip the loading of manifest.json because the base_dir of %s is "
-        "missing.",
+        "Skip the loading of manifest.json because the base_dir of '%s' is "
+        "missing",
         instance_name);
     return;
   }
@@ -46,8 +46,8 @@ void ten_set_default_property_info(const char *base_dir,
     const char *instance_name =
         ten_env_get_attached_instance_name(property->belonging_to, true);
     TEN_LOGI(
-        "Skip the loading of property.json because the base_dir of %s is "
-        "missing.",
+        "Skip the loading of property.json because the base_dir of '%s' is "
+        "missing",
         instance_name);
     return;
   }
