@@ -28,7 +28,6 @@ class test_extension : public ten::extension_t {
 
       auto test_cmd = ten::cmd_t::create("test");
       test_cmd->set_dest("msgpack://127.0.0.1:8001/", "incorrect_graph_id",
-                         "extension_send_msg_to_incorrect_engine",
                          "test_extension");
       ten_env.send_cmd(
           std::move(test_cmd),
@@ -108,7 +107,6 @@ TEST(ExtensionTest, ExtensionSendMsgToIncorrectEngine) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "extension_send_msg_to_incorrect_engine",
                             "test_extension");
 
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));

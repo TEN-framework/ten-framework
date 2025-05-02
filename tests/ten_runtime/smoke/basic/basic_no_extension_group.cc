@@ -15,27 +15,17 @@
 
 namespace {
 
-class test_extension_1 : public ten::extension_t {
+class test_extension : public ten::extension_t {
  public:
-  explicit test_extension_1(const char *name) : ten::extension_t(name) {}
+  explicit test_extension(const char *name) : ten::extension_t(name) {}
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-    cmd_result->set_property("detail", "hello from test extension 1");
-    ten_env.return_result(std::move(cmd_result));
-  }
-};
-
-class test_extension_2 : public ten::extension_t {
- public:
-  explicit test_extension_2(const char *name) : ten::extension_t(name) {}
-
-  void on_cmd(ten::ten_env_t &ten_env,
-              std::unique_ptr<ten::cmd_t> cmd) override {
-    auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-    cmd_result->set_property("detail", "hello from test extension 2");
-    ten_env.return_result(std::move(cmd_result));
+    if (cmd->get_name() == "hello_world") {
+      auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
+      cmd_result->set_property("detail", "hello world, too");
+      ten_env.return_result(std::move(cmd_result));
+    }
   }
 };
 
@@ -68,16 +58,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_out_of_order_1__test_extension_1,
-                                    test_extension_1);
-
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_out_of_order_1__test_extension_2,
-                                    test_extension_2);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(basic_no_extension_group__extension,
+                                    test_extension);
 
 }  // namespace
 
-TEST(ExtensionTest, GraphOutOfOrder1) {  // NOLINT
-  // Start app.
+TEST(BasicTest, NoExtensionGroup) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -88,17 +74,10 @@ TEST(ExtensionTest, GraphOutOfOrder1) {  // NOLINT
   auto start_graph_cmd = ten::cmd_start_graph_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
-                "type": "extension",
-                "name": "test_extension_1",
-                "addon": "graph_out_of_order_1__test_extension_1",
-                "extension_group": "test_extension_group 1",
-                "app": "msgpack://127.0.0.1:8001/"
-             },{
-                "type": "extension",
-                "name": "test_extension_2",
-                "addon": "graph_out_of_order_1__test_extension_2",
-                "extension_group": "test_extension_group 2",
-                "app": "msgpack://127.0.0.1:8001/"
+               "type": "extension",
+               "name": "test_extension",
+               "addon": "basic_no_extension_group__extension",
+               "app": "msgpack://127.0.0.1:8001/"
              }]
            })");
   auto cmd_result =
@@ -108,21 +87,12 @@ TEST(ExtensionTest, GraphOutOfOrder1) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension_1");
+                            "test_extension");
 
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
 
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-  ten_test::check_detail_with_string(cmd_result, "hello from test extension 1");
-
-  hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension_2");
-
-  cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
-
-  ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-  ten_test::check_detail_with_string(cmd_result, "hello from test extension 2");
+  ten_test::check_detail_with_string(cmd_result, "hello world, too");
 
   delete client;
 

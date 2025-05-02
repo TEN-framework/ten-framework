@@ -581,96 +581,97 @@ class http_server_extension_t : public ten::extension_t {
 void send_ten_msg_with_req_body(
     const std::shared_ptr<http_transaction_data_t> &http_session_data) {
   // We are _not_ in the TEN threads, so we need to use ten_env_proxy.
-  http_session_data->http_server->ten_env_proxy->notify([http_session_data](
-                                                            ten::ten_env_t
-                                                                &ten_env) {
-    // Create a TEN command from the request.
+  http_session_data->http_server->ten_env_proxy->notify(
+      [http_session_data](ten::ten_env_t &ten_env) {
+        // Create a TEN command from the request.
 
-    // Parse the received request data and create a command from it
-    // according to the request content.
-    auto cmd_json = nlohmann::json::parse(
-        std::string(reinterpret_cast<char *>(http_session_data->req_buf->data),
-                    ten_buf_get_content_size(http_session_data->req_buf))
-            .c_str());
+        // Parse the received request data and create a command from it
+        // according to the request content.
+        auto cmd_json = nlohmann::json::parse(
+            std::string(
+                reinterpret_cast<char *>(http_session_data->req_buf->data),
+                ten_buf_get_content_size(http_session_data->req_buf))
+                .c_str());
 
-    std::string method = get_http_method_string(http_session_data->method);
+        std::string method = get_http_method_string(http_session_data->method);
 
-    std::unique_ptr<ten::cmd_t> cmd = nullptr;
+        std::unique_ptr<ten::cmd_t> cmd = nullptr;
 
-    if (cmd_json.contains("ten")) {
-      if (cmd_json["ten"].contains("type")) {
-        // Should be a TEN internal command.
+        if (cmd_json.contains("ten")) {
+          if (cmd_json["ten"].contains("type")) {
+            // Should be a TEN internal command.
 
-        if (cmd_json["ten"]["type"] == "close_app") {
-          cmd = ten::cmd_close_app_t::create();
+            if (cmd_json["ten"]["type"] == "close_app") {
+              cmd = ten::cmd_close_app_t::create();
 
-          // Set the destination of the command to the localhost.
-          cmd->set_dest("localhost", nullptr, nullptr, nullptr);
-        } else {
-          assert(0 && "Handle more internal command types.");
-        }
-      } else if (cmd_json["ten"].contains("name")) {
-        // Should be a custom command.
+              // Set the destination of the command to the localhost.
+              cmd->set_dest("localhost", nullptr, nullptr);
+            } else {
+              assert(0 && "Handle more internal command types.");
+            }
+          } else if (cmd_json["ten"].contains("name")) {
+            // Should be a custom command.
 
-        cmd = ten::cmd_t::create(
-            cmd_json["ten"]["name"].get<std::string>().c_str());
+            cmd = ten::cmd_t::create(
+                cmd_json["ten"]["name"].get<std::string>().c_str());
 
-        // If the cmd_json contains "dest", it means the command should be sent
-        // to a specific extension.
-        if (cmd_json["ten"].contains("dest")) {
-          auto dest = cmd_json["ten"]["dest"];
+            // If the cmd_json contains "dest", it means the command should be
+            // sent to a specific extension.
+            if (cmd_json["ten"].contains("dest")) {
+              auto dest = cmd_json["ten"]["dest"];
 
-          try {
-            cmd->set_dest(dest["app"].get<std::string>().c_str(),
-                          dest["graph"].get<std::string>().c_str(),
-                          dest["extension_group"].get<std::string>().c_str(),
-                          dest["extension"].get<std::string>().c_str());
-          } catch (const std::exception &e) {
-            TEN_LOGW("Failed to set the destination of the command: %s",
-                     e.what());
+              try {
+                cmd->set_dest(dest["app"].get<std::string>().c_str(),
+                              dest["graph"].get<std::string>().c_str(),
+                              dest["extension"].get<std::string>().c_str());
+              } catch (const std::exception &e) {
+                TEN_LOGW("Failed to set the destination of the command: %s",
+                         e.what());
+              }
+            }
           }
         }
-      }
-    }
 
-    if (cmd == nullptr) {
-      // Use the method as the command name by default.
-      cmd = ten::cmd_t::create(method.c_str());
-    }
+        if (cmd == nullptr) {
+          // Use the method as the command name by default.
+          cmd = ten::cmd_t::create(method.c_str());
+        }
 
-    cmd_json["method"] =
-        get_http_method_string(http_session_data->method).c_str();
-    cmd_json["url"] = http_session_data->url.c_str();
+        cmd_json["method"] =
+            get_http_method_string(http_session_data->method).c_str();
+        cmd_json["url"] = http_session_data->url.c_str();
 
-    // Parse the full content of the request and set it to the
-    // command.
-    cmd->set_property_from_json(nullptr, cmd_json.dump().c_str());
+        // Parse the full content of the request and set it to the
+        // command.
+        cmd->set_property_from_json(nullptr, cmd_json.dump().c_str());
 
-    // Send out the command to the TEN runtime.
-    ten_env.send_cmd(
-        std::move(cmd),
-        [http_session_data](ten::ten_env_t &ten_env,
-                            std::unique_ptr<ten::cmd_result_t> cmd_result,
-                            ten::error_t *err) {
-          if (err != nullptr) {
-            prepare_response_data_from_ten_world(
-                http_session_data, "The command is not supported. err:" +
-                                       std::string(err->error_message()));
-            return;
-          }
+        // Send out the command to the TEN runtime.
+        ten_env.send_cmd(
+            std::move(cmd),
+            [http_session_data](ten::ten_env_t &ten_env,
+                                std::unique_ptr<ten::cmd_result_t> cmd_result,
+                                ten::error_t *err) {
+              if (err != nullptr) {
+                prepare_response_data_from_ten_world(
+                    http_session_data, "The command is not supported. err:" +
+                                           std::string(err->error_message()));
+                return;
+              }
 
-          auto *ext = static_cast<http_server_extension_t *>(
-              ten::ten_env_internal_accessor_t::get_attached_target(ten_env));
-          assert(ext && "Failed to get the attached extension.");
+              auto *ext = static_cast<http_server_extension_t *>(
+                  ten::ten_env_internal_accessor_t::get_attached_target(
+                      ten_env));
+              assert(ext && "Failed to get the attached extension.");
 
-          if (!ext->is_stopping) {
-            // When stopping, do not push more data into libws thread.
-            // Libws world would clean up itself.
-            prepare_response_data_from_ten_world(
-                http_session_data, cmd_result->get_property_to_json("detail"));
-          }
-        });
-  });
+              if (!ext->is_stopping) {
+                // When stopping, do not push more data into libws thread.
+                // Libws world would clean up itself.
+                prepare_response_data_from_ten_world(
+                    http_session_data,
+                    cmd_result->get_property_to_json("detail"));
+              }
+            });
+      });
 }
 
 void send_ten_msg_without_req_body(

@@ -27,7 +27,7 @@ class test_extension : public ten::extension_t {
       hello_world_cmd = std::move(cmd);
 
       auto timer_cmd = ten::cmd_timer_t::create();
-      timer_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+      timer_cmd->set_dest("localhost", nullptr, nullptr);
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
       timer_cmd->set_times(TIMER_TIMES);
@@ -112,7 +112,6 @@ TEST(ExtensionTest, TimerTwoShot) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "timer_two_shot__extension_group",
                             "test_extension");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

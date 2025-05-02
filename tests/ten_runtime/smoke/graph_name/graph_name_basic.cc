@@ -211,7 +211,7 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
   // result.
   auto send_message_cmd = ten::cmd_t::create("send_message");
   send_message_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                             "graph_id_basic__extension_group_1", "extension1");
+                             "extension1");
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(send_message_cmd));
@@ -224,7 +224,7 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
 
   send_message_cmd = ten::cmd_t::create("send_message");
   send_message_cmd->set_dest("msgpack://127.0.0.1:8002/", graph_id.c_str(),
-                             "graph_id_basic__extension_group_2", "extension3");
+                             "extension3");
 
   // It must be sent directly to 127.0.0.1:8002, not 127.0.0.1:8001
   cmd_result = client2->send_cmd_and_recv_result(std::move(send_message_cmd));
@@ -233,7 +233,7 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
 
   send_message_cmd = ten::cmd_t::create("send_message");
   send_message_cmd->set_dest("msgpack://127.0.0.1:8001/", graph_id.c_str(),
-                             "graph_id_basic__extension_group_1", "extension2");
+                             "extension2");
 
   cmd_result = client->send_cmd_and_recv_result(std::move(send_message_cmd));
 

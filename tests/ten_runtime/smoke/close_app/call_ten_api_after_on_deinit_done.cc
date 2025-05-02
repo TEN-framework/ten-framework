@@ -36,7 +36,7 @@ class test_extension_1 : public ten::extension_t {
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "close_app") {
       auto close_app_cmd = ten::cmd_close_app_t::create();
-      close_app_cmd->set_dest("localhost", nullptr, nullptr, nullptr);
+      close_app_cmd->set_dest("localhost", nullptr, nullptr);
       ten_env.send_cmd(std::move(close_app_cmd));
 
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -204,7 +204,6 @@ TEST(CloseAppTest, CallTenApiAfterOnDeinitDone) {  // NOLINT
   // Send a return_after_3_second command.
   auto return_after_3_second_cmd = ten::cmd_t::create("return_after_3_second");
   return_after_3_second_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                                      "basic_extension_group_2",
                                       "test_extension_2");
   client->send_cmd(std::move(return_after_3_second_cmd));
 
@@ -215,7 +214,7 @@ TEST(CloseAppTest, CallTenApiAfterOnDeinitDone) {  // NOLINT
   // Send a close_app command.
   auto close_app_cmd = ten::cmd_t::create("close_app");
   close_app_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                          "basic_extension_group_1", "test_extension_1");
+                          "test_extension_1");
   client->send_cmd(std::move(close_app_cmd));
 
   ten_thread_join(app_thread, -1);

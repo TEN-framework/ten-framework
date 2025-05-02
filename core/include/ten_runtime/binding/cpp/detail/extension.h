@@ -133,7 +133,7 @@ class extension_t : public binding_handle_t {
     TEN_ASSERT(stop_graph_cmd, "Should not happen.");
 
     ten_msg_clear_and_set_dest(stop_graph_cmd, "localhost", nullptr, nullptr,
-                               nullptr, nullptr);
+                               nullptr);
     ten_env_send_cmd(ten_env.get_c_ten_env(), stop_graph_cmd, nullptr, nullptr,
                      nullptr, nullptr);
     ten_shared_ptr_destroy(stop_graph_cmd);

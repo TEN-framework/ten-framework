@@ -88,7 +88,6 @@ TEST(ExtensionTest, ExtensionRegExtensionGroup) {  // NOLINT
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "extension_reg_extension_group__extension_group",
                             "test_extension");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

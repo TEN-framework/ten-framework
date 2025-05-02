@@ -14,14 +14,12 @@ export class Msg {
   setDest(
     appUri: string | undefined = undefined,
     graphId: string | undefined = undefined,
-    extensionGroup: string | undefined = undefined,
     extension: string | undefined = undefined,
   ) {
     ten_addon.ten_nodejs_msg_set_dest(
       this,
       appUri,
       graphId,
-      extensionGroup,
       extension,
     );
   }

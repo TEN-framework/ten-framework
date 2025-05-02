@@ -184,7 +184,10 @@ async fn watch_file_task(
     loop {
         // Wait for stop or the next check interval.
         tokio::select! {
-            _ = &mut stop_rx => break,
+            _ = &mut stop_rx => {
+                eprintln!("Stopping file watcher");
+                break;
+            },
             _ = tokio::time::sleep(options.check_interval) => {
                 // Check if the file has been rotated or truncated.
                 match std::fs::metadata(&path) {
@@ -217,6 +220,7 @@ async fn watch_file_task(
                 if curr_len > last_pos {
                     // Read the new part.
                     if let Err(e) = file.seek(SeekFrom::Start(last_pos)) {
+                        eprintln!("Error seeking to position: {}", e);
                         let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                         break;
                     }
@@ -231,6 +235,7 @@ async fn watch_file_task(
                         }
                         Ok(_) => {}
                         Err(e) => {
+                            eprintln!("Error reading from file: {}", e);
                             let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                             break;
                         }
@@ -238,6 +243,7 @@ async fn watch_file_task(
                 } else {
                     // Reached EOF, check if the timeout has been reached.
                     if Instant::now().duration_since(last_activity) > options.timeout {
+                        eprintln!("Timeout reached, breaking");
                         break;
                     }
                 }

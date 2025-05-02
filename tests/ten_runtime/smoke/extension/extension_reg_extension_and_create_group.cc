@@ -6,7 +6,6 @@
 //
 #include <nlohmann/json.hpp>
 #include <string>
-#include <vector>
 
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
@@ -94,10 +93,8 @@ TEST(ExtensionTest, ExtensionRegExtensionAndCreateGroup) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest(
-      "msgpack://127.0.0.1:8001/", nullptr,
-      "extension_reg_extension_and_create_group__extension_group",
-      "test_extension");
+  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
+                            "test_extension");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");

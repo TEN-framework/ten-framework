@@ -107,7 +107,6 @@ void ten_msg_set_src_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
 // information to one which is specified through the parameters.
 static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *uri,
                                            const char *graph_id,
-                                           const char *extension_group_name,
                                            const char *extension_name,
                                            TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
@@ -115,25 +114,21 @@ static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *uri,
   TEN_ASSERT((uri != NULL || extension_name != NULL), "Should not happen.");
 
   ten_list_clear(&self->dest_loc);
-  ten_list_push_ptr_back(
-      &self->dest_loc,
-      ten_loc_create(uri, graph_id, extension_group_name, extension_name),
-      (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
+  ten_list_push_ptr_back(&self->dest_loc,
+                         ten_loc_create(uri, graph_id, "", extension_name),
+                         (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 
   return true;
 }
 
 void ten_raw_msg_add_dest(ten_msg_t *self, const char *uri,
-                          const char *graph_id,
-                          const char *extension_group_name,
-                          const char *extension_name) {
+                          const char *graph_id, const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
 
-  ten_list_push_ptr_back(
-      &self->dest_loc,
-      ten_loc_create(uri, graph_id, extension_group_name, extension_name),
-      (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
+  ten_list_push_ptr_back(&self->dest_loc,
+                         ten_loc_create(uri, graph_id, "", extension_name),
+                         (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 }
 
 void ten_raw_msg_clear_dest(ten_msg_t *self) {
@@ -153,7 +148,6 @@ static void ten_raw_msg_clear_and_set_dest_from_msg_src(ten_msg_t *self,
   ten_raw_msg_clear_and_set_dest(
       self, ten_string_get_raw_str(&raw_msg->src_loc.app_uri),
       ten_string_get_raw_str(&raw_msg->src_loc.graph_id),
-      ten_string_get_raw_str(&raw_msg->src_loc.extension_group_name),
       ten_string_get_raw_str(&raw_msg->src_loc.extension_name), NULL);
 }
 
@@ -363,14 +357,12 @@ void ten_msg_set_src_engine_if_unspecified(ten_shared_ptr_t *self,
 
 bool ten_msg_clear_and_set_dest(ten_shared_ptr_t *self, const char *uri,
                                 const char *graph_id,
-                                const char *extension_group_name,
                                 const char *extension_name, ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
 
   return ten_raw_msg_clear_and_set_dest(ten_msg_get_raw_msg(self), uri,
-                                        graph_id, extension_group_name,
-                                        extension_name, err);
+                                        graph_id, extension_name, err);
 }
 
 void ten_raw_msg_clear_and_set_dest_to_loc(ten_msg_t *self, ten_loc_t *loc) {
@@ -380,11 +372,10 @@ void ten_raw_msg_clear_and_set_dest_to_loc(ten_msg_t *self, ten_loc_t *loc) {
   if (!loc) {
     ten_raw_msg_clear_dest(self);
   } else {
-    ten_raw_msg_clear_and_set_dest(
-        self, ten_string_get_raw_str(&loc->app_uri),
-        ten_string_get_raw_str(&loc->graph_id),
-        ten_string_get_raw_str(&loc->extension_group_name),
-        ten_string_get_raw_str(&loc->extension_name), NULL);
+    ten_raw_msg_clear_and_set_dest(self, ten_string_get_raw_str(&loc->app_uri),
+                                   ten_string_get_raw_str(&loc->graph_id),
+                                   ten_string_get_raw_str(&loc->extension_name),
+                                   NULL);
   }
 }
 

@@ -73,8 +73,8 @@ static napi_value ten_nodejs_msg_get_name(napi_env env,
 
 static napi_value ten_nodejs_msg_set_dest(napi_env env,
                                           napi_callback_info info) {
-  const size_t argc = 5;
-  napi_value args[argc];  // this, app_uri, graph_id, extension_group, extension
+  const size_t argc = 4;
+  napi_value args[argc];  // this, app_uri, graph_id, extension
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -98,9 +98,6 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
   ten_string_t graph_id;
   TEN_STRING_INIT(graph_id);
 
-  ten_string_t extension_group;
-  TEN_STRING_INIT(extension_group);
-
   ten_string_t extension;
   TEN_STRING_INIT(extension);
 
@@ -115,20 +112,14 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
   }
 
   if (!is_js_undefined(env, args[3])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[3], &extension_group);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get extension group", NULL);
-  }
-
-  if (!is_js_undefined(env, args[4])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[4], &extension);
+    bool rc = ten_nodejs_get_str_from_js(env, args[3], &extension);
     RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get extension", NULL);
   }
 
   bool rc = ten_msg_clear_and_set_dest(
       msg_bridge->msg, ten_string_get_raw_str(&app_uri),
-      ten_string_get_raw_str(&graph_id),
-      ten_string_get_raw_str(&extension_group),
-      ten_string_get_raw_str(&extension), &err);
+      ten_string_get_raw_str(&graph_id), ten_string_get_raw_str(&extension),
+      &err);
   if (!rc) {
     ten_string_t code_str;
     ten_string_init_formatted(&code_str, "%d", ten_error_code(&err));
@@ -141,7 +132,6 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
 
   ten_string_deinit(&app_uri);
   ten_string_deinit(&graph_id);
-  ten_string_deinit(&extension_group);
   ten_string_deinit(&extension);
   ten_error_deinit(&err);
 

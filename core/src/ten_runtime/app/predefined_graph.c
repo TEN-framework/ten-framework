@@ -82,15 +82,15 @@ ten_app_build_start_graph_cmd_to_start_predefined_graph(
   ten_shared_ptr_t *start_graph_cmd = ten_cmd_start_graph_create();
   TEN_ASSERT(start_graph_cmd, "Should not happen.");
 
-  ten_msg_clear_and_set_dest(start_graph_cmd, app_uri, NULL, NULL, NULL, err);
+  ten_msg_clear_and_set_dest(start_graph_cmd, app_uri, NULL, NULL, err);
 
   void *json_ctx = ten_json_create_new_ctx();
   ten_json_t start_graph_cmd_json = TEN_JSON_INIT_VAL(json_ctx, true);
   ten_json_init_object(&start_graph_cmd_json);
 
   ten_json_t ten_json = TEN_JSON_INIT_VAL(json_ctx, false);
-  bool success = ten_json_object_peek_or_create_object(
-      &start_graph_cmd_json, TEN_STR_TEN, &ten_json);
+  bool success = ten_json_object_peek_or_create_object(&start_graph_cmd_json,
+                                                       TEN_STR_TEN, &ten_json);
   TEN_ASSERT(success, "Should not happen.");
 
   ten_json_t nodes_json = TEN_JSON_INIT_VAL(json_ctx, false);
@@ -193,7 +193,7 @@ static void ten_app_start_auto_start_predefined_graph_result_handler(
 
     ten_shared_ptr_t *close_app_cmd = ten_cmd_close_app_create();
     ten_msg_clear_and_set_dest(close_app_cmd, ten_string_get_raw_str(&app->uri),
-                               NULL, NULL, NULL, err);
+                               NULL, NULL, err);
     ten_env_send_cmd(ten_env, close_app_cmd, NULL, NULL, NULL, err);
   }
 }

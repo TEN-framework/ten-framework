@@ -111,7 +111,6 @@ TEST(PropertyTest, InGraphUseEnv2) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                            "property_in_graph_use_env_2",
                             "property_in_graph_use_env_2");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));
@@ -120,7 +119,6 @@ TEST(PropertyTest, InGraphUseEnv2) {  // NOLINT
   ten_test::check_detail_with_string(cmd_result, "default");
   hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                            "property_in_graph_use_env_2",
                             "property_in_graph_use_env_2_no_prop");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
 

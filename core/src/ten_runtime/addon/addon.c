@@ -373,14 +373,24 @@ static void ten_app_create_addon_instance(ten_app_t *app,
       ten_string_get_raw_str(&addon_context->instance_name);
   TEN_ASSERT(instance_name, "Should not happen.");
 
-  if (ten_c_string_is_empty(addon_name) ||
-      ten_c_string_is_empty(instance_name)) {
-    TEN_LOGI(
-        "The addon name or instance name is empty, will not create the addon "
-        "instance.");
+  if (addon_context->flow ==
+      TEN_ADDON_CONTEXT_FLOW_ENGINE_CREATE_EXTENSION_GROUP) {
+    if (ten_c_string_is_empty(addon_name)) {
+      TEN_LOGI("The addon name is empty, will not create the extension group.");
 
-    ten_app_notify_create_addon_instance_failed(app, addon_context);
-    return;
+      ten_app_notify_create_addon_instance_failed(app, addon_context);
+      return;
+    }
+  } else {
+    if (ten_c_string_is_empty(addon_name) ||
+        ten_c_string_is_empty(instance_name)) {
+      TEN_LOGI(
+          "The addon name or instance name is empty, will not create the addon "
+          "instance.");
+
+      ten_app_notify_create_addon_instance_failed(app, addon_context);
+      return;
+    }
   }
 
   TEN_LOGD("Try to find addon for %s", addon_name);

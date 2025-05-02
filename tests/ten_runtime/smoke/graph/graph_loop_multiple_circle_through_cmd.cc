@@ -212,9 +212,7 @@ TEST(ExtensionTest,
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   auto sum_cmd = ten::cmd_t::create("sum");
-  sum_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                    "graph_loop_multiple_circle_through_cmd__extension_group",
-                    "A");
+  sum_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr, "A");
   cmd_result = client->send_cmd_and_recv_result(std::move(sum_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
 

@@ -281,7 +281,6 @@ TEST(ExtensionTest, GraphLoopInMultiApp) {  // NOLINT
   // Send a user-defined 'hello world' command to 'extension 1'.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "graph_loop_in_multi_app__extension_group_1",
                             "test_extension_1");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));
@@ -294,7 +293,6 @@ TEST(ExtensionTest, GraphLoopInMultiApp) {  // NOLINT
 
   hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8002/", graph_id.c_str(),
-                            "graph_loop_in_multi_app__extension_group_2",
                             "test_extension_2");
 
   cmd_result = client2->send_cmd_and_recv_result(std::move(hello_world_cmd));

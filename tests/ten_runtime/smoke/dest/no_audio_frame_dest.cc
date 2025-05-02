@@ -43,7 +43,8 @@ class test_extension_1 : public ten::extension_t {
       rc = ten_env.send_audio_frame(std::move(audio_frame));
       ASSERT_EQ(rc, true);
     } else if (cmd->get_name() == "audio_frame_ack") {
-      auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *hello_world_cmd);
+      auto cmd_result =
+          ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *hello_world_cmd);
       cmd_result->set_property("detail", "hello world, too");
       bool rc = ten_env.return_result(std::move(cmd_result));
       ASSERT_EQ(rc, true);
@@ -156,7 +157,7 @@ TEST(ExtensionTest, NoAudioFrameDest) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "basic_extension_group", "test_extension_1");
+                            "test_extension_1");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");

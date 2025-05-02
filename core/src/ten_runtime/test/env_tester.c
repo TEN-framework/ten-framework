@@ -841,7 +841,7 @@ static void test_app_ten_env_send_close_app_cmd(ten_env_t *ten_env,
   ten_msg_set_src_to_app(close_app_cmd, app);
 
   bool rc = ten_msg_clear_and_set_dest(close_app_cmd, ten_app_get_uri(app),
-                                       NULL, NULL, NULL, NULL);
+                                       NULL, NULL, NULL);
   TEN_ASSERT(rc, "Should not happen.");
 
   rc = ten_env_send_cmd(ten_env, close_app_cmd, NULL, NULL, NULL, NULL);

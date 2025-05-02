@@ -27,32 +27,40 @@ mod tests {
             temp_file.write_all(test_content)?;
             temp_file.flush()?;
 
-            // Create options with shorter timeout for testing
+            // Create options with shorter timeout for testing.
             let options = FileWatchOptions {
                 timeout: Duration::from_secs(5),
                 buffer_size: 1024,
                 check_interval: Duration::from_millis(100),
             };
 
-            // Start watching the file
+            // Start watching the file.
             let mut stream =
                 watch_file(temp_file.path(), Some(options)).await?;
 
-            // Get the first chunk
+            // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
             assert_eq!(chunk, test_content);
 
-            // Write more content to the file
+            // Write more content to the file.
             let more_content = b"More content!";
             temp_file.write_all(more_content)?;
             temp_file.flush()?;
 
-            // Get the second chunk
-            let chunk =
-                stream.next().await.expect("Should receive more data")?;
-            assert_eq!(chunk, more_content);
+            // Get the second chunk.
+            let chunk = stream.next().await;
+            match chunk {
+                Some(chunk) => match chunk {
+                    Ok(chunk) => assert_eq!(chunk, more_content),
+                    Err(e) => panic!("Should receive more data: {}", e),
+                },
+                None => {
+                    panic!("Should receive more data");
+                }
+            }
 
-            // Stop watching
+            // Stop watching.
+            println!("Stopping stream");
             stream.stop();
 
             Ok(())

@@ -198,7 +198,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
   // Send a user-defined 'hello world' command to 'extension 1'.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "graph_loop_in_one_app__extension_group",
                             "test_extension_1");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
@@ -207,7 +206,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
   // Send a user-defined 'hello world' command to 'extension 2'.
   hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "graph_loop_in_one_app__extension_group",
                             "test_extension_2");
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

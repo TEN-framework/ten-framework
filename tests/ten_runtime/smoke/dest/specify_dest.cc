@@ -65,8 +65,7 @@ class business_extension : public ten::extension_t {
     auto cmd_to_plugin_1 = ten::cmd_t::create("plugin_1_cmd");
 
     // Explicitly specify to interact with plugin_1.
-    cmd_to_plugin_1->set_dest("localhost", "default", "specify_dest_group",
-                              "plugin_extension_1");
+    cmd_to_plugin_1->set_dest("localhost", "default", "plugin_extension_1");
 
     // This is the method to pass unique_ptr through the lambda capture list in
     // C++11. If you can use C++14 or even C++17, the syntax can be simpler, but
@@ -97,8 +96,7 @@ class business_extension : public ten::extension_t {
     auto cmd_to_plugin_2 = ten::cmd_t::create("plugin_2_cmd");
 
     // Explicitly specify to interact with plugin_2.
-    cmd_to_plugin_2->set_dest("localhost", "default", "specify_dest_group",
-                              "plugin_extension_2");
+    cmd_to_plugin_2->set_dest("localhost", "default", "plugin_extension_2");
 
     // This is the method to pass unique_ptr through the lambda capture list in
     // C++11. If you can use C++14 or even C++17, the syntax can be simpler, but
@@ -250,7 +248,7 @@ TEST(ExtensionTest, SpecifyDest) {  // NOLINT
   // Send the "initial_request" to the "business extension".
   auto initial_request_cmd = ten::cmd_t::create("initial_request");
   initial_request_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                                "specify_dest_group", "business_extension");
+                                "business_extension");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(initial_request_cmd));
 

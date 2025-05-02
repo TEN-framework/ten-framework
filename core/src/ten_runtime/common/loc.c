@@ -25,12 +25,6 @@ bool ten_loc_check_integrity(ten_loc_t *self) {
     return false;
   }
 
-  if (!ten_string_is_empty(&self->extension_name)) {
-    if (ten_string_is_empty(&self->extension_group_name)) {
-      return false;
-    }
-  }
-
   return true;
 }
 
