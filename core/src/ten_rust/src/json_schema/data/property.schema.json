@@ -13,9 +13,10 @@
         6
       ]
     },
-    "non_localhost_uri": {
+    "non_empty_non_localhost_uri": {
       "type": "string",
       "format": "uri",
+      "minLength": 1,
       "not": {
         "const": "localhost"
       }
@@ -501,7 +502,7 @@
       "additionalProperties": false,
       "properties": {
         "uri": {
-          "$ref": "#/$defs/non_localhost_uri"
+          "$ref": "#/$defs/non_empty_non_localhost_uri"
         },
         // @{
         // TODO(Wei): The log_level and log_file below are for versions of ten
