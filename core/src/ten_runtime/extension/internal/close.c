@@ -50,7 +50,7 @@ void ten_extension_flush_remaining_paths(ten_extension_t *extension) {
   if (out_paths_cnt) {
     // Call ten_extension_handle_in_msg to consume cmd results, so that the
     // _OUT_paths can be removed.
-    TEN_LOGD("[%s] Flushing %zu remaining out paths.",
+    TEN_LOGD("[%s] Flushing %zu remaining out paths",
              ten_extension_get_name(extension, true), out_paths_cnt);
 
     ten_list_t cmd_result_list = TEN_LIST_INIT_VAL;

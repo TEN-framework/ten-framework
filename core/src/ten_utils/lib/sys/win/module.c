@@ -31,12 +31,12 @@ int ten_module_close(void *handle) {
 
 void *ten_module_get_symbol(void *handle, const char *symbol_name) {
   if (!handle) {
-    TEN_LOGE("Invalid argument: handle is null.");
+    TEN_LOGE("Invalid argument: handle is null");
     return NULL;
   }
 
   if (!symbol_name) {
-    TEN_LOGE("Invalid argument: symbol name is null or empty.");
+    TEN_LOGE("Invalid argument: symbol name is null or empty");
     return NULL;
   }
 

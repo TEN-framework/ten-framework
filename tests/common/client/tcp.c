@@ -139,7 +139,7 @@ bool ten_test_tcp_client_init(
   }
 
   if (!self->socket) {
-    TEN_LOGW("Failed to connect to %s:%d after retry %d times.", ip, port,
+    TEN_LOGW("Failed to connect to %s:%d after retry %d times", ip, port,
              TCP_CLIENT_CONNECT_RETRY_TIMES);
     return false;
   }

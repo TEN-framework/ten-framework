@@ -54,7 +54,7 @@ static void ten_nodejs_ten_env_finalize(napi_env env, void *data, void *hint) {
                  ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
-  TEN_LOGD("TEN JS rte object is finalized.");
+  TEN_LOGD("TEN JS rte object is finalized");
 
   // According to NAPI doc:
   // ====

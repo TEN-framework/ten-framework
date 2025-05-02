@@ -103,7 +103,7 @@ class app_t {
     try {
       on_configure(ten_env);
     } catch (...) {
-      TEN_LOGW("Caught a exception of type '%s' in App on_configure().",
+      TEN_LOGW("Caught a exception of type '%s' in App on_configure()",
                curr_exception_type_name().c_str());
     }
   }
@@ -138,7 +138,7 @@ class app_t {
     try {
       on_init(ten_env);
     } catch (...) {
-      TEN_LOGW("Caught a exception of type '%s' in App on_init().",
+      TEN_LOGW("Caught a exception of type '%s' in App on_init()",
                curr_exception_type_name().c_str());
     }
   }
@@ -174,7 +174,7 @@ class app_t {
     try {
       on_deinit(ten_env);
     } catch (...) {
-      TEN_LOGW("Caught a exception of type '%s' in App on_close().",
+      TEN_LOGW("Caught a exception of type '%s' in App on_close()",
                curr_exception_type_name().c_str());
     }
   }

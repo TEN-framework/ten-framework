@@ -278,7 +278,7 @@ static void ten_py_addon_destroy(PyObject *self) {
   TEN_ASSERT(py_addon && ten_py_addon_check_integrity(py_addon),
              "Invalid argument.");
 
-  TEN_LOGI("[%s] destroy addon host for python addon.",
+  TEN_LOGI("[%s] destroy addon host for python addon",
            ten_string_get_raw_str(&py_addon->c_addon_host->name));
 
   Py_TYPE(self)->tp_free(self);

@@ -448,9 +448,9 @@ bool ten_env_set_property_internal(ten_env_t *self, const char *path,
 done:
   if (!result) {
     if (err) {
-      TEN_LOGW("Failed to set property: %s.", ten_error_message(err));
+      TEN_LOGW("Failed to set property: %s", ten_error_message(err));
     } else {
-      TEN_LOGW("Failed to set property.");
+      TEN_LOGW("Failed to set property");
     }
   }
 

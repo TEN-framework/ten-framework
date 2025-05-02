@@ -32,7 +32,7 @@ ten_cond_t *ten_cond_create(void) {
 
 void ten_cond_destroy(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return;
   }
 
@@ -62,7 +62,7 @@ int ten_cond_wait_while(ten_cond_t *cond, ten_mutex_t *mutex,
       (CRITICAL_SECTION *)ten_mutex_get_native_handle(mutex);
 
   if (!cond || !mutex || !predicate || !lock) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 
@@ -100,7 +100,7 @@ int ten_cond_wait_while(ten_cond_t *cond, ten_mutex_t *mutex,
 
 int ten_cond_signal(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 
@@ -110,7 +110,7 @@ int ten_cond_signal(ten_cond_t *cond) {
 
 int ten_cond_broadcast(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 

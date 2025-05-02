@@ -310,7 +310,7 @@ bool ten_extension_handle_ten_namespace_properties(
   ten_value_t *ten_namespace_properties =
       ten_extension_get_ten_namespace_properties(self);
   if (ten_namespace_properties == NULL) {
-    TEN_LOGI("[%s] `%s` section is not found in the property, skip.",
+    TEN_LOGI("[%s] `%s` section is not found in the property, skip",
              ten_extension_get_name(self, true), TEN_STR_TEN);
     return true;
   }

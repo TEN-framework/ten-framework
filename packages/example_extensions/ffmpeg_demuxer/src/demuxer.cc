@@ -222,7 +222,7 @@ demuxer_t::~demuxer_t() {
     interrupt_cb_param = nullptr;
   }
 
-  TEN_LOGD("Demuxer instance destructed.");
+  TEN_LOGD("Demuxer instance destructed");
 }
 
 AVFormatContext *demuxer_t::create_input_format_context(
@@ -231,7 +231,7 @@ AVFormatContext *demuxer_t::create_input_format_context(
 
   AVFormatContext *input_format_context = avformat_alloc_context();
   if (input_format_context == nullptr) {
-    TEN_LOGE("Failed to create AVFormatContext.");
+    TEN_LOGE("Failed to create AVFormatContext");
     return nullptr;
   }
 
@@ -261,7 +261,7 @@ AVFormatContext *demuxer_t::create_input_format_context(
   av_dict_free(&av_options);
 
   if (ffmpeg_rc == 0) {
-    TEN_LOGD("Open input stream %s successfully.", input_stream_loc.c_str());
+    TEN_LOGD("Open input stream %s successfully", input_stream_loc.c_str());
   } else {
     GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
       TEN_LOGW("Failed to open input stream %s: %s", input_stream_loc.c_str(),
@@ -324,7 +324,7 @@ bool demuxer_t::open_input_stream(const std::string &init_input_stream_loc) {
   TEN_ASSERT(init_input_stream_loc.length() > 0, "Invalid argument.");
 
   if (is_av_decoder_opened()) {
-    TEN_LOGD("Demuxer has already opened.");
+    TEN_LOGD("Demuxer has already opened");
     return true;
   }
 
@@ -349,7 +349,7 @@ bool demuxer_t::open_input_stream(const std::string &init_input_stream_loc) {
     return false;
   }
 
-  TEN_LOGD("Input stream [%s] is opened.", input_stream_loc.c_str());
+  TEN_LOGD("Input stream [%s] is opened", input_stream_loc.c_str());
 
   return true;
 }
@@ -516,7 +516,7 @@ bool demuxer_t::create_video_converter(int width, int height) {
                        DEMUXER_OUTPUT_VIDEO_FRAME_PIXEL_FMT, SWS_POINT, nullptr,
                        nullptr, nullptr);
     if (video_converter_ctx == nullptr) {
-      TEN_LOGD("Failed to create converter context for video frame.");
+      TEN_LOGD("Failed to create converter context for video frame");
       return false;
     }
   }
@@ -608,7 +608,7 @@ bool demuxer_t::decode_next_video_packet(DECODE_STATUS &decode_status) {
 
   ffmpeg_rc = avcodec_receive_frame(video_decoder_ctx, frame);
   if (ffmpeg_rc == AVERROR(EAGAIN)) {
-    TEN_LOGD("Need more data to decode a video frame.");
+    TEN_LOGD("Need more data to decode a video frame");
     return true;
   } else if (ffmpeg_rc < 0) {
     GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
@@ -643,7 +643,7 @@ bool demuxer_t::decode_next_audio_packet(DECODE_STATUS &decode_status) {
   // Skip invalid mp3 packet/frame.
   if ((AV_CODEC_ID_MP3 == audio_decoder_ctx->codec_id) &&
       ffmpeg_rc == AVERROR_INVALIDDATA) {
-    TEN_LOGD("mp3 header is missing and lookup next packet.");
+    TEN_LOGD("mp3 header is missing and lookup next packet");
     return true;
   } else if (ffmpeg_rc != 0) {
     GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
@@ -689,7 +689,7 @@ bool demuxer_t::decode_next_audio_packet(DECODE_STATUS &decode_status) {
 
 DECODE_STATUS demuxer_t::decode_next_packet() {
   if (!is_av_decoder_opened()) {
-    TEN_LOGD("Must open stream first.");
+    TEN_LOGD("Must open stream first");
     return DECODE_STATUS_ERROR;
   }
 
@@ -734,7 +734,7 @@ void demuxer_t::flush_remaining_audio_frames() {
   // Skip invalid mp3 packet/frame.
   if ((AV_CODEC_ID_MP3 == audio_decoder_ctx->codec_id) &&
       ffmpeg_rc == AVERROR_INVALIDDATA) {
-    TEN_LOGD("mp3 header is missing and lookup next packet.");
+    TEN_LOGD("mp3 header is missing and lookup next packet");
     return;
   } else if (ffmpeg_rc != 0) {
     GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
@@ -782,7 +782,7 @@ void demuxer_t::flush_remaining_video_frames() {
   while (ffmpeg_rc >= 0) {
     ffmpeg_rc = avcodec_receive_frame(video_decoder_ctx, frame);
     if (ffmpeg_rc == AVERROR(EAGAIN)) {
-      TEN_LOGD("Need more data to decode a video frame when flushing.");
+      TEN_LOGD("Need more data to decode a video frame when flushing");
       ffmpeg_rc = 0;
       continue;
     } else if (ffmpeg_rc < 0) {
@@ -926,12 +926,12 @@ void demuxer_t::open_video_decoder() {
 
   video_decoder_ctx = avcodec_alloc_context3(video_decoder);
   if (video_decoder_ctx == nullptr) {
-    TEN_LOGE("Failed to create video decoder context.");
+    TEN_LOGE("Failed to create video decoder context");
     return;
   }
 
   if (avcodec_parameters_to_context(video_decoder_ctx, params) < 0) {
-    TEN_LOGE("Failed to setup video decoder context parameters.");
+    TEN_LOGE("Failed to setup video decoder context parameters");
     return;
   }
 
@@ -959,7 +959,7 @@ void demuxer_t::open_video_decoder() {
 
     if (strcmp(tag->key, "rotate") == 0) {
       rotate_degree = static_cast<int>(strtol(tag->value, nullptr, 10));
-      TEN_LOGD("Found rotate = %d in video stream.", rotate_degree);
+      TEN_LOGD("Found rotate = %d in video stream", rotate_degree);
     }
 
     tag = av_dict_get(metadata, "", tag, AV_DICT_IGNORE_SUFFIX);
@@ -988,12 +988,12 @@ void demuxer_t::open_audio_decoder() {
   AVCodecParameters *params = get_audio_decoder_params();
   audio_decoder_ctx = avcodec_alloc_context3(audio_decoder);
   if (audio_decoder_ctx == nullptr) {
-    TEN_LOGD("Failed to create audio decoder context.");
+    TEN_LOGD("Failed to create audio decoder context");
     return;
   }
 
   if (avcodec_parameters_to_context(audio_decoder_ctx, params) < 0) {
-    TEN_LOGD("Failed to setup audio decoder parameters.");
+    TEN_LOGD("Failed to setup audio decoder parameters");
     return;
   }
 

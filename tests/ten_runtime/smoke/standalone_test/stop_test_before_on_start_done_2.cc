@@ -29,7 +29,7 @@ class test_extension_1 : public ten::extension_t {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
 
-      TEN_LOGI("Return hello_world cmd result.");
+      TEN_LOGI("Return hello_world cmd result");
 
       bool rc = ten_env.return_result(std::move(cmd_result));
       EXPECT_EQ(rc, true);
@@ -67,7 +67,7 @@ class extension_tester_1 : public ten::extension_tester_t {
 
     ten_random_sleep_range_ms(0, 1000);
 
-    TEN_LOGI("Send hello_world cmd.");
+    TEN_LOGI("Send hello_world cmd");
 
     ten_env.send_cmd(
         std::move(new_cmd),
@@ -76,7 +76,7 @@ class extension_tester_1 : public ten::extension_tester_t {
           TEN_ASSERT(result->get_status_code() == TEN_STATUS_CODE_OK,
                      "Should not happen.");
 
-          TEN_LOGI("Received result, stop test.");
+          TEN_LOGI("Received result, stop test");
 
           ten_env.stop_test();
 

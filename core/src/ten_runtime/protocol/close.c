@@ -75,12 +75,12 @@ void ten_protocol_on_close(ten_protocol_t *self) {
   TEN_ASSERT(ten_protocol_check_integrity(self, true), "Should not happen.");
 
   if (!ten_protocol_could_be_close(self)) {
-    TEN_LOGD("[%s] Could not close alive base protocol.",
+    TEN_LOGD("[%s] Could not close alive base protocol",
              ten_string_get_raw_str(&self->uri));
     return;
   }
 
-  TEN_LOGD("[%s] Base protocol can be closed now.",
+  TEN_LOGD("[%s] Base protocol can be closed now",
            ten_string_get_raw_str(&self->uri));
 
   self->state = TEN_PROTOCOL_STATE_CLOSED;
@@ -107,7 +107,7 @@ void ten_protocol_close(ten_protocol_t *self) {
   TEN_ASSERT(ten_protocol_check_integrity(self, true), "Should not happen.");
 
   if (self->state >= TEN_PROTOCOL_STATE_CLOSING) {
-    TEN_LOGD("[%s] Protocol is closing, do not close again.",
+    TEN_LOGD("[%s] Protocol is closing, do not close again",
              ten_string_get_raw_str(&self->uri));
     return;
   }
@@ -116,14 +116,14 @@ void ten_protocol_close(ten_protocol_t *self) {
 
   switch (self->role) {
   case TEN_PROTOCOL_ROLE_LISTEN:
-    TEN_LOGD("[%s] Try to close listening protocol.",
+    TEN_LOGD("[%s] Try to close listening protocol",
              ten_string_get_raw_str(&self->uri));
     break;
   case TEN_PROTOCOL_ROLE_IN_INTERNAL:
   case TEN_PROTOCOL_ROLE_IN_EXTERNAL:
   case TEN_PROTOCOL_ROLE_OUT_INTERNAL:
   case TEN_PROTOCOL_ROLE_OUT_EXTERNAL:
-    TEN_LOGD("[%s] Try to close communication protocol.",
+    TEN_LOGD("[%s] Try to close communication protocol",
              ten_string_get_raw_str(&self->uri));
     break;
   default:

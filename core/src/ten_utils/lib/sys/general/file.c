@@ -47,13 +47,13 @@ static char *ten_file_read_from_open_file(FILE *fp) {
   TEN_ASSERT(fp, "Invalid argument.");
 
   if (fseek(fp, 0, SEEK_END) == -1) {
-    TEN_LOGE("Failed to fseek to the end of the file.");
+    TEN_LOGE("Failed to fseek to the end of the file");
     return NULL;
   }
 
   unsigned long length = ftell(fp);
   if (length <= 0) {
-    TEN_LOGW("File size is 0.");
+    TEN_LOGW("File size is 0");
     return NULL;
   }
 
@@ -124,7 +124,7 @@ int ten_file_write_to_open_file(FILE *fp, ten_buf_t buf) {
 
   size_t wrote_size = fwrite(buf.data, 1, buf.content_size, fp);
   if (wrote_size != buf.content_size) {
-    TEN_LOGE("Failed to write fwrite.");
+    TEN_LOGE("Failed to write fwrite");
     return -1;
   }
 

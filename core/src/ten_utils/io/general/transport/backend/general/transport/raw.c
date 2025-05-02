@@ -319,7 +319,7 @@ static int ten_streambackend_raw_close(ten_streambackend_t *backend) {
   TEN_ASSERT(raw_stream, "Invalid argument.");
 
   if (ten_atomic_bool_compare_swap(&backend->is_close, 0, 1)) {
-    // TEN_LOGD("Try to close stream RAW backend.");
+    // TEN_LOGD("Try to close stream RAW backend");
     ten_stream_on_close(backend->stream);
     ten_streambackend_raw_destroy(raw_stream);
   }
@@ -420,7 +420,7 @@ static int ten_transportbackend_raw_connect(ten_transportbackend_t *backend,
     return -1;
   }
 
-  // TEN_LOGD("Connecting.");
+  // TEN_LOGD("Connecting");
   return ten_transportbackend_new_stream(
       backend, dest, 0, 1, backend->transport->on_server_connected, 1);
 }
@@ -432,7 +432,7 @@ static int ten_transportbackend_raw_listen(ten_transportbackend_t *backend,
     return -1;
   }
 
-  // TEN_LOGD("Listening.");
+  // TEN_LOGD("Listening");
   return ten_transportbackend_new_stream(
       backend, dest, 1, 0, backend->transport->on_client_accepted, 0);
 }

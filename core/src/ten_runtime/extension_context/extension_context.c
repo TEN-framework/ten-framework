@@ -57,7 +57,7 @@ ten_extension_context_t *ten_extension_context_create(ten_engine_t *engine) {
   TEN_ASSERT(engine, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Should not happen.");
 
-  TEN_LOGD("[%s] Create Extension context.", ten_engine_get_id(engine, true));
+  TEN_LOGD("[%s] Create Extension context", ten_engine_get_id(engine, true));
 
   ten_extension_context_t *self =
       (ten_extension_context_t *)TEN_MALLOC(sizeof(ten_extension_context_t));
@@ -138,7 +138,7 @@ void ten_extension_context_close(ten_extension_context_t *self) {
   TEN_ASSERT(ten_engine_check_integrity(self->engine, true),
              "Should not happen.");
 
-  TEN_LOGD("[%s] Try to close extension context.",
+  TEN_LOGD("[%s] Try to close extension context",
            ten_engine_get_id(self->engine, true));
 
   if (ten_list_is_empty(&self->extension_threads)) {
@@ -190,12 +190,12 @@ void ten_extension_context_on_close(ten_extension_context_t *self) {
              "Invalid use of extension_context %p.", self);
 
   if (!ten_extension_context_could_be_close(self)) {
-    TEN_LOGD("[%s] Could not close alive extension context.",
+    TEN_LOGD("[%s] Could not close alive extension context",
              ten_engine_get_id(self->engine, true));
     return;
   }
 
-  TEN_LOGD("[%s] Extension context can be closed now.",
+  TEN_LOGD("[%s] Extension context can be closed now",
            ten_engine_get_id(self->engine, true));
 
   ten_extension_context_do_close(self);
@@ -331,12 +331,13 @@ static void ten_extension_context_add_extension_groups_info_from_graph(
 
 static void ten_extension_context_create_extension_group_done(
     ten_env_t *ten_env, ten_extension_group_t *extension_group) {
-  TEN_ASSERT(extension_group &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: The extension thread has not been created yet,
-                 // so it is thread safe.
-                 ten_extension_group_check_integrity(extension_group, false),
+  TEN_ASSERT(extension_group, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: The extension thread has not been created yet, so it is
+  // thread safe.
+  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
              "Should not happen.");
+
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_env->attach_to == TEN_ENV_ATTACH_TO_ENGINE,
@@ -429,6 +430,10 @@ static void ten_extension_context_create_extension_group_done(
             ten_extension_group_get_name(extension_group, true));
     TEN_ASSERT(extension_group->extension_group_info, "Should not happen.");
 
+    TEN_LOGV(
+        "[%s] graph info: ", ten_engine_get_id(extension_context->engine, true),
+        ten_extension_group_get_name(extension_group, true));
+
     ten_extension_context_start(extension_context);
   }
 }
@@ -457,6 +462,9 @@ bool ten_extension_context_start_extension_group(ten_extension_context_t *self,
       ten_cmd_start_graph_get_extension_groups_info(original_start_graph_cmd);
 
   if (ten_list_is_empty(extension_groups_info)) {
+    // This graph/engine has no extension group, which means it is an empty
+    // graph.
+
     ten_extension_context_add_extensions_info_from_graph(self, extension_info);
 
     ten_extension_context_add_extension_groups_info_from_graph(

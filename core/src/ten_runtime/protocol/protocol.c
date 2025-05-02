@@ -221,7 +221,7 @@ void ten_protocol_on_input(ten_protocol_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(msg, "Should not happen.");
 
   if (self->state == TEN_PROTOCOL_STATE_CLOSING) {
-    TEN_LOGD("Protocol is closing, do not handle msgs.");
+    TEN_LOGD("Protocol is closing, do not handle msgs");
     return;
   }
 
@@ -261,7 +261,7 @@ void ten_protocol_on_inputs(ten_protocol_t *self, ten_list_t *msgs) {
   TEN_ASSERT(msgs, "Should not happen.");
 
   if (self->state == TEN_PROTOCOL_STATE_CLOSING) {
-    TEN_LOGD("Protocol is closing, do not handle msgs.");
+    TEN_LOGD("Protocol is closing, do not handle msgs");
     return;
   }
 
@@ -288,7 +288,7 @@ void ten_protocol_send_msg(ten_protocol_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(msg, "Should not happen.");
 
   if (self->state == TEN_PROTOCOL_STATE_CLOSING) {
-    TEN_LOGD("Protocol is closing, do not send msgs.");
+    TEN_LOGD("Protocol is closing, do not send msgs");
     return;
   }
 
@@ -414,7 +414,7 @@ ten_string_t *ten_protocol_uri_to_transport_uri(ten_protocol_t *self,
   const char *transport_type = ten_value_object_peek_string(
       &addon_host->manifest, TEN_STR_TRANSPORT_TYPE);
   if (!transport_type) {
-    TEN_LOGW("No transport type found in the manifest, use the default: %s.",
+    TEN_LOGW("No transport type found in the manifest, use the default: %s",
              TEN_STR_TCP);
     transport_type = TEN_STR_TCP;
   }

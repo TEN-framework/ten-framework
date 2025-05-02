@@ -79,7 +79,7 @@ static void *ten_app_routine(void *args) {
 
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
 
-  TEN_LOGI("[%s] App is created.", ten_app_get_uri(self));
+  TEN_LOGI("[%s] App is created", ten_app_get_uri(self));
 
   self->loop = ten_runloop_create(NULL);
   TEN_ASSERT(self->loop, "Should not happen.");
@@ -170,7 +170,7 @@ void ten_app_destroy(ten_app_t *self) {
   TEN_ASSERT(self && ten_app_check_integrity(self, false),
              "Should not happen.");
 
-  TEN_LOGD("[%s] Destroy app.", ten_app_get_uri(self));
+  TEN_LOGD("[%s] Destroy app", ten_app_get_uri(self));
 
   ten_global_del_app(self);
 
@@ -231,7 +231,7 @@ bool ten_app_run(ten_app_t *self, bool run_in_background,
 
   // TEN app might be closed before running.
   if (ten_app_is_closing(self)) {
-    TEN_LOGW("Failed to run TEN app, because it has been closed.");
+    TEN_LOGW("Failed to run TEN app, because it has been closed");
     return false;
   }
 
@@ -250,7 +250,7 @@ bool ten_app_wait(ten_app_t *self, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self && ten_app_check_integrity(self, false),
              "Should not happen.");
 
-  TEN_LOGD("Wait app thread ends.");
+  TEN_LOGD("Wait app thread ends");
 
   if (self->run_in_background &&
       ten_sanitizer_thread_check_get_belonging_thread(&self->thread_check)) {

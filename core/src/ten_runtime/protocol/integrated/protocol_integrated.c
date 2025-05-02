@@ -202,7 +202,7 @@ static void ten_protocol_integrated_on_output(ten_protocol_integrated_t *self) {
              "Should not happen.");
 
   if (self->base.state == TEN_PROTOCOL_STATE_CLOSING) {
-    TEN_LOGD("Protocol is closing, do not actually send msgs.");
+    TEN_LOGD("Protocol is closing, do not actually send msgs");
     return;
   }
 
@@ -410,7 +410,7 @@ static void ten_protocol_integrated_listen(
 
   ten_string_t *transport_uri = ten_protocol_uri_to_transport_uri(self_, uri);
 
-  TEN_LOGI("%s start listening.", ten_string_get_raw_str(transport_uri));
+  TEN_LOGI("%s start listening", ten_string_get_raw_str(transport_uri));
 
   TEN_UNUSED int rc = ten_transport_listen(transport, transport_uri);
   if (rc) {

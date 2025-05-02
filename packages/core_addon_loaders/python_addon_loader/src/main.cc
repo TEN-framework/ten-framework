@@ -115,7 +115,7 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     int py_initialized = ten_py_is_initialized();
     if (py_initialized != 0) {
-      TEN_LOGI("[Python addon loader] Python runtime has been initialized.");
+      TEN_LOGI("[Python addon loader] Python runtime has been initialized");
       ten_env.on_init_done();
       return;
     }

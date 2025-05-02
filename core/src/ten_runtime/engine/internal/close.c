@@ -38,7 +38,7 @@ static void ten_engine_close_sync(ten_engine_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
 
-  TEN_LOGI("[%s] Start to close engine.", ten_engine_get_id(self, true));
+  TEN_LOGI("[%s] Start to close engine", ten_engine_get_id(self, true));
 
   self->is_closing = true;
 
@@ -92,7 +92,7 @@ static void ten_engine_close_sync(ten_engine_t *self) {
   }
 
   if (self->has_uncompleted_async_task) {
-    TEN_LOGI("[%s] Engine has an uncompleted async task, do not close.",
+    TEN_LOGI("[%s] Engine has an uncompleted async task, do not close",
              ten_engine_get_id(self, true));
 
     nothing_to_do = false;
@@ -119,7 +119,7 @@ static void ten_engine_close_task(void *engine_, TEN_UNUSED void *arg) {
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Invalid argument.");
 
   if (engine->is_closing) {
-    TEN_LOGD("[%s] Engine is already closing, do not close again.",
+    TEN_LOGD("[%s] Engine is already closing, do not close again",
              ten_engine_get_id(engine, true));
     goto done;
   }
@@ -176,7 +176,7 @@ void ten_engine_close_async(ten_engine_t *self) {
       // threads.
       ten_engine_check_integrity(self, false), "Should not happen.");
 
-  TEN_LOGI("[%s] Try to close engine.", ten_engine_get_id(self, false));
+  TEN_LOGI("[%s] Try to close engine", ten_engine_get_id(self, false));
 
   ten_ref_inc_ref(&self->ref);
 
@@ -279,12 +279,12 @@ void ten_engine_on_close(ten_engine_t *self) {
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
 
   if (!ten_engine_could_be_close(self)) {
-    TEN_LOGD("[%s] Could not close alive engine.",
+    TEN_LOGD("[%s] Could not close alive engine",
              ten_engine_get_id(self, true));
     return;
   }
 
-  TEN_LOGD("[%s] Engine can be closed now.", ten_engine_get_id(self, true));
+  TEN_LOGD("[%s] Engine can be closed now", ten_engine_get_id(self, true));
 
   ten_engine_do_close(self);
 }
@@ -315,7 +315,7 @@ void ten_engine_on_extension_context_closed(
   TEN_ASSERT(engine, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Should not happen.");
 
-  TEN_LOGD("[%s] Extension context closed.", ten_engine_get_id(engine, true));
+  TEN_LOGD("[%s] Extension context closed", ten_engine_get_id(engine, true));
 
   // The extension context is closed, so set the pointer to NULL to prevent it
   // from being used again.

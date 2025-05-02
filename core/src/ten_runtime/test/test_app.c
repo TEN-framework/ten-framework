@@ -114,13 +114,13 @@ static void ten_extension_tester_on_test_app_deinit_task(void *self_,
   // operations using the app's `ten_env_proxy` before the releasing of
   // ten_env_proxy are valid.
   TEN_ASSERT(tester->test_app_ten_env_proxy, "Should not happen.");
-  TEN_LOGI("Releasing test_app's ten_env_proxy.");
+  TEN_LOGI("Releasing test_app's ten_env_proxy");
   bool rc = ten_env_proxy_release(tester->test_app_ten_env_proxy, NULL);
   TEN_ASSERT(rc, "Should not happen.");
 
   tester->test_app_ten_env_proxy = NULL;
 
-  TEN_LOGI("Stopping tester's runloop.");
+  TEN_LOGI("Stopping tester's runloop");
   ten_runloop_stop(tester->tester_runloop);
 }
 
@@ -159,11 +159,11 @@ void *ten_builtin_test_app_thread_main(void *args) {
   bool rc = ten_app_run(test_app, false, &err);
   TEN_ASSERT(rc, "Should not happen.");
 
-  TEN_LOGI("test_app's runloop ends.");
+  TEN_LOGI("test_app's runloop ends");
 
   ten_app_destroy(test_app);
 
-  TEN_LOGI("test_app is destroyed.");
+  TEN_LOGI("test_app is destroyed");
 
   return NULL;
 }

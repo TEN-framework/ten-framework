@@ -43,7 +43,7 @@ bool ten_engine_enable_extension_system(ten_engine_t *self, ten_error_t *err) {
              "Should not happen.");
 
   if (self->is_closing) {
-    TEN_LOGE("Engine is closing, do not enable extension system.");
+    TEN_LOGE("Engine is closing, do not enable extension system");
 
     ten_engine_return_error_for_cmd_start_graph(
         self, original_start_graph_cmd,
@@ -69,7 +69,7 @@ bool ten_engine_enable_extension_system(ten_engine_t *self, ten_error_t *err) {
 
     if (!ten_extension_context_start_extension_group(self->extension_context,
                                                      err)) {
-      TEN_LOGE("[%s] Failed to start the extension system.",
+      TEN_LOGE("[%s] Failed to start the extension system",
                ten_app_get_uri(self->app));
 
       ten_engine_return_error_for_cmd_start_graph(
@@ -147,13 +147,13 @@ static void ten_engine_on_all_extension_threads_are_ready(
 
     ten_shared_ptr_t *cmd_result = NULL;
     if (error_occurred) {
-      TEN_LOGE("[%s] Failed to start the graph successfully, shutting it down.",
+      TEN_LOGE("[%s] Failed to start the graph successfully, shutting it down",
                ten_engine_get_id(self, true));
 
       cmd_result = ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR,
                                                   original_start_graph_cmd);
     } else {
-      TEN_LOGV("[%s] All extension threads are initted.",
+      TEN_LOGV("[%s] All extension threads are initted",
                ten_app_get_uri(self->app));
 
       ten_string_t *graph_id = &self->graph_id;
@@ -169,7 +169,7 @@ static void ten_engine_on_all_extension_threads_are_ready(
       // Mark the engine that it could start to handle messages.
       self->is_ready_to_handle_msg = true;
 
-      TEN_LOGD("[%s] Engine is ready to handle messages.",
+      TEN_LOGD("[%s] Engine is ready to handle messages",
                ten_app_get_uri(self->app));
     }
 

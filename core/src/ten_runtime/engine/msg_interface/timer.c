@@ -44,7 +44,7 @@ void ten_engine_handle_cmd_timer(ten_engine_t *self, ten_shared_ptr_t *cmd,
              "Should not happen.");
 
   if (self->is_closing) {
-    TEN_LOGD("Engine is closing, do not setup timer.");
+    TEN_LOGD("Engine is closing, do not setup timer");
     return;
   }
 

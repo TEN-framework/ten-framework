@@ -65,7 +65,7 @@ static void *ten_engine_thread_main(void *self_) {
     self->on_closed(self, self->on_closed_data);
   }
 
-  TEN_LOGD("[%s] Engine thread is stopped.", ten_engine_get_id(self, true));
+  TEN_LOGD("[%s] Engine thread is stopped", ten_engine_get_id(self, true));
 
   return NULL;
 }

@@ -210,7 +210,7 @@ TEST(MultiDestTest, MultiDestSendInStopPeriod1) {  // NOLINT
            })");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
-  TEN_LOGI("start_graph_cmd completed.");
+  TEN_LOGI("start_graph_cmd completed");
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
 
   // Send a user-defined 'hello world' command.
@@ -221,7 +221,7 @@ TEST(MultiDestTest, MultiDestSendInStopPeriod1) {  // NOLINT
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");
 
-  TEN_LOGI("delete client.");
+  TEN_LOGI("delete client");
   delete client;
 
   ten_thread_join(app_thread, -1);

@@ -126,7 +126,7 @@ bool ten_app_init_service_hub(ten_app_t *self, ten_value_t *value) {
 
 void ten_app_deinit_service_hub(ten_app_t *self) {
   if (self->service_hub.service_hub) {
-    TEN_LOGD("[%s] Destroy service hub.", ten_app_get_uri(self));
+    TEN_LOGD("[%s] Destroy service hub", ten_app_get_uri(self));
 
     ten_app_service_hub_destroy_metric(self);
 

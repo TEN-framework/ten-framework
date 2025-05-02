@@ -308,7 +308,7 @@ void ten_hashtable_expand_bkts(ten_hashtable_t *self) {
           ? (self->ineff_expands_times + 1U)
           : 0U;
   if (self->ineff_expands_times > 1U) {
-    // TEN_LOGW("Probably Inefficient hash function.");
+    // TEN_LOGW("Probably Inefficient hash function");
     self->noexpand = true;
   }
 }

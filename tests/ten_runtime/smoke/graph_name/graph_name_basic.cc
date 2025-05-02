@@ -103,7 +103,7 @@ ten::app_t *app2 = nullptr;
 void *app_thread_1_main(TEN_UNUSED void *args) {
   app1 = new test_app_1();
   app1->run(true);
-  TEN_LOGD("Wait app1 thread.");
+  TEN_LOGD("Wait app1 thread");
   app1->wait();
   delete app1;
   app1 = nullptr;
@@ -114,7 +114,7 @@ void *app_thread_1_main(TEN_UNUSED void *args) {
 void *app_thread_2_main(TEN_UNUSED void *args) {
   app2 = new test_app_2();
   app2->run(true);
-  TEN_LOGD("Wait app2 thread.");
+  TEN_LOGD("Wait app2 thread");
   app2->wait();
   delete app2;
   app2 = nullptr;

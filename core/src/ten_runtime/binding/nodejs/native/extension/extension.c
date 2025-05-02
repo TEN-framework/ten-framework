@@ -70,7 +70,7 @@ static void ten_nodejs_extension_detach_callbacks(
 
 static void ten_nodejs_extension_finalize(napi_env env, void *data,
                                           void *hint) {
-  TEN_LOGI("TEN JS extension is finalized.");
+  TEN_LOGI("TEN JS extension is finalized");
 
   ten_nodejs_extension_t *extension_bridge = data;
   TEN_ASSERT(extension_bridge, "Should not happen.");
@@ -141,7 +141,7 @@ static void ten_nodejs_invoke_extension_js_on_configure(napi_env env,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_configure().");
+  TEN_LOGE("Failed to call JS extension on_configure()");
 
 done:
   TEN_FREE(call_info);
@@ -192,7 +192,7 @@ static void ten_nodejs_invoke_extension_js_on_init(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_init().");
+  TEN_LOGE("Failed to call JS extension on_init()");
 
 done:
   TEN_FREE(call_info);
@@ -243,7 +243,7 @@ static void ten_nodejs_invoke_extension_js_on_start(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_start().");
+  TEN_LOGE("Failed to call JS extension on_start()");
 
 done:
   TEN_FREE(call_info);
@@ -294,7 +294,7 @@ static void ten_nodejs_invoke_extension_js_on_stop(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_stop().");
+  TEN_LOGE("Failed to call JS extension on_stop()");
 
 done:
   TEN_FREE(call_info);
@@ -347,7 +347,7 @@ static void ten_nodejs_invoke_extension_js_on_deinit(napi_env env,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_deinit().");
+  TEN_LOGE("Failed to call JS extension on_deinit()");
 
 done:
   TEN_FREE(call_info);
@@ -392,7 +392,7 @@ static void ten_nodejs_invoke_extension_js_on_cmd(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_cmd().");
+  TEN_LOGE("Failed to call JS extension on_cmd()");
 
 done:
   ten_shared_ptr_destroy(call_info->msg);
@@ -439,7 +439,7 @@ static void ten_nodejs_invoke_extension_js_on_data(napi_env env, napi_value fn,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_data().");
+  TEN_LOGE("Failed to call JS extension on_data()");
 
 done:
   ten_shared_ptr_destroy(call_info->msg);
@@ -490,7 +490,7 @@ static void ten_nodejs_invoke_extension_js_on_audio_frame(napi_env env,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_audio_frame().");
+  TEN_LOGE("Failed to call JS extension on_audio_frame()");
 
 done:
   ten_shared_ptr_destroy(call_info->msg);
@@ -541,7 +541,7 @@ static void ten_nodejs_invoke_extension_js_on_video_frame(napi_env env,
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS extension on_video_frame().");
+  TEN_LOGE("Failed to call JS extension on_video_frame()");
 
 done:
   ten_shared_ptr_destroy(call_info->msg);
@@ -658,7 +658,7 @@ static void proxy_on_configure(ten_extension_t *self, ten_env_t *ten_env) {
   bool rc =
       ten_nodejs_tsfn_invoke(extension_bridge->js_on_configure, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_configure().");
+    TEN_LOGE("Failed to call extension on_configure()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_configure(), so that we need to call
@@ -698,7 +698,7 @@ static void proxy_on_init(ten_extension_t *self, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_init, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_init().");
+    TEN_LOGE("Failed to call extension on_init()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_init(), so that we need to call on_init_done() here
@@ -738,7 +738,7 @@ static void proxy_on_start(ten_extension_t *self, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_start, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_start().");
+    TEN_LOGE("Failed to call extension on_start()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_start(), so that we need to call on_start_done()
@@ -778,7 +778,7 @@ static void proxy_on_stop(ten_extension_t *self, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_stop, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_stop().");
+    TEN_LOGE("Failed to call extension on_stop()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_stop(), so that we need to call on_stop_done() here
@@ -818,7 +818,7 @@ static void proxy_on_deinit(ten_extension_t *self, ten_env_t *ten_env) {
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_deinit, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_deinit().");
+    TEN_LOGE("Failed to call extension on_deinit()");
     TEN_FREE(call_info);
 
     // Failed to call JS on_deinit(), so that we need to call on_deinit_done()
@@ -860,7 +860,7 @@ static void proxy_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_cmd, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_cmd().");
+    TEN_LOGE("Failed to call extension on_cmd()");
     TEN_FREE(call_info);
   }
 }
@@ -897,7 +897,7 @@ static void proxy_on_data(ten_extension_t *self, ten_env_t *ten_env,
 
   bool rc = ten_nodejs_tsfn_invoke(extension_bridge->js_on_data, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_data().");
+    TEN_LOGE("Failed to call extension on_data()");
     TEN_FREE(call_info);
   }
 }
@@ -933,7 +933,7 @@ static void proxy_on_audio_frame(ten_extension_t *self, ten_env_t *ten_env,
   bool rc =
       ten_nodejs_tsfn_invoke(extension_bridge->js_on_audio_frame, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_audio_frame().");
+    TEN_LOGE("Failed to call extension on_audio_frame()");
     TEN_FREE(call_info);
   }
 }
@@ -971,7 +971,7 @@ static void proxy_on_video_frame(ten_extension_t *self, ten_env_t *ten_env,
   bool rc =
       ten_nodejs_tsfn_invoke(extension_bridge->js_on_video_frame, call_info);
   if (!rc) {
-    TEN_LOGE("Failed to call extension on_video_frame().");
+    TEN_LOGE("Failed to call extension on_video_frame()");
     TEN_FREE(call_info);
   }
 }

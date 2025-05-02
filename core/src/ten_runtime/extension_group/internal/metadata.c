@@ -21,7 +21,7 @@ void ten_extension_group_load_metadata(ten_extension_group_t *self) {
                  ten_extension_group_check_integrity(self, true),
              "Should not happen.");
 
-  TEN_LOGD("[%s] Load metadata.", ten_extension_group_get_name(self, true));
+  TEN_LOGD("[%s] Load metadata", ten_extension_group_get_name(self, true));
 
   ten_metadata_load(ten_extension_group_on_init, self->ten_env);
 }

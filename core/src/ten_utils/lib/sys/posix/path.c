@@ -113,7 +113,7 @@ ten_string_t *ten_path_realpath(const ten_string_t *path) {
   TEN_ASSERT(path, "Invalid argument.");
 
   if (!path || ten_string_is_empty(path)) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 
@@ -131,7 +131,7 @@ int ten_path_is_dir(const ten_string_t *path) {
   TEN_ASSERT(path, "Invalid argument.");
 
   if (!path || ten_string_is_empty(path)) {
-    TEN_LOGE("Path is empty.");
+    TEN_LOGE("Path is empty");
     return 0;
   }
 
@@ -149,12 +149,12 @@ int ten_path_mkdir(const ten_string_t *path, int recursive) {
   TEN_ASSERT(path, "Invalid argument.");
 
   if (!path || ten_string_is_empty(path)) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return -1;
   }
 
   if (ten_path_is_dir(path)) {
-    TEN_LOGW("Path %s is existed.", ten_string_get_raw_str(path));
+    TEN_LOGW("Path %s is existed", ten_string_get_raw_str(path));
     return 0;
   }
 
@@ -217,14 +217,14 @@ struct ten_dir_fd_t {
 
 ten_dir_fd_t *ten_path_open_dir(const char *path) {
   if (!path || !strlen(path)) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 
   ten_dir_fd_t *dir = TEN_MALLOC(sizeof(ten_dir_fd_t));
   TEN_ASSERT(dir, "Failed to allocate memory.");
   if (!dir) {
-    TEN_LOGE("Failed to allocate memory for ten_dir_fd_t.");
+    TEN_LOGE("Failed to allocate memory for ten_dir_fd_t");
     return NULL;
   }
 
@@ -246,7 +246,7 @@ ten_dir_fd_t *ten_path_open_dir(const char *path) {
 int ten_path_close_dir(ten_dir_fd_t *dir) {
   TEN_ASSERT(dir, "Invalid argument.");
   if (!dir) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return -1;
   }
 
@@ -265,7 +265,7 @@ int ten_path_close_dir(ten_dir_fd_t *dir) {
 ten_path_itor_t *ten_path_get_first(ten_dir_fd_t *dir) {
   TEN_ASSERT(dir, "Invalid argument.");
   if (!dir) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 
@@ -278,7 +278,7 @@ ten_path_itor_t *ten_path_get_first(ten_dir_fd_t *dir) {
 ten_path_itor_t *ten_path_get_next(ten_path_itor_t *itor) {
   TEN_ASSERT(itor, "Invalid argument.");
   if (!itor) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 
@@ -295,7 +295,7 @@ ten_path_itor_t *ten_path_get_next(ten_path_itor_t *itor) {
 ten_string_t *ten_path_itor_get_name(ten_path_itor_t *itor) {
   TEN_ASSERT(itor, "Invalid argument.");
   if (!itor) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 
@@ -305,7 +305,7 @@ ten_string_t *ten_path_itor_get_name(ten_path_itor_t *itor) {
 ten_string_t *ten_path_itor_get_full_name(ten_path_itor_t *itor) {
   TEN_ASSERT(itor, "Invalid argument.");
   if (!itor) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return NULL;
   }
 

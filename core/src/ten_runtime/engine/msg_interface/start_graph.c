@@ -82,13 +82,13 @@ void ten_engine_handle_cmd_start_graph(ten_engine_t *self,
       const char *dest_uri_c_str = ten_string_get_raw_str(dest_uri);
       TEN_ASSERT(dest_uri_c_str, "Invalid argument.");
 
-      TEN_LOGD("Check if we have connected to %s.", dest_uri_c_str);
+      TEN_LOGD("Check if we have connected to %s", dest_uri_c_str);
 
       // Check to see if we have connected to this URI or not.
       ten_remote_t *remote =
           ten_engine_check_remote_is_existed(self, dest_uri_c_str);
       if (!remote) {
-        TEN_LOGD("%s is unconnected, connect now.", dest_uri_c_str);
+        TEN_LOGD("%s is unconnected, connect now", dest_uri_c_str);
 
         ten_shared_ptr_t *child_cmd = ten_msg_clone(cmd, NULL);
         TEN_ASSERT(child_cmd, "Should not happen.");
@@ -118,7 +118,7 @@ void ten_engine_handle_cmd_start_graph(ten_engine_t *self,
         bool rc = ten_engine_connect_to_graph_remote(
             self, ten_string_get_raw_str(dest_uri), child_cmd);
         if (!rc) {
-          TEN_LOGE("[%s] Failed to connect to %s.", ten_app_get_uri(self->app),
+          TEN_LOGE("[%s] Failed to connect to %s", ten_app_get_uri(self->app),
                    dest_uri_c_str);
 
           error_occurred = true;
@@ -129,7 +129,7 @@ void ten_engine_handle_cmd_start_graph(ten_engine_t *self,
           break;
         }
       } else {
-        TEN_LOGD("%s is connected, there is nothing to do.", dest_uri_c_str);
+        TEN_LOGD("%s is connected, there is nothing to do", dest_uri_c_str);
       }
     }
 

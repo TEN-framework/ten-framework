@@ -26,7 +26,7 @@ ten_socket_t *ten_socket_create(TEN_SOCKET_FAMILY family, TEN_SOCKET_TYPE type,
     break;
 
   default:
-    // TEN_LOGE("Unknown socket type.");
+    // TEN_LOGE("Unknown socket type");
     return NULL;
   }
 
@@ -39,7 +39,7 @@ ten_socket_t *ten_socket_create(TEN_SOCKET_FAMILY family, TEN_SOCKET_TYPE type,
 
   int fd = socket(family, native_type, protocol);
   if (fd == INVALID_SOCKET) {
-    // TEN_LOGE("Failed to create socket.");
+    // TEN_LOGE("Failed to create socket");
     return NULL;
   }
 

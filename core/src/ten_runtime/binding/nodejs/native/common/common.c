@@ -206,7 +206,7 @@ void ten_nodejs_report_and_clear_error_(napi_env env, napi_status orig_status,
     ASSERT_IF_NAPI_FAIL(status == napi_ok,
                         "Failed to throw JS fatal exception: %d", status);
   } else {
-    TEN_LOGW("No pending exceptions when napi API failed.");
+    TEN_LOGW("No pending exceptions when napi API failed");
 
     // Encountering napi error but can not get any exceptions. It means JS
     // runtime went wrong (one possible reason is that the JS runtime is

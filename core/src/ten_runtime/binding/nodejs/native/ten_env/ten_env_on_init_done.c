@@ -64,7 +64,7 @@ napi_value ten_nodejs_ten_env_on_init_done(napi_env env,
   }
 
   if (!rc) {
-    TEN_LOGD("TEN/JS failed to on_init_done.");
+    TEN_LOGD("TEN/JS failed to on_init_done");
 
     ten_string_t code_str;
     ten_string_init_formatted(&code_str, "%d", ten_error_code(&err));

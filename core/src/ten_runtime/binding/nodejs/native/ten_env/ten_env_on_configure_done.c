@@ -58,7 +58,7 @@ napi_value ten_nodejs_ten_env_on_configure_done(napi_env env,
                                        ten_env_proxy_notify_on_configure_done,
                                        NULL, &err);
   if (!rc) {
-    TEN_LOGD("TEN/JS failed to on_configure_done.");
+    TEN_LOGD("TEN/JS failed to on_configure_done");
 
     ten_string_t code_str;
     ten_string_init_formatted(&code_str, "%d", ten_error_code(&err));

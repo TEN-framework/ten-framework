@@ -32,7 +32,7 @@ static int set_self(ten_runloop_t *self) {
   ten_thread_key_t key = runloop_key;
 
   if (key == kInvalidTlsKey) {
-    TEN_LOGE("Failed to set the runloop pointer to the thread local storage.");
+    TEN_LOGE("Failed to set the runloop pointer to the thread local storage");
     return -1;
   }
 

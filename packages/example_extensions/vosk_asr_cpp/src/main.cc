@@ -22,7 +22,7 @@ class vosk_asr_cpp_t : public ten::extension_t {
     // Open the specified model.
     vosk_model = vosk_model_new((std::string("models/") + model_name).c_str());
     if (vosk_model == nullptr) {
-      TEN_LOGE("Failed to load model, check if exists in the folder.");
+      TEN_LOGE("Failed to load model, check if exists in the folder");
       exit(EXIT_FAILURE);
     }
 
@@ -33,7 +33,7 @@ class vosk_asr_cpp_t : public ten::extension_t {
 
     vosk_recognizer = vosk_recognizer_new(vosk_model, sample_rate);
     if (vosk_recognizer == nullptr) {
-      TEN_LOGE("Failed to create recognizer.");
+      TEN_LOGE("Failed to create recognizer");
       exit(EXIT_FAILURE);
     }
 

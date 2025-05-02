@@ -171,7 +171,7 @@ void ten_extension_group_create_extensions(ten_extension_group_t *self) {
   TEN_ASSERT(self->ten_env && ten_env_check_integrity(self->ten_env, true),
              "Should not happen.");
 
-  TEN_LOGD("[%s] create_extensions.", ten_extension_group_get_name(self, true));
+  TEN_LOGD("[%s] create_extensions", ten_extension_group_get_name(self, true));
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");
@@ -193,8 +193,7 @@ void ten_extension_group_destroy_extensions(ten_extension_group_t *self,
   TEN_ASSERT(self->ten_env && ten_env_check_integrity(self->ten_env, true),
              "Should not happen.");
 
-  TEN_LOGD("[%s] destroy_extensions.",
-           ten_extension_group_get_name(self, true));
+  TEN_LOGD("[%s] destroy_extensions", ten_extension_group_get_name(self, true));
 
   self->on_destroy_extensions(self, self->ten_env, extensions);
 }

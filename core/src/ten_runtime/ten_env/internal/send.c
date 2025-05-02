@@ -88,7 +88,7 @@ static bool ten_env_send_msg_internal(
   if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD_RESULT) {
     // The only way to send out the 'status' command from extension is through
     // various 'return_xxx' functions.
-    TEN_LOGE("Result commands should be delivered through 'returning'.");
+    TEN_LOGE("Result commands should be delivered through 'returning'");
     ten_error_set(err, TEN_ERROR_CODE_GENERIC,
                   "Result commands should be delivered through 'returning'.");
     result = false;

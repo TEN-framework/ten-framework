@@ -65,7 +65,7 @@ ten_cmd_schema_t *ten_cmd_schema_create(ten_value_t *cmd_schema_value) {
   // }
   ten_value_t *result = ten_value_object_peek(cmd_schema_value, TEN_STR_RESULT);
   if (!result) {
-    TEN_LOGD("No schema [result] found for cmd [%s].",
+    TEN_LOGD("No schema [result] found for cmd [%s]",
              ten_value_object_peek_string(cmd_schema_value, TEN_STR_NAME));
     return self;
   }

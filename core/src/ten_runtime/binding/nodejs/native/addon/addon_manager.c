@@ -149,7 +149,7 @@ static void invoke_addon_manager_js_register_single_addon(
   goto done;
 
 error:
-  TEN_LOGE("Failed to call JS addon manager registerSingleAddon().");
+  TEN_LOGE("Failed to call JS addon manager registerSingleAddon()");
 
 done:
   ten_event_set(ctx->completed);
@@ -207,7 +207,7 @@ static void ten_nodejs_addon_manager_destroy(ten_nodejs_addon_manager_t *self) {
 
 static void ten_nodejs_addon_manager_finalize(napi_env env, void *data,
                                               TEN_UNUSED void *hint) {
-  TEN_LOGI("TEN JS addon manager is finalized.");
+  TEN_LOGI("TEN JS addon manager is finalized");
 
   ten_nodejs_addon_manager_t *addon_manager_bridge = data;
   TEN_ASSERT(addon_manager_bridge && ten_nodejs_addon_manager_check_integrity(
@@ -385,7 +385,7 @@ static void ten_nodejs_addon_register_func(TEN_UNUSED TEN_ADDON_TYPE addon_type,
 
   addon_bridge->c_addon_host = c_addon_host;
 
-  TEN_LOGD("JS addon manager registerSingleAddon() completed.");
+  TEN_LOGD("JS addon manager registerSingleAddon() completed");
 
   addon_manager_register_single_addon_ctx_destroy(ctx);
 }
@@ -425,7 +425,7 @@ static napi_value ten_nodejs_addon_manager_add_extension_addon(
     TEN_ASSERT(0, "Should not happen.");
   }
 
-  TEN_LOGI("Adding Nodejs addon: %s to the native addon manager.",
+  TEN_LOGI("Adding Nodejs addon: %s to the native addon manager",
            ten_string_get_raw_str(&addon_name));
 
   ten_error_t error;

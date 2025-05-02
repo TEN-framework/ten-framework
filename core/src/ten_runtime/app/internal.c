@@ -79,7 +79,7 @@ void ten_app_start(ten_app_t *self) {
   // Start the app's event loop - this call blocks until the loop is stopped.
   ten_runloop_run(self->loop);
 
-  TEN_LOGD("TEN app runloop ends.");
+  TEN_LOGD("TEN app runloop ends");
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   // Clean up telemetry system after the runloop exits.

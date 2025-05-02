@@ -60,11 +60,11 @@ static void ten_timer_on_close(ten_timer_t *self) {
              "Should not happen.");
 
   if (!ten_timer_could_be_close(self)) {
-    TEN_LOGD("[%d] Could not close alive timer.", self->id);
+    TEN_LOGD("[%d] Could not close alive timer", self->id);
     return;
   }
 
-  TEN_LOGD("[%d] Timer can be closed now.", self->id);
+  TEN_LOGD("[%d] Timer can be closed now", self->id);
 
   ten_timer_do_close(self);
 }
@@ -171,7 +171,7 @@ static ten_timer_t *ten_timer_create_internal(ten_runloop_t *runloop) {
   TEN_ASSERT(runloop && ten_runloop_check_integrity(runloop, true),
              "Should not happen.");
 
-  TEN_LOGV("Create a timer.");
+  TEN_LOGV("Create a timer");
 
   ten_timer_t *self = (ten_timer_t *)TEN_MALLOC(sizeof(ten_timer_t));
   TEN_ASSERT(self, "Failed to allocate memory.");
@@ -196,7 +196,7 @@ static ten_timer_t *ten_timer_create_internal(ten_runloop_t *runloop) {
 
   self->backend = ten_runloop_timer_create(NULL, 0, 0);
   if (!self->backend) {
-    TEN_LOGE("No valid backend for timer.");
+    TEN_LOGE("No valid backend for timer");
     goto error;
   }
 
@@ -255,7 +255,7 @@ void ten_timer_destroy(ten_timer_t *self) {
                  ten_timer_could_be_close(self),
              "Should not happen.");
 
-  TEN_LOGV("Destroy a timer.");
+  TEN_LOGV("Destroy a timer");
 
   ten_sanitizer_thread_check_deinit(&self->thread_check);
   ten_signature_set(&self->signature, 0);
@@ -323,7 +323,7 @@ void ten_timer_stop_async(ten_timer_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_timer_check_integrity(self, true), "Should not happen.");
 
-  TEN_LOGV("Scheduling timer stop operation.");
+  TEN_LOGV("Scheduling timer stop operation");
 
   // Post the stop task to the timer's runloop to ensure thread safety
   int rc = ten_runloop_post_task_tail(self->runloop, ten_timer_stop_task, self,
@@ -371,7 +371,7 @@ void ten_timer_close_async(ten_timer_t *self) {
   TEN_ASSERT(ten_timer_check_integrity(self, true), "Should not happen.");
 
   if (ten_atomic_bool_compare_swap(&self->is_closing, 0, 1)) {
-    TEN_LOGV("Try to close a timer.");
+    TEN_LOGV("Try to close a timer");
 
     int rc = ten_runloop_post_task_tail(self->runloop, ten_timer_close_task,
                                         self, NULL);

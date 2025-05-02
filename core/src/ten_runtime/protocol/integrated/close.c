@@ -98,12 +98,12 @@ void ten_protocol_integrated_on_close(ten_protocol_integrated_t *self) {
              "Should not happen.");
 
   if (!ten_protocol_integrated_could_be_close(self)) {
-    TEN_LOGD("[%s] Could not close alive integrated protocol.",
+    TEN_LOGD("[%s] Could not close alive integrated protocol",
              ten_string_get_raw_str(&protocol->uri));
     return;
   }
 
-  TEN_LOGD("[%s] Integrated protocol can be closed now.",
+  TEN_LOGD("[%s] Integrated protocol can be closed now",
            ten_string_get_raw_str(&protocol->uri));
 
   ten_protocol_on_close(&self->base);

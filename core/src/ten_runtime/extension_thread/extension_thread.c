@@ -286,12 +286,12 @@ static void *ten_extension_thread_main_actual(ten_extension_thread_t *self) {
   // Run the extension thread event loop.
   ten_runloop_run(self->runloop);
 
-  TEN_LOGD("[%s] Notifying engine that we are closed.",
+  TEN_LOGD("[%s] Notifying engine that we are closed",
            ten_string_get_raw_str(&extension_group_name));
 
   ten_extension_thread_notify_engine_we_are_closed(self);
 
-  TEN_LOGD("[%s] Extension thread is exited.",
+  TEN_LOGD("[%s] Extension thread is exited",
            ten_string_get_raw_str(&extension_group_name));
 
   ten_string_deinit(&extension_group_name);
@@ -378,7 +378,7 @@ void ten_extension_thread_close(ten_extension_thread_t *self) {
   TEN_ASSERT(ten_extension_thread_check_integrity(self, false),
              "Should not happen.");
 
-  TEN_LOGD("[%s] Try to close extension thread.",
+  TEN_LOGD("[%s] Try to close extension thread",
            ten_extension_group_get_name(self->extension_group, false));
 
   // Notify extension thread that it is about to close.

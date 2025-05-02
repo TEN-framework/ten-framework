@@ -22,7 +22,7 @@ struct ten_cond_t {
 ten_cond_t *ten_cond_create(void) {
   ten_cond_t *cond = (ten_cond_t *)TEN_MALLOC(sizeof(ten_cond_t));
   if (!cond) {
-    TEN_LOGE("Failed to allocate memory.");
+    TEN_LOGE("Failed to allocate memory");
     return NULL;
   }
 
@@ -32,7 +32,7 @@ ten_cond_t *ten_cond_create(void) {
 
 void ten_cond_destroy(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid argument.");
+    TEN_LOGE("Invalid argument");
     return;
   }
 
@@ -45,7 +45,7 @@ int ten_cond_wait(ten_cond_t *cond, ten_mutex_t *mutex, int64_t wait_ms) {
   struct timespec ts;
   pthread_mutex_t *lock = (pthread_mutex_t *)ten_mutex_get_native_handle(mutex);
   if (!cond || !lock) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 
@@ -68,7 +68,7 @@ int ten_cond_wait_while(ten_cond_t *cond, ten_mutex_t *mutex,
   pthread_mutex_t *lock = (pthread_mutex_t *)ten_mutex_get_native_handle(mutex);
 
   if (!cond || !mutex || !predicate || !lock) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 
@@ -101,7 +101,7 @@ int ten_cond_wait_while(ten_cond_t *cond, ten_mutex_t *mutex,
 
 int ten_cond_signal(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 
@@ -110,7 +110,7 @@ int ten_cond_signal(ten_cond_t *cond) {
 
 int ten_cond_broadcast(ten_cond_t *cond) {
   if (!cond) {
-    TEN_LOGE("Invalid_argument.");
+    TEN_LOGE("Invalid_argument");
     return -1;
   }
 

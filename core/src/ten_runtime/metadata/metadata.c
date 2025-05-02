@@ -140,7 +140,7 @@ ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
   TEN_ERROR_INIT(err);
   if (!ten_schema_store_set_schema_definition(schema_store, api_definition,
                                               &err)) {
-    TEN_LOGW("Failed to set schema definition: %s.", ten_error_message(&err));
+    TEN_LOGW("Failed to set schema definition: %s", ten_error_message(&err));
   }
 
   ten_error_deinit(&err);

@@ -87,7 +87,7 @@ static size_t ten_socket_addr_get_native_size(const ten_socket_addr_t *addr) {
   } else if (addr->family == TEN_SOCKET_FAMILY_INET6) {
     return sizeof(struct sockaddr_in6);
   } else {
-    // TEN_LOGE("Unsupported socket family.");
+    // TEN_LOGE("Unsupported socket family");
     return 0;
   }
 }
@@ -97,7 +97,7 @@ bool ten_socket_connect(ten_socket_t *self, ten_socket_addr_t *address) {
 
   struct sockaddr_storage buffer;
   if (!ten_socket_addr_to_native(address, &buffer, sizeof(buffer))) {
-    // TEN_LOGE("Failed to get native socket address.");
+    // TEN_LOGE("Failed to get native socket address");
     return false;
   }
 

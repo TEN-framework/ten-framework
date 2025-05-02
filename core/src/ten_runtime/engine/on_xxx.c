@@ -39,7 +39,7 @@ void ten_engine_on_remove_extension_thread_from_engine(void *self_, void *arg) {
       ten_extension_thread_check_integrity(extension_thread, false),
       "Should not happen.");
 
-  TEN_LOGD("[%s] Remove extension thread (%p) from engine.",
+  TEN_LOGD("[%s] Remove extension thread (%p) from engine",
            ten_engine_get_id(self, true), extension_thread);
 
   ten_list_remove_ptr(&self->extension_context->extension_threads,
@@ -68,7 +68,7 @@ void ten_engine_on_extension_thread_closed_task(void *self_, void *arg) {
       ten_extension_thread_check_integrity(extension_thread, false),
       "Should not happen.");
 
-  TEN_LOGD("[%s] Waiting for extension thread (%p) be reclaimed.",
+  TEN_LOGD("[%s] Waiting for extension thread (%p) be reclaimed",
            ten_engine_get_id(self, true), extension_thread);
 
   TEN_UNUSED int rc =
@@ -77,7 +77,7 @@ void ten_engine_on_extension_thread_closed_task(void *self_, void *arg) {
                       -1);
   TEN_ASSERT(!rc, "Should not happen.");
 
-  TEN_LOGD("[%s] Extension thread (%p) is reclaimed.",
+  TEN_LOGD("[%s] Extension thread (%p) is reclaimed",
            ten_engine_get_id(self, true), extension_thread);
 
   // Extension thread is disappear, so we migrate the extension_group and

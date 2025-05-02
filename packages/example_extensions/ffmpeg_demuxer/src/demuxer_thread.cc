@@ -52,13 +52,13 @@ demuxer_thread_t::~demuxer_thread_t() {
 }
 
 void *demuxer_thread_main(void *self_) {
-  TEN_LOGD("Demuxer thread is started.");
+  TEN_LOGD("Demuxer thread is started");
 
   auto *demuxer_thread = reinterpret_cast<demuxer_thread_t *>(self_);
   TEN_ASSERT(demuxer_thread, "Invalid argument.");
 
   if (!demuxer_thread->create_demuxer()) {
-    TEN_LOGW("Failed to create demuxer, stop the demuxer thread.");
+    TEN_LOGW("Failed to create demuxer, stop the demuxer thread");
 
     demuxer_thread->reply_to_start_cmd(false);
     return nullptr;
@@ -73,7 +73,7 @@ void *demuxer_thread_main(void *self_) {
   demuxer_thread->wait_to_start_demuxing();
 
   // Starts the demuxer loop.
-  TEN_LOGD("Start the demuxer thread loop.");
+  TEN_LOGD("Start the demuxer thread loop");
 
   DECODE_STATUS status = DECODE_STATUS_SUCCESS;
   while (!demuxer_thread->is_stopped() && status == DECODE_STATUS_SUCCESS) {
@@ -81,26 +81,26 @@ void *demuxer_thread_main(void *self_) {
     status = demuxer_thread->demuxer->decode_next_packet();
 
     switch (status) {
-      case DECODE_STATUS_EOF:
-        TEN_LOGD("Input stream is ended, stop the demuxer thread normally.");
+    case DECODE_STATUS_EOF:
+      TEN_LOGD("Input stream is ended, stop the demuxer thread normally");
 
-        // Send EOF frame, so that the subsequent stages could know this fact.
-        demuxer_thread->send_video_eof();
-        demuxer_thread->send_audio_eof();
-        break;
+      // Send EOF frame, so that the subsequent stages could know this fact.
+      demuxer_thread->send_video_eof();
+      demuxer_thread->send_audio_eof();
+      break;
 
-      case DECODE_STATUS_ERROR:
-        TEN_LOGW("Something bad happened, stop the demuxer thread abruptly.");
-        break;
+    case DECODE_STATUS_ERROR:
+      TEN_LOGW("Something bad happened, stop the demuxer thread abruptly");
+      break;
 
-      default:
-        break;
+    default:
+      break;
     }
   }
 
   demuxer_thread->notify_completed(status == DECODE_STATUS_EOF);
 
-  TEN_LOGD("Demuxer thread is stopped.");
+  TEN_LOGD("Demuxer thread is stopped");
 
   return nullptr;
 }
@@ -131,7 +131,7 @@ void demuxer_thread_t::wait_for_stop_completed() {
   int rc = ten_thread_join(demuxer_thread, -1);
   TEN_ASSERT(!rc, "Invalid argument.");
 
-  TEN_LOGD("Demuxer thread has been reclaimed.");
+  TEN_LOGD("Demuxer thread has been reclaimed");
 }
 
 bool demuxer_thread_t::create_demuxer() {

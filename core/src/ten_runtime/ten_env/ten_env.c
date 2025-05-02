@@ -177,11 +177,11 @@ void ten_env_close(ten_env_t *self) {
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_APP:
-    TEN_LOGD("[%s] Close ten of app.",
+    TEN_LOGD("[%s] Close ten of app",
              ten_app_get_uri(self->attached_target.app));
     break;
   case TEN_ENV_ATTACH_TO_ENGINE:
-    TEN_LOGD("[%s] Close ten of engine.",
+    TEN_LOGD("[%s] Close ten of engine",
              ten_engine_get_id(self->attached_target.engine, true));
     break;
   case TEN_ENV_ATTACH_TO_EXTENSION_GROUP:
@@ -190,11 +190,11 @@ void ten_env_close(ten_env_t *self) {
         ten_string_get_raw_str(&self->attached_target.extension_group->name));
     break;
   case TEN_ENV_ATTACH_TO_EXTENSION:
-    TEN_LOGD("[%s] Close ten of extension.",
+    TEN_LOGD("[%s] Close ten of extension",
              ten_string_get_raw_str(&self->attached_target.extension->name));
     break;
   case TEN_ENV_ATTACH_TO_ADDON:
-    TEN_LOGV("[%s] Close ten of addon.",
+    TEN_LOGV("[%s] Close ten of addon",
              ten_string_get_raw_str(&self->attached_target.addon_host->name));
     break;
   default:

@@ -219,7 +219,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_uint8(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -237,7 +237,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_uint16(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -255,7 +255,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_uint32(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -273,7 +273,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_uint64(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -291,7 +291,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_int8(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -309,7 +309,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_int16(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -327,7 +327,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_int32(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -345,7 +345,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_int64(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -363,7 +363,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_float32(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -381,7 +381,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_float64(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -399,7 +399,7 @@ class ten_env_t {
     error_t cpp_err;
     const auto *result = ten_value_peek_raw_str(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -421,7 +421,7 @@ class ten_env_t {
     error_t cpp_err;
     auto *result = ten_value_get_ptr(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());
@@ -439,7 +439,7 @@ class ten_env_t {
     error_t cpp_err;
     auto result = ten_value_get_bool(c_value, cpp_err.get_c_error());
     if (!cpp_err.is_success()) {
-      TEN_LOGW("Failed to get property %s because of incorrect type.", path);
+      TEN_LOGW("Failed to get property %s because of incorrect type", path);
     }
     if (err != nullptr) {
       ten_error_copy(err->get_c_error(), cpp_err.get_c_error());

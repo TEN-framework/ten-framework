@@ -135,13 +135,12 @@ static void ten_remote_on_close(ten_remote_t *self) {
   TEN_ASSERT(ten_remote_check_integrity(self, true), "Should not happen.");
 
   if (!ten_remote_could_be_close(self)) {
-    TEN_LOGI("[%s] Could not close alive remote.",
+    TEN_LOGI("[%s] Could not close alive remote",
              ten_string_get_raw_str(&self->uri));
     return;
   }
 
-  TEN_LOGD("[%s] Remote can be closed now.",
-           ten_string_get_raw_str(&self->uri));
+  TEN_LOGD("[%s] Remote can be closed now", ten_string_get_raw_str(&self->uri));
 
   ten_remote_do_close(self);
 }

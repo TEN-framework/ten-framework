@@ -173,7 +173,7 @@ void ten_engine_on_remote_closed(ten_remote_t *remote, void *on_closed_data) {
     }
 
     if (!found_in_remotes) {
-      TEN_LOGI("[%s] The remote %p is not found in the 'remotes' list.",
+      TEN_LOGI("[%s] The remote %p is not found in the 'remotes' list",
                ten_engine_get_id(self, true), remote);
 
       // If the remote wasn't in either list, just destroy it directly. This can
@@ -211,7 +211,7 @@ static void ten_engine_add_remote(ten_engine_t *self, ten_remote_t *remote) {
   TEN_ASSERT(ten_remote_check_integrity(remote, true),
              "Invalid use of remote %p.", remote);
 
-  TEN_LOGD("[%s] Add %s (%p) as remote.", ten_engine_get_id(self, true),
+  TEN_LOGD("[%s] Add %s (%p) as remote", ten_engine_get_id(self, true),
            ten_string_get_raw_str(&remote->uri), remote);
 
   ten_hashtable_add_string(&self->remotes, &remote->hh_in_remote_table,
@@ -229,7 +229,7 @@ static void ten_engine_add_weak_remote(ten_engine_t *self,
   TEN_ASSERT(ten_remote_check_integrity(remote, true),
              "Invalid use of remote %p.", remote);
 
-  TEN_LOGD("[%s] Add %s (%p) as weak remote.", ten_engine_get_id(self, true),
+  TEN_LOGD("[%s] Add %s (%p) as weak remote", ten_engine_get_id(self, true),
            ten_string_get_raw_str(&remote->uri), remote);
 
   TEN_UNUSED ten_listnode_t *found = ten_list_find_ptr_custom(
@@ -544,7 +544,7 @@ static void ten_engine_connect_to_remote_after_remote_is_created(
     // has not actually been established. Additionally, there is no need to send
     // the 'start_graph' command to this remote, as the graph must have already
     // been started on the remote side.
-    TEN_LOGD("[%s] Destroy remote %p(%s) because it's duplicated.",
+    TEN_LOGD("[%s] Destroy remote %p(%s) because it's duplicated",
              ten_engine_get_id(engine, true), remote,
              ten_string_get_raw_str(&remote->uri));
 
@@ -595,7 +595,7 @@ bool ten_engine_connect_to_graph_remote(ten_engine_t *self, const char *uri,
   TEN_ASSERT(cmd && ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
-  TEN_LOGD("[%s] Trying to connect to %s inside graph.",
+  TEN_LOGD("[%s] Trying to connect to %s inside graph",
            ten_engine_get_id(self, true), uri);
 
   return ten_engine_create_remote_async(
@@ -670,7 +670,7 @@ ten_remote_t *ten_engine_check_remote_is_existed(ten_engine_t *self,
     TEN_ASSERT(ten_remote_check_integrity(remote, true),
                "Invalid use of remote %p.", remote);
 
-    TEN_LOGD("[%s] remote %p for uri '%s' is found in 'remotes' list.",
+    TEN_LOGD("[%s] remote %p for uri '%s' is found in 'remotes' list",
              ten_engine_get_id(self, true), remote, uri);
 
     return remote;
@@ -687,7 +687,7 @@ ten_remote_t *ten_engine_check_remote_is_existed(ten_engine_t *self,
                "Invalid use of remote %p.", remote);
   }
 
-  TEN_LOGD("[%s] remote %p for uri '%s' is%s in 'weak_remotes' list.",
+  TEN_LOGD("[%s] remote %p for uri '%s' is%s in 'weak_remotes' list",
            ten_engine_get_id(self, true), remote, uri, remote ? "" : " not");
 
   return remote;
@@ -715,11 +715,11 @@ bool ten_engine_check_remote_is_duplicated(ten_engine_t *self,
              ten_engine_get_id(self, true), uri, remote);
 
     if (ten_c_string_is_equal_or_smaller(uri, ten_app_get_uri(self->app))) {
-      TEN_LOGW("[%s] > Remote %s (%p) is smaller, this channel is duplicated.",
+      TEN_LOGW("[%s] > Remote %s (%p) is smaller, this channel is duplicated",
                ten_engine_get_id(self, true), uri, remote);
       return true;
     } else {
-      TEN_LOGW("[%s] > Remote %s (%p) is larger, keep this channel.",
+      TEN_LOGW("[%s] > Remote %s (%p) is larger, keep this channel",
                ten_engine_get_id(self, true), uri, remote);
     }
   }
@@ -738,7 +738,7 @@ bool ten_engine_check_remote_is_weak(ten_engine_t *self, ten_remote_t *remote) {
 
   ten_listnode_t *found = ten_list_find_ptr(&self->weak_remotes, remote);
 
-  TEN_LOGD("[%s] remote %p is%s weak.", ten_engine_get_id(self, true), remote,
+  TEN_LOGD("[%s] remote %p is%s weak", ten_engine_get_id(self, true), remote,
            found ? "" : " not");
 
   return found != NULL;
