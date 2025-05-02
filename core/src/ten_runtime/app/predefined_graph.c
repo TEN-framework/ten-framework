@@ -228,12 +228,16 @@ bool ten_app_start_predefined_graph(
 
     ten_path_t *out_path = (ten_path_t *)ten_path_table_add_out_path(
         self->path_table, start_graph_cmd);
-    TEN_ASSERT(out_path && ten_path_check_integrity(out_path, true),
-               "Should not happen.");
+    TEN_ASSERT(out_path, "Should not happen.");
+    TEN_ASSERT(ten_path_check_integrity(out_path, true), "Should not happen.");
   }
   // @}
 
   predefined_graph_info->engine = ten_app_create_engine(self, start_graph_cmd);
+
+  ten_engine_set_graph_name(
+      predefined_graph_info->engine,
+      ten_string_get_raw_str(&predefined_graph_info->name));
 
   // There is no 'connection' when creating predefined graph, so it's always no
   // migration in this stage. Send the 'start_graph_cmd' into the newly created

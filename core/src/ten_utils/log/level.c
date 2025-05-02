@@ -24,6 +24,8 @@ char ten_log_level_char(const TEN_LOG_LEVEL level) {
     return 'E';
   case TEN_LOG_LEVEL_FATAL:
     return 'F';
+  case TEN_LOG_LEVEL_MANDATORY:
+    return 'M';
   default:
     return '?';
   }

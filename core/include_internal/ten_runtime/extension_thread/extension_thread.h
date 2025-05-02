@@ -46,6 +46,8 @@ typedef struct ten_extension_thread_t {
   ten_signature_t signature;
   ten_sanitizer_thread_check_t thread_check;
 
+  int64_t tid;
+
   TEN_EXTENSION_THREAD_STATE state;
   bool is_close_triggered;
 

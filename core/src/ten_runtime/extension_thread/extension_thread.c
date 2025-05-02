@@ -85,6 +85,7 @@ ten_extension_thread_t *ten_extension_thread_create(void) {
   ten_signature_set(&self->signature,
                     (ten_signature_t)TEN_EXTENSION_THREAD_SIGNATURE);
 
+  self->tid = 0;
   self->state = TEN_EXTENSION_THREAD_STATE_INIT;
   self->is_close_triggered = false;
 
@@ -255,6 +256,7 @@ static void *ten_extension_thread_main_actual(ten_extension_thread_t *self) {
       ten_extension_thread_check_integrity(self, false), "Should not happen.");
 
   ten_extension_thread_inherit_thread_ownership(self);
+  self->tid = ten_thread_get_id(NULL);
 
   ten_extension_group_t *extension_group = self->extension_group;
   TEN_ASSERT(extension_group, "Should not happen.");
