@@ -37,7 +37,7 @@ ten_string_t *ten_find_app_base_dir(void) {
     if (!module_path) {
       TEN_LOGE(
           "Could not get app base dir from module path, using TEN_APP_BASE_DIR "
-          "instead.");
+          "instead");
       return NULL;
     }
 
@@ -49,7 +49,7 @@ ten_string_t *ten_find_app_base_dir(void) {
   if (!app_base_dir || ten_string_is_empty(app_base_dir)) {
     TEN_LOGW(
         "Could not get app home from module path, using TEN_APP_BASE_DIR "
-        "instead.");
+        "instead");
     return NULL;
   }
 

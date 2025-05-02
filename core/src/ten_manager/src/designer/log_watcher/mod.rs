@@ -17,6 +17,7 @@ use tokio::sync::Mutex;
 
 use crate::designer::DesignerState;
 use crate::fs::log_file_watcher::{LogFileContentStream, LogFileWatchOptions};
+use crate::log::LogLineInfo;
 use crate::pkg_info::property::get_log_file_path;
 
 // Message types for WebSocket communication
@@ -32,7 +33,7 @@ pub struct SetAppBaseDir {
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
-pub struct FileContent(pub String);
+pub struct FileContent(pub LogLineInfo);
 
 #[derive(Message, Debug, Serialize, Deserialize)]
 #[rtype(result = "()")]
@@ -160,8 +161,19 @@ impl Handler<FileContent> for WsLogWatcher {
         msg: FileContent,
         ctx: &mut Self::Context,
     ) -> Self::Result {
-        // Send the file content as text to the WebSocket client.
-        ctx.text(msg.0);
+        // Send the entire LogLineInfo as JSON to the WebSocket client.
+        match serde_json::to_string(&msg.0) {
+            Ok(json_str) => {
+                ctx.text(json_str);
+            }
+            Err(e) => {
+                // Log the serialization error.
+                eprintln!("Error serializing LogLineInfo to JSON: {}", e);
+
+                // Fallback to just the line content if serialization fails.
+                ctx.text(msg.0.line);
+            }
+        }
     }
 }
 
