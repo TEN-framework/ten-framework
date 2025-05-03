@@ -15,6 +15,7 @@ group("cpp") {
     "hello_world",
     "large_result",
     "long_running",
+    "metadata_additional_field",
     "restful",
   ]
 
