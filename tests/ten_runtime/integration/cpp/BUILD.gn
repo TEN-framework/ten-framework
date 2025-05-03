@@ -15,7 +15,6 @@ group("cpp") {
     "hello_world",
     "large_result",
     "long_running",
-    "manifest_with_comments",
     "restful",
   ]
 
