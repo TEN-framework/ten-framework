@@ -186,3 +186,23 @@ pub fn parse_graph_resources_log(
 
     Ok(())
 }
+
+/// Process a log line: try to parse as graph resources log first, then try to
+/// extract extension information.
+pub fn process_log_line(
+    log_line: &str,
+    graph_resources_log: &mut GraphResourcesLog,
+) -> Option<LogLineMetadata> {
+    // First try to parse as graph resources log.
+    match parse_graph_resources_log(log_line, graph_resources_log) {
+        Ok(_) => {
+            // Successfully parsed as graph resources log, but no metadata to
+            // return.
+            None
+        }
+        Err(_) => {
+            // Not a graph resources log, try to extract extension information.
+            extract_extension_from_log_line(log_line, graph_resources_log)
+        }
+    }
+}

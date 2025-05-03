@@ -18,6 +18,7 @@ use anyhow::Context;
 use anyhow::Result;
 
 use crate::designer::DesignerState;
+use crate::log::LogLineInfo;
 use cmd_run::ShutdownSenders;
 use msg::InboundMsg;
 use msg::OutboundMsg;
@@ -27,20 +28,25 @@ use run_script::extract_command_from_manifest;
 #[derive(Message)]
 #[rtype(result = "()")]
 pub enum RunCmdOutput {
-    StdOut(String),
-    StdErr(String),
+    StdOutNormal(String),
+    StdOutLog(LogLineInfo),
+
+    StdErrNormal(String),
+    StdErrLog(LogLineInfo),
+
     Exit(i32),
 }
 
-/// `CmdParser` returns a tuple: the 1st element is the command string, and
-/// the 2nd is an optional working directory.
+/// `CmdParser` returns a tuple: the 1st element is the command string, the 2nd
+/// is an optional working directory, and the 3rd and 4th are booleans
+/// indicating if stdout and stderr are log content.
 pub type CmdParser = Box<
     dyn Fn(
             &str,
         ) -> std::pin::Pin<
             Box<
                 dyn std::future::Future<
-                        Output = Result<(String, Option<String>)>,
+                        Output = Result<(String, Option<String>, bool, bool)>,
                     > + Send,
             >,
         > + Send
@@ -52,6 +58,8 @@ pub struct WsRunCmd {
     cmd_parser: CmdParser,
     working_directory: Option<String>,
     shutdown_senders: Option<ShutdownSenders>,
+    stdout_is_log: bool,
+    stderr_is_log: bool,
 }
 
 impl WsRunCmd {
@@ -61,6 +69,8 @@ impl WsRunCmd {
             cmd_parser,
             working_directory: None,
             shutdown_senders: None,
+            stdout_is_log: false,
+            stderr_is_log: false,
         }
     }
 }
@@ -93,16 +103,30 @@ impl Handler<RunCmdOutput> for WsRunCmd {
         ctx: &mut Self::Context,
     ) -> Self::Result {
         match msg {
-            RunCmdOutput::StdOut(line) => {
+            RunCmdOutput::StdOutNormal(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::StdOut { data: line };
+                let msg_out = OutboundMsg::StdOutNormal { data: line };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
-            RunCmdOutput::StdErr(line) => {
-                let msg_out = OutboundMsg::StdErr { data: line };
+            RunCmdOutput::StdOutLog(log_line) => {
+                let msg_out = OutboundMsg::StdOutLog { data: log_line };
+                let out_str = serde_json::to_string(&msg_out).unwrap();
+
+                // Sends a text message to the WebSocket client.
+                ctx.text(out_str);
+            }
+            RunCmdOutput::StdErrNormal(line) => {
+                let msg_out = OutboundMsg::StdErrNormal { data: line };
+                let out_str = serde_json::to_string(&msg_out).unwrap();
+
+                // Sends a text message to the WebSocket client.
+                ctx.text(out_str);
+            }
+            RunCmdOutput::StdErrLog(log_line) => {
+                let msg_out = OutboundMsg::StdErrLog { data: log_line };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -140,10 +164,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
 
                 actix::spawn(async move {
                     match fut.await {
-                        Ok((cmd, working_directory)) => {
+                        Ok((
+                            cmd,
+                            working_directory,
+                            stdout_is_log,
+                            stderr_is_log,
+                        )) => {
                             actor_addr.do_send(ProcessCommand {
                                 cmd,
                                 working_directory,
+                                stdout_is_log,
+                                stderr_is_log,
                             });
                         }
                         Err(e) => {
@@ -173,6 +204,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
 struct ProcessCommand {
     cmd: String,
     working_directory: Option<String>,
+    stdout_is_log: bool,
+    stderr_is_log: bool,
 }
 
 #[derive(Message)]
@@ -219,6 +252,9 @@ impl Handler<ProcessCommand> for WsRunCmd {
             self.working_directory = Some(dir);
         }
 
+        self.stdout_is_log = msg.stdout_is_log;
+        self.stderr_is_log = msg.stderr_is_log;
+
         self.cmd_run(&msg.cmd, ctx);
     }
 }
@@ -245,17 +281,25 @@ pub async fn exec_endpoint(
                 })?;
 
             match inbound {
-                InboundMsg::ExecCmd { base_dir, cmd } => {
-                    Ok((cmd, Some(base_dir)))
-                }
-                InboundMsg::RunScript { base_dir, name } => {
+                InboundMsg::ExecCmd {
+                    base_dir,
+                    cmd,
+                    stdout_is_log,
+                    stderr_is_log,
+                } => Ok((cmd, Some(base_dir), stdout_is_log, stderr_is_log)),
+                InboundMsg::RunScript {
+                    base_dir,
+                    name,
+                    stdout_is_log,
+                    stderr_is_log,
+                } => {
                     let cmd = extract_command_from_manifest(
                         &base_dir,
                         &name,
                         state_clone_inner,
                     )
                     .await?;
-                    Ok((cmd, Some(base_dir)))
+                    Ok((cmd, Some(base_dir), stdout_is_log, stderr_is_log))
                 }
             }
         })

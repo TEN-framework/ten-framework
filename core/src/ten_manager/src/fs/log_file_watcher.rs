@@ -19,8 +19,8 @@ use anyhow::{anyhow, Result};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 
-use crate::log::{extract_extension_from_log_line, parse_graph_resources_log};
-use crate::log::{GraphResourcesLog, LogLineInfo, LogLineMetadata};
+use crate::log::process_log_line;
+use crate::log::{GraphResourcesLog, LogLineInfo};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
@@ -281,26 +281,6 @@ async fn watch_log_file_task(
                     }
                 }
             }
-        }
-    }
-}
-
-/// Process a log line: try to parse as graph resources log first, then try to
-/// extract extension information.
-fn process_log_line(
-    log_line: &str,
-    graph_resources_log: &mut GraphResourcesLog,
-) -> Option<LogLineMetadata> {
-    // First try to parse as graph resources log.
-    match parse_graph_resources_log(log_line, graph_resources_log) {
-        Ok(_) => {
-            // Successfully parsed as graph resources log, but no metadata to
-            // return.
-            None
-        }
-        Err(_) => {
-            // Not a graph resources log, try to extract extension information.
-            extract_extension_from_log_line(log_line, graph_resources_log)
         }
     }
 }
