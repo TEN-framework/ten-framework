@@ -11,6 +11,7 @@ use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
 
 use crate::designer::exec::RunCmdOutput;
+use crate::log::{process_log_line, GraphResourcesLog, LogLineInfo};
 
 use super::{msg::OutboundMsg, WsRunCmd};
 
@@ -43,7 +44,15 @@ impl WsRunCmd {
         command
             .arg("-c")
             .arg(cmd)
-            .env("TEN_LOG_FORMATTER", "default")
+            // Set TEN_LOG_FORMATTER to default if any output is log content.
+            .env(
+                "TEN_LOG_FORMATTER",
+                if self.stdout_is_log || self.stderr_is_log {
+                    "default"
+                } else {
+                    ""
+                },
+            )
             // Capture stdout/stderr.
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
@@ -82,11 +91,20 @@ impl WsRunCmd {
         if let Some(mut out) = stdout_child {
             let addr_stdout = addr.clone();
             let shutdown_rx = stdout_shutdown_rx;
+            let is_log = self.stdout_is_log;
 
             thread::spawn(move || {
                 use std::io::{BufRead, BufReader};
 
                 let reader = BufReader::new(&mut out);
+                // Create a graph resources log instance for log processing.
+                let mut graph_resources_log = GraphResourcesLog {
+                    graph_id: String::new(),
+                    graph_name: String::new(),
+                    app_uri: None,
+                    extension_threads: std::collections::HashMap::new(),
+                };
+
                 for line_res in reader.lines() {
                     // Check if we should terminate.
                     if shutdown_rx.try_recv().is_ok() {
@@ -95,11 +113,22 @@ impl WsRunCmd {
 
                     match line_res {
                         Ok(line) => {
-                            // `do_send` is used to asynchronously send messages
-                            // to an actor. This method does not wait for the
-                            // message to be processed, making it suitable for
-                            // messages that do not require a response.
-                            addr_stdout.do_send(RunCmdOutput::StdOut(line));
+                            if is_log {
+                                // Process line as log content.
+                                let metadata = process_log_line(
+                                    &line,
+                                    &mut graph_resources_log,
+                                );
+                                let log_line_info =
+                                    LogLineInfo { line, metadata };
+                                addr_stdout.do_send(RunCmdOutput::StdOutLog(
+                                    log_line_info,
+                                ));
+                            } else {
+                                // Process as normal stdout.
+                                addr_stdout
+                                    .do_send(RunCmdOutput::StdOutNormal(line));
+                            }
                         }
                         Err(_) => break,
                     }
@@ -112,11 +141,20 @@ impl WsRunCmd {
         if let Some(mut err) = stderr_child {
             let addr_stderr = addr.clone();
             let shutdown_rx = stderr_shutdown_rx;
+            let is_log = self.stderr_is_log;
 
             thread::spawn(move || {
                 use std::io::{BufRead, BufReader};
 
                 let reader = BufReader::new(&mut err);
+                // Create a graph resources log instance for log processing.
+                let mut graph_resources_log = GraphResourcesLog {
+                    graph_id: String::new(),
+                    graph_name: String::new(),
+                    app_uri: None,
+                    extension_threads: std::collections::HashMap::new(),
+                };
+
                 for line_res in reader.lines() {
                     // Check if we should terminate.
                     if shutdown_rx.try_recv().is_ok() {
@@ -125,7 +163,22 @@ impl WsRunCmd {
 
                     match line_res {
                         Ok(line) => {
-                            addr_stderr.do_send(RunCmdOutput::StdErr(line));
+                            if is_log {
+                                // Process line as log content.
+                                let metadata = process_log_line(
+                                    &line,
+                                    &mut graph_resources_log,
+                                );
+                                let log_line_info =
+                                    LogLineInfo { line, metadata };
+                                addr_stderr.do_send(RunCmdOutput::StdErrLog(
+                                    log_line_info,
+                                ));
+                            } else {
+                                // Process as normal stderr.
+                                addr_stderr
+                                    .do_send(RunCmdOutput::StdErrNormal(line));
+                            }
                         }
                         Err(_) => break,
                     }

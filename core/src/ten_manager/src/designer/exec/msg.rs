@@ -6,24 +6,42 @@
 //
 use serde::{Deserialize, Serialize};
 
+use crate::log::LogLineInfo;
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum InboundMsg {
     #[serde(rename = "exec_cmd")]
-    ExecCmd { base_dir: String, cmd: String },
+    ExecCmd {
+        base_dir: String,
+        cmd: String,
+        stdout_is_log: bool,
+        stderr_is_log: bool,
+    },
 
     #[serde(rename = "run_script")]
-    RunScript { base_dir: String, name: String },
+    RunScript {
+        base_dir: String,
+        name: String,
+        stdout_is_log: bool,
+        stderr_is_log: bool,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum OutboundMsg {
-    #[serde(rename = "stdout")]
-    StdOut { data: String },
+    #[serde(rename = "stdout_normal")]
+    StdOutNormal { data: String },
 
-    #[serde(rename = "stderr")]
-    StdErr { data: String },
+    #[serde(rename = "stdout_log")]
+    StdOutLog { data: LogLineInfo },
+
+    #[serde(rename = "stderr_normal")]
+    StdErrNormal { data: String },
+
+    #[serde(rename = "stderr_log")]
+    StdErrLog { data: LogLineInfo },
 
     #[serde(rename = "exit")]
     Exit { code: i32 },
