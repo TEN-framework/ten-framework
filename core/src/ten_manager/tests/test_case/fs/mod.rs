@@ -42,6 +42,7 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
+            println!("chunk: {:?}", chunk);
             assert_eq!(chunk.line, test_content);
 
             // Write more content to the file.
@@ -51,6 +52,7 @@ mod tests {
 
             // Get the second chunk.
             let chunk = stream.next().await;
+            println!("chunk: {:?}", chunk);
             match chunk {
                 Some(chunk) => match chunk {
                     Ok(chunk) => assert_eq!(chunk.line, more_content),
@@ -100,6 +102,7 @@ mod tests {
 
             // Get the first chunk
             let chunk = stream.next().await.expect("Should receive data")?;
+            println!("chunk: {:?}", chunk);
             assert_eq!(chunk.line, "Initial content");
 
             // Simulate log rotation - delete and recreate file
@@ -121,6 +124,7 @@ mod tests {
             // Get the content after rotation
             let chunk =
                 stream.next().await.expect("Should receive rotated data")?;
+            println!("chunk: {:?}", chunk);
             assert_eq!(chunk.line, "Rotated content");
 
             // Stop watching
@@ -152,10 +156,12 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
+            println!("chunk: {:?}", chunk);
             assert_eq!(chunk.line, "Test content");
 
             // Wait for the timeout to occur (no new content being written).
             let next_result = stream.next().await;
+            println!("next_result: {:?}", next_result);
             assert!(next_result.is_none(), "Stream should end after timeout");
 
             Ok(())
@@ -198,6 +204,7 @@ mod tests {
             // Get the graph resources line
             let chunk =
                 stream.next().await.expect("Should receive graph resources")?;
+            println!("chunk: {:?}", chunk);
             assert!(chunk.line.contains("[graph resources]"));
 
             // Now write logs that contain extension metadata in format
@@ -218,11 +225,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
+            println!("chunk: {:?}", chunk);
             assert!(chunk.line.contains("on_start()"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
+            println!("metadata: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Get second log with extension metadata
@@ -230,11 +239,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
+            println!("chunk: {:?}", chunk);
             assert!(chunk.line.contains("on_start() done"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
+            println!("metadata: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Stop watching
@@ -394,6 +405,7 @@ mod tests {
                     // Verify that the metadata includes the extension name
                     assert!(chunk.metadata.is_some(), "Should have metadata");
                     let metadata = chunk.metadata.unwrap();
+                    println!("metadata: {:?}", metadata);
                     assert_eq!(
                         metadata.extension,
                         Some("test_extension".to_string())
