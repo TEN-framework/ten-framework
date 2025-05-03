@@ -24,14 +24,14 @@ class test_extension_1 : public ten::extension_t {
     // then they will be terminated.
     ten_env.init_property_from_json(
         R"({
-                      "ten": {
-                        "path_check_interval": 1000000,
-                        "path_timeout": {
-                          "in_path": 60000000,
-                          "out_path": 1000000
-                        }
-                      }
-                    })");
+             "ten": {
+               "path_check_interval": 1000000,
+               "path_timeout": {
+                 "in_path": 60000000,
+                 "out_path": 1000000
+               }
+             }
+           })");
     ten_env.on_configure_done();
   }
 

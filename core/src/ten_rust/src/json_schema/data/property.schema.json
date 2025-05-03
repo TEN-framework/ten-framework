@@ -499,7 +499,6 @@
     },
     "tenConfiguration": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "uri": {
           "$ref": "#/$defs/non_empty_non_localhost_uri"
