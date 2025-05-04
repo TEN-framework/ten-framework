@@ -7,8 +7,6 @@ on:
     paths:
       - "tools/docker_for_building/**"
       - ".github/workflows/build_docker.yml"
-    paths-ignore:
-      - "ai_agents/**"
 
 permissions:
   contents: read
