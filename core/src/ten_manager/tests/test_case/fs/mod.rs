@@ -195,10 +195,9 @@ mod tests {
                  \"msgpack://127.0.0.1:8001/\", \"graph name\": \"\", \"graph \
                  id\": \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
                  \"extension_threads\": {\"1713045\": {\"extensions\": \
-                 [\"test_extension\"]}}}";
+                 [\"test_extension\"]}}}\n";
 
             temp_file.write_all(graph_resources_with_thread.as_bytes())?;
-            temp_file.write_all(b"\n")?;
             temp_file.flush()?;
 
             // Get the graph resources line
@@ -376,10 +375,9 @@ mod tests {
 05-02 22:23:37.535 1713000(1713002) D \
                  ten_protocol_integrated_on_close@close.c:107 \
                  [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Integrated protocol \
-                 can be closed now";
+                 can be closed now\n";
 
             temp_file.write_all(complete_log.as_bytes())?;
-            temp_file.write_all(b"\n")?;
             temp_file.flush()?;
 
             // We need to iterate through all log lines to find the specific
