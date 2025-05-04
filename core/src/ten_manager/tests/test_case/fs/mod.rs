@@ -204,7 +204,7 @@ mod tests {
             // Get the graph resources line
             let chunk =
                 stream.next().await.expect("Should receive graph resources")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 1: {:?}", chunk);
             assert!(chunk.line.contains("[graph resources]"));
 
             // Now write logs that contain extension metadata in format
@@ -225,13 +225,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 2: {:?}", chunk);
             assert!(chunk.line.contains("on_start()"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata: {:?}", metadata);
+            println!("metadata 2: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Get second log with extension metadata
@@ -239,13 +239,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 3: {:?}", chunk);
             assert!(chunk.line.contains("on_start() done"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata: {:?}", metadata);
+            println!("metadata 3: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Stop watching
