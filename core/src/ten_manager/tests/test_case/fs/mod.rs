@@ -42,7 +42,7 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 1: {:?}", chunk);
             assert_eq!(chunk.line, test_content);
 
             // Write more content to the file.
@@ -52,7 +52,7 @@ mod tests {
 
             // Get the second chunk.
             let chunk = stream.next().await;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 2: {:?}", chunk);
             match chunk {
                 Some(chunk) => match chunk {
                     Ok(chunk) => assert_eq!(chunk.line, more_content),
@@ -102,7 +102,7 @@ mod tests {
 
             // Get the first chunk
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 1: {:?}", chunk);
             assert_eq!(chunk.line, "Initial content");
 
             // Simulate log rotation - delete and recreate file
@@ -124,7 +124,7 @@ mod tests {
             // Get the content after rotation
             let chunk =
                 stream.next().await.expect("Should receive rotated data")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 2: {:?}", chunk);
             assert_eq!(chunk.line, "Rotated content");
 
             // Stop watching
@@ -156,7 +156,7 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 1: {:?}", chunk);
             assert_eq!(chunk.line, "Test content");
 
             // Wait for the timeout to occur (no new content being written).
@@ -195,16 +195,15 @@ mod tests {
                  \"msgpack://127.0.0.1:8001/\", \"graph name\": \"\", \"graph \
                  id\": \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
                  \"extension_threads\": {\"1713045\": {\"extensions\": \
-                 [\"test_extension\"]}}}";
+                 [\"test_extension\"]}}}\n";
 
             temp_file.write_all(graph_resources_with_thread.as_bytes())?;
-            temp_file.write_all(b"\n")?;
             temp_file.flush()?;
 
             // Get the graph resources line
             let chunk =
                 stream.next().await.expect("Should receive graph resources")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 1: {:?}", chunk);
             assert!(chunk.line.contains("[graph resources]"));
 
             // Now write logs that contain extension metadata in format
@@ -225,13 +224,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 2: {:?}", chunk);
             assert!(chunk.line.contains("on_start()"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata: {:?}", metadata);
+            println!("metadata 2: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Get second log with extension metadata
@@ -239,13 +238,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk: {:?}", chunk);
+            println!("chunk 3: {:?}", chunk);
             assert!(chunk.line.contains("on_start() done"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata: {:?}", metadata);
+            println!("metadata 3: {:?}", metadata);
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Stop watching
@@ -376,10 +375,9 @@ mod tests {
 05-02 22:23:37.535 1713000(1713002) D \
                  ten_protocol_integrated_on_close@close.c:107 \
                  [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Integrated protocol \
-                 can be closed now";
+                 can be closed now\n";
 
             temp_file.write_all(complete_log.as_bytes())?;
-            temp_file.write_all(b"\n")?;
             temp_file.flush()?;
 
             // We need to iterate through all log lines to find the specific
@@ -395,6 +393,7 @@ mod tests {
             // Process all log lines
             while let Some(result) = stream.next().await {
                 let chunk = result?;
+                println!("chunk: {:?}", chunk);
 
                 // Check if this is one of our target lines
                 if chunk.line.contains(target_start_line)
