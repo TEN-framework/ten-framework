@@ -7,6 +7,7 @@
 mod cmd;
 mod common;
 mod designer;
+mod env_var;
 mod fs;
 mod graph;
 mod log;

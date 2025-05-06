@@ -4,17 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::env;
 use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
-use std::sync::OnceLock;
 
-use crate::designer::{
-    response::{ApiResponse, ErrorResponse, Status},
-    DesignerState,
-};
+use crate::designer::DesignerState;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetEnvVarRequestPayload {
@@ -23,20 +19,22 @@ pub struct GetEnvVarRequestPayload {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetEnvVarResponseData {
-    pub value: String,
+    pub value: Option<String>,
 }
 
-/// This function handles requests for help text from the frontend. It accepts a
-/// JSON payload with a "key" property and returns the corresponding help text.
+/// This function handles requests for getting environment variables.
+/// It accepts a URL query parameter "name" and returns the
+/// corresponding environment variable value, or None if not defined.
 pub async fn get_env_var_endpoint(
-    request_payload: web::Json<GetEnvVarRequestPayload>,
+    query: web::Query<GetEnvVarRequestPayload>,
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let name = &request_payload.name;
+    let name = &query.name;
 
-    let value = "test";
+    // Cross-platform way to get environment variables.
+    let value = env::var(name).ok();
 
-    let response_data = GetEnvVarResponseData { value: value.to_string() };
+    let response_data = GetEnvVarResponseData { value };
 
     Ok(HttpResponse::Ok().json(response_data))
 }
