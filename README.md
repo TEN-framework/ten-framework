@@ -354,6 +354,7 @@ TEN seamlessly integrates with Coze platform to enhance real-time interactive ex
 ##### 1. Clone down the repo and create `.env` file from `.env.example`
 
 ```bash
+cd ai_agent
 cp ./.env.example ./.env
 ```
 
