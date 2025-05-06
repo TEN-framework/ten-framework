@@ -14,7 +14,6 @@
 #include "include_internal/ten_runtime/extension/ten_env/metadata.h"
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
-#include "include_internal/ten_runtime/extension_group/ten_env/metadata.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/ten_env/metadata.h"
 #include "include_internal/ten_runtime/ten_env/metadata_cb.h"
@@ -47,12 +46,6 @@ static TEN_METADATA_LEVEL ten_get_metadata_level_from_name(
       *p_name +=
           strlen(TEN_STR_EXTENSION TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER);
     } else if (ten_c_string_starts_with(
-                   name, TEN_STR_EXTENSION_GROUP
-                             TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER)) {
-      metadata_level = TEN_METADATA_LEVEL_EXTENSION_GROUP;
-      *p_name += strlen(
-          TEN_STR_EXTENSION_GROUP TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER);
-    } else if (ten_c_string_starts_with(
                    name, TEN_STR_APP TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER)) {
       metadata_level = TEN_METADATA_LEVEL_APP;
       *p_name += strlen(TEN_STR_APP TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER);
@@ -76,12 +69,6 @@ ten_determine_metadata_level(TEN_ENV_ATTACH_TO attach_to_type,
   case TEN_ENV_ATTACH_TO_EXTENSION:
     level =
         ten_get_metadata_level_from_name(p_name, TEN_METADATA_LEVEL_EXTENSION);
-    break;
-
-  case TEN_ENV_ATTACH_TO_EXTENSION_GROUP:
-    level = ten_get_metadata_level_from_name(
-        p_name, TEN_METADATA_LEVEL_EXTENSION_GROUP);
-    TEN_ASSERT(level != TEN_METADATA_LEVEL_EXTENSION, "Should not happen.");
     break;
 
   case TEN_ENV_ATTACH_TO_APP:

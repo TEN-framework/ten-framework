@@ -8,7 +8,6 @@
 
 #include "ten_utils/ten_config.h"
 
-#include "include_internal/ten_runtime/extension_group/ten_env/metadata.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
