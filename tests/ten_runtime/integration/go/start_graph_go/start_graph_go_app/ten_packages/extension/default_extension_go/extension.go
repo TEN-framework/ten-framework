@@ -19,7 +19,7 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 	name, _ := cmd.GetName()
 	if name == "start_graph" {
 		startGraphCmd, _ := ten.NewStartGraphCmd()
-		graphJson := `{
+		graphJSON := `{
 			"nodes": [
           		{
           		  "type": "extension",
@@ -33,24 +33,27 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
         	]
 		}`
 
-		graphJsonBytes := []byte(graphJson)
-		startGraphCmd.SetGraphFromJSONBytes(graphJsonBytes)
+		graphJSONBytes := []byte(graphJSON)
+		startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)
 		startGraphCmd.SetDest("localhost", "", "")
 
-		tenEnv.SendCmd(startGraphCmd, func(tenEnv ten.TenEnv, cr ten.CmdResult, err error) {
-			if err != nil {
-				panic("Failed to start graph: " + err.Error())
-			}
+		tenEnv.SendCmd(
+			startGraphCmd,
+			func(tenEnv ten.TenEnv, cr ten.CmdResult, err error) {
+				if err != nil {
+					panic("Failed to start graph: " + err.Error())
+				}
 
-			statusCode, _ := cr.GetStatusCode()
-			if statusCode != ten.StatusCodeOk {
-				panic("Failed to start graph")
-			}
+				statusCode, _ := cr.GetStatusCode()
+				if statusCode != ten.StatusCodeOk {
+					panic("Failed to start graph")
+				}
 
-			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
-			cmdResult.SetPropertyString("detail", "ok")
-			tenEnv.ReturnResult(cmdResult, nil)
-		})
+				cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
+				cmdResult.SetPropertyString("detail", "ok")
+				tenEnv.ReturnResult(cmdResult, nil)
+			},
+		)
 	} else {
 		panic("unknown cmd name: " + name)
 	}
