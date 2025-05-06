@@ -10,6 +10,7 @@ pub mod common;
 pub mod dir_list;
 pub mod doc_link;
 pub mod env;
+pub mod env_var;
 pub mod exec;
 pub mod extensions;
 pub mod file_content;
@@ -123,6 +124,7 @@ pub fn configure_routes(
             // Registry endpoints.
             .service(web::resource("/registry/packages").route(web::get().to(registry::packages::get_packages_endpoint)))
             // Environment endpoints.
-            .service(web::resource("/env").route(web::get().to(env::get_env_endpoint))),
+            .service(web::resource("/env").route(web::get().to(env::get_env_endpoint)))
+            .service(web::resource("/env-var").route(web::post().to(env_var::get_env_var_endpoint))),
     );
 }
