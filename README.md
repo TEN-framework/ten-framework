@@ -327,7 +327,7 @@ TEN seamlessly integrates with Coze platform to enhance real-time interactive ex
 
 <br>
 
-## 🛝 TEN Agent Playground
+## 🛝 Quick Start with TEN Agent Playground
 
 #### 🅰️ Run Playground in localhost
 
