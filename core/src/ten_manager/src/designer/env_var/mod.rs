@@ -23,13 +23,13 @@ pub struct GetEnvVarResponseData {
 }
 
 /// This function handles requests for getting environment variables.
-/// It accepts a URL query parameter "name" and returns the
+/// It accepts a JSON payload with a "name" property and returns the
 /// corresponding environment variable value, or None if not defined.
 pub async fn get_env_var_endpoint(
-    query: web::Query<GetEnvVarRequestPayload>,
+    request_payload: web::Json<GetEnvVarRequestPayload>,
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let name = &query.name;
+    let name = &request_payload.name;
 
     // Cross-platform way to get environment variables.
     let value = env::var(name).ok();

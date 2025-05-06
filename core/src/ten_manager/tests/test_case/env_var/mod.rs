@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::designer::env_var::{
-        get_env_var_endpoint, GetEnvVarResponseData,
+        get_env_var_endpoint, GetEnvVarRequestPayload, GetEnvVarResponseData,
     };
 
     use crate::test_case::common::designer_state::create_designer_state;
@@ -29,13 +29,16 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
-                .route("/env-var", web::get().to(get_env_var_endpoint)),
+                .route("/env-var", web::post().to(get_env_var_endpoint)),
         )
         .await;
 
         // Create test request
-        let req = test::TestRequest::get()
-            .uri(&format!("/env-var?name={}", TEST_VAR_NAME))
+        let req = test::TestRequest::post()
+            .uri("/env-var")
+            .set_json(&GetEnvVarRequestPayload {
+                name: TEST_VAR_NAME.to_string(),
+            })
             .to_request();
 
         // Send request and get response.
@@ -62,13 +65,16 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
-                .route("/env-var", web::get().to(get_env_var_endpoint)),
+                .route("/env-var", web::post().to(get_env_var_endpoint)),
         )
         .await;
 
         // Create test request.
-        let req = test::TestRequest::get()
-            .uri(&format!("/env-var?name={}", TEST_VAR_NAME))
+        let req = test::TestRequest::post()
+            .uri("/env-var")
+            .set_json(&GetEnvVarRequestPayload {
+                name: TEST_VAR_NAME.to_string(),
+            })
             .to_request();
 
         // Send request and get response.
@@ -92,13 +98,16 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(state.clone())
-                .route("/env-var", web::get().to(get_env_var_endpoint)),
+                .route("/env-var", web::post().to(get_env_var_endpoint)),
         )
         .await;
 
         // Create test request.
-        let req = test::TestRequest::get()
-            .uri(&format!("/env-var?name={}", TEST_VAR_NAME))
+        let req = test::TestRequest::post()
+            .uri("/env-var")
+            .set_json(&GetEnvVarRequestPayload {
+                name: TEST_VAR_NAME.to_string(),
+            })
             .to_request();
 
         // Send request and get response.

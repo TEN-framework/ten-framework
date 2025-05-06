@@ -125,6 +125,6 @@ pub fn configure_routes(
             .service(web::resource("/registry/packages").route(web::get().to(registry::packages::get_packages_endpoint)))
             // Environment endpoints.
             .service(web::resource("/env").route(web::get().to(env::get_env_endpoint)))
-            .service(web::resource("/env-var").route(web::get().to(env_var::get_env_var_endpoint))),
+            .service(web::resource("/env-var").route(web::post().to(env_var::get_env_var_endpoint))),
     );
 }
