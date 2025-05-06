@@ -45,10 +45,12 @@
   }                                                                              \
   TEN_CONSTRUCTOR(____ten_addon_##NAME##_registrar____) {                        \
     /* Add addon registration function into addon manager. */                    \
+    TEN_LOGD("Registering addon: %s", #NAME);                                    \
     ten_addon_manager_t *manager = ten_addon_manager_get_instance();             \
     bool success = ten_addon_manager_add_addon(                                  \
         manager, "addon_loader", #NAME,                                          \
         ____ten_addon_##NAME##_register_handler__, NULL, NULL);                  \
+    TEN_LOGD("Registered addon: %s", #NAME);                                     \
     if (!success) {                                                              \
       TEN_LOGF("Failed to register addon: %s", #NAME);                           \
       /* NOLINTNEXTLINE(concurrency-mt-unsafe) */                                \
