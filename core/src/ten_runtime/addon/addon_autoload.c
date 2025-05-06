@@ -120,6 +120,8 @@ static bool load_all_dynamic_libraries_under_path(const char *path) {
       goto continue_loop;
     }
 
+    TEN_LOGD("Loading module: %s", ten_string_get_raw_str(file_path));
+
     void *module_handle = ten_module_load(file_path, 1);
     if (!module_handle) {
       TEN_LOGE("Failed to load module: %s", ten_string_get_raw_str(file_path));
