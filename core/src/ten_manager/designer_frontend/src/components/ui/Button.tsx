@@ -30,7 +30,7 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-[var(--size-base)] px-4 py-2",
-        xs: "h-[var(--size-xs)] rounded-md px-2 text-xs [_svg]:size-3",
+        xs: "h-[var(--size-xs)] rounded-sm px-2 text-xs [_svg]:size-3",
         sm: "h-[var(--size-sm)] rounded-md px-3 text-xs",
         lg: "h-[var(--size-lg)] rounded-md px-8",
         xl: "h-[var(--size-xl)] rounded-md px-8",
