@@ -187,7 +187,7 @@ export const ExtensionBaseItem = React.forwardRef<
       className={cn(
         "px-1 py-2",
         "flex gap-2 w-full items-center max-w-full font-roboto h-fit",
-        "hover:bg-gray-100 dark:hover:bg-gray-800",
+        "hover:bg-ten-fill-4 rounded-sm",
         {
           "cursor-pointer": !!rest?.onClick && !readOnly,
         },
@@ -205,48 +205,32 @@ export const ExtensionBaseItem = React.forwardRef<
         <h3
           className={cn(
             "font-semibold w-full overflow-hidden text-ellipsis",
-            "text-gray-900 dark:text-gray-100"
+            "text-foreground"
           )}
         >
           {item.name}
           {_type === EPackageSource.Local && (
-            <span
-              className={cn(
-                "text-gray-500 dark:text-gray-400",
-                "text-xs font-normal"
-              )}
-            >
+            <span className={cn("text-ten-icontext-2", "text-xs font-normal")}>
               {t("extensionStore.localAddonTip")}
             </span>
           )}
         </h3>
-        <p className={cn("text-xs text-gray-500 dark:text-gray-400")}>
+        <p className={cn("text-xs text-ten-icontext-2 font-thin")}>
           {item.type}
         </p>
       </div>
-      <div className="mt-auto flex flex-col items-end">
+      <div className="my-auto flex flex-col items-end">
         {isInstalled ? (
           <>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled
-              className={cn(
-                "size-4 [&_svg]:size-3  cursor-pointer",
-                "hover:bg-gray-200 dark:hover:bg-gray-700"
-              )}
-            >
-              <CheckIcon className="" />
-            </Button>
+            <CheckIcon className="size-4" />
           </>
         ) : (
           <Button
-            variant="secondary"
-            size="sm"
+            variant="outline"
+            size="xs"
             className={cn(
               "text-xs px-2 py-0.5 font-normal h-fit cursor-pointer",
-              "shadow-none rounded-none",
-              "hover:bg-gray-200 dark:hover:bg-gray-700"
+              "shadow-none"
             )}
             disabled={readOnly || !currentWorkspace?.app?.base_dir}
             onClick={handleInstall(
