@@ -187,7 +187,7 @@ export interface ILogViewerWidgetData<T extends ELogViewerScriptType> {
   scriptType: T;
   script: z.infer<(typeof LogViewerScriptSchemaMap)[T]>;
   options?: ILogViewerWidgetOptions;
-  postActions?: () => void;
+  postActions?: () => void | Promise<void>;
 }
 
 export interface ILogViewerWidget

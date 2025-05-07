@@ -228,6 +228,10 @@ export const AppsManagerWidget = (props: { className?: string }) => {
       }
     } finally {
       mutate();
+      updateCurrentWorkspace({
+        graph: null,
+      });
+      setNodesAndEdges([], []);
       setIsReloading(false);
     }
   };
@@ -254,8 +258,8 @@ export const AppsManagerWidget = (props: { className?: string }) => {
           disableSearch: true,
           title: t("popup.logViewer.appInstall"),
         },
-        postActions: () => {
-          postReloadApps(baseDir);
+        postActions: async () => {
+          await reloadApps(baseDir);
         },
       },
       popup: {

@@ -23,13 +23,19 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
   } = props;
 
   const wsRef = React.useRef<WebSocket | null>(null);
+  const hasConnectedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (!wsUrl || !scriptType || !script) {
       return;
     }
 
+    if (hasConnectedRef.current) {
+      return;
+    }
+
     wsRef.current = new WebSocket(wsUrl);
+    hasConnectedRef.current = true;
 
     wsRef.current.onopen = () => {
       console.log("[LogViewerWidget] WebSocket connected!");
@@ -81,6 +87,7 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
 
     return () => {
       // Close the connection when the component is unmounted.
+      hasConnectedRef.current = false;
       wsRef.current?.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
