@@ -8,9 +8,9 @@
 
 #include "ten_runtime/ten_config.h"
 
-#include "include_internal/ten_runtime/common/loc.h"
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/value/value.h"
 
 #define TEN_EXTENSION_GROUP_INFO_SIGNATURE 0xBC5114352AFF63AEU
 
