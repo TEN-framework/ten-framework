@@ -24,7 +24,10 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{graphs_cache_find_by_id_mut, update_graph_connections_all_fields},
+    graph::{
+        graphs_cache_find_by_id_mut,
+        update_graph_connections_in_property_all_fields,
+    },
     pkg_info::belonging_pkg_info_find_by_graph_info_mut,
 };
 
@@ -45,7 +48,7 @@ pub struct DeleteGraphConnectionResponsePayload {
     pub success: bool,
 }
 
-fn delete_connection(
+fn graph_delete_connection(
     graph: &mut Graph,
     src_app: Option<String>,
     src_extension: String,
@@ -164,7 +167,7 @@ pub async fn delete_graph_connection_endpoint(
     };
 
     // Delete the connection.
-    match delete_connection(
+    if let Err(err) = graph_delete_connection(
         &mut graph_info.graph,
         request_payload.src_app.clone(),
         request_payload.src_extension.clone(),
@@ -173,89 +176,83 @@ pub async fn delete_graph_connection_endpoint(
         request_payload.dest_app.clone(),
         request_payload.dest_extension.clone(),
     ) {
-        Ok(_) => {
-            if let Ok(Some(pkg_info)) =
-                belonging_pkg_info_find_by_graph_info_mut(
-                    &mut pkgs_cache,
-                    graph_info,
-                )
-            {
-                // Update property.json file to remove the connection.
-                if let Some(property) = &mut pkg_info.property {
-                    // Create a GraphConnection representing what we
-                    // want to remove.
-                    let mut connection = GraphConnection {
-                        app: request_payload.src_app.clone(),
-                        extension: request_payload.src_extension.clone(),
-                        cmd: None,
-                        data: None,
-                        audio_frame: None,
-                        video_frame: None,
-                    };
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: format!("Failed to delete connection: {}", err),
+            error: None,
+        };
+        return Ok(HttpResponse::BadRequest().json(error_response));
+    }
 
-                    // Create destination for the message flow.
-                    let destination = GraphDestination {
-                        app: request_payload.dest_app.clone(),
-                        extension: request_payload.dest_extension.clone(),
-                        msg_conversion: None,
-                    };
+    if let Ok(Some(pkg_info)) =
+        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
+    {
+        // Update property.json file to remove the connection.
+        if let Some(property) = &mut pkg_info.property {
+            // Create a GraphConnection representing what we
+            // want to remove.
+            let mut connection = GraphConnection {
+                app: request_payload.src_app.clone(),
+                extension: request_payload.src_extension.clone(),
+                cmd: None,
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            };
 
-                    // Create the message flow with destination.
-                    let message_flow = GraphMessageFlow {
-                        name: request_payload.msg_name.clone(),
-                        dest: vec![destination],
-                    };
+            // Create destination for the message flow.
+            let destination = GraphDestination {
+                app: request_payload.dest_app.clone(),
+                extension: request_payload.dest_extension.clone(),
+                msg_conversion: None,
+            };
 
-                    // Set the appropriate message type field.
-                    match request_payload.msg_type {
-                        MsgType::Cmd => {
-                            connection.cmd = Some(vec![message_flow]);
-                        }
-                        MsgType::Data => {
-                            connection.data = Some(vec![message_flow]);
-                        }
-                        MsgType::AudioFrame => {
-                            connection.audio_frame = Some(vec![message_flow]);
-                        }
-                        MsgType::VideoFrame => {
-                            connection.video_frame = Some(vec![message_flow]);
-                        }
-                    }
+            // Create the message flow with destination.
+            let message_flow = GraphMessageFlow {
+                name: request_payload.msg_name.clone(),
+                dest: vec![destination],
+            };
 
-                    let connections_to_remove = vec![connection];
-
-                    // Write the updated property_all_fields map to
-                    // property.json.
-                    if let Err(e) = update_graph_connections_all_fields(
-                        &pkg_info.url,
-                        &mut property.all_fields,
-                        graph_info.name.as_ref().unwrap(),
-                        None,
-                        Some(&connections_to_remove),
-                        None,
-                    ) {
-                        eprintln!(
-                            "Warning: Failed to update property.json file: {}",
-                            e
-                        );
-                    }
+            // Set the appropriate message type field.
+            match request_payload.msg_type {
+                MsgType::Cmd => {
+                    connection.cmd = Some(vec![message_flow]);
+                }
+                MsgType::Data => {
+                    connection.data = Some(vec![message_flow]);
+                }
+                MsgType::AudioFrame => {
+                    connection.audio_frame = Some(vec![message_flow]);
+                }
+                MsgType::VideoFrame => {
+                    connection.video_frame = Some(vec![message_flow]);
                 }
             }
 
-            let response = ApiResponse {
-                status: Status::Ok,
-                data: DeleteGraphConnectionResponsePayload { success: true },
-                meta: None,
-            };
-            Ok(HttpResponse::Ok().json(response))
-        }
-        Err(err) => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: format!("Failed to delete connection: {}", err),
-                error: None,
-            };
-            Ok(HttpResponse::BadRequest().json(error_response))
+            let connections_to_remove = vec![connection];
+
+            // Write the updated property_all_fields map to
+            // property.json.
+            if let Err(e) = update_graph_connections_in_property_all_fields(
+                &pkg_info.url,
+                &mut property.all_fields,
+                graph_info.name.as_ref().unwrap(),
+                None,
+                Some(&connections_to_remove),
+                None,
+            ) {
+                eprintln!(
+                    "Warning: Failed to update property.json file: {}",
+                    e
+                );
+            }
         }
     }
+
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: DeleteGraphConnectionResponsePayload { success: true },
+        meta: None,
+    };
+    Ok(HttpResponse::Ok().json(response))
 }

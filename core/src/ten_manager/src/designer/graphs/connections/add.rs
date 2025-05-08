@@ -29,7 +29,8 @@ use crate::{
 };
 
 use crate::graph::{
-    graphs_cache_find_by_id_mut, update_graph_connections_all_fields,
+    graphs_cache_find_by_id_mut,
+    update_graph_connections_in_property_all_fields,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -97,27 +98,6 @@ fn create_graph_connection(
     connection
 }
 
-/// Update the property.json file with the new connection.
-fn update_property_file(
-    base_dir: &str,
-    property: &mut ten_rust::pkg_info::property::Property,
-    graph_name: &str,
-    connection: &GraphConnection,
-) -> Result<()> {
-    // Update only with the new connection.
-    let connections_to_add = vec![connection.clone()];
-
-    // Update the property_all_fields map and write to property.json.
-    update_graph_connections_all_fields(
-        base_dir,
-        &mut property.all_fields,
-        graph_name,
-        Some(&connections_to_add),
-        None,
-        None,
-    )
-}
-
 pub async fn add_graph_connection_endpoint(
     request_payload: web::Json<AddGraphConnectionRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
@@ -166,15 +146,19 @@ pub async fn add_graph_connection_endpoint(
     {
         // Update property.json file with the updated graph.
         if let Some(property) = &mut pkg_info.property {
-            // Create a new connection object.
-            let connection = create_graph_connection(&request_payload);
+            // Create a new connection object, and update only with the new
+            // connection.
+            let connections_to_add =
+                vec![create_graph_connection(&request_payload)];
 
-            // Update the property.json file.
-            if let Err(e) = update_property_file(
+            // Update the property_all_fields map and write to property.json.
+            if let Err(e) = update_graph_connections_in_property_all_fields(
                 &pkg_info.url,
-                property,
+                &mut property.all_fields,
                 graph_info.name.as_ref().unwrap(),
-                &connection,
+                Some(&connections_to_add),
+                None,
+                None,
             ) {
                 eprintln!(
                     "Warning: Failed to update property.json file: {}",
