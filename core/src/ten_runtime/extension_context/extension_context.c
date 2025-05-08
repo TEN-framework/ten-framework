@@ -290,11 +290,9 @@ ten_extension_context_get_extension_group_info_by_name(
     ten_extension_group_info_t *extension_group_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
 
-    if (ten_string_is_equal_c_str(&extension_group_info->loc.app_uri,
-                                  app_uri) &&
-        ten_string_is_equal_c_str(
-            &extension_group_info->loc.extension_group_name,
-            extension_group_name)) {
+    if (ten_string_is_equal_c_str(&extension_group_info->app_uri, app_uri) &&
+        ten_string_is_equal_c_str(&extension_group_info->extension_group_name,
+                                  extension_group_name)) {
       result = extension_group_info;
       break;
     }
@@ -429,7 +427,7 @@ static void ten_extension_context_create_extension_group_done(
     ten_extension_group_info_t *extension_group_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
 
-    if (ten_string_is_equal(&extension_group_info->loc.app_uri,
+    if (ten_string_is_equal(&extension_group_info->app_uri,
                             &engine->app->uri)) {
       ++extension_groups_cnt_of_the_current_app;
     }
@@ -511,14 +509,13 @@ bool ten_extension_context_start_extension_group(ten_extension_context_t *self,
 
     // Check whether the current `extension_group` is located within the current
     // `app`.
-    if (ten_string_is_equal(&extension_group_info->loc.app_uri,
+    if (ten_string_is_equal(&extension_group_info->app_uri,
                             &self->engine->app->uri)) {
       bool res = ten_addon_create_extension_group(
           ten_env,
           ten_string_get_raw_str(
               &extension_group_info->extension_group_addon_name),
-          ten_string_get_raw_str(
-              &extension_group_info->loc.extension_group_name),
+          ten_string_get_raw_str(&extension_group_info->extension_group_name),
           (ten_env_addon_create_instance_done_cb_t)
               ten_extension_context_create_extension_group_done,
           NULL);

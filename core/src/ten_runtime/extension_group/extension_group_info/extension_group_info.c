@@ -8,7 +8,6 @@
 
 #include <stdlib.h>
 
-#include "include_internal/ten_runtime/common/loc.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/signature.h"
@@ -37,7 +36,10 @@ ten_extension_group_info_t *ten_extension_group_info_create(void) {
 
   TEN_STRING_INIT(self->extension_group_addon_name);
 
-  ten_loc_init_empty(&self->loc);
+  TEN_STRING_INIT(self->app_uri);
+  TEN_STRING_INIT(self->graph_id);
+  TEN_STRING_INIT(self->extension_group_name);
+
   self->property = ten_value_create_object_with_move(NULL);
 
   return self;
@@ -52,7 +54,9 @@ void ten_extension_group_info_destroy(ten_extension_group_info_t *self) {
 
   ten_string_deinit(&self->extension_group_addon_name);
 
-  ten_loc_deinit(&self->loc);
+  ten_string_deinit(&self->app_uri);
+  ten_string_deinit(&self->graph_id);
+  ten_string_deinit(&self->extension_group_name);
 
   if (self->property) {
     ten_value_destroy(self->property);
@@ -74,16 +78,16 @@ static bool ten_extension_group_info_is_specified_extension_group(
 
   TEN_ASSERT(extension_group_name, "Invalid argument.");
 
-  if (app_uri && !ten_string_is_equal_c_str(&self->loc.app_uri, app_uri)) {
+  if (app_uri && !ten_string_is_equal_c_str(&self->app_uri, app_uri)) {
     return false;
   }
 
-  if (graph_id && !ten_string_is_equal_c_str(&self->loc.graph_id, graph_id)) {
+  if (graph_id && !ten_string_is_equal_c_str(&self->graph_id, graph_id)) {
     return false;
   }
 
   if (extension_group_name &&
-      !ten_string_is_equal_c_str(&self->loc.extension_group_name,
+      !ten_string_is_equal_c_str(&self->extension_group_name,
                                  extension_group_name)) {
     return false;
   }
@@ -168,8 +172,10 @@ ten_shared_ptr_t *get_extension_group_info_in_extension_groups_info(
 
   ten_extension_group_info_t *self = ten_extension_group_info_create();
 
-  ten_loc_set(&self->loc, app_uri, graph_id, extension_group_instance_name,
-              NULL);
+  ten_string_set_formatted(&self->app_uri, "%s", app_uri);
+  ten_string_set_formatted(&self->graph_id, "%s", graph_id);
+  ten_string_set_formatted(&self->extension_group_name, "%s",
+                           extension_group_instance_name);
 
   // Add the extension group addon name if we know it now.
   if (strlen(extension_group_addon_name)) {
@@ -204,10 +210,10 @@ ten_shared_ptr_t *ten_extension_group_info_clone(
   bool new_extension_group_info_created = false;
   ten_shared_ptr_t *new_dest =
       get_extension_group_info_in_extension_groups_info(
-          extension_groups_info, ten_string_get_raw_str(&self->loc.app_uri),
-          ten_string_get_raw_str(&self->loc.graph_id),
+          extension_groups_info, ten_string_get_raw_str(&self->app_uri),
+          ten_string_get_raw_str(&self->graph_id),
           ten_string_get_raw_str(&self->extension_group_addon_name),
-          ten_string_get_raw_str(&self->loc.extension_group_name),
+          ten_string_get_raw_str(&self->extension_group_name),
           &new_extension_group_info_created, NULL);
 
   return new_dest;
@@ -219,11 +225,10 @@ static void ten_extension_group_info_fill_app_uri(
   TEN_ASSERT(ten_extension_group_info_check_integrity(self),
              "Invalid argument.");
   TEN_ASSERT(app_uri, "Should not happen.");
-  TEN_ASSERT(!ten_loc_is_empty(&self->loc), "Should not happen.");
 
   // Fill the app uri of the extension_info if it is empty.
-  if (ten_string_is_empty(&self->loc.app_uri)) {
-    ten_string_set_formatted(&self->loc.app_uri, "%s", app_uri);
+  if (ten_string_is_empty(&self->app_uri)) {
+    ten_string_set_formatted(&self->app_uri, "%s", app_uri);
   }
 }
 
@@ -232,8 +237,8 @@ void ten_extension_groups_info_fill_app_uri(ten_list_t *extension_groups_info,
   ten_list_foreach (extension_groups_info, iter) {
     ten_extension_group_info_t *extension_group_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
-    TEN_ASSERT(extension_group_info && ten_extension_group_info_check_integrity(
-                                           extension_group_info),
+    TEN_ASSERT(extension_group_info, "Invalid argument.");
+    TEN_ASSERT(ten_extension_group_info_check_integrity(extension_group_info),
                "Invalid argument.");
 
     ten_extension_group_info_fill_app_uri(extension_group_info, app_uri);
@@ -246,7 +251,7 @@ static void ten_extension_group_info_fill_graph_id(
   TEN_ASSERT(ten_extension_group_info_check_integrity(self),
              "Invalid use of extension_group_info %p.", self);
 
-  ten_string_set_formatted(&self->loc.graph_id, "%s", graph_id);
+  ten_string_set_formatted(&self->graph_id, "%s", graph_id);
 }
 
 void ten_extension_groups_info_fill_graph_id(ten_list_t *extension_groups_info,
@@ -258,8 +263,8 @@ void ten_extension_groups_info_fill_graph_id(ten_list_t *extension_groups_info,
   ten_list_foreach (extension_groups_info, iter) {
     ten_extension_group_info_t *extension_group_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
-    TEN_ASSERT(extension_group_info && ten_extension_group_info_check_integrity(
-                                           extension_group_info),
+    TEN_ASSERT(extension_group_info, "Invalid argument.");
+    TEN_ASSERT(ten_extension_group_info_check_integrity(extension_group_info),
                "Invalid argument.");
 
     ten_extension_group_info_fill_graph_id(extension_group_info, graph_id);

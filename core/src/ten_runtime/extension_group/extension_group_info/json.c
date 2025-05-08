@@ -24,15 +24,14 @@ bool ten_extension_group_info_to_json(ten_extension_group_info_t *self,
   ten_json_object_set_string(json, TEN_STR_TYPE, TEN_STR_EXTENSION_GROUP);
 
   ten_json_object_set_string(
-      json, TEN_STR_NAME,
-      ten_string_get_raw_str(&self->loc.extension_group_name));
+      json, TEN_STR_NAME, ten_string_get_raw_str(&self->extension_group_name));
 
   ten_json_object_set_string(
       json, TEN_STR_ADDON,
       ten_string_get_raw_str(&self->extension_group_addon_name));
 
   ten_json_object_set_string(json, TEN_STR_APP,
-                             ten_string_get_raw_str(&self->loc.app_uri));
+                             ten_string_get_raw_str(&self->app_uri));
 
   if (self->property) {
     ten_json_t property_json = TEN_JSON_INIT_VAL(json->ctx, false);

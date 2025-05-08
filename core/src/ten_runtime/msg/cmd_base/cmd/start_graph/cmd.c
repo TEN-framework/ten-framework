@@ -365,10 +365,9 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
           ten_extension_group_info_from_smart_ptr(
               ten_smart_ptr_listnode_get(iter_extension_group.node));
 
-      if (ten_string_is_equal(
-              extension_group_name,
-              &extension_group_info->loc.extension_group_name) &&
-          ten_string_is_equal(app_uri, &extension_group_info->loc.app_uri)) {
+      if (ten_string_is_equal(extension_group_name,
+                              &extension_group_info->extension_group_name) &&
+          ten_string_is_equal(app_uri, &extension_group_info->app_uri)) {
         group_found = true;
         break;
       }
@@ -387,10 +386,12 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
     ten_string_set_formatted(&extension_group_info->extension_group_addon_name,
                              TEN_STR_DEFAULT_EXTENSION_GROUP);
 
-    ten_loc_set(
-        &extension_group_info->loc,
-        ten_string_get_raw_str(&extension_info->loc.app_uri), "",
-        ten_string_get_raw_str(&extension_info->loc.extension_group_name), "");
+    ten_string_set_formatted(
+        &extension_group_info->app_uri, "%s",
+        ten_string_get_raw_str(&extension_info->loc.app_uri));
+    ten_string_set_formatted(
+        &extension_group_info->extension_group_name, "%s",
+        ten_string_get_raw_str(&extension_info->loc.extension_group_name));
 
     ten_shared_ptr_t *shared_group = ten_shared_ptr_create(
         extension_group_info, ten_extension_group_info_destroy);
