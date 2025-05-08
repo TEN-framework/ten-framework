@@ -10,7 +10,7 @@ mod tests {
     use serde_json::Value;
     use tempfile::TempDir;
 
-    use ten_manager::graph::update_graph_connections_all_fields;
+    use ten_manager::graph::update_graph_connections_in_property_all_fields;
     use ten_rust::graph::connection::{
         GraphConnection, GraphDestination, GraphMessageFlow,
     };
@@ -107,7 +107,7 @@ mod tests {
 
         // Update the connections in memory and in the file, specifying only
         // connections_to_modify_msg_conversion.
-        update_graph_connections_all_fields(
+        update_graph_connections_in_property_all_fields(
             &test_dir,
             &mut all_fields,
             "test_graph",

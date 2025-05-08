@@ -24,7 +24,7 @@ use crate::fs::json::write_property_json_file;
 ///
 /// In all cases, the original order of connections in the property.json file is
 /// preserved.
-pub fn update_graph_connections_all_fields(
+pub fn update_graph_connections_in_property_all_fields(
     pkg_url: &str,
     property_all_fields: &mut serde_json::Map<String, Value>,
     graph_name: &str,

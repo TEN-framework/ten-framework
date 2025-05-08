@@ -14,7 +14,7 @@ mod tests {
 
     use ten_manager::constants::TEST_DIR;
     use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_manager::graph::update_graph_connections_all_fields;
+    use ten_manager::graph::update_graph_connections_in_property_all_fields;
     use ten_rust::graph::connection::{
         GraphConnection, GraphDestination, GraphMessageFlow,
     };
@@ -113,7 +113,7 @@ mod tests {
         let connections_to_add = vec![connection];
 
         // Update the connections in memory and in the file.
-        update_graph_connections_all_fields(
+        update_graph_connections_in_property_all_fields(
             &test_dir,
             &mut all_fields,
             "test_graph",
