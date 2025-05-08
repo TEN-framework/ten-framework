@@ -30,6 +30,7 @@ export const convertExtensionPropertySchema2ZodSchema = (
       switch (type) {
         case "int64":
         case "int32":
+        case "uint32":
           zodType = z.coerce
             .number()
             .superRefine(

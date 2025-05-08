@@ -30,7 +30,8 @@ use crate::{
         connections::validate::{
             validate_connection_schema, MsgConversionValidateInfo,
         },
-        graphs_cache_find_by_id_mut, update_graph_connections_all_fields,
+        graphs_cache_find_by_id_mut,
+        update_graph_connections_in_property_all_fields,
     },
     pkg_info::belonging_pkg_info_find_by_graph_info_mut,
 };
@@ -161,7 +162,7 @@ fn update_property_all_fields(
             let connections_to_modify = vec![connection];
 
             // Update the property.json file.
-            if let Err(e) = update_graph_connections_all_fields(
+            if let Err(e) = update_graph_connections_in_property_all_fields(
                 &pkg_info.url,
                 &mut property.all_fields,
                 graph_info.name.as_ref().unwrap(),

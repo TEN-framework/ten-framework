@@ -32,6 +32,8 @@ group("go") {
       "send_data_go",
       "send_video_frame_go",
       "start_app_sync_go",
+      "start_graph_go",
+      "start_predefined_graph_go",
       "three_extension_cmd_go",
       "transfer_pointer_go",
       "two_extension_one_group_cmd_go",

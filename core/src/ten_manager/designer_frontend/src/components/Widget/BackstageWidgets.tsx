@@ -4,6 +4,8 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+import * as React from "react";
+
 import { LogViewerBackstageWidget } from "@/components/Widget/LogViewerWidget";
 import { useWidgetStore } from "@/store/widget";
 import { EWidgetCategory } from "@/types/widgets";
@@ -11,18 +13,18 @@ import { EWidgetCategory } from "@/types/widgets";
 export function BackstageWidgets() {
   const { backstageWidgets } = useWidgetStore();
 
+  const [logViewerWidgets] = React.useMemo(() => {
+    const logViewerWidgets = backstageWidgets.filter(
+      (widget) => widget.category === EWidgetCategory.LogViewer
+    );
+    return [logViewerWidgets];
+  }, [backstageWidgets]);
+
   return (
     <>
-      {backstageWidgets.map((widget) => {
-        switch (widget.category) {
-          case EWidgetCategory.LogViewer:
-            return (
-              <LogViewerBackstageWidget key={widget.widget_id} {...widget} />
-            );
-          default:
-            return null;
-        }
-      })}
+      {logViewerWidgets.map((widget) => (
+        <LogViewerBackstageWidget key={widget.widget_id} {...widget} />
+      ))}
     </>
   );
 }
