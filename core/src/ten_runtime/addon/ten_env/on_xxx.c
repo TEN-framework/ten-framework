@@ -210,11 +210,11 @@ static void ten_extension_group_addon_on_create_instance_done(ten_env_t *self,
   switch (addon_context->flow) {
   case TEN_ADDON_CONTEXT_FLOW_ENGINE_CREATE_EXTENSION_GROUP: {
     ten_extension_group_t *extension_group = instance;
-    TEN_ASSERT(extension_group &&
-                   // TEN_NOLINTNEXTLINE(thread-check)
-                   // thread-check: The extension thread has not been created
-                   // yet, so it is thread safe at this time.
-                   ten_extension_group_check_integrity(extension_group, false),
+    TEN_ASSERT(extension_group, "Invalid argument.");
+    // TEN_NOLINTNEXTLINE(thread-check)
+    // thread-check: The extension thread has not been created yet, so it is
+    // thread safe at this time.
+    TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
                "Invalid argument.");
 
     ten_extension_group_set_addon(extension_group, addon_host);
