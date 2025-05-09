@@ -1,0 +1,11 @@
+This example shows how to use the clingo module to solve and visualize a
+puzzle game.  The puzzle is about moving a car out of a parking lot that is
+blocked by other cars. Cars can only move forwards or backwards.
+
+To solve a problem, call:
+
+	clingo unblock.lp <instance>
+
+To solve and visualize, call:
+
+	./visualize.py unblock.lp <instance>

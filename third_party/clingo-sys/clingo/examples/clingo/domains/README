@@ -1,0 +1,6 @@
+This example shows how to inspect the domains of the grounder. Note that this
+example requires clingo - this functionality is not available for gringo.
+
+Example Calls:
+    clingo domains-py.lp instance.lp
+    clingo domains-lua.lp instance.lp

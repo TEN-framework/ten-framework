@@ -1,0 +1,3 @@
+This example shows how to use external atoms:
+    clingo external.lp external-py.lp
+    clingo external.lp external-lua.lp

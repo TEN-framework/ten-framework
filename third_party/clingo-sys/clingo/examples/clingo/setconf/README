@@ -1,0 +1,5 @@
+This example shows how to change the config of the underlying solver.
+
+Example calls:
+    clingo setconf-py.lp
+    clingo setconf-lua.lp

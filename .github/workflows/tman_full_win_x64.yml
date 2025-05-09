@@ -96,16 +96,6 @@ jobs:
           Write-Output "The Python directory is located at: $env:PYTHON3_PATH"
         shell: pwsh
 
-      - name: Get specific version CMake
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "^3"
-
-      - name: Dump version info
-        shell: bash
-        run: |
-          cmake --version
-
       - name: Build
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"

@@ -84,3 +84,6 @@ features = ["static-linking"]
 tempfile = "3.5"
 urlencoding = "2.1"
 tokio-tungstenite = { version = "0.21", features = ["connect"] }
+
+[patch.crates-io]
+clingo-sys = { path = "../../../third_party/clingo-sys" }
