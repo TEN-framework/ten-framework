@@ -23,15 +23,17 @@
 // }}}
 
 #include "gringo/input/nongroundparser.hh"
-#include "gringo/input/programbuilder.hh"
 #include "gringo/input/program.hh"
+#include "gringo/input/programbuilder.hh"
 #include "gringo/output/output.hh"
-#include "input/nongroundgrammar/grammar.hh"
 #include "gringo/symbol.hh"
+#include "input/nongroundgrammar/grammar.hh"
 
 #include "tests/tests.hh"
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 TEST_CASE("input-nongroundlexer", "[input]") {
     Gringo::Test::TestGringoModule module;
@@ -46,25 +48,24 @@ TEST_CASE("input-nongroundlexer", "[input]") {
     NullBackend bck;
     NonGroundParser ngp(pb, bck, incmode);
     ngp.parse(module); // Just to set the logger
-    std::string in =
-        "#script (python) #end "
-        "%*xyz\nxyz\n*%"
-        "%xyz\n"
-        "#minimize "
-        "#minimise "
-        "#infimum "
-        "#inf "
-        ";* "
-        ";\n * "
-        "not "
-        "xyz "
-        "_xyz "
-        "__xyz "
-        "___xyz "
-        "'___xyz' "
-        "'___x'yz' "
-        "'___Xyz' "
-        "'___X'yz' "
+    std::string in = "#script (python) #end "
+                     "%*xyz\nxyz\n*%"
+                     "%xyz\n"
+                     "#minimize "
+                     "#minimise "
+                     "#infimum "
+                     "#inf "
+                     ";* "
+                     ";\n * "
+                     "not "
+                     "xyz "
+                     "_xyz "
+                     "__xyz "
+                     "___xyz "
+                     "'___xyz' "
+                     "'___x'yz' "
+                     "'___Xyz' "
+                     "'___X'yz' "
         // TODO: check errors too: "# "
         ;
     ngp.pushStream("-", std::unique_ptr<std::istream>(new std::stringstream(in)), module.logger);
@@ -111,5 +112,6 @@ TEST_CASE("input-nongroundlexer", "[input]") {
 
 // }}}
 
-} } } // namespace Test Input Gringo
-
+} // namespace Test
+} // namespace Input
+} // namespace Gringo

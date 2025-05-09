@@ -1,3 +1,34 @@
+clasp 3.4.0: Thursday, 3rd April 2025
+  * updated libpotassco (improved `lpconvert` and small fixes)
+  * added option '--opt-stop' for stopping optimization at a given bound
+  * extended LogicProgram API (see https://github.com/potassco/clingo/issues/525)
+  * improved VMTF implementation
+  * simplified RestartParams
+  * simplified output customization (see https://github.com/potassco/clingo/pull/490)
+  * fixed and improved cautious/brave model state update (see https://github.com/potassco/clingo/pull/519)
+  * added number of blocked restarts to stats
+  * reworked dynamic/blocked restarts and added support for different moving averages
+  * added support for pb-constraints in [w]cnf+ format
+  * added support for "knf" format (see https://github.com/jreeves3/LiteralSorting?tab=readme-ov-file#knf-format)
+  * addressed issue https://github.com/potassco/clasp/issues/107
+  * added additional timing info to output (see https://github.com/potassco/clasp/issues/108)
+  * "tweety" asp options are now applied when using config "many"
+  * fixed post-condition of LogicProgram::dispose()
+  * fixed unexpected undo calls from clingo propagator when adding "locked" clauses
+  * fixed race condition in work splitting algorithm
+  * fixed handling of "sticky" logic program options
+  * fixed tests for CLASP_BUILD_WITH_THREADS=OFF
+  * fixed potential infinite loop in DimacsParser
+  * fixed potential nullptr access in parallel solve
+  * fixed issues in `query` algorithm.
+  * fixed issue in counting of binary learnt clauses.
+  * fixed issue https://github.com/potassco/clingo/issues/541
+  * fixed issue https://github.com/potassco/clasp/issues/106
+  * fixed issue https://github.com/potassco/clasp/issues/105
+  * fixed issue https://github.com/potassco/clasp/issues/104
+  * fixed issue https://github.com/potassco/clasp/issues/103
+  * fixed issue https://github.com/potassco/clasp/issues/101
+
 clasp 3.3.10: Wednesday, 7th February 2024
   * fixed issue https://github.com/potassco/clasp/issues/88
   * fixed issue https://github.com/potassco/clasp/issues/90
@@ -102,7 +133,7 @@ clasp 3.3.0: Friday, 28th April 2017
     - changed syntax of option  "--opt-strategy" (old syntax is still supported but deprecated)
       - First argument selects the overall strategy, i.e. model- or core-guided optimization
       - Second argument selects the algorithm, e.g. "K" or "OLL" for core-guided optimization
-      - Further arguments enable additional tactics, e.g. "disjoint" for disjoint core 
+      - Further arguments enable additional tactics, e.g. "disjoint" for disjoint core
         preprocessing in core-guided optimization
     - option "--pre" now prints aspif by default (use "--pre=smodels" for smodels)
 	- merged option "--opt-bound" into "--opt-mode"
@@ -127,7 +158,7 @@ clasp 3.2.3: Monday, 24th April 2017
   * fixed regression in enum mode "domRec" in case of complementary atoms
   * fixed spurious backtracking on integrating sat clauses from theory propagator
   * fixed regression: model heuristic ("--opt-heuristic=2") not applied
-  
+
 clasp 3.2.2: Monday, 23rd January 2017
   * added experimental support for MiniCard's CNF+ format
   * added missing stats key "summary.winner" for getting id of winner thread from clingo
@@ -139,7 +170,7 @@ clasp 3.2.2: Monday, 23rd January 2017
   * fixed: invalid logged lemmas due to buggy minimization in Solver::resolveToFlagged()
   * fixed: LogicProgram::dispose() must reset pointers
   * fixed compilation problems on Cygwin and Alpha
-  
+
 clasp 3.2.1: Thursday, 13th October 2016
   * added support for adding variables from theory propagator
   * fixed output of "--pre" wrt to externals in incremental setting
@@ -188,11 +219,11 @@ clasp 3.1.5: Friday, 5th August 2016 (updated: 11th August 2016)
   * fixed: invalid models in parallel disjunctive solving due to unsynchronized simplifications
   * fixed: Json output sometimes failed to report correct number of optimal models
   * fixed: SAT-frontend must retain pure literals for cautious/brave reasoning
-  * fixed: ClaspFacade::start() sometimes failed to reset SharedContext  
+  * fixed: ClaspFacade::start() sometimes failed to reset SharedContext
   * fixed: Sat-Preprocessor failed to propagate resolution of empty clause
   * fixed: simplifications after end of incremental step not always propagated to all threads
   * fixed too strong assertion in eq-preprocessor
-  
+
 clasp 3.1.4: Thursday, 10th December 2015
   * fixed: "--pre" failed to handle choice/disjunctive heads defined by extended bodies
   * fixed: "--backprop" failed to backpropagte certain constraints when used with "--eq=0"
@@ -209,7 +240,7 @@ clasp 3.1.3: Friday, 31th July 2015
   * fixed: over-satisfied PB constraints not always handled correctly
   * fixed: incorrect handling of aux vars in Solver::numWatches()
   * fixed: C++11 isnan issue on Mac
-  
+
 clasp 3.1.2: Tuesday, 5th May 2015
   * fixed: Option "--heuristic" failed to accept decay factor for domain heuristic
   * fixed: LogicProgram::getDisjFor() failed to handle hash collisions correctly
@@ -227,7 +258,7 @@ clasp 3.1.1: Wednesday, 12th November 2014
   * fixed regression in rule simplification (regression in 3.0.x)
   * fixed regression in "--configuration=jumpy"
   * fixed regression in handling of modifiers true/false in domain heuristic
-  
+
 clasp 3.1.0: Friday, 15th August 2014
   * added new strategies for unsatisfiable-core based optimization
   * added alternative distribution mode via thread-local queues (option " --dist-mode")
@@ -235,10 +266,10 @@ clasp 3.1.0: Friday, 15th August 2014
   * removed optimization options from default configurations
   * CLI changes:
     - option "--sat-prepro" now expects the algorithm followed by an optional list of limits
-    - option "--opt-strategy" now takes two arguments; the first mandatory argument selects the 
+    - option "--opt-strategy" now takes two arguments; the first mandatory argument selects the
       major strategy (i.e. branch and bound or unsat-core), while the optional second argument
       controls fine tuning of said strategy
-    - combined options "--dom-mod" and "--dom-pref" and added enum mode "domRec" for 
+    - combined options "--dom-mod" and "--dom-pref" and added enum mode "domRec" for
       enabling subset optimization via domain heuristic
     - added "--forget-on-step=2" for discarding previously set variable phases and changed
       value for discarding nogood activities and learnt nogoods to 4 and 8, respectively
@@ -260,17 +291,17 @@ clasp 3.0.6: Monday, 21st July 2014
   * fixed: incremental domain heuristic failed to apply values to atoms from previous steps
   * fixed: eq over bodies of size 1 not always correctly handled
   * fixed: typo in description of "--quiet"
-  
+
 clasp 3.0.5: Monday, 19th May 2014
   * added support for ThreadTime::getTime() on MacOS X
   * removed pointless "--del-init" option from config tweety
   * fixed: non-hcf components not always correctly added in incremental disjunctive programs (clingo)
   * fixed: empty soft clauses not correctly handled in MaxSAT frontend
-  * fixed: unfounded sets from 2nd level test not always correctly handled 
+  * fixed: unfounded sets from 2nd level test not always correctly handled
   * fixed: json output must not print NaN
   * fixed: asp options not correctly set on configuration update (from clingo)
   * fixed: regression in handling of (incremental) projection
-  
+
 clasp 3.0.4: Thursday, 24th April 2014
   * replaced "s SATISFIABLE" with "s UNKNOWN" when called with option "--opt-sat"
   * improved handling of weight constraints containing incremental assumptions
@@ -284,7 +315,7 @@ clasp 3.0.3: Friday, 28th March 2014
   * fixed: AsyncResult destructor fails if called after destruction of ClaspFacade
   * fixed: projective enumeration sometimes fails when used with option "--restart-on-model"
   * fixed: regression in handling of negative lower bound in optimization
-  
+
 clasp 3.0.2: Monday, 17th March 2014
   * patch 1 (March 19th, 2014): fixed regression in projective enumeration
   * added ClaspFacade::startSolveAsync() for enumerating models in an iterator-like fashion

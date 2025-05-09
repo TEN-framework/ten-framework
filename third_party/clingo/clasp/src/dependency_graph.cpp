@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -45,7 +45,7 @@ namespace Asp {
 // class PrgDepGraph
 /////////////////////////////////////////////////////////////////////////////////////////
 PrgDepGraph::PrgDepGraph(NonHcfMapType m) {
-	// add sentinal atom needed for disjunctions
+	// add sentinel atom needed for disjunctions
 	createAtom(lit_false(), PrgNode::noScc);
 	VarVec adj;	adj.push_back(idMax);
 	initAtom(sentinel_atom, 0, adj, 0);
@@ -250,7 +250,7 @@ void PrgDepGraph::addPreds(const LogicProgram& prg, PrgBody* b, uint32 bScc, Var
 }
 
 // Splits the heads of b into atoms and disjunctions.
-// Disjunctions are flattened to sentinel-enclose datom-lists.
+// Disjunctions are flattened to sentinel-enclosed atom-lists.
 uint32 PrgDepGraph::addHeads(const LogicProgram& prg, PrgBody* b, VarVec& heads) const {
 	for (PrgBody::head_iterator it = b->heads_begin(), end = b->heads_end(); it != end; ++it) {
 		if (it->isAtom() && !it->isGamma()) {
@@ -653,7 +653,7 @@ void PrgDepGraph::NonHcfComponent::assumptionsFromAssignment(const Solver& s, Li
 bool PrgDepGraph::NonHcfComponent::test(const Solver& generator, const LitVec& assume, VarVec& unfoundedOut) const {
 	assert(generator.id() < prg_->concurrency() && "Invalid id!");
 	// Forwards to message handler of generator so that messages are
-	// handled during long running tests.
+	// handled during long-running tests.
 	struct Tester : MessageHandler {
 		Tester(Solver& s, MessageHandler* gen) : solver(&s), generator(gen) { if (gen) { s.addPost(this); } }
 		~Tester() { if (generator) { solver->removePost(this); } }

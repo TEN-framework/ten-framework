@@ -419,34 +419,51 @@ Output* ClaspAppBase::createOutput(ProblemType f) {
 		return 0;
 	}
 	if (claspAppOpts_.outf != ClaspAppOptions::out_json || claspAppOpts_.onlyPre) {
-		TextOutput::Format outFormat = TextOutput::format_asp;
-		if      (f == Problem_t::Sat){ outFormat = TextOutput::format_sat09; }
-		else if (f == Problem_t::Pb) { outFormat = TextOutput::format_pb09;  }
+		TextOptions options;
+		options.format = TextOutput::format_asp;
+		if      (f == Problem_t::Sat){ options.format = TextOutput::format_sat09; }
+		else if (f == Problem_t::Pb) { options.format = TextOutput::format_pb09;  }
 		else if (f == Problem_t::Asp && claspAppOpts_.outf == ClaspAppOptions::out_comp) {
-			outFormat = TextOutput::format_aspcomp;
+			options.format = TextOutput::format_aspcomp;
 		}
-		out.reset(new TextOutput(verbose(), outFormat, claspAppOpts_.outAtom.c_str(), claspAppOpts_.ifs));
-		if (claspConfig_.parse.isEnabled(ParserOptions::parse_maxsat) && f == Problem_t::Sat) {
-			static_cast<TextOutput*>(out.get())->result[TextOutput::res_sat] = "UNKNOWN";
+		options.verbosity = verbose();
+		options.catAtom = claspAppOpts_.outAtom.c_str();
+		options.ifs = claspAppOpts_.ifs;
+		out.reset(createTextOutput(options));
+		TextOutput* textOut = dynamic_cast<TextOutput*>(out.get());
+		if (claspConfig_.parse.isEnabled(ParserOptions::parse_maxsat) && f == Problem_t::Sat && textOut) {
+			textOut->result[TextOutput::res_sat] = "UNKNOWN";
 		}
 	}
 	else {
-		out.reset(new JsonOutput(verbose()));
+		out.reset(createJsonOutput(verbose()));
 	}
-	if (claspAppOpts_.quiet[0] != static_cast<uint8>(UCHAR_MAX)) {
-		out->setModelQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[0]));
-	}
-	if (claspAppOpts_.quiet[1] != static_cast<uint8>(UCHAR_MAX)) {
-		out->setOptQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[1]));
-	}
-	if (claspAppOpts_.quiet[2] != static_cast<uint8>(UCHAR_MAX)) {
-		out->setCallQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[2]));
+
+	if (out.get()) {
+		if (claspAppOpts_.quiet[0] != static_cast<uint8>(UCHAR_MAX)) {
+			out->setModelQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[0]));
+		}
+		if (claspAppOpts_.quiet[1] != static_cast<uint8>(UCHAR_MAX)) {
+			out->setOptQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[1]));
+		}
+		if (claspAppOpts_.quiet[2] != static_cast<uint8>(UCHAR_MAX)) {
+			out->setCallQuiet((Output::PrintLevel)std::min(uint8(Output::print_no), claspAppOpts_.quiet[2]));
+		}
 	}
 	if (claspAppOpts_.hideAux && clasp_.get()) {
 		clasp_->ctx.output.setFilter('_');
 	}
 	return out.release();
 }
+
+Output* ClaspAppBase::createTextOutput(const TextOptions& options) {
+	return new TextOutput(options.verbosity, options.format, options.catAtom, options.ifs);
+}
+
+Output* ClaspAppBase::createJsonOutput(unsigned verbosity) {
+	return new JsonOutput(verbosity);
+}
+
 void ClaspAppBase::storeCommandArgs(const Potassco::ProgramOptions::ParsedValues&) {
 	/* We don't need the values */
 }

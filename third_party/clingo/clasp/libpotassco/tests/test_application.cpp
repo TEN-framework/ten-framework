@@ -88,9 +88,9 @@ TEST_CASE("Test alarm", "[app]") {
 	struct TimedApp : MyApp {
 		TimedApp() : stop(0) {}
 		void run() {
-			int i = 0;
+			unsigned i = 0;
 			while (!stop) { ++i;  }
-			setExitCode(i);
+			setExitCode(1 + stop);
 		}
 		virtual bool onSignal(int) {
 			stop = 1;
@@ -102,7 +102,7 @@ TEST_CASE("Test alarm", "[app]") {
 	TimedApp app;
 	char* argv[] = {(char*)"app", (char*)"--time-limit=1", 0};
 	int argc = 2;
-	app.main(argc, argv);
+	REQUIRE(app.main(argc, argv) == 2);
 	REQUIRE(app.stop == 1);
 }
 }}}

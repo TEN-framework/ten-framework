@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -93,7 +93,9 @@ namespace bk_lib { namespace detail {
 	struct Memcpy {
 		Memcpy(const T* first) : first_(first) {}
 		void operator()(T* out, std::size_t n) const {
-			std::memcpy(out, first_, n*sizeof(T));
+			if (out && n) {
+				std::memcpy(out, first_, n*sizeof(T));
+			}
 		}
 		const T* first_;
 	};
@@ -181,7 +183,9 @@ public:
 	 * \post size() == other.size() && capacity() == other.size()
 	 */
 	pod_vector(const pod_vector& other) : ebo_(other.size(), other.get_allocator()) {
-		std::memcpy(ebo_.buf, other.begin(), other.size()*sizeof(T));
+		if (const_pointer buf = other.begin()) {
+			std::memcpy(ebo_.buf, buf, other.size()*sizeof(T));
+		}
 		ebo_.size = other.size();
 	}
 
@@ -341,17 +345,19 @@ public:
 
 	//! reallocates storage if necessary but never changes the size() of this pod_vector.
 	/*!
-	 * \note if n is <= capacity() reserve is a noop. Otherwise a reallocation takes place
+	 * \note if n is <= capacity() reserve is a noop. Otherwise, a reallocation takes place
 	 * and capacity() >= n after reserve returned.
 	 * \note reallocation invalidates all references, pointers and iterators referring to
-	 * elements in this pod_vectror.
+	 * elements in this pod_vector.
 	 *
 	 * \note when reallocation occurs elements are copied from the old storage using memcpy.
 	 */
 	void reserve(size_type n) {
 		if (n > capacity()) {
 			T* temp = ebo_.allocate(n);
-			std::memcpy(temp, ebo_.buf, size()*sizeof(T));
+			if (ebo_.buf) {
+				std::memcpy(temp, ebo_.buf, size()*sizeof(T));
+			}
 			ebo_.release();
 			ebo_.buf = temp;
 			ebo_.cap = n;
@@ -430,7 +436,7 @@ public:
 	 * initializes new elements in case ns > size().
 	 * This reflects the behaviour of built-in arrays of pod-types.
 	 * \note
-	 *  Any access to an unitialized element is illegal unless it is accessed
+	 *  Any access to an uninitialized element is illegal unless it is accessed
 	 *  in order to assign a new value.
 	 */
 	void resize_no_init(size_type ns) {
@@ -451,7 +457,9 @@ private:
 	void append_realloc(size_type n, const T& x) {
 		size_type new_cap = grow_size(n);
 		pointer temp      = ebo_.allocate(new_cap);
-		std::memcpy(temp, ebo_.buf, size()*sizeof(T));
+		if (ebo_.buf) {
+			std::memcpy(temp, ebo_.buf, size()*sizeof(T));
+		}
 		detail::fill(temp+size(), temp+size()+n, x);
 		ebo_.release();
 		ebo_.buf  = temp;
@@ -460,7 +468,9 @@ private:
 	}
 	void move_right(iterator pos, size_type n) {
 		assert( (pos || n == 0) && (ebo_.eos() - pos) >= (int)n);
-		std::memmove(pos + n, pos, (end() - pos) * sizeof(T));
+		if (pos) {
+			std::memmove(pos + n, pos, (end() - pos) * sizeof(T));
+		}
 	}
 	template <class It>
 	void insert_range(iterator pos, It first, It last,  std::random_access_iterator_tag,
@@ -499,11 +509,15 @@ private:
 			pointer temp      = ebo_.allocate(new_cap);
 			size_type prefix  = static_cast<size_type>(pos-begin());
 			// copy prefix
-			std::memcpy(temp, begin(), prefix*sizeof(T));
+			if (const_pointer buf = begin()) {
+				std::memcpy(temp, buf, prefix*sizeof(T));
+			}
 			// insert new stuff
 			pred(temp+prefix, n);
 			// copy suffix
-			std::memcpy(temp+prefix+n, pos, (end()-pos)*sizeof(T));
+			if (pos) {
+				std::memcpy(temp+prefix+n, pos, (end()-pos)*sizeof(T));
+			}
 			ebo_.release();
 			ebo_.buf  = temp;
 			ebo_.size+= n;

@@ -10,5 +10,3 @@ def main(prg):
     print ("optimization", prg.statistics["summary"]["costs"])
 
 #end.
-
-

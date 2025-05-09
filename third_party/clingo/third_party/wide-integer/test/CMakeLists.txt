@@ -11,7 +11,7 @@ if (Boost_FOUND)
     test_uintwide_t_n_binary_ops_base.cpp
     test_uintwide_t_spot_values.cpp
     test.cpp)
-  target_compile_features(test_uintwide_t PRIVATE cxx_std_11)
+  target_compile_features(test_uintwide_t PRIVATE cxx_std_20)
   target_include_directories(test_uintwide_t PRIVATE ${PROJECT_SOURCE_DIR})
   target_link_libraries(test_uintwide_t Examples ${CMAKE_THREAD_LIBS_INIT})
   add_test(test test_uintwide_t)

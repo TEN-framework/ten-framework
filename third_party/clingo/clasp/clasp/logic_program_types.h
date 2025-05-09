@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -173,7 +173,7 @@ struct PrgEdge {
 	bool     isGamma()  const { return (rep & 1u) != 0; }
 	//! Returns true if the adjacent node is a body.
 	bool     isBody()   const { return nodeType() == PrgNode::Body; }
-	//! Returns true if the adjacant node is an atom.
+	//! Returns true if the adjacent node is an atom.
 	bool     isAtom()   const { return nodeType() == PrgNode::Atom; }
 	//! Returns true if the adjacent node is a disjunction.
 	bool     isDisj()   const { return nodeType() == PrgNode::Disj; }

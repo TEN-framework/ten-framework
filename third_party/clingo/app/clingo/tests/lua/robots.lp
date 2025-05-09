@@ -94,10 +94,10 @@ go(R, D, t) :- selectRobot(R, t), selectDir(D,t).
 #external volatile(t).
 
 % --- Uncomment an integrity constraint to pose a query
-%   - numbers indicated minimum number of moves  
+%   - numbers indicated minimum number of moves
 %   - sometimes a heuristics was better than another
 
-:- instance(1), not position(red,      5,2,t), volatile(t).  % red moon:        9, vmtf 
+:- instance(1), not position(red,      5,2,t), volatile(t).  % red moon:        9, vmtf
 :- instance(2), not position(red,     15,2,t), volatile(t).  % red triangle:   10, ?
 :- instance(3), not position(green,    2,3,t), volatile(t).  % green triangle:  9, berkmin
 :- instance(4), not position(blue,    12,3,t), volatile(t).  % blue star:       8, ?
@@ -209,4 +209,3 @@ barrier( 7,13,south).
 barrier(15,13,south).
 barrier(10,14,south).
 barrier( 3,15,south).
-

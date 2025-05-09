@@ -13,9 +13,90 @@
 #include <catch2/internal/catch_compare_traits.hpp>
 #include <catch2/internal/catch_test_failure_exception.hpp>
 #include <catch2/internal/catch_logical_traits.hpp>
+#include <catch2/internal/catch_compiler_capabilities.hpp>
 
 #include <type_traits>
 #include <iosfwd>
+
+/** \file
+ * Why does decomposing look the way it does:
+ *
+ * Conceptually, decomposing is simple. We change `REQUIRE( a == b )` into
+ * `Decomposer{} <= a == b`, so that `Decomposer{} <= a` is evaluated first,
+ * and our custom operator is used for `a == b`, because `a` is transformed
+ * into `ExprLhs<T&>` and then into `BinaryExpr<T&, U&>`.
+ *
+ * In practice, decomposing ends up a mess, because we have to support
+ * various fun things.
+ *
+ * 1) Types that are only comparable with literal 0, and they do this by
+ *    comparing against a magic type with pointer constructor and deleted
+ *    other constructors. Example: `REQUIRE((a <=> b) == 0)` in libstdc++
+ *
+ * 2) Types that are only comparable with literal 0, and they do this by
+ *    comparing against a magic type with consteval integer constructor.
+ *    Example: `REQUIRE((a <=> b) == 0)` in current MSVC STL.
+ *
+ * 3) Types that have no linkage, and so we cannot form a reference to
+ *    them. Example: some implementations of traits.
+ *
+ * 4) Starting with C++20, when the compiler sees `a == b`, it also uses
+ *    `b == a` when constructing the overload set. For us this means that
+ *    when the compiler handles `ExprLhs<T> == b`, it also tries to resolve
+ *    the overload set for `b == ExprLhs<T>`.
+ *
+ * To accomodate these use cases, decomposer ended up rather complex.
+ *
+ * 1) These types are handled by adding SFINAE overloads to our comparison
+ *    operators, checking whether `T == U` are comparable with the given
+ *    operator, and if not, whether T (or U) are comparable with literal 0.
+ *    If yes, the overload compares T (or U) with 0 literal inline in the
+ *    definition.
+ *
+ *    Note that for extra correctness, we check  that the other type is
+ *    either an `int` (literal 0 is captured as `int` by templates), or
+ *    a `long` (some platforms use 0L for `NULL` and we want to support
+ *    that for pointer comparisons).
+ *
+ * 2) For these types, `is_foo_comparable<T, int>` is true, but letting
+ *    them fall into the overload that actually does `T == int` causes
+ *    compilation error. Handling them requires that the decomposition
+ *    is `constexpr`, so that P2564R3 applies and the `consteval` from
+ *    their accompanying magic type is propagated through the `constexpr`
+ *    call stack.
+ *
+ *    However this is not enough to handle these types automatically,
+ *    because our default is to capture types by reference, to avoid
+ *    runtime copies. While these references cannot become dangling,
+ *    they outlive the constexpr context and thus the default capture
+ *    path cannot be actually constexpr.
+ *
+ *    The solution is to capture these types by value, by explicitly
+ *    specializing `Catch::capture_by_value` for them. Catch2 provides
+ *    specialization for `std::foo_ordering`s, but users can specialize
+ *    the trait for their own types as well.
+ *
+ * 3) If a type has no linkage, we also cannot capture it by reference.
+ *    The solution is once again to capture them by value. We handle
+ *    the common cases by using `std::is_arithmetic` as the default
+ *    for `Catch::capture_by_value`, but that is only a some-effort
+ *    heuristic. But as with 2), users can specialize `capture_by_value`
+ *    for their own types as needed.
+ *
+ * 4) To support C++20 and make the SFINAE on our decomposing operators
+ *    work, the SFINAE has to happen in return type, rather than in
+ *    a template type. This is due to our use of logical type traits
+ *    (`conjunction`/`disjunction`/`negation`), that we use to workaround
+ *    an issue in older (9-) versions of GCC. I still blame C++20 for
+ *    this, because without the comparison order switching, the logical
+ *    traits could still be used in template type.
+ *
+ * There are also other side concerns, e.g. supporting both `REQUIRE(a)`
+ * and `REQUIRE(a == b)`, or making `REQUIRE_THAT(a, IsEqual(b))` slot
+ * nicely into the same expression handling logic, but these are rather
+ * straightforward and add only a bit of complexity (e.g. common base
+ * class for decomposed expressions).
+ */
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -29,12 +110,45 @@
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wsign-compare"
+#  pragma clang diagnostic ignored "-Wnon-virtual-dtor"
 #elif defined __GNUC__
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wsign-compare"
+#  pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
+
+#if defined(CATCH_CPP20_OR_GREATER) && __has_include(<compare>)
+#  include <compare>
+#    if defined( __cpp_lib_three_way_comparison ) && \
+            __cpp_lib_three_way_comparison >= 201907L
+#      define CATCH_CONFIG_CPP20_COMPARE_OVERLOADS
+#    endif
 #endif
 
 namespace Catch {
+
+    namespace Detail {
+        // This was added in C++20, but we require only C++14 for now.
+        template <typename T>
+        using RemoveCVRef_t = std::remove_cv_t<std::remove_reference_t<T>>;
+    }
+
+    // Note: There is nothing that stops us from extending this,
+    //       e.g. to `std::is_scalar`, but the more encompassing
+    //       traits are usually also more expensive. For now we
+    //       keep this as it used to be and it can be changed later.
+    template <typename T>
+    struct capture_by_value
+        : std::integral_constant<bool, std::is_arithmetic<T>{}> {};
+
+#if defined( CATCH_CONFIG_CPP20_COMPARE_OVERLOADS )
+    template <>
+    struct capture_by_value<std::strong_ordering> : std::true_type {};
+    template <>
+    struct capture_by_value<std::weak_ordering> : std::true_type {};
+    template <>
+    struct capture_by_value<std::partial_ordering> : std::true_type {};
+#endif
 
     template <typename T>
     struct always_false : std::false_type {};
@@ -43,23 +157,22 @@ namespace Catch {
         bool m_isBinaryExpression;
         bool m_result;
 
-    public:
-        auto isBinaryExpression() const -> bool { return m_isBinaryExpression; }
-        auto getResult() const -> bool { return m_result; }
-        virtual void streamReconstructedExpression( std::ostream &os ) const = 0;
+    protected:
+        ~ITransientExpression() = default;
 
-        ITransientExpression( bool isBinaryExpression, bool result )
+    public:
+        constexpr auto isBinaryExpression() const -> bool { return m_isBinaryExpression; }
+        constexpr auto getResult() const -> bool { return m_result; }
+        //! This function **has** to be overriden by the derived class.
+        virtual void streamReconstructedExpression( std::ostream& os ) const;
+
+        constexpr ITransientExpression( bool isBinaryExpression, bool result )
         :   m_isBinaryExpression( isBinaryExpression ),
             m_result( result )
         {}
 
-        ITransientExpression() = default;
-        ITransientExpression(ITransientExpression const&) = default;
-        ITransientExpression& operator=(ITransientExpression const&) = default;
-
-        // We don't actually need a virtual destructor, but many static analysers
-        // complain if it's not here :-(
-        virtual ~ITransientExpression(); // = default;
+        constexpr ITransientExpression( ITransientExpression const& ) = default;
+        constexpr ITransientExpression& operator=( ITransientExpression const& ) = default;
 
         friend std::ostream& operator<<(std::ostream& out, ITransientExpression const& expr) {
             expr.streamReconstructedExpression(out);
@@ -81,7 +194,7 @@ namespace Catch {
         }
 
     public:
-        BinaryExpr( bool comparisonResult, LhsT lhs, StringRef op, RhsT rhs )
+        constexpr BinaryExpr( bool comparisonResult, LhsT lhs, StringRef op, RhsT rhs )
         :   ITransientExpression{ true, comparisonResult },
             m_lhs( lhs ),
             m_op( op ),
@@ -154,7 +267,7 @@ namespace Catch {
         }
 
     public:
-        explicit UnaryExpr( LhsT lhs )
+        explicit constexpr UnaryExpr( LhsT lhs )
         :   ITransientExpression{ false, static_cast<bool>(lhs) },
             m_lhs( lhs )
         {}
@@ -165,31 +278,31 @@ namespace Catch {
     class ExprLhs {
         LhsT m_lhs;
     public:
-        explicit ExprLhs( LhsT lhs ) : m_lhs( lhs ) {}
+        explicit constexpr ExprLhs( LhsT lhs ) : m_lhs( lhs ) {}
 
 #define CATCH_INTERNAL_DEFINE_EXPRESSION_EQUALITY_OPERATOR( id, op )           \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )                       \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )             \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<Detail::is_##id##_comparable<LhsT, RhsT>,      \
-                                Detail::negation<std::is_arithmetic<           \
-                                    std::remove_reference_t<RhsT>>>>::value,   \
+                                Detail::negation<capture_by_value<             \
+                                    Detail::RemoveCVRef_t<RhsT>>>>::value,     \
             BinaryExpr<LhsT, RhsT const&>> {                                   \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<Detail::is_##id##_comparable<LhsT, RhsT>,      \
-                                std::is_arithmetic<RhsT>>::value,              \
+                                capture_by_value<RhsT>>::value,                \
             BinaryExpr<LhsT, RhsT>> {                                          \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<                                               \
                 Detail::negation<Detail::is_##id##_comparable<LhsT, RhsT>>,    \
                 Detail::is_eq_0_comparable<LhsT>,                              \
@@ -202,8 +315,8 @@ namespace Catch {
             static_cast<bool>( lhs.m_lhs op 0 ), lhs.m_lhs, #op##_sr, rhs };   \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<                                               \
                 Detail::negation<Detail::is_##id##_comparable<LhsT, RhsT>>,    \
                 Detail::is_eq_0_comparable<RhsT>,                              \
@@ -220,29 +333,30 @@ namespace Catch {
 
     #undef CATCH_INTERNAL_DEFINE_EXPRESSION_EQUALITY_OPERATOR
 
+
 #define CATCH_INTERNAL_DEFINE_EXPRESSION_COMPARISON_OPERATOR( id, op )         \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )                       \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )             \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<Detail::is_##id##_comparable<LhsT, RhsT>,      \
-                                Detail::negation<std::is_arithmetic<           \
-                                    std::remove_reference_t<RhsT>>>>::value,   \
+                                Detail::negation<capture_by_value<             \
+                                    Detail::RemoveCVRef_t<RhsT>>>>::value,     \
             BinaryExpr<LhsT, RhsT const&>> {                                   \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<Detail::is_##id##_comparable<LhsT, RhsT>,      \
-                                std::is_arithmetic<RhsT>>::value,              \
+                                capture_by_value<RhsT>>::value,                \
             BinaryExpr<LhsT, RhsT>> {                                          \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<                                               \
                 Detail::negation<Detail::is_##id##_comparable<LhsT, RhsT>>,    \
                 Detail::is_##id##_0_comparable<LhsT>,                          \
@@ -253,8 +367,8 @@ namespace Catch {
             static_cast<bool>( lhs.m_lhs op 0 ), lhs.m_lhs, #op##_sr, rhs };   \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<                                                    \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<                                                   \
             Detail::conjunction<                                               \
                 Detail::negation<Detail::is_##id##_comparable<LhsT, RhsT>>,    \
                 Detail::is_##id##_0_comparable<RhsT>,                          \
@@ -274,17 +388,17 @@ namespace Catch {
 
 #define CATCH_INTERNAL_DEFINE_EXPRESSION_OPERATOR( op )                        \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )                       \
-        ->std::enable_if_t<                                                    \
-            !std::is_arithmetic<std::remove_reference_t<RhsT>>::value,         \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT&& rhs )             \
+        -> std::enable_if_t<                                                   \
+            !capture_by_value<Detail::RemoveCVRef_t<RhsT>>::value,             \
             BinaryExpr<LhsT, RhsT const&>> {                                   \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }                                                                          \
     template <typename RhsT>                                                   \
-    friend auto operator op( ExprLhs&& lhs, RhsT rhs )                         \
-        ->std::enable_if_t<std::is_arithmetic<RhsT>::value,                    \
-                           BinaryExpr<LhsT, RhsT>> {                           \
+    constexpr friend auto operator op( ExprLhs&& lhs, RhsT rhs )               \
+        -> std::enable_if_t<capture_by_value<RhsT>::value,                     \
+                            BinaryExpr<LhsT, RhsT>> {                          \
         return {                                                               \
             static_cast<bool>( lhs.m_lhs op rhs ), lhs.m_lhs, #op##_sr, rhs }; \
     }
@@ -309,19 +423,22 @@ namespace Catch {
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        auto makeUnaryExpr() const -> UnaryExpr<LhsT> {
+        constexpr auto makeUnaryExpr() const -> UnaryExpr<LhsT> {
             return UnaryExpr<LhsT>{ m_lhs };
         }
     };
 
     struct Decomposer {
-        template<typename T, std::enable_if_t<!std::is_arithmetic<std::remove_reference_t<T>>::value, int> = 0>
-        friend auto operator <= ( Decomposer &&, T && lhs ) -> ExprLhs<T const&> {
+        template <typename T,
+                  std::enable_if_t<!capture_by_value<Detail::RemoveCVRef_t<T>>::value,
+                      int> = 0>
+        constexpr friend auto operator <= ( Decomposer &&, T && lhs ) -> ExprLhs<T const&> {
             return ExprLhs<const T&>{ lhs };
         }
 
-        template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, int> = 0>
-        friend auto operator <= ( Decomposer &&, T value ) -> ExprLhs<T> {
+        template <typename T,
+                  std::enable_if_t<capture_by_value<T>::value, int> = 0>
+        constexpr friend auto operator <= ( Decomposer &&, T value ) -> ExprLhs<T> {
             return ExprLhs<T>{ value };
         }
     };

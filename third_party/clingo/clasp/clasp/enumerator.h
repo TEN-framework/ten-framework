@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -60,11 +60,13 @@ struct Model {
 	const ValueVec*   values; // variable assignment or consequences
 	const SumVec*     costs;  // associated costs (or 0)
 	uint32            sId :16;// id of solver that found the model
-	uint32            type:12;// type of model
+	uint32            type:10;// type of model
 	uint32            opt : 1;// whether the model is optimal w.r.t costs (0: unknown)
 	uint32            def : 1;// whether the model is definite w.r.t consequences (0: unknown)
 	uint32            sym : 1;// whether symmetric models are possible
 	uint32            up  : 1;// whether the model was updated on last unsat
+	uint32            fin : 1;// final model of the active reasoning step
+	uint32            res : 1;// reserved
 };
 
 /**
@@ -92,6 +94,7 @@ struct EnumOptions {
 	ProjMode proMode;   /*!< Projection mode to use.      */
 	uint32   project;   /*!< Options for projection.      */
 	SumVec   optBound;  /*!< Initial bound for optimize statements. */
+	SumVec   optStop;   /*!< Optional stop bound for optimization. */
 };
 const char* modelType(const Model& m);
 
@@ -232,11 +235,11 @@ public:
 	};
 	//! Returns whether unsat may be tentative and/or requires synchronization.
 	virtual int  unsatType()        const;
-	//! Returns whether or not this enumerator supports full restarts once a model was found.
+	//! Returns whether this enumerator supports full restarts once a model was found.
 	virtual bool supportsRestarts() const { return true; }
-	//! Returns whether or not this enumerator supports parallel search.
+	//! Returns whether this enumerator supports parallel search.
 	virtual bool supportsParallel() const { return true; }
-	//! Returns whether or not this enumerator supports splitting-based search.
+	//! Returns whether this enumerator supports splitting-based search.
 	virtual bool supportsSplitting(const SharedContext& problem) const;
 	//! Returns whether this enumerator requires exhaustive search to produce a definite answer.
 	virtual bool exhaustive()       const { return mini_ && mini_->mode() != MinimizeMode_t::enumerate; }
@@ -252,15 +255,17 @@ protected:
 	 */
 	virtual ConPtr doInit(SharedContext& ctx, SharedMinimizeData* min, int numModels) = 0;
 	virtual void   doReset();
-	Model&         model();
 private:
 	class SharedQueue;
 	Enumerator(const Enumerator&);
 	Enumerator& operator=(const Enumerator&);
 	ConRef constraintRef(const Solver& s) const;
+	void   setModel(Solver& s, bool up);
 	SharedMinimizeData* mini_;
 	SharedQueue*        queue_;
+	ValueVec            values_;
 	SumVec              costs_;
+	LitVec              sym_;
 	Model               model_;
 };
 

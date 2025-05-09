@@ -23,15 +23,18 @@
 // }}}
 
 #include "gringo/input/groundtermparser.hh"
-#include "input/groundtermgrammar/grammar.hh"
 #include "gringo/logger.hh"
+#include "input/groundtermgrammar/grammar.hh"
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 Symbol GroundTermParser::parse(std::string const &str, Logger &log) {
     log_ = &log;
     undefined_ = false;
-    while (!empty()) { pop(); }
+    while (!empty()) {
+        pop();
+    }
     push(gringo_make_unique<std::stringstream>(str), 0);
     GroundTermGrammar::parser parser(this);
     parser.parse();
@@ -50,22 +53,25 @@ Symbol GroundTermParser::term(UnOp op, Symbol a) {
     if (a.type() == SymbolType::Num) {
         int num = a.num();
         switch (op) {
-            case UnOp::NEG: { return Symbol::createNum(-num); }
-            case UnOp::ABS: { return Symbol::createNum(std::abs(num)); }
-            case UnOp::NOT: { return Symbol::createNum(~num); }
+            case UnOp::NEG: {
+                return Symbol::createNum(-num);
+            }
+            case UnOp::ABS: {
+                return Symbol::createNum(std::abs(num));
+            }
+            case UnOp::NOT: {
+                return Symbol::createNum(~num);
+            }
         }
         assert(false);
-    }
-    else if (op == UnOp::NEG && a.type() == SymbolType::Fun) {
+    } else if (op == UnOp::NEG && a.type() == SymbolType::Fun) {
         return a.flipSign();
     }
     undefined_ = true;
     return Symbol::createNum(0);
 }
 
-unsigned GroundTermParser::terms() {
-    return terms_.emplace();
-}
+unsigned GroundTermParser::terms() { return terms_.emplace(); }
 
 Symbol GroundTermParser::tuple(unsigned uid, bool forceTuple) {
     SymVec args(terms_.erase(uid));
@@ -80,9 +86,7 @@ unsigned GroundTermParser::terms(unsigned uid, Symbol a) {
     return uid;
 }
 
-SymVec GroundTermParser::terms(unsigned uid) {
-    return terms_.erase(uid);
-}
+SymVec GroundTermParser::terms(unsigned uid) { return terms_.erase(uid); }
 
 void GroundTermParser::parseError(std::string const &message, Logger &log) {
     static_cast<void>(log);
@@ -96,19 +100,15 @@ void GroundTermParser::lexerError(StringSpan token, Logger &log) {
     static_cast<void>(log);
     Location loc("<string>", line(), column(), "<string>", line(), column());
     std::ostringstream oss;
-    oss << loc << ": " << "error: unexpected token:\n"
-        << std::string(token.first, token.size) << "\n";
+    oss << loc << ": " << "error: unexpected token:\n" << std::string(token.first, token.size) << "\n";
     throw GringoError(oss.str().c_str());
 }
 
-int GroundTermParser::lex(void *pValue, Logger &log) {
-    return lex_impl(pValue, log);
-}
+int GroundTermParser::lex(void *pValue, Logger &log) { return lex_impl(pValue, log); }
 
-void GroundTermParser::setValue(Symbol value) {
-    value_ = value;
-}
+void GroundTermParser::setValue(Symbol value) { value_ = value; }
 
-} }
+} // namespace Input
+} // namespace Gringo
 
 #include "input/groundtermlexer.hh"

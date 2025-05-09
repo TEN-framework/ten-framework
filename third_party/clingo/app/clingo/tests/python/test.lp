@@ -59,4 +59,3 @@ r(k,X) :- test(X).
 #external volatile(k).
  :- not c(5), not volatile(k).
 volatile(k-1).
-

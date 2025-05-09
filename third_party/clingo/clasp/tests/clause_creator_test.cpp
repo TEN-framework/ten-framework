@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -183,7 +183,7 @@ TEST_CASE("ClauseCreator create", "[constraint][core]") {
 		creator.start(Constraint_t::Loop);
 		creator.add(~c).add(~a).add(~d).add(~b); // 2 1 3 1
 		REQUIRE_FALSE((bool)creator.end());
-		// make sure we watch highest levels, i.e. 3 and 2
+		// make sure we watch the highest levels, i.e. 3 and 2
 		REQUIRE(~d == creator[0]);
 		REQUIRE(~c == creator[1]);
 		REQUIRE(s.numLearntConstraints() == 0);

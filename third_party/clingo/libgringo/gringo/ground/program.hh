@@ -27,18 +27,19 @@
 
 #include <gringo/ground/statement.hh>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ declaration of Program
 
-using IdVec     = std::vector<std::pair<Location, String>>;
-using SEdb      = std::shared_ptr<std::pair<UTerm, SymVec>>;
-using SEdbVec   = std::vector<SEdb>;
+using IdVec = std::vector<std::pair<Location, String>>;
+using SEdb = std::shared_ptr<std::pair<UTerm, SymVec>>;
+using SEdbVec = std::vector<SEdb>;
 using SymVecSet = std::set<SymVec>;
-using ParamSet  = std::map<Sig, SymVecSet>;
+using ParamSet = std::map<Sig, SymVecSet>;
 
 class Parameters {
-public:
+  public:
     void add(String name, SymVec &&args);
     bool find(Sig sig) const;
     ParamSet::const_iterator begin() const;
@@ -46,12 +47,12 @@ public:
     bool empty() const;
     void clear();
 
-private:
+  private:
     ParamSet params_;
 };
 
 class Program {
-public:
+  public:
     using const_iterator = Statement::Dep::ComponentVec::const_iterator;
 
     Program(SEdbVec &&edb, Statement::Dep::ComponentVec &&stms);
@@ -60,23 +61,20 @@ public:
     void prepare(Parameters const &params, Output::OutputBase &out, Logger &log);
     //! Ground a prepared program.
     void ground(Context &context, Output::OutputBase &out, Logger &log);
-    const_iterator begin() const {
-        return stms_.begin();
-    }
-    const_iterator end() const {
-        return stms_.end();
-    }
+    const_iterator begin() const { return stms_.begin(); }
+    const_iterator end() const { return stms_.end(); }
 
-private:
-    SEdbVec                      edb_;
+  private:
+    SEdbVec edb_;
     Statement::Dep::ComponentVec stms_;
-    bool                         linearized_ = false;
+    bool linearized_ = false;
 };
 
 std::ostream &operator<<(std::ostream &out, Program const &prg);
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo
 
 #endif // GRINGO_GROUND_PROGRAM_HH

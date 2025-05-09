@@ -30,4 +30,3 @@ $ ./main.py --verbose --option solver.forget_on_step 1 \
 $ ./main.py --verbose --option solver.forget_on_step 1 --maxobj 40 \
     PartnerUnits/encodings/encoding.lp \
     PartnerUnits/instances/180-partner_units_polynomial-47-0.lp
-

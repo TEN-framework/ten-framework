@@ -25,19 +25,19 @@
 #ifndef GRINGO_SYMBOL_HH
 #define GRINGO_SYMBOL_HH
 
+#include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
-#include <memory>
-#include <unordered_map>
-#include <vector>
-#include <string>
 #include <functional>
-#include <cassert>
+#include <iostream>
 #include <iterator>
-#include <algorithm>
-#include <utility>
+#include <memory>
 #include <potassco/basic_types.h>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace Gringo {
 
@@ -46,7 +46,7 @@ namespace Gringo {
 using StringSpan = Potassco::StringSpan;
 
 class String {
-public:
+  public:
     String(StringSpan str);
     String(char const *str);
 
@@ -58,7 +58,7 @@ public:
     static uintptr_t toRep(String s) noexcept;
     static String fromRep(uintptr_t t) noexcept;
 
-private:
+  private:
     class Impl;
 
     String(uintptr_t) noexcept;
@@ -67,22 +67,22 @@ private:
 
 inline bool operator==(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) == 0; }
 inline bool operator!=(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) != 0; }
-inline bool operator< (String a, String b) { return std::strcmp(a.c_str(), b.c_str()) <  0; }
-inline bool operator> (String a, String b) { return std::strcmp(a.c_str(), b.c_str()) >  0; }
+inline bool operator<(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) < 0; }
+inline bool operator>(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) > 0; }
 inline bool operator<=(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) <= 0; }
 inline bool operator>=(String a, String b) { return std::strcmp(a.c_str(), b.c_str()) >= 0; }
 
 inline bool operator==(String a, char const *b) { return std::strcmp(a.c_str(), b) == 0; }
 inline bool operator!=(String a, char const *b) { return std::strcmp(a.c_str(), b) != 0; }
-inline bool operator< (String a, char const *b) { return std::strcmp(a.c_str(), b) <  0; }
-inline bool operator> (String a, char const *b) { return std::strcmp(a.c_str(), b) >  0; }
+inline bool operator<(String a, char const *b) { return std::strcmp(a.c_str(), b) < 0; }
+inline bool operator>(String a, char const *b) { return std::strcmp(a.c_str(), b) > 0; }
 inline bool operator<=(String a, char const *b) { return std::strcmp(a.c_str(), b) <= 0; }
 inline bool operator>=(String a, char const *b) { return std::strcmp(a.c_str(), b) >= 0; }
 
 inline bool operator==(char const *a, String b) { return std::strcmp(a, b.c_str()) == 0; }
 inline bool operator!=(char const *a, String b) { return std::strcmp(a, b.c_str()) != 0; }
-inline bool operator< (char const *a, String b) { return std::strcmp(a, b.c_str()) <  0; }
-inline bool operator> (char const *a, String b) { return std::strcmp(a, b.c_str()) >  0; }
+inline bool operator<(char const *a, String b) { return std::strcmp(a, b.c_str()) < 0; }
+inline bool operator>(char const *a, String b) { return std::strcmp(a, b.c_str()) > 0; }
 inline bool operator<=(char const *a, String b) { return std::strcmp(a, b.c_str()) <= 0; }
 inline bool operator>=(char const *a, String b) { return std::strcmp(a, b.c_str()) >= 0; }
 
@@ -94,9 +94,9 @@ inline std::ostream &operator<<(std::ostream &out, String x) {
 // {{{1 declaration of Signature (flyweight)
 
 class Sig {
-public:
+  public:
     Sig(String name, uint32_t arity, bool sign);
-    explicit Sig(uint64_t rep) : rep_(rep) {  }
+    explicit Sig(uint64_t rep) : rep_(rep) {}
 
     String name() const;
     Sig flipSign() const;
@@ -104,12 +104,8 @@ public:
     bool sign() const;
     size_t hash() const;
     uint64_t const &rep() const { return rep_; }
-    bool match(String n, uint32_t a, bool s = false) const {
-        return name() == n && arity() == a && sign() == s;
-    }
-    bool match(char const *n, uint32_t a, bool s = false) const {
-        return name() == n && arity() == a && sign() == s;
-    }
+    bool match(String n, uint32_t a, bool s = false) const { return name() == n && arity() == a && sign() == s; }
+    bool match(char const *n, uint32_t a, bool s = false) const { return name() == n && arity() == a && sign() == s; }
     bool operator==(Sig s) const;
     bool operator!=(Sig s) const;
     bool operator<(Sig s) const;
@@ -117,35 +113,48 @@ public:
     bool operator<=(Sig s) const;
     bool operator>=(Sig s) const;
 
-private:
+  private:
     uint64_t rep_;
 };
 
 inline std::ostream &operator<<(std::ostream &out, Sig x) {
-    if (x.sign()) { out << "-"; }
+    if (x.sign()) {
+        out << "-";
+    }
     out << x.name() << "/" << x.arity();
     return out;
 }
 
 // {{{1 declaration of Symbol (flyweight)
 
-enum class SymbolType : uint8_t {
-    Inf     = 0,
-    Num     = 1,
-    Str     = 4,
-    Fun     = 5,
-    Special = 6,
-    Sup     = 7
-};
+enum class SymbolType : uint8_t { Inf = 0, Num = 1, Str = 4, Fun = 5, Special = 6, Sup = 7 };
 
 inline std::ostream &operator<<(std::ostream &out, SymbolType sym) {
     switch (sym) {
-        case SymbolType::Inf: { out << "Inf"; break; }
-        case SymbolType::Num: { out << "Num"; break; }
-        case SymbolType::Str: { out << "Str"; break; }
-        case SymbolType::Fun: { out << "Fun"; break; }
-        case SymbolType::Special: { out << "Special"; break; }
-        case SymbolType::Sup: { out << "Sup"; break; }
+        case SymbolType::Inf: {
+            out << "Inf";
+            break;
+        }
+        case SymbolType::Num: {
+            out << "Num";
+            break;
+        }
+        case SymbolType::Str: {
+            out << "Str";
+            break;
+        }
+        case SymbolType::Fun: {
+            out << "Fun";
+            break;
+        }
+        case SymbolType::Special: {
+            out << "Special";
+            break;
+        }
+        case SymbolType::Sup: {
+            out << "Sup";
+            break;
+        }
     }
     return out;
 }
@@ -156,19 +165,17 @@ using SymSpan = Potassco::Span<Symbol>;
 using IdSymMap = std::unordered_map<String, Symbol>;
 
 class Symbol {
-public:
+  public:
     // construction
     Symbol(); // createSpecial
-    explicit Symbol(uint64_t sym) : rep_(sym) { };
+    explicit Symbol(uint64_t sym) : rep_(sym) {};
     static Symbol createId(String val, bool sign = false);
     static Symbol createStr(String val);
     static Symbol createNum(int num);
     static Symbol createInf();
     static Symbol createSup();
     static Symbol createTuple(SymSpan args);
-    static Symbol createTuple(SymVec const &args) {
-        return createTuple(Potassco::toSpan(args));
-    }
+    static Symbol createTuple(SymVec const &args) { return createTuple(Potassco::toSpan(args)); }
     static Symbol createFun(String name, SymSpan args, bool sign = false);
     static Symbol createFun(String name, SymVec const &args, bool sign = false) {
         return createFun(name, Potassco::toSpan(args), sign);
@@ -199,14 +206,15 @@ public:
     bool operator>=(Symbol const &other) const;
 
     // ouput
-    void print(std::ostream& out) const;
+    void print(std::ostream &out) const;
 
-    uint64_t const &rep () const { return rep_; }
-private:
+    uint64_t const &rep() const { return rep_; }
+
+  private:
     uint64_t rep_;
 };
 
-inline std::ostream& operator<<(std::ostream& out, Symbol sym) {
+inline std::ostream &operator<<(std::ostream &out, Symbol sym) {
     sym.print(out);
     return out;
 }
@@ -240,9 +248,7 @@ inline std::string quote(StringSpan str) {
     }
     return res;
 }
-inline std::string quote(char const *str) {
-    return quote({str, strlen(str)});
-}
+inline std::string quote(char const *str) { return quote({str, strlen(str)}); }
 
 inline std::string unquote(StringSpan str) {
     std::string res;
@@ -268,16 +274,16 @@ inline std::string unquote(StringSpan str) {
                 }
             }
             slash = false;
+        } else if (c == '\\') {
+            slash = true;
+        } else {
+            res.push_back(c);
         }
-        else if (c == '\\') { slash = true; }
-        else { res.push_back(c); }
     }
     return res;
 }
 
-inline std::string unquote(char const *str) {
-    return unquote({str, strlen(str)});
-}
+inline std::string unquote(char const *str) { return unquote({str, strlen(str)}); }
 
 // }}}1
 
@@ -287,18 +293,15 @@ namespace std {
 
 // {{{1 definition of hash functions
 
-template<>
-struct hash<Gringo::String> {
+template <> struct hash<Gringo::String> {
     size_t operator()(Gringo::String const &str) const { return str.hash(); }
 };
 
-template<>
-struct hash<Gringo::Sig> {
+template <> struct hash<Gringo::Sig> {
     size_t operator()(Gringo::Sig const &sig) const { return sig.hash(); }
 };
 
-template<>
-struct hash<Gringo::Symbol> {
+template <> struct hash<Gringo::Symbol> {
     size_t operator()(Gringo::Symbol const &sym) const { return sym.hash(); }
 };
 
@@ -307,4 +310,3 @@ struct hash<Gringo::Symbol> {
 } // namespace std
 
 #endif // GRINGO_SYMBOL_HH
-

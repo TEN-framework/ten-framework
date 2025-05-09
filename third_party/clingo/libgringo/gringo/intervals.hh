@@ -25,35 +25,34 @@
 #ifndef GRINGO_INTERVALS_HH
 #define GRINGO_INTERVALS_HH
 
-#include <vector>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
 namespace Gringo {
 
 // NOTE: refactor this is almost the same as interval_set ...
 
-template <class T>
-class IntervalSet {
-public:
+template <class T> class IntervalSet {
+  public:
     // Notes: read < as before with gap (except if bounds of same type are compared)
     using Value = T;
     struct RBound;
 
     struct LBound {
         LBound &operator=(RBound const &x) {
-            bound     = x.bound;
+            bound = x.bound;
             inclusive = !x.inclusive;
             return *this;
         }
         bool operator<(LBound const &x) const {
-            return bound < x.bound || (!(x.bound < bound) &&  inclusive && !x.inclusive );
+            return bound < x.bound || (!(x.bound < bound) && inclusive && !x.inclusive);
         }
         bool operator<=(LBound const &x) const {
             return bound < x.bound || (!(x.bound < bound) && (inclusive || !x.inclusive));
         }
         bool operator<(RBound const &x) const {
-            return bound < x.bound || (!(x.bound < bound) &&  inclusive &&  x.inclusive );
+            return bound < x.bound || (!(x.bound < bound) && inclusive && x.inclusive);
         }
         Value bound;
         bool inclusive;
@@ -61,33 +60,27 @@ public:
 
     struct RBound {
         RBound &operator=(LBound const &x) {
-            bound     = x.bound;
+            bound = x.bound;
             inclusive = !x.inclusive;
             return *this;
         }
         bool operator<(RBound const &x) const {
-            return bound < x.bound || (!(x.bound < bound) &&  !inclusive &&  x.inclusive );
+            return bound < x.bound || (!(x.bound < bound) && !inclusive && x.inclusive);
         }
         bool operator<=(RBound const &x) const {
-            return bound < x.bound || (!(x.bound < bound) && (!inclusive ||  x.inclusive));
+            return bound < x.bound || (!(x.bound < bound) && (!inclusive || x.inclusive));
         }
         bool operator<(LBound const &x) const {
-            return bound < x.bound || (!(x.bound < bound) &&  !inclusive && !x.inclusive );
+            return bound < x.bound || (!(x.bound < bound) && !inclusive && !x.inclusive);
         }
         Value bound;
         bool inclusive;
     };
 
     struct Interval {
-        bool contains(T const &x) const {
-            return !(x < *this) && !(*this < x);
-        }
-        bool empty() const {
-            return !(left < right);
-        }
-        bool operator<(Interval const &x) const {
-            return right < x.left;
-        }
+        bool contains(T const &x) const { return !(x < *this) && !(*this < x); }
+        bool empty() const { return !(left < right); }
+        bool operator<(Interval const &x) const { return right < x.left; }
         LBound left;
         RBound right;
     };
@@ -100,13 +93,9 @@ public:
         }
     }
 
-    IntervalSet(Interval const &x) {
-        add(x);
-    }
+    IntervalSet(Interval const &x) { add(x); }
 
-    IntervalSet(Value const &a, bool ta, Value const &b, bool tb) {
-        add({{a, ta}, {b, tb}});
-    }
+    IntervalSet(Value const &a, bool ta, Value const &b, bool tb) { add({{a, ta}, {b, tb}}); }
 
     IntervalSet(IntervalSet &&other) noexcept = default;
     IntervalSet(IntervalSet const &other) = default;
@@ -120,16 +109,14 @@ public:
             auto it = std::lower_bound(vec_.begin(), vec_.end(), x);
             if (it == vec_.end()) {
                 vec_.emplace_back(x);
-            }
-            else {
+            } else {
                 auto jt = std::upper_bound(it, vec_.end(), x);
                 if (it == jt) {
                     vec_.emplace(it, x);
-                }
-                else {
-                    it->left  = std::min(x.left, it->left);
-                    it->right = std::max(x.right, (jt-1)->right);
-                    vec_.erase(it+1, jt);
+                } else {
+                    it->left = std::min(x.left, it->left);
+                    it->right = std::max(x.right, (jt - 1)->right);
+                    vec_.erase(it + 1, jt);
                 }
             }
         }
@@ -140,27 +127,24 @@ public:
             auto it = std::lower_bound(vec_.begin(), vec_.end(), x);
             if (it != vec_.end()) {
                 auto jt = std::upper_bound(it, vec_.end(), x);
-                if (it+1 == jt) {
+                if (it + 1 == jt) {
                     Interval r;
-                    r.left    = x.right;
-                    r.right   = it->right;
+                    r.left = x.right;
+                    r.right = it->right;
                     it->right = x.left;
                     if (it->empty()) {
                         if (r.empty()) {
                             vec_.erase(it);
-                        }
-                        else {
+                        } else {
                             *it = r;
                         }
+                    } else if (!r.empty()) {
+                        vec_.emplace(it + 1, r);
                     }
-                    else if (!r.empty()) {
-                        vec_.emplace(it+1, r);
-                    }
-                }
-                else if (it != jt) {
-                    it->right    = x.left;
-                    (jt-1)->left = x.right;
-                    vec_.erase(it + !it->empty(), jt - !(jt-1)->empty());
+                } else if (it != jt) {
+                    it->right = x.left;
+                    (jt - 1)->left = x.right;
+                    vec_.erase(it + !it->empty(), jt - !(jt - 1)->empty());
                 }
             }
         }
@@ -189,47 +173,30 @@ public:
         return false;
     }
 
-    bool empty() const {
-        return vec_.empty();
-    }
+    bool empty() const { return vec_.empty(); }
 
-    size_t size() const {
-        return vec_.size();
-    }
+    size_t size() const { return vec_.size(); }
 
-    Interval const &front() const {
-        return vec_.front();
-    }
+    Interval const &front() const { return vec_.front(); }
 
-    Interval const &back() const {
-        return vec_.back();
-    }
+    Interval const &back() const { return vec_.back(); }
 
-    void clear() {
-        return vec_.clear();
-    }
+    void clear() { return vec_.clear(); }
 
-    void add(Value const &a, bool ta, Value const &b, bool tb) {
-        add({{a, ta}, {b, tb}});
-    }
+    void add(Value const &a, bool ta, Value const &b, bool tb) { add({{a, ta}, {b, tb}}); }
 
-    const_iterator begin() const {
-        return vec_.begin();
-    }
+    const_iterator begin() const { return vec_.begin(); }
 
-    const_iterator end() const {
-        return vec_.end();
-    }
+    const_iterator end() const { return vec_.end(); }
 
-    void remove(Value const &a, bool ta, Value const &b, bool tb) {
-        return remove({{a, ta}, {b, tb}});
-    }
+    void remove(Value const &a, bool ta, Value const &b, bool tb) { return remove({{a, ta}, {b, tb}}); }
 
     IntervalSet intersect(IntervalSet const &set) const {
         auto it = vec_.begin();
         IntervalSet intersection;
         for (auto &x : set.vec_) {
-            for (; it != vec_.end() && it->right < x.left; ++it) { }
+            for (; it != vec_.end() && it->right < x.left; ++it) {
+            }
             for (; it != vec_.end() && it->right <= x.right; ++it) {
                 intersection.vec_.emplace_back(Interval{std::max(it->left, x.left), it->right});
             }
@@ -245,7 +212,8 @@ public:
         IntervalSet difference;
         for (auto &x : vec_) {
             Interval current = x;
-            for (; it != set.vec_.end() && it->right < current.left; ++it) { }
+            for (; it != set.vec_.end() && it->right < current.left; ++it) {
+            }
             for (; it != set.vec_.end() && it->right <= current.right; ++it) {
                 if (current.left < it->left) {
                     difference.vec_.emplace_back(current);
@@ -263,29 +231,21 @@ public:
         return difference;
     }
 
-private:
+  private:
     IntervalVec vec_;
 };
 
-template <class T>
-bool operator<(T const &a, typename IntervalSet<T>::Interval const &b) {
+template <class T> bool operator<(T const &a, typename IntervalSet<T>::Interval const &b) {
     return a < b.left.bound || (!(b.left.bound < a) && !b.left.inclusive);
 }
 
-template <class T>
-bool operator<(typename IntervalSet<T>::Interval const &a, T const &b) {
+template <class T> bool operator<(typename IntervalSet<T>::Interval const &a, T const &b) {
     return a.right.bound < b || (!(b < a.right.bound) && !a.right.inclusive);
 }
 
-template <class T>
-typename Gringo::IntervalSet<T>::const_iterator begin(IntervalSet<T> const &x) {
-    return x.begin();
-}
+template <class T> typename Gringo::IntervalSet<T>::const_iterator begin(IntervalSet<T> const &x) { return x.begin(); }
 
-template <class T>
-typename Gringo::IntervalSet<T>::const_iterator end(IntervalSet<T> const &x) {
-    return x.end();
-}
+template <class T> typename Gringo::IntervalSet<T>::const_iterator end(IntervalSet<T> const &x) { return x.end(); }
 
 } // namespace Gringo
 

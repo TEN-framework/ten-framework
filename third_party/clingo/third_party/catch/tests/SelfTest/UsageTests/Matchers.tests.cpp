@@ -406,6 +406,25 @@ TEST_CASE( "Vector matchers that fail", "[matchers][vector][.][failing]" ) {
     }
 }
 
+namespace {
+    struct SomeType {
+        int i;
+        friend bool operator==( SomeType lhs, SomeType rhs ) {
+            return lhs.i == rhs.i;
+        }
+    };
+} // end anonymous namespace
+
+TEST_CASE( "Vector matcher with elements without !=", "[matchers][vector][approvals]" ) {
+    std::vector<SomeType> lhs, rhs;
+    lhs.push_back( { 1 } );
+    lhs.push_back( { 2 } );
+    rhs.push_back( { 1 } );
+    rhs.push_back( { 1 } );
+
+    REQUIRE_THAT( lhs, !Equals(rhs) );
+}
+
 TEST_CASE( "Exception matchers that succeed",
            "[matchers][exceptions][!throws]" ) {
     CHECK_THROWS_MATCHES(
@@ -871,7 +890,7 @@ struct MatcherA : Catch::Matchers::MatcherGenericBase {
         return "equals: (int) 1 or (string) \"1\"";
     }
     bool match( int i ) const { return i == 1; }
-    bool match( std::string s ) const { return s == "1"; }
+    bool match( std::string const& s ) const { return s == "1"; }
 };
 
 struct MatcherB : Catch::Matchers::MatcherGenericBase {
@@ -1008,7 +1027,6 @@ TEST_CASE( "Combining MatchNotOfGeneric does not nest",
 }
 
 struct EvilAddressOfOperatorUsed : std::exception {
-    EvilAddressOfOperatorUsed() {}
     const char* what() const noexcept override {
         return "overloaded address-of operator of matcher was used instead of "
                "std::addressof";
@@ -1016,7 +1034,6 @@ struct EvilAddressOfOperatorUsed : std::exception {
 };
 
 struct EvilCommaOperatorUsed : std::exception {
-    EvilCommaOperatorUsed() {}
     const char* what() const noexcept override {
         return "overloaded comma operator of matcher was used";
     }
@@ -1054,7 +1071,6 @@ struct ImmovableMatcher : Catch::Matchers::MatcherGenericBase {
 };
 
 struct MatcherWasMovedOrCopied : std::exception {
-    MatcherWasMovedOrCopied() {}
     const char* what() const noexcept override {
         return "attempted to copy or move a matcher";
     }
@@ -1062,17 +1078,20 @@ struct MatcherWasMovedOrCopied : std::exception {
 
 struct ThrowOnCopyOrMoveMatcher : Catch::Matchers::MatcherGenericBase {
     ThrowOnCopyOrMoveMatcher() = default;
-    [[noreturn]] ThrowOnCopyOrMoveMatcher( ThrowOnCopyOrMoveMatcher const& ):
-        Catch::Matchers::MatcherGenericBase() {
+
+    [[noreturn]] ThrowOnCopyOrMoveMatcher( ThrowOnCopyOrMoveMatcher const& other ):
+        Catch::Matchers::MatcherGenericBase( other ) {
         throw MatcherWasMovedOrCopied();
     }
-    [[noreturn]] ThrowOnCopyOrMoveMatcher( ThrowOnCopyOrMoveMatcher&& ):
-        Catch::Matchers::MatcherGenericBase() {
+    // NOLINTNEXTLINE(performance-noexcept-move-constructor)
+    [[noreturn]] ThrowOnCopyOrMoveMatcher( ThrowOnCopyOrMoveMatcher&& other ):
+        Catch::Matchers::MatcherGenericBase( CATCH_MOVE(other) ) {
         throw MatcherWasMovedOrCopied();
     }
     ThrowOnCopyOrMoveMatcher& operator=( ThrowOnCopyOrMoveMatcher const& ) {
         throw MatcherWasMovedOrCopied();
     }
+    // NOLINTNEXTLINE(performance-noexcept-move-constructor)
     ThrowOnCopyOrMoveMatcher& operator=( ThrowOnCopyOrMoveMatcher&& ) {
         throw MatcherWasMovedOrCopied();
     }

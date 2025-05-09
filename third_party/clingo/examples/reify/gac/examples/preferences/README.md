@@ -1,4 +1,4 @@
-# Preferences 
+# Preferences
 
 Call to compute all superset maximal stable models of `guess.lp`:
 

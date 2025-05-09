@@ -135,9 +135,6 @@ class bhopscotch_map {
                  const Allocator& alloc)
       : bhopscotch_map(bucket_count, hash, KeyEqual(), alloc) {}
 
-  bhopscotch_map(const bhopscotch_map& other, const Allocator& alloc)
-      : m_ht(other.m_ht, alloc) {}
-
   explicit bhopscotch_map(const Allocator& alloc)
       : bhopscotch_map(ht::DEFAULT_INIT_BUCKETS_SIZE, alloc) {}
 

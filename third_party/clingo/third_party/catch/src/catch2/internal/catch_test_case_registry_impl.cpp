@@ -7,11 +7,9 @@
 // SPDX-License-Identifier: BSL-1.0
 #include <catch2/internal/catch_test_case_registry_impl.hpp>
 
-#include <catch2/internal/catch_context.hpp>
 #include <catch2/internal/catch_enforce.hpp>
+#include <catch2/interfaces/catch_interfaces_config.hpp>
 #include <catch2/interfaces/catch_interfaces_registry_hub.hpp>
-#include <catch2/internal/catch_random_number_generator.hpp>
-#include <catch2/internal/catch_run_context.hpp>
 #include <catch2/internal/catch_sharding.hpp>
 #include <catch2/catch_test_case_info.hpp>
 #include <catch2/catch_test_spec.hpp>
@@ -22,6 +20,38 @@
 #include <set>
 
 namespace Catch {
+
+    namespace {
+        static void enforceNoDuplicateTestCases(
+            std::vector<TestCaseHandle> const& tests ) {
+            auto testInfoCmp = []( TestCaseInfo const* lhs,
+                                   TestCaseInfo const* rhs ) {
+                return *lhs < *rhs;
+            };
+            std::set<TestCaseInfo const*, decltype( testInfoCmp )&> seenTests(
+                testInfoCmp );
+            for ( auto const& test : tests ) {
+                const auto infoPtr = &test.getTestCaseInfo();
+                const auto prev = seenTests.insert( infoPtr );
+                CATCH_ENFORCE( prev.second,
+                               "error: test case \""
+                                   << infoPtr->name << "\", with tags \""
+                                   << infoPtr->tagsAsString()
+                                   << "\" already defined.\n"
+                                   << "\tFirst seen at "
+                                   << ( *prev.first )->lineInfo << "\n"
+                                   << "\tRedefined at " << infoPtr->lineInfo );
+            }
+        }
+
+        static bool matchTest( TestCaseHandle const& testCase,
+                               TestSpec const& testSpec,
+                               IConfig const& config ) {
+            return testSpec.matches( testCase.getTestCaseInfo() ) &&
+                   isThrowSafe( testCase, config );
+        }
+
+    } // end unnamed namespace
 
     std::vector<TestCaseHandle> sortTests( IConfig const& config, std::vector<TestCaseHandle> const& unsortedTestCases ) {
         switch (config.runOrder()) {
@@ -40,7 +70,6 @@ namespace Catch {
             return sorted;
         }
         case TestRunOrder::Randomized: {
-            seedRng(config);
             using TestWithHash = std::pair<TestCaseInfoHasher::hash_t, TestCaseHandle>;
 
             TestCaseInfoHasher h{ config.rngSeed() };
@@ -79,29 +108,6 @@ namespace Catch {
         return !testCase.getTestCaseInfo().throws() || config.allowThrows();
     }
 
-    bool matchTest( TestCaseHandle const& testCase, TestSpec const& testSpec, IConfig const& config ) {
-        return testSpec.matches( testCase.getTestCaseInfo() ) && isThrowSafe( testCase, config );
-    }
-
-    void
-    enforceNoDuplicateTestCases( std::vector<TestCaseHandle> const& tests ) {
-        auto testInfoCmp = []( TestCaseInfo const* lhs,
-                               TestCaseInfo const* rhs ) {
-            return *lhs < *rhs;
-        };
-        std::set<TestCaseInfo const*, decltype(testInfoCmp) &> seenTests(testInfoCmp);
-        for ( auto const& test : tests ) {
-            const auto infoPtr = &test.getTestCaseInfo();
-            const auto prev = seenTests.insert( infoPtr );
-            CATCH_ENFORCE(
-                prev.second,
-                "error: test case \"" << infoPtr->name << "\", with tags \""
-                    << infoPtr->tagsAsString() << "\" already defined.\n"
-                    << "\tFirst seen at " << ( *prev.first )->lineInfo << "\n"
-                    << "\tRedefined at " << infoPtr->lineInfo );
-        }
-    }
-
     std::vector<TestCaseHandle> filterTests( std::vector<TestCaseHandle> const& testCases, TestSpec const& testSpec, IConfig const& config ) {
         std::vector<TestCaseHandle> filtered;
         filtered.reserve( testCases.size() );
@@ -116,6 +122,8 @@ namespace Catch {
     std::vector<TestCaseHandle> const& getAllTestCasesSorted( IConfig const& config ) {
         return getRegistryHub().getTestCaseRegistry().getAllTestsSorted( config );
     }
+
+    TestRegistry::~TestRegistry() = default;
 
     void TestRegistry::registerTest(Detail::unique_ptr<TestCaseInfo> testInfo, Detail::unique_ptr<ITestInvoker> testInvoker) {
         m_handles.emplace_back(testInfo.get(), testInvoker.get());
@@ -140,13 +148,6 @@ namespace Catch {
             m_currentSortOrder = config.runOrder();
         }
         return m_sortedFunctions;
-    }
-
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    void TestInvokerAsFunction::invoke() const {
-        m_testAsFunction();
     }
 
 } // end namespace Catch

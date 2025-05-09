@@ -64,4 +64,3 @@ bot :- scc(C,A), true(atom(A)), wait(C,atom(A),Z), steps(C,Z).
 
 true(atom(A)) :- supp(A), not fact(A), bot.
 fail(atom(A)) :- supp(A), not fact(A), bot.
-

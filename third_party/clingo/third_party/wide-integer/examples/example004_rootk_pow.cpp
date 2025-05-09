@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2018 - 2022.                 //
+//  Copyright Christopher Kormanyos 2018 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -23,16 +23,14 @@ auto ::math::wide_integer::example004_rootk_pow() -> bool
     using ::math::wide_integer::uint256_t;
     #endif
 
-    WIDE_INTEGER_CONSTEXPR uint256_t x("0x95E0E51079E1D11737D3FD01429AA745582FEB4381D61FA56948C1A949E43C32");
-    WIDE_INTEGER_CONSTEXPR uint256_t r = rootk(x, 7U); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    constexpr uint256_t x("0x95E0E51079E1D11737D3FD01429AA745582FEB4381D61FA56948C1A949E43C32");
+    constexpr uint256_t r = rootk(x, 7U); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
-    WIDE_INTEGER_CONSTEXPR bool result_is_ok_root = (r == UINT64_C(0x16067D1894));
+    constexpr bool result_is_ok_root = (r == UINT64_C(0x16067D1894));
 
     result_is_ok = (result_is_ok_root && result_is_ok);
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_is_ok_root, "Error: example004_rootk_pow not OK!");
-    #endif
   }
 
   {
@@ -42,16 +40,14 @@ auto ::math::wide_integer::example004_rootk_pow() -> bool
     using ::math::wide_integer::uint256_t;
     #endif
 
-    WIDE_INTEGER_CONSTEXPR uint256_t r { static_cast<std::uint64_t>(UINT64_C(0x16067D1894)) };
-    WIDE_INTEGER_CONSTEXPR uint256_t p = pow(r, static_cast<unsigned>(UINT8_C(7)));
+    constexpr uint256_t r { static_cast<std::uint64_t>(UINT64_C(0x16067D1894)) };
+    constexpr uint256_t p = pow(r, static_cast<unsigned>(UINT8_C(7)));
 
-    WIDE_INTEGER_CONSTEXPR bool result_is_ok_pow = (p == "0x95E0E5104B2F636571834936C982E40EFA25682E7370CD1C248051E1CDC34000");
+    constexpr bool result_is_ok_pow = (p == "0x95E0E5104B2F636571834936C982E40EFA25682E7370CD1C248051E1CDC34000");
 
     result_is_ok = (result_is_ok_pow && result_is_ok);
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_is_ok_pow, "Error: example004_rootk_pow not OK!");
-    #endif
   }
 
   {
@@ -61,16 +57,14 @@ auto ::math::wide_integer::example004_rootk_pow() -> bool
     using ::math::wide_integer::int256_t;
     #endif
 
-    WIDE_INTEGER_CONSTEXPR int256_t x("-17791969125525294590007745776736486317864490689865550963808715359713140948018");
-    WIDE_INTEGER_CONSTEXPR int256_t r = cbrt(x);
+    constexpr int256_t x("-17791969125525294590007745776736486317864490689865550963808715359713140948018");
+    constexpr int256_t r = cbrt(x);
 
-    WIDE_INTEGER_CONSTEXPR bool result_is_ok_root = (r == int256_t("-26106060416733621800766427"));
+    constexpr bool result_is_ok_root = (r == int256_t("-26106060416733621800766427"));
 
     result_is_ok = (result_is_ok_root && result_is_ok);
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_is_ok_root, "Error: example004_rootk_pow not OK!");
-    #endif
   }
 
   {
@@ -80,16 +74,14 @@ auto ::math::wide_integer::example004_rootk_pow() -> bool
     using ::math::wide_integer::int256_t;
     #endif
 
-    WIDE_INTEGER_CONSTEXPR int256_t x("-17791969125525294590007745776736486317864490689865550963808715359713140948018");
-    WIDE_INTEGER_CONSTEXPR int256_t r = rootk(x, 3);
+    constexpr int256_t x("-17791969125525294590007745776736486317864490689865550963808715359713140948018");
+    constexpr int256_t r = rootk(x, 3);
 
-    WIDE_INTEGER_CONSTEXPR bool result_is_ok_root = (r == int256_t("-26106060416733621800766427"));
+    constexpr bool result_is_ok_root = (r == int256_t("-26106060416733621800766427"));
 
     result_is_ok = (result_is_ok_root && result_is_ok);
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_is_ok_root, "Error: example004_rootk_pow not OK!");
-    #endif
   }
 
   return result_is_ok;

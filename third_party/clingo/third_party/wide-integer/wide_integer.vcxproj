@@ -72,19 +72,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);C:\boost\boost_1_83_0;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);C:\boost\boost_1_85_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);C:\boost\boost_1_83_0;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);C:\boost\boost_1_85_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);C:\boost\boost_1_83_0;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);C:\boost\boost_1_85_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);C:\boost\boost_1_83_0;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);C:\boost\boost_1_85_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -195,6 +195,7 @@
     <ClInclude Include="test\test_uintwide_t_n_binary_ops_template_signed.h" />
     <ClInclude Include="test\test_uintwide_t_n_binary_ops_template.h" />
     <ClInclude Include="test\test_uintwide_t_n_number_theory_funcs_template.h" />
+    <ClInclude Include="util\utility\util_pseudorandom_time_point_seed.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="examples\example000a_builtin_convert.cpp" />

@@ -22,11 +22,12 @@
 
 // }}}
 
+#include "gringo/input/aggregate.hh"
 #include "gringo/bug.hh"
 #include "gringo/logger.hh"
-#include "gringo/input/aggregate.hh"
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ definition of AssignLevel
 
@@ -50,7 +51,9 @@ void AssignLevel::assignLevels(unsigned level, BoundSet const &bound) {
     BoundSet children(bound);
     for (auto &occs : occurr_) {
         unsigned l = children.emplace(occs.first, level).first->second;
-        for (auto &occ : occs.second) { occ->level = l; }
+        for (auto &occ : occs.second) {
+            occ->level = l;
+        }
     }
     for (auto &child : children_) {
         child.assignLevels(level + 1, children);
@@ -60,21 +63,13 @@ void AssignLevel::assignLevels(unsigned level, BoundSet const &bound) {
 // }}}
 // {{{ definition of CheckLevel
 
-bool CheckLevel::Ent::operator<(Ent const &x) const {
-    return false;
-}
+bool CheckLevel::Ent::operator<(Ent const &x) const { return false; }
 
-CheckLevel::CheckLevel(Location const &loc, Printable const &p)
-: loc(loc)
-, p(p) { }
+CheckLevel::CheckLevel(Location const &loc, Printable const &p) : loc(loc), p(p) {}
 
 #if defined(_MSC_VER) && _MSCVER < 1920
 CheckLevel::CheckLevel(CheckLevel &&other) noexcept
-: loc{other.loc}
-, p{other.p}
-, dep{std::move(other.dep)}
-, current{other.current}
-, vars{std::move(other.vars)} { }
+    : loc{other.loc}, p{other.p}, dep{std::move(other.dep)}, current{other.current}, vars{std::move(other.vars)} {}
 #else
 CheckLevel::CheckLevel(CheckLevel &&other) noexcept = default;
 #endif
@@ -91,33 +86,38 @@ void CheckLevel::check(Logger &log) {
     dep.order();
     auto vars(dep.open());
     if (!vars.empty()) {
-        auto cmp = [](SC::VarNode const *x, SC::VarNode const *y) -> bool{
-            if (x->data->name != y->data->name) { return x->data->name < y->data->name; }
+        auto cmp = [](SC::VarNode const *x, SC::VarNode const *y) -> bool {
+            if (x->data->name != y->data->name) {
+                return x->data->name < y->data->name;
+            }
             return x->data->loc() < y->data->loc();
         };
         std::sort(vars.begin(), vars.end(), cmp);
         std::ostringstream msg;
         msg << loc << ": error: unsafe variables in:\n  " << p << "\n";
-        for (auto &x : vars) { msg << x->data->loc() << ": note: '" << x->data->name << "' is unsafe\n"; }
+        for (auto &x : vars) {
+            msg << x->data->loc() << ": note: '" << x->data->name << "' is unsafe\n";
+        }
         GRINGO_REPORT(log, Warnings::RuntimeError) << msg.str();
     }
 }
 
 void addVars(ChkLvlVec &levels, VarTermBoundVec &vars) {
-    for (auto &x: vars) {
+    for (auto &x : vars) {
         auto &lvl(levels[x.first->level]);
         bool bind = x.second && levels.size() == x.first->level + 1;
-        if (bind) { lvl.dep.insertEdge(*lvl.current, lvl.var(*x.first)); }
-        else      { lvl.dep.insertEdge(lvl.var(*x.first), *lvl.current); }
+        if (bind) {
+            lvl.dep.insertEdge(*lvl.current, lvl.var(*x.first));
+        } else {
+            lvl.dep.insertEdge(lvl.var(*x.first), *lvl.current);
+        }
     }
 }
 
 // }}}
 // {{{ declaration of ToGroundArg
 
-ToGroundArg::ToGroundArg(unsigned &auxNames, DomainData &domains)
-: auxNames(auxNames)
-, domains(domains) { }
+ToGroundArg::ToGroundArg(unsigned &auxNames, DomainData &domains) : auxNames(auxNames), domains(domains) {}
 
 String ToGroundArg::newId(bool increment) {
     unsigned inc = increment ? 1 : 0;
@@ -158,16 +158,12 @@ UTerm ToGroundArg::newId(UTermVec &&global, Location const &loc, bool increment)
 
 // {{{ definition of BodyAggregate
 
-void BodyAggregate::addToSolver(IESolver &solver) {
-    static_cast<void>(solver);
-}
+void BodyAggregate::addToSolver(IESolver &solver) { static_cast<void>(solver); }
 
 // }}}
 // {{{ definition of HeadAggregate
 
-void HeadAggregate::addToSolver(IESolver &solver) {
-    static_cast<void>(solver);
-}
+void HeadAggregate::addToSolver(IESolver &solver) { static_cast<void>(solver); }
 
 void HeadAggregate::initTheory(TheoryDefs &def, bool hasBody, Logger &log) {
     static_cast<void>(def);
@@ -175,9 +171,7 @@ void HeadAggregate::initTheory(TheoryDefs &def, bool hasBody, Logger &log) {
     static_cast<void>(log);
 }
 
-Symbol HeadAggregate::isEDB() const {
-    return {};
-}
+Symbol HeadAggregate::isEDB() const { return {}; }
 
 void HeadAggregate::printWithCondition(std::ostream &out, UBodyAggrVec const &condition) const {
     out << *this;
@@ -195,18 +189,16 @@ std::vector<ULitVec> unpoolComparison_(ULitVec const &cond) {
     std::vector<ULitVec> conds;
     // compute the cross-product of the unpooled conditions
     Term::unpool(
-        cond.begin(), cond.end(),
-        [](ULit const &lit) {
-            return lit->unpoolComparison();
-        }, [&] (std::vector<ULitVec> cond) {
+        cond.begin(), cond.end(), [](ULit const &lit) { return lit->unpoolComparison(); },
+        [&](std::vector<ULitVec> cond) {
             conds.emplace_back();
             for (auto &lits : cond) {
-                conds.back().insert(conds.back().end(),
-                                    std::make_move_iterator(lits.begin()),
+                conds.back().insert(conds.back().end(), std::make_move_iterator(lits.begin()),
                                     std::make_move_iterator(lits.end()));
             }
         });
     return conds;
 }
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

@@ -25,14 +25,14 @@
 #ifndef CLINGO_CONTROL_HH
 #define CLINGO_CONTROL_HH
 
-#include <gringo/symbol.hh>
-#include <gringo/types.hh>
-#include <gringo/locatable.hh>
+#include <clingo.h>
 #include <gringo/backend.hh>
+#include <gringo/locatable.hh>
 #include <gringo/logger.hh>
 #include <gringo/output/literals.hh>
+#include <gringo/symbol.hh>
+#include <gringo/types.hh>
 #include <potassco/clingo.h>
-#include <clingo.h>
 
 namespace Gringo {
 
@@ -67,17 +67,17 @@ namespace Gringo {
 // {{{1 declaration of SolveResult
 
 class SolveResult {
-public:
-    enum Satisfiabily : unsigned { Unknown=0, Satisfiable=1, Unsatisfiable=2 };
+  public:
+    enum Satisfiabily : unsigned { Unknown = 0, Satisfiable = 1, Unsatisfiable = 2 };
     SolveResult(Satisfiabily status, bool exhausted, bool interrupted)
-    : repr_(static_cast<unsigned>(status) | (exhausted << 2) | (interrupted << 3)) { }
-    SolveResult(unsigned repr)
-    : repr_(repr) { }
+        : repr_(static_cast<unsigned>(status) | (exhausted << 2) | (interrupted << 3)) {}
+    SolveResult(unsigned repr) : repr_(repr) {}
     Satisfiabily satisfiable() const { return static_cast<Satisfiabily>(repr_ & 3); }
     bool exhausted() const { return (repr_ >> 2) & 1; }
     bool interrupted() const { return (repr_ >> 3) & 1; }
     operator unsigned() const { return repr_; }
-private:
+
+  private:
     unsigned repr_;
 };
 
@@ -115,7 +115,7 @@ struct clingo_model {
     virtual ConsequenceType isConsequence(Potassco::Lit_t literal) const = 0;
     virtual Gringo::SymbolicAtoms const &getDomain() const = 0;
     virtual void add(Potassco::Span<Gringo::Symbol> symbols) = 0;
-    virtual ~clingo_model() { }
+    virtual ~clingo_model() {}
 };
 
 namespace Gringo {
@@ -131,37 +131,49 @@ struct SolveEventHandler {
 using USolveEventHandler = std::unique_ptr<SolveEventHandler>;
 inline bool SolveEventHandler::on_model(Model &) { return true; }
 inline bool SolveEventHandler::on_unsat(Potassco::Span<int64_t> optimization) { return true; }
-inline void SolveEventHandler::on_finish(SolveResult, Potassco::AbstractStatistics *, Potassco::AbstractStatistics *) { }
+inline void SolveEventHandler::on_finish(SolveResult, Potassco::AbstractStatistics *, Potassco::AbstractStatistics *) {}
 
 struct SolveFuture {
     virtual SolveResult get() = 0;
     virtual Model const *model() = 0;
     virtual Potassco::LitSpan unsatCore() = 0;
+    virtual Model const *lastModel() = 0;
     virtual bool wait(double timeout) = 0;
     virtual void cancel() = 0;
     virtual void resume() = 0;
-    virtual ~SolveFuture() { }
+    virtual ~SolveFuture() {}
 };
 using USolveFuture = std::unique_ptr<SolveFuture>;
 
 struct DefaultSolveFuture : SolveFuture {
-    DefaultSolveFuture(USolveEventHandler cb) : cb_(std::move(cb)) { }
-    SolveResult get() override { resume(); return {SolveResult::Unknown, false, false}; }
-    Model const *model() override { resume(); return nullptr; }
-    Potassco::LitSpan unsatCore() override {
-        throw std::runtime_error("no core available");
+    DefaultSolveFuture(USolveEventHandler cb) : cb_(std::move(cb)) {}
+    SolveResult get() override {
+        resume();
+        return {SolveResult::Unknown, false, false};
     }
-    bool wait(double) override { resume(); return true; }
+    Model const *model() override {
+        resume();
+        return nullptr;
+    }
+    Potassco::LitSpan unsatCore() override { throw std::runtime_error("no core available"); }
+    Model const *lastModel() override { throw std::runtime_error("no model available"); }
+    bool wait(double) override {
+        resume();
+        return true;
+    }
     void cancel() override { resume(); }
     void resume() override {
         if (!done_) {
             done_ = true;
-            if (cb_) { cb_->on_finish({SolveResult::Unknown, false, false}, nullptr, nullptr); }
+            if (cb_) {
+                cb_->on_finish({SolveResult::Unknown, false, false}, nullptr, nullptr);
+            }
         }
     }
 
     ~DefaultSolveFuture() override { resume(); }
-private:
+
+  private:
     USolveEventHandler cb_;
     bool done_ = false;
 };
@@ -172,12 +184,13 @@ struct ConfigProxy {
     virtual bool hasSubKey(unsigned key, char const *name) const = 0;
     virtual unsigned getSubKey(unsigned key, char const *name) const = 0;
     virtual unsigned getArrKey(unsigned key, unsigned idx) const = 0;
-    virtual void getKeyInfo(unsigned key, int* nSubkeys = 0, int* arrLen = 0, const char** help = 0, int* nValues = 0) const = 0;
-    virtual const char* getSubKeyName(unsigned key, unsigned idx) const = 0;
+    virtual void getKeyInfo(unsigned key, int *nSubkeys = 0, int *arrLen = 0, const char **help = 0,
+                            int *nValues = 0) const = 0;
+    virtual const char *getSubKeyName(unsigned key, unsigned idx) const = 0;
     virtual bool getKeyValue(unsigned key, std::string &value) const = 0;
     virtual void setKeyValue(unsigned key, const char *val) = 0;
     virtual unsigned getRootKey() const = 0;
-    virtual ~ConfigProxy() { }
+    virtual ~ConfigProxy() {}
 };
 
 // {{{1 declaration of Propagator
@@ -190,7 +203,8 @@ using PropagateInit = clingo_propagate_init;
 struct clingo_propagate_init {
     virtual Potassco::Lit_t addLiteral(bool freeze) = 0;
     virtual bool addClause(Potassco::LitSpan lits) = 0;
-    virtual bool addWeightConstraint(Potassco::Lit_t lit, Potassco::WeightLitSpan lits, Potassco::Weight_t bound, int type, bool eq) = 0;
+    virtual bool addWeightConstraint(Potassco::Lit_t lit, Potassco::WeightLitSpan lits, Potassco::Weight_t bound,
+                                     int type, bool eq) = 0;
     virtual void addMinimize(Potassco::Lit_t literal, Potassco::Weight_t weight, Potassco::Weight_t priority) = 0;
     virtual bool propagate() = 0;
     virtual Gringo::Output::DomainData const &theory() const = 0;
@@ -230,21 +244,26 @@ using Control = clingo_control;
 struct clingo_control {
     using Assumptions = Potassco::LitSpan;
     using GroundVec = std::vector<std::pair<Gringo::String, Gringo::SymVec>>;
-    using NewControlFunc = Gringo::Control* (*)(int, char const **);
+    using NewControlFunc = Gringo::Control *(*)(int, char const **);
     using FreeControlFunc = void (*)(Gringo::Control *);
 
     virtual Gringo::ConfigProxy &getConf() = 0;
     virtual Gringo::SymbolicAtoms const &getDomain() const = 0;
 
     virtual void ground(GroundVec const &vec, Gringo::Context *context) = 0;
-    virtual Gringo::USolveFuture solve(Assumptions assumptions, clingo_solve_mode_bitset_t mode, Gringo::USolveEventHandler cb = nullptr) = 0;
+    virtual Gringo::USolveFuture solve(Assumptions assumptions, clingo_solve_mode_bitset_t mode,
+                                       Gringo::USolveEventHandler cb = nullptr) = 0;
     virtual void interrupt() = 0;
     virtual void *claspFacade() = 0;
     virtual void add(std::string const &name, Gringo::StringVec const &params, std::string const &part) = 0;
     virtual void load(std::string const &filename) = 0;
+    virtual void load_aspif(Potassco::Span<char const *> files) = 0;
     virtual Gringo::Symbol getConst(std::string const &name) const = 0;
     virtual bool blocked() = 0;
     virtual void assignExternal(Potassco::Atom_t ext, Potassco::Value_t val) = 0;
+    virtual void assignExternal(Gringo::Symbol ext, Potassco::Value_t val) = 0;
+    virtual void updateProject(Potassco::AtomSpan project, bool append) = 0;
+    virtual void removeMinimize() = 0;
     virtual bool isConflicting() const noexcept = 0;
     virtual Potassco::AbstractStatistics const *statistics() const = 0;
     virtual void useEnumAssumption(bool enable) = 0;

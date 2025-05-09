@@ -74,10 +74,10 @@ This example shows how to solve both iteratively and asynchronously:
 from typing import ContextManager, Iterator, List, Optional, Sequence, Tuple, Union
 
 from ._internal import _c_call, _c_call2, _ffi, _handle_error, _lib
-from .util import Slice, SlicedSequence
 from .core import OrderedEnum
 from .symbol import Symbol
 from .symbolic_atoms import SymbolicAtoms
+from .util import Slice, SlicedSequence
 
 __all__ = ["Model", "ModelType", "SolveControl", "SolveHandle", "SolveResult"]
 
@@ -558,6 +558,20 @@ class SolveHandle(ContextManager["SolveHandle"]):
             handler=self._handler,
         )
         return [core[i] for i in range(size)]
+
+    def last(self) -> Optional[Model]:
+        """
+        The last computed model if there is any.
+
+        Notes
+        -----
+        If the search is not completed yet or the problem is unsatisfiable, the function returns None.
+        """
+        p_model = _ffi.new("clingo_model_t**")
+        _handle_error(_lib.clingo_solve_handle_last(self._rep, p_model), self._handler)
+        if p_model[0] == _ffi.NULL:
+            return None
+        return Model(p_model[0])
 
     def get(self) -> SolveResult:
         """

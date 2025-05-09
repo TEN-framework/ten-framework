@@ -25,10 +25,10 @@
 #include <gringo/output/aggregates.hh>
 #include <gringo/output/statements.hh>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
-namespace {
-}
+namespace {}
 
 // {{{1 definition of AggregateAnalyzer
 
@@ -106,9 +106,9 @@ void AggregateAnalyzer::print(std::ostream &out) {
     out << std::endl;
 }
 
-AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBounds const &disjunctiveBounds, AggregateFunction fun, Interval range, BodyAggregateElements const &elems)
-: weightType{POSITIVE}
-, range(range) {
+AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBounds const &disjunctiveBounds,
+                                     AggregateFunction fun, Interval range, BodyAggregateElements const &elems)
+    : weightType{POSITIVE}, range(range) {
     // NOTE: considers everything that is fixed in a reduct as ANTIMONOTONE
     IntervalSet<Symbol> numBounds;
     for (auto const &y : disjunctiveBounds) {
@@ -137,12 +137,12 @@ AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBound
         }
         IntervalSet<Symbol>::Interval a;
         IntervalSet<Symbol>::Interval b;
-        a.left  = range.left;
+        a.left = range.left;
         a.right = x.left;
-        b.left  = x.right;
+        b.left = x.right;
         b.right = range.right;
         if (a.empty() && b.empty()) {
-            truth        = False;
+            truth = False;
             monotonicity = ANTIMONOTONE;
             bounds.clear();
             bounds.emplace_back(a, b);
@@ -154,12 +154,11 @@ AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBound
         }
     }
     if (bounds.empty()) {
-        truth        = True;
+        truth = True;
         monotonicity = MONOTONE;
-    }
-    else {
+    } else {
         truth = Open;
-        bool hasPositive       = false;
+        bool hasPositive = false;
         bool hasPositiveWeight = false;
         bool hasNegativeWeight = false;
         for (auto const &x : elems) {
@@ -167,7 +166,7 @@ AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBound
             for (auto const &y : x.second) {
                 for (auto const &z : data.clause(y)) {
                     if (z.sign() == NAF::POS) {
-                        hasPositive        = true;
+                        hasPositive = true;
                         hasPositiveLiteral = true;
                         break;
                     }
@@ -192,30 +191,30 @@ AggregateAnalyzer::AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBound
                 weightType = NEGATIVE;
             }
         }
-        if (naf != NAF::POS || !hasPositive)  {
+        if (naf != NAF::POS || !hasPositive) {
             monotonicity = ANTIMONOTONE;
-        }
-        else if (nonMonotone) {
+        } else if (nonMonotone) {
             monotonicity = NONMONOTONE;
-        }
-        else if (bounds.size() == 1) {
+        } else if (bounds.size() == 1) {
             bool flip = fun == AggregateFunction::MIN || (fun == AggregateFunction::SUM && weightType == NEGATIVE);
             if (bounds.front().first.empty()) {
                 flip = !flip;
             }
-            monotonicity = flip ? MONOTONE : ANTIMONOTONE;;
-        }
-        else {
+            monotonicity = flip ? MONOTONE : ANTIMONOTONE;
+            ;
+        } else {
             monotonicity = CONVEX;
         }
     }
 }
 
-LitValVec AggregateAnalyzer::translateElems(DomainData &data, Translator &x, AggregateFunction fun, BodyAggregateElements const &bdElems, bool incomplete) const {
+LitValVec AggregateAnalyzer::translateElems(DomainData &data, Translator &x, AggregateFunction fun,
+                                            BodyAggregateElements const &bdElems, bool incomplete) const {
     LitValVec elems;
     for (auto const &y : bdElems) {
         Symbol weight(getWeight(fun, data.tuple(y.first)));
-        LiteralId lit = getEqualFormula(data, x, y.second, false, monotonicity == AggregateAnalyzer::NONMONOTONE && incomplete);
+        LiteralId lit =
+            getEqualFormula(data, x, y.second, false, monotonicity == AggregateAnalyzer::NONMONOTONE && incomplete);
         elems.emplace_back(lit, weight);
     }
     return elems;
@@ -225,7 +224,8 @@ LitValVec AggregateAnalyzer::translateElems(DomainData &data, Translator &x, Agg
 
 namespace {
 
-LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &res, bool isMin, LitValVec &&elems, bool incomplete) {
+LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &res, bool isMin, LitValVec &&elems,
+                          bool incomplete) {
     // NOTE: passing the elems vec as a list of weighted formulas
     //       could be exploited to add fewer disjunctions than translateElems adds at the moment
     //       (same goes for sum aggregates)
@@ -246,13 +246,11 @@ LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &re
                     if (isMin) {
                         consequent.emplace_back(elem.first);
                     }
-                }
-                else if (bound.second.contains(elem.second)) {
+                } else if (bound.second.contains(elem.second)) {
                     if (!isMin) {
                         consequent.emplace_back(elem.first);
                     }
-                }
-                else {
+                } else {
                     if (hasAntecedent) {
                         antecedent.emplace_back(elem.first);
                     }
@@ -265,8 +263,7 @@ LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &re
                 for (auto &lit : antecedent) {
                     conjunction.emplace_back(lit.negate());
                 }
-            }
-            else {
+            } else {
                 if (incomplete && res.monotonicity == AggregateAnalyzer::NONMONOTONE) {
                     // (a | b | c => x | y | z) => q
                     // is equivalent to
@@ -275,15 +272,14 @@ LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &re
                     //     a2 => q
                     //    ~a1 => q
                     //   ~~a2 => a1 | q
-                    LiteralId q  = data.newAux();
+                    LiteralId q = data.newAux();
                     LiteralId a1 = getEqualClause(data, x, data.clause(std::move(antecedent)), false, true);
                     LiteralId a2 = getEqualClause(data, x, data.clause(std::move(consequent)), false, false);
                     Rule().addHead(q).addBody(a2).translate(data, x);
                     Rule().addHead(q).addBody(a1.negate()).translate(data, x);
                     Rule().addHead(q).addHead(a1).addBody(a2.negate().negate()).translate(data, x);
                     conjunction.emplace_back(q);
-                }
-                else {
+                } else {
                     LiteralId aux = data.newAux();
                     for (auto &lit : consequent) {
                         Rule().addHead(aux).addBody(lit).translate(data, x);
@@ -296,8 +292,7 @@ LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &re
                     conjunction.emplace_back(aux);
                 }
             }
-        }
-        else {
+        } else {
             assert(!consequent.empty());
             conjunction.emplace_back(getEqualClause(data, x, data.clause(std::move(consequent)), false, false));
         }
@@ -313,21 +308,18 @@ LiteralId translateMinMax(DomainData &data, Translator &x, AggregateAnalyzer &re
 namespace {
 
 class SumTranslator {
-public:
+  public:
     void addLiteral(DomainData &data, LiteralId const &lit, Potassco::Weight_t weight, bool recursive) {
         if (weight > 0) {
             if (!recursive || lit.invertible() || call(data, lit, &Literal::isAtomFromPreviousStep)) {
                 litsPosStrat_.emplace_back(get_clone(lit), weight);
-            }
-            else {
+            } else {
                 litsPosRec_.emplace_back(get_clone(lit), weight);
             }
-        }
-        else if (weight < 0) {
+        } else if (weight < 0) {
             if (!recursive || lit.invertible() || call(data, lit, &Literal::isAtomFromPreviousStep)) {
                 litsNegStrat_.emplace_back(get_clone(lit), -weight);
-            }
-            else {
+            } else {
                 litsNegRec_.emplace_back(get_clone(lit), -weight);
             }
         }
@@ -345,8 +337,7 @@ public:
                     }
                     Potassco::Weight_t lower = 1 - bound.second.left.bound.num();
                     translate(data, x, neg, lower, litsNegRec_, litsPosRec_, litsNegStrat_, litsPosStrat_);
-                }
-                else {
+                } else {
                     if (!pos) {
                         pos = data.newAux();
                     }
@@ -360,9 +351,8 @@ public:
                         neg = data.newAux();
                     }
                     Potassco::Weight_t lower = 1 + bound.first.right.bound.num();
-                    translate(data, x, neg,  lower, litsPosRec_, litsNegRec_, litsPosStrat_, litsNegStrat_);
-                }
-                else {
+                    translate(data, x, neg, lower, litsPosRec_, litsNegRec_, litsPosStrat_, litsNegStrat_);
+                } else {
                     if (!pos) {
                         pos = data.newAux();
                     }
@@ -383,10 +373,12 @@ public:
         return call(data, ret, &Literal::translate, x);
     }
 
-private:
-    static void translate(DomainData &data, Translator &x, LiteralId const &head, Potassco::Weight_t bound, LitUintVec const &litsPosRec, LitUintVec const &litsNegRec, LitUintVec const &litsPosStrat, LitUintVec const &litsNegStrat) {
+  private:
+    static void translate(DomainData &data, Translator &x, LiteralId const &head, Potassco::Weight_t bound,
+                          LitUintVec const &litsPosRec, LitUintVec const &litsNegRec, LitUintVec const &litsPosStrat,
+                          LitUintVec const &litsNegStrat) {
         LitUintVec elems;
-        for (auto const &wLit : litsPosRec)   {
+        for (auto const &wLit : litsPosRec) {
             elems.emplace_back(get_clone(wLit.first), wLit.second);
         }
         for (auto const &wLit : litsPosStrat) {
@@ -439,8 +431,7 @@ LiteralId getEqualClause(DomainData &data, Translator &x, LitSpan clause, bool c
             }
         }
         Rule().addHead(aux).addBody(clause).translate(data, x);
-    }
-    else {
+    } else {
         for (auto const &lit : clause) {
             Rule().addHead(aux).addBody(lit).translate(data, x);
         }
@@ -453,7 +444,8 @@ LiteralId getEqualClause(DomainData &data, Translator &x, LitSpan clause, bool c
 
 } // namespace
 
-LiteralId getEqualClause(DomainData &data, Translator &x, std::pair<Id_t, Id_t> clause, bool conjunctive, bool equivalence) {
+LiteralId getEqualClause(DomainData &data, Translator &x, std::pair<Id_t, Id_t> clause, bool conjunctive,
+                         bool equivalence) {
     if (clause.second > 1) {
         auto ret = x.clause(clause, conjunctive, equivalence);
         if (!ret) {
@@ -473,36 +465,32 @@ LiteralId getEqualFormula(DomainData &data, Translator &x, Formula const &formul
     return getEqualClause(data, x, data.clause(std::move(disjunction)), conjunctive, equivalence);
 }
 
-LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction fun, NAF naf, DisjunctiveBounds const &bounds, Interval const &range, BodyAggregateElements const &bdElems, bool recursive) {
+LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction fun, NAF naf,
+                            DisjunctiveBounds const &bounds, Interval const &range,
+                            BodyAggregateElements const &bdElems, bool recursive) {
     AggregateAnalyzer res(data, naf, bounds, fun, range, bdElems);
-    //res.print(std::cerr);
+    // res.print(std::cerr);
     LiteralId aux;
     if (res.truth == AggregateAnalyzer::True) {
         aux = data.getTrueLit();
-    }
-    else if (res.truth == AggregateAnalyzer::False) {
+    } else if (res.truth == AggregateAnalyzer::False) {
         aux = data.getTrueLit().negate();
-    }
-    else {
+    } else {
         recursive = res.monotonicity == AggregateAnalyzer::NONMONOTONE && recursive;
         LitValVec elems = res.translateElems(data, x, fun, bdElems, recursive);
         if (elems.size() == 1) {
-            bool hasElem  = bounds.contains({{elems.front().second, true}, {elems.front().second, true}});
+            bool hasElem = bounds.contains({{elems.front().second, true}, {elems.front().second, true}});
             bool hasEmpty = bounds.contains({{getNeutral(fun), true}, {getNeutral(fun), true}});
             if (hasElem && hasEmpty) {
                 aux = data.getTrueLit();
-            }
-            else if (hasElem) {
+            } else if (hasElem) {
                 aux = elems.front().first;
-            }
-            else if (hasEmpty) {
+            } else if (hasEmpty) {
                 aux = elems.front().first.negate();
-            }
-            else {
+            } else {
                 aux = data.getTrueLit().negate();
             }
-        }
-        else {
+        } else {
             switch (fun) {
                 case AggregateFunction::COUNT:
                 case AggregateFunction::SUMP:
@@ -511,7 +499,8 @@ LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction f
                     for (auto &elem : elems) {
                         trans.addLiteral(data, elem.first, elem.second.num(), recursive);
                     }
-                    aux = trans.translate(data, x, res.bounds, !recursive, res.weightType == AggregateAnalyzer::NEGATIVE);
+                    aux =
+                        trans.translate(data, x, res.bounds, !recursive, res.weightType == AggregateAnalyzer::NEGATIVE);
                     break;
                 }
                 case AggregateFunction::MIN:
@@ -535,4 +524,5 @@ LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction f
 
 // }}}1
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo

@@ -25,14 +25,14 @@
 #ifndef GRINGO_BACKTRACE_HH
 #define GRINGO_BACKTRACE_HH
 
-#include <libunwind.h>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
-#include <cstdio>
+#include <libunwind.h>
+#include <string>
 #include <unistd.h>
 #include <unordered_map>
-#include <string>
-#include <cstdlib>
 
 // TODO: given a little time this could be cleaned up
 //       to remove the ugly fixed size strings
@@ -42,8 +42,8 @@ namespace Gringo {
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays,cppcoreguidelines-no-malloc,cppcoreguidelines-pro-type-vararg,cppcoreguidelines-avoid-magic-numbers,cppcoreguidelines-owning-memory,cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
-inline const char* getExecutableName() {
-    static char const * exe = nullptr;
+inline const char *getExecutableName() {
+    static char const *exe = nullptr;
     if (exe == nullptr) {
         char tmp[4096];
         static char buf[4096];
@@ -56,22 +56,22 @@ inline const char* getExecutableName() {
     return exe;
 }
 
-inline int getFileAndLine (unw_word_t addr, char *file, int *line) {
+inline int getFileAndLine(unw_word_t addr, char *file, int *line) {
     char buf[4096];
     static std::unordered_map<unw_word_t, std::string> cache;
     std::string &s = cache[addr];
     if (!s.empty()) {
         strncpy(buf, s.c_str(), sizeof(buf));
-    }
-    else {
-        snprintf (buf, sizeof(buf), "/home/wv/bin/linux/64/binutils-2.23.1/bin/addr2line -C -e %s -f -i %lx", getExecutableName(), addr);
-        FILE* f = popen (buf, "r");
+    } else {
+        snprintf(buf, sizeof(buf), "/home/wv/bin/linux/64/binutils-2.23.1/bin/addr2line -C -e %s -f -i %lx",
+                 getExecutableName(), addr);
+        FILE *f = popen(buf, "r");
         if (f == nullptr) {
-            perror (buf);
+            perror(buf);
             return 0;
         }
-        fgets (buf, sizeof(buf), f);
-        fgets (buf, sizeof(buf), f);
+        fgets(buf, sizeof(buf), f);
+        fgets(buf, sizeof(buf), f);
         pclose(f);
         s = buf;
         const char *pref = "/home/kaminski/svn/wv/Programming/gringo/trunk/";
@@ -82,13 +82,14 @@ inline int getFileAndLine (unw_word_t addr, char *file, int *line) {
     }
     if (buf[0] != '?') {
         char *p = buf;
-        while (*p != ':') { p++; }
+        while (*p != ':') {
+            p++;
+        }
         *p++ = 0;
-        strncpy (file , buf, 4096);
-        sscanf (p,"%d", line);
-    }
-    else {
-        strncpy (file,"unkown", 4096);
+        strncpy(file, buf, 4096);
+        sscanf(p, "%d", line);
+    } else {
+        strncpy(file, "unkown", 4096);
         *line = 0;
     }
     return 1;
@@ -96,8 +97,9 @@ inline int getFileAndLine (unw_word_t addr, char *file, int *line) {
 
 inline void showBacktrace() {
     char name[4096];
-    int  status{0};
-    unw_cursor_t cursor; unw_context_t uc;
+    int status{0};
+    unw_cursor_t cursor;
+    unw_context_t uc;
     unw_word_t ip{0};
     unw_word_t sp{0};
     unw_word_t offp{0};

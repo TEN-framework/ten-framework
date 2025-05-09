@@ -27,10 +27,10 @@
 
 #include <bitset>
 #include <cstdio>
+#include <functional>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <memory>
-#include <functional>
 
 #include <iostream>
 
@@ -39,43 +39,33 @@ namespace Gringo {
 // {{{1 declaration of GringoError
 
 class GringoError : public std::runtime_error {
-public:
-    GringoError(char const *msg)
-    : std::runtime_error(msg) { }
+  public:
+    GringoError(char const *msg) : std::runtime_error(msg) {}
 };
 
 class MessageLimitError : public std::runtime_error {
-public:
-    MessageLimitError(char const *msg)
-    : std::runtime_error(msg) { }
+  public:
+    MessageLimitError(char const *msg) : std::runtime_error(msg) {}
 };
 
 // {{{1 declaration of Logger
 
-enum class Errors : int {
-    Success   = 0,
-    Runtime   = 1,
-    Logic     = 2,
-    Bad_alloc = 3,
-    Unknown   = 4
-};
+enum class Errors : int { Success = 0, Runtime = 1, Logic = 2, Bad_alloc = 3, Unknown = 4 };
 
 enum class Warnings : int {
     OperationUndefined = 0,
-    RuntimeError       = 1,
-    AtomUndefined      = 2,
-    FileIncluded       = 3,
-    VariableUnbounded  = 4,
-    GlobalVariable     = 5,
-    Other              = 6,
+    RuntimeError = 1,
+    AtomUndefined = 2,
+    FileIncluded = 3,
+    VariableUnbounded = 4,
+    GlobalVariable = 5,
+    Other = 6,
 };
 
 class Logger {
-public:
-    using Printer = std::function<void (Warnings, char const *)>;
-    Logger(Printer p = nullptr, unsigned limit = 20)
-    : p_(std::move(p))
-    , limit_(limit) { }
+  public:
+    using Printer = std::function<void(Warnings, char const *)>;
+    Logger(Printer p = nullptr, unsigned limit = 20) : p_(std::move(p)), limit_(limit) {}
 
     bool check(Errors id);
     bool check(Warnings id);
@@ -83,10 +73,10 @@ public:
     void enable(Warnings id, bool enable);
     void print(Warnings code, char const *msg);
 
-private:
+  private:
     Printer p_;
     unsigned limit_;
-    std::bitset<static_cast<int>(Warnings::Other)+1> disabled_;
+    std::bitset<static_cast<int>(Warnings::Other) + 1> disabled_;
     bool error_ = false;
 };
 
@@ -105,25 +95,20 @@ inline bool Logger::check(Warnings id) {
         error_ = true;
         return true;
     }
-    if (limit_  == 0 && error_) {
+    if (limit_ == 0 && error_) {
         throw MessageLimitError("too many messages.");
     }
     return !disabled_[static_cast<int>(id)] && limit_ > 0 && (--limit_, true);
 }
 
-inline bool Logger::hasError() const {
-    return error_;
-}
+inline bool Logger::hasError() const { return error_; }
 
-inline void Logger::enable(Warnings id, bool enabled) {
-    disabled_[static_cast<int>(id)] = !enabled;
-}
+inline void Logger::enable(Warnings id, bool enabled) { disabled_[static_cast<int>(id)] = !enabled; }
 
 inline void Logger::print(Warnings code, char const *msg) {
     if (p_) {
         p_(code, msg);
-    }
-    else {
+    } else {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         fprintf(stderr, "%s\n", msg);
         fflush(stderr);
@@ -133,21 +118,16 @@ inline void Logger::print(Warnings code, char const *msg) {
 // {{{1 definition of Report
 
 class Report {
-public:
-    Report(Logger &p, Warnings code)
-    : p_(p), code_(code) { }
+  public:
+    Report(Logger &p, Warnings code) : p_(p), code_(code) {}
     Report(Report const &other) = delete;
     Report(Report &&other) = delete;
     Report &operator=(Report const &other) = delete;
     Report &operator=(Report &&other) = delete;
-    ~Report() {
-        p_.print(code_, out_.str().c_str());
-    }
-    std::ostringstream &out() {
-        return out_;
-    }
+    ~Report() { p_.print(code_, out_.str().c_str()); }
+    std::ostringstream &out() { return out_; }
 
-private:
+  private:
     std::ostringstream out_;
     Logger &p_;
     Warnings code_;
@@ -155,11 +135,12 @@ private:
 
 // }}}1
 
-} // namespace GRINGO
+} // namespace Gringo
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GRINGO_REPORT(p, id) \
-if (!(p).check(id)) { } \
-else Gringo::Report(p, id).out()
+#define GRINGO_REPORT(p, id)                                                                                           \
+    if (!(p).check(id)) {                                                                                              \
+    } else                                                                                                             \
+        Gringo::Report(p, id).out()
 
 #endif // GRINGO_LOGGER_HH

@@ -23,22 +23,22 @@ The following example reproduces the default clingo application:
     clingo_main(ClingoApp(sys.argv[0]), sys.argv[1:])
 """
 
-from typing import Any, Callable, List, Optional, Sequence
-from abc import ABCMeta, abstractmethod
 import sys
+from abc import ABCMeta
+from typing import Any, Callable, List, Optional, Sequence
 
 from ._internal import (
-    _cb_error_print,
     _cb_error_panic,
+    _cb_error_print,
     _ffi,
     _handle_error,
     _lib,
     _overwritten,
     _to_str,
 )
+from .control import Control
 from .core import MessageCode
 from .solving import Model
-from .control import Control
 
 __all__ = ["Application", "ApplicationOptions", "Flag", "clingo_main"]
 
@@ -190,12 +190,11 @@ class Application(metaclass=ABCMeta):
     Maximum number of messages defaulting to `20` passed to the logger.
     """
 
-    @abstractmethod
     def main(self, control: Control, files: Sequence[str]) -> None:
         """
         Function to replace clingo's default main function.
 
-        This function must be implemented.
+        If this function is not implemented, clingo's default is used.
 
         Parameters
         ----------
@@ -292,30 +291,46 @@ def clingo_main(
     c_application = _ffi.new(
         "clingo_application_t*",
         (
-            _lib.pyclingo_application_program_name
-            if _overwritten(Application, application, "program_name")
-            else _ffi.NULL,
-            _lib.pyclingo_application_version
-            if _overwritten(Application, application, "version")
-            else _ffi.NULL,
-            _lib.pyclingo_application_message_limit
-            if _overwritten(Application, application, "message_limit")
-            else _ffi.NULL,
-            _lib.pyclingo_application_main
-            if _overwritten(Application, application, "main")
-            else _ffi.NULL,
-            _lib.pyclingo_application_logger
-            if _overwritten(Application, application, "logger")
-            else _ffi.NULL,
-            _lib.pyclingo_application_print_model
-            if _overwritten(Application, application, "print_model")
-            else _ffi.NULL,
-            _lib.pyclingo_application_register_options
-            if _overwritten(Application, application, "register_options")
-            else _ffi.NULL,
-            _lib.pyclingo_application_validate_options
-            if _overwritten(Application, application, "validate_options")
-            else _ffi.NULL,
+            (
+                _lib.pyclingo_application_program_name
+                if _overwritten(Application, application, "program_name")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_version
+                if _overwritten(Application, application, "version")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_message_limit
+                if _overwritten(Application, application, "message_limit")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_main
+                if _overwritten(Application, application, "main")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_logger
+                if _overwritten(Application, application, "logger")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_print_model
+                if _overwritten(Application, application, "print_model")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_register_options
+                if _overwritten(Application, application, "register_options")
+                else _ffi.NULL
+            ),
+            (
+                _lib.pyclingo_application_validate_options
+                if _overwritten(Application, application, "validate_options")
+                else _ffi.NULL
+            ),
         ),
     )
 

@@ -28,75 +28,57 @@
 #include <gringo/domain.hh>
 #include <gringo/ground/instantiation.hh>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ definition of PosBinder
 
-template <class Index, class... LookupArgs>
-struct PosBinder : Binder {
+template <class Index, class... LookupArgs> struct PosBinder : Binder {
     using IndexType = typename std::remove_reference<Index>::type;
-    using Match     = typename IndexType::SizeType;
-    using MatchRng  = typename IndexType::OffsetRange;
-    using Lookup    = std::tuple<Index, LookupArgs...>;
+    using Match = typename IndexType::SizeType;
+    using MatchRng = typename IndexType::OffsetRange;
+    using Lookup = std::tuple<Index, LookupArgs...>;
 
-    PosBinder(UTerm &&repr, Match &result, Index &&index, BinderType type, LookupArgs&&... args)
-        : repr(std::move(repr))
-        , result(result)
-        , index(std::forward<Index>(index), std::forward<LookupArgs>(args)...)
-        , type(type) { }
+    PosBinder(UTerm &&repr, Match &result, Index &&index, BinderType type, LookupArgs &&...args)
+        : repr(std::move(repr)), result(result), index(std::forward<Index>(index), std::forward<LookupArgs>(args)...),
+          type(type) {}
 
-    template <       int... I> struct lookup;
-    template <int N, int... I> struct lookup<N, I...> : lookup<N-1, N, I...> { };
-    template <       int... I> struct lookup<0, I...> {
+    template <int... I> struct lookup;
+    template <int N, int... I> struct lookup<N, I...> : lookup<N - 1, N, I...> {};
+    template <int... I> struct lookup<0, I...> {
         MatchRng operator()(std::tuple<Index, LookupArgs...> &index, BinderType type, Logger &log) {
             return std::get<0>(index).lookup(std::get<I>(index)..., type, log);
         }
     };
 
-    IndexUpdater *getUpdater() override {
-        return &std::get<0>(index);
-    }
+    IndexUpdater *getUpdater() override { return &std::get<0>(index); }
 
-    void match(Logger &log) override {
-        current = lookup<sizeof...(LookupArgs)>()(index, type, log);
-    }
+    void match(Logger &log) override { current = lookup<sizeof...(LookupArgs)>()(index, type, log); }
 
-    bool next() override {
-        return current.next(result, *repr, std::get<0>(index));
-    }
+    bool next() override { return current.next(result, *repr, std::get<0>(index)); }
 
-    void print(std::ostream &out) const override {
-        out << *repr << "@" << type;
-    }
+    void print(std::ostream &out) const override { out << *repr << "@" << type; }
 
-    UTerm      repr; // problematic
-    Match     &result;
-    Lookup     index;
-    MatchRng   current;
+    UTerm repr; // problematic
+    Match &result;
+    Lookup index;
+    MatchRng current;
     BinderType type;
 };
 
 // }}}
 // {{{ definition of Matcher
 
-template <class Atom>
-struct Matcher : Binder {
+template <class Atom> struct Matcher : Binder {
     using DomainType = AbstractDomain<Atom>;
-    using Match      = typename DomainType::SizeType;
+    using Match = typename DomainType::SizeType;
 
     Matcher(Match &result, DomainType &domain, Term const &repr, RECNAF naf)
-        : result(result)
-        , domain(domain)
-        , repr(repr)
-        , naf(naf) { }
+        : result(result), domain(domain), repr(repr), naf(naf) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
-    void match(Logger &log) override {
-        firstMatch = domain.lookup(result, repr, naf, log);
-    }
+    void match(Logger &log) override { firstMatch = domain.lookup(result, repr, naf, log); }
 
     bool next() override {
         bool ret = firstMatch;
@@ -108,34 +90,26 @@ struct Matcher : Binder {
         out << naf << repr << "[" << domain.generation() << "/" << domain.size() << "]" << "@ALL";
     }
 
-    Match      &result;
+    Match &result;
     DomainType &domain;
     Term const &repr;
-    RECNAF      naf;
-    bool        firstMatch = false;
+    RECNAF naf;
+    bool firstMatch = false;
 };
 
 // }}}
 // {{{ definition of PosMatcher
 
-template <class Atom>
-struct PosMatcher : Binder, IndexUpdater {
+template <class Atom> struct PosMatcher : Binder, IndexUpdater {
     using DomainType = AbstractDomain<Atom>;
     using Match = typename DomainType::SizeType;
 
     PosMatcher(Match &result, DomainType &domain, UTerm &&repr, BinderType type)
-        : result(result)
-        , domain(domain)
-        , repr(std::move(repr))
-        , type(type) { }
+        : result(result), domain(domain), repr(std::move(repr)), type(type) {}
 
-    IndexUpdater *getUpdater() override {
-        return type == BinderType::NEW ? this : nullptr;
-    }
+    IndexUpdater *getUpdater() override { return type == BinderType::NEW ? this : nullptr; }
 
-    void match(Logger &log) override {
-        firstMatch = domain.lookup(result, *repr, type, log);
-    }
+    void match(Logger &log) override { firstMatch = domain.lookup(result, *repr, type, log); }
 
     bool next() override {
         bool ret = firstMatch;
@@ -144,20 +118,20 @@ struct PosMatcher : Binder, IndexUpdater {
     }
 
     bool update() override {
-        return domain.update([](unsigned) { }, *repr, imported, importedDelayed);
+        return domain.update([](unsigned) {}, *repr, imported, importedDelayed);
     }
 
     void print(std::ostream &out) const override {
         out << *repr << "[" << domain.generation() << "/" << domain.size() << "]" << "@" << type;
     }
 
-    Match      &result;
+    Match &result;
     DomainType &domain;
-    UTerm       repr;
-    BinderType  type;
-    unsigned    imported = 0;
-    unsigned    importedDelayed = 0;
-    bool        firstMatch = false;
+    UTerm repr;
+    BinderType type;
+    unsigned imported = 0;
+    unsigned importedDelayed = 0;
+    bool firstMatch = false;
 };
 
 // }}}
@@ -167,12 +141,14 @@ struct PosMatcher : Binder, IndexUpdater {
 //       but it should be enough to make imported part of the key of full_indices
 
 template <class Atom>
-inline UIdx make_binder(AbstractDomain<Atom> &domain, NAF naf, Term const &repr, typename AbstractDomain<Atom>::SizeType &elem, BinderType type, bool recursive, Term::VarSet &bound, int imported) {
-    using DomainType          = AbstractDomain<Atom>;
-    using PredicateMatcher    = Matcher<Atom>;
+inline UIdx make_binder(AbstractDomain<Atom> &domain, NAF naf, Term const &repr,
+                        typename AbstractDomain<Atom>::SizeType &elem, BinderType type, bool recursive,
+                        Term::VarSet &bound, int imported) {
+    using DomainType = AbstractDomain<Atom>;
+    using PredicateMatcher = Matcher<Atom>;
     using PosPredicateMatcher = PosMatcher<Atom>;
-    using PosPredicateBinder  = PosBinder<typename DomainType::BindIndex&, SValVec>;
-    using FullPredicateBinder = PosBinder<typename DomainType::FullIndex&>;
+    using PosPredicateBinder = PosBinder<typename DomainType::BindIndex &, SValVec>;
+    using FullPredicateBinder = PosBinder<typename DomainType::FullIndex &>;
     if (naf == NAF::POS) {
         UTerm predClone(repr.clone());
         VarTermBoundVec occs;
@@ -187,8 +163,11 @@ inline UIdx make_binder(AbstractDomain<Atom> &domain, NAF naf, Term const &repr,
             Term::VarSet occBoundSet;
             VarTermVec occBound;
             for (auto &x : occs) {
-                if (x.first->bindRef)                               { x.first->bindRef = bound.emplace(x.first->name).second; }
-                else if (occBoundSet.emplace(x.first->name).second) { occBound.emplace_back(*x.first); }
+                if (x.first->bindRef) {
+                    x.first->bindRef = bound.emplace(x.first->name).second;
+                } else if (occBoundSet.emplace(x.first->name).second) {
+                    occBound.emplace_back(*x.first);
+                }
             }
             Term::RenameMap rename;
             UTerm idxClone(predClone->renameVars(rename));
@@ -224,6 +203,7 @@ inline UIdx make_binder(AbstractDomain<Atom> &domain, NAF naf, Term const &repr,
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo
 
 #endif // GRINGO_GROUND_BINDERS_HH

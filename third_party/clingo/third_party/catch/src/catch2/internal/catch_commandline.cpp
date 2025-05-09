@@ -9,8 +9,9 @@
 
 #include <catch2/catch_config.hpp>
 #include <catch2/internal/catch_string_manip.hpp>
+#include <catch2/interfaces/catch_interfaces_config.hpp>
 #include <catch2/interfaces/catch_interfaces_registry_hub.hpp>
-#include <catch2/interfaces/catch_interfaces_reporter_registry.hpp>
+#include <catch2/internal/catch_reporter_registry.hpp>
 #include <catch2/internal/catch_console_colour.hpp>
 #include <catch2/internal/catch_parse_numbers.hpp>
 #include <catch2/internal/catch_reporter_spec_parser.hpp>
@@ -46,7 +47,7 @@ namespace Catch {
                     line = trim(line);
                     if( !line.empty() && !startsWith( line, '#' ) ) {
                         if( !startsWith( line, '"' ) )
-                            line = '"' + line + '"';
+                            line = '"' + CATCH_MOVE(line) + '"';
                         config.testsOrTags.push_back( line );
                         config.testsOrTags.emplace_back( "," );
                     }
@@ -144,7 +145,7 @@ namespace Catch {
 
             auto const& reporterSpec = *parsed;
 
-            IReporterRegistry::FactoryMap const& factories =
+            auto const& factories =
                 getRegistryHub().getReporterRegistry().getFactories();
             auto result = factories.find( reporterSpec.name() );
 
@@ -300,8 +301,8 @@ namespace Catch {
                 ( "split the tests to execute into this many groups" )
             | Opt( setShardIndex, "shard index" )
                 ["--shard-index"]
-                ( "index of the group of tests to execute (see --shard-count)" ) |
-            Opt( config.allowZeroTests )
+                ( "index of the group of tests to execute (see --shard-count)" )
+            | Opt( config.allowZeroTests )
                 ["--allow-running-no-tests"]
                 ( "Treat 'No tests run' as a success" )
             | Arg( config.testsOrTags, "test name|pattern|tags" )

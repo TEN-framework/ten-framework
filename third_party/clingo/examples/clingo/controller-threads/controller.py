@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import atexit
 import os
 import readline
-import atexit
 import signal
+from threading import Condition, Thread
+
 from clingo import Control, Function, Number
-from threading import Thread, Condition
+
 
 class Connection:
     def __init__(self):
@@ -26,19 +28,31 @@ class Connection:
         self.condition.notify()
         self.condition.release()
 
+
 class Controller:
     def __init__(self):
         histfile = os.path.join(os.path.expanduser("~"), ".controller")
-        try: readline.read_history_file(histfile)
-        except IOError: pass
-        readline.parse_and_bind('tab: complete')
+        try:
+            readline.read_history_file(histfile)
+        except IOError:
+            pass
+        readline.parse_and_bind("tab: complete")
+
         def complete(commands, text, state):
             matches = []
-            if state == 0: matches = [ c for c in commands if c.startswith(text) ]
+            if state == 0:
+                matches = [c for c in commands if c.startswith(text)]
             return matches[state] if state < len(matches) else None
-        readline.set_completer(lambda text, state: complete(['more_pigeon_please', 'less_pigeon_please', 'solve', 'exit'], text, state))
+
+        readline.set_completer(
+            lambda text, state: complete(
+                ["more_pigeon_please", "less_pigeon_please", "solve", "exit"],
+                text,
+                state,
+            )
+        )
         atexit.register(readline.write_history_file, histfile)
-        self.input  = Connection()
+        self.input = Connection()
         self.output = None
 
     def register_connection(self, connection):
@@ -62,9 +76,11 @@ class Controller:
         while True:
             signal.signal(signal.SIGINT, pyInt)
             try:
-                try: input_ = raw_input
-                except NameError: input_ = input
-                line = input_('> ')
+                try:
+                    input_ = raw_input
+                except NameError:
+                    input_ = input
+                line = input_("> ")
                 signal.signal(signal.SIGINT, signal.SIG_IGN)
             except EOFError:
                 signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -89,17 +105,18 @@ class Controller:
             else:
                 print("unknown command: " + line)
 
+
 class SolveThread(Thread):
     STATE_SOLVE = 1
-    STATE_IDLE  = 2
-    STATE_EXIT  = 3
+    STATE_IDLE = 2
+    STATE_EXIT = 3
 
     def __init__(self, connection):
         Thread.__init__(self)
-        self.k   = 0
+        self.k = 0
         self.prg = Control()
         self.prg.load("client.lp")
-        self.prg.ground([("pigeon", []), ("sleep",  [Number(self.k)])])
+        self.prg.ground([("pigeon", []), ("sleep", [Number(self.k)])])
         self.prg.assign_external(Function("sleep", [Number(self.k)]), True)
         self.state = SolveThread.STATE_IDLE
         self.input = Connection()
@@ -109,7 +126,9 @@ class SolveThread(Thread):
         self.output.send("answer: " + str(model)),
 
     def on_finish(self, ret):
-        self.output.send("finish: " + str(ret) + (" (INTERRUPTED)" if ret.interrupted else ""))
+        self.output.send(
+            "finish: " + str(ret) + (" (INTERRUPTED)" if ret.interrupted else "")
+        )
 
     def handle_message(self, msg):
         if msg == "interrupt":
@@ -124,12 +143,15 @@ class SolveThread(Thread):
             self.state = SolveThread.STATE_IDLE
         elif msg == "solve":
             self.state = SolveThread.STATE_SOLVE
-        else: raise(RuntimeError("unexpected message: " + msg))
+        else:
+            raise (RuntimeError("unexpected message: " + msg))
 
     def run(self):
         while True:
             if self.state == SolveThread.STATE_SOLVE:
-                f = self.prg.solve(on_model=self.on_model, on_finish=self.on_finish, async_=True)
+                f = self.prg.solve(
+                    on_model=self.on_model, on_finish=self.on_finish, async_=True
+                )
             msg = self.input.receive()
             if self.state == SolveThread.STATE_SOLVE:
                 f.cancel()
@@ -142,8 +164,9 @@ class SolveThread(Thread):
             elif ret is not None and not ret.unknown:
                 self.k = self.k + 1
                 self.prg.ground([("sleep", [Number(self.k)])])
-                self.prg.release_external(Function("sleep", [Number(self.k-1)]))
+                self.prg.release_external(Function("sleep", [Number(self.k - 1)]))
                 self.prg.assign_external(Function("sleep", [Number(self.k)]), True)
+
 
 ct = Controller()
 st = SolveThread(ct.input)
@@ -152,4 +175,3 @@ ct.register_connection(st.input)
 st.start()
 ct.run()
 st.join()
-

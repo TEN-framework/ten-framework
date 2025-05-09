@@ -1,15 +1,15 @@
 import sys
-from typing import Deque, Dict, Set, List, Tuple
 from collections import deque
+from typing import Deque, Dict, List, Set, Tuple
 
-from networkx import DiGraph # type: ignore
-from networkx.algorithms.components import strongly_connected_components # type: ignore
-from networkx.algorithms.dag import topological_sort # type: ignore
+from clingox.program import Program, ProgramObserver, Rule
+from networkx import DiGraph  # type: ignore
+from networkx.algorithms.components import strongly_connected_components  # type: ignore
+from networkx.algorithms.dag import topological_sort  # type: ignore
 
+from clingo.application import Application, clingo_main
 from clingo.control import Control
 from clingo.symbol import Symbol
-from clingo.application import Application, clingo_main
-from clingox.program import Program, ProgramObserver, Rule
 
 Atom = int
 Literal = int
@@ -26,7 +26,7 @@ def _analyze(rules: List[Rule]) -> List[List[Rule]]:
             occ.setdefault(abs(lit), set()).add(u)
 
     for u, rule in enumerate(rules):
-        atm, = rule.head
+        (atm,) = rule.head
         for v in occ.get(atm, []):
             dep_graph.add_edge(u, v)
 
@@ -75,7 +75,7 @@ def _well_founded(interpretation: Set[Literal], scc: List[Rule]) -> None:
         return not is_false(lit) and (lit < 0 or is_true(lit) or lit in has_source)
 
     def enqueue_source(idx: RuleIndex):
-        atm, = scc[idx].head
+        (atm,) = scc[idx].head
         if counters_source[idx] == 0 and atm not in has_source:
             has_source.add(atm)
             is_source.add(idx)
@@ -88,7 +88,7 @@ def _well_founded(interpretation: Set[Literal], scc: List[Rule]) -> None:
 
     # initialize the above data structures
     for i, rule in enumerate(scc):
-        atm, = rule.head
+        (atm,) = rule.head
 
         if is_false(*rule.body) or is_true(atm):
             continue
@@ -138,7 +138,7 @@ def _well_founded(interpretation: Set[Literal], scc: List[Rule]) -> None:
             for i in watches.get(-lit, []):
                 counters_source[i] += 1
                 if i in is_source:
-                    atm, = scc[i].head
+                    (atm,) = scc[i].head
                     is_source.remove(i)
                     has_source.remove(atm)
                     if -atm not in interpretation:
@@ -167,17 +167,17 @@ def _well_founded(interpretation: Set[Literal], scc: List[Rule]) -> None:
 
 
 def well_founded(prg: Program) -> Tuple[List[Symbol], List[Symbol]]:
-    '''
+    """
     Computes the well-founded model of the given program returning a pair of
     facts and unknown atoms.
 
     This function assumes that the program contains only normal rules.
-    '''
+    """
     for rule in prg.rules:
         if len(rule.head) != 1 or rule.choice:
-            raise RuntimeError('only normal rules are supported')
+            raise RuntimeError("only normal rules are supported")
     if prg.weight_rules:
-        raise RuntimeError('only normal rules are supported')
+        raise RuntimeError("only normal rules are supported")
 
     # analyze program and compute well-founded model
     interpretation: Set[Literal] = set()
@@ -186,11 +186,15 @@ def well_founded(prg: Program) -> Tuple[List[Symbol], List[Symbol]]:
 
     # compute facts
     fct = [atm.symbol for atm in prg.facts]
-    fct.extend(prg.output_atoms[lit] for lit in interpretation if lit > 0 and lit in prg.output_atoms)
+    fct.extend(
+        prg.output_atoms[lit]
+        for lit in interpretation
+        if lit > 0 and lit in prg.output_atoms
+    )
     # compute unknowns
     ukn = set()
     for rule in prg.rules:
-        atm, = rule.head
+        (atm,) = rule.head
         not_false = any(-lit in interpretation for lit in rule.body)
         if atm not in interpretation and not not_false and atm in prg.output_atoms:
             ukn.add(prg.output_atoms[atm])
@@ -209,14 +213,14 @@ class LevelApp(Application):
         for f in files:
             ctl.load(f)
         if not files:
-            ctl.load('-')
+            ctl.load("-")
 
         ctl.ground([("base", [])])
 
         fct, ukn = well_founded(prg)
-        print('Facts:')
+        print("Facts:")
         print(f'{" ".join(map(str, fct))}')
-        print('Unknown:')
+        print("Unknown:")
         print(f'{" ".join(map(str, ukn))}')
 
         ctl.solve()

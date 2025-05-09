@@ -25,7 +25,8 @@
 #include "gringo/output/statement.hh"
 #include "gringo/output/literals.hh"
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 void replaceDelayed(DomainData &data, LiteralId &lit, LitVec &delayed) {
     if (call(data, lit, &Literal::isIncomplete)) {
@@ -35,8 +36,7 @@ void replaceDelayed(DomainData &data, LiteralId &lit, LitVec &delayed) {
             if (ret.first.sign() != NAF::POS) {
                 assert(ret.first.sign() == lit.sign());
                 delayed.emplace_back(lit.withSign(NAF::POS));
-            }
-            else {
+            } else {
                 delayed.emplace_back(lit);
             }
         }
@@ -49,9 +49,7 @@ void replaceDelayed(DomainData &data, LitVec &lits, LitVec &delayed) {
     }
 }
 
-void translate(DomainData &data, Translator &x, LiteralId &lit) {
-    lit = call(data, lit, &Literal::translate, x);
-}
+void translate(DomainData &data, Translator &x, LiteralId &lit) { lit = call(data, lit, &Literal::translate, x); }
 
 void translate(DomainData &data, Translator &x, LitVec &lits) {
     for (auto &lit : lits) {
@@ -59,5 +57,5 @@ void translate(DomainData &data, Translator &x, LitVec &lits) {
     }
 }
 
-} } // namespace Output Gringo
-
+} // namespace Output
+} // namespace Gringo

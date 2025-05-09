@@ -128,7 +128,7 @@ TheoryAtom::TheoryAtom(Id_t a, Id_t term, const IdSpan& args, Id_t* op, Id_t* rh
 	, guard_(op != 0)
 	, termId_(term)
 	, nTerms_(static_cast<uint32_t>(Potassco::size(args))) {
-	std::memcpy(term_, Potassco::begin(args), nTerms_ * sizeof(Id_t));
+	nTerms_ == 0 || std::memcpy(term_, Potassco::begin(args), nTerms_ * sizeof(Id_t));
 	if (op) {
 		term_[nTerms_] = *op;
 		term_[nTerms_ + 1] = *rhs;

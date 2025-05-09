@@ -99,4 +99,3 @@ end
 
 1 { assign(U,C) : color(C) } 1 :- vertex(U).
 :- edge(U,V), assign(U,C), assign(V,C).
-

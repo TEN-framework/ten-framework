@@ -1,3 +1,11 @@
+
+//              Copyright Catch2 Authors
+// Distributed under the Boost Software License, Version 1.0.
+//   (See accompanying file LICENSE.txt or copy at
+//        https://www.boost.org/LICENSE_1_0.txt)
+
+// SPDX-License-Identifier: BSL-1.0
+
 // 210-Evt-EventListeners.cpp
 
 // Contents:
@@ -377,8 +385,7 @@ struct MyListener : Catch::EventListenerBase {
 CATCH_REGISTER_LISTENER( MyListener )
 
 // Get rid of Wweak-tables
-MyListener::~MyListener() {}
-
+MyListener::~MyListener() = default;
 
 // -----------------------------------------------------------------------
 // 3. Test cases:

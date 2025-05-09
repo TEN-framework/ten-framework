@@ -15,4 +15,3 @@ def main(prg):
 #program b.
 
 :- p(X).
-

@@ -9,6 +9,7 @@ else()
 set(CLASP_DEFINE_ATOMIC "
 template <class T>
 struct Plain {
+	explicit Plain(T v = T()) : val_(v) {}
 	T operator=(T nv)   { return (val_ = nv); }
 	operator T () const { return val_; }
 	operator T&()       { return val_; }
@@ -29,6 +30,11 @@ if (NOT DEFINED CLASP_USE_STD_VECTOR)
 	else()
 		set(CLASP_USE_STD_VECTOR 0)
 	endif()
+endif()
+if (CLASP_VERSION_TWEAK)
+	set(CLASP_VERSION_STRING "${CLASP_VERSION_MAJOR}.${CLASP_VERSION_MINOR}.${CLASP_VERSION_PATCH}-dev(${CLASP_VERSION_TWEAK})")
+else()
+	set(CLASP_VERSION_STRING "${CLASP_VERSION}")
 endif()
 configure_file(${header_path}/config.h.in ${CLASP_BINARY_DIR}/clasp/config.h @ONLY)
 

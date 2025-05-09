@@ -1,11 +1,11 @@
 ﻿# ------------------------------------------------------------------------------
-#  Copyright Christopher Kormanyos 2022.
+#  Copyright Christopher Kormanyos 2022 - 2024.
 #  Distributed under the Boost Software License,
 #  Version 1.0. (See accompanying file LICENSE_1_0.txt
 #  or copy at http://www.boost.org/LICENSE_1_0.txt)
 # ------------------------------------------------------------------------------
 
-BOOST_ROOT_FOR_GCOV = /mnt/c/boost/boost_1_78_0
+BOOST_ROOT_FOR_GCOV = /mnt/c/boost/boost_1_85_0
 CC                  = g++
 STD                 = c++14
 ALL_COV             = 0

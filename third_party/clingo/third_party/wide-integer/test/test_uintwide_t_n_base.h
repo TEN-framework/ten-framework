@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2019 - 2022.
+//  Copyright Christopher Kormanyos 2019 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -13,6 +13,8 @@
   #include <sstream>
 
   #include <boost/version.hpp>
+
+  #include <util/utility/util_pseudorandom_time_point_seed.h>
 
   #if !defined(BOOST_VERSION)
   #error BOOST_VERSION is not defined. Ensure that <boost/version.hpp> is properly included.
@@ -43,7 +45,7 @@
   #endif
 
   #if (BOOST_VERSION < 108000)
-  #if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+  #if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wdeprecated-copy"
   #endif
@@ -119,7 +121,7 @@
       using other_local_uint_type = OtherLocalUintType;
       using other_boost_uint_type = OtherBoostUintType;
 
-      my_random_generator().seed(static_cast<typename random_engine_type::result_type>(std::clock()));
+      my_random_generator().seed(util::util_pseudorandom_time_point_seed::value<typename random_engine_type::result_type>());
 
       #if defined(WIDE_INTEGER_NAMESPACE)
       using distribution_type =
@@ -154,7 +156,7 @@
   };
 
   #if (BOOST_VERSION < 108000)
-  #if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+  #if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
   #pragma GCC diagnostic pop
   #endif
   #endif

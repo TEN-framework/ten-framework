@@ -31,7 +31,7 @@
 namespace Gringo {
 
 class Script : public Context {
-public:
+  public:
     virtual void main(Control &ctl) = 0;
     virtual char const *version() = 0;
     ~Script() override = default;
@@ -40,7 +40,7 @@ using UScript = std::shared_ptr<Script>;
 using UScriptVec = std::vector<std::tuple<String, bool, UScript>>;
 
 class Scripts : public Context {
-public:
+  public:
     Scripts() = default;
     ~Scripts() override;
 
@@ -51,20 +51,17 @@ public:
     void exec(String type, Location loc, String code) override;
     char const *version(String type);
 
-    template <class F>
-    void withContext(Context *ctx, F f);
-private:
+    template <class F> void withContext(Context *ctx, F f);
+
+  private:
     UScriptVec scripts_;
 };
 
 class ChainContext : public Context {
-public:
-    ChainContext(Context &a, Scripts &b)
-    : a_{a}, b_{b} { }
+  public:
+    ChainContext(Context &a, Scripts &b) : a_{a}, b_{b} {}
 
-    bool callable(String name) override {
-        return a_.callable(name) || b_.callable(name);
-    }
+    bool callable(String name) override { return a_.callable(name) || b_.callable(name); }
 
     SymVec call(Location const &loc, String name, SymSpan args, Logger &log) override {
         if (a_.callable(name)) {
@@ -73,23 +70,19 @@ public:
         return b_.call(loc, name, args, log);
     }
 
-    void exec(String type, Location loc, String code) override {
-        b_.exec(type, loc, code);
-    }
+    void exec(String type, Location loc, String code) override { b_.exec(type, loc, code); }
 
-private:
+  private:
     Context &a_;
     Scripts &b_;
 };
 
 Scripts &g_scripts();
 
-template <class F>
-inline void Scripts::withContext(Context *ctx, F f) {
+template <class F> inline void Scripts::withContext(Context *ctx, F f) {
     if (ctx == nullptr) {
         f(*this);
-    }
-    else {
+    } else {
         ChainContext cctx{*ctx, *this};
         f(cctx);
     }
@@ -98,4 +91,3 @@ inline void Scripts::withContext(Context *ctx, F f) {
 } // namespace Gringo
 
 #endif // CLINGO_SCRIPTS_HH
-

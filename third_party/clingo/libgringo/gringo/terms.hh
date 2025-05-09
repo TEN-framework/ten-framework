@@ -25,34 +25,29 @@
 #ifndef GRINGO_TERMS_HH
 #define GRINGO_TERMS_HH
 
-#include <gringo/utility.hh>
-#include <gringo/base.hh>
-#include <gringo/term.hh>
-#include <gringo/hash_set.hh>
-#include <potassco/theory_data.h>
-#include <gringo/logger.hh>
 #include <functional>
+#include <gringo/base.hh>
+#include <gringo/hash_set.hh>
+#include <gringo/logger.hh>
+#include <gringo/term.hh>
+#include <gringo/utility.hh>
+#include <potassco/theory_data.h>
 
 namespace Gringo {
 
 using StringVec = std::vector<String>;
-template <class T>
-struct GetName {
+template <class T> struct GetName {
     using result_type = String;
-    String const &operator()(T const &x) const {
-        return x.name();
-    }
+    String const &operator()(T const &x) const { return x.name(); }
 };
 
 // {{{1 TheoryOpDef
 
 class TheoryOpDef {
-public:
+  public:
     using Key = std::pair<String, bool>;
     struct GetKey {
-        Key operator()(TheoryOpDef const &x) const {
-            return x.key();
-        }
+        Key operator()(TheoryOpDef const &x) const { return x.key(); }
     };
 
     TheoryOpDef(Location const &loc, String op, unsigned priority, TheoryOperatorType type);
@@ -69,7 +64,7 @@ public:
     unsigned priority() const;
     TheoryOperatorType type() const;
 
-private:
+  private:
     Location loc_;
     String op_;
     unsigned priority_;
@@ -77,10 +72,8 @@ private:
 };
 
 using TheoryOpDefs =
-    ordered_set<
-        TheoryOpDef,
-        HashKey<TheoryOpDef::Key, TheoryOpDef::GetKey, mix_value_hash<TheoryOpDef::Key>>,
-        EqualToKey<TheoryOpDef::Key, TheoryOpDef::GetKey>>;
+    ordered_set<TheoryOpDef, HashKey<TheoryOpDef::Key, TheoryOpDef::GetKey, mix_value_hash<TheoryOpDef::Key>>,
+                EqualToKey<TheoryOpDef::Key, TheoryOpDef::GetKey>>;
 
 inline std::ostream &operator<<(std::ostream &out, TheoryOpDef const &def) {
     def.print(out);
@@ -90,7 +83,7 @@ inline std::ostream &operator<<(std::ostream &out, TheoryOpDef const &def) {
 // {{{1 TheoryTermDef
 
 class TheoryTermDef {
-public:
+  public:
     TheoryTermDef(Location const &loc, String name);
     TheoryTermDef(TheoryTermDef const &other) = delete;
     TheoryTermDef(TheoryTermDef &&other) noexcept = default;
@@ -114,17 +107,14 @@ public:
     unsigned getPrio(String op, bool unary) const;
     bool hasOp(String op, bool unary) const;
 
-private:
+  private:
     Location loc_;
     String name_;
     mutable TheoryOpDefs opDefs_;
 };
 
-using TheoryTermDefs =
-    ordered_set<
-        TheoryTermDef,
-        HashKey<String, GetName<TheoryTermDef>, mix_hash<String>>,
-        EqualToKey<String, GetName<TheoryTermDef>>>;
+using TheoryTermDefs = ordered_set<TheoryTermDef, HashKey<String, GetName<TheoryTermDef>, mix_hash<String>>,
+                                   EqualToKey<String, GetName<TheoryTermDef>>>;
 
 inline std::ostream &operator<<(std::ostream &out, TheoryTermDef const &def) {
     def.print(out);
@@ -134,16 +124,15 @@ inline std::ostream &operator<<(std::ostream &out, TheoryTermDef const &def) {
 // {{{1 TheoryAtomDef
 
 class TheoryAtomDef {
-public:
+  public:
     using Key = Sig;
     struct GetKey {
-        Key operator()(TheoryAtomDef const &x) const {
-            return x.sig();
-        }
+        Key operator()(TheoryAtomDef const &x) const { return x.sig(); }
     };
 
     TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type);
-    TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type, StringVec &&ops, String guardDef);
+    TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type,
+                  StringVec &&ops, String guardDef);
     TheoryAtomDef(TheoryAtomDef const &other) = delete;
     TheoryAtomDef(TheoryAtomDef &&other) noexcept = default;
     TheoryAtomDef &operator=(TheoryAtomDef const &other) = delete;
@@ -159,7 +148,7 @@ public:
     String guardDef() const;
     void print(std::ostream &out) const;
 
-private:
+  private:
     Location loc_;
     Sig sig_;
     String elemDef_;
@@ -169,10 +158,8 @@ private:
 };
 
 using TheoryAtomDefs =
-    ordered_set<
-        TheoryAtomDef,
-        HashKey<TheoryAtomDef::Key, TheoryAtomDef::GetKey, mix_value_hash<TheoryAtomDef::Key>>,
-        EqualToKey<TheoryAtomDef::Key, TheoryAtomDef::GetKey>>;
+    ordered_set<TheoryAtomDef, HashKey<TheoryAtomDef::Key, TheoryAtomDef::GetKey, mix_value_hash<TheoryAtomDef::Key>>,
+                EqualToKey<TheoryAtomDef::Key, TheoryAtomDef::GetKey>>;
 
 inline std::ostream &operator<<(std::ostream &out, TheoryAtomDef const &def) {
     def.print(out);
@@ -182,7 +169,7 @@ inline std::ostream &operator<<(std::ostream &out, TheoryAtomDef const &def) {
 // {{{1 TheoryDef
 
 class TheoryDef {
-public:
+  public:
     TheoryDef(Location const &loc, String name);
     TheoryDef(TheoryDef const &other) = delete;
     TheoryDef(TheoryDef &&other) noexcept = default;
@@ -199,18 +186,15 @@ public:
     Location const &loc() const;
     void print(std::ostream &out) const;
 
-private:
+  private:
     Location loc_;
     String name_;
     mutable TheoryTermDefs termDefs_;
     mutable TheoryAtomDefs atomDefs_;
 };
 
-using TheoryDefs =
-    ordered_set<
-        TheoryDef,
-        HashKey<String, GetName<TheoryDef>, mix_hash<String>>,
-        EqualToKey<String, GetName<TheoryDef>>>;
+using TheoryDefs = ordered_set<TheoryDef, HashKey<String, GetName<TheoryDef>, mix_hash<String>>,
+                               EqualToKey<String, GetName<TheoryDef>>>;
 
 inline std::ostream &operator<<(std::ostream &out, TheoryDef const &def) {
     def.print(out);

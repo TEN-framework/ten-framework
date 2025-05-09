@@ -11,7 +11,7 @@ if (Boost_FOUND)
 endif()
 
 add_library(WideInteger INTERFACE)
-target_compile_features(WideInteger INTERFACE cxx_std_11)
+target_compile_features(WideInteger INTERFACE cxx_std_20)
 
 target_include_directories(
   WideInteger SYSTEM INTERFACE

@@ -1,4 +1,4 @@
-#script (python) 
+#script (python)
 
 from clingo import Number, String, Function
 
@@ -14,7 +14,7 @@ def main(prg):
     while ((imax is None or step < imax.number) and
            (step == 0 or step < imin.number or (
               (istop.string == "SAT"     and not ret.satisfiable) or
-              (istop.string == "UNSAT"   and not ret.unsatisfiable) or 
+              (istop.string == "UNSAT"   and not ret.unsatisfiable) or
               (istop.string == "UNKNOWN" and not ret.unknown)))):
         parts = []
         parts.append(("check", [Number(step)]))

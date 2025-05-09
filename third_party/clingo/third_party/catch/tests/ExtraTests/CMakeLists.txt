@@ -2,12 +2,11 @@
 # Build extra tests.
 #
 
-cmake_minimum_required( VERSION 3.10 )
+cmake_minimum_required( VERSION 3.16 )
 
 project( Catch2ExtraTests LANGUAGES CXX )
 
 message( STATUS "Extra tests included" )
-
 
 add_test(
   NAME TestShardingIntegration
@@ -183,7 +182,7 @@ if (NOT WIN32)
     PROPERTIES
       PASS_REGULAR_EXPRESSION "Catch will terminate"
   )
-endif(NOT WIN32)
+endif()
 
 
 add_test(NAME CATCH_CONFIG_DISABLE_EXCEPTIONS-3 COMMAND DisabledExceptions-CustomHandler "Tests that run")
@@ -467,6 +466,29 @@ set_tests_properties(
     PASS_REGULAR_EXPRESSION "Errors occurred during startup!"
 )
 
+add_executable(ReportingCrashWithJunitReporter ${TESTS_DIR}/X36-ReportingCrashWithJunitReporter.cpp)
+target_link_libraries(ReportingCrashWithJunitReporter PRIVATE Catch2::Catch2WithMain)
+add_test(
+  NAME Reporters::CrashInJunitReporter
+  COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:ReportingCrashWithJunitReporter> --reporter JUnit
+)
+set_tests_properties(
+    Reporters::CrashInJunitReporter
+  PROPERTIES
+    PASS_REGULAR_EXPRESSION "</testsuites>"
+    LABELS "uses-signals"
+)
+
+add_executable(AssertionStartingEventGoesBeforeAssertionIsEvaluated
+  X20-AssertionStartingEventGoesBeforeAssertionIsEvaluated.cpp
+)
+target_link_libraries(AssertionStartingEventGoesBeforeAssertionIsEvaluated
+  PRIVATE Catch2::Catch2WithMain
+)
+add_test(
+  NAME ReporterEvents::AssertionStartingHappensBeforeAssertionIsEvaluated
+  COMMAND $<TARGET_FILE:AssertionStartingEventGoesBeforeAssertionIsEvaluated>
+)
 
 #add_executable(DebugBreakMacros ${TESTS_DIR}/X12-CustomDebugBreakMacro.cpp)
 #target_link_libraries(DebugBreakMacros Catch2)
@@ -545,6 +567,7 @@ add_executable(AmalgamatedTestCompilation
   ${CATCH_DIR}/extras/catch_amalgamated.cpp
 )
 target_include_directories(AmalgamatedTestCompilation PRIVATE ${CATCH_DIR}/extras)
+target_compile_features(AmalgamatedTestCompilation PRIVATE cxx_std_14)
 
 add_test(NAME AmalgamatedFileTest COMMAND AmalgamatedTestCompilation)
 set_tests_properties(

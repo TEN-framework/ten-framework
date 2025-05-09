@@ -23,22 +23,27 @@
 // }}}
 
 #include "gringo/output/theory.hh"
-#include "gringo/output/literal.hh"
 #include "gringo/backend.hh"
 #include "gringo/logger.hh"
+#include "gringo/output/literal.hh"
 #include "gringo/output/literals.hh"
 #include "potassco/basic_types.h"
 #include <cstring>
 #include <tuple>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 namespace {
 
-bool addSeen(std::vector<bool>& vec, Potassco::Id_t id) {
-    if (vec.size() <= id) { vec.resize(id + 1, false); }
+bool addSeen(std::vector<bool> &vec, Potassco::Id_t id) {
+    if (vec.size() <= id) {
+        vec.resize(id + 1, false);
+    }
     bool seen = vec[id];
-    if (!seen) { vec[id] = true; }
+    if (!seen) {
+        vec[id] = true;
+    }
     return !seen;
 }
 
@@ -46,20 +51,14 @@ bool addSeen(std::vector<bool>& vec, Potassco::Id_t id) {
 
 // {{{1 definition of TheoryParser
 
-TheoryParser::Elem::Elem(String op, bool unary)
-: tokenType_(Op)
-, op_(op, unary) { }
+TheoryParser::Elem::Elem(String op, bool unary) : tokenType_(Op), op_(op, unary) {}
 
-TheoryParser::Elem::Elem(UTheoryTerm term)
-: tokenType_(Id)
-, term_(std::move(term))  {}
+TheoryParser::Elem::Elem(UTheoryTerm term) : tokenType_(Id), term_(std::move(term)) {}
 
-TheoryParser::Elem::Elem(Elem &&elem) noexcept
-: tokenType_(elem.type()) {
+TheoryParser::Elem::Elem(Elem &&elem) noexcept : tokenType_(elem.type()) {
     if (elem.type() == Id) {
         new (&term()) UTheoryTerm(std::move(elem.term()));
-    }
-    else {
+    } else {
         new (&op()) std::pair<String, bool>(std::move(elem.op()));
     }
 }
@@ -67,17 +66,14 @@ TheoryParser::Elem::Elem(Elem &&elem) noexcept
 TheoryParser::Elem::~Elem() noexcept {
     if (type() == Id) {
         term().~UTheoryTerm();
-    }
-    else {
+    } else {
         op().~pair();
     }
 }
 
-TheoryParser::TokenType TheoryParser::Elem::type() {
-    return tokenType_;
-}
+TheoryParser::TokenType TheoryParser::Elem::type() { return tokenType_; }
 
-std::pair<String,bool> &TheoryParser::Elem::op() {
+std::pair<String, bool> &TheoryParser::Elem::op() {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
     return op_;
 }
@@ -87,14 +83,14 @@ UTheoryTerm &TheoryParser::Elem::term() {
     return term_;
 }
 
-TheoryParser::TheoryParser(Location const &loc, TheoryTermDef const &def)
-: loc_(loc)
-, def_(def) { }
+TheoryParser::TheoryParser(Location const &loc, TheoryTermDef const &def) : loc_(loc), def_(def) {}
 
 bool TheoryParser::check(String op) {
-    if (stack_.size() < 2) { return false; }
+    if (stack_.size() < 2) {
+        return false;
+    }
     assert(stack_.back().type() == Id);
-    auto current  = def_.getPrioAndAssoc(op);
+    auto current = def_.getPrioAndAssoc(op);
     auto previous = def_.getPrio(stack_[stack_.size() - 2].op().first, stack_[stack_.size() - 2].op().second);
     return previous > current.first || (previous == current.first && current.second);
 }
@@ -111,8 +107,7 @@ void TheoryParser::reduce() {
         auto a = std::move(stack_.back().term());
         stack_.pop_back();
         stack_.emplace_back(gringo_make_unique<BinaryTheoryTerm>(std::move(a), op.first, std::move(b)));
-    }
-    else {
+    } else {
         stack_.emplace_back(gringo_make_unique<UnaryTheoryTerm>(op.first, std::move(b)));
     }
 }
@@ -144,17 +139,14 @@ UTheoryTerm TheoryParser::parse(RawTheoryTerm::ElemVec elems, Logger &log) {
 
 // {{{1 definition of RawTheoryTerm
 
-RawTheoryTerm::RawTheoryTerm(ElemVec elems)
-: elems_(std::move(elems)) { }
+RawTheoryTerm::RawTheoryTerm(ElemVec elems) : elems_(std::move(elems)) {}
 
 void RawTheoryTerm::append(StringVec ops, UTheoryTerm term) {
     assert(elems_.empty() || !ops.empty());
     elems_.emplace_back(std::move(ops), std::move(term));
 }
 
-size_t RawTheoryTerm::hash() const {
-    return get_value_hash(typeid(RawTheoryTerm).hash_code(), elems_);
-}
+size_t RawTheoryTerm::hash() const { return get_value_hash(typeid(RawTheoryTerm).hash_code(), elems_); }
 
 bool RawTheoryTerm::operator==(TheoryTerm const &other) const {
     auto const *t = dynamic_cast<RawTheoryTerm const *>(&other);
@@ -170,9 +162,7 @@ void RawTheoryTerm::print(std::ostream &out) const {
     out << ")";
 }
 
-RawTheoryTerm *RawTheoryTerm::clone() const {
-    return gringo_make_unique<RawTheoryTerm>(get_clone(elems_)).release();
-}
+RawTheoryTerm *RawTheoryTerm::clone() const { return gringo_make_unique<RawTheoryTerm>(get_clone(elems_)).release(); }
 
 Potassco::Id_t RawTheoryTerm::eval(TheoryData &data, Logger &log) const {
     static_cast<void>(data);
@@ -201,23 +191,16 @@ UTheoryTerm RawTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 
 // {{{1 definition of UnaryTheoryTerm
 
-UnaryTheoryTerm::UnaryTheoryTerm(String op, UTheoryTerm arg)
-: arg_(std::move(arg))
-, op_(op)
-{ }
+UnaryTheoryTerm::UnaryTheoryTerm(String op, UTheoryTerm arg) : arg_(std::move(arg)), op_(op) {}
 
-size_t UnaryTheoryTerm::hash() const {
-    return get_value_hash(typeid(UnaryTheoryTerm).hash_code(), arg_, op_);
-}
+size_t UnaryTheoryTerm::hash() const { return get_value_hash(typeid(UnaryTheoryTerm).hash_code(), arg_, op_); }
 
 bool UnaryTheoryTerm::operator==(TheoryTerm const &other) const {
     auto const *t = dynamic_cast<UnaryTheoryTerm const *>(&other);
     return t != nullptr && is_value_equal_to(arg_, t->arg_) && op_ == t->op_;
 }
 
-void UnaryTheoryTerm::print(std::ostream &out) const {
-    out << "(" << op_ << *arg_ << ")";
-}
+void UnaryTheoryTerm::print(std::ostream &out) const { out << "(" << op_ << *arg_ << ")"; }
 
 UnaryTheoryTerm *UnaryTheoryTerm::clone() const {
     return gringo_make_unique<UnaryTheoryTerm>(op_, get_clone(arg_)).release();
@@ -226,17 +209,13 @@ UnaryTheoryTerm *UnaryTheoryTerm::clone() const {
 Potassco::Id_t UnaryTheoryTerm::eval(TheoryData &data, Logger &log) const {
     auto op = data.addTerm(op_.c_str());
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    Potassco::Id_t args[] = { arg_->eval(data, log) };
+    Potassco::Id_t args[] = {arg_->eval(data, log)};
     return data.addTermFun(op, Potassco::toSpan(args, 1));
 }
 
-void UnaryTheoryTerm::collect(VarTermBoundVec &vars) {
-    arg_->collect(vars);
-}
+void UnaryTheoryTerm::collect(VarTermBoundVec &vars) { arg_->collect(vars); }
 
-void UnaryTheoryTerm::replace(Defines &defs) {
-    arg_->replace(defs);
-}
+void UnaryTheoryTerm::replace(Defines &defs) { arg_->replace(defs); }
 
 UTheoryTerm UnaryTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
     Term::replace(arg_, arg_->initTheory(p, log));
@@ -246,10 +225,7 @@ UTheoryTerm UnaryTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 // {{{1 definition of BinaryTheoryTerm
 
 BinaryTheoryTerm::BinaryTheoryTerm(UTheoryTerm left, String op, UTheoryTerm right)
-: left_(std::move(left))
-, right_(std::move(right))
-, op_(op)
-{ }
+    : left_(std::move(left)), right_(std::move(right)), op_(op) {}
 
 size_t BinaryTheoryTerm::hash() const {
     return get_value_hash(typeid(BinaryTheoryTerm).hash_code(), left_, right_, op_);
@@ -260,9 +236,7 @@ bool BinaryTheoryTerm::operator==(TheoryTerm const &other) const {
     return t != nullptr && is_value_equal_to(left_, t->left_) && is_value_equal_to(right_, t->right_) && op_ == t->op_;
 }
 
-void BinaryTheoryTerm::print(std::ostream &out) const {
-    out << "(" << *left_ << op_ << *right_ << ")";
-}
+void BinaryTheoryTerm::print(std::ostream &out) const { out << "(" << *left_ << op_ << *right_ << ")"; }
 
 BinaryTheoryTerm *BinaryTheoryTerm::clone() const {
     return gringo_make_unique<BinaryTheoryTerm>(get_clone(left_), op_, get_clone(right_)).release();
@@ -271,7 +245,7 @@ BinaryTheoryTerm *BinaryTheoryTerm::clone() const {
 Potassco::Id_t BinaryTheoryTerm::eval(TheoryData &data, Logger &log) const {
     auto op = data.addTerm(op_.c_str());
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    Potassco::Id_t args[] = { left_->eval(data, log), right_->eval(data, log) };
+    Potassco::Id_t args[] = {left_->eval(data, log), right_->eval(data, log)};
     return data.addTermFun(op, Potassco::toSpan(args, 2));
 }
 
@@ -293,17 +267,14 @@ UTheoryTerm BinaryTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 
 // {{{1 definition of TupleTheoryTerm
 
-TupleTheoryTerm::TupleTheoryTerm(Type type, UTheoryTermVec args)
-: args_(std::move(args))
-, type_(type)
-{ }
+TupleTheoryTerm::TupleTheoryTerm(Type type, UTheoryTermVec args) : args_(std::move(args)), type_(type) {}
 
 size_t TupleTheoryTerm::hash() const {
     return get_value_hash(typeid(TupleTheoryTerm).hash_code(), static_cast<unsigned>(type_), args_);
 }
 
 bool TupleTheoryTerm::operator==(TheoryTerm const &other) const {
-    auto const *t = dynamic_cast<TupleTheoryTerm const*>(&other);
+    auto const *t = dynamic_cast<TupleTheoryTerm const *>(&other);
     return t != nullptr && is_value_equal_to(args_, t->args_) && type_ == t->type_;
 }
 
@@ -352,17 +323,12 @@ UTheoryTerm TupleTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 
 // {{{1 definition of FunctionTheoryTerm
 
-FunctionTheoryTerm::FunctionTheoryTerm(String name, UTheoryTermVec args)
-: args_(std::move(args))
-, name_(name)
-{ }
+FunctionTheoryTerm::FunctionTheoryTerm(String name, UTheoryTermVec args) : args_(std::move(args)), name_(name) {}
 
-size_t FunctionTheoryTerm::hash() const {
-    return get_value_hash(typeid(FunctionTheoryTerm).hash_code(), name_, args_);
-}
+size_t FunctionTheoryTerm::hash() const { return get_value_hash(typeid(FunctionTheoryTerm).hash_code(), name_, args_); }
 
 bool FunctionTheoryTerm::operator==(TheoryTerm const &other) const {
-    auto const *t = dynamic_cast<FunctionTheoryTerm const*>(&other);
+    auto const *t = dynamic_cast<FunctionTheoryTerm const *>(&other);
     return t != nullptr && is_value_equal_to(args_, t->args_) && name_ == t->name_;
 }
 
@@ -406,40 +372,29 @@ UTheoryTerm FunctionTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 
 // {{{1 definition of TermTheoryTerm
 
-TermTheoryTerm::TermTheoryTerm(UTerm term)
-: term_(std::move(term)) {
-    assert(dynamic_cast<VarTerm*>(term_.get()) || dynamic_cast<ValTerm*>(term_.get()));
+TermTheoryTerm::TermTheoryTerm(UTerm term) : term_(std::move(term)) {
+    assert(dynamic_cast<VarTerm *>(term_.get()) || dynamic_cast<ValTerm *>(term_.get()));
 }
 
-size_t TermTheoryTerm::hash() const {
-    return get_value_hash(typeid(TermTheoryTerm).hash_code(), term_);
-}
+size_t TermTheoryTerm::hash() const { return get_value_hash(typeid(TermTheoryTerm).hash_code(), term_); }
 
 bool TermTheoryTerm::operator==(TheoryTerm const &other) const {
     auto const *t = dynamic_cast<TermTheoryTerm const *>(&other);
     return t != nullptr && is_value_equal_to(term_, t->term_);
 }
 
-void TermTheoryTerm::print(std::ostream &out) const {
-    out << "(" << *term_ << ")";
-}
+void TermTheoryTerm::print(std::ostream &out) const { out << "(" << *term_ << ")"; }
 
-TermTheoryTerm *TermTheoryTerm::clone() const {
-    return gringo_make_unique<TermTheoryTerm>(get_clone(term_)).release();
-}
+TermTheoryTerm *TermTheoryTerm::clone() const { return gringo_make_unique<TermTheoryTerm>(get_clone(term_)).release(); }
 
 Potassco::Id_t TermTheoryTerm::eval(TheoryData &data, Logger &log) const {
     bool undefined = false;
     return data.addTerm(term_->eval(undefined, log));
 }
 
-void TermTheoryTerm::collect(VarTermBoundVec &vars) {
-    term_->collect(vars, false);
-}
+void TermTheoryTerm::collect(VarTermBoundVec &vars) { term_->collect(vars, false); }
 
-void TermTheoryTerm::replace(Defines &defs) {
-    Term::replace(term_, term_->replace(defs, true));
-}
+void TermTheoryTerm::replace(Defines &defs) { Term::replace(term_, term_->replace(defs, true)); }
 
 UTheoryTerm TermTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
     static_cast<void>(p);
@@ -450,26 +405,26 @@ UTheoryTerm TermTheoryTerm::initTheory(TheoryParser &p, Logger &log) {
 // {{{1 definition of TheoryData
 
 TheoryData::TheoryData(Potassco::TheoryData &data)
-: data_(data)
-, terms_{0, TermHash{data_}, TermEqual{data_}}
-, elems_{0, ElementHash{*this}, ElementEqual{*this}}
-, atoms_{0, AtomHash{data_}, AtomEqual{data_}}
-, out_(nullptr)
-, aSeen_{0}
-{ }
+    : data_(data), terms_{0, TermHash{data_}, TermEqual{data_}}, elems_{0, ElementHash{*this}, ElementEqual{*this}},
+      atoms_{0, AtomHash{data_}, AtomEqual{data_}}, out_(nullptr), aSeen_{0} {}
 
-void TheoryData::print(Potassco::Id_t termId, const Potassco::TheoryTerm& term) {
+void TheoryData::print(Potassco::Id_t termId, const Potassco::TheoryTerm &term) {
     switch (term.type()) {
-        case Potassco::Theory_t::Number  : out_->theoryTerm(termId, term.number()); break;
-        case Potassco::Theory_t::Symbol  : out_->theoryTerm(termId, Potassco::toSpan(term.symbol())); break;
-        case Potassco::Theory_t::Compound: out_->theoryTerm(termId, term.compound(), term.terms()); break;
+        case Potassco::Theory_t::Number:
+            out_->theoryTerm(termId, term.number());
+            break;
+        case Potassco::Theory_t::Symbol:
+            out_->theoryTerm(termId, Potassco::toSpan(term.symbol()));
+            break;
+        case Potassco::Theory_t::Compound:
+            out_->theoryTerm(termId, term.compound(), term.terms());
+            break;
     }
 }
-void TheoryData::print(const Potassco::TheoryAtom& a) {
+void TheoryData::print(const Potassco::TheoryAtom &a) {
     if (a.guard() != nullptr) {
         out_->theoryAtom(a.atom(), a.term(), a.elements(), *a.guard(), *a.rhs());
-    }
-    else {
+    } else {
         out_->theoryAtom(a.atom(), a.term(), a.elements());
     }
 }
@@ -503,8 +458,7 @@ void TheoryData::output(TheoryOutput &out) {
     aSeen_ = data_.numAtoms();
 }
 
-template <typename ...Args>
-Potassco::Id_t TheoryData::addTerm_(Args ...args) {
+template <typename... Args> Potassco::Id_t TheoryData::addTerm_(Args... args) {
     auto it = terms_.find(std::make_tuple(args...));
     if (it != terms_.end()) {
         return *it;
@@ -515,19 +469,15 @@ Potassco::Id_t TheoryData::addTerm_(Args ...args) {
     return size;
 }
 
-Potassco::Id_t TheoryData::addTerm(int number) {
-    return addTerm_(number);
-}
+Potassco::Id_t TheoryData::addTerm(int number) { return addTerm_(number); }
 
-Potassco::Id_t TheoryData::addTerm(char const *name) {
-    return addTerm_(name);
-}
+Potassco::Id_t TheoryData::addTerm(char const *name) { return addTerm_(name); }
 
-Potassco::Id_t TheoryData::addTermFun(Potassco::Id_t funcSym, Potassco::IdSpan const& terms) {
+Potassco::Id_t TheoryData::addTermFun(Potassco::Id_t funcSym, Potassco::IdSpan const &terms) {
     return addTerm_(funcSym, terms);
 }
 
-Potassco::Id_t TheoryData::addTermTup(Potassco::Tuple_t type, Potassco::IdSpan const& terms) {
+Potassco::Id_t TheoryData::addTermTup(Potassco::Tuple_t type, Potassco::IdSpan const &terms) {
     return addTerm_(type, terms);
 }
 
@@ -539,7 +489,7 @@ Potassco::Id_t TheoryData::addTerm(Symbol value) {
                 auto f = addTerm("-");
                 auto ret = addTerm(-num);
                 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-                Potassco::Id_t args[] = { ret };
+                Potassco::Id_t args[] = {ret};
                 return addTermFun(f, Potassco::toSpan(args, 1));
             }
             return addTerm(num);
@@ -566,9 +516,7 @@ Potassco::Id_t TheoryData::addTerm(Symbol value) {
                 return addTermTup(Potassco::Tuple_t::Paren, Potassco::toSpan(args));
             }
             Potassco::Id_t name = addTerm(value.name().c_str());
-            auto ret = args.empty()
-                ? addTerm(value.name().c_str())
-                : addTermFun(name, Potassco::toSpan(args));
+            auto ret = args.empty() ? addTerm(value.name().c_str()) : addTermFun(name, Potassco::toSpan(args));
             if (value.sign()) {
                 Potassco::Id_t f = addTerm("-");
                 ret = addTermFun(f, Potassco::toSpan(&ret, 1));
@@ -605,8 +553,9 @@ Potassco::Id_t TheoryData::addElem(Potassco::IdSpan const &tuple, LitVec cond) {
     return size;
 }
 
-template <typename ...Args>
-std::pair<Potassco::TheoryAtom const&, bool> TheoryData::addAtom_(std::function<Potassco::Id_t()> const &newAtom, Args ...args) {
+template <typename... Args>
+std::pair<Potassco::TheoryAtom const &, bool> TheoryData::addAtom_(std::function<Potassco::Id_t()> const &newAtom,
+                                                                   Args... args) {
     auto it = atoms_.find(std::make_tuple(args...));
     if (it != atoms_.end()) {
         return {**(data_.begin() + *it), false};
@@ -617,11 +566,15 @@ std::pair<Potassco::TheoryAtom const&, bool> TheoryData::addAtom_(std::function<
     return {atom, true};
 }
 
-std::pair<Potassco::TheoryAtom const &, bool> TheoryData::addAtom(std::function<Potassco::Id_t()> const &newAtom, Potassco::Id_t termId, Potassco::IdSpan const &elems) {
+std::pair<Potassco::TheoryAtom const &, bool> TheoryData::addAtom(std::function<Potassco::Id_t()> const &newAtom,
+                                                                  Potassco::Id_t termId,
+                                                                  Potassco::IdSpan const &elems) {
     return addAtom_(newAtom, termId, elems);
 }
 
-std::pair<Potassco::TheoryAtom const &, bool> TheoryData::addAtom(std::function<Potassco::Id_t()> const &newAtom, Potassco::Id_t termId, Potassco::IdSpan const &elems, Potassco::Id_t op, Potassco::Id_t rhs) {
+std::pair<Potassco::TheoryAtom const &, bool> TheoryData::addAtom(std::function<Potassco::Id_t()> const &newAtom,
+                                                                  Potassco::Id_t termId, Potassco::IdSpan const &elems,
+                                                                  Potassco::Id_t op, Potassco::Id_t rhs) {
     return addAtom_(newAtom, termId, elems, op, rhs);
 }
 
@@ -630,12 +583,19 @@ void TheoryData::printTerm(std::ostream &out, Potassco::Id_t termId) const {
     auto const &term = data_.getTerm(termId);
     switch (term.type()) {
         case Potassco::Theory_t::Number: {
-            if (term.number() < 0) { out << "("; }
+            if (term.number() < 0) {
+                out << "(";
+            }
             out << term.number();
-            if (term.number() < 0) { out << ")"; }
+            if (term.number() < 0) {
+                out << ")";
+            }
             break;
         }
-        case Potassco::Theory_t::Symbol: { out << term.symbol(); break; }
+        case Potassco::Theory_t::Symbol: {
+            out << term.symbol();
+            break;
+        }
         case Potassco::Theory_t::Compound: {
             auto const *parens = Potassco::toString(term.isTuple() ? term.tuple() : Potassco::Tuple_t::Paren);
             bool isOp = false;
@@ -643,11 +603,10 @@ void TheoryData::printTerm(std::ostream &out, Potassco::Id_t termId) const {
             if (term.isFunction()) {
                 if (term.size() <= 2) {
                     auto const &name = data_.getTerm(term.function());
-                    char buf[2] = { *name.symbol(), 0 };
+                    char buf[2] = {*name.symbol(), 0};
                     if ((isOp = std::strpbrk(buf, "/!<=>+-*\\?&@|:;~^.") != nullptr)) {
                         op = name.symbol();
-                    }
-                    else if ((isOp = strcmp(name.symbol(), "not") == 0)) {
+                    } else if ((isOp = strcmp(name.symbol(), "not") == 0)) {
                         op = term.size() == 1 ? "not " : " not ";
                     }
                 }
@@ -659,8 +618,10 @@ void TheoryData::printTerm(std::ostream &out, Potassco::Id_t termId) const {
             if (isOp && term.size() <= 1) {
                 out << op;
             }
-            print_comma(out, term, op, [this](std::ostream &out, Potassco::Id_t termId){ printTerm(out, termId); });
-            if (term.isTuple() && term.tuple() == Potassco::Tuple_t::Paren && term.size() == 1) { out << ","; }
+            print_comma(out, term, op, [this](std::ostream &out, Potassco::Id_t termId) { printTerm(out, termId); });
+            if (term.isTuple() && term.tuple() == Potassco::Tuple_t::Paren && term.size() == 1) {
+                out << ",";
+            }
             out << parens[1];
             break;
         }
@@ -671,23 +632,18 @@ void TheoryData::printTerm(std::ostream &out, Potassco::Id_t termId) const {
 void TheoryData::printElem(std::ostream &out, Potassco::Id_t elemId, PrintLit printLit) const {
     auto const &elem = data_.getElement(elemId);
     auto const &cond = getCondition(elemId);
-    print_comma(out, elem, ",", [this](std::ostream &out, Potassco::Id_t termId){ printTerm(out, termId); });
+    print_comma(out, elem, ",", [this](std::ostream &out, Potassco::Id_t termId) { printTerm(out, termId); });
     if (elem.size() == 0 && cond.empty()) {
         out << ": ";
-    }
-    else if (!cond.empty()) {
+    } else if (!cond.empty()) {
         out << ": ";
-        print_comma(out, cond, ",", [&printLit](std::ostream &out, LiteralId const &lit){ printLit(out, lit); });
+        print_comma(out, cond, ",", [&printLit](std::ostream &out, LiteralId const &lit) { printLit(out, lit); });
     }
 }
 
-bool TheoryData::empty() const {
-    return data_.numAtoms() == 0;
-}
+bool TheoryData::empty() const { return data_.numAtoms() == 0; }
 
-Potassco::TheoryData const &TheoryData::data() const {
-    return data_;
-}
+Potassco::TheoryData const &TheoryData::data() const { return data_; }
 
 LitVec const &TheoryData::getCondition(Potassco::Id_t elemId) const {
     assert(elemId < elems_.size());
@@ -713,4 +669,5 @@ void TheoryData::reset(bool resetData) {
 
 // }}}1
 
-} } // namspace Gringo
+} // namespace Output
+} // namespace Gringo

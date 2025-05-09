@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -277,7 +277,7 @@ public:
 		priority_reserved_msg    = 0,    //!< Reserved priority for message/termination handlers (if any).
 		priority_reserved_ufs    = 10,   //!< Reserved priority for the default unfounded set checker (if any).
 		priority_reserved_look   = 1023, //!< Reserved priority for the default lookahead operator (if any).
-		priority_class_general   = 1024, //!< Priortiy of extended post propagators.
+		priority_class_general   = 1024, //!< Priority of extended post propagators.
 	};
 
 	//! Shall return a value representing the priority of this propagator.
@@ -315,7 +315,7 @@ public:
 	 *   Solver::propagateUntil(this) after enqueuing any new assignments
 	 *   to initiate propagation up to this propagator.
 	 *
-	 * Typically, propagateFixpoint() should implemet a loop like this:
+	 * Typically, propagateFixpoint() should implement a loop like this:
 	 * \code
 	 * for (;;) {
 	 *   if (!assign_newly_implied_literals(s)){ return false; }
@@ -352,7 +352,7 @@ protected:
 	//! Calls reset on post propagators following this.
 	void cancelPropagation();
 
-	//! PostPropagators are not clonable by default.
+	//! PostPropagators are not cloneable by default.
 	Constraint* cloneAttach(Solver&) { return 0; }
 	// Constraint interface - noops
 	PropResult  propagate(Solver&, Literal, uint32&);

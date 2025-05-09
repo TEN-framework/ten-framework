@@ -25,10 +25,10 @@
 #ifndef _GRINGO_OUTPUT_TEST_SOLVER_HELPER_HH
 #define _GRINGO_OUTPUT_TEST_SOLVER_HELPER_HH
 
-#include "gringo/logger.hh"
 #include "gringo/ground/dependency.hh"
 #include "gringo/input/nongroundparser.hh"
 #include "gringo/input/program.hh"
+#include "gringo/logger.hh"
 #include "gringo/output/output.hh"
 
 #include "tests/tests.hh"
@@ -37,22 +37,23 @@
 #include <clasp/solver.h>
 #include <regex>
 
-
-namespace Gringo { namespace Output { namespace Test {
+namespace Gringo {
+namespace Output {
+namespace Test {
 
 // {{{ definition of solve
 
-using Model  = std::vector<std::string>;
+using Model = std::vector<std::string>;
 using Filter = std::initializer_list<std::string>;
 using Models = std::vector<Model>;
 using ModelsAndMessages = std::pair<std::vector<Model>, std::vector<std::string>>;
 
 class ModelPrinter : public Clasp::EventHandler {
-public:
+  public:
     ModelPrinter(Models &models, Filter &filter) : models(models), filter(filter) {}
-    bool onModel(const Clasp::Solver& s, const Clasp::Model& m) {
+    bool onModel(const Clasp::Solver &s, const Clasp::Model &m) {
         models.emplace_back();
-        const Clasp::OutputTable& out = s.outputTable();
+        const Clasp::OutputTable &out = s.outputTable();
         for (Clasp::OutputTable::pred_iterator it = out.pred_begin(); it != out.pred_end(); ++it) {
             if (m.isTrue(it->cond)) {
                 onAtom(it->name.c_str());
@@ -64,14 +65,13 @@ public:
         std::sort(models.back().begin(), models.back().end());
         return true;
     }
-    void onAtom(std::string&& atom) {
+    void onAtom(std::string &&atom) {
         for (auto &x : filter) {
             if (atom.compare(0, x.size(), x) == 0) {
                 models.back().emplace_back(std::move(atom));
                 return;
             }
         }
-
     }
     Models &models;
     Filter &filter;
@@ -79,10 +79,7 @@ public:
 
 struct ClingoState {
     ClingoState()
-    : out(td, {}, ss, OutputFormat::INTERMEDIATE)
-    , pb(context, prg, out.outPreds, defs)
-    , parser(pb, bck, incmode) {
-    }
+        : out(td, {}, ss, OutputFormat::INTERMEDIATE), pb(context, prg, out.outPreds, defs), parser(pb, bck, incmode) {}
     Gringo::Test::TestGringoModule module;
     std::stringstream ss;
     Potassco::TheoryData td;
@@ -112,7 +109,8 @@ inline bool ground(ClingoState &state) {
     return false;
 }
 
-inline Models solve(ClingoState &state, std::string const &str, Filter filter = {""}, std::initializer_list<Clasp::wsum_t> minimize = {}) {
+inline Models solve(ClingoState &state, std::string const &str, Filter filter = {""},
+                    std::initializer_list<Clasp::wsum_t> minimize = {}) {
     state.parser.pushStream("-", gringo_make_unique<std::stringstream>(str), state.module);
     Models models;
     // grounder: parse
@@ -137,13 +135,16 @@ inline Models solve(ClingoState &state, std::string const &str, Filter filter = 
     return models;
 }
 
-inline ModelsAndMessages solve(std::string const &str, std::initializer_list<std::string> filter = {""}, std::initializer_list<Clasp::wsum_t> minimize = {}) {
+inline ModelsAndMessages solve(std::string const &str, std::initializer_list<std::string> filter = {""},
+                               std::initializer_list<Clasp::wsum_t> minimize = {}) {
     ClingoState state;
     return {solve(state, str, filter, minimize), state.module.messages()};
 }
 
 // }}}
 
-} } } // namespace Test Output Gringo
+} // namespace Test
+} // namespace Output
+} // namespace Gringo
 
 #endif // _GRINGO_OUTPUT_TEST_SOLVER_HELPER_HH

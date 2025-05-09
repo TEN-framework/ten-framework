@@ -1,10 +1,10 @@
-#script (lua) 
+#script (lua)
 
 function get(val, default)
-    if val ~= nil then 
-        return val 
-    else 
-        return default 
+    if val ~= nil then
+        return val
+    else
+        return default
     end
 end
 
@@ -17,7 +17,7 @@ function main(prg)
     while (imax == nil or step < imax.number) and
           (step == 0 or step < imin.number or (
               (istop.string == "SAT"     and not ret.satisfiable) or
-              (istop.string == "UNSAT"   and not ret.unsatisfiable) or 
+              (istop.string == "UNSAT"   and not ret.unsatisfiable) or
               (istop.string == "UNKNOWN" and not ret.unknown))) do
         local parts = {}
         table.insert(parts, {"check", {step}})

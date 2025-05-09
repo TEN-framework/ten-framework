@@ -26,7 +26,7 @@
 %define namespace "Gringo::Input::GroundTermGrammar"
 %name-prefix "GringoGroundTermGrammar_"
 %error-verbose
-%locations // NOTE: different behavior for location-less parsers for different bison versions 
+%locations // NOTE: different behavior for location-less parsers for different bison versions
 %defines
 %parse-param { Gringo::Input::GroundTermParser *lexer }
 %lex-param { Gringo::Input::GroundTermParser *lexer }
@@ -40,7 +40,7 @@
 
 #include "gringo/term.hh"
 #include "gringo/input/groundtermparser.hh"
-#include <climits> 
+#include <climits>
 
 using namespace Gringo;
 using namespace Gringo::Input;
@@ -150,4 +150,3 @@ terms
     : nterms[a] { $$ = $a;  }
     |           { $$ = lexer->terms();  }
     ;
-

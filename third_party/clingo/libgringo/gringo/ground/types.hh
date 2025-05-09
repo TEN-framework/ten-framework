@@ -28,4 +28,3 @@
 #include <gringo/output/types.hh>
 
 #endif // GRINGO_GROUND_TYPES_HH
-

@@ -25,4 +25,3 @@ end
 #show a : a.
 #show b : b.
 #show c : c.
-

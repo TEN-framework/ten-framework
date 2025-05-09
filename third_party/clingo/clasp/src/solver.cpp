@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -138,11 +138,13 @@ Solver::Solver(SharedContext* ctx, uint32 id)
 	, enum_(0)
 	, memUse_(0)
 	, lazyRem_(0)
+	, dynLimit_(0)
 	, ccInfo_(Constraint_t::Conflict)
 	, dbIdx_(0)
 	, lastSimp_(0)
 	, shufSimp_(0)
-	, initPost_(0){
+	, initPost_(0)
+	, splitReq_(false) {
 	Var trueVar = assign_.addVar();
 	assign_.setValue(trueVar, value_true);
 	markSeen(trueVar);
@@ -224,7 +226,7 @@ void Solver::startInit(uint32 numConsGuess, const SolverParams& params) {
 	if (!strategy_.hasConfig) {
 		uint32 id           = this->id();
 		uint32 hId          = strategy_.heuId; // remember active heuristic
-		strategy_           = params;
+		strategy_           = static_cast<const SolverStrategies&>(params);
 		strategy_.id        = id; // keep id
 		strategy_.hasConfig = 1;  // strategy is now "up to date"
 		if      (!params.ccMinRec)  { delete ccMin_; ccMin_ = 0; }
@@ -353,6 +355,13 @@ uint32 Solver::receive(SharedLiterals** out, uint32 maxOut) const {
 	}
 	return 0;
 }
+
+void Solver::restart() {
+	undoUntil(0);
+	++stats.restarts;
+	ccInfo_.score().bumpActivity();
+}
+
 SharedLiterals* Solver::distribute(const Literal* lits, uint32 size, const ConstraintInfo& extra) {
 	if (shared_->distributor.get() && !extra.aux() && (size <= 3 || shared_->distributor->isCandidate(size, extra.lbd(), extra.type()))) {
 		uint32 initialRefs = shared_->concurrency() - (size <= ClauseHead::MAX_SHORT_LEN || !shared_->physicalShare(extra.type()));
@@ -574,8 +583,24 @@ bool Solver::split(LitVec& out) {
 	copyGuidingPath(out);
 	pushRootLevel();
 	out.push_back(~decision(rootLevel()));
+	splitReq_ = false;
 	stats.addSplit();
 	return true;
+}
+bool Solver::requestSplit() {
+	splitReq_ = true;
+	bool res  = splittable();
+	if (!res && decisionLevel() > rootLevel() && !frozenLevel(rootLevel()+1)) {
+		splitReq_ = false; // solver can't split because split would contain aux vars
+	}
+	return res;
+}
+bool Solver::clearSplitRequest() {
+	if (splitReq_) {
+		splitReq_ = false;
+		return true;
+	}
+	return false;
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 // Solver: Watch management
@@ -935,7 +960,9 @@ bool Solver::resolveConflict() {
 	if (decisionLevel() > rootLevel()) {
 		if (decisionLevel() != backtrackLevel() && searchMode() != SolverStrategies::no_learning) {
 			uint32 uipLevel = analyzeConflict();
-			stats.addConflict(decisionLevel(), uipLevel, backtrackLevel(), ccInfo_.lbd());
+			uint32 dl       = decisionLevel();
+			stats.addConflict(dl, uipLevel, backtrackLevel(), ccInfo_.lbd());
+			if (dynLimit_) { dynLimit_->update(dl, ccInfo_.lbd()); }
 			if (shared_->reportMode()) {
 				sharedContext()->report(NewConflictEvent(*this, cc_, ccInfo_));
 			}
@@ -1643,7 +1670,7 @@ Solver::DBInfo Solver::reduceLinear(uint32 maxR, const CmpScore& sc) {
 		scoreSum += sc.score(learnts_[i]->activity());
 	}
 	double avgAct = (scoreSum / (double) numLearntConstraints());
-	// constraints with socre > 1.5 times the average are "active"
+	// constraints with score > 1.5 times the average are "active"
 	double scoreThresh = avgAct * 1.5;
 	double scoreMax    = (double)sc.score(makeScore(Clasp::ACT_MAX, 1));
 	if (scoreThresh > scoreMax) {
@@ -1817,15 +1844,21 @@ ValueRep Solver::search(SearchLimits& limit, double rf) {
 	rf = std::max(0.0, std::min(1.0, rf));
 	lower.reset();
 	if (limit.restart.local && decisionLevel() == rootLevel()) { cflStamp_.assign(decisionLevel()+1, 0); }
+	dynLimit_ = limit.restart.dynamic;
+	struct AtExit {
+		~AtExit() { self->dynLimit_ = 0; }
+		Solver* self;
+	} atExit = {this};
 	do {
 		for (bool conflict = hasConflict() || !propagate() || !simplify(), local = limit.restart.local;;) {
 			if (conflict) {
 				uint32 n = 1, ts;
 				do {
 					if (block && block->push(ts = numAssignedVars()) && ts > block->scaled()) {
-						if (limit.restart.dynamic) { limit.restart.dynamic->resetRun(); }
+						if (limit.restart.dynamic) { limit.restart.dynamic->block(); }
 						else                       { limit.restart.conflicts += block->inc; }
 						block->next = block->n + block->inc;
+						++stats.blRestarts;
 					}
 				} while (resolveConflict() && !propagate() && (++n, true));
 				limit.used += n;

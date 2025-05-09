@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2019 - 2022.
+//  Copyright Christopher Kormanyos 2019 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -47,7 +47,7 @@
 #endif
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #endif
@@ -70,7 +70,7 @@ auto test_uintwide_t_n_binary_ops_base::my_gen() -> test_uintwide_t_n_binary_ops
 }
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic pop
 #endif
 #endif

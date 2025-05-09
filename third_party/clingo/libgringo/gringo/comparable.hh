@@ -29,12 +29,11 @@ namespace Gringo {
 
 // {{{ declaration of Comparable
 
-template <class Base>
-class Comparable {
-public:
+template <class Base> class Comparable {
+  public:
     Comparable() = default;
     Comparable(Comparable const &other) = default;
-    Comparable(Comparable && other) noexcept = default;
+    Comparable(Comparable &&other) noexcept = default;
     Comparable &operator=(Comparable const &other) = default;
     Comparable &operator=(Comparable &&other) noexcept = default;
     virtual ~Comparable() noexcept = default;
@@ -48,5 +47,3 @@ public:
 } // namespace Gringo
 
 #endif // GRINGO_COMPARABLE_HH
-
-

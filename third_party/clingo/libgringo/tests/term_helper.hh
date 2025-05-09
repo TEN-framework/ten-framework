@@ -25,10 +25,11 @@
 #ifndef _GRINGO_TEST_TERM_HELPER_HH
 #define _GRINGO_TEST_TERM_HELPER_HH
 
-#include "tests/tests.hh"
 #include "gringo/term.hh"
+#include "tests/tests.hh"
 
-namespace Gringo { namespace Test {
+namespace Gringo {
+namespace Test {
 
 // {{{ definition of functions to create terms
 
@@ -40,7 +41,9 @@ inline std::unique_ptr<ValTerm> val(Symbol v) {
 inline std::unique_ptr<VarTerm> var(char const *x, int level = 0) {
     static std::unordered_map<String, Term::SVal> vals;
     auto &ret(vals[x]);
-    if (!ret) { ret = std::make_shared<Symbol>(); }
+    if (!ret) {
+        ret = std::make_shared<Symbol>();
+    }
     Location loc(String("dummy"), 1, 1, String("dummy"), 1, 1);
     auto var(make_locatable<VarTerm>(loc, String(x), ret));
     var->level = level;
@@ -67,39 +70,35 @@ inline std::unique_ptr<BinOpTerm> binop(BinOp op, UTerm &&left, UTerm &&right) {
     return make_locatable<BinOpTerm>(loc, op, std::move(left), std::move(right));
 }
 
-template <class... T>
-std::unique_ptr<FunctionTerm> fun(char const *name, T&&... args) {
+template <class... T> std::unique_ptr<FunctionTerm> fun(char const *name, T &&...args) {
     Location loc(String("dummy"), 1, 1, String("dummy"), 1, 1);
     return make_locatable<FunctionTerm>(loc, String(name), Test::init<UTermVec>(std::forward<T>(args)...));
 }
 
-template <class... T>
-std::unique_ptr<LuaTerm> lua(char const *name, T&&... args) {
+template <class... T> std::unique_ptr<LuaTerm> lua(char const *name, T &&...args) {
     Location loc(String("dummy"), 1, 1, String("dummy"), 1, 1);
     return make_locatable<LuaTerm>(loc, String(name), Test::init<UTermVec>(std::forward<T>(args)...));
 }
 
-template <class... T>
-std::unique_ptr<PoolTerm> pool(T&&... args) {
+template <class... T> std::unique_ptr<PoolTerm> pool(T &&...args) {
     Location loc(String("dummy"), 1, 1, String("dummy"), 1, 1);
     return make_locatable<PoolTerm>(loc, Test::init<UTermVec>(std::forward<T>(args)...));
 }
 
-template <class... T>
-UTermVec termvec(T&&... args) {
-    return Test::init<UTermVec>(std::forward<T>(args)...);
-}
+template <class... T> UTermVec termvec(T &&...args) { return Test::init<UTermVec>(std::forward<T>(args)...); }
 
 inline Symbol NUM(int num) { return Symbol::createNum(num); }
 inline Symbol SUP() { return Symbol::createSup(); }
 inline Symbol INF() { return Symbol::createInf(); }
 inline Symbol STR(String name) { return Symbol::createStr(name); }
 inline Symbol ID(String name, bool sign = false) { return Symbol::createId(name, sign); }
-inline Symbol FUN(String name, SymVec args, bool sign = false) { return Symbol::createFun(name, Potassco::toSpan(args), sign); }
+inline Symbol FUN(String name, SymVec args, bool sign = false) {
+    return Symbol::createFun(name, Potassco::toSpan(args), sign);
+}
 
 // }}}
 
-} } // namespace Gringo Test
+} // namespace Test
+} // namespace Gringo
 
 #endif // _GRINGO_TEST_TERM_HELPER_HH
-

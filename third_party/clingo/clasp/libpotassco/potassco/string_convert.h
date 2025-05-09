@@ -121,6 +121,7 @@ int xconvert(const char* x, int& out, const char** errPos = 0, int = 0);
 int xconvert(const char* x, long& out, const char** errPos = 0, int = 0);
 int xconvert(const char* x, unsigned long& out, const char** errPos = 0, int = 0);
 int xconvert(const char* x, double& out, const char** errPos = 0, int = 0);
+int xconvert(const char* x, float& out, const char** errPos = 0, int = 0);
 int xconvert(const char* x, const char*& out, const char** errPos = 0, int = 0);
 int xconvert(const char* x, std::string& out, const char** errPos = 0, int sep = 0);
 template <class T>

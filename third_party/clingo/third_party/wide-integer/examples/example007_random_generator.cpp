@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2018 - 2022.                 //
+//  Copyright Christopher Kormanyos 2018 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -45,7 +45,7 @@ namespace local_random
     // Purosely use the default seed.
     random_engine_type generator; // NOLINT(cert-msc32-c,cert-msc51-cpp)
 
-    distribution_type distribution;
+    distribution_type distribution { };
 
     const wide_integer_type n = distribution(generator);
 

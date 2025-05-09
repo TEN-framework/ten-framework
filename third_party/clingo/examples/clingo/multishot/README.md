@@ -6,9 +6,9 @@ Examples
 
 The branch-and-bound example:
 
-    $ python opt.py tohE.lp tohI.lp tohB.lp -c n=20
+    $ python opt.py tohB.lp tohI.lp -c n=20
     opt-example version 1.0
-    Reading from tohE.lp ...
+    Reading from tohB.lp ...
     Solving...
     Answer: 1
     move(3,c,2)  move(4,b,1)  move(4,c,3)  move(2,b,4)  move(4,b,5)  move(4,a,6)  move(3,b,7)
@@ -26,7 +26,7 @@ The branch-and-bound example:
     Solving...
     Optimum found
     UNSATISFIABLE
-    
+
     Models       : 5
     Calls        : 6
     Time         : 0.015s (Solving: 0.01s 1st Model: 0.01s Unsat: 0.00s)
@@ -45,7 +45,7 @@ The incremental solving example:
     move(1,c,8)  move(4,c,9)  move(3,a,10) move(4,a,11) move(2,c,12) move(4,b,13) move(3,c,14)
     move(4,c,15)
     SATISFIABLE
-    
+
     Models       : 1+
     Calls        : 16
     Time         : 0.020s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)

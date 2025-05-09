@@ -31,8 +31,8 @@ asstwo(S,u):-arg(S),ass(S,u),saturate.
 sattwo(S):-arg(S),ass(S,u),saturate.
 :-not saturate.
 #show ass/2.
-       
+
 :-ass(s1, 0),ass(s2, 0),ass(s3, 0).
 :-ass(s1, 1),ass(s2, 0),ass(s3, 1).
-       
+
 %unfounded: saturate, asstwo(s1,0), asstwo(s1,0)

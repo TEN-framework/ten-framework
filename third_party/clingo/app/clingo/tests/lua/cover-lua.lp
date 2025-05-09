@@ -6,7 +6,7 @@ State = { }
 State.__index = State
 
 function State.new()
-    local x = { 
+    local x = {
         leaves = {},
         last   = nil
     }

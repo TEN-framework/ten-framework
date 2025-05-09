@@ -36,7 +36,7 @@ struct is_checked_cpp_int : public std::integral_constant<bool, false>
 // for __int128 and/or __float128:
 //
 template <class T>
-inline const char* name_of()
+const char* name_of()
 {
    return typeid(T).name();
 }
@@ -46,12 +46,12 @@ inline const char* name_of()
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 template <>
-inline const char* name_of<__int128>()
+const char* name_of<__int128>()
 {
    return "__int128";
 }
 template <>
-inline const char* name_of<unsigned __int128>()
+const char* name_of<unsigned __int128>()
 {
    return "unsigned __int128";
 }
@@ -61,7 +61,7 @@ inline const char* name_of<unsigned __int128>()
 #endif
 #ifdef BOOST_HAS_FLOAT128
 //template <>
-//inline const char* name_of<__float128>()
+//const char* name_of<__float128>()
 //{
 //   return "__float128";
 //}
@@ -557,12 +557,12 @@ void test_signed_integer_ops(const std::integral_constant<bool, false>&)
 }
 
 template <class Real>
-inline Real negate_if_signed(Real r, const std::integral_constant<bool, true>&)
+Real negate_if_signed(Real r, const std::integral_constant<bool, true>&)
 {
    return -r;
 }
 template <class Real>
-inline Real negate_if_signed(Real r, const std::integral_constant<bool, false>&)
+Real negate_if_signed(Real r, const std::integral_constant<bool, false>&)
 {
    return r;
 }
@@ -1959,7 +1959,7 @@ void test_mixed(const std::integral_constant<bool, false>&)
 }
 
 template <class Real>
-inline bool check_is_nan(const Real& val, const std::integral_constant<bool, true>&)
+bool check_is_nan(const Real& val, const std::integral_constant<bool, true>&)
 {
    #ifndef BOOST_MP_STANDALONE
    return (boost::math::isnan)(val);
@@ -1969,17 +1969,17 @@ inline bool check_is_nan(const Real& val, const std::integral_constant<bool, tru
    #endif
 }
 template <class Real>
-inline bool check_is_nan(const Real&, const std::integral_constant<bool, false>&)
+bool check_is_nan(const Real&, const std::integral_constant<bool, false>&)
 {
    return false;
 }
 template <class Real>
-inline Real negate_value(const Real& val, const std::integral_constant<bool, true>&)
+Real negate_value(const Real& val, const std::integral_constant<bool, true>&)
 {
    return -val;
 }
 template <class Real>
-inline Real negate_value(const Real& val, const std::integral_constant<bool, false>&)
+Real negate_value(const Real& val, const std::integral_constant<bool, false>&)
 {
    return val;
 }
@@ -2916,7 +2916,7 @@ void test_basic_conditionals(Real a, Real b)
 
 template <class T>
 typename std::enable_if<boost::multiprecision::number_category<T>::value == boost::multiprecision::number_kind_complex>::type
-test_relationals(T a, T b)
+test_comparisons(T a, T b)
 {
    BOOST_CHECK_EQUAL((a == b), false);
    BOOST_CHECK_EQUAL((a != b), true);
@@ -2947,7 +2947,7 @@ test_relationals(T a, T b)
 
 template <class T>
 typename std::enable_if<boost::multiprecision::number_category<T>::value != boost::multiprecision::number_kind_complex>::type
-test_relationals(T a, T b)
+test_comparisons(T a, T b)
 {
    BOOST_CHECK_EQUAL((a == b), false);
    BOOST_CHECK_EQUAL((a != b), true);
@@ -3269,7 +3269,7 @@ void test()
    //
    // Comparisons:
    //
-   test_relationals(a, b);
+   test_comparisons(a, b);
    test_members(a);
    //
    // Use in Boolean context:

@@ -1,39 +1,56 @@
 #!/usr/bin/env python
 
-import socket
-import os
-import readline
 import atexit
-import random
-import signal
 import errno
+import os
+import random
+import readline
+import signal
+import socket
 
 histfile = os.path.join(os.path.expanduser("~"), ".controller")
-try: readline.read_history_file(histfile)
-except IOError: pass
-readline.parse_and_bind('tab: complete')
+try:
+    readline.read_history_file(histfile)
+except IOError:
+    pass
+readline.parse_and_bind("tab: complete")
+
+
 def complete(commands, text, state):
     matches = []
-    if state == 0: matches = [ c for c in commands if c.startswith(text) ]
+    if state == 0:
+        matches = [c for c in commands if c.startswith(text)]
     return matches[state] if state < len(matches) else None
-readline.set_completer(lambda text, state: complete(['more_pigeon_please', 'less_pigeon_please', 'solve', 'exit'], text, state))
+
+
+readline.set_completer(
+    lambda text, state: complete(
+        ["more_pigeon_please", "less_pigeon_please", "solve", "exit"], text, state
+    )
+)
 atexit.register(readline.write_history_file, histfile)
+
 
 def handleMessages(conn):
     def interrupt(conn):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         conn.sendall(b"interrupt\n")
+
     signal.signal(signal.SIGINT, lambda a, b: interrupt(conn))
     data = bytearray()
     while True:
         while True:
-            try: data.extend(conn.recv(4096))
+            try:
+                data.extend(conn.recv(4096))
             except OSError as e:
-                if e.errno != errno.EINTR: raise
+                if e.errno != errno.EINTR:
+                    raise
             except socket.error as e:
                 code, msg = e
-                if code != errno.EINTR: raise
-            else: break
+                if code != errno.EINTR:
+                    raise
+            else:
+                break
         pos = data.find(b"\n")
         while pos >= 0:
             (msg, data) = data.split(b"\n", 1)
@@ -47,20 +64,24 @@ def handleMessages(conn):
                 pos = data.find(b"\n")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-    for i in range(0,10):
+    for i in range(0, 10):
         try:
             p = random.randrange(1000, 60000)
             s.bind(("", p))
         except OSError as e:
-            if e.errno != errno.EINTR: raise
+            if e.errno != errno.EINTR:
+                raise
         except socket.error as e:
             code, msg = e
-            if code != errno.EADDRINUSE: raise
+            if code != errno.EADDRINUSE:
+                raise
             continue
         else:
-            with open(".controller.PORT", "w") as f: f.write(str(p))
+            with open(".controller.PORT", "w") as f:
+                f.write(str(p))
             print("waiting for connections...")
             break
         raise "no port found"
@@ -79,9 +100,11 @@ try:
     while True:
         signal.signal(signal.SIGINT, pyInt)
         try:
-            try: input_ = raw_input
-            except NameError: input_ = input
-            line = input_('> ')
+            try:
+                input_ = raw_input
+            except NameError:
+                input_ = input
+            line = input_("> ")
             signal.signal(signal.SIGINT, signal.SIG_IGN)
         except EOFError:
             signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -105,4 +128,3 @@ except KeyboardInterrupt:
     raise
 finally:
     s.close()
-

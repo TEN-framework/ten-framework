@@ -11,7 +11,6 @@
 #define CATCH_BENCHMARK_FUNCTION_HPP_INCLUDED
 
 #include <catch2/benchmark/catch_chronometer.hpp>
-#include <catch2/benchmark/detail/catch_complete_invoke.hpp>
 #include <catch2/internal/catch_meta.hpp>
 #include <catch2/internal/catch_unique_ptr.hpp>
 #include <catch2/internal/catch_move_and_forward.hpp>
@@ -36,21 +35,16 @@ namespace Catch {
             private:
                 struct callable {
                     virtual void call(Chronometer meter) const = 0;
-                    virtual Catch::Detail::unique_ptr<callable> clone() const = 0;
                     virtual ~callable(); // = default;
 
                     callable() = default;
-                    callable(callable const&) = default;
-                    callable& operator=(callable const&) = default;
+                    callable(callable&&) = default;
+                    callable& operator=(callable&&) = default;
                 };
                 template <typename Fun>
                 struct model : public callable {
                     model(Fun&& fun_) : fun(CATCH_MOVE(fun_)) {}
                     model(Fun const& fun_) : fun(fun_) {}
-
-                    Catch::Detail::unique_ptr<callable> clone() const override {
-                        return Catch::Detail::make_unique<model<Fun>>( *this );
-                    }
 
                     void call(Chronometer meter) const override {
                         call(meter, is_callable<Fun(Chronometer)>());
@@ -65,14 +59,8 @@ namespace Catch {
                     Fun fun;
                 };
 
-                struct do_nothing { void operator()() const {} };
-
-                template <typename T>
-                BenchmarkFunction(model<T>* c) : f(c) {}
-
             public:
-                BenchmarkFunction()
-                    : f(new model<do_nothing>{ {} }) {}
+                BenchmarkFunction();
 
                 template <typename Fun,
                     std::enable_if_t<!is_related<Fun, BenchmarkFunction>::value, int> = 0>
@@ -82,17 +70,9 @@ namespace Catch {
                 BenchmarkFunction( BenchmarkFunction&& that ) noexcept:
                     f( CATCH_MOVE( that.f ) ) {}
 
-                BenchmarkFunction(BenchmarkFunction const& that)
-                    : f(that.f->clone()) {}
-
                 BenchmarkFunction&
                 operator=( BenchmarkFunction&& that ) noexcept {
                     f = CATCH_MOVE( that.f );
-                    return *this;
-                }
-
-                BenchmarkFunction& operator=(BenchmarkFunction const& that) {
-                    f = that.f->clone();
                     return *this;
                 }
 

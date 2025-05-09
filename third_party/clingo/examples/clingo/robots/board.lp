@@ -16,7 +16,7 @@ barrier( 7, 9, 1,0).  barrier( 7, 4,0, 1).  barrier( 7,13,0, 1).
 barrier(10, 9,-1,0).  barrier(16, 4,0, 1).  barrier(15,13,0, 1).
 barrier( 4,10, 1,0).  barrier( 1, 6,0, 1).  barrier(10,14,0, 1).
 barrier( 2,11, 1,0).  barrier( 4, 7,0, 1).  barrier( 3,15,0, 1).
-barrier( 8,11, 1,0).  barrier( 8, 7,0, 1).  
+barrier( 8,11, 1,0).  barrier( 8, 7,0, 1).
 
 available_target(red   , moon  ,  5 , 2).
 available_target(red   , sun   , 15,  2).

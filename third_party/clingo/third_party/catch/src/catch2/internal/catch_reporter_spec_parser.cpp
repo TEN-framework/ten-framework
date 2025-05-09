@@ -21,9 +21,9 @@ namespace Catch {
         };
 
         kvPair splitKVPair(StringRef kvString) {
-            auto splitPos = static_cast<size_t>( std::distance(
-                kvString.begin(),
-                std::find( kvString.begin(), kvString.end(), '=' ) ) );
+            auto splitPos = static_cast<size_t>(
+                std::find( kvString.begin(), kvString.end(), '=' ) -
+                kvString.begin() );
 
             return { kvString.substr( 0, splitPos ),
                      kvString.substr( splitPos + 1, kvString.size() ) };
@@ -117,7 +117,7 @@ namespace Catch {
             auto kv = splitKVPair( parts[i] );
             auto key = kv.key, value = kv.value;
 
-            if ( key.empty() || value.empty() ) {
+            if ( key.empty() || value.empty() ) { // NOLINT(bugprone-branch-clone)
                 return {};
             } else if ( key[0] == 'X' ) {
                 // This is a reporter-specific option, we don't check these

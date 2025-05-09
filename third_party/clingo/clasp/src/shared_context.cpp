@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -49,12 +49,12 @@ static const char* const stats_s[] = {
 	"ctx"
 };
 uint32 ProblemStats::size()             { return (sizeof(stats_s)/sizeof(stats_s[0])) - 1; }
-const char* ProblemStats::key(uint32 i) { return i < size() ? stats_s[i] : throw std::out_of_range(POTASSCO_FUNC_NAME); }
+const char* ProblemStats::key(uint32 i) { POTASSCO_CHECK(i < size(), ERANGE); return stats_s[i]; }
 StatisticObject ProblemStats::at(const char* key) const {
 #define VALUE(X) StatisticObject::value(&X)
 #define APPLY(x, y) if (std::strcmp(key, #x) == 0) return y;
 	PS_STATS(APPLY)
-	throw std::out_of_range(POTASSCO_FUNC_NAME);
+	POTASSCO_CHECK(false, ERANGE);
 #undef VALUE
 #undef APPLY
 }
@@ -310,7 +310,7 @@ void ShortImplicationsGraph::removeTrue(const Solver& s, Literal p) {
 		if (s.value(q.var()) == value_free && s.value(r.var()) == value_free) {
 			// clause is binary on dl 0
 			Literal imp[2] = {q,r};
-			add(binary_imp, false, imp);
+			add(binary_imp, q.flagged(), imp);
 		}
 		// else: clause is SAT and removed when the satisfied literal is processed
 	}
@@ -437,6 +437,20 @@ bool SatPreprocessor::preprocess(SharedContext& ctx, Options& opts) {
 			ctx.setFrozen(*it, true);
 		}
 	}
+	if (ctx.preserveHeuristic()) {
+		for (DomainTable::iterator it = ctx.heuristic.begin(), end = ctx.heuristic.end(); it != end; ++it) {
+			if (!ctx.master()->isFalse(it->cond())) {
+				ctx.setFrozen(it->var(), true);
+			}
+		}
+		struct Freeze : DomainTable::DefaultAction {
+			explicit Freeze(SharedContext& c) : ctx(&c) {}
+			void atom(Literal p, HeuParams::DomPref, uint32) { ctx->setFrozen(p.var(), true); }
+			SharedContext* ctx;
+		} act(ctx);
+		DomainTable::applyDefault(ctx, act, ctx.defaultDomPref());
+	}
+
 	// preprocess only if not too many vars are frozen or not too many clauses
 	bool limFrozen = false;
 	if (opts.limFrozen != 0 && ctx_->stats().vars.frozen) {
@@ -490,11 +504,11 @@ bool SatPreprocessor::preprocess(SharedContext& ctx) {
 }
 void SatPreprocessor::extendModel(ValueVec& m, LitVec& open) {
 	if (!open.empty()) {
-		// flip last unconstraint variable to get "next" model
+		// flip last unconstrained variable to get "next" model
 		open.back() = ~open.back();
 	}
 	doExtendModel(m, open);
-	// remove unconstraint vars already flipped
+	// remove unconstrained vars already flipped
 	while (!open.empty() && open.back().sign()) {
 		open.pop_back();
 	}
@@ -619,7 +633,9 @@ void OutputTable::setProjectMode(ProjectMode m) {
 void OutputTable::addProject(Literal x) {
 	proj_.push_back(x);
 }
-
+void OutputTable::clearProject() {
+	proj_.clear();
+}
 uint32 OutputTable::size() const {
 	return numFacts() + numPreds() + numVars();
 }
@@ -697,6 +713,7 @@ uint32 DomainTable::simplify() {
 void DomainTable::reset() {
 	DomVec().swap(entries_);
 	assume = 0;
+	seen_  = 0;
 }
 DomainTable::DefaultAction::~DefaultAction() {}
 void DomainTable::applyDefault(const SharedContext& ctx, DefaultAction& act, uint32 defFilter) {
@@ -762,6 +779,7 @@ struct SharedContext::Minimize {
 static BasicSatConfig config_def_s;
 SharedContext::SharedContext()
 	: mini_(0), progress_(0), lastTopLevel_(0) {
+	static_assert(sizeof(Share) == sizeof(uint32_t), "unexpected size");
 	// sentinel always present
 	setFrozen(addVar(Var_t::Atom, 0), true);
 	stats_.vars.num = 0;
@@ -769,7 +787,12 @@ SharedContext::SharedContext()
 	config_.release();
 	pushSolver();
 }
-
+uint32 SharedContext::defaultDomPref() const {
+	const SolverParams& sp = config_->solver(0);
+	return sp.heuId == Heuristic_t::Domain && sp.heuristic.domMod != HeuParams::mod_none
+		? sp.heuristic.domPref
+		: set_bit(0u, 31);
+}
 bool SharedContext::ok() const { return master()->decisionLevel() || !master()->hasConflict() || master()->hasStopConflict(); }
 void SharedContext::enableStats(uint32 lev) {
 	if (lev > 0) { master()->stats.enableExtended(); }

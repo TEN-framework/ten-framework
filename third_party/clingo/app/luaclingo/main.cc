@@ -24,18 +24,17 @@
 
 #include <luaclingo.h>
 
-#if defined  _WIN32 || defined __CYGWIN__
-#    define VISIBILITY_DEFAULT __declspec (dllexport)
+#if defined _WIN32 || defined __CYGWIN__
+#define VISIBILITY_DEFAULT __declspec(dllexport)
 #else
-#    if __GNUC__ >= 4
-#        define VISIBILITY_DEFAULT  __attribute__ ((visibility ("default")))
-#    else
-#        define VISIBILITY_DEFAULT
-#    endif
+#if __GNUC__ >= 4
+#define VISIBILITY_DEFAULT __attribute__((visibility("default")))
+#else
+#define VISIBILITY_DEFAULT
+#endif
 #endif
 
 extern "C" VISIBILITY_DEFAULT int luaopen_clingo(lua_State *L) {
     clingo_register_lua_(L);
     return clingo_init_lua_(L);
 }
-

@@ -137,4 +137,3 @@ stone(X, Y, t) :- field(X, Y), stone(X, Y, t - 1), not jumped(X, Y, t), not remo
  :- { not stone(X, Y, t) : field(X, Y) } n, volatile(t).
 % the last stone shall be in the center
  :- not stone(0, 0, t), volatile(t).
-

@@ -23,7 +23,7 @@
 //
 #include "example.h"
 // Add the libclasp directory to the list of
-// include directoies of your build system.
+// include directories of your build system.
 #include <clasp/logic_program.h>    // for defining logic programs
 #include <clasp/unfounded_check.h>  // unfounded set checkers
 #include <clasp/model_enumerators.h>// for enumerating answer sets
@@ -62,7 +62,7 @@ void example1(bool basicSolve) {
 	lp.addOutput("a", a);
 	lp.addOutput("b", b);
 	// It is not limited to atoms. For example, the following
-	// statement results in the ouput "~b" whenever b is not
+	// statement results in the output "~b" whenever b is not
 	// in a stable model.
 	lp.addOutput("~b", Potassco::neg(b));
 	// And we always want to have "eureka"...

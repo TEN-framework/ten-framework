@@ -2,16 +2,16 @@
 Test clingo's Application class.
 """
 
-from typing import Any, Callable, List, Sequence, Tuple
-from unittest import TestCase
-from tempfile import NamedTemporaryFile
-from multiprocessing import Process, Queue
 import os
 import re
+from multiprocessing import Process, Queue
+from tempfile import NamedTemporaryFile
+from typing import Any, Callable, List, Sequence, Tuple
+from unittest import TestCase
 
-from .util import _MCB
-from ..core import MessageCode
 from ..application import Application, ApplicationOptions, Flag, clingo_main
+from ..core import MessageCode
+from .util import _MCB
 
 
 class TestApp(Application):

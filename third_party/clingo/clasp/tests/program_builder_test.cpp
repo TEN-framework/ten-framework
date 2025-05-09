@@ -170,11 +170,16 @@ TEST_CASE("Logic program", "[asp]") {
 	SECTION("testOneLoop") {
 		lpAdd(lp.start(ctx),
 			"a :- not b.\n"
-			"b :- not a.\n");
+			"b :- not a.\n"
+			"#output a : a.");
+		lp.enableOutputState();
 		REQUIRE((lp.endProgram() && ctx.endInit()));
-		REQUIRE( 1u == ctx.numVars() );
-		REQUIRE( 0u == ctx.numConstraints() );
-		REQUIRE( lp.getLiteral(a) == ~lp.getLiteral(b) );
+		REQUIRE(1u == ctx.numVars());
+		REQUIRE(0u == ctx.numConstraints());
+		REQUIRE(lp.getLiteral(a) == ~lp.getLiteral(b));
+		REQUIRE(lp.getOutputState(a) == Asp::LogicProgram::out_shown);
+		REQUIRE(lp.getOutputState(b) == Asp::LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(b, MapLit_t::Refined) == Asp::LogicProgram::out_none);
 	}
 
 	SECTION("testZeroLoop") {
@@ -182,11 +187,16 @@ TEST_CASE("Logic program", "[asp]") {
 			"a :- b.\n"
 			"b :- a.\n"
 			"a :- not c.\n"
-			"c :- not a.");
+			"c :- not a.\n"
+			"#output a : a.");
+		lp.enableOutputState();
 		REQUIRE((lp.endProgram() && ctx.endInit()));
-		REQUIRE( 1u == ctx.numVars() );
-		REQUIRE( 0u == ctx.numConstraints() );
-		REQUIRE( lp.getLiteral(a) == lp.getLiteral(b) );
+		REQUIRE(1u == ctx.numVars());
+		REQUIRE(0u == ctx.numConstraints());
+		REQUIRE(lp.getLiteral(a) == lp.getLiteral(b));
+		REQUIRE(lp.getOutputState(a) == Asp::LogicProgram::out_shown);
+		REQUIRE(lp.getOutputState(b) == Asp::LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(b, MapLit_t::Refined) == Asp::LogicProgram::out_shown);
 	}
 
 	SECTION("testEqSuccs") {
@@ -1259,6 +1269,99 @@ TEST_CASE("Logic program", "[asp]") {
 		lp.start(ctx);
 		REQUIRE_FALSE(lp.theoryData().hasTerm(0));
 	}
+	SECTION("testAccept") {
+		lp.start(ctx);
+		lp.addExternal(b, Potassco::Value_t::False);
+		lpAdd(lp, "b :- a.\nc :- not d.\n#minimize{b}@0.\n{e}.f :- c.\ng.\nh :- g.");
+		REQUIRE(lp.supportsSmodels());
+		lp.addProject(Potassco::toSpan(&a, 1));
+		lp.addOutput("a", a);
+		lp.addOutput("c", c);
+		Potassco::Lit_t x = Potassco::lit(e);
+		lp.addAssumption(Potassco::toSpan(&x, 1));
+		lp.addDomHeuristic(e, DomModType::Init, 10, 1, Potassco::toSpan<Potassco::Lit_t>());
+		lp.addAcycEdge(1u, 2u, Potassco::toSpan<Potassco::Lit_t>());
+		lp.addAcycEdge(2u, 1u, Potassco::toSpan<Potassco::Lit_t>());
+		REQUIRE_FALSE(lp.supportsSmodels());
+		SECTION("beforeEnd") {
+			std::stringstream str;
+			AspParser::write(lp, str, AspParser::format_aspif);
+			REQUIRE(str.str() == "asp 1 0 0\n"
+				"5 2 2\n"          // #external b.
+				"1 0 1 7 0 0\n"    // g.
+				"1 0 1 8 0 0\n"    // h.
+				"1 0 1 2 0 1 1\n"  // b :- a.
+				"1 0 1 3 0 1 -4\n" // c :- not d.
+				"1 1 1 5 0 0\n"    // {e}.
+				"1 0 1 6 0 1 3\n"  // f :- c.
+				"2 0 1 2 1\n"      // #minimize@0{b}.
+				"4 1 a 1 1\n"      // show a : a.
+				"4 1 c 1 3\n"      // show c : c.
+				"3 1 1\n"          // project {a}.
+				"6 1 5\n"          // assume {e}.
+				"7 3 5 10 1 0\n"   // #heu e, init,5,10
+				"8 1 2 0\n"        // #edge 1,2
+				"8 2 1 0\n"        // #edge 2,1
+				"0\n"
+			);
+		}
+		SECTION("afterEnd") {
+			lp.endProgram();
+			std::stringstream str;
+			AspParser::write(lp, str, AspParser::format_aspif);
+			REQUIRE(str.str() == "asp 1 0 0\n"
+				"1 0 1 6 0 0\n"  // f.
+				"1 0 1 7 0 0\n"  // g.
+				"1 0 1 8 0 0\n"  // h.
+				"1 0 1 3 0 0\n"  // c.
+				"1 1 1 5 0 0\n"  // {e}.
+				"2 0 0\n"        // #minimize@0{}.
+				"4 1 c 1 3\n"    // show c : c.
+				"3 1 1\n"        // project {a}.
+				"6 1 5\n"        // assume {e}.
+				"7 3 5 10 1 0\n" // #heu e, init,5,10
+				"8 1 2 0\n"      // #edge 1,2
+				"8 2 1 0\n"      // #edge 2,1
+				"0\n"
+			);
+		}
+		SECTION("afterDispose") {
+			SECTION("beforeEnd") {
+				lp.dispose(false);
+				REQUIRE(lp.ok());
+				std::stringstream str;
+				AspParser::write(lp, str, AspParser::format_aspif);
+				REQUIRE(str.str() == "asp 1 0 0\n"
+					"1 0 1 7 0 0\n"  // g.
+					"1 0 1 8 0 0\n"  // h.
+					"6 1 5\n"        // assume {e}.
+					"0\n"
+				);
+			}
+			SECTION("afterEnd") {
+				lp.endProgram();
+				lp.dispose(false);
+				REQUIRE(lp.ok());
+				std::stringstream str;
+				AspParser::write(lp, str, AspParser::format_aspif);
+				REQUIRE(str.str() == "asp 1 0 0\n"
+					"1 0 1 6 0 0\n"  // f.
+					"1 0 1 7 0 0\n"  // g.
+					"1 0 1 8 0 0\n"  // h.
+					"6 1 5\n"        // assume {e}.
+					"0\n"
+				);
+			}
+			SECTION("full") {
+				lp.dispose(true);
+				REQUIRE(lp.ok());
+				std::stringstream str;
+				AspParser::write(lp, str, AspParser::format_aspif);
+				REQUIRE(str.str() == "asp 1 0 0\n0\n");
+				lp.endProgram();
+			}
+		}
+	}
 }
 
 TEST_CASE("Incremental logic program", "[asp]") {
@@ -1858,19 +1961,23 @@ TEST_CASE("Incremental logic program", "[asp]") {
 	}
 	SECTION("testSymbolUpdate") {
 		lp.start(ctx);
+		lp.enableOutputState();
 		// I0:
 		lp.updateProgram();
 		lpAdd(lp, "{a}.");
 		lp.addOutput("a", a);
 		REQUIRE(lp.endProgram());
+		REQUIRE(lp.getOutputState(a) == LogicProgram::out_shown);
 		uint32 os = ctx.output.size();
 		// I1:
 		lp.updateProgram();
 		lpAdd(lp, "{b;c}.");
 		lp.addOutput("b", b);
-
 		REQUIRE(lp.endProgram());
 		REQUIRE(!isSentinel(lp.getLiteral(c)));
+		REQUIRE(lp.getOutputState(a) == LogicProgram::out_shown);
+		REQUIRE(lp.getOutputState(b) == LogicProgram::out_shown);
+		REQUIRE(lp.getOutputState(c) == LogicProgram::out_none);
 		REQUIRE(os + 1 == ctx.output.size());
 	}
 	SECTION("testFreezeDefined") {
@@ -1935,7 +2042,7 @@ TEST_CASE("Incremental logic program", "[asp]") {
 		REQUIRE(lp.endProgram());
 		// I1:
 		lp.updateProgram();
-		REQUIRE_THROWS_AS(lpAdd(lp, "{a}."), RedefinitionError);
+		REQUIRE_THROWS_AS(lpAdd(lp, "{a}."), std::logic_error);
 	}
 	SECTION("testGetAssumptions") {
 		lp.start(ctx);
@@ -1969,7 +2076,7 @@ TEST_CASE("Incremental logic program", "[asp]") {
 		lpAdd(lp, "a. #minimize{a}.");
 		REQUIRE(lp.endProgram());
 		REQUIRE(ctx.minimize()->adjust(0) == 1);
-		ctx.removeMinimize();
+		lp.removeMinimize();
 
 		lp.updateProgram();
 		lpAdd(lp, "#minimize{a}.");
@@ -2213,19 +2320,49 @@ TEST_CASE("Incremental logic program", "[asp]") {
 
 	SECTION("testProjectionIsExplicitAndCumulative") {
 		lp.start(ctx);
+		lp.enableOutputState();
 		lp.updateProgram();
+		REQUIRE(ctx.output.projectMode() == ProjectMode_t::Output);
 		lpAdd(lp, "{a;b}. #project {a}.");
 		REQUIRE(lp.endProgram());
+		REQUIRE(lp.getOutputState(1) == LogicProgram::out_projected);
+		REQUIRE(lp.getOutputState(2) == LogicProgram::out_none);
 
 		REQUIRE(ctx.output.projectMode() == ProjectMode_t::Explicit);
 		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(a)) != ctx.output.proj_end());
 		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(b)) == ctx.output.proj_end());
 
 		lp.updateProgram();
-		lpAdd(lp, "{c;d}. #project{d}.");
+		lpAdd(lp, "{c;d}. #project{d}. #output d : d.");
 		REQUIRE(lp.endProgram());
+		REQUIRE(lp.getOutputState(1) == LogicProgram::out_projected);
+		REQUIRE(lp.getOutputState(2) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(3) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(4) == LogicProgram::out_all);
 
 		REQUIRE(ctx.output.projectMode() == ProjectMode_t::Explicit);
+		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(a)) != ctx.output.proj_end());
+		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(b)) == ctx.output.proj_end());
+		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(c)) == ctx.output.proj_end());
+		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(d)) != ctx.output.proj_end());
+
+		lp.updateProgram();
+		lp.removeProject();
+		REQUIRE_FALSE(ctx.output.hasProject());
+		REQUIRE(ctx.output.projectMode() == ProjectMode_t::Output);
+		REQUIRE(lp.getOutputState(1) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(2) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(3) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(4) == LogicProgram::out_shown);
+
+		Var project[2] = {1, 4};
+		lp.addProject(Potassco::toSpan(project, 2));
+		REQUIRE(lp.endProgram());
+		REQUIRE(ctx.output.projectMode() == ProjectMode_t::Explicit);
+		REQUIRE(lp.getOutputState(1) == LogicProgram::out_projected);
+		REQUIRE(lp.getOutputState(2) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(3) == LogicProgram::out_none);
+		REQUIRE(lp.getOutputState(4) == LogicProgram::out_all);
 		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(a)) != ctx.output.proj_end());
 		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(b)) == ctx.output.proj_end());
 		REQUIRE(std::find(ctx.output.proj_begin(), ctx.output.proj_end(), lp.getLiteral(c)) == ctx.output.proj_end());
@@ -2378,6 +2515,59 @@ TEST_CASE("Sat builder", "[sat]") {
 		REQUIRE(builder.addClause(clause) == false);
 		REQUIRE(builder.endProgram() == false);
 		REQUIRE(ctx.ok() == false);
+	}
+	SECTION("testAssumptions") {
+		builder.prepareProblem(16);
+		LitVec         clause;
+		struct a : Literal { a(Var v) : Literal(v, false) {} };
+		struct x : Literal { x(Var v) : Literal(v + 4, false) {} };
+		struct y : Literal { y(Var v) : Literal(v + 8, false) {} };
+		struct z : Literal { z(Var v) : Literal(v + 12, false) {} };
+		for (Var v = 1u; v <= 4u; ++v) {
+			clause.clear();
+			clause.push_back(~a(1));
+			clause.push_back(x(v));
+			clause.push_back(z(v));
+			builder.addClause(clause);
+
+			clause.clear();
+			clause.push_back(~y(v));
+			clause.push_back(~x(v));
+			builder.addClause(clause);
+
+			clause.clear();
+			clause.push_back(x(v));
+			clause.push_back(~z(v));
+			builder.addClause(clause);
+			builder.addAssumption(a(v));
+		}
+		builder.endProgram();
+		LitVec assume;
+		builder.getAssumptions(assume);
+		REQUIRE(ctx.numConstraints() == 12);
+		REQUIRE(ctx.numVars() == 16);
+
+		auto& s = *ctx.master();
+		REQUIRE(s.pushRoot(assume));
+		REQUIRE(s.rootLevel() == 4);
+		REQUIRE(s.numFreeVars() == 12);
+		for (Var v = 1; v <= 4; ++v) {
+			REQUIRE(s.value(y(v).var()) == value_free);
+			REQUIRE(s.value(z(v).var()) == value_free);
+			s.assume(y(v));
+			REQUIRE_FALSE(s.propagate());
+			REQUIRE(s.resolveConflict());
+			REQUIRE(s.propagate());
+			REQUIRE(s.rootLevel() == 4);
+			REQUIRE(s.isTrue(x(v)));
+			REQUIRE(s.isFalse(y(v)));
+			REQUIRE(s.isTrue(a(1)));
+		}
+		REQUIRE(s.numFreeVars() == 4u);
+		for (Var v = 1u; v <= 4u; ++v) {
+			REQUIRE(s.value(z(v).var()) == value_free);
+			REQUIRE((s.assume(z(v)) && s.propagate()));
+		}
 	}
 }
 

@@ -23,10 +23,10 @@
 // }}}
 
 #ifdef CLINGO_WITH_PYTHON
-#   include <pyclingo.h>
+#include <pyclingo.h>
 #endif
 #ifdef CLINGO_WITH_LUA
-#   include <luaclingo.h>
+#include <luaclingo.h>
 #endif
 
 #include <clingo.h>
@@ -35,17 +35,17 @@
 extern "C" CLINGO_VISIBILITY_DEFAULT int gringo_main_(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
-#   ifdef CLINGO_WITH_PYTHON
+#ifdef CLINGO_WITH_PYTHON
     if (!clingo_register_python_()) {
         std::cerr << clingo_error_message() << std::endl;
         return 1;
     }
-#   endif
-#   ifdef CLINGO_WITH_LUA
+#endif
+#ifdef CLINGO_WITH_LUA
     if (!clingo_register_lua_(nullptr)) {
         std::cerr << clingo_error_message() << std::endl;
         return 1;
     }
-#   endif
+#endif
     return gringo_main_(argc, argv);
 }

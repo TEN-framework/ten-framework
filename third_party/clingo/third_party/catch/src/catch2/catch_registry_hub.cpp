@@ -21,6 +21,8 @@
 #include <catch2/interfaces/catch_interfaces_reporter_factory.hpp>
 #include <catch2/internal/catch_move_and_forward.hpp>
 
+#include <exception>
+
 namespace Catch {
 
     namespace {
@@ -31,7 +33,7 @@ namespace Catch {
 
         public: // IRegistryHub
             RegistryHub() = default;
-            IReporterRegistry const& getReporterRegistry() const override {
+            ReporterRegistry const& getReporterRegistry() const override {
                 return m_reporterRegistry;
             }
             ITestCaseRegistry const& getTestCaseRegistry() const override {

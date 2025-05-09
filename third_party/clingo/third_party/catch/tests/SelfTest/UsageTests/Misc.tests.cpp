@@ -11,11 +11,6 @@
 #include <catch2/internal/catch_config_wchar.hpp>
 #include <catch2/internal/catch_windows_h_proxy.hpp>
 
-#ifdef __clang__
-#   pragma clang diagnostic ignored "-Wc++98-compat"
-#   pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
-#endif
-
 
 #include <iostream>
 #include <cerrno>
@@ -158,9 +153,9 @@ TEST_CASE( "looped tests", "[.][failing]" ) {
 }
 
 TEST_CASE( "Sends stuff to stdout and stderr", "[.]" ) {
-    std::cout << "A string sent directly to stdout" << std::endl;
-    std::cerr << "A string sent directly to stderr" << std::endl;
-    std::clog << "A string sent to stderr via clog" << std::endl;
+    std::cout << "A string sent directly to stdout\n" << std::flush;
+    std::cerr << "A string sent directly to stderr\n" << std::flush;
+    std::clog << "A string sent to stderr via clog\n" << std::flush;
 }
 
 TEST_CASE( "null strings" ) {
@@ -215,6 +210,18 @@ TEST_CASE("Testing checked-if 3", "[checked-if][!shouldfail]") {
     // If the checked false is not entered, this passes and the test
     // fails, because of the [!shouldfail] tag.
     SUCCEED();
+}
+
+[[noreturn]]
+TEST_CASE("Testing checked-if 4", "[checked-if][!shouldfail]") {
+    CHECKED_ELSE(true) {}
+    throw std::runtime_error("Uncaught exception should fail!");
+}
+
+[[noreturn]]
+TEST_CASE("Testing checked-if 5", "[checked-if][!shouldfail]") {
+    CHECKED_ELSE(false) {}
+    throw std::runtime_error("Uncaught exception should fail!");
 }
 
 TEST_CASE( "xmlentitycheck" ) {
@@ -384,7 +391,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Product with differing arities", "[template][product
 using MyTypes = std::tuple<int, char, float>;
 TEMPLATE_LIST_TEST_CASE("Template test case with test types specified inside std::tuple", "[template][list]", MyTypes)
 {
-    REQUIRE(sizeof(TestType) > 0);
+    REQUIRE(std::is_arithmetic<TestType>::value);
 }
 
 struct NonDefaultConstructibleType {
@@ -394,7 +401,7 @@ struct NonDefaultConstructibleType {
 using MyNonDefaultConstructibleTypes = std::tuple<NonDefaultConstructibleType, float>;
 TEMPLATE_LIST_TEST_CASE("Template test case with test types specified inside non-default-constructible std::tuple", "[template][list]", MyNonDefaultConstructibleTypes)
 {
-    REQUIRE(sizeof(TestType) > 0);
+    REQUIRE(std::is_trivially_copyable<TestType>::value);
 }
 
 struct NonCopyableAndNonMovableType {
@@ -409,7 +416,7 @@ struct NonCopyableAndNonMovableType {
 using NonCopyableAndNonMovableTypes = std::tuple<NonCopyableAndNonMovableType, float>;
 TEMPLATE_LIST_TEST_CASE("Template test case with test types specified inside non-copyable and non-movable std::tuple", "[template][list]", NonCopyableAndNonMovableTypes)
 {
-    REQUIRE(sizeof(TestType) > 0);
+    REQUIRE(std::is_default_constructible<TestType>::value);
 }
 
 // https://github.com/philsquared/Catch/issues/166

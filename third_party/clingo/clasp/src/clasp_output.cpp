@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2009-2017 Benjamin Kaufmann
+// Copyright (c) 2009-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -24,7 +24,6 @@
 #include <clasp/cli/clasp_output.h>
 #include <clasp/solver.h>
 #include <clasp/satelite.h>
-#include <clasp/minimize_constraint.h>
 #include <clasp/util/timer.h>
 #include <potassco/string_convert.h>
 #include <stdio.h>
@@ -80,24 +79,23 @@ void formatEvent(const Clasp::BasicSolveEvent& ev, Potassco::StringBuilder& str)
 		, s.numConstraints()
 		, s.numLearntConstraints()
 		, s.stats.conflicts
-		, s.stats.conflicts/std::max(1.0,double(s.stats.choices))
+		, ratio(s.stats.conflicts, s.stats.choices)
 		, ev.cLimit <= (UINT32_MAX) ? (int64)ev.cLimit:-1
 		, ev.lLimit != (UINT32_MAX) ? (int64)ev.lLimit:-1
 	);
 }
 template <>
-void formatEvent(const Clasp::SolveTestEvent&  ev, Potassco::StringBuilder& str) {
-	char ct = ev.partial ? 'P' : 'F';
-	if (ev.result == -1) { str.appendFormat("%2u:%c| HC: %-5u %-60s|", ev.solver->id(), ct, ev.hcc, "..."); }
-	else                 {
-		str.appendFormat("%2u:%c| HC: %-5u %-4s|%8u/%-8u|%10" PRIu64"/%-6.3f| T: %-15.3f|", ev.solver->id(), ct, ev.hcc, (ev.result == 1 ? "OK" : "FAIL")
-		  , ev.solver->numConstraints()
-		  , ev.solver->numLearntConstraints()
-		  , ev.conflicts()
-		  , ev.conflicts()/std::max(1.0,double(ev.choices()))
-		  , ev.time
-		);
-	}
+void formatEvent(const Clasp::SolveTestEvent& ev, Potassco::StringBuilder& str) {
+	str.appendFormat("%2u:%c| %c HCC: %-6u |%8u/%-8u|%10" PRIu64"/%-6.3f| Time: %10.3fs |", ev.solver->id()
+		, "FP"[ev.partial]
+		, "?NY"[Range<int>(-1, 1).clamp(ev.result) + 1]
+		, ev.hcc
+		, ev.solver->numConstraints()
+		, ev.solver->numLearntConstraints()
+		, ev.conflicts()
+		, ratio(ev.conflicts(), ev.choices())
+		, ev.time
+	);
 }
 #if CLASP_HAS_THREADS
 template <>
@@ -110,11 +108,10 @@ void formatEvent(const Clasp::mt::MessageEvent& ev, Potassco::StringBuilder& str
 /////////////////////////////////////////////////////////////////////////////////////////
 // Output
 /////////////////////////////////////////////////////////////////////////////////////////
-Output::Output(uint32 verb) : summary_(0), verbose_(0) {
+Output::Output(uint32 verb) : time_(-1.0), model_(-1.0), summary_(0), verbose_(0), last_(false) {
 	std::memset(quiet_, 0, sizeof(quiet_));
 	setCallQuiet(print_no);
 	setVerbosity(verb);
-	clearModel();
 }
 Output::~Output() {}
 void Output::setVerbosity(uint32 verb) {
@@ -128,18 +125,11 @@ void Output::setModelQuiet(PrintLevel model){ quiet_[0] = static_cast<uint8>(mod
 void Output::setOptQuiet(PrintLevel opt)    { quiet_[1] = static_cast<uint8>(opt);   }
 void Output::setCallQuiet(PrintLevel call)  { quiet_[2] = static_cast<uint8>(call);  }
 
-void Output::saveModel(const Model& m) {
-	saved_ = m;
-	const SumVec*  costs = m.costs ? &(costs_ = *m.costs) : 0;
-	const ValueVec* vals = &(vals_ = *m.values);
-	saved_.values = vals;
-	saved_.costs  = costs;
-}
-
 void Output::onEvent(const Event& ev) {
 	typedef ClaspFacade::StepStart StepStart;
 	typedef ClaspFacade::StepReady StepReady;
 	if (const StepStart* start = event_cast<StepStart>(ev)) {
+		if (time_ == -1.0) { time_ = RealTime::getTime(); }
 		startStep(*start->facade);
 	}
 	else if (const StepReady* ready = event_cast<StepReady>(ev)) {
@@ -147,13 +137,13 @@ void Output::onEvent(const Event& ev) {
 	}
 }
 bool Output::onModel(const Solver& s, const Model& m) {
-	if (modelQ() == print_all || optQ() == print_all) {
-		printModel(s.outputTable(), m, print_all);
+	PrintLevel type = (m.opt == 1 && !m.consequences()) || m.def ? print_best : print_all;
+	bool hasMeta = m.consequences() || m.costs;
+	model_ = elapsedTime();
+	if (modelQ() <= type || (hasMeta && optQ() <= type)) {
+		printModel(s.outputTable(), m, type);
 	}
-	if (modelQ() == print_best || optQ() == print_best) {
-		if (m.opt == 1 && !m.consequences()) { printModel(s.outputTable(), m, print_best); clearModel(); }
-		else                                 { saveModel(m); }
-	}
+	last_ = type != print_best && (modelQ() == print_best || (optQ() == print_best && hasMeta));
 	return true;
 }
 bool Output::onUnsat(const Solver& s, const Model& m) {
@@ -166,15 +156,12 @@ bool Output::onUnsat(const Solver& s, const Model& m) {
 	}
 	return true;
 }
-void Output::startStep(const ClaspFacade&) { clearModel(); summary_ = 0; }
+void Output::startStep(const ClaspFacade&) { summary_ = 0; last_ = false; }
 void Output::stopStep(const ClaspFacade::Summary& s){
-	if (getModel()) {
-		if (s.model()){
-			saved_.opt = s.model()->opt;
-			saved_.def = s.model()->def;
-		}
-		printModel(s.ctx().output, *getModel(), print_best);
-		clearModel();
+	if (s.model() && last_) {
+		Model m = *s.model();
+		m.up = 0; // ignore update state and always print as model
+		printModel(s.ctx().output, m, print_best);
 	}
 	else if (modelQ() == print_all && s.model() && s.model()->up && !s.model()->def) {
 		printModel(s.ctx().output, *s.model(), print_all);
@@ -195,6 +182,7 @@ void Output::shutdown(const ClaspFacade::Summary& summary) {
 	printSummary(summary, true);
 	if (stats(summary)) { printStatistics(summary, true); }
 	shutdown();
+	time_ = -1.0;
 }
 // Returns the number of consequences and estimates in m.
 // For a model m with m.consequences and a return value ret:
@@ -267,6 +255,8 @@ uintp Output::doPrint(const OutPair&, UPtr x) { return x; }
 bool Output::stats(const ClaspFacade::Summary& summary) const {
 	return summary.facade->config()->context().stats != 0;
 }
+double Output::elapsedTime() const { return time_ != -1.0 ? RealTime::getTime() - time_ : -1.0; }
+double Output::modelTime() const { return model_; }
 /////////////////////////////////////////////////////////////////////////////////////////
 // JsonOutput
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -277,39 +267,39 @@ JsonOutput::~JsonOutput() { JsonOutput::shutdown(); }
 void JsonOutput::run(const char* solver, const char* version, const std::string* iBeg, const std::string* iEnd) {
 	if (indent() == 0) {
 		open_ = "";
-		JsonOutput::pushObject();
+		pushObject();
 	}
 	printKeyValue("Solver", std::string(solver).append(" version ").append(version).c_str());
-	pushObject("Input", type_array);
-	printf("%-*s", indent(), " ");
+	pushObject("Input", type_array, true);
 	for (const char* sep = ""; iBeg != iEnd; ++iBeg, sep = ",") {
 		printString(iBeg->c_str(), sep);
 	}
 	popObject();
 	pushObject("Call", type_array);
 }
-void JsonOutput::shutdown(const ClaspFacade::Summary& summary) {
-	while (!objStack_.empty() && *objStack_.rbegin() == '[') {
-		popObject();
-	}
-	Output::shutdown(summary);
-}
-
 void JsonOutput::shutdown() {
 	if (!objStack_.empty()) {
-		do { popObject(); } while (!objStack_.empty());
+		popUntil(0u);
 		printf("\n");
+		fflush(stdout);
 	}
-	fflush(stdout);
 }
 void JsonOutput::startStep(const ClaspFacade& f) {
 	Output::startStep(f);
+	popUntil(2u);
 	pushObject(0, type_object);
+	printTime("Start", elapsedTime());
+	fflush(stdout);
 }
 void JsonOutput::stopStep(const ClaspFacade::Summary& s) {
 	assert(!objStack_.empty());
 	Output::stopStep(s);
-	while (popObject() != '{') { ; }
+	popUntil(3u);
+	printTime("Stop", elapsedTime());
+	if (callQ() != print_best) { // keep call object open for last summary
+		popObject();
+	}
+	fflush(stdout);
 }
 
 bool JsonOutput::visitThreads(Operation op) {
@@ -565,12 +555,13 @@ void JsonOutput::printKeyValue(const char* k, const StatisticObject& o) {
 	open_ = ",\n";
 }
 
-void JsonOutput::pushObject(const char* k, ObjType t) {
+void JsonOutput::pushObject(const char* k, ObjType t, bool startIndent) {
 	printKey(k);
 	char o = t == type_object ? '{' : '[';
 	objStack_ += o;
 	printf("%c\n", o);
 	open_ = "";
+	if (startIndent) { printf("%-*s", indent(), " "); }
 }
 char JsonOutput::popObject() {
 	assert(!objStack_.empty());
@@ -580,11 +571,21 @@ char JsonOutput::popObject() {
 	open_ = ",\n";
 	return o;
 }
-void JsonOutput::startModel() {
-	if (!hasWitness()) {
+void JsonOutput::startWitness(double time) {
+	if (!hasWitnesses()) {
 		pushObject("Witnesses", type_array);
 	}
 	pushObject();
+	printTime("Time", time);
+}
+void JsonOutput::endWitness() {
+	popObject();
+	fflush(stdout);
+}
+void JsonOutput::popUntil(uint32 sz) {
+	while (sizeVec(objStack_) > sz) {
+		popObject();
+	}
 }
 uintp JsonOutput::doPrint(const OutPair& out, uintp data) {
 	const char* sep = reinterpret_cast<const char*>(data);
@@ -593,38 +594,45 @@ uintp JsonOutput::doPrint(const OutPair& out, uintp data) {
 	return reinterpret_cast<UPtr>(", ");
 }
 void JsonOutput::printModel(const OutputTable& out, const Model& m, PrintLevel x) {
-	uint32 hasModel = (x == modelQ());
-	if (hasModel) {
-		startModel();
-		pushObject("Value", type_array);
-		printf("%-*s", indent(), " ");
+	bool hasModel = false;
+	if (modelQ() <= x) {
+		hasModel = (startWitness(modelTime()), true);
+		pushObject("Value", type_array, true);
 		printWitness(out, m, reinterpret_cast<UPtr>(""));
 		popObject();
-		if (m.consequences() && x == optQ()) {
-			printCons(numCons(out, m));
-		}
 	}
-	if (x == optQ()) {
-		if (m.consequences() && !hasModel++) {
-			startModel();
-			printCons(numCons(out, m));
-		}
-		if (m.costs) {
-			if (!hasModel++) { startModel(); }
-			printCosts(*m.costs);
-		}
+	if (optQ() <= x && (m.consequences() || m.costs)) {
+		if (!hasModel)        { hasModel = (startWitness(modelTime()), true); }
+		if (m.consequences()) { printCons(numCons(out, m)); }
+		if (m.costs)          { printCosts(*m.costs); }
 	}
-	if (hasModel) { popObject(); }
+	if (hasModel) { endWitness(); }
 }
-void JsonOutput::printCosts(const SumVec& opt, const char* name) {
-	pushObject(name, type_array);
-	printf("%-*s", indent(), " ");
+void JsonOutput::printUnsat(const OutputTable& out, const LowerBound* lower, const Model* prevModel) {
+	if (lower && optQ() == print_all) {
+		startWitness(elapsedTime());
+		Potassco::Span<wsum_t> first = Potassco::toSpan<wsum_t>();
+		if (prevModel && prevModel->costs && prevModel->costs->size() > lower->level) {
+			first = Potassco::toSpan(&prevModel->costs->at(0), lower->level);
+		}
+		printSum("Lower", first, &lower->bound);
+		endWitness();
+	}
+}
+void JsonOutput::printSum(const char* name, Potassco::Span<wsum_t> sum, const wsum_t* last) {
+	pushObject(name, type_array, true);
 	const char* sep = "";
-	for (SumVec::const_iterator it = opt.begin(), end = opt.end(); it != end; ++it) {
+	for (Potassco::Span<wsum_t>::iterator it = Potassco::begin(sum), end = Potassco::end(sum); it != end; ++it) {
 		printf("%s%" PRId64, sep, *it);
 		sep = ", ";
 	}
+	if (last) {
+		printf("%s%" PRId64, sep, *last);
+	}
 	popObject();
+}
+void JsonOutput::printCosts(const SumVec& opt, const char* name) {
+	printSum(name, Potassco::toSpan(opt));
 }
 void JsonOutput::printCons(const UPair& cons) {
 	pushObject("Consequences");
@@ -634,7 +642,7 @@ void JsonOutput::printCons(const UPair& cons) {
 }
 
 void JsonOutput::printSummary(const ClaspFacade::Summary& run, bool final) {
-	if (hasWitness()) { popObject(); }
+	popUntil(final ? 1u : 3u);
 	const char* res = "UNKNOWN";
 	if      (run.unsat()) { res = "UNSATISFIABLE"; }
 	else if (run.sat())   { res = !run.optimum() ? "SATISFIABLE" : "OPTIMUM FOUND"; }
@@ -676,11 +684,14 @@ void JsonOutput::printSummary(const ClaspFacade::Summary& run, bool final) {
 		}
 	}
 }
-void JsonOutput::printStatistics(const ClaspFacade::Summary& summary, bool) {
-	if (hasWitness()) { popObject(); }
+void JsonOutput::printStatistics(const ClaspFacade::Summary& summary, bool final) {
+	popUntil(final ? 1u : 3u);
 	pushObject("Stats", type_object);
 	summary.accept(*this);
 	popObject();
+}
+void JsonOutput::printTime(const char* name, double t) {
+	if (t >= 0.0) { printKeyValue(name, t); }
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 // TextOutput
@@ -689,8 +700,9 @@ void JsonOutput::printStatistics(const ClaspFacade::Summary& summary, bool) {
 #define printLN(cat, fmt, ...)       printf("%s" fmt "\n", format[cat], __VA_ARGS__)
 #define printBR(cat)                 printf("%s\n", format[cat])
 #define printKey(k)                  printf("%s%-*s: ", format[cat_comment], width_, (k))
-const char* const rowSep   = "----------------------------------------------------------------------------|";
-const char* const finalSep = "=============================== Accumulation ===============================|";
+const char* const rowSep   = "------------------------------------------------------------------------------------------|";
+const char* const finalSep = "====================================== Accumulation ======================================|";
+const char* const satPre   = "Sat-Prepro";
 
 static inline std::string prettify(const std::string& str) {
 	if (str.size() < 40) return str;
@@ -699,7 +711,7 @@ static inline std::string prettify(const std::string& str) {
 	return t;
 }
 TextOutput::TextOutput(uint32 verbosity, Format fmt, const char* catAtom, char ifs) : Output(verbosity), stTime_(0.0), state_(0) {
-	result[res_unknonw]    = "UNKNOWN";
+	result[res_unknown]    = "UNKNOWN";
 	result[res_sat]        = "SATISFIABLE";
 	result[res_unsat]      = "UNSATISFIABLE";
 	result[res_opt]        = "OPTIMUM FOUND";
@@ -791,10 +803,10 @@ void TextOutput::printSummary(const ClaspFacade::Summary& run, bool final) {
 	if (final && callQ() != print_no){
 		comment(1, "%s\n", finalSep);
 	}
-	const char* res = result[res_unknonw];
+	const char* res = result[res_unknown];
 	if      (run.unsat()) { res = result[res_unsat]; }
 	else if (run.sat())   { res = !run.optimum() ? result[res_sat] : result[res_opt]; }
-	if (std::strlen(res)) { printLN(cat_result, "%s", res); }
+	if (*res) { printLN(cat_result, "%s", res); }
 	if (verbosity() || stats(run)) {
 		printBR(cat_comment);
 		if (run.result.interrupted()){ printKeyValue((run.result.signal != SIGALRM ? "INTERRUPTED" : "TIME LIMIT"), "%u\n", uint32(1));  }
@@ -841,25 +853,30 @@ void TextOutput::printStatistics(const ClaspFacade::Summary& run, bool) {
 }
 void TextOutput::startStep(const ClaspFacade& f) {
 	Output::startStep(f);
-	if (callQ() != print_no) { comment(1, "%s\n", rowSep); comment(2, "%-13s: %d\n", "Call", f.step()+1); }
+	setState(Event::subsystem_facade, 0, 0);
+	if (callQ() != print_no) {
+		comment(1, "%s\n", rowSep);
+		comment(2, "%-13s: %d\n", "Call", f.step()+1);
+	}
+}
+void TextOutput::stopStep(const ClaspFacade::Summary& s) {
+	setState(Event::subsystem_facade, 0, 0);
+	comment(2 - (callQ() != print_no), "%s\n", rowSep);
+	Output::stopStep(s);
 }
 void TextOutput::onEvent(const Event& ev) {
 	typedef SatElite::Progress SatPre;
-	if (ev.verb <= verbosity()) {
-		if      (ev.system == 0)      { setState(0,0,0); }
-		else if (ev.system == state_) {
+	if (ev.verb <= verbosity() && ev.system != Event::subsystem_facade) {
+		if (ev.system == state_) {
 			if      (ev.system == Event::subsystem_solve)       { printSolveProgress(ev); }
 			else if (const SatPre* sat = event_cast<SatPre>(ev)){
-				if      (sat->op != SatElite::Progress::event_algorithm) { comment(2, "Sat-Prepro   : %c: %8u/%-8u\r", (char)sat->op, sat->cur, sat->max); }
-				else if (sat->cur!= sat->max)                            {
-					setState(0,0,0); comment(2, "Sat-Prepro   :\r");
-					state_ = Event::subsystem_prepare;
-				}
+				if      (sat->op != SatElite::Progress::event_algorithm) { comment(2, "%-13s: %c: %8u/%-8u\r", satPre, (char)sat->op, sat->cur, sat->max); }
+				else if (sat->cur!= sat->max)                            { setState(ev.system, 2, satPre); }
 				else {
 					SatPreprocessor* p = sat->self;
 					double tEnd = RealTime::getTime();
-					comment(2, "Sat-Prepro   : %.3f (ClRemoved: %u ClAdded: %u LitsStr: %u)\n", tEnd - stTime_, p->stats.clRemoved, p->stats.clAdded, p->stats.litsRemoved);
-					state_ = 0;
+					comment(2, "%-13s: %.3fs (ClRemoved: %u ClAdded: %u LitsStr: %u)\n", satPre, tEnd - stTime_, p->stats.clRemoved, p->stats.clAdded, p->stats.litsRemoved);
+					state_ = Event::subsystem_facade;
 				}
 			}
 		}
@@ -869,30 +886,34 @@ void TextOutput::onEvent(const Event& ev) {
 	}
 	Output::onEvent(ev);
 }
-
 void TextOutput::setState(uint32 state, uint32 verb, const char* m) {
-	if (state != state_ && verb <= verbosity()) {
-		double tEnd = RealTime::getTime();
-		if      (state_ == Event::subsystem_solve) { comment(2, "%s\n", rowSep); }
-		else if (state_ != Event::subsystem_facade){ printf("%.3f\n", tEnd - stTime_); }
-		stTime_ = tEnd;
-		state_  = state;
-		if      (state_ == Event::subsystem_load)   { comment(2, "%-13s: ", m ? m : "Reading"); }
-		else if (state_ == Event::subsystem_prepare){ comment(2, "%-13s: ", m ? m : "Preprocessing"); }
-		else if (state_ == Event::subsystem_solve)  { comment(1, "Solving...\n"); progress_.clear(); }
+	double ts = RealTime::getTime();
+	if (verb <= verbosity()) {
+		if (state_ == Event::subsystem_load || state_ == Event::subsystem_prepare) {
+			printf("%.3fs\n", ts - stTime_);
+		}
+		if      (state == Event::subsystem_load)   { comment(2, "%-13s: ", m ? m : "Reading"); }
+		else if (state == Event::subsystem_prepare){ comment(2, "%-13s:%s", m ? m : "Preprocessing", m == satPre ? "\r" : " "); }
+		else if (state == Event::subsystem_solve)  { comment(1, "Solving...\n"); }
 	}
+	progress_.clear();
+	stTime_ = ts;
+	state_  = state;
 }
-
 void TextOutput::printSolveProgress(const Event& ev) {
 	if (ev.id == SolveTestEvent::id_s  && (verbosity() & 4) == 0) { return; }
 	if (ev.id == BasicSolveEvent::id_s && (verbosity() & 1) == 0) { return; }
 	char lEnd = '\n';
 	char line[128];
+	int eventId = static_cast<int>(ev.id);
 	Potassco::StringBuilder str(line, sizeof(line));
 	if      (const BasicSolveEvent* be = event_cast<BasicSolveEvent>(ev)) { Clasp::Cli::formatEvent(*be, str); }
 	else if (const SolveTestEvent*  te = event_cast<SolveTestEvent>(ev) ) { Clasp::Cli::formatEvent(*te, str); lEnd= te->result == -1 ? '\r' : '\n'; }
 #if CLASP_HAS_THREADS
-	else if (const mt::MessageEvent*me = event_cast<mt::MessageEvent>(ev)){ Clasp::Cli::formatEvent(*me, str); }
+	else if (const mt::MessageEvent*me = event_cast<mt::MessageEvent>(ev)){
+		Clasp::Cli::formatEvent(*me, str);
+		eventId = LogEvent::id_s;
+	}
 #endif
 	else if (const LogEvent* log = event_cast<LogEvent>(ev))              {
 		char timeBuffer[30];
@@ -901,21 +922,21 @@ void TextOutput::printSolveProgress(const Event& ev) {
 		str.appendFormat("%2u:L| %-30s %-38s |", log->solver->id(), time.c_str(), log->msg);
 	}
 	else                                                                  { return; }
-	int eventId = static_cast<int>(ev.id);
-	int nLines  = ev.id != LogEvent::id_s && lEnd == '\n';
+	str.appendFormat(" %10.3fs |", elapsedTime());
 	FileLock lock(stdout);
-	if (nLines && (progress_.lines <= 0 || eventId != progress_.last)) {
+	if (progress_.lines <= 0 || eventId != progress_.last) {
 		if (progress_.lines <= 0) {
-			if ((this->verbosity() & 1) != 0) {
+			const char* prefix = format[cat_comment];
+			if ((this->verbosity() & 1) != 0 || ev.id == SolveTestEvent::id_s) {
 				printf("%s%s\n"
-					"%sID:T       Vars           Constraints         State            Limits       |\n"
-					"%s       #free/#fixed   #problem/#learnt  #conflicts/ratio #conflict/#learnt  |\n"
-					"%s%s\n", format[cat_comment], rowSep, format[cat_comment], format[cat_comment], format[cat_comment], rowSep);
+					"%sID:T       Vars           Constraints         State            Limits            Time     |\n"
+					"%s       #free/#fixed   #problem/#learnt  #conflicts/ratio #conflict/#learnt                |\n"
+					"%s%s\n", prefix, rowSep, prefix, prefix, prefix, rowSep);
 			}
 			else {
 				printf("%s%s\n"
-					"%sID:T       Info                     Info                      Info          |\n"
-					"%s%s\n", format[cat_comment], rowSep, format[cat_comment], format[cat_comment], rowSep);
+					"%sID:T       Info                     Info                      Info               Time     |\n"
+					"%s%s\n", prefix, rowSep, prefix, prefix, rowSep);
 			}
 			progress_.lines = 20;
 		}
@@ -924,7 +945,7 @@ void TextOutput::printSolveProgress(const Event& ev) {
 		}
 		progress_.last = eventId;
 	}
-	progress_.lines -= nLines;
+	progress_.lines -= static_cast<int>(lEnd == '\n');
 	printf("%s%s%c", format[cat_comment], line, lEnd);
 }
 
@@ -937,6 +958,14 @@ const char* TextOutput::getIfsSuffix(char ifs, CategoryKey c) const {
 }
 const char* TextOutput::getIfsSuffix(CategoryKey c) const {  return getIfsSuffix(ifs_[0], c);  }
 const char* TextOutput::fieldSeparator() const { return ifs_; }
+bool TextOutput::clearProgress(int nLines) {
+	if (progress_.last != -1) {
+		if (progress_.last != INT_MAX ) { progress_.last = INT_MAX; comment(2, "%s\n", rowSep); }
+		progress_.lines -= nLines;
+		return true;
+	}
+	return false;
+}
 int TextOutput::printSep(CategoryKey k) const { return printf("%s%s", fieldSeparator(), getIfsSuffix(k)); }
 uintp TextOutput::doPrint(const OutPair& s, UPtr data) {
 	const uint32 MSB = 31u;
@@ -973,22 +1002,28 @@ void TextOutput::printMeta(const OutputTable& out, const Model& m) {
 		printf("\n");
 	}
 }
+void TextOutput::printModelValues(const OutputTable& out, const Model& m) {
+	printValues(out, m);
+}
 void TextOutput::printModel(const OutputTable& out, const Model& m, PrintLevel x) {
 	FileLock lock(stdout);
-	if (x == modelQ()) {
-		comment(1, "%s: %" PRIu64"\n", !m.up ? "Answer" : "Update", m.num);
-		printValues(out, m);
-		progress_.clear();
-	}
-	if (x == optQ()) {
-		printMeta(out, m);
+	bool printValues = modelQ() <= x;
+	bool printOpt    = optQ() <= x;
+	if (printValues || printOpt) {
+		const char* type = !m.up ? "Answer" : "Update";
+		clearProgress(3);
+		comment(1, "%s: %" PRIu64" (Time: %.3fs)\n", type, m.num, modelTime());
+		if (printValues) { printModelValues(out, m); }
+		if (printOpt)    { printMeta(out, m); }
 	}
 }
 void TextOutput::printUnsat(const OutputTable& out, const LowerBound* lower, const Model* prevModel) {
 	FileLock lock(stdout);
 	if (lower && optQ() == print_all) {
 		const SumVec* costs = prevModel ? prevModel->costs : 0;
-		printf("%s%-12s: ", format[cat_comment], "Progression");
+		double ts = elapsedTime();
+		clearProgress(1);
+		comment(0, "%-12s: ", "Progression");
 		if (costs && costs->size() > lower->level) {
 			for (uint32 i = 0; i != lower->level; ++i) {
 				printf("%" PRId64 " ", (*costs)[i]);
@@ -997,12 +1032,12 @@ void TextOutput::printUnsat(const OutputTable& out, const LowerBound* lower, con
 			int w = 1; for (wsum_t x = ub; x > 9; ++w) { x /= 10; }
 			double err = double(ub - lower->bound)/double(lower->bound);
 			if (err < 0) { err = -err; }
-			printf("[%*" PRId64 ";%" PRId64 "] (Error: %g)", w, lower->bound, ub, err);
+			printf("[%*" PRId64 ";%" PRId64 "] (Error: %g ", w, lower->bound, ub, err);
 		}
 		else {
-			printf("[%" PRId64 ";inf]", lower->bound);
+			printf("[%6" PRId64 ";inf] (", lower->bound);
 		}
-		printf("\n");
+		printf("Time: %.3fs)\n", ts);
 	}
 	if (prevModel && prevModel->up && optQ() == print_all) {
 		printMeta(out, *prevModel);
@@ -1131,7 +1166,7 @@ void TextOutput::visitProblemStats(const ProblemStats& ps) {
 	}
 	printBR(cat_comment);
 }
-void TextOutput::visitSolverStats(const Clasp::SolverStats& st) {
+void TextOutput::visitSolverStats(const SolverStats& st) {
 	printStats(st);
 	printBR(cat_comment);
 }
@@ -1171,7 +1206,7 @@ void TextOutput::visitExternalStats(const StatisticObject& stats) {
 	printChildren(stats);
 }
 
-void TextOutput::printStats(const Clasp::SolverStats& st) const {
+void TextOutput::printStats(const SolverStats& st) const {
 	if (!accu_ && st.extra) {
 		printKeyValue("CPU Time", "%.3fs\n", st.extra->cpuTime);
 		printKeyValue("Models", "%" PRIu64"\n", st.extra->models);
@@ -1183,7 +1218,7 @@ void TextOutput::printStats(const Clasp::SolverStats& st) const {
 	printf(" (Analyzed: %" PRIu64")\n", st.backjumps());
 	printKeyValue("Restarts", "%-8" PRIu64"", st.restarts);
 	if (st.restarts) {
-		printf(" (Average: %.2f Last: %" PRIu64")", st.avgRestart(), st.lastRestart);
+		printf(" (Average: %.2f Last: %" PRIu64" Blocked: %" PRIu64")", st.avgRestart(), st.lastRestart, st.blRestarts);
 	}
 	printf("\n");
 	if (!st.extra) return;

@@ -24,18 +24,14 @@
 
 #include <clingo/astv2.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 namespace {
 
 struct Deepcopy {
-    template <typename T>
-    AST::Value operator()(T const &val) {
-        return val;
-    }
-    AST::Value operator()(SAST &ast) {
-        return ast->deepcopy();
-    }
+    template <typename T> AST::Value operator()(T const &val) { return val; }
+    AST::Value operator()(SAST &ast) { return ast->deepcopy(); }
     AST::Value operator()(AST::ASTVec &asts) {
         AST::ASTVec ret;
         ret.reserve(asts.size());
@@ -47,10 +43,7 @@ struct Deepcopy {
 };
 
 struct HashCombine {
-    template <class T>
-    void operator()(T const &a) {
-        Gringo::hash_combine(seed, Gringo::get_value_hash(a));
-    }
+    template <class T> void operator()(T const &a) { Gringo::hash_combine(seed, Gringo::get_value_hash(a)); }
     void operator()(Location const &a) {
         // location attributes are skipped
         static_cast<void>(a);
@@ -60,9 +53,7 @@ struct HashCombine {
             Gringo::hash_combine(seed, a.ast->hash());
         }
     }
-    void operator()(SAST const &a) {
-        Gringo::hash_combine(seed, a->hash());
-    }
+    void operator()(SAST const &a) { Gringo::hash_combine(seed, a->hash()); }
     void operator()(AST::ASTVec const &a) {
         Gringo::hash_combine(seed, a.size());
         for (auto const &ast : a) {
@@ -73,10 +64,7 @@ struct HashCombine {
 };
 
 struct CompareLess {
-    template <class T>
-    bool operator()(T const &a) {
-        return a < mpark::get<T>(b);
-    }
+    template <class T> bool operator()(T const &a) { return a < mpark::get<T>(b); }
     bool operator()(OAST const &a) {
         auto const &ast_b = mpark::get<OAST>(b);
         if (ast_b.ast.get() == nullptr) {
@@ -87,23 +75,17 @@ struct CompareLess {
         }
         return *a.ast < *ast_b.ast;
     }
-    bool operator()(SAST const &a) {
-        return *a < *mpark::get<SAST>(b);
-    }
+    bool operator()(SAST const &a) { return *a < *mpark::get<SAST>(b); }
     bool operator()(AST::ASTVec const &a) {
         auto const &vec_b = mpark::get<AST::ASTVec>(b);
-        return std::lexicographical_compare(
-            a.begin(), a.end(), vec_b.begin(), vec_b.end(),
-            [](SAST const &a, SAST const &b) { return *a < *b; });
+        return std::lexicographical_compare(a.begin(), a.end(), vec_b.begin(), vec_b.end(),
+                                            [](SAST const &a, SAST const &b) { return *a < *b; });
     }
     AST::Value const &b;
 };
 
 struct CompareEqual {
-    template <class T>
-    bool operator()(T const &a) {
-        return a == mpark::get<T>(b);
-    }
+    template <class T> bool operator()(T const &a) { return a == mpark::get<T>(b); }
     bool operator()(OAST const &a) {
         auto const &ast_b = mpark::get<OAST>(b);
         if (a.ast.get() == nullptr || ast_b.ast.get() == nullptr) {
@@ -111,22 +93,18 @@ struct CompareEqual {
         }
         return *a.ast == *ast_b.ast;
     }
-    bool operator()(SAST const &a) {
-        return *a == *mpark::get<SAST>(b);
-    }
+    bool operator()(SAST const &a) { return *a == *mpark::get<SAST>(b); }
     bool operator()(AST::ASTVec const &a) {
         auto const &vec_b = mpark::get<AST::ASTVec>(b);
-        return std::equal(
-            a.begin(), a.end(), vec_b.begin(), vec_b.end(),
-            [](SAST const &a, SAST const &b) { return *a == *b; });
+        return std::equal(a.begin(), a.end(), vec_b.begin(), vec_b.end(),
+                          [](SAST const &a, SAST const &b) { return *a == *b; });
     }
     AST::Value const &b;
 };
 
 } // namespace
 
-AST::AST(clingo_ast_type_e type)
-: type_{type} { }
+AST::AST(clingo_ast_type_e type) : type_{type} {}
 
 AST::AttributeVector::iterator AST::find_(clingo_ast_attribute_e name) {
     return std::find_if(values_.begin(), values_.end(), [name](auto const &x) { return x.first == name; });
@@ -136,9 +114,7 @@ AST::AttributeVector::const_iterator AST::find_(clingo_ast_attribute_e name) con
     return std::find_if(values_.begin(), values_.end(), [name](auto const &x) { return x.first == name; });
 }
 
-bool AST::hasValue(clingo_ast_attribute_e name) const {
-    return find_(name) != values_.end();
-}
+bool AST::hasValue(clingo_ast_attribute_e name) const { return find_(name) != values_.end(); }
 
 AST::Value const &AST::value(clingo_ast_attribute_e name) const {
     auto it = find_(name);
@@ -205,7 +181,7 @@ bool operator<(AST const &a, AST const &b) {
     auto ie_a = a.values_.end();
     auto it_b = b.values_.begin();
     auto ie_b = b.values_.end();
-    for ( ; ; ++it_a, ++it_b) {
+    for (;; ++it_a, ++it_b) {
         if (it_a != ie_a && it_a->first == clingo_ast_attribute_location) {
             ++it_a;
         }
@@ -236,7 +212,7 @@ bool operator==(AST const &a, AST const &b) {
     auto ie_a = a.values_.end();
     auto it_b = b.values_.begin();
     auto ie_b = b.values_.end();
-    for ( ; ; ++it_a, ++it_b) {
+    for (;; ++it_a, ++it_b) {
         if (it_a != ie_a && it_a->first == clingo_ast_attribute_location) {
             ++it_a;
         }
@@ -259,53 +235,36 @@ bool operator==(AST const &a, AST const &b) {
     return true;
 }
 
-void AST::incRef() {
-    ++refCount_;
-}
+void AST::incRef() { ++refCount_; }
 
 void AST::decRef() {
     assert(refCount_ > 0);
     --refCount_;
 }
 
-unsigned AST::refCount() const {
-    return refCount_;
-}
+unsigned AST::refCount() const { return refCount_; }
 
-bool AST::unique() const {
-    return refCount_ == 1;
-}
+bool AST::unique() const { return refCount_ == 1; }
 
-clingo_ast_type_e AST::type() const {
-    return type_;
-}
+clingo_ast_type_e AST::type() const { return type_; }
 
-SAST::SAST()
-: ast_{nullptr} { }
+SAST::SAST() : ast_{nullptr} {}
 
-SAST::SAST(AST *ast)
-: ast_{ast} {
+SAST::SAST(AST *ast) : ast_{ast} {
     if (ast_ != nullptr) {
         ast_->incRef();
     }
 }
 
-SAST::SAST(clingo_ast_type_e type)
-: ast_{new AST{type}} {
-    ast_->incRef();
-}
+SAST::SAST(clingo_ast_type_e type) : ast_{new AST{type}} { ast_->incRef(); }
 
-SAST::SAST(SAST const &ast)
-: ast_{ast.ast_} {
+SAST::SAST(SAST const &ast) : ast_{ast.ast_} {
     if (ast_ != nullptr) {
         ast_->incRef();
     }
 }
 
-SAST::SAST(SAST &&ast) noexcept
-: ast_{nullptr} {
-    std::swap(ast_, ast.ast_);
-}
+SAST::SAST(SAST &&ast) noexcept : ast_{nullptr} { std::swap(ast_, ast.ast_); }
 
 SAST &SAST::operator=(SAST const &ast) {
     if (this != &ast) {
@@ -323,17 +282,11 @@ SAST &SAST::operator=(SAST &&ast) noexcept {
     return *this;
 }
 
-AST *SAST::operator->() const {
-    return ast_;
-}
+AST *SAST::operator->() const { return ast_; }
 
-unsigned SAST::use_count() const {
-    return ast_->refCount();
-}
+unsigned SAST::use_count() const { return ast_->refCount(); }
 
-AST *SAST::get() const {
-    return ast_;
-}
+AST *SAST::get() const { return ast_; }
 
 AST *SAST::release() {
     auto *ast = ast_;
@@ -351,12 +304,9 @@ void SAST::clear() {
     }
 }
 
-AST &SAST::operator*() const {
-    return *ast_;
-}
+AST &SAST::operator*() const { return *ast_; }
 
-SAST::~SAST() {
-    clear();
-}
+SAST::~SAST() { clear(); }
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

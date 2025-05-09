@@ -25,29 +25,33 @@
 #ifndef GRINGO_GROUND_STATEMENTS_HH
 #define GRINGO_GROUND_STATEMENTS_HH
 
-#include <gringo/ground/statement.hh>
 #include <gringo/ground/literals.hh>
-#include <gringo/output/statements.hh>
+#include <gringo/ground/statement.hh>
 #include <gringo/intervals.hh>
+#include <gringo/output/statements.hh>
 #include <gringo/output/theory.hh>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 using Output::DomainData;
 
 // {{{1 declaration of HeadDefinition
 
 class HeadDefinition : private HeadOccurrence {
-public:
-    using OffsetMap = std::unordered_map<IndexUpdater*, unsigned>;
+  public:
+    using OffsetMap = std::unordered_map<IndexUpdater *, unsigned>;
     using RInstVec = std::vector<std::reference_wrapper<Instantiator>>;
-    using EnqueueVec = std::vector<std::pair<IndexUpdater*, RInstVec>>;
+    using EnqueueVec = std::vector<std::pair<IndexUpdater *, RInstVec>>;
 
     HeadDefinition(UTerm repr, Domain *domain);
     void collectImportant(Term::VarSet &vars);
     void enqueue(Queue &queue);
-    operator bool () const { return static_cast<bool>(repr_); }
-    Domain &dom() { assert(domain_); return *domain_; }
+    operator bool() const { return static_cast<bool>(repr_); }
+    Domain &dom() {
+        assert(domain_);
+        return *domain_;
+    }
     UTerm const &domRepr() const { return repr_; }
     void init() {
         if (domain_ != nullptr) {
@@ -60,7 +64,8 @@ public:
             dep.provides(node, *this, repr_->gterm());
         }
     }
-private:
+
+  private:
     // {{{2 HeadOccurrence interface
     void defines(IndexUpdater &update, Instantiator *inst) override;
     /// }}}2
@@ -75,7 +80,7 @@ private:
 // {{{1 declaration of AbstractStatement
 
 class AbstractStatement : public Statement, protected SolutionCallback {
-public:
+  public:
     AbstractStatement(UTerm repr, Domain *domain, ULitVec lits);
     // This function returns true if all non-auxiliary literals are non-recursive.
     // The accumulation rule can use this function to mark complete rules as output recursive.
@@ -99,7 +104,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-protected:
+  protected:
     // {{{2 SolutionCallback interface
     void printHead(std::ostream &out) const override;
     void propagate(Queue &queue) override;
@@ -119,8 +124,8 @@ protected:
 // {{{1 declaration of AbstractRule
 
 class AbstractRule : public Statement, protected SolutionCallback {
-public:
-    using HeadVec = std::vector<std::pair<UTerm, Domain*>>;
+  public:
+    using HeadVec = std::vector<std::pair<UTerm, Domain *>>;
     using HeadDefVec = std::vector<HeadDefinition>;
     AbstractRule(HeadVec heads, ULitVec lits);
     // {{{2 Statement interface
@@ -128,7 +133,8 @@ public:
     void startLinearize(bool active) override;
     void linearize(Context &context, bool positive, Logger &log) override;
     void enqueue(Queue &q) override;
-protected:
+
+  protected:
     // {{{2 SolutionCallback interface
     void propagate(Queue &queue) override;
     // }}}2
@@ -142,16 +148,15 @@ protected:
 
 // {{{1 declaration of Rule
 
-template <bool>
-class Rule : public AbstractRule {
-public:
+template <bool> class Rule : public AbstractRule {
+  public:
     Rule(HeadVec heads, ULitVec lits);
     // {{{2 Statement interface
     bool isNormal() const override;
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-protected:
+  protected:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -161,27 +166,27 @@ protected:
 // {{{1 declaration of ExternalStatement
 
 class ExternalStatement : public AbstractRule {
-public:
+  public:
     ExternalStatement(HeadVec heads, ULitVec lits, UTerm type);
     // {{{2 Statement interface
     bool isNormal() const override;
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-protected:
+  protected:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     UTerm type_;
 };
 
 // {{{1 declaration of ExternalRule
 
 class ExternalRule : public Statement {
-public:
+  public:
     ExternalRule();
 
     // {{{2 Statement Interface
@@ -194,7 +199,7 @@ public:
     void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     HeadDefinition def_;
 };
 
@@ -203,7 +208,7 @@ private:
 // {{{1 declaration of ShowStatement
 
 class ShowStatement : public AbstractStatement {
-public:
+  public:
     ShowStatement(UTerm term, ULitVec body);
 
     // {{{2 AbstractStatement interface
@@ -211,7 +216,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -223,7 +228,7 @@ private:
 // {{{1 declaration of EdgeStatement
 
 class EdgeStatement : public AbstractStatement {
-public:
+  public:
     EdgeStatement(UTerm u, UTerm v, ULitVec body);
 
     // {{{2 AbstractStatement interface
@@ -231,7 +236,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -244,7 +249,7 @@ private:
 // {{{1 declaration of ProjectStatement
 
 class ProjectStatement : public AbstractStatement {
-public:
+  public:
     ProjectStatement(UTerm atom, ULitVec body);
 
     // {{{2 AbstractStatement interface
@@ -252,7 +257,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -264,7 +269,7 @@ private:
 // {{{1 declaration of HeuristicStatement
 
 class HeuristicStatement : public AbstractStatement {
-public:
+  public:
     HeuristicStatement(UTerm atom, UTerm value, UTerm bias, UTerm mod, ULitVec body);
 
     // {{{2 AbstractStatement interface
@@ -272,7 +277,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -287,7 +292,7 @@ private:
 // {{{1 declaration of WeakConstraint
 
 class WeakConstraint : public AbstractStatement {
-public:
+  public:
     WeakConstraint(UTermVec tuple, ULitVec body);
 
     // {{{2 AbstractStatement interface
@@ -295,7 +300,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     void printHead(std::ostream &out) const override;
@@ -315,7 +320,7 @@ using Output::BodyAggregateDomain;
 class BodyAggregateComplete;
 
 class BodyAggregateAccumulate : public AbstractStatement {
-public:
+  public:
     BodyAggregateAccumulate(BodyAggregateComplete &complete, UTermVec tuple, ULitVec lits);
     void printHead(std::ostream &out) const override;
 
@@ -326,7 +331,7 @@ public:
     void linearize(Context &context, bool positive, Logger &log) override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface (w/o printHead)
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -338,14 +343,14 @@ private:
 // {{{1 declaration of BodyAggregateComplete
 
 class BodyAggregateComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using AccumulateDomainVec = std::vector<std::reference_wrapper<BodyAggregateAccumulate>>;
-    using TodoVec             = std::vector<Id_t>;
+    using TodoVec = std::vector<Id_t>;
 
     BodyAggregateComplete(DomainData &data, UTerm repr, AggregateFunction fun, BoundVec bounds);
     BodyAggregateDomain &dom() {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        return static_cast<BodyAggregateDomain&>(def_.dom());
+        return static_cast<BodyAggregateDomain &>(def_.dom());
     }
     void enqueue(BodyAggregateDomain::Iterator atom);
     UTerm const &accuRepr() const { return accuRepr_; }
@@ -357,20 +362,20 @@ public:
     void setOutputRecursive() { outputRecursive_ = true; }
 
     // {{{2 Statement interface
-    bool isNormal() const override;                           // return false -> this one creates choices
-    void analyze(Dep::Node &node, Dep &dep) override;         // use accuDoms to build the dependency...
-    void startLinearize(bool active) override;                // noop because single instantiator
+    bool isNormal() const override;                                        // return false -> this one creates choices
+    void analyze(Dep::Node &node, Dep &dep) override;                      // use accuDoms to build the dependency...
+    void startLinearize(bool active) override;                             // noop because single instantiator
     void linearize(Context &context, bool positive, Logger &log) override; // noop because single instantiator
-    void enqueue(Queue &q) override;                          // enqueue the single instantiator
+    void enqueue(Queue &q) override;                                       // enqueue the single instantiator
     // {{{2 Printable interface
-    void print(std::ostream &out) const override;             // #complete { h1, ..., hn } :- accu1,... , accun.
+    void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
-    void printHead(std::ostream &out) const override;         // #complete { h1, ..., hn }
-    void propagate(Queue &queue) override;                    // enqueue based on accuDoms
-    void report(Output::OutputBase &out, Logger &log) override;            // loop over headDom here
+    void printHead(std::ostream &out) const override;           // #complete { h1, ..., hn }
+    void propagate(Queue &queue) override;                      // enqueue based on accuDoms
+    void report(Output::OutputBase &out, Logger &log) override; // loop over headDom here
     // {{{2 BodyOcc interface
     UGTerm getRepr() const override;
     bool isPositive() const override;
@@ -397,7 +402,7 @@ private:
 // {{{1 declaration of BodyAggregateLiteral
 
 class BodyAggregateLiteral : public Literal, private BodyOcc {
-public:
+  public:
     BodyAggregateLiteral(BodyAggregateComplete &complete, NAF naf, bool auxiliary);
 
     // {{{2 Printable interface
@@ -412,7 +417,7 @@ public:
     bool auxiliary() const override { return auxiliary_; }
     // }}}2
 
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -441,7 +446,7 @@ using Output::AssignmentAggregateDomain;
 class AssignmentAggregateComplete;
 
 class AssignmentAggregateAccumulate : public AbstractStatement {
-public:
+  public:
     AssignmentAggregateAccumulate(AssignmentAggregateComplete &complete, UTermVec tuple, ULitVec lits);
     void printHead(std::ostream &out) const override;
 
@@ -452,7 +457,7 @@ public:
     void linearize(Context &context, bool positive, Logger &log) override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface (w/o printHead)
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -464,14 +469,14 @@ private:
 // {{{1 declaration of AssignmentAggregateComplete
 
 class AssignmentAggregateComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using AccumulateDomainVec = std::vector<std::reference_wrapper<AssignmentAggregateAccumulate>>;
-    using TodoVec             = std::vector<Id_t>;
+    using TodoVec = std::vector<Id_t>;
 
     AssignmentAggregateComplete(DomainData &data, UTerm repr, UTerm dataRepr, AggregateFunction fun);
     AssignmentAggregateDomain &dom() {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        return static_cast<AssignmentAggregateDomain&>(def_.dom());
+        return static_cast<AssignmentAggregateDomain &>(def_.dom());
     }
     UTerm const &dataRepr() const { return dataRepr_; }
     UTerm const &domRepr() const { return def_.domRepr(); }
@@ -480,20 +485,20 @@ public:
     void addAccuDom(AssignmentAggregateAccumulate &accu) { accuDoms_.emplace_back(accu); }
     void setOutputRecursive() { outputRecursive_ = true; }
     // {{{2 Statement interface
-    bool isNormal() const override;                           // return false -> this one creates choices
-    void analyze(Dep::Node &node, Dep &dep) override;         // use accuDoms to build the dependency...
-    void startLinearize(bool active) override;                // noop because single instantiator
+    bool isNormal() const override;                                        // return false -> this one creates choices
+    void analyze(Dep::Node &node, Dep &dep) override;                      // use accuDoms to build the dependency...
+    void startLinearize(bool active) override;                             // noop because single instantiator
     void linearize(Context &context, bool positive, Logger &log) override; // noop because single instantiator
-    void enqueue(Queue &q) override;                          // enqueue the single instantiator
+    void enqueue(Queue &q) override;                                       // enqueue the single instantiator
     // {{{2 Printable interface
-    void print(std::ostream &out) const override;             // #complete { h1, ..., hn } :- accu1,... , accun.
+    void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
-    void printHead(std::ostream &out) const override;         // #complete { h1, ..., hn }
-    void propagate(Queue &queue) override;                    // enqueue based on accuDoms
-    void report(Output::OutputBase &out, Logger &log) override;            // loop over headDom here
+    void printHead(std::ostream &out) const override;           // #complete { h1, ..., hn }
+    void propagate(Queue &queue) override;                      // enqueue based on accuDoms
+    void report(Output::OutputBase &out, Logger &log) override; // loop over headDom here
     // {{{2 BodyOcc interface
     UGTerm getRepr() const override;
     bool isPositive() const override;
@@ -518,7 +523,7 @@ private:
 // {{{1 declaration of AssignmentAggregateLiteral
 
 class AssignmentAggregateLiteral : public Literal, private BodyOcc {
-public:
+  public:
     AssignmentAggregateLiteral(AssignmentAggregateComplete &complete, bool auxiliary);
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
@@ -528,11 +533,11 @@ public:
     BodyOcc *occurrence() override;
     void collect(VarTermBoundVec &vars) const override;
     Score score(Term::VarSet const &bound, Logger &log) override;
-    std::pair<Output::LiteralId,bool> toOutput(Logger &log) override;
+    std::pair<Output::LiteralId, bool> toOutput(Logger &log) override;
     bool auxiliary() const override { return auxiliary_; }
     // }}}2
 
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -557,22 +562,22 @@ private:
 // The following classes correspond to the rules indicated below.
 // empty :- body.              % to handle the empty case
 // accu  :- empty, cond.       % accumulation of conditon (blocks if condition is a fact and no head available yet)
-// accu  :- empty, cond, head. % accumulation of head (blocks if no condition available yet, unblocks if there is a head and the condition is fact)
-// aggr  :- accu.              % complete rule (let's through unblocked conjunctions)
-// head  :- aggr, body.        % literal
+// accu  :- empty, cond, head. % accumulation of head (blocks if no condition available yet, unblocks if there is a head
+// and the condition is fact) aggr  :- accu.              % complete rule (let's through unblocked conjunctions) head :-
+// aggr, body.        % literal
 
 using Output::ConjunctionAtom;
 using Output::ConjunctionDomain;
 class ConjunctionComplete;
 
 class ConjunctionAccumulateEmpty : public AbstractStatement {
-public:
+  public:
     ConjunctionAccumulateEmpty(ConjunctionComplete &complete, ULitVec lits);
     // {{{2 Statement interface
     bool isNormal() const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -583,14 +588,14 @@ private:
 // {{{1 declaration of ConjunctionAccumulateCond
 
 class ConjunctionAccumulateCond : public AbstractStatement {
-public:
+  public:
     ConjunctionAccumulateCond(ConjunctionComplete &complete, ULitVec lits);
     // {{{2 Statement interface
     bool isNormal() const override;
     void linearize(Context &context, bool positive, Logger &log) override;
     void analyze(Dep::Node &node, Dep &dep) override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -601,14 +606,14 @@ private:
 // {{{1 declaration of ConjunctionAccumulateHead
 
 class ConjunctionAccumulateHead : public AbstractStatement {
-public:
+  public:
     ConjunctionAccumulateHead(ConjunctionComplete &complete, ULitVec lits);
     // {{{2 Statement interface
     bool isNormal() const override;
     void linearize(Context &context, bool positive, Logger &log) override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -619,7 +624,7 @@ private:
 // {{{1 declaration of ConjunctionComplete
 
 class ConjunctionComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using TodoVec = std::vector<Id_t>;
     ConjunctionComplete(DomainData &data, UTerm repr, UTermVec local);
     UTerm condRepr() const;
@@ -629,7 +634,7 @@ public:
     UTerm const &domRepr() const { return def_.domRepr(); }
     ConjunctionDomain &dom() {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        return static_cast<ConjunctionDomain&>(def_.dom());
+        return static_cast<ConjunctionDomain &>(def_.dom());
     }
     PredicateDomain &emptyDom() { return domEmpty_; }
     PredicateDomain &condDom() { return domCond_; }
@@ -648,7 +653,7 @@ public:
     void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
     void printHead(std::ostream &out) const override;
     void propagate(Queue &queue) override;
@@ -663,17 +668,16 @@ private:
     DefinedBy &definedBy() override;
     void checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const override;
     // }}}2
-    template <class F>
-    void reportOther(F f, Logger &log);
+    template <class F> void reportOther(F f, Logger &log);
 
     HeadDefinition def_; // condtional literal
     PredicateDomain domEmpty_;
     PredicateDomain domCond_;
     OccurrenceType occType_ = OccurrenceType::STRATIFIED;
     DefinedBy defBy_;
-    Instantiator inst_;  // dummy instantiator
-    TodoVec todo_;       // contains literals that might have to be exported
-    UTermVec local_;     // local variables in condition
+    Instantiator inst_; // dummy instantiator
+    TodoVec todo_;      // contains literals that might have to be exported
+    UTermVec local_;    // local variables in condition
     bool condRecursive_ = false;
     bool headRecursive_ = false;
 };
@@ -681,7 +685,7 @@ private:
 // {{{1 declaration of ConjunctionLiteral
 
 class ConjunctionLiteral : public Literal, private BodyOcc {
-public:
+  public:
     ConjunctionLiteral(ConjunctionComplete &complete, bool auxiliary);
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
@@ -691,11 +695,11 @@ public:
     BodyOcc *occurrence() override;
     void collect(VarTermBoundVec &vars) const override;
     Score score(Term::VarSet const &bound, Logger &log) override;
-    std::pair<Output::LiteralId,bool> toOutput(Logger &log) override;
+    std::pair<Output::LiteralId, bool> toOutput(Logger &log) override;
     bool auxiliary() const override { return auxiliary_; }
     // }}}2
 
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -722,7 +726,7 @@ using Output::TheoryDomain;
 class TheoryComplete;
 
 class TheoryAccumulate : public AbstractStatement {
-public:
+  public:
     TheoryAccumulate(TheoryComplete &complete, ULitVec lits);
     TheoryAccumulate(TheoryComplete &complete, Output::UTheoryTermVec tuple, ULitVec lits);
     void printHead(std::ostream &out) const override;
@@ -732,7 +736,7 @@ public:
     bool isNormal() const override { return true; }
     void linearize(Context &context, bool positive, Logger &log) override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -745,7 +749,7 @@ private:
 // {{{1 declaration of TheoryComplete
 
 class TheoryComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using AccuVec = std::vector<std::reference_wrapper<TheoryAccumulate>>;
     using TodoVec = std::vector<Id_t>;
 
@@ -753,7 +757,7 @@ public:
     TheoryComplete(DomainData &data, UTerm repr, TheoryAtomType type, UTerm name, String op, Output::UTheoryTerm guard);
     TheoryDomain &dom() {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        return static_cast<TheoryDomain&>(def_.dom());
+        return static_cast<TheoryDomain &>(def_.dom());
     }
     void enqueue(TheoryDomain::Iterator atom);
     UTerm const &accuRepr() const { return accuRepr_; }
@@ -774,7 +778,7 @@ public:
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
     void printHead(std::ostream &out) const override;
     void propagate(Queue &queue) override;
@@ -806,7 +810,7 @@ private:
 // {{{1 declaration of TheoryLiteral
 
 class TheoryLiteral : public Literal, private BodyOcc {
-public:
+  public:
     TheoryLiteral(TheoryComplete &complete, NAF naf, bool auxiliary);
     TheoryAtomType type() const { return complete_.type(); }
     // {{{2 Printable interface
@@ -817,10 +821,10 @@ public:
     BodyOcc *occurrence() override;
     void collect(VarTermBoundVec &vars) const override;
     Score score(Term::VarSet const &bound, Logger &log) override;
-    std::pair<Output::LiteralId,bool> toOutput(Logger &log) override;
+    std::pair<Output::LiteralId, bool> toOutput(Logger &log) override;
     bool auxiliary() const override { return auxiliary_; }
     // }}}2
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -842,7 +846,7 @@ private:
 // {{{1 declaration of TheoryRule
 
 class TheoryRule : public AbstractStatement {
-public:
+  public:
     TheoryRule(TheoryLiteral &lit, ULitVec lits);
     // {{{2 AbstractStatement interface
     void collectImportant(Term::VarSet &vars) override;
@@ -851,7 +855,7 @@ public:
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
 
-private:
+  private:
     TheoryLiteral &lit_;
 };
 
@@ -866,7 +870,7 @@ using Output::HeadAggregateDomain;
 class HeadAggregateAccumulate;
 
 class HeadAggregateComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using TodoVec = std::vector<HeadAggregateDomain::SizeType>;
     using AccumulateDomainVec = std::vector<std::reference_wrapper<HeadAggregateAccumulate>>;
 
@@ -879,19 +883,19 @@ public:
     void enqueue(HeadAggregateDomain::Iterator atom);
     void addAccuDom(HeadAggregateAccumulate &accu) { accuDoms_.emplace_back(accu); }
     // {{{3 Statement interface
-    bool isNormal() const override;                           // return false -> this one creates choices
-    void analyze(Dep::Node &node, Dep &dep) override;         // use accuDoms to build the dependency...
-    void startLinearize(bool active) override;                // noop because single instantiator
+    bool isNormal() const override;                                        // return false -> this one creates choices
+    void analyze(Dep::Node &node, Dep &dep) override;                      // use accuDoms to build the dependency...
+    void startLinearize(bool active) override;                             // noop because single instantiator
     void linearize(Context &context, bool positive, Logger &log) override; // noop because single instantiator
-    void enqueue(Queue &q) override;                          // enqueue the single instantiator
+    void enqueue(Queue &q) override;                                       // enqueue the single instantiator
     // {{{2 Printable interface
-    void print(std::ostream &out) const override;             // #complete { h1, ..., hn } :- accu1,... , accun.
+    void print(std::ostream &out) const override;
     // }}}2
-private:
+  private:
     // {{{2 SolutionCallback interface
-    void printHead(std::ostream &out) const override;         // #complete { h1, ..., hn }
-    void propagate(Queue &queue) override;                    // enqueue based on accuDoms
-    void report(Output::OutputBase &out, Logger &log) override;            // loop over headDom here
+    void printHead(std::ostream &out) const override;           // #complete { h1, ..., hn }
+    void propagate(Queue &queue) override;                      // enqueue based on accuDoms
+    void report(Output::OutputBase &out, Logger &log) override; // loop over headDom here
     // {{{2 BodyOcc interface
     UGTerm getRepr() const override;
     bool isPositive() const override;
@@ -916,14 +920,14 @@ private:
 // {{{1 declaration of HeadAggregateRule
 
 class HeadAggregateRule : public AbstractStatement {
-public:
+  public:
     HeadAggregateRule(HeadAggregateComplete &complete, ULitVec lits);
 
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -934,7 +938,7 @@ private:
 // {{{1 declaration of HeadAggregateLiteral
 
 class HeadAggregateLiteral : public Literal, private BodyOcc {
-public:
+  public:
     HeadAggregateLiteral(HeadAggregateComplete &complete);
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
@@ -944,10 +948,12 @@ public:
     BodyOcc *occurrence() override;
     void collect(VarTermBoundVec &vars) const override;
     Score score(Term::VarSet const &bound, Logger &log) override;
-    std::pair<Output::LiteralId,bool> toOutput(Logger &log) override;
-    bool auxiliary() const override { return true; } // by construction
+    std::pair<Output::LiteralId, bool> toOutput(Logger &log) override;
+    bool auxiliary() const override {
+        return true; // by construction
+    }
     // }}}2
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -967,8 +973,9 @@ private:
 // {{{1 declaration of HeadAggregateAccumulate
 
 class HeadAggregateAccumulate : public AbstractStatement {
-public:
-    HeadAggregateAccumulate(HeadAggregateComplete &complete, UTermVec tuple, PredicateDomain *predDom, UTerm predRepr, ULitVec lits);
+  public:
+    HeadAggregateAccumulate(HeadAggregateComplete &complete, UTermVec tuple, PredicateDomain *predDom, UTerm predRepr,
+                            ULitVec lits);
     HeadDefinition &predDef() { return predDef_; }
     HeadDefinition const &predDef() const { return predDef_; }
     UTermVec const &tuple() const { return tuple_; }
@@ -977,7 +984,7 @@ public:
     void collectImportant(Term::VarSet &vars) override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface (w/o printHead)
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
@@ -1015,7 +1022,7 @@ using Output::DisjunctionDomain;
 
 class DisjunctionAccumulate;
 class DisjunctionComplete : public Statement, private SolutionCallback, private BodyOcc {
-public:
+  public:
     using TodoVec = std::vector<Id_t>;
     using AccumulateVec = std::vector<std::reference_wrapper<DisjunctionAccumulate>>;
     DisjunctionComplete(DomainData &data, UTerm repr);
@@ -1024,20 +1031,20 @@ public:
     void addAccu(DisjunctionAccumulate &accu) { accu_.emplace_back(accu); }
     void enqueue(DisjunctionDomain::Iterator atom);
     // {{{2 Statement interface
-    bool isNormal() const override;                           // return false -> this one creates choices
-    void analyze(Dep::Node &node, Dep &dep) override;         // use accuDoms to build the dependency...
-    void startLinearize(bool active) override;                // noop because single instantiator
+    bool isNormal() const override;                                        // return false -> this one creates choices
+    void analyze(Dep::Node &node, Dep &dep) override;                      // use accuDoms to build the dependency...
+    void startLinearize(bool active) override;                             // noop because single instantiator
     void linearize(Context &context, bool positive, Logger &log) override; // noop because single instantiator
-    void enqueue(Queue &q) override;                          // enqueue the single instantiator
+    void enqueue(Queue &q) override;                                       // enqueue the single instantiator
     // {{{2 Printable interface
-    void print(std::ostream &out) const override;             // #complete { h1, ..., hn } :- accu1,... , accun.
+    void print(std::ostream &out) const override;
     // }}}2
 
-private:
+  private:
     // {{{2 SolutionCallback interface
-    void printHead(std::ostream &out) const override;         // #complete { h1, ..., hn }
-    void propagate(Queue &queue) override;                    // enqueue based on accuDoms
-    void report(Output::OutputBase &out, Logger &log) override;            // loop over headDom here
+    void printHead(std::ostream &out) const override;           // #complete { h1, ..., hn }
+    void propagate(Queue &queue) override;                      // enqueue based on accuDoms
+    void report(Output::OutputBase &out, Logger &log) override; // loop over headDom here
     unsigned priority() const override { return 1; }
     // {{{2 BodyOcc interface
     UGTerm getRepr() const override;
@@ -1061,7 +1068,7 @@ private:
 // {{{1 declaration of DisjunctionLiteral
 
 class DisjunctionLiteral : public Literal, private BodyOcc {
-public:
+  public:
     DisjunctionLiteral(DisjunctionComplete &complete);
     // {{{2 Printable interface
     void print(std::ostream &out) const override;
@@ -1071,10 +1078,12 @@ public:
     BodyOcc *occurrence() override;
     void collect(VarTermBoundVec &vars) const override;
     Score score(Term::VarSet const &bound, Logger &log) override;
-    std::pair<Output::LiteralId,bool> toOutput(Logger &log) override;
-    bool auxiliary() const override { return true; } // by construction
+    std::pair<Output::LiteralId, bool> toOutput(Logger &log) override;
+    bool auxiliary() const override {
+        return true; // by construction
+    }
     // }}}2
-private:
+  private:
     // {{{2 BodyOcc interface
     DefinedBy &definedBy() override;
     UGTerm getRepr() const override;
@@ -1094,7 +1103,7 @@ private:
 // {{{1 declaration of DisjunctionRule
 
 class DisjunctionRule : public AbstractStatement {
-public:
+  public:
     DisjunctionRule(DisjunctionComplete &complete, ULitVec lits);
     // {{{2 Statement interface
     bool isNormal() const override;
@@ -1102,7 +1111,7 @@ public:
     void report(Output::OutputBase &out, Logger &log) override;
     // }}}2
 
-private:
+  private:
     DisjunctionComplete &complete_;
 };
 
@@ -1110,28 +1119,28 @@ private:
 
 class DisjunctionAccumulate;
 class DisjunctionAccumulateHead : public SolutionCallback {
-public:
-    DisjunctionAccumulateHead(DisjunctionAccumulate &accu)
-    : accu_(accu) { }
+  public:
+    DisjunctionAccumulateHead(DisjunctionAccumulate &accu) : accu_(accu) {}
     void report(Output::OutputBase &out, Logger &log) override;
-    void propagate(Queue &queue) override { }
+    void propagate(Queue &queue) override {}
     void printHead(std::ostream &out) const override;
 
-private:
+  private:
     DisjunctionAccumulate &accu_;
 };
 
 class DisjunctionAccumulate : public AbstractStatement {
     friend class DisjunctionAccumulateHead;
-public:
-    DisjunctionAccumulate(DisjunctionComplete &complete, PredicateDomain *predDom, UTerm predRepr, ULitVec headCond, UTerm elemRepr, ULitVec lits);
-    HeadDefinition &predDef() {
-        return predDef_;
-    }
+
+  public:
+    DisjunctionAccumulate(DisjunctionComplete &complete, PredicateDomain *predDom, UTerm predRepr, ULitVec headCond,
+                          UTerm elemRepr, ULitVec lits);
+    HeadDefinition &predDef() { return predDef_; }
     void printPred(std::ostream &out) const;
     void analyze(Dep::Node &node, Dep &dep) override;
     void collectImportant(Term::VarSet &vars) override;
-private:
+
+  private:
     void reportHead(Output::OutputBase &out, Logger &log);
     void linearize(Context &context, bool positive, Logger &log) override;
     // {{{2 SolutionCallback interface
@@ -1148,6 +1157,7 @@ private:
 
 // }}}1
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo
 
 #endif // GRINGO_GROUND_STATEMENTS_HH

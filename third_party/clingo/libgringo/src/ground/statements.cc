@@ -23,14 +23,15 @@
 // }}}
 
 #include "gringo/ground/statements.hh"
-#include "gringo/safetycheck.hh"
-#include "gringo/output/literals.hh"
-#include "gringo/output/output.hh"
 #include "gringo/ground/binders.hh"
 #include "gringo/logger.hh"
+#include "gringo/output/literals.hh"
+#include "gringo/output/output.hh"
+#include "gringo/safetycheck.hh"
 #include <limits>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // FIXME: too much c&p similarities in the implementations below
 
@@ -42,7 +43,7 @@ namespace {
 
 Output::DisjunctiveBounds _initBounds(BoundVec const &bounds, Logger &log) {
     Output::DisjunctiveBounds set;
-    set.add({{Symbol::createInf(),true}, {Symbol::createSup(),true}});
+    set.add({{Symbol::createInf(), true}, {Symbol::createSup(), true}});
     for (auto const &x : bounds) {
         bool undefined = false;
         Symbol v(x.bound->eval(undefined, log));
@@ -52,7 +53,7 @@ Output::DisjunctiveBounds _initBounds(BoundVec const &bounds, Logger &log) {
                 set.remove({{Symbol::createInf(), true}, {v, false}});
                 break;
             }
-            case Relation::GT:  {
+            case Relation::GT: {
                 set.remove({{Symbol::createInf(), true}, {v, true}});
                 break;
             }
@@ -60,7 +61,7 @@ Output::DisjunctiveBounds _initBounds(BoundVec const &bounds, Logger &log) {
                 set.remove({{v, false}, {Symbol::createSup(), true}});
                 break;
             }
-            case Relation::LT:  {
+            case Relation::LT: {
                 set.remove({{v, true}, {Symbol::createSup(), true}});
                 break;
             }
@@ -81,18 +82,19 @@ Output::DisjunctiveBounds _initBounds(BoundVec const &bounds, Logger &log) {
 // {{{2 definition of _linearize (Note: could be moved into AbstractStatement)
 
 struct Ent {
-    Ent(BinderType type, Literal &lit) : type(type), lit(lit) { }
+    Ent(BinderType type, Literal &lit) : type(type), lit(lit) {}
     std::vector<unsigned> depends;
     std::vector<unsigned> vars;
     BinderType type;
     Literal &lit;
 };
-using SC  = SafetyChecker<unsigned, Ent>;
+using SC = SafetyChecker<unsigned, Ent>;
 
-InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallback &cb, Term::VarSet &&important, ULitVec const &lits, Term::VarSet const &boundInitially = Term::VarSet()) {
+InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallback &cb, Term::VarSet &&important,
+                   ULitVec const &lits, Term::VarSet const &boundInitially = Term::VarSet()) {
     InstVec insts;
     std::vector<unsigned> rec;
-    std::vector<std::vector<std::pair<BinderType,Literal*>>> todo{1};
+    std::vector<std::vector<std::pair<BinderType, Literal *>>> todo{1};
     unsigned i{0};
     for (auto const &x : lits) {
         todo.back().emplace_back(BinderType::ALL, x.get());
@@ -121,7 +123,7 @@ InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallbac
         Term::VarSet bound = boundInitially;
         insts.emplace_back(cb);
         SC s;
-        std::unordered_map<String, SC::VarNode*> varMap;
+        std::unordered_map<String, SC::VarNode *> varMap;
         std::vector<std::pair<String, std::vector<unsigned>>> boundBy;
         for (auto &lit : x) {
             auto &entNode(s.insertEnt(lit.first, *lit.second));
@@ -130,14 +132,13 @@ InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallbac
             for (auto &occ : vars) {
                 if (bound.find(occ.first->name) == bound.end()) {
                     auto &varNode(varMap[occ.first->name]);
-                    if (varNode == nullptr)   {
+                    if (varNode == nullptr) {
                         varNode = &s.insertVar(numeric_cast<unsigned>(boundBy.size()));
                         boundBy.emplace_back(occ.first->name, std::vector<unsigned>{});
                     }
                     if (occ.second) {
                         s.insertEdge(entNode, *varNode);
-                    }
-                    else {
+                    } else {
                         s.insertEdge(*varNode, entNode);
                     }
                     entNode.data.vars.emplace_back(varNode->data);
@@ -149,7 +150,8 @@ InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallbac
         auto pred = [&bound, &log](Ent const &x, Ent const &y) -> bool {
             double sx(x.lit.score(bound, log));
             double sy(y.lit.score(bound, log));
-            //std::cerr << "  " << x.lit << "@" << sx << " < " << y.lit << "@" << sy << " with " << bound.size() << std::endl;
+            // std::cerr << "  " << x.lit << "@" << sx << " < " << y.lit << "@" << sy << " with " << bound.size() <<
+            // std::endl;
             if (sx < 0 || sy < 0) {
                 return sx < sy;
             }
@@ -175,8 +177,7 @@ InstVec _linearize(Logger &log, Context &context, bool positive, SolutionCallbac
                     if ((depend.empty() || depend.back() != uid) && important.find(bb.first) != important.end()) {
                         depend.emplace_back(uid);
                     }
-                }
-                else {
+                } else {
                     y->data.depends.insert(y->data.depends.end(), bb.second.begin(), bb.second.end());
                 }
             }
@@ -211,14 +212,10 @@ UTerm completeRepr_(UTerm const &repr) {
 // {{{2 definition of BindOnce
 
 class BindOnce : public Binder, public IndexUpdater {
-public:
-    IndexUpdater *getUpdater() override {
-        return this;
-    }
+  public:
+    IndexUpdater *getUpdater() override { return this; }
 
-    bool update() override {
-        return true;
-    }
+    bool update() override { return true; }
 
     void match(Logger &log) override {
         static_cast<void>(log);
@@ -231,38 +228,33 @@ public:
         return ret;
     }
 
-    void print(std::ostream &out) const override {
-        out << "#once_";
-    }
+    void print(std::ostream &out) const override { out << "#once_"; }
 
-private:
+  private:
     bool once_ = false;
 };
 
 // {{{2 operator <<
 
-template <class T>
-std::ostream &operator <<(std::ostream &out, std::unique_ptr<T> const &x) {
+template <class T> std::ostream &operator<<(std::ostream &out, std::unique_ptr<T> const &x) {
     out << *x;
     return out;
 }
 
-template <class T>
-std::ostream &operator <<(std::ostream &out, std::vector<T> const &x) {
+template <class T> std::ostream &operator<<(std::ostream &out, std::vector<T> const &x) {
     if (!x.empty()) {
-        for (auto it = x.begin(), ie = x.end(); ; ) {
+        for (auto it = x.begin(), ie = x.end();;) {
             out << *it;
             if (++it != ie) {
                 out << ",";
-            }
-            else {
+            } else {
                 break;
             }
         }
     }
     return out;
 }
-std::ostream &operator <<(std::ostream &out, OccurrenceType x) {
+std::ostream &operator<<(std::ostream &out, OccurrenceType x) {
     switch (x) {
         case OccurrenceType::POSITIVELY_STRATIFIED: {
             break;
@@ -286,9 +278,7 @@ std::ostream &operator <<(std::ostream &out, OccurrenceType x) {
 // }}}1
 // {{{1 definition of HeadDefinition
 
-HeadDefinition::HeadDefinition(UTerm repr, Domain *domain)
-: repr_(std::move(repr))
-, domain_(domain) { }
+HeadDefinition::HeadDefinition(UTerm repr, Domain *domain) : repr_(std::move(repr)), domain_(domain) {}
 
 void HeadDefinition::defines(IndexUpdater &update, Instantiator *inst) {
     auto ret(offsets_.emplace(&update, numeric_cast<unsigned>(enqueueVec_.size())));
@@ -326,8 +316,7 @@ void HeadDefinition::collectImportant(Term::VarSet &vars) {
 //{{{1 definition of AbstractStatement
 
 AbstractStatement::AbstractStatement(UTerm repr, Domain *domain, ULitVec lits)
-: def_(std::move(repr), domain)
-, lits_(std::move(lits)) { }
+    : def_(std::move(repr), domain), lits_(std::move(lits)) {}
 
 bool AbstractStatement::isOutputRecursive() const {
     for (auto const &x : lits_) {
@@ -339,9 +328,7 @@ bool AbstractStatement::isOutputRecursive() const {
     return false;
 }
 
-bool AbstractStatement::isNormal() const {
-    return false;
-}
+bool AbstractStatement::isNormal() const { return false; }
 
 void AbstractStatement::analyze(Dep::Node &node, Dep &dep) {
     def_.analyze(node, dep);
@@ -360,9 +347,7 @@ void AbstractStatement::startLinearize(bool active) {
     }
 }
 
-void AbstractStatement::collectImportant(Term::VarSet &vars) {
-    def_.collectImportant(vars);
-}
+void AbstractStatement::collectImportant(Term::VarSet &vars) { def_.collectImportant(vars); }
 void AbstractStatement::linearize(Context &context, bool positive, Logger &log) {
     Term::VarSet important;
     collectImportant(important);
@@ -379,14 +364,11 @@ void AbstractStatement::enqueue(Queue &q) {
 void AbstractStatement::printHead(std::ostream &out) const {
     if (def_) {
         out << *def_.domRepr();
-    }
-    else {
+    } else {
         out << "#false";
     }
 }
-void AbstractStatement::printBody(std::ostream &out) const {
-    out << lits_;
-}
+void AbstractStatement::printBody(std::ostream &out) const { out << lits_; }
 
 void AbstractStatement::print(std::ostream &out) const {
     printHead(out);
@@ -397,9 +379,7 @@ void AbstractStatement::print(std::ostream &out) const {
     out << ".";
 }
 
-void AbstractStatement::propagate(Queue &queue) {
-    def_.enqueue(queue);
-}
+void AbstractStatement::propagate(Queue &queue) { def_.enqueue(queue); }
 
 //}}}1
 
@@ -408,19 +388,14 @@ void AbstractStatement::propagate(Queue &queue) {
 // {{{1 definition of ExternalRule
 
 ExternalRule::ExternalRule()
-: def_(make_locatable<ValTerm>(Location("#external", 1, 1, "#external", 1, 1), Symbol::createId("#external")), nullptr) { }
+    : def_(make_locatable<ValTerm>(Location("#external", 1, 1, "#external", 1, 1), Symbol::createId("#external")),
+           nullptr) {}
 
-bool ExternalRule::isNormal() const {
-    return false;
-}
+bool ExternalRule::isNormal() const { return false; }
 
-void ExternalRule::analyze(Dep::Node &node, Dep &dep) {
-    def_.analyze(node, dep);
-}
+void ExternalRule::analyze(Dep::Node &node, Dep &dep) { def_.analyze(node, dep); }
 
-void ExternalRule::startLinearize(bool active) {
-    def_.setActive(active);
-}
+void ExternalRule::startLinearize(bool active) { def_.setActive(active); }
 
 void ExternalRule::linearize(Context &context, bool positive, Logger &logger) {
     static_cast<void>(context);
@@ -428,18 +403,13 @@ void ExternalRule::linearize(Context &context, bool positive, Logger &logger) {
     static_cast<void>(logger);
 }
 
-void ExternalRule::enqueue(Queue &queue) {
-    static_cast<void>(queue);
-}
+void ExternalRule::enqueue(Queue &queue) { static_cast<void>(queue); }
 
-void ExternalRule::print(std::ostream &out) const {
-    out << "#external.";
-}
+void ExternalRule::print(std::ostream &out) const { out << "#external."; }
 
 //{{{1 definition of AbstractRule
 
-AbstractRule::AbstractRule(HeadVec heads, ULitVec lits)
-: lits_(std::move(lits)) {
+AbstractRule::AbstractRule(HeadVec heads, ULitVec lits) : lits_(std::move(lits)) {
     defs_.reserve(heads.size());
     for (auto &head : heads) {
         assert(head.first && head.second);
@@ -494,23 +464,19 @@ void AbstractRule::propagate(Queue &queue) {
 //{{{1 definition of Rule
 
 template <bool disjunctive>
-Rule<disjunctive>::Rule(HeadVec heads, ULitVec lits)
-: AbstractRule(std::move(heads), std::move(lits)) { }
+Rule<disjunctive>::Rule(HeadVec heads, ULitVec lits) : AbstractRule(std::move(heads), std::move(lits)) {}
 
-template <bool disjunctive>
-void Rule<disjunctive>::printHead(std::ostream &out) const {
+template <bool disjunctive> void Rule<disjunctive>::printHead(std::ostream &out) const {
     if (!disjunctive) {
         out << "{";
-    }
-    else if (defs_.empty()) {
+    } else if (defs_.empty()) {
         out << "#false";
     }
     bool sep = false;
     for (auto &def : defs_) {
         if (sep) {
             out << ";";
-        }
-        else {
+        } else {
             sep = true;
         }
         out << *def.domRepr();
@@ -520,8 +486,7 @@ void Rule<disjunctive>::printHead(std::ostream &out) const {
     }
 }
 
-template <bool disjunctive>
-void Rule<disjunctive>::print(std::ostream &out) const {
+template <bool disjunctive> void Rule<disjunctive>::print(std::ostream &out) const {
     printHead(out);
     if (!lits_.empty()) {
         out << ":-";
@@ -530,13 +495,9 @@ void Rule<disjunctive>::print(std::ostream &out) const {
     out << ".";
 }
 
-template <bool disjunctive>
-bool Rule<disjunctive>::isNormal() const {
-    return defs_.size() == 1 && disjunctive;
-}
+template <bool disjunctive> bool Rule<disjunctive>::isNormal() const { return defs_.size() == 1 && disjunctive; }
 
-template <bool disjunctive>
-void Rule<disjunctive>::report(Output::OutputBase &out, Logger &log) {
+template <bool disjunctive> void Rule<disjunctive>::report(Output::OutputBase &out, Logger &log) {
     Output::Rule &rule(out.tempRule(!disjunctive));
     bool fact = true;
     for (auto &x : lits_) {
@@ -560,13 +521,12 @@ void Rule<disjunctive>::report(Output::OutputBase &out, Logger &log) {
             }
             return;
         }
-        auto &dom = static_cast<PredicateDomain&>(def.dom());
+        auto &dom = static_cast<PredicateDomain &>(def.dom());
         auto ret(dom.define(val));
         if (!ret.first->fact()) {
             Potassco::Id_t offset = static_cast<Potassco::Id_t>(ret.first - dom.begin());
             rule.addHead({NAF::POS, Output::AtomType::Predicate, offset, dom.domainOffset()});
-        }
-        else if (disjunctive) {
+        } else if (disjunctive) {
             return;
         }
     }
@@ -586,8 +546,7 @@ template class Rule<false>;
 //{{{1 definition of ExternalStatement
 
 ExternalStatement::ExternalStatement(HeadVec heads, ULitVec lits, UTerm type)
-: AbstractRule(std::move(heads), std::move(lits))
-, type_(std::move(type)) { }
+    : AbstractRule(std::move(heads), std::move(lits)), type_(std::move(type)) {}
 
 void ExternalStatement::printHead(std::ostream &out) const {
     out << "#external ";
@@ -595,8 +554,7 @@ void ExternalStatement::printHead(std::ostream &out) const {
     for (auto const &def : defs_) {
         if (sep) {
             out << ";";
-        }
-        else {
+        } else {
             sep = true;
         }
         out << *def.domRepr();
@@ -612,9 +570,7 @@ void ExternalStatement::print(std::ostream &out) const {
     out << ".";
 }
 
-bool ExternalStatement::isNormal() const {
-    return false;
-}
+bool ExternalStatement::isNormal() const { return false; }
 
 void ExternalStatement::report(Output::OutputBase &out, Logger &log) {
     for (auto &def : defs_) {
@@ -631,22 +587,18 @@ void ExternalStatement::report(Output::OutputBase &out, Logger &log) {
         Potassco::Value_t value;
         if (id && term.name() == "false") {
             value = Potassco::Value_t::False;
-        }
-        else if (id && term.name() == "true") {
+        } else if (id && term.name() == "true") {
             value = Potassco::Value_t::True;
-        }
-        else if (id && term.name() == "free") {
+        } else if (id && term.name() == "free") {
             value = Potassco::Value_t::Free;
-        }
-        else if (id && term.name() == "release") {
+        } else if (id && term.name() == "release") {
             value = Potassco::Value_t::Release;
-        }
-        else {
+        } else {
             // TODO: report something
             continue;
         }
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        auto &dom = static_cast<PredicateDomain&>(def.dom());
+        auto &dom = static_cast<PredicateDomain &>(def.dom());
         auto ret = dom.define(val, false);
         Potassco::Id_t offset = static_cast<Potassco::Id_t>(std::get<0>(ret) - dom.begin());
         std::get<0>(ret)->setExternal(true);
@@ -655,14 +607,12 @@ void ExternalStatement::report(Output::OutputBase &out, Logger &log) {
     }
 }
 
-
 // }}}1
 
 // {{{1 definition of ShowStatement
 
 ShowStatement::ShowStatement(UTerm term, ULitVec body)
-: AbstractStatement(nullptr, nullptr, std::move(body))
-, term_(std::move(term)) { }
+    : AbstractStatement(nullptr, nullptr, std::move(body)), term_(std::move(term)) {}
 
 void ShowStatement::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
@@ -680,17 +630,13 @@ void ShowStatement::report(Output::OutputBase &out, Logger &log) {
         }
         Output::ShowStatement ss(term, cond);
         out.output(ss);
-    }
-    else {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << term_->loc() << ": info: tuple ignored:\n"
-            << "  " << term << "\n";
+    } else {
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << term_->loc() << ": info: tuple ignored:\n"
+                                                         << "  " << term << "\n";
     }
 }
 
-void ShowStatement::collectImportant(Term::VarSet &vars) {
-    term_->collect(vars);
-}
+void ShowStatement::collectImportant(Term::VarSet &vars) { term_->collect(vars); }
 
 void ShowStatement::printHead(std::ostream &out) const {
     out << "#show ";
@@ -705,23 +651,18 @@ void ShowStatement::print(std::ostream &out) const {
 // {{{1 definition of EdgeStatement
 
 EdgeStatement::EdgeStatement(UTerm u, UTerm v, ULitVec body)
-: AbstractStatement(nullptr, nullptr, std::move(body))
-, u_(std::move(u))
-, v_(std::move(v))
-{ }
+    : AbstractStatement(nullptr, nullptr, std::move(body)), u_(std::move(u)), v_(std::move(v)) {}
 
 void EdgeStatement::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
     Symbol u = u_->eval(undefined, log);
     if (undefined) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << u_->loc() << ": info: edge ignored\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << u_->loc() << ": info: edge ignored\n";
         return;
     }
     Symbol v = v_->eval(undefined, log);
     if (undefined) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << v_->loc() << ": info: edge ignored\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << v_->loc() << ": info: edge ignored\n";
         return;
     }
     Output::LitVec &cond = out.tempLits();
@@ -743,9 +684,7 @@ void EdgeStatement::collectImportant(Term::VarSet &vars) {
     v_->collect(vars);
 }
 
-void EdgeStatement::printHead(std::ostream &out) const {
-    out << "#edge (" << *u_ << "," << *v_ << ")";
-}
+void EdgeStatement::printHead(std::ostream &out) const { out << "#edge (" << *u_ << "," << *v_ << ")"; }
 
 void EdgeStatement::print(std::ostream &out) const {
     printHead(out);
@@ -755,9 +694,7 @@ void EdgeStatement::print(std::ostream &out) const {
 // {{{1 definition of ProjectStatement
 
 ProjectStatement::ProjectStatement(UTerm atom, ULitVec body)
-: AbstractStatement(nullptr, nullptr, std::move(body))
-, atom_(std::move(atom))
-{ }
+    : AbstractStatement(nullptr, nullptr, std::move(body)), atom_(std::move(atom)) {}
 
 void ProjectStatement::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
@@ -767,13 +704,12 @@ void ProjectStatement::report(Output::OutputBase &out, Logger &log) {
     assert(domain != out.data.predDoms().end());
     auto atom = (*domain)->find(term);
     Id_t offset = numeric_cast<Id_t>(atom - (*domain)->begin());
-    Output::ProjectStatement ps(Output::LiteralId{NAF::POS, Output::AtomType::Predicate, offset, (*domain)->domainOffset()});
+    Output::ProjectStatement ps(
+        Output::LiteralId{NAF::POS, Output::AtomType::Predicate, offset, (*domain)->domainOffset()});
     out.output(ps);
 }
 
-void ProjectStatement::collectImportant(Term::VarSet &vars) {
-    atom_->collect(vars);
-}
+void ProjectStatement::collectImportant(Term::VarSet &vars) { atom_->collect(vars); }
 
 void ProjectStatement::printHead(std::ostream &out) const {
     out << "#project ";
@@ -788,12 +724,8 @@ void ProjectStatement::print(std::ostream &out) const {
 // {{{1 definition of HeuristicStatement
 
 HeuristicStatement::HeuristicStatement(UTerm atom, UTerm value, UTerm bias, UTerm mod, ULitVec body)
-: AbstractStatement(nullptr, nullptr, std::move(body))
-, atom_(std::move(atom))
-, value_(std::move(value))
-, priority_(std::move(bias))
-, mod_(std::move(mod))
-{ }
+    : AbstractStatement(nullptr, nullptr, std::move(body)), atom_(std::move(atom)), value_(std::move(value)),
+      priority_(std::move(bias)), mod_(std::move(mod)) {}
 
 void HeuristicStatement::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
@@ -803,19 +735,17 @@ void HeuristicStatement::report(Output::OutputBase &out, Logger &log) {
     auto domain = out.data.predDoms().find(term.sig());
     assert(domain != out.data.predDoms().end());
     auto atom = (*domain)->find(term);
-    assert (atom != (*domain)->end());
+    assert(atom != (*domain)->end());
     // check value
     Symbol value = value_->eval(undefined, log);
     if (undefined || value.type() != SymbolType::Num) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << value_->loc() << ": info: heuristic directive ignored\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << value_->loc() << ": info: heuristic directive ignored\n";
         return;
     }
     // check priority
     Symbol priority = priority_->eval(undefined, log);
     if (undefined || priority.type() != SymbolType::Num || priority.num() < 0) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << priority_->loc() << ": info: heuristic directive ignored\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << priority_->loc() << ": info: heuristic directive ignored\n";
         return;
     }
     // check modifier
@@ -824,27 +754,20 @@ void HeuristicStatement::report(Output::OutputBase &out, Logger &log) {
         mod = Symbol::createId("");
     }
     Potassco::Heuristic_t heuMod;
-    if      (mod == Symbol::createId("true")) {
+    if (mod == Symbol::createId("true")) {
         heuMod = Potassco::Heuristic_t::True;
-    }
-    else if (mod == Symbol::createId("false")) {
+    } else if (mod == Symbol::createId("false")) {
         heuMod = Potassco::Heuristic_t::False;
-    }
-    else if (mod == Symbol::createId("level"))  {
+    } else if (mod == Symbol::createId("level")) {
         heuMod = Potassco::Heuristic_t::Level;
-    }
-    else if (mod == Symbol::createId("factor")) {
+    } else if (mod == Symbol::createId("factor")) {
         heuMod = Potassco::Heuristic_t::Factor;
-    }
-    else if (mod == Symbol::createId("init"))   {
+    } else if (mod == Symbol::createId("init")) {
         heuMod = Potassco::Heuristic_t::Init;
-    }
-    else if (mod == Symbol::createId("sign")) {
+    } else if (mod == Symbol::createId("sign")) {
         heuMod = Potassco::Heuristic_t::Sign;
-    }
-    else {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << mod_->loc() << ": info: heuristic directive ignored\n";
+    } else {
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << mod_->loc() << ": info: heuristic directive ignored\n";
         return;
     }
     // TODO: this loop appears far too often...
@@ -884,8 +807,7 @@ void HeuristicStatement::print(std::ostream &out) const {
 // {{{1 definition of WeakConstraint
 
 WeakConstraint::WeakConstraint(UTermVec tuple, ULitVec body)
-: AbstractStatement(nullptr, nullptr, std::move(body))
-, tuple_(std::move(tuple)) { }
+    : AbstractStatement(nullptr, nullptr, std::move(body)), tuple_(std::move(tuple)) {}
 
 void WeakConstraint::report(Output::OutputBase &out, Logger &log) {
     SymVec &tempVals = out.tempVals();
@@ -906,8 +828,7 @@ void WeakConstraint::report(Output::OutputBase &out, Logger &log) {
         }
         Output::WeakConstraint min(tempVals, tempLits);
         out.output(min);
-    }
-    else if (!undefined) {
+    } else if (!undefined) {
         GRINGO_REPORT(log, Warnings::OperationUndefined)
             << tuple_.front()->loc() << ": info: tuple ignored:\n"
             << "  " << out.tempVals_.front() << "@" << out.tempVals_[1] << "\n";
@@ -942,11 +863,8 @@ void WeakConstraint::print(std::ostream &out) const {
 // {{{1 definition of BodyAggregateComplete
 
 BodyAggregateComplete::BodyAggregateComplete(DomainData &data, UTerm repr, AggregateFunction fun, BoundVec bounds)
-: def_(std::move(repr), &data.add<BodyAggregateDomain>())
-, accuRepr_(completeRepr_(def_.domRepr()))
-, fun_(fun)
-, bounds_(std::move(bounds))
-, inst_(*this) {
+    : def_(std::move(repr), &data.add<BodyAggregateDomain>()), accuRepr_(completeRepr_(def_.domRepr())), fun_(fun),
+      bounds_(std::move(bounds)), inst_(*this) {
     switch (fun) {
         case AggregateFunction::COUNT:
         case AggregateFunction::SUMP:
@@ -975,9 +893,7 @@ BodyAggregateComplete::BodyAggregateComplete(DomainData &data, UTerm repr, Aggre
     }
 }
 
-bool BodyAggregateComplete::isNormal() const {
-    return true;
-}
+bool BodyAggregateComplete::isNormal() const { return true; }
 
 void BodyAggregateComplete::analyze(Dep::Node &node, Dep &dep) {
     dep.depends(node, *this);
@@ -995,7 +911,7 @@ void BodyAggregateComplete::linearize(Context &context, bool positive, Logger &l
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -1008,13 +924,9 @@ void BodyAggregateComplete::enqueue(Queue &q) {
     q.enqueue(inst_);
 }
 
-void BodyAggregateComplete::printHead(std::ostream &out) const {
-    out << *def_.domRepr();
-}
+void BodyAggregateComplete::printHead(std::ostream &out) const { out << *def_.domRepr(); }
 
-void BodyAggregateComplete::propagate(Queue &queue) {
-    def_.enqueue(queue);
-}
+void BodyAggregateComplete::propagate(Queue &queue) { def_.enqueue(queue); }
 
 void BodyAggregateComplete::report(Output::OutputBase &out, Logger &log) {
     static_cast<void>(out);
@@ -1035,33 +947,24 @@ void BodyAggregateComplete::report(Output::OutputBase &out, Logger &log) {
 void BodyAggregateComplete::print(std::ostream &out) const {
     printHead(out);
     out << ":-";
-    print_comma(out, accuDoms_, ",", [this](std::ostream &out, BodyAggregateAccumulate const &x) -> void { x.printHead(out); out << occType_; });
+    print_comma(out, accuDoms_, ",", [this](std::ostream &out, BodyAggregateAccumulate const &x) -> void {
+        x.printHead(out);
+        out << occType_;
+    });
     out << ".";
 }
 
-UGTerm BodyAggregateComplete::getRepr() const {
-    return accuRepr_->gterm();
-}
+UGTerm BodyAggregateComplete::getRepr() const { return accuRepr_->gterm(); }
 
-bool BodyAggregateComplete::isPositive() const {
-    return true;
-}
+bool BodyAggregateComplete::isPositive() const { return true; }
 
-bool BodyAggregateComplete::isNegative() const {
-    return false;
-}
+bool BodyAggregateComplete::isNegative() const { return false; }
 
-void BodyAggregateComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void BodyAggregateComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType BodyAggregateComplete::getType() const {
-    return occType_;
-}
+OccurrenceType BodyAggregateComplete::getType() const { return occType_; }
 
-BodyAggregateComplete::DefinedBy &BodyAggregateComplete::definedBy() {
-    return defBy_;
-}
+BodyAggregateComplete::DefinedBy &BodyAggregateComplete::definedBy() { return defBy_; }
 
 void BodyAggregateComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1079,9 +982,8 @@ void BodyAggregateComplete::enqueue(BodyAggregateDomain::Iterator atom) {
 // {{{1 definition of BodyAggregateAccumulate
 
 BodyAggregateAccumulate::BodyAggregateAccumulate(BodyAggregateComplete &complete, UTermVec tuple, ULitVec lits)
-: AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, tuple_(std::move(tuple)) {}
+    : AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits)), complete_(complete),
+      tuple_(std::move(tuple)) {}
 
 void BodyAggregateAccumulate::collectImportant(Term::VarSet &vars) {
     VarTermBoundVec bound;
@@ -1136,33 +1038,19 @@ void BodyAggregateAccumulate::printHead(std::ostream &out) const {
 // {{{1 definition of BodyAggregateLiteral
 
 BodyAggregateLiteral::BodyAggregateLiteral(BodyAggregateComplete &complete, NAF naf, bool auxiliary)
-: complete_(complete)
-, naf_(naf)
-, auxiliary_(auxiliary) { }
+    : complete_(complete), naf_(naf), auxiliary_(auxiliary) {}
 
-UGTerm BodyAggregateLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm BodyAggregateLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool BodyAggregateLiteral::isPositive() const {
-    return naf_ == NAF::POS && complete_.monotone();
-}
+bool BodyAggregateLiteral::isPositive() const { return naf_ == NAF::POS && complete_.monotone(); }
 
-bool BodyAggregateLiteral::isNegative() const {
-    return naf_ != NAF::POS;
-}
+bool BodyAggregateLiteral::isNegative() const { return naf_ != NAF::POS; }
 
-void BodyAggregateLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void BodyAggregateLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType BodyAggregateLiteral::getType() const {
-    return type_;
-}
+OccurrenceType BodyAggregateLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &BodyAggregateLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &BodyAggregateLiteral::definedBy() { return defs_; }
 
 void BodyAggregateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1186,13 +1074,9 @@ void BodyAggregateLiteral::print(std::ostream &out) const {
     }
 }
 
-bool BodyAggregateLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool BodyAggregateLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *BodyAggregateLiteral::occurrence() {
-    return this;
-}
+BodyOcc *BodyAggregateLiteral::occurrence() { return this; }
 
 void BodyAggregateLiteral::collect(VarTermBoundVec &vars) const {
     complete_.domRepr()->collect(vars, naf_ == NAF::POS);
@@ -1219,34 +1103,33 @@ std::pair<Output::LiteralId, bool> BodyAggregateLiteral::toOutput(Logger &log) {
     switch (naf_) {
         case NAF::POS:
         case NAF::NOTNOT: {
-            return atm.fact()
-                ? std::make_pair(Output::LiteralId(), true)
-                : std::make_pair(Output::LiteralId{naf_, Output::AtomType::BodyAggregate, offset_, dom.domainOffset()}, false);
+            return atm.fact() ? std::make_pair(Output::LiteralId(), true)
+                              : std::make_pair(Output::LiteralId{naf_, Output::AtomType::BodyAggregate, offset_,
+                                                                 dom.domainOffset()},
+                                               false);
         }
         case NAF::NOT: {
             return !atm.recursive() && !atm.satisfiable()
-                ? std::make_pair(Output::LiteralId(), true)
-                : std::make_pair(Output::LiteralId{naf_, Output::AtomType::BodyAggregate, offset_, dom.domainOffset()}, false);
+                       ? std::make_pair(Output::LiteralId(), true)
+                       : std::make_pair(
+                             Output::LiteralId{naf_, Output::AtomType::BodyAggregate, offset_, dom.domainOffset()},
+                             false);
         }
     }
     assert(false);
-    return {Output::LiteralId(),true};
+    return {Output::LiteralId(), true};
 }
 
 // }}}1
 
 // {{{1 definition of AssignmentAggregateComplete
 
-AssignmentAggregateComplete::AssignmentAggregateComplete(DomainData &data, UTerm repr, UTerm dataRepr, AggregateFunction fun)
-: def_(std::move(repr), &data.add<AssignmentAggregateDomain>())
-, dataRepr_(std::move(dataRepr))
-, fun_(fun)
-, inst_(*this) {
-}
+AssignmentAggregateComplete::AssignmentAggregateComplete(DomainData &data, UTerm repr, UTerm dataRepr,
+                                                         AggregateFunction fun)
+    : def_(std::move(repr), &data.add<AssignmentAggregateDomain>()), dataRepr_(std::move(dataRepr)), fun_(fun),
+      inst_(*this) {}
 
-bool AssignmentAggregateComplete::isNormal() const {
-  return true;
-}
+bool AssignmentAggregateComplete::isNormal() const { return true; }
 
 void AssignmentAggregateComplete::analyze(Dep::Node &node, Dep &dep) {
     dep.depends(node, *this);
@@ -1264,7 +1147,7 @@ void AssignmentAggregateComplete::linearize(Context &context, bool positive, Log
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -1277,13 +1160,9 @@ void AssignmentAggregateComplete::enqueue(Queue &q) {
     q.enqueue(inst_);
 }
 
-void AssignmentAggregateComplete::printHead(std::ostream &out) const {
-    out << *def_.domRepr();
-}
+void AssignmentAggregateComplete::printHead(std::ostream &out) const { out << *def_.domRepr(); }
 
-void AssignmentAggregateComplete::propagate(Queue &queue) {
-    def_.enqueue(queue);
-}
+void AssignmentAggregateComplete::propagate(Queue &queue) { def_.enqueue(queue); }
 
 void AssignmentAggregateComplete::report(Output::OutputBase &out, Logger &log) {
     static_cast<void>(log);
@@ -1316,33 +1195,24 @@ void AssignmentAggregateComplete::report(Output::OutputBase &out, Logger &log) {
 void AssignmentAggregateComplete::print(std::ostream &out) const {
     printHead(out);
     out << ":-";
-    print_comma(out, accuDoms_, ";", [this](std::ostream &out, AssignmentAggregateAccumulate const &x) -> void { x.printHead(out); out << occType_; });
+    print_comma(out, accuDoms_, ";", [this](std::ostream &out, AssignmentAggregateAccumulate const &x) -> void {
+        x.printHead(out);
+        out << occType_;
+    });
     out << ".";
 }
 
-UGTerm AssignmentAggregateComplete::getRepr() const {
-    return dataRepr_->gterm();
-}
+UGTerm AssignmentAggregateComplete::getRepr() const { return dataRepr_->gterm(); }
 
-bool AssignmentAggregateComplete::isPositive() const {
-    return true;
-}
+bool AssignmentAggregateComplete::isPositive() const { return true; }
 
-bool AssignmentAggregateComplete::isNegative() const {
-    return false;
-}
+bool AssignmentAggregateComplete::isNegative() const { return false; }
 
-void AssignmentAggregateComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void AssignmentAggregateComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType AssignmentAggregateComplete::getType() const {
-    return occType_;
-}
+OccurrenceType AssignmentAggregateComplete::getType() const { return occType_; }
 
-AssignmentAggregateComplete::DefinedBy &AssignmentAggregateComplete::definedBy() {
-    return defBy_;
-}
+AssignmentAggregateComplete::DefinedBy &AssignmentAggregateComplete::definedBy() { return defBy_; }
 
 void AssignmentAggregateComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1360,10 +1230,10 @@ void AssignmentAggregateComplete::enqueue(Id_t dataId) {
 
 // {{{1 Definition of AssignmentAggregateAccumulate
 
-AssignmentAggregateAccumulate::AssignmentAggregateAccumulate(AssignmentAggregateComplete &complete, UTermVec tuple, ULitVec lits)
-: AbstractStatement(get_clone(complete.dataRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, tuple_(std::move(tuple)) { }
+AssignmentAggregateAccumulate::AssignmentAggregateAccumulate(AssignmentAggregateComplete &complete, UTermVec tuple,
+                                                             ULitVec lits)
+    : AbstractStatement(get_clone(complete.dataRepr()), nullptr, std::move(lits)), complete_(complete),
+      tuple_(std::move(tuple)) {}
 
 void AssignmentAggregateAccumulate::linearize(Context &context, bool positive, Logger &log) {
     AbstractStatement::linearize(context, positive, log);
@@ -1417,32 +1287,19 @@ void AssignmentAggregateAccumulate::printHead(std::ostream &out) const {
 // {{{1 Definition of AssignmentAggregateLiteral
 
 AssignmentAggregateLiteral::AssignmentAggregateLiteral(AssignmentAggregateComplete &complete, bool auxiliary)
-: complete_(complete)
-, auxiliary_(auxiliary) { }
+    : complete_(complete), auxiliary_(auxiliary) {}
 
-UGTerm AssignmentAggregateLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm AssignmentAggregateLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool AssignmentAggregateLiteral::isPositive() const {
-    return false;
-}
+bool AssignmentAggregateLiteral::isPositive() const { return false; }
 
-bool AssignmentAggregateLiteral::isNegative() const {
-    return false;
-}
+bool AssignmentAggregateLiteral::isNegative() const { return false; }
 
-void AssignmentAggregateLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void AssignmentAggregateLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType AssignmentAggregateLiteral::getType() const {
-    return type_;
-}
+OccurrenceType AssignmentAggregateLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &AssignmentAggregateLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &AssignmentAggregateLiteral::definedBy() { return defs_; }
 
 void AssignmentAggregateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1452,20 +1309,15 @@ void AssignmentAggregateLiteral::checkDefined(LocSet &done, SigSet const &edb, U
 
 void AssignmentAggregateLiteral::print(std::ostream &out) const {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-    out << static_cast<FunctionTerm&>(*complete_.domRepr()).arguments().back() << "=" << complete_.fun() << "{" << *complete_.domRepr() << "}" << type_;
+    out << static_cast<FunctionTerm &>(*complete_.domRepr()).arguments().back() << "=" << complete_.fun() << "{"
+        << *complete_.domRepr() << "}" << type_;
 }
 
-bool AssignmentAggregateLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool AssignmentAggregateLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *AssignmentAggregateLiteral::occurrence() {
-    return this;
-}
+BodyOcc *AssignmentAggregateLiteral::occurrence() { return this; }
 
-void AssignmentAggregateLiteral::collect(VarTermBoundVec &vars) const {
-    complete_.domRepr()->collect(vars, true);
-}
+void AssignmentAggregateLiteral::collect(VarTermBoundVec &vars) const { complete_.domRepr()->collect(vars, true); }
 
 UIdx AssignmentAggregateLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -1481,9 +1333,10 @@ std::pair<Output::LiteralId, bool> AssignmentAggregateLiteral::toOutput(Logger &
     static_cast<void>(log);
     assert(offset_ != InvalidId);
     auto &atm = complete_.dom()[offset_];
-    return atm.fact()
-        ? std::make_pair(Output::LiteralId(), true)
-        : std::make_pair(Output::LiteralId{NAF::POS, Output::AtomType::AssignmentAggregate, offset_, complete_.dom().domainOffset()}, false);
+    return atm.fact() ? std::make_pair(Output::LiteralId(), true)
+                      : std::make_pair(Output::LiteralId{NAF::POS, Output::AtomType::AssignmentAggregate, offset_,
+                                                         complete_.dom().domainOffset()},
+                                       false);
 }
 
 ///}}}1
@@ -1491,32 +1344,19 @@ std::pair<Output::LiteralId, bool> AssignmentAggregateLiteral::toOutput(Logger &
 // {{{1 definition of ConjunctionLiteral
 
 ConjunctionLiteral::ConjunctionLiteral(ConjunctionComplete &complete, bool auxiliary)
-: complete_(complete)
-, auxiliary_(auxiliary) { }
+    : complete_(complete), auxiliary_(auxiliary) {}
 
-UGTerm ConjunctionLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm ConjunctionLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool ConjunctionLiteral::isPositive() const {
-    return true;
-}
+bool ConjunctionLiteral::isPositive() const { return true; }
 
-bool ConjunctionLiteral::isNegative() const {
-    return false;
-}
+bool ConjunctionLiteral::isNegative() const { return false; }
 
-void ConjunctionLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void ConjunctionLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType ConjunctionLiteral::getType() const {
-    return type_;
-}
+OccurrenceType ConjunctionLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &ConjunctionLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &ConjunctionLiteral::definedBy() { return defs_; }
 
 void ConjunctionLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1524,21 +1364,13 @@ void ConjunctionLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec 
     static_cast<void>(undef);
 }
 
-void ConjunctionLiteral::print(std::ostream &out) const {
-    out << *complete_.domRepr() << type_;
-}
+void ConjunctionLiteral::print(std::ostream &out) const { out << *complete_.domRepr() << type_; }
 
-bool ConjunctionLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool ConjunctionLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *ConjunctionLiteral::occurrence() {
-    return this;
-}
+BodyOcc *ConjunctionLiteral::occurrence() { return this; }
 
-void ConjunctionLiteral::collect(VarTermBoundVec &vars) const {
-    complete_.domRepr()->collect(vars, true);
-}
+void ConjunctionLiteral::collect(VarTermBoundVec &vars) const { complete_.domRepr()->collect(vars, true); }
 
 UIdx ConjunctionLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -1554,20 +1386,18 @@ std::pair<Output::LiteralId, bool> ConjunctionLiteral::toOutput(Logger &log) {
     static_cast<void>(log);
     assert(offset_ != InvalidId);
     auto &atm = complete_.dom()[offset_];
-    return atm.fact()
-        ? std::make_pair(Output::LiteralId(), true)
-        : std::make_pair(Output::LiteralId{NAF::POS, Output::AtomType::Conjunction, offset_, complete_.dom().domainOffset()}, false);
+    return atm.fact() ? std::make_pair(Output::LiteralId(), true)
+                      : std::make_pair(Output::LiteralId{NAF::POS, Output::AtomType::Conjunction, offset_,
+                                                         complete_.dom().domainOffset()},
+                                       false);
 }
 
 // {{{1 definition of ConjunctionAccumulateEmpty
 
 ConjunctionAccumulateEmpty::ConjunctionAccumulateEmpty(ConjunctionComplete &complete, ULitVec lits)
-: AbstractStatement(complete.emptyRepr(), &complete.emptyDom(), std::move(lits))
-, complete_(complete) { }
+    : AbstractStatement(complete.emptyRepr(), &complete.emptyDom(), std::move(lits)), complete_(complete) {}
 
-bool ConjunctionAccumulateEmpty::isNormal() const {
-    return true;
-}
+bool ConjunctionAccumulateEmpty::isNormal() const { return true; }
 
 void ConjunctionAccumulateEmpty::report(Output::OutputBase &out, Logger &log) {
     static_cast<void>(log);
@@ -1580,9 +1410,9 @@ void ConjunctionAccumulateEmpty::report(Output::OutputBase &out, Logger &log) {
 // {{{1 definition of ConjunctionAccumulateCond
 
 ConjunctionAccumulateCond::ConjunctionAccumulateCond(ConjunctionComplete &complete, ULitVec lits)
-: AbstractStatement(complete.condRepr(), &complete.condDom(), std::move(lits))
-, complete_(complete) {
-    lits_.emplace_back(gringo_make_unique<PredicateLiteral>(true, complete_.emptyDom(), NAF::POS, complete.emptyRepr()));
+    : AbstractStatement(complete.condRepr(), &complete.condDom(), std::move(lits)), complete_(complete) {
+    lits_.emplace_back(
+        gringo_make_unique<PredicateLiteral>(true, complete_.emptyDom(), NAF::POS, complete.emptyRepr()));
 }
 
 void ConjunctionAccumulateCond::linearize(Context &context, bool positive, Logger &log) {
@@ -1602,9 +1432,7 @@ void ConjunctionAccumulateCond::analyze(Dep::Node &node, Dep &dep) {
     }
 }
 
-bool ConjunctionAccumulateCond::isNormal() const {
-    return true;
-}
+bool ConjunctionAccumulateCond::isNormal() const { return true; }
 
 void ConjunctionAccumulateCond::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
@@ -1628,8 +1456,7 @@ void ConjunctionAccumulateCond::report(Output::OutputBase &out, Logger &log) {
 // {{{1 definition of ConjunctionAccumulateHead
 
 ConjunctionAccumulateHead::ConjunctionAccumulateHead(ConjunctionComplete &complete, ULitVec lits)
-: AbstractStatement(complete.headRepr(), nullptr, std::move(lits))
-, complete_(complete) {
+    : AbstractStatement(complete.headRepr(), nullptr, std::move(lits)), complete_(complete) {
     lits_.emplace_back(gringo_make_unique<PredicateLiteral>(true, complete_.condDom(), NAF::POS, complete.condRepr()));
 }
 
@@ -1640,9 +1467,7 @@ void ConjunctionAccumulateHead::linearize(Context &context, bool positive, Logge
     }
 }
 
-bool ConjunctionAccumulateHead::isNormal() const {
-    return true;
-}
+bool ConjunctionAccumulateHead::isNormal() const { return true; }
 
 void ConjunctionAccumulateHead::report(Output::OutputBase &out, Logger &log) {
     bool undefined = false;
@@ -1666,11 +1491,12 @@ void ConjunctionAccumulateHead::report(Output::OutputBase &out, Logger &log) {
 // {{{1 definition of ConjunctionComplete
 
 ConjunctionComplete::ConjunctionComplete(DomainData &data, UTerm repr, UTermVec local)
-: def_(std::move(repr), &data.add<ConjunctionDomain>())
-, domEmpty_(def_.domRepr()->getSig()) // Note: any sig will do
-, domCond_(def_.domRepr()->getSig()) // Note: any sig will do
-, inst_(*this)
-, local_(std::move(local)) { }
+    : def_(std::move(repr), &data.add<ConjunctionDomain>()),
+      domEmpty_(def_.domRepr()->getSig()) // Note: any sig will do
+      ,
+      domCond_(def_.domRepr()->getSig()) // Note: any sig will do
+      ,
+      inst_(*this), local_(std::move(local)) {}
 
 UTerm ConjunctionComplete::emptyRepr() const {
     UTermVec args;
@@ -1698,15 +1524,15 @@ UTerm ConjunctionComplete::headRepr() const {
 
 UTerm ConjunctionComplete::accuRepr() const {
     UTermVec args;
-    args.emplace_back(make_locatable<VarTerm>(def_.domRepr()->loc(), "#Any1", std::make_shared<Symbol>(Symbol::createNum(0))));
+    args.emplace_back(
+        make_locatable<VarTerm>(def_.domRepr()->loc(), "#Any1", std::make_shared<Symbol>(Symbol::createNum(0))));
     args.emplace_back(get_clone(def_.domRepr()));
-    args.emplace_back(make_locatable<VarTerm>(def_.domRepr()->loc(), "#Any2", std::make_shared<Symbol>(Symbol::createNum(0))));
+    args.emplace_back(
+        make_locatable<VarTerm>(def_.domRepr()->loc(), "#Any2", std::make_shared<Symbol>(Symbol::createNum(0))));
     return make_locatable<FunctionTerm>(def_.domRepr()->loc(), "#accu", std::move(args));
 }
 
-bool ConjunctionComplete::isNormal() const {
-    return true;
-}
+bool ConjunctionComplete::isNormal() const { return true; }
 
 void ConjunctionComplete::analyze(Dep::Node &node, Dep &dep) {
     dep.depends(node, *this);
@@ -1724,7 +1550,7 @@ void ConjunctionComplete::linearize(Context &context, bool positive, Logger &log
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -1737,16 +1563,11 @@ void ConjunctionComplete::enqueue(Queue &q) {
     q.enqueue(inst_);
 }
 
-void ConjunctionComplete::printHead(std::ostream &out) const{
-    out << *def_.domRepr();
-}
+void ConjunctionComplete::printHead(std::ostream &out) const { out << *def_.domRepr(); }
 
-void ConjunctionComplete::propagate(Queue &queue) {
-    def_.enqueue(queue);
-}
+void ConjunctionComplete::propagate(Queue &queue) { def_.enqueue(queue); }
 
-template <class F>
-void ConjunctionComplete::reportOther(F f, Logger &log) {
+template <class F> void ConjunctionComplete::reportOther(F f, Logger &log) {
     bool undefined = false;
     auto atom = dom().reserve(domRepr()->eval(undefined, log));
     assert(!undefined);
@@ -1758,7 +1579,7 @@ void ConjunctionComplete::reportOther(F f, Logger &log) {
 }
 
 void ConjunctionComplete::reportEmpty(Logger &log) {
-    reportOther([](ConjunctionDomain::Iterator) { }, log);
+    reportOther([](ConjunctionDomain::Iterator) {}, log);
 }
 
 void ConjunctionComplete::reportCond(DomainData &data, Symbol cond, Output::LitVec &lits, Logger &log) {
@@ -1789,34 +1610,22 @@ void ConjunctionComplete::report(Output::OutputBase &out, Logger &log) {
     todo_.clear();
 }
 
-void ConjunctionComplete::print(std::ostream &out) const{
+void ConjunctionComplete::print(std::ostream &out) const {
     printHead(out);
     out << ":-" << *accuRepr();
 }
 
-UGTerm ConjunctionComplete::getRepr() const {
-    return accuRepr()->gterm();
-}
+UGTerm ConjunctionComplete::getRepr() const { return accuRepr()->gterm(); }
 
-bool ConjunctionComplete::isPositive() const {
-    return true;
-}
+bool ConjunctionComplete::isPositive() const { return true; }
 
-bool ConjunctionComplete::isNegative() const {
-    return false;
-}
+bool ConjunctionComplete::isNegative() const { return false; }
 
-void ConjunctionComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void ConjunctionComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType ConjunctionComplete::getType() const {
-    return occType_;
-}
+OccurrenceType ConjunctionComplete::getType() const { return occType_; }
 
-ConjunctionComplete::DefinedBy &ConjunctionComplete::definedBy() {
-    return defBy_;
-}
+ConjunctionComplete::DefinedBy &ConjunctionComplete::definedBy() { return defBy_; }
 
 void ConjunctionComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1829,25 +1638,15 @@ void ConjunctionComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec
 // {{{1 definition of TheoryComplete
 
 TheoryComplete::TheoryComplete(DomainData &data, UTerm repr, TheoryAtomType type, UTerm name)
-: def_(std::move(repr), &data.add<TheoryDomain>())
-, accuRepr_(completeRepr_(def_.domRepr()))
-, op_("")
-, name_(std::move(name))
-, inst_(*this)
-, type_(type) { }
+    : def_(std::move(repr), &data.add<TheoryDomain>()), accuRepr_(completeRepr_(def_.domRepr())), op_(""),
+      name_(std::move(name)), inst_(*this), type_(type) {}
 
-TheoryComplete::TheoryComplete(DomainData &data, UTerm repr, TheoryAtomType type, UTerm name, String op, Output::UTheoryTerm guard)
-: def_(std::move(repr), &data.add<TheoryDomain>())
-, accuRepr_(completeRepr_(def_.domRepr()))
-, op_(op)
-, guard_(std::move(guard))
-, name_(std::move(name))
-, inst_(*this)
-, type_(type) { }
+TheoryComplete::TheoryComplete(DomainData &data, UTerm repr, TheoryAtomType type, UTerm name, String op,
+                               Output::UTheoryTerm guard)
+    : def_(std::move(repr), &data.add<TheoryDomain>()), accuRepr_(completeRepr_(def_.domRepr())), op_(op),
+      guard_(std::move(guard)), name_(std::move(name)), inst_(*this), type_(type) {}
 
-bool TheoryComplete::isNormal() const {
-    return false;
-}
+bool TheoryComplete::isNormal() const { return false; }
 
 void TheoryComplete::analyze(Dep::Node &node, Dep &dep) {
     dep.depends(node, *this);
@@ -1865,7 +1664,7 @@ void TheoryComplete::linearize(Context &context, bool positive, Logger &log) {
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -1893,9 +1692,7 @@ void TheoryComplete::printHead(std::ostream &out) const {
     }
 }
 
-void TheoryComplete::propagate(Queue &queue) {
-    def_.enqueue(queue);
-}
+void TheoryComplete::propagate(Queue &queue) { def_.enqueue(queue); }
 
 void TheoryComplete::report(Output::OutputBase &out, Logger &log) {
     static_cast<void>(out);
@@ -1916,29 +1713,17 @@ void TheoryComplete::print(std::ostream &out) const {
     out << ".";
 }
 
-UGTerm TheoryComplete::getRepr() const {
-    return accuRepr_->gterm();
-}
+UGTerm TheoryComplete::getRepr() const { return accuRepr_->gterm(); }
 
-bool TheoryComplete::isPositive() const {
-    return true;
-}
+bool TheoryComplete::isPositive() const { return true; }
 
-bool TheoryComplete::isNegative() const {
-    return false;
-}
+bool TheoryComplete::isNegative() const { return false; }
 
-void TheoryComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void TheoryComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType TheoryComplete::getType() const {
-    return occType_;
-}
+OccurrenceType TheoryComplete::getType() const { return occType_; }
 
-TheoryComplete::DefinedBy &TheoryComplete::definedBy() {
-    return defBy_;
-}
+TheoryComplete::DefinedBy &TheoryComplete::definedBy() { return defBy_; }
 
 void TheoryComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -1949,15 +1734,12 @@ void TheoryComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &und
 // {{{1 definition of TheoryAccumulate
 
 TheoryAccumulate::TheoryAccumulate(TheoryComplete &complete, ULitVec lits)
-: AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, neutral_(true) { }
+    : AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits)), complete_(complete), neutral_(true) {
+}
 
 TheoryAccumulate::TheoryAccumulate(TheoryComplete &complete, Output::UTheoryTermVec tuple, ULitVec lits)
-: AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, tuple_(std::move(tuple))
-, neutral_(false) { }
+    : AbstractStatement(get_clone(complete.accuRepr()), nullptr, std::move(lits)), complete_(complete),
+      tuple_(std::move(tuple)), neutral_(false) {}
 
 void TheoryAccumulate::linearize(Context &context, bool positive, Logger &log) {
     AbstractStatement::linearize(context, positive, log);
@@ -2015,8 +1797,7 @@ void TheoryAccumulate::printHead(std::ostream &out) const {
     out << "#accu(" << *complete_.domRepr() << ",";
     if (!tuple_.empty()) {
         out << "tuple(" << tuple_ << ")";
-    }
-    else {
+    } else {
         out << "#neutral";
     }
     out << ")";
@@ -2025,33 +1806,19 @@ void TheoryAccumulate::printHead(std::ostream &out) const {
 // {{{1 definition of TheoryLiteral
 
 TheoryLiteral::TheoryLiteral(TheoryComplete &complete, NAF naf, bool auxiliary)
-: complete_(complete)
-, naf_(naf)
-, auxiliary_(auxiliary) { }
+    : complete_(complete), naf_(naf), auxiliary_(auxiliary) {}
 
-UGTerm TheoryLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm TheoryLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool TheoryLiteral::isPositive() const {
-    return false;
-}
+bool TheoryLiteral::isPositive() const { return false; }
 
-bool TheoryLiteral::isNegative() const {
-    return naf_ != NAF::POS;
-}
+bool TheoryLiteral::isNegative() const { return naf_ != NAF::POS; }
 
-void TheoryLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void TheoryLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType TheoryLiteral::getType() const {
-    return type_;
-}
+OccurrenceType TheoryLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &TheoryLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &TheoryLiteral::definedBy() { return defs_; }
 
 void TheoryLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -2069,17 +1836,11 @@ void TheoryLiteral::print(std::ostream &out) const {
     }
 }
 
-bool TheoryLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool TheoryLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *TheoryLiteral::occurrence() {
-    return this;
-}
+BodyOcc *TheoryLiteral::occurrence() { return this; }
 
-void TheoryLiteral::collect(VarTermBoundVec &vars) const {
-    complete_.domRepr()->collect(vars, naf_ == NAF::POS);
-}
+void TheoryLiteral::collect(VarTermBoundVec &vars) const { complete_.domRepr()->collect(vars, naf_ == NAF::POS); }
 
 UIdx TheoryLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -2104,19 +1865,15 @@ std::pair<Output::LiteralId, bool> TheoryLiteral::toOutput(Logger &log) {
 // {{{1 definition of TheoryRule
 
 TheoryRule::TheoryRule(TheoryLiteral &lit, ULitVec lits)
-    : AbstractStatement(nullptr, nullptr, std::move(lits))
-    , lit_(lit) { }
+    : AbstractStatement(nullptr, nullptr, std::move(lits)), lit_(lit) {}
 
-void TheoryRule::collectImportant(Term::VarSet &vars) {
-    lit_.collectImportant(vars);
-}
+void TheoryRule::collectImportant(Term::VarSet &vars) { lit_.collectImportant(vars); }
 
 void TheoryRule::report(Output::OutputBase &out, Logger &log) {
     if (lit_.type() == TheoryAtomType::Directive) {
         Output::TheoryDirective td(lit_.toOutput(log).first);
         out.output(td);
-    }
-    else {
+    } else {
         Output::Rule rule;
         for (auto &x : lits_) {
             if (x->auxiliary()) {
@@ -2132,9 +1889,7 @@ void TheoryRule::report(Output::OutputBase &out, Logger &log) {
     }
 }
 
-void TheoryRule::printHead(std::ostream &out) const {
-    lit_.print(out);
-}
+void TheoryRule::printHead(std::ostream &out) const { lit_.print(out); }
 
 // }}}1
 
@@ -2143,8 +1898,7 @@ void TheoryRule::printHead(std::ostream &out) const {
 // {{{1 definition of HeadAggregateRule
 
 HeadAggregateRule::HeadAggregateRule(HeadAggregateComplete &complete, ULitVec lits)
-: AbstractStatement(get_clone(complete.domRepr()), &complete.dom(), std::move(lits))
-, complete_(complete) { }
+    : AbstractStatement(get_clone(complete.domRepr()), &complete.dom(), std::move(lits)), complete_(complete) {}
 
 void HeadAggregateRule::report(Output::OutputBase &out, Logger &log) {
     Output::Rule &rule(out.tempRule(false));
@@ -2186,7 +1940,13 @@ void HeadAggregateRule::print(std::ostream &out) const {
     }
     if (!lits_.empty()) {
         out << ":-";
-        auto g = [](std::ostream &out, ULit const &x) { if (x) { out << *x; } else { out << "#null?"; }  };
+        auto g = [](std::ostream &out, ULit const &x) {
+            if (x) {
+                out << *x;
+            } else {
+                out << "#null?";
+            }
+        };
         print_comma(out, lits_, ",", g);
     }
     out << ".";
@@ -2194,11 +1954,10 @@ void HeadAggregateRule::print(std::ostream &out) const {
 
 // {{{1 definition of HeadAggregateAccumulate
 
-HeadAggregateAccumulate::HeadAggregateAccumulate(HeadAggregateComplete &complete, UTermVec tuple, PredicateDomain *predDom, UTerm predRepr, ULitVec lits)
-: AbstractStatement(completeRepr_(complete.domRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, predDef_(std::move(predRepr), predDom)
-, tuple_(std::move(tuple)) { }
+HeadAggregateAccumulate::HeadAggregateAccumulate(HeadAggregateComplete &complete, UTermVec tuple,
+                                                 PredicateDomain *predDom, UTerm predRepr, ULitVec lits)
+    : AbstractStatement(completeRepr_(complete.domRepr()), nullptr, std::move(lits)), complete_(complete),
+      predDef_(std::move(predRepr), predDom), tuple_(std::move(tuple)) {}
 
 void HeadAggregateAccumulate::collectImportant(Term::VarSet &vars) {
     VarTermBoundVec bound;
@@ -2243,10 +2002,11 @@ void HeadAggregateAccumulate::report(Output::OutputBase &out, Logger &log) {
     Output::LiteralId lit;
     if (predDef_) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        auto &predDom = static_cast<PredicateDomain&>(predDef_.dom());
+        auto &predDom = static_cast<PredicateDomain &>(predDef_.dom());
         auto predAtm = predDom.reserve(predVal);
         if (!predAtm->fact()) {
-            lit = Output::LiteralId(NAF::POS, Output::AtomType::Predicate, numeric_cast<Id_t>(predAtm - predDom.begin()), predDom.domainOffset());
+            lit = Output::LiteralId(NAF::POS, Output::AtomType::Predicate,
+                                    numeric_cast<Id_t>(predAtm - predDom.begin()), predDom.domainOffset());
         }
     }
     atm->accumulate(out.data, tuple_.empty() ? def_.domRepr()->loc() : tuple_.front()->loc(), vals, lit, tempLits, log);
@@ -2257,8 +2017,7 @@ void HeadAggregateAccumulate::printHead(std::ostream &out) const {
     out << "#accu(" << *complete_.domRepr() << ",";
     if (predDef_) {
         out << *predDef_.domRepr() << ",tuple(" << tuple_ << ")";
-    }
-    else {
+    } else {
         out << "#true";
     }
     out << ")";
@@ -2267,11 +2026,8 @@ void HeadAggregateAccumulate::printHead(std::ostream &out) const {
 // {{{1 definition of HeadAggregateComplete
 
 HeadAggregateComplete::HeadAggregateComplete(DomainData &data, UTerm repr, AggregateFunction fun, BoundVec bounds)
-: repr_(std::move(repr))
-, domain_(data.add<HeadAggregateDomain>())
-, inst_(*this)
-, fun_(fun)
-, bounds_(std::move(bounds)) { }
+    : repr_(std::move(repr)), domain_(data.add<HeadAggregateDomain>()), inst_(*this), fun_(fun),
+      bounds_(std::move(bounds)) {}
 
 void HeadAggregateComplete::enqueue(HeadAggregateDomain::Iterator atom) {
     if (!atom->enqueued()) {
@@ -2280,9 +2036,7 @@ void HeadAggregateComplete::enqueue(HeadAggregateDomain::Iterator atom) {
     }
 }
 
-bool HeadAggregateComplete::isNormal() const {
-    return false;
-}
+bool HeadAggregateComplete::isNormal() const { return false; }
 
 void HeadAggregateComplete::analyze(Dep::Node &node, Dep &dep) {
     for (HeadAggregateAccumulate &x : accuDoms_) {
@@ -2304,7 +2058,7 @@ void HeadAggregateComplete::linearize(Context &context, bool positive, Logger &l
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -2382,33 +2136,19 @@ void HeadAggregateComplete::report(Output::OutputBase &out, Logger &log) {
     todo_.clear();
 }
 
-UGTerm HeadAggregateComplete::getRepr() const {
-    return completeRepr_(repr_)->gterm();
-}
+UGTerm HeadAggregateComplete::getRepr() const { return completeRepr_(repr_)->gterm(); }
 
-bool HeadAggregateComplete::isPositive() const {
-    return true;
-}
+bool HeadAggregateComplete::isPositive() const { return true; }
 
-bool HeadAggregateComplete::isNegative() const {
-    return false;
-}
+bool HeadAggregateComplete::isNegative() const { return false; }
 
-void HeadAggregateComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void HeadAggregateComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType HeadAggregateComplete::getType() const {
-    return occType_;
-}
+OccurrenceType HeadAggregateComplete::getType() const { return occType_; }
 
-HeadAggregateComplete::DefinedBy &HeadAggregateComplete::definedBy() {
-    return defBy_;
-}
+HeadAggregateComplete::DefinedBy &HeadAggregateComplete::definedBy() { return defBy_; }
 
-HeadAggregateDomain &HeadAggregateComplete::dom() {
-    return domain_;
-}
+HeadAggregateDomain &HeadAggregateComplete::dom() { return domain_; }
 
 void HeadAggregateComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -2418,32 +2158,19 @@ void HeadAggregateComplete::checkDefined(LocSet &done, SigSet const &edb, UndefV
 
 // {{{1 definition of HeadAggregateLiteral
 
-HeadAggregateLiteral::HeadAggregateLiteral(HeadAggregateComplete &complete)
-: complete_(complete) { }
+HeadAggregateLiteral::HeadAggregateLiteral(HeadAggregateComplete &complete) : complete_(complete) {}
 
-UGTerm HeadAggregateLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm HeadAggregateLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool HeadAggregateLiteral::isPositive() const {
-    return true;
-}
+bool HeadAggregateLiteral::isPositive() const { return true; }
 
-bool HeadAggregateLiteral::isNegative() const {
-    return false;
-}
+bool HeadAggregateLiteral::isNegative() const { return false; }
 
-void HeadAggregateLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void HeadAggregateLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType HeadAggregateLiteral::getType() const {
-    return type_;
-}
+OccurrenceType HeadAggregateLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &HeadAggregateLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &HeadAggregateLiteral::definedBy() { return defs_; }
 
 void HeadAggregateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -2451,21 +2178,13 @@ void HeadAggregateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVe
     static_cast<void>(undef);
 }
 
-void HeadAggregateLiteral::print(std::ostream &out) const {
-    out << *complete_.domRepr() << type_;
-}
+void HeadAggregateLiteral::print(std::ostream &out) const { out << *complete_.domRepr() << type_; }
 
-bool HeadAggregateLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool HeadAggregateLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *HeadAggregateLiteral::occurrence() {
-    return this;
-}
+BodyOcc *HeadAggregateLiteral::occurrence() { return this; }
 
-void HeadAggregateLiteral::collect(VarTermBoundVec &vars) const {
-    complete_.domRepr()->collect(vars, true);
-}
+void HeadAggregateLiteral::collect(VarTermBoundVec &vars) const { complete_.domRepr()->collect(vars, true); }
 
 UIdx HeadAggregateLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -2487,13 +2206,9 @@ std::pair<Output::LiteralId, bool> HeadAggregateLiteral::toOutput(Logger &log) {
 // {{{1 definition of DisjunctionRule
 
 DisjunctionRule::DisjunctionRule(DisjunctionComplete &complete, ULitVec lits)
-: AbstractStatement(get_clone(complete.domRepr()), &complete.dom(), std::move(lits))
-, complete_(complete) {
-}
+    : AbstractStatement(get_clone(complete.domRepr()), &complete.dom(), std::move(lits)), complete_(complete) {}
 
-bool DisjunctionRule::isNormal() const {
-    return false;
-}
+bool DisjunctionRule::isNormal() const { return false; }
 
 void DisjunctionRule::report(Output::OutputBase &out, Logger &log) {
     Output::Rule &rule(out.tempRule(false));
@@ -2525,32 +2240,19 @@ void DisjunctionRule::report(Output::OutputBase &out, Logger &log) {
 
 // {{{1 definition of DisjunctionLiteral
 
-DisjunctionLiteral::DisjunctionLiteral(DisjunctionComplete &complete)
-: complete_(complete) { }
+DisjunctionLiteral::DisjunctionLiteral(DisjunctionComplete &complete) : complete_(complete) {}
 
-UGTerm DisjunctionLiteral::getRepr() const {
-    return complete_.domRepr()->gterm();
-}
+UGTerm DisjunctionLiteral::getRepr() const { return complete_.domRepr()->gterm(); }
 
-bool DisjunctionLiteral::isPositive() const {
-    return true;
-}
+bool DisjunctionLiteral::isPositive() const { return true; }
 
-bool DisjunctionLiteral::isNegative() const {
-    return false;
-}
+bool DisjunctionLiteral::isNegative() const { return false; }
 
-void DisjunctionLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void DisjunctionLiteral::setType(OccurrenceType x) { type_ = x; }
 
-OccurrenceType DisjunctionLiteral::getType() const {
-    return type_;
-}
+OccurrenceType DisjunctionLiteral::getType() const { return type_; }
 
-BodyOcc::DefinedBy &DisjunctionLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &DisjunctionLiteral::definedBy() { return defs_; }
 
 void DisjunctionLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -2558,21 +2260,13 @@ void DisjunctionLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec 
     static_cast<void>(undef);
 }
 
-void DisjunctionLiteral::print(std::ostream &out) const {
-    out << "[" << *complete_.domRepr() << type_ << "]";
-}
+void DisjunctionLiteral::print(std::ostream &out) const { out << "[" << *complete_.domRepr() << type_ << "]"; }
 
-bool DisjunctionLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool DisjunctionLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
-BodyOcc *DisjunctionLiteral::occurrence() {
-    return this;
-}
+BodyOcc *DisjunctionLiteral::occurrence() { return this; }
 
-void DisjunctionLiteral::collect(VarTermBoundVec &vars) const {
-    complete_.domRepr()->collect(vars, true);
-}
+void DisjunctionLiteral::collect(VarTermBoundVec &vars) const { complete_.domRepr()->collect(vars, true); }
 
 UIdx DisjunctionLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -2592,13 +2286,9 @@ std::pair<Output::LiteralId, bool> DisjunctionLiteral::toOutput(Logger &log) {
 // {{{1 definition of DisjunctionComplete
 
 DisjunctionComplete::DisjunctionComplete(DomainData &data, UTerm repr)
-: repr_(std::move(repr))
-, domain_(data.add<DisjunctionDomain>())
-, inst_(*this) { }
+    : repr_(std::move(repr)), domain_(data.add<DisjunctionDomain>()), inst_(*this) {}
 
-bool DisjunctionComplete::isNormal() const {
-    return true;
-}
+bool DisjunctionComplete::isNormal() const { return true; }
 
 void DisjunctionComplete::analyze(Dep::Node &node, Dep &dep) {
     dep.depends(node, *this);
@@ -2620,7 +2310,7 @@ void DisjunctionComplete::linearize(Context &context, bool positive, Logger &log
     static_cast<void>(context);
     static_cast<void>(positive);
     static_cast<void>(log);
-    auto binder  = gringo_make_unique<BindOnce>();
+    auto binder = gringo_make_unique<BindOnce>();
     for (HeadOccurrence &x : defBy_) {
         x.defines(*binder->getUpdater(), &inst_);
     }
@@ -2685,34 +2375,22 @@ void DisjunctionComplete::report(Output::OutputBase &out, Logger &log) {
     }
 }
 
-void DisjunctionComplete::print(std::ostream &out) const{
+void DisjunctionComplete::print(std::ostream &out) const {
     printHead(out);
     out << ":-" << *completeRepr_(repr_) << occType_;
 }
 
-UGTerm DisjunctionComplete::getRepr() const {
-    return completeRepr_(repr_)->gterm();
-}
+UGTerm DisjunctionComplete::getRepr() const { return completeRepr_(repr_)->gterm(); }
 
-bool DisjunctionComplete::isPositive() const {
-    return true;
-}
+bool DisjunctionComplete::isPositive() const { return true; }
 
-bool DisjunctionComplete::isNegative() const {
-    return false;
-}
+bool DisjunctionComplete::isNegative() const { return false; }
 
-void DisjunctionComplete::setType(OccurrenceType x) {
-    occType_ = x;
-}
+void DisjunctionComplete::setType(OccurrenceType x) { occType_ = x; }
 
-OccurrenceType DisjunctionComplete::getType() const {
-    return occType_;
-}
+OccurrenceType DisjunctionComplete::getType() const { return occType_; }
 
-DisjunctionComplete::DefinedBy &DisjunctionComplete::definedBy() {
-    return defBy_;
-}
+DisjunctionComplete::DefinedBy &DisjunctionComplete::definedBy() { return defBy_; }
 
 void DisjunctionComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
     static_cast<void>(done);
@@ -2722,26 +2400,20 @@ void DisjunctionComplete::checkDefined(LocSet &done, SigSet const &edb, UndefVec
 
 // {{{1 definition of DisjunctionAccumulate
 
-void DisjunctionAccumulateHead::report(Output::OutputBase &out, Logger &log) {
-    accu_.reportHead(out, log);
-}
+void DisjunctionAccumulateHead::report(Output::OutputBase &out, Logger &log) { accu_.reportHead(out, log); }
 void DisjunctionAccumulateHead::printHead(std::ostream &out) const {
     if (accu_.predDef()) {
         out << *accu_.predDef().domRepr();
-    }
-    else {
+    } else {
         out << "#false";
     }
 }
 
-DisjunctionAccumulate::DisjunctionAccumulate(DisjunctionComplete &complete, PredicateDomain *predDom, UTerm predRepr, ULitVec headCond, UTerm elemRepr, ULitVec lits)
-: AbstractStatement(completeRepr_(complete.domRepr()), nullptr, std::move(lits))
-, complete_(complete)
-, elemRepr_(std::move(elemRepr))
-, predDef_(std::move(predRepr), predDom)
-, headCond_(std::move(headCond))
-, accuHead_(*this)
-, instHead_(accuHead_) {
+DisjunctionAccumulate::DisjunctionAccumulate(DisjunctionComplete &complete, PredicateDomain *predDom, UTerm predRepr,
+                                             ULitVec headCond, UTerm elemRepr, ULitVec lits)
+    : AbstractStatement(completeRepr_(complete.domRepr()), nullptr, std::move(lits)), complete_(complete),
+      elemRepr_(std::move(elemRepr)), predDef_(std::move(predRepr), predDom), headCond_(std::move(headCond)),
+      accuHead_(*this), instHead_(accuHead_) {
     complete_.addAccu(*this);
     lits_.emplace_back(gringo_make_unique<DisjunctionLiteral>(complete_));
 }
@@ -2784,8 +2456,7 @@ void DisjunctionAccumulate::collectImportant(Term::VarSet &vars) {
 void DisjunctionAccumulate::printPred(std::ostream &out) const {
     if (predDef_) {
         out << *predDef_.domRepr();
-    }
-    else {
+    } else {
         out << "#false";
     }
     bool sep = false;
@@ -2823,12 +2494,13 @@ void DisjunctionAccumulate::reportHead(Output::OutputBase &out, Logger &log) {
     }
     if (predDef_) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
-        auto &predDom = static_cast<PredicateDomain&>(predDef_.dom());
+        auto &predDom = static_cast<PredicateDomain &>(predDef_.dom());
         auto predAtm = predDom.reserve(predRepr);
         if (predAtm->fact()) {
             return;
         }
-        tempLits.emplace_back(Output::LiteralId(NAF::POS, Output::AtomType::Predicate, numeric_cast<Id_t>(predAtm - predDom.begin()), predDom.domainOffset()));
+        tempLits.emplace_back(Output::LiteralId(NAF::POS, Output::AtomType::Predicate,
+                                                numeric_cast<Id_t>(predAtm - predDom.begin()), predDom.domainOffset()));
     }
     complete_.enqueue(atm);
     atm->accumulateHead(out.data, elemRepr, tempLits);
@@ -2858,4 +2530,5 @@ void DisjunctionAccumulate::report(Output::OutputBase &out, Logger &log) {
 
 // }}}1
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo

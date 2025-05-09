@@ -29,21 +29,18 @@
 #include <cmath>
 #include <cstring>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 namespace {
 
 // {{{ declaration of RangeBinder
 
 class RangeBinder : public Binder {
-public:
-    RangeBinder(UTerm assign, RangeLiteralShared &range)
-    : assign_(std::move(assign))
-    , range_(range) { }
+  public:
+    RangeBinder(UTerm assign, RangeLiteralShared &range) : assign_(std::move(assign)), range_(range) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
     void match(Logger &log) override {
         bool undefined = false;
@@ -51,16 +48,15 @@ public:
         Symbol r{range_.second->eval(undefined, log)};
         if (!undefined && l.type() == SymbolType::Num && r.type() == SymbolType::Num) {
             current_ = l.num();
-            end_     = r.num();
-        }
-        else {
+            end_ = r.num();
+        } else {
             if (!undefined) {
                 GRINGO_REPORT(log, Warnings::OperationUndefined)
                     << (range_.first->loc() + range_.second->loc()) << ": info: interval undefined:\n"
                     << "  " << *range_.first << ".." << *range_.second << "\n";
             }
             current_ = 1;
-            end_     = 0;
+            end_ = 0;
         }
     }
 
@@ -70,30 +66,23 @@ public:
         return current_ <= end_ && assign_->match(Symbol::createNum(current_++));
     }
 
-    void print(std::ostream &out) const override {
-        out << *assign_ << "=" << *range_.first << ".." << *range_.second;
-    }
+    void print(std::ostream &out) const override { out << *assign_ << "=" << *range_.first << ".." << *range_.second; }
 
-private:
-    UTerm               assign_;
+  private:
+    UTerm assign_;
     RangeLiteralShared &range_;
-    int                 current_ = 0;
-    int                 end_     = 0;
-
+    int current_ = 0;
+    int end_ = 0;
 };
 
 // }}}
 // {{{ declaration of RangeMatcher
 
 class RangeMatcher : public Binder {
-public:
-    RangeMatcher(Term &assign, RangeLiteralShared &range)
-    : assign_(assign)
-    , range_(range) { }
+  public:
+    RangeMatcher(Term &assign, RangeLiteralShared &range) : assign_(assign), range_(range) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
     void match(Logger &log) override {
         bool undefined = false;
@@ -102,8 +91,7 @@ public:
         Symbol a{assign_.eval(undefined, log)};
         if (!undefined && l.type() == SymbolType::Num && r.type() == SymbolType::Num) {
             firstMatch_ = a.type() == SymbolType::Num && l.num() <= a.num() && a.num() <= r.num();
-        }
-        else {
+        } else {
             if (!undefined) {
                 GRINGO_REPORT(log, Warnings::OperationUndefined)
                     << (range_.first->loc() + range_.second->loc()) << ": info: interval undefined:\n"
@@ -119,14 +107,12 @@ public:
         return m;
     }
 
-    void print(std::ostream &out) const override {
-        out << assign_ << "=" << *range_.first << ".." << *range_.second;
-    }
+    void print(std::ostream &out) const override { out << assign_ << "=" << *range_.first << ".." << *range_.second; }
 
-private:
-    Term               &assign_;
+  private:
+    Term &assign_;
     RangeLiteralShared &range_;
-    bool                firstMatch_ = false;
+    bool firstMatch_ = false;
 };
 
 // }}}
@@ -134,15 +120,11 @@ private:
 // {{{ declaration of ScriptBinder
 
 class ScriptBinder : public Binder {
-public:
+  public:
     ScriptBinder(Context &context, UTerm assign, ScriptLiteralShared &shared)
-    : context_(context)
-    , assign_(std::move(assign))
-    , shared_(shared) { }
+        : context_(context), assign_(std::move(assign)), shared_(shared) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
     void match(Logger &log) override {
         SymVec args;
@@ -152,8 +134,7 @@ public:
         }
         if (!undefined) {
             matches_ = context_.call(assign_->loc(), std::get<0>(shared_), Potassco::toSpan(args), log);
-        }
-        else {
+        } else {
             matches_ = {};
         }
         current_ = matches_.begin();
@@ -173,12 +154,12 @@ public:
         out << ")";
     }
 
-private:
-    Context             &context_;
-    UTerm                assign_;
+  private:
+    Context &context_;
+    UTerm assign_;
     ScriptLiteralShared &shared_;
-    SymVec               matches_;
-    SymVec::iterator     current_;
+    SymVec matches_;
+    SymVec::iterator current_;
 };
 
 // }}}
@@ -186,13 +167,10 @@ private:
 // {{{ declaration of RelationMatcher
 
 class RelationMatcher : public Binder {
-public:
-    RelationMatcher(RelationShared &shared)
-    : shared_(shared) { }
+  public:
+    RelationMatcher(RelationShared &shared) : shared_(shared) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
     void match(Logger &log) override {
         bool undefined = false;
@@ -207,12 +185,12 @@ public:
             return;
         }
         switch (std::get<0>(shared_)) {
-            case Relation::GT:  {
-                firstMatch_ = l >  r;
+            case Relation::GT: {
+                firstMatch_ = l > r;
                 break;
             }
-            case Relation::LT:  {
-                firstMatch_ = l <  r;
+            case Relation::LT: {
+                firstMatch_ = l < r;
                 break;
             }
             case Relation::GEQ: {
@@ -227,7 +205,7 @@ public:
                 firstMatch_ = l != r;
                 break;
             }
-            case Relation::EQ:  {
+            case Relation::EQ: {
                 firstMatch_ = l == r;
                 break;
             }
@@ -244,7 +222,7 @@ public:
         out << *std::get<1>(shared_) << std::get<0>(shared_) << *std::get<2>(shared_);
     }
 
-private:
+  private:
     RelationShared &shared_;
     bool firstMatch_ = false;
 };
@@ -253,22 +231,17 @@ private:
 // {{{ declaration of AssignBinder
 
 class AssignBinder : public Binder {
-public:
-    AssignBinder(UTerm &&lhs, Term &rhs)
-    : lhs_(std::move(lhs))
-    , rhs_(rhs) { }
+  public:
+    AssignBinder(UTerm &&lhs, Term &rhs) : lhs_(std::move(lhs)), rhs_(rhs) {}
 
-    IndexUpdater *getUpdater() override {
-        return nullptr;
-    }
+    IndexUpdater *getUpdater() override { return nullptr; }
 
     void match(Logger &log) override {
         bool undefined = false;
         Symbol valRhs = rhs_.eval(undefined, log);
         if (!undefined) {
             firstMatch_ = lhs_->match(valRhs);
-        }
-        else {
+        } else {
             firstMatch_ = false;
         }
     }
@@ -279,16 +252,13 @@ public:
         return ret;
     }
 
-    void print(std::ostream &out) const override {
-        out << *lhs_ << "=" << rhs_;
-    }
+    void print(std::ostream &out) const override { out << *lhs_ << "=" << rhs_; }
 
-private:
+  private:
     UTerm lhs_;
     Term &rhs_;
     bool firstMatch_ = false;
 };
-
 
 // }}}
 
@@ -297,20 +267,13 @@ private:
 // {{{1 definition of RangeLiteral
 
 RangeLiteral::RangeLiteral(UTerm assign, UTerm left, UTerm right)
-: assign_(std::move(assign))
-, range_(std::move(left), std::move(right)) { }
+    : assign_(std::move(assign)), range_(std::move(left), std::move(right)) {}
 
-void RangeLiteral::print(std::ostream &out) const {
-    out << *assign_ << "=" << *range_.first << ".." << *range_.second;
-}
+void RangeLiteral::print(std::ostream &out) const { out << *assign_ << "=" << *range_.first << ".." << *range_.second; }
 
-bool RangeLiteral::isRecursive() const {
-    return false;
-}
+bool RangeLiteral::isRecursive() const { return false; }
 
-BodyOcc *RangeLiteral::occurrence() {
-    return nullptr;
-}
+BodyOcc *RangeLiteral::occurrence() { return nullptr; }
 
 void RangeLiteral::collect(VarTermBoundVec &vars) const {
     assign_->collect(vars, true);
@@ -333,34 +296,27 @@ Literal::Score RangeLiteral::score(Term::VarSet const &bound, Logger &log) {
         bool undefined = false;
         Symbol l(range_.first->eval(undefined, log));
         Symbol r(range_.second->eval(undefined, log));
-        return (l.type() == SymbolType::Num && r.type() == SymbolType::Num) ? static_cast<double>(r.num()) - l.num() : -1.0;
+        return (l.type() == SymbolType::Num && r.type() == SymbolType::Num) ? static_cast<double>(r.num()) - l.num()
+                                                                            : -1.0;
     }
     return 0;
 }
-std::pair<Output::LiteralId, bool> RangeLiteral::toOutput(Logger &log) {
-    return {Output::LiteralId(), true};
-}
+std::pair<Output::LiteralId, bool> RangeLiteral::toOutput(Logger &log) { return {Output::LiteralId(), true}; }
 
 // {{{1 definition of ScriptLiteral
 
-
 ScriptLiteral::ScriptLiteral(UTerm assign, String name, UTermVec args)
-: assign_(std::move(assign))
-, shared_(name, std::move(args)) { }
+    : assign_(std::move(assign)), shared_(name, std::move(args)) {}
 
-void ScriptLiteral::print(std::ostream &out) const    {
+void ScriptLiteral::print(std::ostream &out) const {
     out << *assign_ << "=" << std::get<0>(shared_) << "(";
     print_comma(out, std::get<1>(shared_), ",", [](std::ostream &out, UTerm const &term) { out << *term; });
     out << ")";
 }
 
-bool ScriptLiteral::isRecursive() const {
-    return false;
-}
+bool ScriptLiteral::isRecursive() const { return false; }
 
-BodyOcc *ScriptLiteral::occurrence() {
-    return nullptr;
-}
+BodyOcc *ScriptLiteral::occurrence() { return nullptr; }
 
 void ScriptLiteral::collect(VarTermBoundVec &vars) const {
     assign_->collect(vars, true);
@@ -390,19 +346,15 @@ std::pair<Output::LiteralId, bool> ScriptLiteral::toOutput(Logger &log) {
 // {{{1 definition of PredicateLiteral
 
 RelationLiteral::RelationLiteral(Relation rel, UTerm left, UTerm right)
-: shared_(rel, std::move(left), std::move(right)) { }
+    : shared_(rel, std::move(left), std::move(right)) {}
 
-void RelationLiteral::print(std::ostream &out) const  {
+void RelationLiteral::print(std::ostream &out) const {
     out << *std::get<1>(shared_) << std::get<0>(shared_) << *std::get<2>(shared_);
 }
 
-bool RelationLiteral::isRecursive() const  {
-    return false;
-}
+bool RelationLiteral::isRecursive() const { return false; }
 
-BodyOcc *RelationLiteral::occurrence()  {
-    return nullptr;
-}
+BodyOcc *RelationLiteral::occurrence() { return nullptr; }
 
 void RelationLiteral::collect(VarTermBoundVec &vars) const {
     std::get<1>(shared_)->collect(vars, std::get<0>(shared_) == Relation::EQ);
@@ -428,7 +380,7 @@ Literal::Score RelationLiteral::score(Term::VarSet const &bound, Logger &log) {
     return -1;
 }
 
-std::pair<Output::LiteralId,bool> RelationLiteral::toOutput(Logger &log)  {
+std::pair<Output::LiteralId, bool> RelationLiteral::toOutput(Logger &log) {
     static_cast<void>(log);
     return {Output::LiteralId(), true};
 }
@@ -436,10 +388,7 @@ std::pair<Output::LiteralId,bool> RelationLiteral::toOutput(Logger &log)  {
 // {{{1 definition of PredicateLiteral
 
 PredicateLiteral::PredicateLiteral(bool auxiliary, PredicateDomain &domain, NAF naf, UTerm &&repr)
-: auxiliary_(auxiliary)
-, repr_(std::move(repr))
-, domain_(domain)
-, naf_(naf) { }
+    : auxiliary_(auxiliary), repr_(std::move(repr)), domain_(domain), naf_(naf) {}
 
 void PredicateLiteral::print(std::ostream &out) const {
     if (auxiliary()) {
@@ -464,18 +413,14 @@ void PredicateLiteral::print(std::ostream &out) const {
     }
 }
 
-bool PredicateLiteral::isRecursive() const {
-    return type_ == OccurrenceType::UNSTRATIFIED;
-}
+bool PredicateLiteral::isRecursive() const { return type_ == OccurrenceType::UNSTRATIFIED; }
 
 Literal::Score PredicateLiteral::score(Term::VarSet const &bound, Logger &log) {
     static_cast<void>(log);
     return naf_ == NAF::POS ? estimate(domain_.size(), *repr_, bound) : 0;
 }
 
-void PredicateLiteral::collect(VarTermBoundVec &vars) const {
-    repr_->collect(vars, naf_ == NAF::POS);
-}
+void PredicateLiteral::collect(VarTermBoundVec &vars) const { repr_->collect(vars, naf_ == NAF::POS); }
 
 std::pair<Output::LiteralId, bool> PredicateLiteral::toOutput(Logger &log) {
     static_cast<void>(log);
@@ -500,11 +445,12 @@ std::pair<Output::LiteralId, bool> PredicateLiteral::toOutput(Logger &log) {
         }
     }
     assert(false);
-    return {Output::LiteralId(),true};
+    return {Output::LiteralId(), true};
 }
 
 UIdx PredicateLiteral::make_index(BinderType type, Term::VarSet &bound, bool initialized) {
-    return make_binder(domain_, naf_, *repr_, offset_, type, isRecursive(), bound, initialized ? numeric_cast<int>(domain_.incOffset()) : 0);
+    return make_binder(domain_, naf_, *repr_, offset_, type, isRecursive(), bound,
+                       initialized ? numeric_cast<int>(domain_.incOffset()) : 0);
 }
 
 UIdx PredicateLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
@@ -512,25 +458,15 @@ UIdx PredicateLiteral::index(Context &context, BinderType type, Term::VarSet &bo
     return make_index(type, bound, false);
 }
 
-BodyOcc *PredicateLiteral::occurrence() {
-    return this;
-}
+BodyOcc *PredicateLiteral::occurrence() { return this; }
 
-UGTerm PredicateLiteral::getRepr() const {
-    return repr_->gterm();
-}
+UGTerm PredicateLiteral::getRepr() const { return repr_->gterm(); }
 
-bool PredicateLiteral::isPositive() const {
-    return naf_ == NAF::POS;
-}
+bool PredicateLiteral::isPositive() const { return naf_ == NAF::POS; }
 
-bool PredicateLiteral::isNegative() const {
-    return naf_ != NAF::POS;
-}
+bool PredicateLiteral::isNegative() const { return naf_ != NAF::POS; }
 
-void PredicateLiteral::setType(OccurrenceType x) {
-    type_ = x;
-}
+void PredicateLiteral::setType(OccurrenceType x) { type_ = x; }
 
 OccurrenceType PredicateLiteral::getType() const {
     if (type_ == OccurrenceType::POSITIVELY_STRATIFIED && domain_.hasChoice()) {
@@ -539,12 +475,11 @@ OccurrenceType PredicateLiteral::getType() const {
     return type_;
 }
 
-BodyOcc::DefinedBy &PredicateLiteral::definedBy() {
-    return defs_;
-}
+BodyOcc::DefinedBy &PredicateLiteral::definedBy() { return defs_; }
 
 void PredicateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &undef) const {
-    if (!auxiliary_ && defs_.empty() && done.find(repr_->loc()) == done.end() && edb.find(repr_->getSig()) == edb.end() && domain_.empty()) {
+    if (!auxiliary_ && defs_.empty() && done.find(repr_->loc()) == done.end() &&
+        edb.find(repr_->getSig()) == edb.end() && domain_.empty()) {
         // accumulate warnings in array of printables ..
         done.insert(repr_->loc());
         undef.emplace_back(repr_->loc(), repr_.get());
@@ -552,8 +487,7 @@ void PredicateLiteral::checkDefined(LocSet &done, SigSet const &edb, UndefVec &u
 }
 
 ProjectionLiteral::ProjectionLiteral(bool auxiliary, PredicateDomain &domain, UTerm repr, bool initialized)
-: PredicateLiteral(auxiliary, domain, NAF::POS, std::move(repr))
-, initialized_(initialized) { }
+    : PredicateLiteral(auxiliary, domain, NAF::POS, std::move(repr)), initialized_(initialized) {}
 
 UIdx ProjectionLiteral::index(Context &context, BinderType type, Term::VarSet &bound) {
     static_cast<void>(context);
@@ -564,4 +498,5 @@ UIdx ProjectionLiteral::index(Context &context, BinderType type, Term::VarSet &b
 
 // }}}1
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo

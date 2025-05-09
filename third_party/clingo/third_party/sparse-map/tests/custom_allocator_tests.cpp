@@ -59,6 +59,8 @@ class custom_allocator {
   template <typename U>
   custom_allocator(const custom_allocator<U>&) {}
 
+  custom_allocator& operator=(const custom_allocator& other) = default;
+
   pointer address(reference x) const noexcept { return &x; }
 
   const_pointer address(const_reference x) const noexcept { return &x; }

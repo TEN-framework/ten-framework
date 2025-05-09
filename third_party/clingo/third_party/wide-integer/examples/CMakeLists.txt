@@ -21,6 +21,6 @@ add_library(Examples
   example012_rsa_crypto.cpp
   example013_ecdsa_sign_verify.cpp
   example014_pi_spigot_wide.cpp)
-target_compile_features(Examples PRIVATE cxx_std_11)
+target_compile_features(Examples PRIVATE cxx_std_20)
 target_include_directories(Examples PRIVATE ${PROJECT_SOURCE_DIR})
 target_include_directories(Examples SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})

@@ -38,26 +38,11 @@ namespace {
         return ulpDist <= maxUlpDiff;
     }
 
-#if defined(CATCH_CONFIG_GLOBAL_NEXTAFTER)
-
-    float nextafter(float x, float y) {
-        return ::nextafterf(x, y);
-    }
-
-    double nextafter(double x, double y) {
-        return ::nextafter(x, y);
-    }
-
-#endif // ^^^ CATCH_CONFIG_GLOBAL_NEXTAFTER ^^^
 
 template <typename FP>
 FP step(FP start, FP direction, uint64_t steps) {
     for (uint64_t i = 0; i < steps; ++i) {
-#if defined(CATCH_CONFIG_GLOBAL_NEXTAFTER)
         start = Catch::nextafter(start, direction);
-#else
-        start = std::nextafter(start, direction);
-#endif
     }
     return start;
 }
@@ -191,7 +176,7 @@ namespace Detail {
 
     std::string WithinRelMatcher::describe() const {
         Catch::ReusableStringStream sstr;
-        sstr << "and " << m_target << " are within " << m_epsilon * 100. << "% of each other";
+        sstr << "and " << ::Catch::Detail::stringify(m_target) << " are within " << m_epsilon * 100. << "% of each other";
         return sstr.str();
     }
 

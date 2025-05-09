@@ -1,8 +1,8 @@
-// A Bison parser, made by GNU Bison 3.3.2.
+// A Bison parser, made by GNU Bison 3.8.2.
 
 // Skeleton implementation for Bison LALR(1) parsers in C++
 
-// Copyright (C) 2002-2015, 2018-2019 Free Software Foundation, Inc.
+// Copyright (C) 2002-2015, 2018-2021 Free Software Foundation, Inc.
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // As a special exception, you may create a larger work that contains
 // part or all of the Bison parser skeleton and distribute that work
@@ -30,88 +30,78 @@
 // This special exception was added by the Free Software Foundation in
 // version 2.2 of Bison.
 
-// Undocumented macros, especially those whose name start with YY_,
-// are private implementation details.  Do not rely on them.
-
+// DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+// especially those whose name start with YY_ or yy_.  They are
+// private implementation details that can be changed or removed.
 
 // Take the name prefix into account.
-#define yylex   GringoNonGroundGrammar_lex
+#define yylex GringoNonGroundGrammar_lex
 
 // First part of user prologue.
-#line 58 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:429
-
+#line 58 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
 
 #include "gringo/input/nongroundparser.hh"
 #include "gringo/input/programbuilder.hh"
-#include <climits> 
+#include <climits>
 
 #define BUILDER (lexer->builder())
 #define LOGGER (lexer->logger())
-#define YYLLOC_DEFAULT(Current, Rhs, N)                                \
-    do {                                                               \
-        if (N) {                                                       \
-            (Current).beginFilename = YYRHSLOC (Rhs, 1).beginFilename; \
-            (Current).beginLine     = YYRHSLOC (Rhs, 1).beginLine;     \
-            (Current).beginColumn   = YYRHSLOC (Rhs, 1).beginColumn;   \
-            (Current).endFilename   = YYRHSLOC (Rhs, N).endFilename;   \
-            (Current).endLine       = YYRHSLOC (Rhs, N).endLine;       \
-            (Current).endColumn     = YYRHSLOC (Rhs, N).endColumn;     \
-        }                                                              \
-        else {                                                         \
-            (Current).beginFilename = YYRHSLOC (Rhs, 0).endFilename;   \
-            (Current).beginLine     = YYRHSLOC (Rhs, 0).endLine;       \
-            (Current).beginColumn   = YYRHSLOC (Rhs, 0).endColumn;     \
-            (Current).endFilename   = YYRHSLOC (Rhs, 0).endFilename;   \
-            (Current).endLine       = YYRHSLOC (Rhs, 0).endLine;       \
-            (Current).endColumn     = YYRHSLOC (Rhs, 0).endColumn;     \
-        }                                                              \
-    }                                                                  \
-    while (false)
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                                                                \
+    do {                                                                                                               \
+        if (N) {                                                                                                       \
+            (Current).beginFilename = YYRHSLOC(Rhs, 1).beginFilename;                                                  \
+            (Current).beginLine = YYRHSLOC(Rhs, 1).beginLine;                                                          \
+            (Current).beginColumn = YYRHSLOC(Rhs, 1).beginColumn;                                                      \
+            (Current).endFilename = YYRHSLOC(Rhs, N).endFilename;                                                      \
+            (Current).endLine = YYRHSLOC(Rhs, N).endLine;                                                              \
+            (Current).endColumn = YYRHSLOC(Rhs, N).endColumn;                                                          \
+        } else {                                                                                                       \
+            (Current).beginFilename = YYRHSLOC(Rhs, 0).endFilename;                                                    \
+            (Current).beginLine = YYRHSLOC(Rhs, 0).endLine;                                                            \
+            (Current).beginColumn = YYRHSLOC(Rhs, 0).endColumn;                                                        \
+            (Current).endFilename = YYRHSLOC(Rhs, 0).endFilename;                                                      \
+            (Current).endLine = YYRHSLOC(Rhs, 0).endLine;                                                              \
+            (Current).endColumn = YYRHSLOC(Rhs, 0).endColumn;                                                          \
+        }                                                                                                              \
+    } while (false)
 
 using namespace Gringo;
 using namespace Gringo::Input;
 
-int GringoNonGroundGrammar_lex(void *value, Gringo::Location* loc, NonGroundParser *lexer) {
+int GringoNonGroundGrammar_lex(void *value, Gringo::Location *loc, NonGroundParser *lexer) {
     return lexer->lex(value, *loc);
 }
 
-
-#line 80 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:429
+#line 81 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
 
 #include "grammar.hh"
 
-
 // Unqualified %code blocks.
-#line 96 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:435
+#line 96 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
 
+void NonGroundGrammar::parser::error(DefaultLocation const &l, std::string const &msg) { lexer->parseError(l, msg); }
 
-void NonGroundGrammar::parser::error(DefaultLocation const &l, std::string const &msg) {
-    lexer->parseError(l, msg);
-}
-
-
-#line 94 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:435
-
+#line 96 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
 
 #ifndef YY_
-# if defined YYENABLE_NLS && YYENABLE_NLS
-#  if ENABLE_NLS
-#   include <libintl.h> // FIXME: INFRINGES ON USER NAME SPACE.
-#   define YY_(msgid) dgettext ("bison-runtime", msgid)
-#  endif
-# endif
-# ifndef YY_
-#  define YY_(msgid) msgid
-# endif
+#if defined YYENABLE_NLS && YYENABLE_NLS
+#if ENABLE_NLS
+#include <libintl.h> // FIXME: INFRINGES ON USER NAME SPACE.
+#define YY_(msgid) dgettext("bison-runtime", msgid)
+#endif
+#endif
+#ifndef YY_
+#define YY_(msgid) msgid
+#endif
 #endif
 
 // Whether we are compiled with exception support.
 #ifndef YY_EXCEPTIONS
-# if defined __GNUC__ && !defined __EXCEPTIONS
-#  define YY_EXCEPTIONS 0
-# else
-#  define YY_EXCEPTIONS 1
-# endif
+#if defined __GNUC__ && !defined __EXCEPTIONS
+#define YY_EXCEPTIONS 0
+#else
+#define YY_EXCEPTIONS 1
+#endif
 #endif
 
 #define YYRHSLOC(Rhs, K) ((Rhs)[K].location)
@@ -119,410 +109,260 @@ void NonGroundGrammar::parser::error(DefaultLocation const &l, std::string const
    If N is 0, then set CURRENT to the empty location which ends
    the previous symbol: RHS[0] (always defined).  */
 
-# ifndef YYLLOC_DEFAULT
-#  define YYLLOC_DEFAULT(Current, Rhs, N)                               \
-    do                                                                  \
-      if (N)                                                            \
-        {                                                               \
-          (Current).begin  = YYRHSLOC (Rhs, 1).begin;                   \
-          (Current).end    = YYRHSLOC (Rhs, N).end;                     \
-        }                                                               \
-      else                                                              \
-        {                                                               \
-          (Current).begin = (Current).end = YYRHSLOC (Rhs, 0).end;      \
-        }                                                               \
+#ifndef YYLLOC_DEFAULT
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                                                                \
+    do                                                                                                                 \
+        if (N) {                                                                                                       \
+            (Current).begin = YYRHSLOC(Rhs, 1).begin;                                                                  \
+            (Current).end = YYRHSLOC(Rhs, N).end;                                                                      \
+        } else {                                                                                                       \
+            (Current).begin = (Current).end = YYRHSLOC(Rhs, 0).end;                                                    \
+        }                                                                                                              \
     while (false)
-# endif
-
-
-// Suppress unused-variable warnings by "using" E.
-#define YYUSE(E) ((void) (E))
+#endif
 
 // Enable debugging if requested.
 #if YYDEBUG
 
 // A pseudo ostream that takes yydebug_ into account.
-# define YYCDEBUG if (yydebug_) (*yycdebug_)
+#define YYCDEBUG                                                                                                       \
+    if (yydebug_)                                                                                                      \
+    (*yycdebug_)
 
-# define YY_SYMBOL_PRINT(Title, Symbol)         \
-  do {                                          \
-    if (yydebug_)                               \
-    {                                           \
-      *yycdebug_ << Title << ' ';               \
-      yy_print_ (*yycdebug_, Symbol);           \
-      *yycdebug_ << '\n';                       \
-    }                                           \
-  } while (false)
+#define YY_SYMBOL_PRINT(Title, Symbol)                                                                                 \
+    do {                                                                                                               \
+        if (yydebug_) {                                                                                                \
+            *yycdebug_ << Title << ' ';                                                                                \
+            yy_print_(*yycdebug_, Symbol);                                                                             \
+            *yycdebug_ << '\n';                                                                                        \
+        }                                                                                                              \
+    } while (false)
 
-# define YY_REDUCE_PRINT(Rule)          \
-  do {                                  \
-    if (yydebug_)                       \
-      yy_reduce_print_ (Rule);          \
-  } while (false)
+#define YY_REDUCE_PRINT(Rule)                                                                                          \
+    do {                                                                                                               \
+        if (yydebug_)                                                                                                  \
+            yy_reduce_print_(Rule);                                                                                    \
+    } while (false)
 
-# define YY_STACK_PRINT()               \
-  do {                                  \
-    if (yydebug_)                       \
-      yystack_print_ ();                \
-  } while (false)
+#define YY_STACK_PRINT()                                                                                               \
+    do {                                                                                                               \
+        if (yydebug_)                                                                                                  \
+            yy_stack_print_();                                                                                         \
+    } while (false)
 
 #else // !YYDEBUG
 
-# define YYCDEBUG if (false) std::cerr
-# define YY_SYMBOL_PRINT(Title, Symbol)  YYUSE (Symbol)
-# define YY_REDUCE_PRINT(Rule)           static_cast<void> (0)
-# define YY_STACK_PRINT()                static_cast<void> (0)
+#define YYCDEBUG                                                                                                       \
+    if (false)                                                                                                         \
+    std::cerr
+#define YY_SYMBOL_PRINT(Title, Symbol) YY_USE(Symbol)
+#define YY_REDUCE_PRINT(Rule) static_cast<void>(0)
+#define YY_STACK_PRINT() static_cast<void>(0)
 
 #endif // !YYDEBUG
 
-#define yyerrok         (yyerrstatus_ = 0)
-#define yyclearin       (yyla.clear ())
+#define yyerrok (yyerrstatus_ = 0)
+#define yyclearin (yyla.clear())
 
-#define YYACCEPT        goto yyacceptlab
-#define YYABORT         goto yyabortlab
-#define YYERROR         goto yyerrorlab
-#define YYRECOVERING()  (!!yyerrstatus_)
+#define YYACCEPT goto yyacceptlab
+#define YYABORT goto yyabortlab
+#define YYERROR goto yyerrorlab
+#define YYRECOVERING() (!!yyerrstatus_)
 
-#line 28 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:510
-namespace Gringo { namespace Input { namespace NonGroundGrammar {
-#line 189 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:510
+#line 28 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+namespace Gringo {
+namespace Input {
+namespace NonGroundGrammar {
+#line 189 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
 
-  /* Return YYSTR after stripping away unnecessary quotes and
-     backslashes, so that it's suitable for yyerror.  The heuristic is
-     that double-quoting is unnecessary unless the string contains an
-     apostrophe, a comma, or backslash (other than backslash-backslash).
-     YYSTR is taken from yytname.  */
-  std::string
-  parser::yytnamerr_ (const char *yystr)
-  {
-    if (*yystr == '"')
-      {
-        std::string yyr;
-        char const *yyp = yystr;
-
-        for (;;)
-          switch (*++yyp)
-            {
-            case '\'':
-            case ',':
-              goto do_not_strip_quotes;
-
-            case '\\':
-              if (*++yyp != '\\')
-                goto do_not_strip_quotes;
-              else
-                goto append;
-
-            append:
-            default:
-              yyr += *yyp;
-              break;
-
-            case '"':
-              return yyr;
-            }
-      do_not_strip_quotes: ;
-      }
-
-    return yystr;
-  }
-
-
-  /// Build a parser object.
-  parser::parser (Gringo::Input::NonGroundParser *lexer_yyarg)
-    :
+/// Build a parser object.
+parser::parser(Gringo::Input::NonGroundParser *lexer_yyarg)
 #if YYDEBUG
-      yydebug_ (false),
-      yycdebug_ (&std::cerr),
+    : yydebug_(false), yycdebug_(&std::cerr),
+#else
+    :
 #endif
-      lexer (lexer_yyarg)
-  {}
+      lexer(lexer_yyarg) {
+}
 
-  parser::~parser ()
-  {}
+parser::~parser() {}
 
-  parser::syntax_error::~syntax_error () YY_NOEXCEPT YY_NOTHROW
-  {}
+parser::syntax_error::~syntax_error() YY_NOEXCEPT YY_NOTHROW {}
 
-  /*---------------.
-  | Symbol types.  |
-  `---------------*/
+/*---------.
+| symbol.  |
+`---------*/
 
-  // basic_symbol.
-#if 201103L <= YY_CPLUSPLUS
-  template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (basic_symbol&& that)
-    : Base (std::move (that))
-    , value (std::move (that.value))
-    , location (std::move (that.location))
-  {}
-#endif
+// basic_symbol.
+template <typename Base>
+parser::basic_symbol<Base>::basic_symbol(const basic_symbol &that)
+    : Base(that), value(that.value), location(that.location) {}
 
-  template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
-    : Base (that)
-    , value (that.value)
-    , location (that.location)
-  {}
+/// Constructor for valueless symbols.
+template <typename Base>
+parser::basic_symbol<Base>::basic_symbol(typename Base::kind_type t, YY_MOVE_REF(location_type) l)
+    : Base(t), value(), location(l) {}
 
+template <typename Base>
+parser::basic_symbol<Base>::basic_symbol(typename Base::kind_type t, YY_RVREF(value_type) v, YY_RVREF(location_type) l)
+    : Base(t), value(YY_MOVE(v)), location(YY_MOVE(l)) {}
 
-  /// Constructor for valueless symbols.
-  template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t, YY_MOVE_REF (location_type) l)
-    : Base (t)
-    , value ()
-    , location (l)
-  {}
+template <typename Base> parser::symbol_kind_type parser::basic_symbol<Base>::type_get() const YY_NOEXCEPT {
+    return this->kind();
+}
 
-  template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t, YY_RVREF (semantic_type) v, YY_RVREF (location_type) l)
-    : Base (t)
-    , value (YY_MOVE (v))
-    , location (YY_MOVE (l))
-  {}
+template <typename Base> bool parser::basic_symbol<Base>::empty() const YY_NOEXCEPT {
+    return this->kind() == symbol_kind::S_YYEMPTY;
+}
 
-  template <typename Base>
-  bool
-  parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
-  {
-    return Base::type_get () == empty_symbol;
-  }
+template <typename Base> void parser::basic_symbol<Base>::move(basic_symbol &s) {
+    super_type::move(s);
+    value = YY_MOVE(s.value);
+    location = YY_MOVE(s.location);
+}
 
-  template <typename Base>
-  void
-  parser::basic_symbol<Base>::move (basic_symbol& s)
-  {
-    super_type::move (s);
-    value = YY_MOVE (s.value);
-    location = YY_MOVE (s.location);
-  }
-
-  // by_type.
-  parser::by_type::by_type ()
-    : type (empty_symbol)
-  {}
+// by_kind.
+parser::by_kind::by_kind() YY_NOEXCEPT : kind_(symbol_kind::S_YYEMPTY) {}
 
 #if 201103L <= YY_CPLUSPLUS
-  parser::by_type::by_type (by_type&& that)
-    : type (that.type)
-  {
-    that.clear ();
-  }
+parser::by_kind::by_kind(by_kind &&that) YY_NOEXCEPT : kind_(that.kind_) { that.clear(); }
 #endif
 
-  parser::by_type::by_type (const by_type& that)
-    : type (that.type)
-  {}
+parser::by_kind::by_kind(const by_kind &that) YY_NOEXCEPT : kind_(that.kind_) {}
 
-  parser::by_type::by_type (token_type t)
-    : type (yytranslate_ (t))
-  {}
+parser::by_kind::by_kind(token_kind_type t) YY_NOEXCEPT : kind_(yytranslate_(t)) {}
 
-  void
-  parser::by_type::clear ()
-  {
-    type = empty_symbol;
-  }
+void parser::by_kind::clear() YY_NOEXCEPT { kind_ = symbol_kind::S_YYEMPTY; }
 
-  void
-  parser::by_type::move (by_type& that)
-  {
-    type = that.type;
-    that.clear ();
-  }
+void parser::by_kind::move(by_kind &that) {
+    kind_ = that.kind_;
+    that.clear();
+}
 
-  int
-  parser::by_type::type_get () const YY_NOEXCEPT
-  {
-    return type;
-  }
+parser::symbol_kind_type parser::by_kind::kind() const YY_NOEXCEPT { return kind_; }
 
+parser::symbol_kind_type parser::by_kind::type_get() const YY_NOEXCEPT { return this->kind(); }
 
-  // by_state.
-  parser::by_state::by_state () YY_NOEXCEPT
-    : state (empty_state)
-  {}
+// by_state.
+parser::by_state::by_state() YY_NOEXCEPT : state(empty_state) {}
 
-  parser::by_state::by_state (const by_state& that) YY_NOEXCEPT
-    : state (that.state)
-  {}
+parser::by_state::by_state(const by_state &that) YY_NOEXCEPT : state(that.state) {}
 
-  void
-  parser::by_state::clear () YY_NOEXCEPT
-  {
-    state = empty_state;
-  }
+void parser::by_state::clear() YY_NOEXCEPT { state = empty_state; }
 
-  void
-  parser::by_state::move (by_state& that)
-  {
+void parser::by_state::move(by_state &that) {
     state = that.state;
-    that.clear ();
-  }
+    that.clear();
+}
 
-  parser::by_state::by_state (state_type s) YY_NOEXCEPT
-    : state (s)
-  {}
+parser::by_state::by_state(state_type s) YY_NOEXCEPT : state(s) {}
 
-  parser::symbol_number_type
-  parser::by_state::type_get () const YY_NOEXCEPT
-  {
+parser::symbol_kind_type parser::by_state::kind() const YY_NOEXCEPT {
     if (state == empty_state)
-      return empty_symbol;
+        return symbol_kind::S_YYEMPTY;
     else
-      return yystos_[state];
-  }
+        return YY_CAST(symbol_kind_type, yystos_[+state]);
+}
 
-  parser::stack_symbol_type::stack_symbol_type ()
-  {}
+parser::stack_symbol_type::stack_symbol_type() {}
 
-  parser::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
-    : super_type (YY_MOVE (that.state), YY_MOVE (that.value), YY_MOVE (that.location))
-  {
+parser::stack_symbol_type::stack_symbol_type(YY_RVREF(stack_symbol_type) that)
+    : super_type(YY_MOVE(that.state), YY_MOVE(that.value), YY_MOVE(that.location)) {
 #if 201103L <= YY_CPLUSPLUS
     // that is emptied.
     that.state = empty_state;
 #endif
-  }
+}
 
-  parser::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
-    : super_type (s, YY_MOVE (that.value), YY_MOVE (that.location))
-  {
+parser::stack_symbol_type::stack_symbol_type(state_type s, YY_MOVE_REF(symbol_type) that)
+    : super_type(s, YY_MOVE(that.value), YY_MOVE(that.location)) {
     // that is emptied.
-    that.type = empty_symbol;
-  }
+    that.kind_ = symbol_kind::S_YYEMPTY;
+}
 
 #if YY_CPLUSPLUS < 201103L
-  parser::stack_symbol_type&
-  parser::stack_symbol_type::operator= (stack_symbol_type& that)
-  {
+parser::stack_symbol_type &parser::stack_symbol_type::operator=(const stack_symbol_type &that) {
+    state = that.state;
+    value = that.value;
+    location = that.location;
+    return *this;
+}
+
+parser::stack_symbol_type &parser::stack_symbol_type::operator=(stack_symbol_type &that) {
     state = that.state;
     value = that.value;
     location = that.location;
     // that is emptied.
     that.state = empty_state;
     return *this;
-  }
+}
 #endif
 
-  template <typename Base>
-  void
-  parser::yy_destroy_ (const char* yymsg, basic_symbol<Base>& yysym) const
-  {
+template <typename Base> void parser::yy_destroy_(const char *yymsg, basic_symbol<Base> &yysym) const {
     if (yymsg)
-      YY_SYMBOL_PRINT (yymsg, yysym);
+        YY_SYMBOL_PRINT(yymsg, yysym);
 
     // User destructor.
-    YYUSE (yysym.type_get ());
-  }
+    YY_USE(yysym.kind());
+}
 
 #if YYDEBUG
-  template <typename Base>
-  void
-  parser::yy_print_ (std::ostream& yyo,
-                                     const basic_symbol<Base>& yysym) const
-  {
-    std::ostream& yyoutput = yyo;
-    YYUSE (yyoutput);
-    symbol_number_type yytype = yysym.type_get ();
-#if defined __GNUC__ && ! defined __clang__ && ! defined __ICC && __GNUC__ * 100 + __GNUC_MINOR__ <= 408
-    // Avoid a (spurious) G++ 4.8 warning about "array subscript is
-    // below array bounds".
-    if (yysym.empty ())
-      std::abort ();
-#endif
-    yyo << (yytype < yyntokens_ ? "token" : "nterm")
-        << ' ' << yytname_[yytype] << " ("
-        << yysym.location << ": ";
-    YYUSE (yytype);
-    yyo << ')';
-  }
+template <typename Base> void parser::yy_print_(std::ostream &yyo, const basic_symbol<Base> &yysym) const {
+    std::ostream &yyoutput = yyo;
+    YY_USE(yyoutput);
+    if (yysym.empty())
+        yyo << "empty symbol";
+    else {
+        symbol_kind_type yykind = yysym.kind();
+        yyo << (yykind < YYNTOKENS ? "token" : "nterm") << ' ' << yysym.name() << " (" << yysym.location << ": ";
+        YY_USE(yykind);
+        yyo << ')';
+    }
+}
 #endif
 
-  void
-  parser::yypush_ (const char* m, YY_MOVE_REF (stack_symbol_type) sym)
-  {
+void parser::yypush_(const char *m, YY_MOVE_REF(stack_symbol_type) sym) {
     if (m)
-      YY_SYMBOL_PRINT (m, sym);
-    yystack_.push (YY_MOVE (sym));
-  }
+        YY_SYMBOL_PRINT(m, sym);
+    yystack_.push(YY_MOVE(sym));
+}
 
-  void
-  parser::yypush_ (const char* m, state_type s, YY_MOVE_REF (symbol_type) sym)
-  {
+void parser::yypush_(const char *m, state_type s, YY_MOVE_REF(symbol_type) sym) {
 #if 201103L <= YY_CPLUSPLUS
-    yypush_ (m, stack_symbol_type (s, std::move (sym)));
+    yypush_(m, stack_symbol_type(s, std::move(sym)));
 #else
-    stack_symbol_type ss (s, sym);
-    yypush_ (m, ss);
+    stack_symbol_type ss(s, sym);
+    yypush_(m, ss);
 #endif
-  }
+}
 
-  void
-  parser::yypop_ (int n)
-  {
-    yystack_.pop (n);
-  }
+void parser::yypop_(int n) YY_NOEXCEPT { yystack_.pop(n); }
 
 #if YYDEBUG
-  std::ostream&
-  parser::debug_stream () const
-  {
-    return *yycdebug_;
-  }
+std::ostream &parser::debug_stream() const { return *yycdebug_; }
 
-  void
-  parser::set_debug_stream (std::ostream& o)
-  {
-    yycdebug_ = &o;
-  }
+void parser::set_debug_stream(std::ostream &o) { yycdebug_ = &o; }
 
+parser::debug_level_type parser::debug_level() const { return yydebug_; }
 
-  parser::debug_level_type
-  parser::debug_level () const
-  {
-    return yydebug_;
-  }
-
-  void
-  parser::set_debug_level (debug_level_type l)
-  {
-    yydebug_ = l;
-  }
+void parser::set_debug_level(debug_level_type l) { yydebug_ = l; }
 #endif // YYDEBUG
 
-  parser::state_type
-  parser::yy_lr_goto_state_ (state_type yystate, int yysym)
-  {
-    int yyr = yypgoto_[yysym - yyntokens_] + yystate;
+parser::state_type parser::yy_lr_goto_state_(state_type yystate, int yysym) {
+    int yyr = yypgoto_[yysym - YYNTOKENS] + yystate;
     if (0 <= yyr && yyr <= yylast_ && yycheck_[yyr] == yystate)
-      return yytable_[yyr];
+        return yytable_[yyr];
     else
-      return yydefgoto_[yysym - yyntokens_];
-  }
+        return yydefgoto_[yysym - YYNTOKENS];
+}
 
-  bool
-  parser::yy_pact_value_is_default_ (int yyvalue)
-  {
-    return yyvalue == yypact_ninf_;
-  }
+bool parser::yy_pact_value_is_default_(int yyvalue) YY_NOEXCEPT { return yyvalue == yypact_ninf_; }
 
-  bool
-  parser::yy_table_value_is_error_ (int yyvalue)
-  {
-    return yyvalue == yytable_ninf_;
-  }
+bool parser::yy_table_value_is_error_(int yyvalue) YY_NOEXCEPT { return yyvalue == yytable_ninf_; }
 
-  int
-  parser::operator() ()
-  {
-    return parse ();
-  }
+int parser::operator()() { return parse(); }
 
-  int
-  parser::parse ()
-  {
-    // State.
+int parser::parse() {
     int yyn;
     /// Length of the RHS of the rule being reduced.
     int yylen = 0;
@@ -543,2090 +383,2965 @@ namespace Gringo { namespace Input { namespace NonGroundGrammar {
 #if YY_EXCEPTIONS
     try
 #endif // YY_EXCEPTIONS
-      {
-    YYCDEBUG << "Starting parse\n";
-
-
-    /* Initialize the stack.  The initial state will be set in
-       yynewstate, since the latter expects the semantical and the
-       location values to have been already stored, initialize these
-       stacks with a primary value.  */
-    yystack_.clear ();
-    yypush_ (YY_NULLPTR, 0, YY_MOVE (yyla));
-
-  /*-----------------------------------------------.
-  | yynewstate -- push a new symbol on the stack.  |
-  `-----------------------------------------------*/
-  yynewstate:
-    YYCDEBUG << "Entering state " << yystack_[0].state << '\n';
-
-    // Accept?
-    if (yystack_[0].state == yyfinal_)
-      YYACCEPT;
-
-    goto yybackup;
-
-
-  /*-----------.
-  | yybackup.  |
-  `-----------*/
-  yybackup:
-    // Try to take a decision without lookahead.
-    yyn = yypact_[yystack_[0].state];
-    if (yy_pact_value_is_default_ (yyn))
-      goto yydefault;
-
-    // Read a lookahead token.
-    if (yyla.empty ())
-      {
-        YYCDEBUG << "Reading a token: ";
-#if YY_EXCEPTIONS
-        try
-#endif // YY_EXCEPTIONS
-          {
-            yyla.type = yytranslate_ (yylex (&yyla.value, &yyla.location, lexer));
-          }
-#if YY_EXCEPTIONS
-        catch (const syntax_error& yyexc)
-          {
-            YYCDEBUG << "Caught exception: " << yyexc.what() << '\n';
-            error (yyexc);
-            goto yyerrlab1;
-          }
-#endif // YY_EXCEPTIONS
-      }
-    YY_SYMBOL_PRINT ("Next token is", yyla);
-
-    /* If the proper action on seeing token YYLA.TYPE is to reduce or
-       to detect an error, take that action.  */
-    yyn += yyla.type_get ();
-    if (yyn < 0 || yylast_ < yyn || yycheck_[yyn] != yyla.type_get ())
-      goto yydefault;
-
-    // Reduce or error.
-    yyn = yytable_[yyn];
-    if (yyn <= 0)
-      {
-        if (yy_table_value_is_error_ (yyn))
-          goto yyerrlab;
-        yyn = -yyn;
-        goto yyreduce;
-      }
-
-    // Count tokens shifted since error; after three, turn off error status.
-    if (yyerrstatus_)
-      --yyerrstatus_;
-
-    // Shift the lookahead token.
-    yypush_ ("Shifting", yyn, YY_MOVE (yyla));
-    goto yynewstate;
-
-
-  /*-----------------------------------------------------------.
-  | yydefault -- do the default action for the current state.  |
-  `-----------------------------------------------------------*/
-  yydefault:
-    yyn = yydefact_[yystack_[0].state];
-    if (yyn == 0)
-      goto yyerrlab;
-    goto yyreduce;
-
-
-  /*-----------------------------.
-  | yyreduce -- do a reduction.  |
-  `-----------------------------*/
-  yyreduce:
-    yylen = yyr2_[yyn];
     {
-      stack_symbol_type yylhs;
-      yylhs.state = yy_lr_goto_state_ (yystack_[yylen].state, yyr1_[yyn]);
-      /* If YYLEN is nonzero, implement the default value of the
-         action: '$$ = $1'.  Otherwise, use the top of the stack.
+        YYCDEBUG << "Starting parse\n";
 
-         Otherwise, the following line sets YYLHS.VALUE to garbage.
-         This behavior is undocumented and Bison users should not rely
-         upon it.  */
-      if (yylen)
-        yylhs.value = yystack_[yylen - 1].value;
-      else
-        yylhs.value = yystack_[0].value;
+        /* Initialize the stack.  The initial state will be set in
+           yynewstate, since the latter expects the semantical and the
+           location values to have been already stored, initialize these
+           stacks with a primary value.  */
+        yystack_.clear();
+        yypush_(YY_NULLPTR, 0, YY_MOVE(yyla));
 
-      // Default location.
-      {
-        stack_type::slice range (yystack_, yylen);
-        YYLLOC_DEFAULT (yylhs.location, range, yylen);
-        yyerror_range[1].location = yylhs.location;
-      }
+    /*-----------------------------------------------.
+    | yynewstate -- push a new symbol on the stack.  |
+    `-----------------------------------------------*/
+    yynewstate:
+        YYCDEBUG << "Entering state " << int(yystack_[0].state) << '\n';
+        YY_STACK_PRINT();
 
-      // Perform the reduction.
-      YY_REDUCE_PRINT (yyn);
+        // Accept?
+        if (yystack_[0].state == yyfinal_)
+            YYACCEPT;
+
+        goto yybackup;
+
+    /*-----------.
+    | yybackup.  |
+    `-----------*/
+    yybackup:
+        // Try to take a decision without lookahead.
+        yyn = yypact_[+yystack_[0].state];
+        if (yy_pact_value_is_default_(yyn))
+            goto yydefault;
+
+        // Read a lookahead token.
+        if (yyla.empty()) {
+            YYCDEBUG << "Reading a token\n";
 #if YY_EXCEPTIONS
-      try
+            try
 #endif // YY_EXCEPTIONS
-        {
-          switch (yyn)
             {
-  case 7:
-#line 331 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->parseError(yylhs.location, "syntax error, unexpected ."); }
-#line 673 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 10:
-#line 337 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 679 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 11:
-#line 338 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 685 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 12:
-#line 339 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 691 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 13:
-#line 346 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::XOR, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 697 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 14:
-#line 347 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::OR, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 703 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 15:
-#line 348 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::AND, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 709 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 16:
-#line 349 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::ADD, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 715 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 17:
-#line 350 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::SUB, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 721 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 18:
-#line 351 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MUL, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 727 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 19:
-#line 352 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::DIV, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 733 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 20:
-#line 353 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MOD, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 739 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 21:
-#line 354 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::POW, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 745 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 22:
-#line 355 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NEG, (yystack_[0].value.term)); }
-#line 751 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 23:
-#line 356 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NOT, (yystack_[0].value.term)); }
-#line 757 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 24:
-#line 357 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), false); }
-#line 763 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 25:
-#line 358 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), true); }
-#line 769 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 26:
-#line 359 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[1].value.termvec), false); }
-#line 775 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 27:
-#line 360 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[2].value.termvec), true); }
-#line 781 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 28:
-#line 361 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec), false); }
-#line 787 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 29:
-#line 362 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec), true); }
-#line 793 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 30:
-#line 363 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::ABS, (yystack_[1].value.term)); }
-#line 799 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 31:
-#line 364 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str)))); }
-#line 805 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 32:
-#line 365 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)), BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), true); }
-#line 811 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 33:
-#line 366 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createNum((yystack_[0].value.num))); }
-#line 817 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 34:
-#line 367 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str)))); }
-#line 823 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 35:
-#line 368 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createInf()); }
-#line 829 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 36:
-#line 369 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createSup()); }
-#line 835 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 37:
-#line 375 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term));  }
-#line 841 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 38:
-#line 376 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term));  }
-#line 847 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 39:
-#line 380 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec(BUILDER.termvecvec(), (yystack_[0].value.termvec));  }
-#line 853 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 40:
-#line 381 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec());  }
-#line 859 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 41:
-#line 387 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 865 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 42:
-#line 388 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::XOR, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 871 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 43:
-#line 389 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::OR, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 877 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 44:
-#line 390 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::AND, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 883 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 45:
-#line 391 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::ADD, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 889 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 46:
-#line 392 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::SUB, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 895 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 47:
-#line 393 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MUL, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 901 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 48:
-#line 394 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::DIV, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 907 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 49:
-#line 395 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MOD, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 913 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 50:
-#line 396 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::POW, (yystack_[2].value.term), (yystack_[0].value.term)); }
-#line 919 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 51:
-#line 397 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NEG, (yystack_[0].value.term)); }
-#line 925 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 52:
-#line 398 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NOT, (yystack_[0].value.term)); }
-#line 931 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 53:
-#line 399 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.pool(yylhs.location, (yystack_[1].value.termvec)); }
-#line 937 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 54:
-#line 400 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec), false); }
-#line 943 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 55:
-#line 401 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec), true); }
-#line 949 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 56:
-#line 402 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::ABS, (yystack_[1].value.termvec)); }
-#line 955 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 57:
-#line 403 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str)))); }
-#line 961 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 58:
-#line 404 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)), BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), true); }
-#line 967 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 59:
-#line 405 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createNum((yystack_[0].value.num))); }
-#line 973 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 60:
-#line 406 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str)))); }
-#line 979 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 61:
-#line 407 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createInf()); }
-#line 985 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 62:
-#line 408 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createSup()); }
-#line 991 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 63:
-#line 409 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str))); }
-#line 997 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 64:
-#line 410 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String("_")); }
-#line 1003 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 65:
-#line 416 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term)); }
-#line 1009 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 66:
-#line 417 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term)); }
-#line 1015 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 67:
-#line 423 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term)); }
-#line 1021 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 68:
-#line 424 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term)); }
-#line 1027 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 69:
-#line 428 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = (yystack_[0].value.termvec); }
-#line 1033 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 70:
-#line 429 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(); }
-#line 1039 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 71:
-#line 433 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[1].value.termvec), true); }
-#line 1045 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 72:
-#line 434 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[0].value.termvec), false); }
-#line 1051 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 73:
-#line 435 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), true); }
-#line 1057 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 74:
-#line 436 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), false); }
-#line 1063 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 75:
-#line 439 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[1].value.term)); }
-#line 1069 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 76:
-#line 440 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[1].value.term)); }
-#line 1075 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 77:
-#line 443 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term)); }
-#line 1081 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 78:
-#line 444 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec((yystack_[1].value.termvec), (yystack_[0].value.term)); }
-#line 1087 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 79:
-#line 447 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec(BUILDER.termvecvec(), (yystack_[0].value.termvec)); }
-#line 1093 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 80:
-#line 448 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec((yystack_[2].value.termvecvec), (yystack_[0].value.termvec)); }
-#line 1099 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 81:
-#line 452 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec(BUILDER.termvec(BUILDER.termvec(), (yystack_[2].value.term)), (yystack_[0].value.term))); }
-#line 1105 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 82:
-#line 453 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvecvec) = BUILDER.termvecvec((yystack_[4].value.termvecvec), BUILDER.termvec(BUILDER.termvec(BUILDER.termvec(), (yystack_[2].value.term)), (yystack_[0].value.term))); }
-#line 1111 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 83:
-#line 463 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::GT; }
-#line 1117 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 84:
-#line 464 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::LT; }
-#line 1123 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 85:
-#line 465 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::GEQ; }
-#line 1129 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 86:
-#line 466 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::LEQ; }
-#line 1135 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 87:
-#line 467 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::EQ; }
-#line 1141 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 88:
-#line 468 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rel) = Relation::NEQ; }
-#line 1147 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 89:
-#line 472 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.predRep(yylhs.location, false, String::fromRep((yystack_[0].value.str)), BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec())); }
-#line 1153 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 90:
-#line 473 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.predRep(yylhs.location, false, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec)); }
-#line 1159 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 91:
-#line 474 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.predRep(yylhs.location, true, String::fromRep((yystack_[0].value.str)), BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec())); }
-#line 1165 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 92:
-#line 475 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.predRep(yylhs.location, true, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec)); }
-#line 1171 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 93:
-#line 479 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rellitvec) = BUILDER.rellitvec(yylhs.location, (yystack_[1].value.rel), (yystack_[0].value.term)); }
-#line 1177 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 94:
-#line 480 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.rellitvec) = BUILDER.rellitvec(yylhs.location, (yystack_[2].value.rellitvec), (yystack_[1].value.rel), (yystack_[0].value.term)); }
-#line 1183 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 95:
-#line 484 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true); }
-#line 1189 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 96:
-#line 485 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false); }
-#line 1195 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 97:
-#line 486 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true); }
-#line 1201 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 98:
-#line 487 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false); }
-#line 1207 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 99:
-#line 488 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true); }
-#line 1213 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 100:
-#line 489 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false); }
-#line 1219 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 101:
-#line 490 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::POS, (yystack_[0].value.term)); }
-#line 1225 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 102:
-#line 491 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::NOT, (yystack_[0].value.term)); }
-#line 1231 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 103:
-#line 492 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::NOTNOT, (yystack_[0].value.term)); }
-#line 1237 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 104:
-#line 493 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::POS, (yystack_[1].value.term), (yystack_[0].value.rellitvec)); }
-#line 1243 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 105:
-#line 494 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::NOT, (yystack_[1].value.term), (yystack_[0].value.rellitvec)); }
-#line 1249 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 106:
-#line 495 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::NOTNOT, (yystack_[1].value.term), (yystack_[0].value.rellitvec)); }
-#line 1255 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 107:
-#line 503 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = BUILDER.litvec(BUILDER.litvec(), (yystack_[0].value.lit)); }
-#line 1261 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 108:
-#line 504 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = BUILDER.litvec((yystack_[2].value.litvec), (yystack_[0].value.lit)); }
-#line 1267 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 109:
-#line 508 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = (yystack_[0].value.litvec); }
-#line 1273 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 110:
-#line 509 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = BUILDER.litvec(); }
-#line 1279 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 111:
-#line 513 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = (yystack_[0].value.litvec); }
-#line 1285 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 112:
-#line 514 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.litvec) = BUILDER.litvec(); }
-#line 1291 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 113:
-#line 518 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.fun) = AggregateFunction::SUM; }
-#line 1297 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 114:
-#line 519 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.fun) = AggregateFunction::SUMP; }
-#line 1303 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 115:
-#line 520 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.fun) = AggregateFunction::MIN; }
-#line 1309 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 116:
-#line 521 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.fun) = AggregateFunction::MAX; }
-#line 1315 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 117:
-#line 522 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.fun) = AggregateFunction::COUNT; }
-#line 1321 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 118:
-#line 528 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bodyaggrelem) = { BUILDER.termvec(), (yystack_[0].value.litvec) }; }
-#line 1327 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 119:
-#line 529 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bodyaggrelem) = { (yystack_[1].value.termvec), (yystack_[0].value.litvec) }; }
-#line 1333 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 120:
-#line 533 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bodyaggrelemvec) = BUILDER.bodyaggrelemvec(BUILDER.bodyaggrelemvec(), (yystack_[0].value.bodyaggrelem).first, (yystack_[0].value.bodyaggrelem).second); }
-#line 1339 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 121:
-#line 534 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bodyaggrelemvec) = BUILDER.bodyaggrelemvec((yystack_[2].value.bodyaggrelemvec), (yystack_[0].value.bodyaggrelem).first, (yystack_[0].value.bodyaggrelem).second); }
-#line 1345 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 122:
-#line 540 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lbodyaggrelem) = { (yystack_[1].value.lit), (yystack_[0].value.litvec) }; }
-#line 1351 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 123:
-#line 544 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[0].value.lbodyaggrelem).first, (yystack_[0].value.lbodyaggrelem).second); }
-#line 1357 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 124:
-#line 545 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist), (yystack_[0].value.lbodyaggrelem).first, (yystack_[0].value.lbodyaggrelem).second); }
-#line 1363 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 125:
-#line 551 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { AggregateFunction::COUNT, true, BUILDER.condlitvec() }; }
-#line 1369 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 126:
-#line 552 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { AggregateFunction::COUNT, true, (yystack_[1].value.condlitlist) }; }
-#line 1375 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 127:
-#line 553 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { (yystack_[2].value.fun), false, BUILDER.bodyaggrelemvec() }; }
-#line 1381 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 128:
-#line 554 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { (yystack_[3].value.fun), false, (yystack_[1].value.bodyaggrelemvec) }; }
-#line 1387 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 129:
-#line 558 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bound) = { Relation::LEQ, (yystack_[0].value.term) }; }
-#line 1393 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 130:
-#line 559 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bound) = { (yystack_[1].value.rel), (yystack_[0].value.term) }; }
-#line 1399 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 131:
-#line 560 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.bound) = { Relation::LEQ, TermUid(-1) }; }
-#line 1405 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 132:
-#line 564 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec(Relation::LEQ, (yystack_[2].value.term), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1411 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 133:
-#line 565 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec((yystack_[2].value.rel), (yystack_[3].value.term), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1417 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 134:
-#line 566 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec(Relation::LEQ, TermUid(-1), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1423 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 135:
-#line 567 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[0].value.theoryAtom)); }
-#line 1429 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 136:
-#line 573 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.headaggrelemvec) = BUILDER.headaggrelemvec((yystack_[5].value.headaggrelemvec), (yystack_[3].value.termvec), (yystack_[1].value.lit), (yystack_[0].value.litvec)); }
-#line 1435 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 137:
-#line 574 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.headaggrelemvec) = BUILDER.headaggrelemvec(BUILDER.headaggrelemvec(), (yystack_[3].value.termvec), (yystack_[1].value.lit), (yystack_[0].value.litvec)); }
-#line 1441 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 138:
-#line 578 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit), (yystack_[0].value.litvec)); }
-#line 1447 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 139:
-#line 579 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[3].value.condlitlist), (yystack_[1].value.lit), (yystack_[0].value.litvec)); }
-#line 1453 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 140:
-#line 585 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { (yystack_[2].value.fun), false, BUILDER.headaggrelemvec() }; }
-#line 1459 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 141:
-#line 586 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { (yystack_[3].value.fun), false, (yystack_[1].value.headaggrelemvec) }; }
-#line 1465 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 142:
-#line 587 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { AggregateFunction::COUNT, true, BUILDER.condlitvec()}; }
-#line 1471 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 143:
-#line 588 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.aggr) = { AggregateFunction::COUNT, true, (yystack_[1].value.condlitlist)}; }
-#line 1477 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 144:
-#line 592 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec(Relation::LEQ, (yystack_[2].value.term), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1483 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 145:
-#line 593 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec((yystack_[2].value.rel), (yystack_[3].value.term), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1489 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 146:
-#line 594 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice, (yystack_[1].value.aggr).elems, lexer->boundvec(Relation::LEQ, TermUid(-1), (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term)); }
-#line 1495 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 147:
-#line 595 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.uid) = lexer->aggregate((yystack_[0].value.theoryAtom)); }
-#line 1501 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 148:
-#line 602 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.lbodyaggrelem) = { (yystack_[2].value.lit), (yystack_[0].value.litvec) }; }
-#line 1507 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 151:
-#line 616 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist), (yystack_[1].value.lit), BUILDER.litvec()); }
-#line 1513 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 152:
-#line 617 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist), (yystack_[1].value.lit), BUILDER.litvec()); }
-#line 1519 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 153:
-#line 618 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[3].value.condlitlist), (yystack_[2].value.lit), BUILDER.litvec()); }
-#line 1525 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 154:
-#line 619 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[4].value.condlitlist), (yystack_[3].value.lit), (yystack_[1].value.litvec)); }
-#line 1531 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 155:
-#line 620 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit), BUILDER.litvec()); }
-#line 1537 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 156:
-#line 621 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit), BUILDER.litvec()); }
-#line 1543 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 157:
-#line 622 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[3].value.lit), (yystack_[1].value.litvec)); }
-#line 1549 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 158:
-#line 623 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[2].value.lit), BUILDER.litvec()); }
-#line 1555 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 159:
-#line 627 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist), (yystack_[1].value.lit), (yystack_[0].value.litvec)); }
-#line 1561 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 160:
-#line 628 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[2].value.lit), (yystack_[0].value.litvec)); }
-#line 1567 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 161:
-#line 635 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit)); }
-#line 1573 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 162:
-#line 636 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit)); }
-#line 1579 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 163:
-#line 637 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location, NAF::POS, (yystack_[1].value.uid)); }
-#line 1585 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 164:
-#line 638 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location, NAF::POS, (yystack_[1].value.uid)); }
-#line 1591 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 165:
-#line 639 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location, NAF::NOT, (yystack_[1].value.uid)); }
-#line 1597 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 166:
-#line 640 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location, NAF::NOT, (yystack_[1].value.uid)); }
-#line 1603 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 167:
-#line 641 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location, NAF::NOTNOT, (yystack_[1].value.uid)); }
-#line 1609 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 168:
-#line 642 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location, NAF::NOTNOT, (yystack_[1].value.uid)); }
-#line 1615 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 169:
-#line 643 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.conjunction((yystack_[2].value.body), yystack_[1].location, (yystack_[1].value.lbodyaggrelem).first, (yystack_[1].value.lbodyaggrelem).second); }
-#line 1621 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 170:
-#line 644 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.body(); }
-#line 1627 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 171:
-#line 648 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit)); }
-#line 1633 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 172:
-#line 649 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location, NAF::POS, (yystack_[1].value.uid)); }
-#line 1639 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 173:
-#line 650 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location, NAF::NOT, (yystack_[1].value.uid)); }
-#line 1645 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 174:
-#line 651 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location, NAF::NOTNOT, (yystack_[1].value.uid)); }
-#line 1651 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 175:
-#line 652 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.conjunction((yystack_[2].value.body), yystack_[1].location, (yystack_[1].value.lbodyaggrelem).first, (yystack_[1].value.lbodyaggrelem).second); }
-#line 1657 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 176:
-#line 656 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.body(); }
-#line 1663 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 177:
-#line 657 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.body(); }
-#line 1669 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 178:
-#line 658 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = (yystack_[0].value.body); }
-#line 1675 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 179:
-#line 661 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.head) = BUILDER.headlit((yystack_[0].value.lit)); }
-#line 1681 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 180:
-#line 662 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.head) = BUILDER.disjunction(yylhs.location, (yystack_[0].value.condlitlist)); }
-#line 1687 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 181:
-#line 663 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.head) = lexer->headaggregate(yylhs.location, (yystack_[0].value.uid)); }
-#line 1693 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 182:
-#line 667 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.rule(yylhs.location, (yystack_[1].value.head)); }
-#line 1699 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 183:
-#line 668 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.rule(yylhs.location, (yystack_[2].value.head)); }
-#line 1705 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 184:
-#line 669 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.rule(yylhs.location, (yystack_[2].value.head), (yystack_[0].value.body)); }
-#line 1711 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 185:
-#line 670 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.rule(yylhs.location, BUILDER.headlit(BUILDER.boollit(yylhs.location, false)), (yystack_[0].value.body)); }
-#line 1717 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 186:
-#line 671 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.rule(yylhs.location, BUILDER.headlit(BUILDER.boollit(yylhs.location, false)), BUILDER.body()); }
-#line 1723 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 187:
-#line 677 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = (yystack_[0].value.termvec); }
-#line 1729 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 188:
-#line 678 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termvec) = BUILDER.termvec(); }
-#line 1735 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 189:
-#line 682 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termpair) = {(yystack_[2].value.term), (yystack_[0].value.term)}; }
-#line 1741 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 190:
-#line 683 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.termpair) = {(yystack_[0].value.term), BUILDER.term(yylhs.location, Symbol::createNum(0))}; }
-#line 1747 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 191:
-#line 687 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.bodylit(BUILDER.body(), (yystack_[0].value.lit)); }
-#line 1753 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 192:
-#line 688 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[0].value.lit)); }
-#line 1759 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 193:
-#line 692 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = (yystack_[0].value.body); }
-#line 1765 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 194:
-#line 693 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.body(); }
-#line 1771 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 195:
-#line 694 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.body) = BUILDER.body(); }
-#line 1777 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 196:
-#line 698 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first, (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[4].value.body)); }
-#line 1783 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 197:
-#line 699 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first, (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), BUILDER.body()); }
-#line 1789 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 198:
-#line 703 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, BUILDER.term(yystack_[2].location, UnOp::NEG, (yystack_[2].value.termpair).first), (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body)); }
-#line 1795 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 199:
-#line 704 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, BUILDER.term(yystack_[2].location, UnOp::NEG, (yystack_[2].value.termpair).first), (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body)); }
-#line 1801 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 200:
-#line 708 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first, (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body)); }
-#line 1807 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 201:
-#line 709 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first, (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body)); }
-#line 1813 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 206:
-#line 722 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.showsig(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false)); }
-#line 1819 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 207:
-#line 723 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.showsig(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true)); }
-#line 1825 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 208:
-#line 724 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.showsig(yylhs.location, Sig("", 0, false)); }
-#line 1831 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 209:
-#line 725 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.show(yylhs.location, (yystack_[2].value.term), (yystack_[0].value.body)); }
-#line 1837 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 210:
-#line 726 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.show(yylhs.location, (yystack_[1].value.term), BUILDER.body()); }
-#line 1843 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 211:
-#line 732 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.defined(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false)); }
-#line 1849 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 212:
-#line 733 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.defined(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true)); }
-#line 1855 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 213:
-#line 738 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.edge(yylhs.location, (yystack_[2].value.termvecvec), (yystack_[0].value.body)); }
-#line 1861 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 214:
-#line 744 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.heuristic(yylhs.location, (yystack_[8].value.term), (yystack_[7].value.body), (yystack_[5].value.term), (yystack_[3].value.term), (yystack_[1].value.term)); }
-#line 1867 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 215:
-#line 745 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.heuristic(yylhs.location, (yystack_[6].value.term), (yystack_[5].value.body), (yystack_[3].value.term), BUILDER.term(yylhs.location, Symbol::createNum(0)), (yystack_[1].value.term)); }
-#line 1873 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 216:
-#line 751 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.project(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false)); }
-#line 1879 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 217:
-#line 752 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.project(yylhs.location, Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true)); }
-#line 1885 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 218:
-#line 753 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.project(yylhs.location, (yystack_[1].value.term), (yystack_[0].value.body)); }
-#line 1891 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 219:
-#line 759 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    {  BUILDER.define(yylhs.location, String::fromRep((yystack_[2].value.str)), (yystack_[0].value.term), false, LOGGER); }
-#line 1897 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 220:
-#line 763 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->storeComments(); }
-#line 1903 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 221:
-#line 766 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.define(yylhs.location, String::fromRep((yystack_[4].value.str)), (yystack_[2].value.term), true, LOGGER); lexer->flushComments(); }
-#line 1909 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 222:
-#line 767 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->flushComments(); BUILDER.define(yylhs.location, String::fromRep((yystack_[7].value.str)), (yystack_[5].value.term), true, LOGGER); }
-#line 1915 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 223:
-#line 768 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->flushComments(); BUILDER.define(yylhs.location, String::fromRep((yystack_[7].value.str)), (yystack_[5].value.term), false, LOGGER); }
-#line 1921 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 224:
-#line 774 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.script(yylhs.location, String::fromRep((yystack_[3].value.str)), String::fromRep((yystack_[1].value.str))); }
-#line 1927 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 225:
-#line 780 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->include(String::fromRep((yystack_[1].value.str)), yylhs.location, false, LOGGER); }
-#line 1933 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 226:
-#line 781 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->include(String::fromRep((yystack_[2].value.str)), yylhs.location, true, LOGGER); }
-#line 1939 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 227:
-#line 787 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.idlist) = BUILDER.idvec((yystack_[2].value.idlist), yystack_[0].location, String::fromRep((yystack_[0].value.str))); }
-#line 1945 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 228:
-#line 788 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.idlist) = BUILDER.idvec(BUILDER.idvec(), yystack_[0].location, String::fromRep((yystack_[0].value.str))); }
-#line 1951 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 229:
-#line 792 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.idlist) = BUILDER.idvec(); }
-#line 1957 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 230:
-#line 793 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.idlist) = (yystack_[0].value.idlist); }
-#line 1963 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 231:
-#line 797 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.block(yylhs.location, String::fromRep((yystack_[4].value.str)), (yystack_[2].value.idlist)); }
-#line 1969 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 232:
-#line 798 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.block(yylhs.location, String::fromRep((yystack_[1].value.str)), BUILDER.idvec()); }
-#line 1975 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 233:
-#line 804 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.external(yylhs.location, (yystack_[3].value.term), (yystack_[1].value.body), BUILDER.term(yylhs.location, Symbol::createId("false"))); lexer->flushComments(); }
-#line 1981 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 234:
-#line 805 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.external(yylhs.location, (yystack_[3].value.term), BUILDER.body(), BUILDER.term(yylhs.location, Symbol::createId("false"))); lexer->flushComments(); }
-#line 1987 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 235:
-#line 806 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.external(yylhs.location, (yystack_[2].value.term), BUILDER.body(), BUILDER.term(yylhs.location, Symbol::createId("false"))); lexer->flushComments(); }
-#line 1993 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 236:
-#line 807 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->flushComments(); BUILDER.external(yylhs.location, (yystack_[6].value.term), (yystack_[4].value.body), (yystack_[1].value.term)); }
-#line 1999 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 237:
-#line 808 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->flushComments(); BUILDER.external(yylhs.location, (yystack_[6].value.term), BUILDER.body(), (yystack_[1].value.term)); }
-#line 2005 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 238:
-#line 809 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->flushComments(); BUILDER.external(yylhs.location, (yystack_[5].value.term), BUILDER.body(), (yystack_[1].value.term)); }
-#line 2011 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 239:
-#line 815 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 2017 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 240:
-#line 816 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 2023 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 241:
-#line 822 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = BUILDER.theoryops((yystack_[1].value.theoryOps), String::fromRep((yystack_[0].value.str))); }
-#line 2029 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 242:
-#line 823 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = BUILDER.theoryops(BUILDER.theoryops(), String::fromRep((yystack_[0].value.str))); }
-#line 2035 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 243:
-#line 827 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermset(yylhs.location, (yystack_[1].value.theoryOpterms)); }
-#line 2041 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 244:
-#line 828 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theoryoptermlist(yylhs.location, (yystack_[1].value.theoryOpterms)); }
-#line 2047 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 245:
-#line 829 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(yylhs.location, BUILDER.theoryopterms()); }
-#line 2053 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 246:
-#line 830 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermopterm(yylhs.location, (yystack_[1].value.theoryOpterm)); }
-#line 2059 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 247:
-#line 831 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(yylhs.location, BUILDER.theoryopterms(BUILDER.theoryopterms(), yystack_[2].location, (yystack_[2].value.theoryOpterm))); }
-#line 2065 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 248:
-#line 832 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(yylhs.location, BUILDER.theoryopterms(yystack_[3].location, (yystack_[3].value.theoryOpterm), (yystack_[1].value.theoryOpterms))); }
-#line 2071 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 249:
-#line 833 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermfun(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.theoryOpterms)); }
-#line 2077 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 250:
-#line 834 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str)))); }
-#line 2083 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 251:
-#line 835 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createNum((yystack_[0].value.num))); }
-#line 2089 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 252:
-#line 836 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str)))); }
-#line 2095 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 253:
-#line 837 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createInf()); }
-#line 2101 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 254:
-#line 838 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createSup()); }
-#line 2107 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 255:
-#line 839 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTerm) = BUILDER.theorytermvar(yylhs.location, String::fromRep((yystack_[0].value.str))); }
-#line 2113 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 256:
-#line 843 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterm) = BUILDER.theoryopterm((yystack_[2].value.theoryOpterm), (yystack_[1].value.theoryOps), (yystack_[0].value.theoryTerm)); }
-#line 2119 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 257:
-#line 844 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterm) = BUILDER.theoryopterm((yystack_[1].value.theoryOps), (yystack_[0].value.theoryTerm)); }
-#line 2125 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 258:
-#line 845 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterm) = BUILDER.theoryopterm(BUILDER.theoryops(), (yystack_[0].value.theoryTerm)); }
-#line 2131 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 259:
-#line 849 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterms) = BUILDER.theoryopterms((yystack_[2].value.theoryOpterms), yystack_[0].location, (yystack_[0].value.theoryOpterm)); }
-#line 2137 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 260:
-#line 850 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterms) = BUILDER.theoryopterms(BUILDER.theoryopterms(), yystack_[0].location, (yystack_[0].value.theoryOpterm)); }
-#line 2143 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 261:
-#line 854 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterms) = (yystack_[0].value.theoryOpterms); }
-#line 2149 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 262:
-#line 855 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpterms) = BUILDER.theoryopterms(); }
-#line 2155 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 263:
-#line 859 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElem) = { (yystack_[2].value.theoryOpterms), (yystack_[0].value.litvec) }; }
-#line 2161 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 264:
-#line 860 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElem) = { BUILDER.theoryopterms(), (yystack_[0].value.litvec) }; }
-#line 2167 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 265:
-#line 864 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElems) = BUILDER.theoryelems((yystack_[3].value.theoryElems), (yystack_[0].value.theoryElem).first, (yystack_[0].value.theoryElem).second); }
-#line 2173 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 266:
-#line 865 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElems) = BUILDER.theoryelems(BUILDER.theoryelems(), (yystack_[0].value.theoryElem).first, (yystack_[0].value.theoryElem).second); }
-#line 2179 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 267:
-#line 869 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElems) = (yystack_[0].value.theoryElems); }
-#line 2185 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 268:
-#line 870 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryElems) = BUILDER.theoryelems(); }
-#line 2191 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 269:
-#line 874 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)), BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), false); }
-#line 2197 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 270:
-#line 875 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)), (yystack_[1].value.termvecvec), false); }
-#line 2203 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 271:
-#line 878 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtom) = BUILDER.theoryatom((yystack_[0].value.term), BUILDER.theoryelems()); }
-#line 2209 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 272:
-#line 879 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtom) = BUILDER.theoryatom((yystack_[6].value.term), (yystack_[3].value.theoryElems)); }
-#line 2215 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 273:
-#line 880 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtom) = BUILDER.theoryatom((yystack_[8].value.term), (yystack_[5].value.theoryElems), String::fromRep((yystack_[2].value.str)), yystack_[1].location, (yystack_[1].value.theoryOpterm)); }
-#line 2221 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 274:
-#line 886 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = BUILDER.theoryops(BUILDER.theoryops(), String::fromRep((yystack_[0].value.str))); }
-#line 2227 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 275:
-#line 887 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = BUILDER.theoryops((yystack_[2].value.theoryOps), String::fromRep((yystack_[0].value.str))); }
-#line 2233 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 276:
-#line 891 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = (yystack_[0].value.theoryOps); }
-#line 2239 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 277:
-#line 892 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOps) = BUILDER.theoryops(); }
-#line 2245 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 278:
-#line 896 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDef) = BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[5].value.str)), (yystack_[2].value.num), TheoryOperatorType::Unary); }
-#line 2251 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 279:
-#line 897 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDef) = BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[7].value.str)), (yystack_[4].value.num), TheoryOperatorType::BinaryLeft); }
-#line 2257 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 280:
-#line 898 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDef) = BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[7].value.str)), (yystack_[4].value.num), TheoryOperatorType::BinaryRight); }
-#line 2263 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 281:
-#line 902 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDefs) = BUILDER.theoryopdefs(BUILDER.theoryopdefs(), (yystack_[0].value.theoryOpDef)); }
-#line 2269 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 282:
-#line 903 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDefs) = BUILDER.theoryopdefs((yystack_[3].value.theoryOpDefs), (yystack_[0].value.theoryOpDef)); }
-#line 2275 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 283:
-#line 907 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDefs) = (yystack_[0].value.theoryOpDefs); }
-#line 2281 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 284:
-#line 908 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryOpDefs) = BUILDER.theoryopdefs(); }
-#line 2287 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 285:
-#line 912 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = (yystack_[0].value.str); }
-#line 2293 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 286:
-#line 913 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("left"); }
-#line 2299 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 287:
-#line 914 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("right"); }
-#line 2305 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 288:
-#line 915 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("unary"); }
-#line 2311 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 289:
-#line 916 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("binary"); }
-#line 2317 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 290:
-#line 917 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("head"); }
-#line 2323 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 291:
-#line 918 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("body"); }
-#line 2329 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 292:
-#line 919 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("any"); }
-#line 2335 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 293:
-#line 920 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.str) = String::toRep("directive"); }
-#line 2341 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 294:
-#line 924 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryTermDef) = BUILDER.theorytermdef(yylhs.location, String::fromRep((yystack_[5].value.str)), (yystack_[2].value.theoryOpDefs), LOGGER); }
-#line 2347 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 295:
-#line 928 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomType) = TheoryAtomType::Head; }
-#line 2353 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 296:
-#line 929 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomType) = TheoryAtomType::Body; }
-#line 2359 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 297:
-#line 930 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomType) = TheoryAtomType::Any; }
-#line 2365 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 298:
-#line 931 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomType) = TheoryAtomType::Directive; }
-#line 2371 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 299:
-#line 936 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomDef) = BUILDER.theoryatomdef(yylhs.location, String::fromRep((yystack_[14].value.str)), (yystack_[12].value.num), String::fromRep((yystack_[10].value.str)), (yystack_[0].value.theoryAtomType), (yystack_[6].value.theoryOps), String::fromRep((yystack_[2].value.str))); }
-#line 2377 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 300:
-#line 937 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryAtomDef) = BUILDER.theoryatomdef(yylhs.location, String::fromRep((yystack_[6].value.str)), (yystack_[4].value.num), String::fromRep((yystack_[2].value.str)), (yystack_[0].value.theoryAtomType)); }
-#line 2383 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 301:
-#line 941 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = BUILDER.theorydefs((yystack_[2].value.theoryDefs), (yystack_[0].value.theoryAtomDef)); }
-#line 2389 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 302:
-#line 942 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = BUILDER.theorydefs((yystack_[2].value.theoryDefs), (yystack_[0].value.theoryTermDef)); }
-#line 2395 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 303:
-#line 943 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = BUILDER.theorydefs(BUILDER.theorydefs(), (yystack_[0].value.theoryAtomDef)); }
-#line 2401 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 304:
-#line 944 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = BUILDER.theorydefs(BUILDER.theorydefs(), (yystack_[0].value.theoryTermDef)); }
-#line 2407 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 305:
-#line 948 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = (yystack_[0].value.theoryDefs); }
-#line 2413 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 306:
-#line 949 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { (yylhs.value.theoryDefs) = BUILDER.theorydefs(); }
-#line 2419 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 307:
-#line 953 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { BUILDER.theorydef(yylhs.location, String::fromRep((yystack_[6].value.str)), (yystack_[3].value.theoryDefs), LOGGER); }
-#line 2425 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 308:
-#line 959 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->theoryLexing(TheoryLexing::Theory); }
-#line 2431 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 309:
-#line 963 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->theoryLexing(TheoryLexing::Definition); }
-#line 2437 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-  case 310:
-#line 967 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:919
-    { lexer->theoryLexing(TheoryLexing::Disabled); }
-#line 2443 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-    break;
-
-
-#line 2447 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:919
-            default:
-              break;
+                yyla.kind_ = yytranslate_(yylex(&yyla.value, &yyla.location, lexer));
+            }
+#if YY_EXCEPTIONS
+            catch (const syntax_error &yyexc) {
+                YYCDEBUG << "Caught exception: " << yyexc.what() << '\n';
+                error(yyexc);
+                goto yyerrlab1;
+            }
+#endif // YY_EXCEPTIONS
+        }
+        YY_SYMBOL_PRINT("Next token is", yyla);
+
+        if (yyla.kind() == symbol_kind::S_YYerror) {
+            // The scanner already issued an error message, process directly
+            // to error recovery.  But do not keep the error token as
+            // lookahead, it is too special and may lead us to an endless
+            // loop in error recovery. */
+            yyla.kind_ = symbol_kind::S_YYUNDEF;
+            goto yyerrlab1;
+        }
+
+        /* If the proper action on seeing token YYLA.TYPE is to reduce or
+           to detect an error, take that action.  */
+        yyn += yyla.kind();
+        if (yyn < 0 || yylast_ < yyn || yycheck_[yyn] != yyla.kind()) {
+            goto yydefault;
+        }
+
+        // Reduce or error.
+        yyn = yytable_[yyn];
+        if (yyn <= 0) {
+            if (yy_table_value_is_error_(yyn))
+                goto yyerrlab;
+            yyn = -yyn;
+            goto yyreduce;
+        }
+
+        // Count tokens shifted since error; after three, turn off error status.
+        if (yyerrstatus_)
+            --yyerrstatus_;
+
+        // Shift the lookahead token.
+        yypush_("Shifting", state_type(yyn), YY_MOVE(yyla));
+        goto yynewstate;
+
+    /*-----------------------------------------------------------.
+    | yydefault -- do the default action for the current state.  |
+    `-----------------------------------------------------------*/
+    yydefault:
+        yyn = yydefact_[+yystack_[0].state];
+        if (yyn == 0)
+            goto yyerrlab;
+        goto yyreduce;
+
+    /*-----------------------------.
+    | yyreduce -- do a reduction.  |
+    `-----------------------------*/
+    yyreduce:
+        yylen = yyr2_[yyn];
+        {
+            stack_symbol_type yylhs;
+            yylhs.state = yy_lr_goto_state_(yystack_[yylen].state, yyr1_[yyn]);
+            /* If YYLEN is nonzero, implement the default value of the
+               action: '$$ = $1'.  Otherwise, use the top of the stack.
+
+               Otherwise, the following line sets YYLHS.VALUE to garbage.
+               This behavior is undocumented and Bison users should not rely
+               upon it.  */
+            if (yylen)
+                yylhs.value = yystack_[yylen - 1].value;
+            else
+                yylhs.value = yystack_[0].value;
+
+            // Default location.
+            {
+                stack_type::slice range(yystack_, yylen);
+                YYLLOC_DEFAULT(yylhs.location, range, yylen);
+                yyerror_range[1].location = yylhs.location;
+            }
+
+            // Perform the reduction.
+            YY_REDUCE_PRINT(yyn);
+#if YY_EXCEPTIONS
+            try
+#endif // YY_EXCEPTIONS
+            {
+                switch (yyn) {
+                    case 7: // statement: "."
+#line 327 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->parseError(yylhs.location, "syntax error, unexpected .");
+                    }
+#line 662 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 10: // identifier: "<IDENTIFIER>"
+#line 333 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 668 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 11: // identifier: "default"
+#line 334 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 674 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 12: // identifier: "override"
+#line 335 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 680 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 13: // constterm: constterm "^" constterm
+#line 342 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::XOR, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 686 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 14: // constterm: constterm "?" constterm
+#line 343 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, BinOp::OR, (yystack_[2].value.term), (yystack_[0].value.term));
+                    }
+#line 692 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 15: // constterm: constterm "&" constterm
+#line 344 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::AND, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 698 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 16: // constterm: constterm "+" constterm
+#line 345 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::ADD, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 704 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 17: // constterm: constterm "-" constterm
+#line 346 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::SUB, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 710 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 18: // constterm: constterm "*" constterm
+#line 347 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MUL, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 716 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 19: // constterm: constterm "/" constterm
+#line 348 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::DIV, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 722 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 20: // constterm: constterm "\\" constterm
+#line 349 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MOD, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 728 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 21: // constterm: constterm "**" constterm
+#line 350 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::POW, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 734 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 22: // constterm: "-" constterm
+#line 351 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NEG, (yystack_[0].value.term));
+                    }
+#line 740 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 23: // constterm: "~" constterm
+#line 352 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NOT, (yystack_[0].value.term));
+                    }
+#line 746 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 24: // constterm: "(" ")"
+#line 353 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), false);
+                    }
+#line 752 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 25: // constterm: "(" "," ")"
+#line 354 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), true);
+                    }
+#line 758 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 26: // constterm: "(" consttermvec ")"
+#line 355 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[1].value.termvec), false);
+                    }
+#line 764 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 27: // constterm: "(" consttermvec "," ")"
+#line 356 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[2].value.termvec), true);
+                    }
+#line 770 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 28: // constterm: identifier "(" constargvec ")"
+#line 357 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                          (yystack_[1].value.termvecvec), false);
+                    }
+#line 776 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 29: // constterm: "@" identifier "(" constargvec ")"
+#line 358 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                          (yystack_[1].value.termvecvec), true);
+                    }
+#line 782 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 30: // constterm: "|" constterm "|"
+#line 359 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::ABS, (yystack_[1].value.term));
+                    }
+#line 788 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 31: // constterm: identifier
+#line 360 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 794 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 32: // constterm: "@" identifier
+#line 361 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)),
+                                         BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), true);
+                    }
+#line 800 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 33: // constterm: "<NUMBER>"
+#line 362 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createNum((yystack_[0].value.num)));
+                    }
+#line 806 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 34: // constterm: "<STRING>"
+#line 363 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 812 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 35: // constterm: "#inf"
+#line 364 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createInf());
+                    }
+#line 818 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 36: // constterm: "#sup"
+#line 365 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createSup());
+                    }
+#line 824 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 37: // consttermvec: constterm
+#line 371 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term));
+                    }
+#line 830 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 38: // consttermvec: consttermvec "," constterm
+#line 372 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term));
+                    }
+#line 836 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 39: // constargvec: consttermvec
+#line 376 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) =
+                            BUILDER.termvecvec(BUILDER.termvecvec(), (yystack_[0].value.termvec));
+                    }
+#line 842 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 40: // constargvec: %empty
+#line 377 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) = BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec());
+                    }
+#line 848 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 41: // term: term ".." term
+#line 383 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, (yystack_[2].value.term), (yystack_[0].value.term));
+                    }
+#line 854 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 42: // term: term "^" term
+#line 384 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::XOR, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 860 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 43: // term: term "?" term
+#line 385 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, BinOp::OR, (yystack_[2].value.term), (yystack_[0].value.term));
+                    }
+#line 866 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 44: // term: term "&" term
+#line 386 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::AND, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 872 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 45: // term: term "+" term
+#line 387 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::ADD, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 878 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 46: // term: term "-" term
+#line 388 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::SUB, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 884 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 47: // term: term "*" term
+#line 389 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MUL, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 890 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 48: // term: term "/" term
+#line 390 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::DIV, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 896 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 49: // term: term "\\" term
+#line 391 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::MOD, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 902 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 50: // term: term "**" term
+#line 392 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BinOp::POW, (yystack_[2].value.term),
+                                                          (yystack_[0].value.term));
+                    }
+#line 908 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 51: // term: "-" term
+#line 393 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NEG, (yystack_[0].value.term));
+                    }
+#line 914 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 52: // term: "~" term
+#line 394 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::NOT, (yystack_[0].value.term));
+                    }
+#line 920 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 53: // term: "(" tuplevec ")"
+#line 395 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.pool(yylhs.location, (yystack_[1].value.termvec));
+                    }
+#line 926 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 54: // term: identifier "(" argvec ")"
+#line 396 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                          (yystack_[1].value.termvecvec), false);
+                    }
+#line 932 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 55: // term: "@" identifier "(" argvec ")"
+#line 397 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                          (yystack_[1].value.termvecvec), true);
+                    }
+#line 938 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 56: // term: "|" unaryargvec "|"
+#line 398 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, UnOp::ABS, (yystack_[1].value.termvec));
+                    }
+#line 944 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 57: // term: identifier
+#line 399 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 950 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 58: // term: "@" identifier
+#line 400 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)),
+                                         BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), true);
+                    }
+#line 956 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 59: // term: "<NUMBER>"
+#line 401 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createNum((yystack_[0].value.num)));
+                    }
+#line 962 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 60: // term: "<STRING>"
+#line 402 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 968 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 61: // term: "#inf"
+#line 403 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createInf());
+                    }
+#line 974 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 62: // term: "#sup"
+#line 404 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, Symbol::createSup());
+                    }
+#line 980 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 63: // term: "<VARIABLE>"
+#line 405 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)));
+                    }
+#line 986 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 64: // term: "<ANONYMOUS>"
+#line 406 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String("_"));
+                    }
+#line 992 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 65: // unaryargvec: term
+#line 412 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term));
+                    }
+#line 998 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 66: // unaryargvec: unaryargvec ";" term
+#line 413 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term));
+                    }
+#line 1004 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 67: // ntermvec: term
+#line 419 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term));
+                    }
+#line 1010 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 68: // ntermvec: ntermvec "," term
+#line 420 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[0].value.term));
+                    }
+#line 1016 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 69: // termvec: ntermvec
+#line 424 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = (yystack_[0].value.termvec);
+                    }
+#line 1022 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 70: // termvec: %empty
+#line 425 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec();
+                    }
+#line 1028 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 71: // tuple: ntermvec ","
+#line 429 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[1].value.termvec), true);
+                    }
+#line 1034 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 72: // tuple: ntermvec
+#line 430 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, (yystack_[0].value.termvec), false);
+                    }
+#line 1040 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 73: // tuple: ","
+#line 431 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), true);
+                    }
+#line 1046 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 74: // tuple: %empty
+#line 432 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, BUILDER.termvec(), false);
+                    }
+#line 1052 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 75: // tuplevec_sem: tuple ";"
+#line 435 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[1].value.term));
+                    }
+#line 1058 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 76: // tuplevec_sem: tuplevec_sem tuple ";"
+#line 436 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec((yystack_[2].value.termvec), (yystack_[1].value.term));
+                    }
+#line 1064 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 77: // tuplevec: tuple
+#line 439 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec(BUILDER.termvec(), (yystack_[0].value.term));
+                    }
+#line 1070 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 78: // tuplevec: tuplevec_sem tuple
+#line 440 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec((yystack_[1].value.termvec), (yystack_[0].value.term));
+                    }
+#line 1076 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 79: // argvec: termvec
+#line 443 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) =
+                            BUILDER.termvecvec(BUILDER.termvecvec(), (yystack_[0].value.termvec));
+                    }
+#line 1082 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 80: // argvec: argvec ";" termvec
+#line 444 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) =
+                            BUILDER.termvecvec((yystack_[2].value.termvecvec), (yystack_[0].value.termvec));
+                    }
+#line 1088 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 81: // binaryargvec: term "," term
+#line 448 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) = BUILDER.termvecvec(
+                            BUILDER.termvecvec(),
+                            BUILDER.termvec(BUILDER.termvec(BUILDER.termvec(), (yystack_[2].value.term)),
+                                            (yystack_[0].value.term)));
+                    }
+#line 1094 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 82: // binaryargvec: binaryargvec ";" term "," term
+#line 449 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvecvec) = BUILDER.termvecvec(
+                            (yystack_[4].value.termvecvec),
+                            BUILDER.termvec(BUILDER.termvec(BUILDER.termvec(), (yystack_[2].value.term)),
+                                            (yystack_[0].value.term)));
+                    }
+#line 1100 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 83: // cmp: ">"
+#line 459 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::GT;
+                    }
+#line 1106 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 84: // cmp: "<"
+#line 460 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::LT;
+                    }
+#line 1112 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 85: // cmp: ">="
+#line 461 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::GEQ;
+                    }
+#line 1118 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 86: // cmp: "<="
+#line 462 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::LEQ;
+                    }
+#line 1124 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 87: // cmp: "="
+#line 463 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::EQ;
+                    }
+#line 1130 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 88: // cmp: "!="
+#line 464 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rel) = Relation::NEQ;
+                    }
+#line 1136 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 89: // atom: identifier
+#line 468 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.predRep(yylhs.location, false, String::fromRep((yystack_[0].value.str)),
+                                            BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()));
+                    }
+#line 1142 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 90: // atom: identifier "(" argvec ")"
+#line 469 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.predRep(yylhs.location, false, String::fromRep((yystack_[3].value.str)),
+                                            (yystack_[1].value.termvecvec));
+                    }
+#line 1148 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 91: // atom: "-" identifier
+#line 470 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.predRep(yylhs.location, true, String::fromRep((yystack_[0].value.str)),
+                                            BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()));
+                    }
+#line 1154 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 92: // atom: "-" identifier "(" argvec ")"
+#line 471 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.predRep(yylhs.location, true, String::fromRep((yystack_[3].value.str)),
+                                            (yystack_[1].value.termvecvec));
+                    }
+#line 1160 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 93: // rellitvec: cmp term
+#line 475 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rellitvec) =
+                            BUILDER.rellitvec(yylhs.location, (yystack_[1].value.rel), (yystack_[0].value.term));
+                    }
+#line 1166 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 94: // rellitvec: rellitvec cmp term
+#line 476 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.rellitvec) = BUILDER.rellitvec(yylhs.location, (yystack_[2].value.rellitvec),
+                                                                    (yystack_[1].value.rel), (yystack_[0].value.term));
+                    }
+#line 1172 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 95: // literal: "#true"
+#line 480 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true);
+                    }
+#line 1178 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 96: // literal: "not" "#true"
+#line 481 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false);
+                    }
+#line 1184 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 97: // literal: "not" "not" "#true"
+#line 482 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true);
+                    }
+#line 1190 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 98: // literal: "#false"
+#line 483 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false);
+                    }
+#line 1196 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 99: // literal: "not" "#false"
+#line 484 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, true);
+                    }
+#line 1202 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 100: // literal: "not" "not" "#false"
+#line 485 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.boollit(yylhs.location, false);
+                    }
+#line 1208 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 101: // literal: atom
+#line 486 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::POS, (yystack_[0].value.term));
+                    }
+#line 1214 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 102: // literal: "not" atom
+#line 487 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::NOT, (yystack_[0].value.term));
+                    }
+#line 1220 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 103: // literal: "not" "not" atom
+#line 488 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.predlit(yylhs.location, NAF::NOTNOT, (yystack_[0].value.term));
+                    }
+#line 1226 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 104: // literal: term rellitvec
+#line 489 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::POS, (yystack_[1].value.term),
+                                                           (yystack_[0].value.rellitvec));
+                    }
+#line 1232 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 105: // literal: "not" term rellitvec
+#line 490 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::NOT, (yystack_[1].value.term),
+                                                           (yystack_[0].value.rellitvec));
+                    }
+#line 1238 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 106: // literal: "not" "not" term rellitvec
+#line 491 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lit) = BUILDER.rellit(yylhs.location, NAF::NOTNOT, (yystack_[1].value.term),
+                                                           (yystack_[0].value.rellitvec));
+                    }
+#line 1244 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 107: // nlitvec: literal
+#line 499 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = BUILDER.litvec(BUILDER.litvec(), (yystack_[0].value.lit));
+                    }
+#line 1250 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 108: // nlitvec: nlitvec "," literal
+#line 500 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = BUILDER.litvec((yystack_[2].value.litvec), (yystack_[0].value.lit));
+                    }
+#line 1256 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 109: // litvec: nlitvec
+#line 504 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = (yystack_[0].value.litvec);
+                    }
+#line 1262 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 110: // litvec: %empty
+#line 505 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = BUILDER.litvec();
+                    }
+#line 1268 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 111: // optcondition: ":" litvec
+#line 509 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = (yystack_[0].value.litvec);
+                    }
+#line 1274 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 112: // optcondition: %empty
+#line 510 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.litvec) = BUILDER.litvec();
+                    }
+#line 1280 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 113: // aggregatefunction: "#sum"
+#line 514 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.fun) = AggregateFunction::SUM;
+                    }
+#line 1286 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 114: // aggregatefunction: "#sum+"
+#line 515 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.fun) = AggregateFunction::SUMP;
+                    }
+#line 1292 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 115: // aggregatefunction: "#min"
+#line 516 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.fun) = AggregateFunction::MIN;
+                    }
+#line 1298 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 116: // aggregatefunction: "#max"
+#line 517 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.fun) = AggregateFunction::MAX;
+                    }
+#line 1304 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 117: // aggregatefunction: "#count"
+#line 518 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.fun) = AggregateFunction::COUNT;
+                    }
+#line 1310 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 118: // bodyaggrelem: ":" litvec
+#line 524 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bodyaggrelem) = {BUILDER.termvec(), (yystack_[0].value.litvec)};
+                    }
+#line 1316 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 119: // bodyaggrelem: ntermvec optcondition
+#line 525 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bodyaggrelem) = {(yystack_[1].value.termvec), (yystack_[0].value.litvec)};
+                    }
+#line 1322 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 120: // bodyaggrelemvec: bodyaggrelem
+#line 529 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bodyaggrelemvec) =
+                            BUILDER.bodyaggrelemvec(BUILDER.bodyaggrelemvec(), (yystack_[0].value.bodyaggrelem).first,
+                                                    (yystack_[0].value.bodyaggrelem).second);
+                    }
+#line 1328 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 121: // bodyaggrelemvec: bodyaggrelemvec ";" bodyaggrelem
+#line 530 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bodyaggrelemvec) = BUILDER.bodyaggrelemvec(
+                            (yystack_[2].value.bodyaggrelemvec), (yystack_[0].value.bodyaggrelem).first,
+                            (yystack_[0].value.bodyaggrelem).second);
+                    }
+#line 1334 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 122: // altbodyaggrelem: literal optcondition
+#line 536 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lbodyaggrelem) = {(yystack_[1].value.lit), (yystack_[0].value.litvec)};
+                    }
+#line 1340 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 123: // altbodyaggrelemvec: altbodyaggrelem
+#line 540 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) =
+                            BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[0].value.lbodyaggrelem).first,
+                                               (yystack_[0].value.lbodyaggrelem).second);
+                    }
+#line 1346 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 124: // altbodyaggrelemvec: altbodyaggrelemvec ";" altbodyaggrelem
+#line 541 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) =
+                            BUILDER.condlitvec((yystack_[2].value.condlitlist), (yystack_[0].value.lbodyaggrelem).first,
+                                               (yystack_[0].value.lbodyaggrelem).second);
+                    }
+#line 1352 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 125: // bodyaggregate: "{" "}"
+#line 547 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {AggregateFunction::COUNT, true, BUILDER.condlitvec()};
+                    }
+#line 1358 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 126: // bodyaggregate: "{" altbodyaggrelemvec "}"
+#line 548 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {AggregateFunction::COUNT, true, (yystack_[1].value.condlitlist)};
+                    }
+#line 1364 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 127: // bodyaggregate: aggregatefunction "{" "}"
+#line 549 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {(yystack_[2].value.fun), false, BUILDER.bodyaggrelemvec()};
+                    }
+#line 1370 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 128: // bodyaggregate: aggregatefunction "{" bodyaggrelemvec "}"
+#line 550 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {(yystack_[3].value.fun), false, (yystack_[1].value.bodyaggrelemvec)};
+                    }
+#line 1376 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 129: // upper: term
+#line 554 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bound) = {Relation::LEQ, (yystack_[0].value.term)};
+                    }
+#line 1382 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 130: // upper: cmp term
+#line 555 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bound) = {(yystack_[1].value.rel), (yystack_[0].value.term)};
+                    }
+#line 1388 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 131: // upper: %empty
+#line 556 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.bound) = {Relation::LEQ, TermUid(-1)};
+                    }
+#line 1394 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 132: // lubodyaggregate: term bodyaggregate upper
+#line 560 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate(
+                            (yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                            (yystack_[1].value.aggr).elems,
+                            lexer->boundvec(Relation::LEQ, (yystack_[2].value.term), (yystack_[0].value.bound).rel,
+                                            (yystack_[0].value.bound).term));
+                    }
+#line 1400 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 133: // lubodyaggregate: term cmp bodyaggregate upper
+#line 561 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate(
+                            (yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                            (yystack_[1].value.aggr).elems,
+                            lexer->boundvec((yystack_[2].value.rel), (yystack_[3].value.term),
+                                            (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term));
+                    }
+#line 1406 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 134: // lubodyaggregate: bodyaggregate upper
+#line 562 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) =
+                            lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                                             (yystack_[1].value.aggr).elems,
+                                             lexer->boundvec(Relation::LEQ, TermUid(-1), (yystack_[0].value.bound).rel,
+                                                             (yystack_[0].value.bound).term));
+                    }
+#line 1412 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 135: // lubodyaggregate: theory_atom
+#line 563 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate((yystack_[0].value.theoryAtom));
+                    }
+#line 1418 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 136: // headaggrelemvec: headaggrelemvec ";" termvec ":" literal optcondition
+#line 569 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.headaggrelemvec) =
+                            BUILDER.headaggrelemvec((yystack_[5].value.headaggrelemvec), (yystack_[3].value.termvec),
+                                                    (yystack_[1].value.lit), (yystack_[0].value.litvec));
+                    }
+#line 1424 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 137: // headaggrelemvec: termvec ":" literal optcondition
+#line 570 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.headaggrelemvec) =
+                            BUILDER.headaggrelemvec(BUILDER.headaggrelemvec(), (yystack_[3].value.termvec),
+                                                    (yystack_[1].value.lit), (yystack_[0].value.litvec));
+                    }
+#line 1430 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 138: // altheadaggrelemvec: literal optcondition
+#line 574 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit),
+                                                                       (yystack_[0].value.litvec));
+                    }
+#line 1436 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 139: // altheadaggrelemvec: altheadaggrelemvec ";" literal optcondition
+#line 575 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(
+                            (yystack_[3].value.condlitlist), (yystack_[1].value.lit), (yystack_[0].value.litvec));
+                    }
+#line 1442 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 140: // headaggregate: aggregatefunction "{" "}"
+#line 581 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {(yystack_[2].value.fun), false, BUILDER.headaggrelemvec()};
+                    }
+#line 1448 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 141: // headaggregate: aggregatefunction "{" headaggrelemvec "}"
+#line 582 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {(yystack_[3].value.fun), false, (yystack_[1].value.headaggrelemvec)};
+                    }
+#line 1454 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 142: // headaggregate: "{" "}"
+#line 583 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {AggregateFunction::COUNT, true, BUILDER.condlitvec()};
+                    }
+#line 1460 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 143: // headaggregate: "{" altheadaggrelemvec "}"
+#line 584 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.aggr) = {AggregateFunction::COUNT, true, (yystack_[1].value.condlitlist)};
+                    }
+#line 1466 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 144: // luheadaggregate: term headaggregate upper
+#line 588 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate(
+                            (yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                            (yystack_[1].value.aggr).elems,
+                            lexer->boundvec(Relation::LEQ, (yystack_[2].value.term), (yystack_[0].value.bound).rel,
+                                            (yystack_[0].value.bound).term));
+                    }
+#line 1472 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 145: // luheadaggregate: term cmp headaggregate upper
+#line 589 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate(
+                            (yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                            (yystack_[1].value.aggr).elems,
+                            lexer->boundvec((yystack_[2].value.rel), (yystack_[3].value.term),
+                                            (yystack_[0].value.bound).rel, (yystack_[0].value.bound).term));
+                    }
+#line 1478 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 146: // luheadaggregate: headaggregate upper
+#line 590 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) =
+                            lexer->aggregate((yystack_[1].value.aggr).fun, (yystack_[1].value.aggr).choice,
+                                             (yystack_[1].value.aggr).elems,
+                                             lexer->boundvec(Relation::LEQ, TermUid(-1), (yystack_[0].value.bound).rel,
+                                                             (yystack_[0].value.bound).term));
+                    }
+#line 1484 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 147: // luheadaggregate: theory_atom
+#line 591 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.uid) = lexer->aggregate((yystack_[0].value.theoryAtom));
+                    }
+#line 1490 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 148: // conjunction: literal ":" litvec
+#line 598 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.lbodyaggrelem) = {(yystack_[2].value.lit), (yystack_[0].value.litvec)};
+                    }
+#line 1496 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 151: // disjunctionsep: disjunctionsep literal ","
+#line 612 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist),
+                                                                       (yystack_[1].value.lit), BUILDER.litvec());
+                    }
+#line 1502 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 152: // disjunctionsep: disjunctionsep literal dsym
+#line 613 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[2].value.condlitlist),
+                                                                       (yystack_[1].value.lit), BUILDER.litvec());
+                    }
+#line 1508 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 153: // disjunctionsep: disjunctionsep literal ":" ";"
+#line 614 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec((yystack_[3].value.condlitlist),
+                                                                       (yystack_[2].value.lit), BUILDER.litvec());
+                    }
+#line 1514 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 154: // disjunctionsep: disjunctionsep literal ":" nlitvec dsym
+#line 615 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(
+                            (yystack_[4].value.condlitlist), (yystack_[3].value.lit), (yystack_[1].value.litvec));
+                    }
+#line 1520 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 155: // disjunctionsep: literal ","
+#line 616 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) =
+                            BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit), BUILDER.litvec());
+                    }
+#line 1526 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 156: // disjunctionsep: literal dsym
+#line 617 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) =
+                            BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[1].value.lit), BUILDER.litvec());
+                    }
+#line 1532 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 157: // disjunctionsep: literal ":" nlitvec dsym
+#line 618 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[3].value.lit),
+                                                                       (yystack_[1].value.litvec));
+                    }
+#line 1538 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 158: // disjunctionsep: literal ":" ";"
+#line 619 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) =
+                            BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[2].value.lit), BUILDER.litvec());
+                    }
+#line 1544 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 159: // disjunction: disjunctionsep literal optcondition
+#line 623 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(
+                            (yystack_[2].value.condlitlist), (yystack_[1].value.lit), (yystack_[0].value.litvec));
+                    }
+#line 1550 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 160: // disjunction: literal ":" litvec
+#line 624 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.condlitlist) = BUILDER.condlitvec(BUILDER.condlitvec(), (yystack_[2].value.lit),
+                                                                       (yystack_[0].value.litvec));
+                    }
+#line 1556 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 161: // bodycomma: bodycomma literal ","
+#line 631 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit));
+                    }
+#line 1562 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 162: // bodycomma: bodycomma literal ";"
+#line 632 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit));
+                    }
+#line 1568 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 163: // bodycomma: bodycomma lubodyaggregate ","
+#line 633 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location,
+                                                                  NAF::POS, (yystack_[1].value.uid));
+                    }
+#line 1574 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 164: // bodycomma: bodycomma lubodyaggregate ";"
+#line 634 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location,
+                                                                  NAF::POS, (yystack_[1].value.uid));
+                    }
+#line 1580 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 165: // bodycomma: bodycomma "not" lubodyaggregate ","
+#line 635 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location,
+                                                 NAF::NOT, (yystack_[1].value.uid));
+                    }
+#line 1586 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 166: // bodycomma: bodycomma "not" lubodyaggregate ";"
+#line 636 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location,
+                                                 NAF::NOT, (yystack_[1].value.uid));
+                    }
+#line 1592 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 167: // bodycomma: bodycomma "not" "not" lubodyaggregate ","
+#line 637 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location,
+                                                 NAF::NOTNOT, (yystack_[1].value.uid));
+                    }
+#line 1598 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 168: // bodycomma: bodycomma "not" "not" lubodyaggregate ";"
+#line 638 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location,
+                                                 NAF::NOTNOT, (yystack_[1].value.uid));
+                    }
+#line 1604 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 169: // bodycomma: bodycomma conjunction ";"
+#line 639 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.conjunction((yystack_[2].value.body), yystack_[1].location,
+                                                                 (yystack_[1].value.lbodyaggrelem).first,
+                                                                 (yystack_[1].value.lbodyaggrelem).second);
+                    }
+#line 1610 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 170: // bodycomma: %empty
+#line 640 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.body();
+                    }
+#line 1616 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 171: // bodydot: bodycomma literal "."
+#line 644 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[1].value.lit));
+                    }
+#line 1622 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 172: // bodydot: bodycomma lubodyaggregate "."
+#line 645 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = lexer->bodyaggregate((yystack_[2].value.body), yystack_[1].location,
+                                                                  NAF::POS, (yystack_[1].value.uid));
+                    }
+#line 1628 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 173: // bodydot: bodycomma "not" lubodyaggregate "."
+#line 646 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[3].value.body), yystack_[1].location + yystack_[2].location,
+                                                 NAF::NOT, (yystack_[1].value.uid));
+                    }
+#line 1634 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 174: // bodydot: bodycomma "not" "not" lubodyaggregate "."
+#line 647 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) =
+                            lexer->bodyaggregate((yystack_[4].value.body), yystack_[1].location + yystack_[3].location,
+                                                 NAF::NOTNOT, (yystack_[1].value.uid));
+                    }
+#line 1640 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 175: // bodydot: bodycomma conjunction "."
+#line 648 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.conjunction((yystack_[2].value.body), yystack_[1].location,
+                                                                 (yystack_[1].value.lbodyaggrelem).first,
+                                                                 (yystack_[1].value.lbodyaggrelem).second);
+                    }
+#line 1646 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 176: // bodyconddot: "."
+#line 652 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.body();
+                    }
+#line 1652 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 177: // bodyconddot: ":" "."
+#line 653 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.body();
+                    }
+#line 1658 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 178: // bodyconddot: ":" bodydot
+#line 654 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = (yystack_[0].value.body);
+                    }
+#line 1664 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 179: // head: literal
+#line 657 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.head) = BUILDER.headlit((yystack_[0].value.lit));
+                    }
+#line 1670 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 180: // head: disjunction
+#line 658 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.head) = BUILDER.disjunction(yylhs.location, (yystack_[0].value.condlitlist));
+                    }
+#line 1676 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 181: // head: luheadaggregate
+#line 659 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.head) = lexer->headaggregate(yylhs.location, (yystack_[0].value.uid));
+                    }
+#line 1682 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 182: // statement: head "."
+#line 663 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.rule(yylhs.location, (yystack_[1].value.head));
+                    }
+#line 1688 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 183: // statement: head ":-" "."
+#line 664 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.rule(yylhs.location, (yystack_[2].value.head));
+                    }
+#line 1694 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 184: // statement: head ":-" bodydot
+#line 665 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.rule(yylhs.location, (yystack_[2].value.head), (yystack_[0].value.body));
+                    }
+#line 1700 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 185: // statement: ":-" bodydot
+#line 666 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.rule(yylhs.location, BUILDER.headlit(BUILDER.boollit(yylhs.location, false)),
+                                     (yystack_[0].value.body));
+                    }
+#line 1706 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 186: // statement: ":-" "."
+#line 667 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.rule(yylhs.location, BUILDER.headlit(BUILDER.boollit(yylhs.location, false)),
+                                     BUILDER.body());
+                    }
+#line 1712 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 187: // optimizetuple: "," ntermvec
+#line 673 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = (yystack_[0].value.termvec);
+                    }
+#line 1718 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 188: // optimizetuple: %empty
+#line 674 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termvec) = BUILDER.termvec();
+                    }
+#line 1724 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 189: // optimizeweight: term "@" term
+#line 678 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termpair) = {(yystack_[2].value.term), (yystack_[0].value.term)};
+                    }
+#line 1730 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 190: // optimizeweight: term
+#line 679 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.termpair) = {(yystack_[0].value.term),
+                                                  BUILDER.term(yylhs.location, Symbol::createNum(0))};
+                    }
+#line 1736 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 191: // optimizelitvec: literal
+#line 683 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.bodylit(BUILDER.body(), (yystack_[0].value.lit));
+                    }
+#line 1742 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 192: // optimizelitvec: optimizelitvec "," literal
+#line 684 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.bodylit((yystack_[2].value.body), (yystack_[0].value.lit));
+                    }
+#line 1748 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 193: // optimizecond: ":" optimizelitvec
+#line 688 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = (yystack_[0].value.body);
+                    }
+#line 1754 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 194: // optimizecond: ":"
+#line 689 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.body();
+                    }
+#line 1760 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 195: // optimizecond: %empty
+#line 690 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.body) = BUILDER.body();
+                    }
+#line 1766 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 196: // statement: ":~" bodydot "[" optimizeweight optimizetuple "]"
+#line 694 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first,
+                                         (yystack_[2].value.termpair).second, (yystack_[1].value.termvec),
+                                         (yystack_[4].value.body));
+                    }
+#line 1772 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 197: // statement: ":~" "." "[" optimizeweight optimizetuple "]"
+#line 695 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first,
+                                         (yystack_[2].value.termpair).second, (yystack_[1].value.termvec),
+                                         BUILDER.body());
+                    }
+#line 1778 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 198: // maxelemlist: optimizeweight optimizetuple optimizecond
+#line 699 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(
+                            yylhs.location,
+                            BUILDER.term(yystack_[2].location, UnOp::NEG, (yystack_[2].value.termpair).first),
+                            (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body));
+                    }
+#line 1784 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 199: // maxelemlist: maxelemlist ";" optimizeweight optimizetuple optimizecond
+#line 700 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(
+                            yylhs.location,
+                            BUILDER.term(yystack_[2].location, UnOp::NEG, (yystack_[2].value.termpair).first),
+                            (yystack_[2].value.termpair).second, (yystack_[1].value.termvec), (yystack_[0].value.body));
+                    }
+#line 1790 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 200: // minelemlist: optimizeweight optimizetuple optimizecond
+#line 704 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first,
+                                         (yystack_[2].value.termpair).second, (yystack_[1].value.termvec),
+                                         (yystack_[0].value.body));
+                    }
+#line 1796 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 201: // minelemlist: minelemlist ";" optimizeweight optimizetuple optimizecond
+#line 705 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.optimize(yylhs.location, (yystack_[2].value.termpair).first,
+                                         (yystack_[2].value.termpair).second, (yystack_[1].value.termvec),
+                                         (yystack_[0].value.body));
+                    }
+#line 1802 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 206: // statement: "#showsig" identifier "/" "<NUMBER>" "."
+#line 718 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.showsig(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false));
+                    }
+#line 1808 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 207: // statement: "#showsig" "-" identifier "/" "<NUMBER>" "."
+#line 719 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.showsig(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true));
+                    }
+#line 1814 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 208: // statement: "#show" "."
+#line 720 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.showsig(yylhs.location, Sig("", 0, false));
+                    }
+#line 1820 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 209: // statement: "#show" term ":" bodydot
+#line 721 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.show(yylhs.location, (yystack_[2].value.term), (yystack_[0].value.body));
+                    }
+#line 1826 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 210: // statement: "#show" term "."
+#line 722 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.show(yylhs.location, (yystack_[1].value.term), BUILDER.body());
+                    }
+#line 1832 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 211: // statement: "#defined" identifier "/" "<NUMBER>" "."
+#line 728 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.defined(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false));
+                    }
+#line 1838 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 212: // statement: "#defined" "-" identifier "/" "<NUMBER>" "."
+#line 729 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.defined(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true));
+                    }
+#line 1844 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 213: // statement: "#edge" "(" binaryargvec ")" bodyconddot
+#line 734 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.edge(yylhs.location, (yystack_[2].value.termvecvec), (yystack_[0].value.body));
+                    }
+#line 1850 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 214: // statement: "#heuristic" atom bodyconddot "[" term "@" term "," term "]"
+#line 740 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.heuristic(yylhs.location, (yystack_[8].value.term), (yystack_[7].value.body),
+                                          (yystack_[5].value.term), (yystack_[3].value.term), (yystack_[1].value.term));
+                    }
+#line 1856 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 215: // statement: "#heuristic" atom bodyconddot "[" term "," term "]"
+#line 741 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.heuristic(yylhs.location, (yystack_[6].value.term), (yystack_[5].value.body),
+                                          (yystack_[3].value.term), BUILDER.term(yylhs.location, Symbol::createNum(0)),
+                                          (yystack_[1].value.term));
+                    }
+#line 1862 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 216: // statement: "#project" identifier "/" "<NUMBER>" "."
+#line 747 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.project(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), false));
+                    }
+#line 1868 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 217: // statement: "#project" "-" identifier "/" "<NUMBER>" "."
+#line 748 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.project(yylhs.location,
+                                        Sig(String::fromRep((yystack_[3].value.str)), (yystack_[1].value.num), true));
+                    }
+#line 1874 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 218: // statement: "#project" atom bodyconddot
+#line 749 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.project(yylhs.location, (yystack_[1].value.term), (yystack_[0].value.body));
+                    }
+#line 1880 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 219: // define: identifier "=" constterm
+#line 755 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.define(yylhs.location, String::fromRep((yystack_[2].value.str)),
+                                       (yystack_[0].value.term), false, LOGGER);
+                    }
+#line 1886 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 220: // storecomment: %empty
+#line 759 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->storeComments();
+                    }
+#line 1892 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 221: // statement: "#const" identifier "=" constterm "." storecomment
+#line 762 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.define(yylhs.location, String::fromRep((yystack_[4].value.str)),
+                                       (yystack_[2].value.term), true, LOGGER);
+                        lexer->flushComments();
+                    }
+#line 1898 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 222: // statement: "#const" identifier "=" constterm "." storecomment "[" "default" "]"
+#line 763 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->flushComments();
+                        BUILDER.define(yylhs.location, String::fromRep((yystack_[7].value.str)),
+                                       (yystack_[5].value.term), true, LOGGER);
+                    }
+#line 1904 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 223: // statement: "#const" identifier "=" constterm "." storecomment "[" "override" "]"
+#line 764 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->flushComments();
+                        BUILDER.define(yylhs.location, String::fromRep((yystack_[7].value.str)),
+                                       (yystack_[5].value.term), false, LOGGER);
+                    }
+#line 1910 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 224: // statement: "<SCRIPT>" "(" "<IDENTIFIER>" ")" "<CODE>" "."
+#line 770 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.script(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                       String::fromRep((yystack_[1].value.str)));
+                    }
+#line 1916 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 225: // statement: "#include" "<STRING>" "."
+#line 776 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->include(String::fromRep((yystack_[1].value.str)), yylhs.location, false, LOGGER);
+                    }
+#line 1922 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 226: // statement: "#include" "<" identifier ">" "."
+#line 777 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->include(String::fromRep((yystack_[2].value.str)), yylhs.location, true, LOGGER);
+                    }
+#line 1928 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 227: // nidlist: nidlist "," identifier
+#line 783 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.idlist) = BUILDER.idvec((yystack_[2].value.idlist), yystack_[0].location,
+                                                             String::fromRep((yystack_[0].value.str)));
+                    }
+#line 1934 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 228: // nidlist: identifier
+#line 784 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.idlist) = BUILDER.idvec(BUILDER.idvec(), yystack_[0].location,
+                                                             String::fromRep((yystack_[0].value.str)));
+                    }
+#line 1940 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 229: // idlist: %empty
+#line 788 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.idlist) = BUILDER.idvec();
+                    }
+#line 1946 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 230: // idlist: nidlist
+#line 789 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.idlist) = (yystack_[0].value.idlist);
+                    }
+#line 1952 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 231: // statement: "#program" identifier "(" idlist ")" "."
+#line 793 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.block(yylhs.location, String::fromRep((yystack_[4].value.str)),
+                                      (yystack_[2].value.idlist));
+                    }
+#line 1958 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 232: // statement: "#program" identifier "."
+#line 794 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.block(yylhs.location, String::fromRep((yystack_[1].value.str)), BUILDER.idvec());
+                    }
+#line 1964 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 233: // statement: "#external" atom ":" bodydot storecomment
+#line 800 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.external(yylhs.location, (yystack_[3].value.term), (yystack_[1].value.body),
+                                         BUILDER.term(yylhs.location, Symbol::createId("false")));
+                        lexer->flushComments();
+                    }
+#line 1970 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 234: // statement: "#external" atom ":" "." storecomment
+#line 801 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.external(yylhs.location, (yystack_[3].value.term), BUILDER.body(),
+                                         BUILDER.term(yylhs.location, Symbol::createId("false")));
+                        lexer->flushComments();
+                    }
+#line 1976 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 235: // statement: "#external" atom "." storecomment
+#line 802 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.external(yylhs.location, (yystack_[2].value.term), BUILDER.body(),
+                                         BUILDER.term(yylhs.location, Symbol::createId("false")));
+                        lexer->flushComments();
+                    }
+#line 1982 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 236: // statement: "#external" atom ":" bodydot storecomment "[" term "]"
+#line 803 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->flushComments();
+                        BUILDER.external(yylhs.location, (yystack_[6].value.term), (yystack_[4].value.body),
+                                         (yystack_[1].value.term));
+                    }
+#line 1988 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 237: // statement: "#external" atom ":" "." storecomment "[" term "]"
+#line 804 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->flushComments();
+                        BUILDER.external(yylhs.location, (yystack_[6].value.term), BUILDER.body(),
+                                         (yystack_[1].value.term));
+                    }
+#line 1994 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 238: // statement: "#external" atom "." storecomment "[" term "]"
+#line 805 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->flushComments();
+                        BUILDER.external(yylhs.location, (yystack_[5].value.term), BUILDER.body(),
+                                         (yystack_[1].value.term));
+                    }
+#line 2000 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 239: // theory_op: "<THEORYOP>"
+#line 811 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 2006 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 240: // theory_op: "not"
+#line 812 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 2012 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 241: // theory_op_list: theory_op_list theory_op
+#line 818 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) =
+                            BUILDER.theoryops((yystack_[1].value.theoryOps), String::fromRep((yystack_[0].value.str)));
+                    }
+#line 2018 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 242: // theory_op_list: theory_op
+#line 819 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) =
+                            BUILDER.theoryops(BUILDER.theoryops(), String::fromRep((yystack_[0].value.str)));
+                    }
+#line 2024 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 243: // theory_term: "{" theory_opterm_list "}"
+#line 823 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theorytermset(yylhs.location, (yystack_[1].value.theoryOpterms));
+                    }
+#line 2030 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 244: // theory_term: "[" theory_opterm_list "]"
+#line 824 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theoryoptermlist(yylhs.location, (yystack_[1].value.theoryOpterms));
+                    }
+#line 2036 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 245: // theory_term: "(" ")"
+#line 825 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(yylhs.location, BUILDER.theoryopterms());
+                    }
+#line 2042 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 246: // theory_term: "(" theory_opterm ")"
+#line 826 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theorytermopterm(yylhs.location, (yystack_[1].value.theoryOpterm));
+                    }
+#line 2048 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 247: // theory_term: "(" theory_opterm "," ")"
+#line 827 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(
+                            yylhs.location, BUILDER.theoryopterms(BUILDER.theoryopterms(), yystack_[2].location,
+                                                                  (yystack_[2].value.theoryOpterm)));
+                    }
+#line 2054 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 248: // theory_term: "(" theory_opterm "," theory_opterm_nlist ")"
+#line 828 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermtuple(
+                            yylhs.location,
+                            BUILDER.theoryopterms(yystack_[3].location, (yystack_[3].value.theoryOpterm),
+                                                  (yystack_[1].value.theoryOpterms)));
+                    }
+#line 2060 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 249: // theory_term: identifier "(" theory_opterm_list ")"
+#line 829 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theorytermfun(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                  (yystack_[1].value.theoryOpterms));
+                    }
+#line 2066 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 250: // theory_term: identifier
+#line 830 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(
+                            yylhs.location, Symbol::createId(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 2072 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 251: // theory_term: "<NUMBER>"
+#line 831 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theorytermvalue(yylhs.location, Symbol::createNum((yystack_[0].value.num)));
+                    }
+#line 2078 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 252: // theory_term: "<STRING>"
+#line 832 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(
+                            yylhs.location, Symbol::createStr(String::fromRep((yystack_[0].value.str))));
+                    }
+#line 2084 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 253: // theory_term: "#inf"
+#line 833 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createInf());
+                    }
+#line 2090 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 254: // theory_term: "#sup"
+#line 834 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) = BUILDER.theorytermvalue(yylhs.location, Symbol::createSup());
+                    }
+#line 2096 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 255: // theory_term: "<VARIABLE>"
+#line 835 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTerm) =
+                            BUILDER.theorytermvar(yylhs.location, String::fromRep((yystack_[0].value.str)));
+                    }
+#line 2102 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 256: // theory_opterm: theory_opterm theory_op_list theory_term
+#line 839 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterm) =
+                            BUILDER.theoryopterm((yystack_[2].value.theoryOpterm), (yystack_[1].value.theoryOps),
+                                                 (yystack_[0].value.theoryTerm));
+                    }
+#line 2108 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 257: // theory_opterm: theory_op_list theory_term
+#line 840 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterm) =
+                            BUILDER.theoryopterm((yystack_[1].value.theoryOps), (yystack_[0].value.theoryTerm));
+                    }
+#line 2114 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 258: // theory_opterm: theory_term
+#line 841 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterm) =
+                            BUILDER.theoryopterm(BUILDER.theoryops(), (yystack_[0].value.theoryTerm));
+                    }
+#line 2120 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 259: // theory_opterm_nlist: theory_opterm_nlist "," theory_opterm
+#line 845 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterms) = BUILDER.theoryopterms(
+                            (yystack_[2].value.theoryOpterms), yystack_[0].location, (yystack_[0].value.theoryOpterm));
+                    }
+#line 2126 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 260: // theory_opterm_nlist: theory_opterm
+#line 846 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterms) = BUILDER.theoryopterms(
+                            BUILDER.theoryopterms(), yystack_[0].location, (yystack_[0].value.theoryOpterm));
+                    }
+#line 2132 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 261: // theory_opterm_list: theory_opterm_nlist
+#line 850 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterms) = (yystack_[0].value.theoryOpterms);
+                    }
+#line 2138 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 262: // theory_opterm_list: %empty
+#line 851 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpterms) = BUILDER.theoryopterms();
+                    }
+#line 2144 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 263: // theory_atom_element: theory_opterm_nlist disable_theory_lexing optcondition
+#line 855 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElem) = {(yystack_[2].value.theoryOpterms), (yystack_[0].value.litvec)};
+                    }
+#line 2150 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 264: // theory_atom_element: disable_theory_lexing ":" litvec
+#line 856 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElem) = {BUILDER.theoryopterms(), (yystack_[0].value.litvec)};
+                    }
+#line 2156 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 265: // theory_atom_element_nlist: theory_atom_element_nlist enable_theory_lexing ";"
+                              // theory_atom_element
+#line 860 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElems) =
+                            BUILDER.theoryelems((yystack_[3].value.theoryElems), (yystack_[0].value.theoryElem).first,
+                                                (yystack_[0].value.theoryElem).second);
+                    }
+#line 2162 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 266: // theory_atom_element_nlist: theory_atom_element
+#line 861 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElems) =
+                            BUILDER.theoryelems(BUILDER.theoryelems(), (yystack_[0].value.theoryElem).first,
+                                                (yystack_[0].value.theoryElem).second);
+                    }
+#line 2168 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 267: // theory_atom_element_list: theory_atom_element_nlist
+#line 865 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElems) = (yystack_[0].value.theoryElems);
+                    }
+#line 2174 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 268: // theory_atom_element_list: %empty
+#line 866 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryElems) = BUILDER.theoryelems();
+                    }
+#line 2180 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 269: // theory_atom_name: identifier
+#line 870 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) =
+                            BUILDER.term(yylhs.location, String::fromRep((yystack_[0].value.str)),
+                                         BUILDER.termvecvec(BUILDER.termvecvec(), BUILDER.termvec()), false);
+                    }
+#line 2186 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 270: // theory_atom_name: identifier "(" argvec ")"
+#line 871 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.term) = BUILDER.term(yylhs.location, String::fromRep((yystack_[3].value.str)),
+                                                          (yystack_[1].value.termvecvec), false);
+                    }
+#line 2192 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 271: // theory_atom: "&" theory_atom_name
+#line 874 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtom) = BUILDER.theoryatom((yystack_[0].value.term), BUILDER.theoryelems());
+                    }
+#line 2198 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 272: // theory_atom: "&" theory_atom_name enable_theory_lexing "{" theory_atom_element_list
+                              // enable_theory_lexing "}" disable_theory_lexing
+#line 875 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtom) =
+                            BUILDER.theoryatom((yystack_[6].value.term), (yystack_[3].value.theoryElems));
+                    }
+#line 2204 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 273: // theory_atom: "&" theory_atom_name enable_theory_lexing "{" theory_atom_element_list
+                              // enable_theory_lexing "}" theory_op theory_opterm disable_theory_lexing
+#line 876 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtom) =
+                            BUILDER.theoryatom((yystack_[8].value.term), (yystack_[5].value.theoryElems),
+                                               String::fromRep((yystack_[2].value.str)), yystack_[1].location,
+                                               (yystack_[1].value.theoryOpterm));
+                    }
+#line 2210 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 274: // theory_operator_nlist: theory_op
+#line 882 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) =
+                            BUILDER.theoryops(BUILDER.theoryops(), String::fromRep((yystack_[0].value.str)));
+                    }
+#line 2216 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 275: // theory_operator_nlist: theory_operator_nlist "," theory_op
+#line 883 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) =
+                            BUILDER.theoryops((yystack_[2].value.theoryOps), String::fromRep((yystack_[0].value.str)));
+                    }
+#line 2222 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 276: // theory_operator_list: theory_operator_nlist
+#line 887 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) = (yystack_[0].value.theoryOps);
+                    }
+#line 2228 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 277: // theory_operator_list: %empty
+#line 888 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOps) = BUILDER.theoryops();
+                    }
+#line 2234 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 278: // theory_operator_definition: theory_op enable_theory_definition_lexing ":" "<NUMBER>"
+                              // "," "unary"
+#line 892 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDef) =
+                            BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[5].value.str)),
+                                                (yystack_[2].value.num), TheoryOperatorType::Unary);
+                    }
+#line 2240 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 279: // theory_operator_definition: theory_op enable_theory_definition_lexing ":" "<NUMBER>"
+                              // "," "binary" "," "left"
+#line 893 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDef) =
+                            BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[7].value.str)),
+                                                (yystack_[4].value.num), TheoryOperatorType::BinaryLeft);
+                    }
+#line 2246 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 280: // theory_operator_definition: theory_op enable_theory_definition_lexing ":" "<NUMBER>"
+                              // "," "binary" "," "right"
+#line 894 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDef) =
+                            BUILDER.theoryopdef(yylhs.location, String::fromRep((yystack_[7].value.str)),
+                                                (yystack_[4].value.num), TheoryOperatorType::BinaryRight);
+                    }
+#line 2252 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 281: // theory_operator_definition_nlist: theory_operator_definition
+#line 898 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDefs) =
+                            BUILDER.theoryopdefs(BUILDER.theoryopdefs(), (yystack_[0].value.theoryOpDef));
+                    }
+#line 2258 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 282: // theory_operator_definition_nlist: theory_operator_definition_nlist enable_theory_lexing
+                              // ";" theory_operator_definition
+#line 899 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDefs) =
+                            BUILDER.theoryopdefs((yystack_[3].value.theoryOpDefs), (yystack_[0].value.theoryOpDef));
+                    }
+#line 2264 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 283: // theory_operator_definiton_list: theory_operator_definition_nlist
+#line 903 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDefs) = (yystack_[0].value.theoryOpDefs);
+                    }
+#line 2270 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 284: // theory_operator_definiton_list: %empty
+#line 904 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryOpDefs) = BUILDER.theoryopdefs();
+                    }
+#line 2276 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 285: // theory_definition_identifier: identifier
+#line 908 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = (yystack_[0].value.str);
+                    }
+#line 2282 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 286: // theory_definition_identifier: "left"
+#line 909 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("left");
+                    }
+#line 2288 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 287: // theory_definition_identifier: "right"
+#line 910 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("right");
+                    }
+#line 2294 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 288: // theory_definition_identifier: "unary"
+#line 911 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("unary");
+                    }
+#line 2300 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 289: // theory_definition_identifier: "binary"
+#line 912 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("binary");
+                    }
+#line 2306 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 290: // theory_definition_identifier: "head"
+#line 913 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("head");
+                    }
+#line 2312 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 291: // theory_definition_identifier: "body"
+#line 914 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("body");
+                    }
+#line 2318 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 292: // theory_definition_identifier: "any"
+#line 915 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("any");
+                    }
+#line 2324 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 293: // theory_definition_identifier: "directive"
+#line 916 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.str) = String::toRep("directive");
+                    }
+#line 2330 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 294: // theory_term_definition: theory_definition_identifier enable_theory_lexing "{"
+                              // theory_operator_definiton_list enable_theory_definition_lexing "}"
+#line 920 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryTermDef) =
+                            BUILDER.theorytermdef(yylhs.location, String::fromRep((yystack_[5].value.str)),
+                                                  (yystack_[2].value.theoryOpDefs), LOGGER);
+                    }
+#line 2336 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 295: // theory_atom_type: "head"
+#line 924 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomType) = TheoryAtomType::Head;
+                    }
+#line 2342 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 296: // theory_atom_type: "body"
+#line 925 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomType) = TheoryAtomType::Body;
+                    }
+#line 2348 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 297: // theory_atom_type: "any"
+#line 926 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomType) = TheoryAtomType::Any;
+                    }
+#line 2354 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 298: // theory_atom_type: "directive"
+#line 927 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomType) = TheoryAtomType::Directive;
+                    }
+#line 2360 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 299: // theory_atom_definition: "&" theory_definition_identifier "/" "<NUMBER>" ":"
+                              // theory_definition_identifier "," enable_theory_lexing "{" theory_operator_list
+                              // enable_theory_definition_lexing "}" "," theory_definition_identifier ","
+                              // theory_atom_type
+#line 932 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomDef) = BUILDER.theoryatomdef(
+                            yylhs.location, String::fromRep((yystack_[14].value.str)), (yystack_[12].value.num),
+                            String::fromRep((yystack_[10].value.str)), (yystack_[0].value.theoryAtomType),
+                            (yystack_[6].value.theoryOps), String::fromRep((yystack_[2].value.str)));
+                    }
+#line 2366 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 300: // theory_atom_definition: "&" theory_definition_identifier "/" "<NUMBER>" ":"
+                              // theory_definition_identifier "," theory_atom_type
+#line 933 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryAtomDef) = BUILDER.theoryatomdef(
+                            yylhs.location, String::fromRep((yystack_[6].value.str)), (yystack_[4].value.num),
+                            String::fromRep((yystack_[2].value.str)), (yystack_[0].value.theoryAtomType));
+                    }
+#line 2372 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 301: // theory_definition_nlist: theory_definition_list ";" theory_atom_definition
+#line 937 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) =
+                            BUILDER.theorydefs((yystack_[2].value.theoryDefs), (yystack_[0].value.theoryAtomDef));
+                    }
+#line 2378 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 302: // theory_definition_nlist: theory_definition_list ";" theory_term_definition
+#line 938 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) =
+                            BUILDER.theorydefs((yystack_[2].value.theoryDefs), (yystack_[0].value.theoryTermDef));
+                    }
+#line 2384 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 303: // theory_definition_nlist: theory_atom_definition
+#line 939 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) =
+                            BUILDER.theorydefs(BUILDER.theorydefs(), (yystack_[0].value.theoryAtomDef));
+                    }
+#line 2390 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 304: // theory_definition_nlist: theory_term_definition
+#line 940 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) =
+                            BUILDER.theorydefs(BUILDER.theorydefs(), (yystack_[0].value.theoryTermDef));
+                    }
+#line 2396 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 305: // theory_definition_list: theory_definition_nlist
+#line 944 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) = (yystack_[0].value.theoryDefs);
+                    }
+#line 2402 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 306: // theory_definition_list: %empty
+#line 945 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        (yylhs.value.theoryDefs) = BUILDER.theorydefs();
+                    }
+#line 2408 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 307: // statement: "#theory" identifier enable_theory_definition_lexing "{"
+                              // theory_definition_list "}" disable_theory_lexing "."
+#line 949 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        BUILDER.theorydef(yylhs.location, String::fromRep((yystack_[6].value.str)),
+                                          (yystack_[3].value.theoryDefs), LOGGER);
+                    }
+#line 2414 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 308: // enable_theory_lexing: %empty
+#line 955 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->theoryLexing(TheoryLexing::Theory);
+                    }
+#line 2420 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 309: // enable_theory_definition_lexing: %empty
+#line 959 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->theoryLexing(TheoryLexing::Definition);
+                    }
+#line 2426 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+                    case 310: // disable_theory_lexing: %empty
+#line 963 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+                    {
+                        lexer->theoryLexing(TheoryLexing::Disabled);
+                    }
+#line 2432 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+                    break;
+
+#line 2436 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"
+
+                    default:
+                        break;
+                }
+            }
+#if YY_EXCEPTIONS
+            catch (const syntax_error &yyexc) {
+                YYCDEBUG << "Caught exception: " << yyexc.what() << '\n';
+                error(yyexc);
+                YYERROR;
+            }
+#endif // YY_EXCEPTIONS
+            YY_SYMBOL_PRINT("-> $$ =", yylhs);
+            yypop_(yylen);
+            yylen = 0;
+
+            // Shift the result of the reduction.
+            yypush_(YY_NULLPTR, YY_MOVE(yylhs));
+        }
+        goto yynewstate;
+
+    /*--------------------------------------.
+    | yyerrlab -- here on detecting error.  |
+    `--------------------------------------*/
+    yyerrlab:
+        // If not already recovering from an error, report this error.
+        if (!yyerrstatus_) {
+            ++yynerrs_;
+            context yyctx(*this, yyla);
+            std::string msg = yysyntax_error_(yyctx);
+            error(yyla.location, YY_MOVE(msg));
+        }
+
+        yyerror_range[1].location = yyla.location;
+        if (yyerrstatus_ == 3) {
+            /* If just tried and failed to reuse lookahead token after an
+               error, discard it.  */
+
+            // Return failure if at end of input.
+            if (yyla.kind() == symbol_kind::S_YYEOF)
+                YYABORT;
+            else if (!yyla.empty()) {
+                yy_destroy_("Error: discarding", yyla);
+                yyla.clear();
             }
         }
-#if YY_EXCEPTIONS
-      catch (const syntax_error& yyexc)
-        {
-          YYCDEBUG << "Caught exception: " << yyexc.what() << '\n';
-          error (yyexc);
-          YYERROR;
-        }
-#endif // YY_EXCEPTIONS
-      YY_SYMBOL_PRINT ("-> $$ =", yylhs);
-      yypop_ (yylen);
-      yylen = 0;
-      YY_STACK_PRINT ();
 
-      // Shift the result of the reduction.
-      yypush_ (YY_NULLPTR, YY_MOVE (yylhs));
-    }
-    goto yynewstate;
+        // Else will try to reuse lookahead token after shifting the error token.
+        goto yyerrlab1;
 
+    /*---------------------------------------------------.
+    | yyerrorlab -- error raised explicitly by YYERROR.  |
+    `---------------------------------------------------*/
+    yyerrorlab:
+        /* Pacify compilers when the user code never invokes YYERROR and
+           the label yyerrorlab therefore never appears in user code.  */
+        if (false)
+            YYERROR;
 
-  /*--------------------------------------.
-  | yyerrlab -- here on detecting error.  |
-  `--------------------------------------*/
-  yyerrlab:
-    // If not already recovering from an error, report this error.
-    if (!yyerrstatus_)
-      {
-        ++yynerrs_;
-        error (yyla.location, yysyntax_error_ (yystack_[0].state, yyla));
-      }
+        /* Do not reclaim the symbols of the rule whose action triggered
+           this YYERROR.  */
+        yypop_(yylen);
+        yylen = 0;
+        YY_STACK_PRINT();
+        goto yyerrlab1;
 
-
-    yyerror_range[1].location = yyla.location;
-    if (yyerrstatus_ == 3)
-      {
-        /* If just tried and failed to reuse lookahead token after an
-           error, discard it.  */
-
-        // Return failure if at end of input.
-        if (yyla.type_get () == yyeof_)
-          YYABORT;
-        else if (!yyla.empty ())
-          {
-            yy_destroy_ ("Error: discarding", yyla);
-            yyla.clear ();
-          }
-      }
-
-    // Else will try to reuse lookahead token after shifting the error token.
-    goto yyerrlab1;
-
-
-  /*---------------------------------------------------.
-  | yyerrorlab -- error raised explicitly by YYERROR.  |
-  `---------------------------------------------------*/
-  yyerrorlab:
-    /* Pacify compilers when the user code never invokes YYERROR and
-       the label yyerrorlab therefore never appears in user code.  */
-    if (false)
-      YYERROR;
-
-    /* Do not reclaim the symbols of the rule whose action triggered
-       this YYERROR.  */
-    yypop_ (yylen);
-    yylen = 0;
-    goto yyerrlab1;
-
-
-  /*-------------------------------------------------------------.
-  | yyerrlab1 -- common code for both syntax error and YYERROR.  |
-  `-------------------------------------------------------------*/
-  yyerrlab1:
-    yyerrstatus_ = 3;   // Each real token shifted decrements this.
-    {
-      stack_symbol_type error_token;
-      for (;;)
-        {
-          yyn = yypact_[yystack_[0].state];
-          if (!yy_pact_value_is_default_ (yyn))
-            {
-              yyn += yyterror_;
-              if (0 <= yyn && yyn <= yylast_ && yycheck_[yyn] == yyterror_)
-                {
-                  yyn = yytable_[yyn];
-                  if (0 < yyn)
-                    break;
+    /*-------------------------------------------------------------.
+    | yyerrlab1 -- common code for both syntax error and YYERROR.  |
+    `-------------------------------------------------------------*/
+    yyerrlab1:
+        yyerrstatus_ = 3; // Each real token shifted decrements this.
+        // Pop stack until we find a state that shifts the error token.
+        for (;;) {
+            yyn = yypact_[+yystack_[0].state];
+            if (!yy_pact_value_is_default_(yyn)) {
+                yyn += symbol_kind::S_YYerror;
+                if (0 <= yyn && yyn <= yylast_ && yycheck_[yyn] == symbol_kind::S_YYerror) {
+                    yyn = yytable_[yyn];
+                    if (0 < yyn)
+                        break;
                 }
             }
 
-          // Pop the current state because it cannot handle the error token.
-          if (yystack_.size () == 1)
-            YYABORT;
+            // Pop the current state because it cannot handle the error token.
+            if (yystack_.size() == 1)
+                YYABORT;
 
-          yyerror_range[1].location = yystack_[0].location;
-          yy_destroy_ ("Error: popping", yystack_[0]);
-          yypop_ ();
-          YY_STACK_PRINT ();
+            yyerror_range[1].location = yystack_[0].location;
+            yy_destroy_("Error: popping", yystack_[0]);
+            yypop_();
+            YY_STACK_PRINT();
+        }
+        {
+            stack_symbol_type error_token;
+
+            yyerror_range[2].location = yyla.location;
+            YYLLOC_DEFAULT(error_token.location, yyerror_range, 2);
+
+            // Shift the error token.
+            error_token.state = state_type(yyn);
+            yypush_("Shifting", YY_MOVE(error_token));
+        }
+        goto yynewstate;
+
+    /*-------------------------------------.
+    | yyacceptlab -- YYACCEPT comes here.  |
+    `-------------------------------------*/
+    yyacceptlab:
+        yyresult = 0;
+        goto yyreturn;
+
+    /*-----------------------------------.
+    | yyabortlab -- YYABORT comes here.  |
+    `-----------------------------------*/
+    yyabortlab:
+        yyresult = 1;
+        goto yyreturn;
+
+    /*-----------------------------------------------------.
+    | yyreturn -- parsing is finished, return the result.  |
+    `-----------------------------------------------------*/
+    yyreturn:
+        if (!yyla.empty())
+            yy_destroy_("Cleanup: discarding lookahead", yyla);
+
+        /* Do not reclaim the symbols of the rule whose action triggered
+           this YYABORT or YYACCEPT.  */
+        yypop_(yylen);
+        YY_STACK_PRINT();
+        while (1 < yystack_.size()) {
+            yy_destroy_("Cleanup: popping", yystack_[0]);
+            yypop_();
         }
 
-      yyerror_range[2].location = yyla.location;
-      YYLLOC_DEFAULT (error_token.location, yyerror_range, 2);
-
-      // Shift the error token.
-      error_token.state = yyn;
-      yypush_ ("Shifting", YY_MOVE (error_token));
+        return yyresult;
     }
-    goto yynewstate;
-
-
-  /*-------------------------------------.
-  | yyacceptlab -- YYACCEPT comes here.  |
-  `-------------------------------------*/
-  yyacceptlab:
-    yyresult = 0;
-    goto yyreturn;
-
-
-  /*-----------------------------------.
-  | yyabortlab -- YYABORT comes here.  |
-  `-----------------------------------*/
-  yyabortlab:
-    yyresult = 1;
-    goto yyreturn;
-
-
-  /*-----------------------------------------------------.
-  | yyreturn -- parsing is finished, return the result.  |
-  `-----------------------------------------------------*/
-  yyreturn:
-    if (!yyla.empty ())
-      yy_destroy_ ("Cleanup: discarding lookahead", yyla);
-
-    /* Do not reclaim the symbols of the rule whose action triggered
-       this YYABORT or YYACCEPT.  */
-    yypop_ (yylen);
-    while (1 < yystack_.size ())
-      {
-        yy_destroy_ ("Cleanup: popping", yystack_[0]);
-        yypop_ ();
-      }
-
-    return yyresult;
-  }
 #if YY_EXCEPTIONS
-    catch (...)
-      {
+    catch (...) {
         YYCDEBUG << "Exception caught: cleaning lookahead and stack\n";
         // Do not try to display the values of the reclaimed symbols,
         // as their printers might throw an exception.
-        if (!yyla.empty ())
-          yy_destroy_ (YY_NULLPTR, yyla);
+        if (!yyla.empty())
+            yy_destroy_(YY_NULLPTR, yyla);
 
-        while (1 < yystack_.size ())
-          {
-            yy_destroy_ (YY_NULLPTR, yystack_[0]);
-            yypop_ ();
-          }
+        while (1 < yystack_.size()) {
+            yy_destroy_(YY_NULLPTR, yystack_[0]);
+            yypop_();
+        }
         throw;
-      }
+    }
 #endif // YY_EXCEPTIONS
-  }
+}
 
-  void
-  parser::error (const syntax_error& yyexc)
-  {
-    error (yyexc.location, yyexc.what ());
-  }
+void parser::error(const syntax_error &yyexc) { error(yyexc.location, yyexc.what()); }
 
-  // Generate an error message.
-  std::string
-  parser::yysyntax_error_ (state_type yystate, const symbol_type& yyla) const
-  {
-    // Number of reported tokens (one for the "unexpected", one per
-    // "expected").
-    size_t yycount = 0;
-    // Its maximum.
-    enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
-    // Arguments of yyformat.
-    char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
+/* Return YYSTR after stripping away unnecessary quotes and
+   backslashes, so that it's suitable for yyerror.  The heuristic is
+   that double-quoting is unnecessary unless the string contains an
+   apostrophe, a comma, or backslash (other than backslash-backslash).
+   YYSTR is taken from yytname.  */
+std::string parser::yytnamerr_(const char *yystr) {
+    if (*yystr == '"') {
+        std::string yyr;
+        char const *yyp = yystr;
 
+        for (;;)
+            switch (*++yyp) {
+                case '\'':
+                case ',':
+                    goto do_not_strip_quotes;
+
+                case '\\':
+                    if (*++yyp != '\\')
+                        goto do_not_strip_quotes;
+                    else
+                        goto append;
+
+                append:
+                default:
+                    yyr += *yyp;
+                    break;
+
+                case '"':
+                    return yyr;
+            }
+    do_not_strip_quotes:;
+    }
+
+    return yystr;
+}
+
+std::string parser::symbol_name(symbol_kind_type yysymbol) { return yytnamerr_(yytname_[yysymbol]); }
+
+// parser::context.
+parser::context::context(const parser &yyparser, const symbol_type &yyla) : yyparser_(yyparser), yyla_(yyla) {}
+
+int parser::context::expected_tokens(symbol_kind_type yyarg[], int yyargn) const {
+    // Actual number of expected tokens
+    int yycount = 0;
+
+    const int yyn = yypact_[+yyparser_.yystack_[0].state];
+    if (!yy_pact_value_is_default_(yyn)) {
+        /* Start YYX at -YYN if negative to avoid negative indexes in
+           YYCHECK.  In other words, skip the first -YYN actions for
+           this state because they are default actions.  */
+        const int yyxbegin = yyn < 0 ? -yyn : 0;
+        // Stay within bounds of both yycheck and yytname.
+        const int yychecklim = yylast_ - yyn + 1;
+        const int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+        for (int yyx = yyxbegin; yyx < yyxend; ++yyx)
+            if (yycheck_[yyx + yyn] == yyx && yyx != symbol_kind::S_YYerror &&
+                !yy_table_value_is_error_(yytable_[yyx + yyn])) {
+                if (!yyarg)
+                    ++yycount;
+                else if (yycount == yyargn)
+                    return 0;
+                else
+                    yyarg[yycount++] = YY_CAST(symbol_kind_type, yyx);
+            }
+    }
+
+    if (yyarg && yycount == 0 && 0 < yyargn)
+        yyarg[0] = symbol_kind::S_YYEMPTY;
+    return yycount;
+}
+
+int parser::yy_syntax_error_arguments_(const context &yyctx, symbol_kind_type yyarg[], int yyargn) const {
     /* There are many possibilities here to consider:
        - If this state is a consistent state with a default action, then
          the only way this function was invoked is if the default action
@@ -2645,950 +3360,610 @@ namespace Gringo { namespace Input { namespace NonGroundGrammar {
        - Of course, the expected token list depends on states to have
          correct lookahead information, and it depends on the parser not
          to perform extra reductions after fetching a lookahead from the
-         scanner and before detecting a syntax error.  Thus, state
-         merging (from LALR or IELR) and default reductions corrupt the
-         expected token list.  However, the list is correct for
-         canonical LR with one exception: it will still contain any
-         token that will not be accepted due to an error action in a
-         later state.
+         scanner and before detecting a syntax error.  Thus, state merging
+         (from LALR or IELR) and default reductions corrupt the expected
+         token list.  However, the list is correct for canonical LR with
+         one exception: it will still contain any token that will not be
+         accepted due to an error action in a later state.
     */
-    if (!yyla.empty ())
-      {
-        int yytoken = yyla.type_get ();
-        yyarg[yycount++] = yytname_[yytoken];
-        int yyn = yypact_[yystate];
-        if (!yy_pact_value_is_default_ (yyn))
-          {
-            /* Start YYX at -YYN if negative to avoid negative indexes in
-               YYCHECK.  In other words, skip the first -YYN actions for
-               this state because they are default actions.  */
-            int yyxbegin = yyn < 0 ? -yyn : 0;
-            // Stay within bounds of both yycheck and yytname.
-            int yychecklim = yylast_ - yyn + 1;
-            int yyxend = yychecklim < yyntokens_ ? yychecklim : yyntokens_;
-            for (int yyx = yyxbegin; yyx < yyxend; ++yyx)
-              if (yycheck_[yyx + yyn] == yyx && yyx != yyterror_
-                  && !yy_table_value_is_error_ (yytable_[yyx + yyn]))
-                {
-                  if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
-                    {
-                      yycount = 1;
-                      break;
-                    }
-                  else
-                    yyarg[yycount++] = yytname_[yyx];
-                }
-          }
-      }
 
-    char const* yyformat = YY_NULLPTR;
-    switch (yycount)
-      {
-#define YYCASE_(N, S)                         \
-        case N:                               \
-          yyformat = S;                       \
+    if (!yyctx.lookahead().empty()) {
+        if (yyarg)
+            yyarg[0] = yyctx.token();
+        int yyn = yyctx.expected_tokens(yyarg ? yyarg + 1 : yyarg, yyargn - 1);
+        return yyn + 1;
+    }
+    return 0;
+}
+
+// Generate an error message.
+std::string parser::yysyntax_error_(const context &yyctx) const {
+    // Its maximum.
+    enum { YYARGS_MAX = 5 };
+    // Arguments of yyformat.
+    symbol_kind_type yyarg[YYARGS_MAX];
+    int yycount = yy_syntax_error_arguments_(yyctx, yyarg, YYARGS_MAX);
+
+    char const *yyformat = YY_NULLPTR;
+    switch (yycount) {
+#define YYCASE_(N, S)                                                                                                  \
+    case N:                                                                                                            \
+        yyformat = S;                                                                                                  \
         break
-      default: // Avoid compiler warnings.
-        YYCASE_ (0, YY_("syntax error"));
-        YYCASE_ (1, YY_("syntax error, unexpected %s"));
-        YYCASE_ (2, YY_("syntax error, unexpected %s, expecting %s"));
-        YYCASE_ (3, YY_("syntax error, unexpected %s, expecting %s or %s"));
-        YYCASE_ (4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
-        YYCASE_ (5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
+        default: // Avoid compiler warnings.
+            YYCASE_(0, YY_("syntax error"));
+            YYCASE_(1, YY_("syntax error, unexpected %s"));
+            YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
+            YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
+            YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
+            YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
 #undef YYCASE_
-      }
+    }
 
     std::string yyres;
     // Argument number.
-    size_t yyi = 0;
-    for (char const* yyp = yyformat; *yyp; ++yyp)
-      if (yyp[0] == '%' && yyp[1] == 's' && yyi < yycount)
-        {
-          yyres += yytnamerr_ (yyarg[yyi++]);
-          ++yyp;
-        }
-      else
-        yyres += *yyp;
+    std::ptrdiff_t yyi = 0;
+    for (char const *yyp = yyformat; *yyp; ++yyp)
+        if (yyp[0] == '%' && yyp[1] == 's' && yyi < yycount) {
+            yyres += symbol_name(yyarg[yyi++]);
+            ++yyp;
+        } else
+            yyres += *yyp;
     return yyres;
-  }
+}
 
+const short parser::yypact_ninf_ = -487;
 
-  const short parser::yypact_ninf_ = -485;
+const short parser::yytable_ninf_ = -311;
 
-  const short parser::yytable_ninf_ = -311;
+const short parser::yypact_[] = {
+    173,  236,  -487, 71,   -487, -487, -487, 84,   18,   668,  -487, 852,  -487, -487, 236,  236,  236,  1487, 236,
+    -487, 210,  -487, 57,   252,  -487, 252,  100,  15,   -487, 1087, 1296, 89,   -487, 135,  -487, 272,  1325, 348,
+    1487, -487, -487, -487, -487, 236,  -487, 1487, 113,  -487, -487, 195,  -487, -487, 1212, -487, 433,  1556, -487,
+    91,   192,  952,  -487, 1241, -487, 188,  -487, 236,  852,  -487, 327,  852,  -487, 852,  -487, -487, 197,  1850,
+    40,   200,  194,  202,  144,  1487, 206,  -487, 227,  236,  207,  1487, 236,  216,  58,   203,  -487, 750,  -487,
+    236,  235,  -487, 1648, 256,  97,   -487, 1826, 258,  233,  1296, 228,  1354, 1383, 236,  28,   203,  -487, 254,
+    236,  238,  460,  -487, -487, 1826, 94,   259,  265,  240,  -487, -487, 1270, 1648, -487, 1487, 1487, 1487, 1487,
+    -487, -487, -487, -487, -487, 1487, 1487, -487, 1487, 1487, 1487, 1487, 1487, 995,  622,  952,  1116, -487, -487,
+    -487, -487, 1412, 1826, 1487, -487, 98,   -487, 303,  290,  -487, 278,  -487, 1850, 46,   -487, 208,  852,  852,
+    852,  852,  852,  852,  852,  852,  852,  852,  -487, -487, 1487, 302,  1487, -487, 236,  1487, 852,  292,  276,
+    1651, 209,  315,  1487, 346,  -487, 349,  -487, 356,  1154, 826,  1602, 69,   359,  952,  190,  44,   -487, 370,
+    -487, 1487, 1241, -487, -487, 1241, 1487, -487, 369,  -487, 383,  367,  420,  106,  430,  420,  232,  65,   390,
+    -487, -487, -487, 402,  392,  1487, 435,  1487, -487, 1487, 1487, 412,  -487, -487, 1648, -487, 622,  458,  -487,
+    253,  319,  297,  1872, 437,  437,  437,  872,  437,  319,  1875, 1826, 952,  1487, -487, -487, -487, 41,   -487,
+    -487, 473,  239,  1826, 1183, -487, -487, -487, -487, -487, 852,  -487, 788,  -487, -487, 474,  439,  388,  607,
+    447,  447,  447,  1096, 447,  388,  1896, 283,  969,  306,  -487, 483,  446,  325,  520,  429,  485,  1487, 203,
+    1487, 1487, 358,  -487, -487, 469,  -487, -487, 1487, -487, 256,  -487, 320,  885,  1602, 226,  1049, 952,  1241,
+    -487, -487, -487, 707,  -487, -487, -487, -487, -487, -487, 487,  493,  -487, 256,  1826, -487, -487, 1487, 1487,
+    495,  490,  1487, -487, 495,  492,  1487, 442,  498,  -487, 450,  499,  379,  524,  1826, 420,  420,  449,  622,
+    1487, 922,  1487, -487, 1826, 1241, -487, 1241, -487, 1487, -487, 41,   479,  -487, 1850, 852,  -487, -487, -487,
+    1949, 1949, 1895, -487, -487, -487, -487, -487, -487, 501,  -487, 1949, -487, 361,  521,  -487, 480,  -487, 525,
+    -487, 236,  522,  -487, -487, 527,  -487, 1826, -487, 1682, 417,  -487, 510,  511,  1487, 588,  -487, -487, 1241,
+    1602, 234,  -487, -487, -487, 952,  -487, -487, 1241, -487, 462,  -487, 336,  -487, -487, 1826, 458,  1241, -487,
+    -487, 420,  -487, -487, 420,  529,  -487, 533,  -487, 1065, 561,  -487, -487, -487, -487, -487, -487, -487, -487,
+    -487, -487, -487, -487, -487, 372,  503,  504,  537,  -487, -487, 256,  544,  -487, -487, 521,  514,  509,  -487,
+    47,   1949, -487, -487, 1949, 1949, 256,  507,  515,  1241, -487, -487, 542,  -487, 1487, -487, 1487, 1487, 1462,
+    1487, 1487, -487, -487, -487, -487, -487, -487, -487, -487, 1463, -487, 566,  495,  495,  -487, -487, 526,  549,
+    -487, 524,  -487, -487, -487, -487, 1241, -487, -487, 1926, -487, 531,  -487, 361,  -487, 1949, 361,  -487, 410,
+    1826, 1706, 1730, -487, 1754, 1778, -487, 1241, -487, -487, 516,  361,  563,  -487, -487, 256,  -487, 54,   -487,
+    -487, 1949, -487, 534,  538,  -487, -487, 1487, -487, -487, 579,  -487, -487, 480,  -487, -487, -487, -487, 361,
+    -487, -487, 1802, 561,  585,  545,  550,  -487, -487, 587,  532,  361,  -487, 131,  592,  -487, -487, -487, -487,
+    -487, -487, 577,  49,   361,  596,  -487, -487, 597,  -487, 112,  361,  565,  -487, -487, -487, 604,  561,  605,
+    131,  -487};
 
-  const short
-  parser::yypact_[] =
-  {
-     108,  -485,   245,    64,   728,  -485,  -485,  -485,    94,    31,
-    -485,  -485,   245,   245,  1374,   245,  -485,  -485,    33,   156,
-    -485,    73,    15,  -485,   950,  1190,  -485,    97,  -485,   105,
-    1227,   116,   160,    33,   225,  1374,  -485,  -485,  -485,  -485,
-     245,  1374,    96,   245,  -485,  -485,  -485,   118,  -485,  -485,
-    1081,  -485,   496,  1570,  -485,    82,   143,   807,  -485,  1092,
-    -485,    46,  -485,  1411,  -485,    40,   148,   170,   153,  1374,
-     157,  -485,   202,   245,   183,    37,   245,   182,  -485,   540,
-    -485,   245,   222,  -485,  1648,   231,   144,  -485,  1851,   239,
-     220,  1190,   235,  1269,  1283,  -485,  1222,  1374,   245,    42,
-     119,   119,   245,   230,  1728,  -485,   106,  1851,    23,   263,
-     273,  -485,   228,  -485,  -485,  1129,  1648,  -485,  1374,  1374,
-    1374,  -485,  1374,  -485,  -485,  -485,  -485,  1374,  1374,  -485,
-    1374,  1374,  1374,  1374,  1374,   867,   388,   807,   964,  -485,
-    -485,  -485,  -485,  1321,  1851,  1374,  -485,    85,  -485,   299,
-     245,  1411,  -485,   204,  1411,  -485,  1411,  -485,  -485,   304,
-    1871,  -485,  -485,  1374,   297,  1374,  1374,  1411,   314,  1374,
-     325,  -485,   296,   298,  1002,   625,  1611,   282,   342,   807,
-     133,   103,  -485,   348,  -485,  1374,  1092,  -485,  -485,  1092,
-    1374,  -485,   361,  -485,   376,  1675,   402,   152,   409,   402,
-     164,  -485,  -485,  1684,   174,   107,   343,   422,  -485,  -485,
-     411,   391,   379,  1374,  -485,   245,  1374,  -485,  1374,  1374,
-     415,   400,  -485,  -485,  1648,  -485,   388,   443,  -485,   216,
-     324,   539,  1909,   417,   417,   417,   281,   417,   324,   963,
-    1851,   807,  1374,  -485,  -485,  -485,    62,  -485,  -485,   450,
-     205,  1851,  1044,  -485,  -485,  -485,  -485,  -485,   432,  -485,
-     421,  -485,  1871,    43,  -485,  1499,  1411,  1411,  1411,  1411,
-    1411,  1411,  1411,  1411,  1411,  1411,   294,   642,   305,   311,
-    1889,  1374,   335,  -485,  -485,   439,   394,   454,  -485,   231,
-    -485,   262,   313,  1611,   187,   902,   807,  1092,  -485,  -485,
-    -485,  1171,  -485,  -485,  -485,  -485,  -485,  -485,   455,   460,
-    -485,   231,  1851,  -485,  -485,  1374,  1374,   462,   458,  1374,
-    -485,   462,   461,  1374,  -485,  1374,   119,  1374,   401,   464,
-    -485,  -485,  1374,   412,   473,   339,  -485,   478,   448,  1851,
-     402,   402,   381,   413,   388,  1374,   585,  1374,  -485,  1851,
-    1092,  -485,  1092,  -485,  1374,  -485,    62,  1411,  -485,  1426,
-    -485,  -485,   483,   459,   363,  1509,   465,   465,   465,  1576,
-     465,   363,  1282,  -485,  -485,   766,   766,  1446,  -485,  -485,
-    -485,  -485,  -485,  -485,   475,  -485,   766,  -485,   302,   498,
-    -485,   469,  -485,   503,  -485,  -485,  -485,   360,  -485,   488,
-     489,  1374,   507,  -485,  -485,  -485,  1092,  1611,   292,  -485,
-    -485,  -485,   807,  -485,  -485,  1092,  -485,   397,  -485,   272,
-    -485,  -485,  1851,   443,  1092,  -485,  -485,   402,  -485,  -485,
-     402,  1851,  -485,  1724,   509,  -485,  1373,   511,  -485,   815,
-     245,   514,   477,   491,  1896,  -485,  -485,  -485,  -485,  -485,
-    -485,  -485,  -485,  -485,  -485,  -485,  -485,  -485,   284,   518,
-    -485,  -485,   231,   527,  -485,   500,  -485,  1871,  1411,  -485,
-     498,   506,   497,  -485,    45,   766,  -485,  -485,   766,   766,
-     231,   505,   512,  1092,   529,  -485,  1374,  1374,  1742,  -485,
-    -485,  -485,  -485,  -485,  -485,  -485,  -485,  -485,  1363,  -485,
-     546,   462,   462,  1374,  -485,  1374,  1374,  -485,  -485,  -485,
-    -485,  -485,   513,   532,  -485,   381,  -485,  -485,  1092,  -485,
-    -485,  -485,  1489,  -485,   519,  -485,   302,  -485,   766,   302,
-    -485,   347,  1760,  1784,  -485,  -485,  1092,  -485,  -485,  1851,
-    1800,  1824,   490,   302,   548,  -485,  -485,   231,  -485,    56,
-    -485,  -485,   766,  -485,   526,   535,  -485,  -485,  -485,  1374,
-    -485,   558,  -485,  -485,   469,  -485,  -485,  -485,  -485,   302,
-    -485,  -485,  1842,  1896,   560,   536,   542,  -485,  -485,   569,
-     523,   302,  -485,   357,   574,  -485,  -485,  -485,  -485,  -485,
-    -485,   561,   367,   302,  -485,   575,  -485,   588,  -485,   368,
-     302,   562,  -485,  -485,  -485,   590,  1896,   592,   357,  -485
-  };
+const short parser::yydefact_[] = {
+    0,   0,   5,   0,   10,  11,  12,  0,   0,   0,   1,   0,   3,   310, 0,   0,   0,   0,   0,   117, 0,   7,   0,
+    0,   98,  0,   170, 0,   61,  0,   74,  0,   116, 0,   115, 0,   0,   0,   0,   114, 113, 62,  6,   0,   95,  0,
+    170, 59,  64,  0,   60,  63,  0,   4,   57,  0,   101, 179, 0,   131, 181, 0,   180, 0,   147, 0,   0,   35,  0,
+    0,   36,  0,   33,  34,  31,  219, 0,   269, 271, 58,  0,   0,   57,  52,  0,   0,   0,   0,   0,   89,  0,   0,
+    186, 0,   185, 0,   0,   142, 0,   112, 0,   73,  67,  72,  77,  74,  0,   0,   0,   0,   89,  0,   208, 0,   0,
+    0,   57,  51,  309, 65,  0,   0,   0,   0,   99,  96,  0,   0,   102, 70,  0,   0,   0,   87,  85,  83,  86,  84,
+    0,   0,   88,  0,   0,   0,   0,   0,   0,   104, 131, 110, 155, 149, 150, 156, 70,  129, 0,   146, 112, 182, 170,
+    32,  23,  0,   24,  37,  0,   22,  0,   40,  0,   0,   0,   0,   0,   0,   0,   0,   0,   8,   9,   70,  0,   70,
+    232, 229, 70,  0,   0,   0,   0,   0,   91,  70,  170, 220, 170, 176, 0,   0,   0,   0,   0,   0,   131, 0,   0,
+    135, 0,   225, 0,   110, 138, 143, 0,   71,  75,  78,  53,  0,   190, 188, 0,   0,   188, 0,   91,  0,   218, 170,
+    210, 0,   0,   70,  0,   0,   56,  0,   0,   0,   100, 97,  0,   103, 105, 69,  79,  0,   45,  44,  41,  49,  47,
+    50,  43,  48,  46,  42,  93,  131, 0,   144, 158, 107, 109, 160, 140, 0,   0,   130, 110, 151, 159, 152, 183, 184,
+    40,  25,  0,   26,  30,  39,  0,   16,  15,  20,  18,  21,  14,  19,  17,  13,  0,   268, 0,   228, 230, 0,   0,
+    0,   0,   0,   0,   0,   0,   70,  0,   220, 220, 235, 177, 178, 0,   125, 112, 123, 0,   0,   0,   0,   0,   131,
+    110, 161, 171, 162, 0,   134, 163, 172, 164, 175, 169, 0,   109, 111, 112, 68,  76,  203, 0,   0,   195, 0,   0,
+    202, 195, 0,   0,   0,   0,   209, 0,   0,   0,   306, 66,  188, 188, 0,   106, 0,   54,  70,  145, 94,  0,   157,
+    0,   141, 70,  153, 109, 0,   27,  38,  0,   28,  270, 253, 262, 262, 0,   254, 251, 252, 255, 239, 240, 250, 242,
+    0,   258, 260, 310, 266, 267, 308, 0,   55,  0,   0,   54,  220, 0,   211, 81,  213, 0,   0,   90,  234, 233, 0,
+    0,   122, 126, 0,   0,   0,   165, 173, 166, 131, 132, 148, 110, 127, 112, 120, 0,   226, 139, 189, 187, 194, 198,
+    205, 188, 200, 204, 188, 0,   216, 0,   206, 54,  0,   292, 289, 291, 293, 290, 286, 287, 288, 285, 308, 304, 303,
+    305, 0,   0,   0,   0,   80,  108, 112, 0,   154, 29,  261, 0,   0,   245, 0,   262, 241, 257, 0,   0,   112, 0,
+    0,   110, 227, 231, 221, 212, 0,   92,  0,   0,   0,   0,   0,   124, 167, 174, 168, 133, 118, 119, 128, 0,   191,
+    193, 195, 195, 217, 207, 0,   0,   310, 0,   197, 196, 224, 137, 0,   243, 244, 0,   246, 0,   256, 259, 263, 310,
+    310, 264, 0,   82,  0,   0,   238, 0,   0,   121, 0,   199, 201, 0,   284, 0,   302, 301, 112, 247, 0,   249, 265,
+    0,   272, 0,   0,   237, 236, 0,   215, 192, 0,   309, 281, 283, 309, 307, 136, 248, 310, 222, 223, 0,   0,   0,
+    0,   0,   273, 214, 0,   0,   0,   294, 308, 0,   282, 297, 296, 298, 295, 300, 0,   0,   277, 0,   278, 274, 276,
+    309, 0,   0,   0,   279, 280, 275, 0,   0,   0,   0,   299};
 
-  const unsigned short
-  parser::yydefact_[] =
-  {
-       0,     5,     0,     0,     0,    10,    11,    12,     0,     0,
-       1,   310,     0,     0,     0,     0,   117,     7,     0,     0,
-      98,   170,     0,    61,     0,    74,   116,     0,   115,     0,
-       0,     0,     0,     0,     0,     0,   113,   114,    62,    95,
-       0,     0,   170,     0,     6,    59,    64,     0,    60,    63,
-       0,     4,    57,     0,   101,   179,     0,   131,   181,     0,
-     180,     0,   147,     0,     3,     0,   269,   271,    58,     0,
-      57,    52,     0,     0,    89,     0,     0,     0,   186,     0,
-     185,     0,     0,   142,     0,   112,     0,    73,    67,    72,
-      77,    74,     0,     0,     0,   208,     0,     0,     0,    89,
-       0,     0,     0,     0,    57,    51,     0,    65,     0,     0,
-       0,   309,     0,    99,    96,     0,     0,   102,    70,     0,
-       0,    87,     0,    85,    83,    86,    84,     0,     0,    88,
-       0,     0,     0,     0,     0,     0,   104,   131,   110,   155,
-     149,   150,   156,    70,   129,     0,   146,   112,   182,   170,
-       0,     0,    35,     0,     0,    36,     0,    33,    34,    31,
-     219,     8,     9,    70,     0,    70,    70,     0,    91,    70,
-     170,   220,     0,     0,     0,     0,     0,     0,     0,   131,
-       0,     0,   135,     0,   225,     0,   110,   138,   143,     0,
-      71,    75,    78,    53,     0,   190,   188,     0,     0,   188,
-       0,   170,   210,     0,     0,    91,     0,   170,   176,   218,
-       0,     0,     0,    70,   232,   229,     0,    56,     0,     0,
-       0,     0,   100,    97,     0,   103,   105,    69,    79,     0,
-      45,    44,    41,    49,    47,    50,    43,    48,    46,    42,
-      93,   131,     0,   144,   158,   107,   109,   160,   140,     0,
-       0,   130,   110,   151,   159,   152,   183,   184,    32,    23,
-       0,    24,    37,     0,    22,     0,    40,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,   268,     0,     0,
-       0,    70,     0,   220,   220,   235,     0,     0,   125,   112,
-     123,     0,     0,     0,     0,     0,   131,   110,   161,   171,
-     162,     0,   134,   163,   172,   164,   175,   169,     0,   109,
-     111,   112,    68,    76,   203,     0,     0,   195,     0,     0,
-     202,   195,     0,     0,   209,     0,     0,     0,     0,     0,
-     177,   178,     0,     0,     0,     0,   228,   230,     0,    66,
-     188,   188,   306,     0,   106,     0,    54,    70,   145,    94,
-       0,   157,     0,   141,    70,   153,   109,    40,    25,     0,
-      26,    30,    39,     0,    16,    15,    20,    18,    21,    14,
-      19,    17,    13,   270,   253,   262,   262,     0,   254,   251,
-     252,   255,   239,   240,   250,   242,     0,   258,   260,   310,
-     266,   267,   308,     0,    55,    54,   220,     0,    90,   234,
-     233,     0,     0,   211,   122,   126,     0,     0,     0,   165,
-     173,   166,   131,   132,   148,   110,   127,   112,   120,     0,
-     226,   139,   189,   187,   194,   198,   205,   188,   200,   204,
-     188,    81,   213,     0,     0,   216,     0,     0,   206,    54,
-       0,     0,     0,     0,     0,   292,   288,   289,   286,   287,
-     290,   291,   293,   285,   308,   304,   303,   305,     0,     0,
-      80,   108,   112,     0,   154,     0,    27,    38,     0,    28,
-     261,     0,     0,   245,     0,   262,   241,   257,     0,     0,
-     112,     0,     0,   110,   221,    92,     0,     0,     0,   212,
-     124,   167,   174,   168,   133,   118,   119,   128,     0,   191,
-     193,   195,   195,     0,   217,     0,     0,   207,   227,   231,
-     197,   196,     0,     0,   310,     0,   224,   137,     0,    29,
-     243,   244,     0,   246,     0,   256,   259,   263,   310,   310,
-     264,     0,     0,     0,   238,   121,     0,   199,   201,    82,
-       0,     0,     0,   284,     0,   302,   301,   112,   247,     0,
-     249,   265,     0,   272,     0,     0,   237,   236,   192,     0,
-     215,     0,   309,   281,   283,   309,   307,   136,   248,   310,
-     222,   223,     0,     0,     0,     0,     0,   273,   214,     0,
-       0,     0,   294,   308,     0,   282,   297,   295,   296,   298,
-     300,     0,     0,   277,   278,     0,   274,   276,   309,     0,
-       0,     0,   279,   280,   275,     0,     0,     0,     0,   299
-  };
+const short parser::yypgoto_[] = {-487, -487, -487, -487, -1,   19,   551,  342,  310,  -487, -28,  -145, 518,  -487,
+                                  -487, -138, -487, -16,  0,    -115, 45,   -117, -143, -155, 17,   116,  -487, 204,
+                                  -487, -181, -141, -189, -487, -487, -6,   -487, -487, -142, -487, -487, -487, 27,
+                                  -84,  -487, -206, -103, -487, -325, -487, -487, -487, -261, -487, -487, -275, -360,
+                                  -347, -351, -289, -343, 96,   -487, -487, -487, 616,  -487, -487, 53,   -487, -487,
+                                  -418, 123,  30,   127,  -487, -487, -356, -486, -12};
 
-  const short
-  parser::yypgoto_[] =
-  {
-    -485,  -485,  -485,  -485,    -2,   -49,   456,   246,   364,  -485,
-     -18,  -120,   517,  -485,  -485,  -107,  -485,   -47,    17,  -113,
-       4,   -86,  -134,  -129,    32,   112,  -485,   206,  -485,  -155,
-    -132,  -135,  -485,  -485,   -14,  -485,  -485,  -123,  -485,  -485,
-    -485,     1,   -89,  -485,  -179,   -60,  -485,  -302,  -485,  -485,
-    -485,  -208,  -485,  -485,  -288,  -373,  -341,  -348,  -268,  -334,
-      83,  -485,  -485,  -485,   612,  -485,  -485,    36,  -485,  -485,
-    -417,   110,    12,   111,  -485,  -485,  -366,  -484,   -10
-  };
+const short parser::yydefgoto_[] = {0,   3,   9,   53,  82,  165, 281, 282, 98,  120, 245, 246, 104, 105, 106, 247,
+                                    191, 156, 56,  147, 263, 334, 335, 212, 203, 429, 430, 315, 316, 204, 157, 205,
+                                    268, 100, 59,  60,  206, 153, 61,  62,  93,  94,  198, 63,  342, 221, 506, 436,
+                                    222, 225, 8,   309, 296, 297, 390, 391, 392, 393, 471, 472, 395, 396, 397, 78,
+                                    207, 597, 598, 563, 564, 565, 457, 458, 590, 459, 460, 461, 182, 234, 398};
 
-  const short
-  parser::yydefgoto_[] =
-  {
-      -1,     3,     4,    51,    70,   262,   362,   363,    84,   108,
-     227,   228,    90,    91,    92,   229,   204,   145,    54,   136,
-     245,   309,   310,   187,   178,   418,   419,   290,   291,   179,
-     146,   180,   250,    86,    57,    58,   181,   142,    59,    60,
-      79,    80,   209,    61,   317,   196,   500,   425,   197,   200,
-       9,   285,   337,   338,   385,   386,   387,   388,   470,   471,
-     390,   391,   392,    67,   182,   597,   598,   563,   564,   565,
-     454,   455,   590,   456,   457,   458,   164,   220,   393
-  };
+const short parser::yytable_[] = {
+    7,   76,  103, 272, 394,  224, 265, 261, 54,  267, 74,  319, 244,  77,  79,  80,  273, 84,  346, 86,  321, 439,
+    89,  90,  89,  91,  58,   228, 54,  511, 75,  475, 264, 479, 110,  111, 115, 116, 473, 146, 482, 483, 118, 292,
+    478, 294, 411, 412, 298,  148, 95,  54,  128, 366, 57,  306, 594,  179, 278, 522, 54,  331, 193, 327, 161, 74,
+    480, 74,  74,  194, 74,   10,  58,  122, 99,  195, 574, 103, 12,   576, 322, 323, 210, 227, 188, 162, 324, 192,
+    167, 96,  168, 87,  54,   151, 208, 354, 332, 279, 523, 305, 180,  512, 149, 150, 11,  568, 158, 152, 226, 270,
+    271, 210, 601, 231, 595,  479, 477, 92,  364, 107, 349, 325, 367,  387, 388, 54,  243, 360, 419, 526, 121, 260,
+    525, 524, 357, 358, 586,  321, 202, 423, 259, 587, 487, 151, 602,  213, 235, 588, 54,  214, 151, 462, 463, 372,
+    343, 579, 589, 152, 344,  415, 236, 184, 603, 58,  152, 108, 479,  409, 74,  74,  74,  74,  74,  74,  74,  74,
+    74,  74,  185, 425, 424,  432, 540, 541, 295, 320, 74,  275, 607,  283, 284, 285, 286, 287, 288, 289, 290, 291,
+    54,  54,  128, 569, 328,  244, 477, 159, 299, 329, 575, 479, 54,   170, 171, 54,  196, 160, 1,   2,   465, 407,
+    197, 308, 154, 311, -308, 468, 210, 591, 260, 123, 469, 169, 507,  549, 181, 508, 183, 321, 420, 394, 186, 438,
+    330, 421, 314, 441, 497,  187, 172, 173, 193, 498, 209, 174, 552,  175, 351, 130, 131, 336, 303, 304, 189, 176,
+    177, 229, 85,  211, 562,  54,  215, 230, 132, 502, 280, 74,  178,  74,  422, 218, 347, 4,   500, 501, 348, 216,
+    499, 369, 5,   6,   237,  370, 389, 232, 138, 139, 238, 375, 428,  141, 130, 142, 320, 360, 362, 363, 562, 4,
+    88,  143, 144, 239, 518,  434, 5,   6,   54,  243, 596, 55,  274,  54,  145, 4,   276, 604, 527, 83,  109, 277,
+    5,   6,   293, 65,  378,  363, 66,  138, 139, 163, 102, 530, 141,  4,   260, 301, 113, 300, 117, 305, 5,   6,
+    143, 144, 456, 119, 67,   399, 363, 138, 139, 68,  127, 307, 141,  54,  310, 54,  416, 155, 130, 131, 417, 340,
+    143, 74,  402, 363, 164,  389, 389, 389, 481, 69,  503, 132, 70,   312, 504, 326, 389, 117, 567, 71,  333, 375,
+    72,  190, 4,   485, 339,  73,  320, 201, 114, 5,   6,   138, 139,  410, 363, 466, 141, 467, 142, 102, 54,  220,
+    220, 4,   513, 338, 143,  144, 514, 54,  5,   6,   172, 173, 446,  363, 341, 174, 54,  145, 242, 387, 388, 102,
+    248, 249, 250, 176, -89,  -89, 456, 345, 251, 252, -89, 253, 254,  255, 256, 257, 258, 352, 155, 350, -89, 353,
+    314, 359, 102, 355, 269,  129, 490, 363, 361, -91, -91, 211, 361,  389, 428, -91, 389, 389, 505, -89, 141, 54,
+    368, -89, 376, -91, 554,  555, 377, 102, 174, 102, 233, 400, 102,  401, 404, -89, 413, 544, 405, 102, 431, 366,
+    435, 437, -91, 440, 318,  442, -91, 456, 155, 443, 445, 553, 54,   444, 258, 389, 464, 170, 171, 337, -91, 389,
+    447, 448, 470, 449, -308, 480, 450, 476, 484, 403, 54,  486, 451,  491, 492, 102, 488, 356, 509, 220, 220, 452,
+    510, 389, 515, 516, 517,  519, 453, 577, 521, 528, 172, 173, 520,  529, 547, 174, 448, 175, 449, 155, 365, 450,
+    456, 531, 454, 176, 177,  451, 539, 543, 566, 542, 550, 570, 560,  561, 452, 571, 178, 455, 573, 130, 131, 453,
+    494, 4,   580, 581, 582,  583, 495, 584, 5,   6,   592, 456, 132,  593, 599, 600, 170, 454, 406, 605, 408, 102,
+    606, 608, 373, 166, 538,  496, 414, 217, 551, 64,  455, 418, 138,  139, 258, 155, 4,   141, 585, 142, 102, 545,
+    609, 5,   6,   546, 133,  143, 144, 134, 135, 172, 173, 0,   433,  102, 174, 0,   220, 136, 145, 137, 220, 0,
+    0,   0,   176, 177, 140,  0,   0,   0,   -2,  13,  0,   337, 14,   102, 15,  0,   16,  17,  0,   0,   102, 18,
+    19,  20,  0,   21,  0,    22,  0,   23,  24,  0,   0,   0,   25,   26,  27,  28,  29,  0,   0,   0,   30,  0,
+    31,  32,  33,  34,  0,    0,   0,   0,   0,   15,  35,  0,   17,   0,   426, 0,   0,   36,  37,  493, 38,  39,
+    40,  41,  42,  43,  44,   0,   0,   155, 45,  46,  28,  47,  48,   4,   49,  30,  50,  51,  0,   52,  5,   6,
+    0,   0,   0,   0,   0,    0,   14,  427, 15,  0,   0,   17,  0,    0,   0,   81,  19,  0,   41,  0,   0,   0,
+    0,   0,   24,  45,  0,    0,   47,  48,  4,   28,  199, 50,  51,   0,   30,  5,   6,   32,  0,   34,  0,   0,
+    0,   0,   65,  0,   0,    66,  0,   532, 0,   533, 534, 0,   536,  537, 38,  39,  40,  41,  0,   0,   44,  0,
+    102, 0,   45,  67,  0,    47,  48,  4,   68,  0,   50,  51,  0,    200, 5,   6,   14,  0,   15,  0,   0,   17,
+    0,   0,   0,   374, 19,   0,   0,   0,   69,  0,   0,   70,  124,  0,   0,   0,   0,   0,   71,  28,  199, 72,
+    65,  4,   30,  66,  73,   32,  0,   34,  5,   6,   572, 0,   0,    0,   0,   0,   0,   130, 131, 0,   0,   0,
+    0,   67,  38,  39,  40,   41,  68,  0,   125, 14,  0,   15,  45,   0,   17,  47,  48,  4,   0,   19,  50,  51,
+    0,   317, 5,   6,   0,    240, 69,  0,   0,   70,  138, 139, 28,   199, 0,   141, 71,  30,  0,   72,  32,  4,
+    34,  0,   73,  143, 144,  0,   5,   6,   0,   -90, -90, 0,   0,    0,   0,   -90, 0,   38,  39,  40,  41,  0,
+    0,   241, 0,   -90, 0,    45,  0,   0,   47,  48,  4,   0,   15,   50,  51,  17,  0,   5,   6,   0,   0,   0,
+    0,   0,   -90, 0,   133,  0,   -90, 134, 135, 0,   0,   0,   -310, 28,  0,   0,   0,   136, 30,  137, -90, 0,
+    0,   0,   0,   0,   140,  0,   0,   0,   379, 380, 381, 15,  0,    382, 17,  0,   0,   0,   81,  19,  0,   41,
+    0,   0,   0,   0,   0,    0,   45,  0,   0,   47,  48,  4,   28,   29,  50,  51,  383, 30,  5,   6,   32,  0,
+    34,  0,   0,   0,   384,  0,   4,   0,   0,   385, 386, 387, 388,  5,   6,   0,   0,   81,  39,  40,  41,  15,
+    0,   0,   17,  0,   0,    45,  0,   19,  47,  48,  4,   0,   0,    50,  51,  0,   0,   5,   6,   0,   -92, -92,
+    28,  199, 0,   0,   -92,  30,  0,   0,   32,  0,   34,  0,   0,    0,   -92, 15,  0,   0,   17,  0,   0,   170,
+    171, 0,   0,   0,   0,    81,  39,  40,  41,  24,  0,   0,   0,    -92, 0,   45,  28,  -92, 47,  48,  4,   30,
+    15,  50,  51,  17,  0,    5,   6,   0,   0,   -92, 0,   0,   0,    97,  172, 173, 24,  0,   0,   174, 0,   38,
+    0,   28,  41,  0,   0,    44,  30,  176, 177, 45,  0,   0,   47,   48,  4,   0,   15,  50,  51,  17,  52,  5,
+    6,   0,   262, 0,   0,    0,   38,  0,   0,   41,  24,  0,   44,   0,   0,   0,   45,  28,  0,   47,  48,  4,
+    30,  15,  50,  51,  17,   52,  5,   6,   0,   0,   0,   0,   0,    0,   313, 0,   0,   24,  0,   0,   0,   0,
+    38,  0,   28,  41,  0,    0,   44,  30,  15,  0,   45,  17,  0,    47,  48,  4,   0,   0,   50,  51,  0,   52,
+    5,   6,   124, 371, 0,    0,   0,   38,  0,   28,  41,  0,   0,    44,  30,  15,  0,   45,  17,  0,   47,  48,
+    4,   0,   0,   50,  51,   0,   52,  5,   6,   24,  0,   0,   0,    0,   38,  0,   28,  41,  0,   0,   125, 30,
+    15,  0,   45,  17,  0,    47,  48,  4,   0,   0,   50,  51,  0,    126, 5,   6,   240, 0,   0,   0,   0,   38,
+    0,   28,  41,  0,   15,   44,  30,  17,  0,   45,  101, 0,   47,   48,  4,   0,   0,   50,  51,  0,   52,  5,
+    6,   0,   0,   0,   0,    28,  38,  0,   0,   41,  30,  15,  241,  0,   17,  0,   45,  0,   0,   47,  48,  4,
+    112, 0,   50,  51,  0,    0,   5,   6,   0,   0,   81,  0,   28,   41,  0,   0,   0,   30,  15,  0,   45,  17,
+    0,   47,  48,  4,   0,    0,   50,  51,  0,   0,   5,   6,   0,    0,   0,   0,   0,   81,  0,   28,  41,  0,
+    0,   0,   30,  15,  0,    45,  17,  0,   47,  48,  4,   0,   0,    50,  51,  0,   219, 5,   6,   0,   0,   0,
+    0,   0,   81,  0,   28,   41,  0,   0,   0,   30,  15,  0,   45,   17,  0,   47,  48,  4,   0,   0,   50,  51,
+    0,   223, 5,   6,   0,    0,   0,   0,   0,   81,  0,   28,  41,   0,   0,   0,   30,  0,   0,   45,  0,   0,
+    47,  48,  4,   0,   0,    50,  51,  0,   266, 5,   6,   0,   0,    130, 131, 0,   81,  15,  0,   41,  17,  0,
+    426, 0,   0,   0,   45,   0,   132, 47,  48,  4,   0,   0,   50,   51,  0,   0,   5,   6,   28,  15,  0,   0,
+    17,  30,  0,   0,   0,    0,   138, 139, 0,   0,   0,   141, 0,    142, 0,   535, 0,   0,   0,   0,   28,  143,
+    144, 81,  0,   30,  41,   0,   0,   0,   0,   0,   0,   45,  145,  0,   47,  48,  4,   0,   0,   50,  51,  0,
+    0,   5,   6,   81,  0,    0,   41,  0,   0,   0,   0,   0,   0,    45,  0,   0,   47,  48,  4,   130, 131, 50,
+    51,  0,   0,   5,   6,    0,   0,   0,   19,  0,   0,   0,   132,  0,   133, 0,   0,   134, 135, 0,   0,   0,
+    0,   0,   29,  0,   0,    136, 0,   137, 0,   32,  0,   34,  138,  139, 140, 0,   0,   141, 0,   142, 0,   130,
+    131, 0,   0,   0,   0,    143, 144, 39,  40,  0,   19,  0,   0,    0,   132, 0,   133, 0,   145, 134, 135, 0,
+    0,   0,   0,   0,   199,  0,   0,   136, 0,   137, 0,   32,  0,    34,  138, 139, 140, 0,   0,   141, 0,   142,
+    0,   130, 131, 0,   130,  131, 0,   143, 144, 39,  40,  0,   0,    302, 0,   0,   132, 0,   133, 132, 145, 134,
+    135, 0,   0,   0,   0,    0,   0,   0,   0,   136, 0,   137, 0,    130, 131, 0,   138, 139, 140, 138, 139, 141,
+    489, 142, 141, 0,   142,  0,   132, 0,   0,   143, 144, 0,   143,  144, 0,   130, 131, 0,   0,   0,   0,   0,
+    145, 0,   0,   145, 0,    0,   138, 139, 132, 0,   0,   141, 0,    142, 0,   0,   0,   130, 131, 0,   0,   143,
+    144, 0,   0,   0,   0,    0,   0,   0,   138, 139, 132, 0,   145,  141, 0,   142, 0,   556, 0,   130, 131, 0,
+    0,   143, 144, 0,   0,    0,   558, 0,   0,   0,   138, 139, 132,  0,   145, 141, 0,   142, 0,   557, 0,   130,
+    131, 0,   0,   143, 144,  0,   0,   0,   0,   0,   0,   0,   138,  139, 132, 0,   145, 141, 0,   142, 0,   0,
+    0,   130, 131, 0,   0,    143, 144, 0,   0,   0,   0,   0,   0,    0,   138, 139, 132, 0,   145, 141, 0,   142,
+    0,   559, 0,   130, 131,  0,   0,   143, 144, 0,   0,   0,   0,    0,   0,   0,   138, 139, 132, 0,   145, 141,
+    0,   142, 0,   578, 0,    170, 171, 0,   0,   143, 144, 0,   0,    0,   0,   0,   0,   0,   138, 139, 0,   0,
+    145, 141, 0,   142, 0,    130, 131, 0,   130, 131, 0,   143, 144,  0,   0,   0,   0,   0,   0,   0,   172, 173,
+    0,   0,   145, 174, 0,    175, 0,   170, 171, 0,   0,   0,   0,    176, 177, 0,   0,   0,   0,   0,   138, 139,
+    0,   138, 139, 141, 178,  142, 141, 0,   142, 0,   379, 380, 381,  143, 144, 382, 143, 144, 0,   0,   0,   0,
+    172, 173, 0,   0,   145,  174, 0,   175, 0,   0,   474, 0,   0,    0,   0,   176, 177, 0,   383, 379, 380, 381,
+    0,   0,   382, 0,   0,    0,   384, 0,   4,   0,   0,   385, 386,  387, 388, 5,   6,   0,   0,   548, 379, 380,
+    381, 0,   0,   382, 0,    383, 0,   0,   0,   0,   0,   0,   0,    0,   0,   384, 0,   4,   0,   0,   385, 386,
+    387, 388, 5,   6,   0,    0,   383, 0,   0,   0,   0,   0,   0,    0,   0,   0,   384, 0,   4,   0,   0,   385,
+    386, 387, 388, 5,   6};
 
-  const short
-  parser::yytable_[] =
-  {
-       8,    65,    52,   226,   247,   243,   135,    89,    55,   389,
-      66,    68,   210,    72,   160,   478,    74,    77,   254,   428,
-     321,   296,    52,   249,   255,   481,   482,   512,    85,   474,
-      99,    74,   103,   104,   199,    75,    56,   185,   106,   137,
-     294,   111,   472,   110,    81,   477,   170,   302,    52,   100,
-     101,   171,   246,   359,   161,   522,   276,    52,   278,   279,
-     148,   159,   282,   147,    10,   216,   479,   117,   149,   185,
-     169,   168,   350,    89,   172,   399,   400,    52,   574,   183,
-     217,   576,    73,   177,   360,    56,   523,    78,   513,   242,
-     206,   138,   139,    82,   252,   253,   205,   568,   476,    63,
-     211,   478,   259,    64,   140,   264,   335,   265,     5,   348,
-     109,   344,   162,    52,   601,     6,     7,   306,   280,   141,
-     214,   241,    93,   351,   140,   382,   383,   140,   207,   295,
-      94,   526,   225,   208,   215,   281,    52,   525,   296,   141,
-     412,   524,   141,   303,    97,   307,   112,   304,   258,   159,
-     257,   159,   159,   478,   159,   328,   579,   408,   340,   341,
-     404,   442,   443,   414,   413,   159,   356,    56,   143,     1,
-       2,   284,    52,    52,   397,   305,   163,   185,   289,   242,
-     226,   165,   421,   188,    52,   166,   189,    52,   484,   607,
-     476,   318,   117,   311,   319,  -308,   478,   409,   575,   537,
-     538,   410,   324,   322,   569,    76,   323,   167,   331,    98,
-     150,   169,   151,   336,   260,   326,   327,   591,   364,   365,
-     366,   367,   368,   369,   370,   371,   372,   460,   152,   411,
-     173,     5,   153,   464,   463,     5,   184,   432,     6,     7,
-     186,   552,     6,     7,   353,   261,   295,   354,   501,   190,
-      52,   502,   296,   154,   549,   562,   155,   346,   347,   427,
-     389,   156,   191,   430,   159,   159,   159,   159,   159,   159,
-     159,   159,   159,   159,   102,   384,   193,   157,   212,     5,
-     494,   495,   158,   417,   119,   120,     6,     7,   496,   218,
-      52,   297,   298,   562,   344,    52,   299,   242,   423,   219,
-       5,   405,   491,   221,   406,   596,   492,     6,     7,   225,
-     467,   497,   604,   256,   498,   127,   128,    12,   130,    13,
-       5,    14,   277,   514,   300,    16,   515,     6,     7,   132,
-     133,   222,   266,   517,   493,   373,   347,    23,   174,   283,
-     453,    25,   281,    26,   286,    28,   394,   347,    52,   530,
-      52,   527,   395,   347,   461,   159,   462,   159,   127,   128,
-     295,   130,    35,    36,    37,    38,   223,   301,    53,   308,
-      41,   287,   132,   384,   384,   384,   398,   347,    71,   480,
-     439,   347,   382,   383,   384,   444,    45,    46,     5,    88,
-     314,    48,    49,   121,    96,     6,     7,   269,   270,   105,
-     271,   485,   347,   313,    52,   107,   186,   345,   123,   124,
-     289,   273,   316,    52,   116,   125,   329,   126,   567,   467,
-     586,   144,    52,   320,   129,   587,   588,   589,   499,   554,
-     555,   594,   595,   105,   602,   603,   330,   332,   508,   333,
-     342,   343,   453,   176,   445,   446,   447,   448,   449,   450,
-     451,   452,   334,   345,   130,    88,     5,   195,   195,   352,
-     357,   203,   358,     6,     7,   401,   159,   402,   403,   420,
-     350,   424,   426,   384,   434,   429,   384,   384,   435,   224,
-     417,    52,    88,   230,   231,   437,   232,   438,   440,   441,
-     459,   233,   234,   468,   235,   236,   237,   238,   239,   240,
-     469,   144,   271,   475,   544,   -89,   -89,    88,   479,   251,
-     -89,  -308,   483,   453,   486,   487,    52,   510,   -89,   553,
-     384,   489,   547,   504,   118,   507,   384,    88,   509,    88,
-      88,   511,   516,    88,    52,   -89,   518,   521,   -89,   293,
-     558,   519,   119,   144,    12,   520,    13,   528,    14,   240,
-     384,   529,    16,   -89,   312,   531,   536,   543,    20,   577,
-     550,   542,   566,   561,    23,   174,   570,   573,    25,   580,
-      26,   453,    28,   127,   128,   571,   130,    88,   581,   583,
-     339,   582,   195,   195,   592,   599,   593,   132,   133,    35,
-      36,    37,    38,    39,   -90,   -90,   584,    41,   600,   -90,
-     606,   605,   608,   465,   453,   144,   349,   -90,   192,   263,
-     535,   551,   490,    45,    46,     5,    62,   585,    48,    49,
-     609,   175,     6,     7,   -90,   545,   546,   -90,     0,    12,
-       0,    13,     0,    14,     0,     0,     0,    16,     0,     0,
-       0,     0,   -90,   113,     0,    88,     0,     0,     0,    23,
-     174,  -310,     0,    25,     0,    26,   407,    28,     0,   240,
-     144,     0,     0,     0,     0,    88,   374,   375,   376,     0,
-     377,     0,     0,     0,    35,    36,    37,    38,   114,   422,
-      88,     0,    41,   195,     0,     0,     0,   195,     0,   431,
-       0,   433,     0,     0,   378,     0,   436,     0,    45,    46,
-       5,     0,     0,    48,    49,     0,   292,     6,     7,   312,
-       0,    88,     0,     0,     0,   379,     0,     5,    88,     0,
-     380,   381,   382,   383,     6,     7,     0,     0,    -2,    11,
-       0,     0,    12,     0,    13,     0,    14,     0,     0,    15,
-      16,     0,    17,     0,    18,    19,    20,     0,     0,     0,
-      21,    22,    23,    24,     0,     0,    25,     0,    26,    27,
-      28,    29,     0,     0,     0,   488,     0,     0,     0,     0,
-       0,    30,    31,    32,    33,    34,   144,    35,    36,    37,
-      38,    39,    40,     0,     0,    41,     0,    42,     0,     0,
-     374,   375,   376,     0,   377,     0,     0,     0,     0,    43,
-      44,    45,    46,     5,    47,     0,    48,    49,     0,    50,
-       6,     7,   121,    13,     0,    14,     0,     0,   378,     0,
-       0,     0,     0,     0,   -92,   -92,     0,   123,   124,   -92,
-       0,    23,     0,     0,   125,    25,   126,   -92,     0,   379,
-       0,     5,     0,   129,   380,   381,   382,   383,     6,     7,
-     532,   533,     0,     0,   -92,     0,    69,   -92,     0,    38,
-       0,     0,    88,     0,    41,     0,     0,   539,     0,   540,
-     541,     0,   -92,    13,     0,    14,     0,     0,     0,    16,
-      45,    46,     5,     0,     0,    48,    49,     0,     0,     6,
-       7,    23,    24,     0,     0,    25,     0,    26,     0,    28,
-       0,     0,     0,     0,     0,     0,     0,     0,    13,     0,
-      14,     0,     0,     0,    16,     0,    69,    36,    37,    38,
-       0,     0,     0,   572,    41,     0,    23,   174,     0,     0,
-      25,     0,    26,     0,    28,     0,     0,     0,     0,     0,
-      45,    46,     5,     0,     0,    48,    49,     0,     0,     6,
-       7,    69,    36,    37,    38,     0,    13,     0,    14,    41,
-       0,     0,     0,     0,     0,     0,   119,   120,    20,     0,
-      13,     0,    14,     0,    23,    45,    46,     5,    25,     0,
-      48,    49,    20,     0,     6,     7,     0,     0,    23,    83,
-       0,     0,    25,     0,     0,     0,     0,   127,   128,    35,
-     130,   131,    38,    39,     0,     0,   244,    41,    13,     0,
-      14,   132,   133,    35,     0,     0,    38,    39,     0,     0,
-      20,    41,     0,    45,    46,     5,    23,     0,    48,    49,
-      25,    50,     6,     7,     0,     0,     0,    45,    46,     5,
-       0,   288,    48,    49,     0,    50,     6,     7,     0,     0,
-      13,    35,    14,     0,    38,    39,     0,     0,     0,    41,
-       0,     0,    20,     0,     0,     0,     0,     0,    23,     0,
-       0,     0,    25,     0,     0,    45,    46,     5,     0,     0,
-      48,    49,     0,    50,     6,     7,   355,    13,     0,    14,
-       0,     0,     0,    35,     0,     0,    38,    39,    13,   113,
-      14,    41,     0,     0,     0,    23,     0,     0,     0,    25,
-      20,     0,     0,     0,     0,     0,    23,    45,    46,     5,
-      25,     0,    48,    49,     0,    50,     6,     7,     0,     0,
-      35,     0,     0,    38,   114,    13,     0,    14,    41,     0,
-       0,    35,     0,     0,    38,    39,     0,   222,     0,    41,
-       0,     0,     0,    23,    45,    46,     5,    25,     0,    48,
-      49,     0,   115,     6,     7,    45,    46,     5,     0,     0,
-      48,    49,     0,    50,     6,     7,     0,    13,    35,    14,
-     415,    38,   223,     0,     0,     0,    41,     0,     0,     0,
-       0,     0,     0,     0,     0,    23,    13,     0,    14,    25,
-      87,     0,    45,    46,     5,     0,     0,    48,    49,     0,
-     416,     6,     7,     0,    23,     0,     0,     0,    25,     0,
-      69,     0,     0,    38,     0,   119,   120,     0,    41,     0,
-       0,   201,     0,    13,     0,    14,   202,   122,     0,    69,
-       0,    95,    38,     0,    45,    46,     5,    41,     0,    48,
-      49,    23,     0,     6,     7,    25,   127,   128,     0,   130,
-     131,     0,     0,    45,    46,     5,     0,     0,    48,    49,
-     132,   133,     6,     7,     0,    13,    69,    14,     0,    38,
-       0,     0,   134,     0,    41,   267,   268,     0,     0,    13,
-       0,    14,     0,    23,     0,     0,     0,    25,     0,     0,
-      45,    46,     5,     0,     0,    48,    49,    23,   194,     6,
-       7,    25,     0,     0,     0,     0,   269,   270,    69,   271,
-     272,    38,   198,     0,     0,     0,    41,    13,     0,    14,
-     273,   274,    69,     0,     0,    38,     0,     0,     0,     0,
-      41,     0,    45,    46,     5,    23,     0,    48,    49,    25,
-       0,     6,     7,     0,     0,     0,    45,    46,     5,     0,
-     248,    48,    49,     0,     0,     6,     7,     0,     0,    13,
-      69,    14,   415,    38,     0,     0,   119,   120,    41,   505,
-      13,     0,    14,   506,     0,     0,     0,    23,   122,     0,
-       0,    25,     0,     0,    45,    46,     5,     0,    23,    48,
-      49,     0,    25,     6,     7,     0,     0,   127,   128,     0,
-     130,   131,    69,     0,     0,    38,     0,   150,     0,   151,
-      41,   132,   133,    69,     0,     0,    38,     0,     0,     0,
-       0,    41,   150,   134,   151,   152,    45,    46,     5,   153,
-       0,    48,    49,     0,     0,     6,     7,    45,    46,     5,
-     152,     0,    48,    49,   153,     0,     6,     7,     0,     0,
-     154,     0,     0,   155,     0,     0,     0,   466,   156,     0,
-     374,   375,   376,     0,   377,   154,     0,     0,   155,     0,
-       0,     0,     0,   156,   157,     0,     5,   473,     0,   158,
-       0,     0,     0,     6,     7,     0,     0,     0,   378,   157,
-       0,     5,   267,   268,   158,     0,     0,     0,     6,     7,
-       0,     0,   267,   374,   375,   376,     0,   377,     0,   379,
-       0,     5,     0,     0,   380,   381,   382,   383,     6,     7,
-     548,     0,     0,   269,   270,     0,   271,   272,     0,     0,
-       0,   378,     0,   269,   270,     0,   271,   273,   274,     0,
-       0,     0,     0,     0,     0,     0,   361,   273,   274,   275,
-       0,     0,   379,     0,     5,     0,     0,   380,   381,   382,
-     383,     6,     7,   119,   120,   121,     0,     0,     0,   267,
-     268,     0,    16,     0,     0,   122,     0,     0,     0,     0,
-     123,   124,     0,     0,     0,    24,     0,   125,     0,   126,
-      26,     0,    28,     0,   127,   128,   129,   130,   131,     0,
-     269,   270,     0,   271,   119,   120,   121,     0,   132,   133,
-      36,    37,     0,    16,   273,   274,   122,     0,     0,     0,
-     134,   123,   124,     0,     0,     0,   174,     0,   125,     0,
-     126,    26,     0,    28,     0,   127,   128,   129,   130,   131,
-       0,   119,   120,   121,     0,     0,     0,     0,     0,   132,
-     133,    36,    37,   122,     0,     0,     0,     0,   123,   124,
-       0,   134,     0,     0,     0,   125,     0,   126,   119,   120,
-       0,   315,   127,   128,   129,   130,   131,   119,   120,     0,
-     122,     0,     0,     0,   325,     0,   132,   133,     0,   122,
-       0,     0,     0,     0,     0,     0,     0,     0,   134,   127,
-     128,     0,   130,   131,     0,     0,     0,     0,   127,   128,
-       0,   130,   131,   132,   133,     0,     0,   119,   120,     0,
-       0,     0,   132,   133,   503,   134,     0,   -91,   -91,   122,
-       0,     0,   -91,     0,   134,   119,   120,     0,     0,     0,
-     -91,     0,     0,     0,     0,     0,   213,   122,   127,   128,
-       0,   130,   131,   119,   120,     0,     0,   -91,     0,     0,
-     -91,     0,   132,   133,     0,   122,   127,   128,     0,   130,
-     131,     0,   534,     0,   134,   -91,     0,   119,   120,     0,
-     132,   133,     0,     0,   127,   128,     0,   130,   131,   122,
-     556,     0,   134,   119,   120,     0,     0,     0,   132,   133,
-     559,     0,     0,     0,     0,   122,     0,     0,   127,   128,
-     134,   130,   131,     0,   557,     0,     0,   119,   120,     0,
-       0,     0,   132,   133,   127,   128,     0,   130,   131,   122,
-       0,     0,     0,     0,   134,   119,   120,     0,   132,   133,
-       0,     0,     0,     0,   119,   120,     0,   122,   127,   128,
-     134,   130,   131,     0,   560,     0,   122,     0,     0,     0,
-       0,     0,   132,   133,   267,   268,   127,   128,     0,   130,
-     131,     0,   578,     0,   134,   127,   128,     0,   130,   131,
-     132,   133,   267,   268,     0,     0,     0,     0,     0,   132,
-     133,     0,   134,   396,     0,   269,   270,     0,   271,   272,
-       0,   134,   119,   120,     0,     0,     0,     0,     0,   273,
-     274,     0,     0,   269,   270,     0,   271,   272,     0,     0,
-       0,   275,     0,     0,     0,     0,     0,   273,   274,     0,
-       0,     0,     0,   127,   128,     0,   130,   131,     0,   275,
-       0,     0,     0,     0,     0,     0,     0,   132,   133,   445,
-     446,   447,   448,   449,   450,   451,   452,     0,     0,   134,
-       0,     5,     0,     0,     0,     0,     0,     0,     6,     7
-  };
+const short parser::yycheck_[] = {
+    1,   13,  30,  158, 293, 108, 149, 148, 9,   154, 11,  200, 127, 14,  15,  16,  158, 18,  224, 20,  201, 346, 23,
+    23,  25,  25,  9,   111, 29,  447, 11,  382, 149, 393, 35,  35,  37,  38,  381, 55,  396, 397, 43,  181, 391, 183,
+    307, 308, 186, 55,  35,  52,  52,  12,  9,   193, 7,   17,  12,  12,  61,  17,  34,  204, 65,  66,  12,  68,  69,
+    11,  71,  0,   55,  46,  29,  17,  562, 105, 60,  565, 11,  12,  98,  55,  85,  66,  17,  88,  69,  74,  71,  34,
+    93,  52,  95,  233, 52,  51,  51,  34,  60,  457, 11,  12,  20,  51,  61,  66,  109, 11,  12,  127, 598, 114, 65,
+    475, 391, 17,  259, 30,  55,  52,  264, 76,  77,  126, 126, 242, 317, 480, 17,  147, 479, 476, 237, 238, 5,   318,
+    93,  320, 146, 10,  403, 52,  32,  48,  52,  16,  149, 52,  52,  357, 358, 270, 48,  573, 25,  66,  52,  314, 66,
+    17,  50,  146, 66,  30,  526, 305, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 34,  322, 321, 336, 507, 508,
+    185, 201, 187, 160, 606, 170, 171, 172, 173, 174, 175, 176, 177, 178, 199, 200, 200, 552, 12,  318, 479, 17,  187,
+    17,  564, 569, 211, 3,   4,   214, 11,  27,  43,  44,  363, 303, 17,  194, 30,  196, 30,  370, 242, 583, 244, 34,
+    372, 34,  438, 522, 34,  441, 34,  418, 12,  528, 34,  344, 52,  17,  199, 348, 12,  20,  40,  41,  34,  17,  17,
+    45,  529, 47,  229, 3,   4,   214, 51,  52,  55,  55,  56,  11,  56,  11,  543, 270, 12,  17,  18,  428, 66,  276,
+    68,  278, 52,  51,  48,  71,  423, 426, 52,  52,  52,  48,  78,  79,  31,  52,  293, 55,  40,  41,  31,  278, 326,
+    45,  3,   47,  318, 418, 51,  52,  581, 71,  56,  55,  56,  71,  467, 341, 78,  79,  317, 317, 593, 9,   17,  322,
+    68,  71,  34,  600, 481, 17,  56,  51,  78,  79,  30,  6,   51,  52,  9,   40,  41,  12,  30,  484, 45,  71,  360,
+    69,  36,  55,  38,  34,  78,  79,  55,  56,  355, 45,  29,  51,  52,  40,  41,  34,  52,  17,  45,  366, 17,  368,
+    48,  59,  3,   4,   52,  6,   55,  376, 51,  52,  51,  380, 381, 382, 394, 56,  48,  18,  59,  31,  52,  30,  391,
+    81,  547, 66,  24,  376, 69,  87,  71,  400, 17,  74,  418, 93,  56,  78,  79,  40,  41,  51,  52,  366, 45,  368,
+    47,  105, 417, 107, 108, 71,  48,  52,  55,  56,  52,  426, 78,  79,  40,  41,  51,  52,  12,  45,  435, 68,  126,
+    76,  77,  129, 130, 131, 132, 55,  11,  12,  447, 17,  138, 139, 17,  141, 142, 143, 144, 145, 146, 55,  148, 69,
+    27,  69,  417, 51,  154, 30,  156, 34,  51,  52,  12,  11,  12,  11,  12,  476, 504, 17,  479, 480, 435, 48,  45,
+    484, 11,  52,  12,  27,  78,  79,  51,  181, 45,  183, 34,  12,  186, 51,  69,  66,  31,  513, 17,  193, 17,  12,
+    11,  17,  48,  17,  200, 69,  52,  514, 204, 17,  17,  529, 519, 69,  210, 522, 73,  3,   4,   215, 66,  528, 4,
+    5,   51,  7,   52,  12,  10,  34,  11,  17,  539, 17,  16,  31,  31,  233, 17,  235, 17,  237, 238, 25,  17,  552,
+    49,  49,  17,  11,  32,  569, 49,  52,  40,  41,  48,  48,  519, 45,  5,   47,  7,   259, 260, 10,  573, 31,  50,
+    55,  56,  16,  12,  30,  17,  55,  51,  49,  539, 69,  25,  49,  68,  65,  11,  3,   4,   32,  6,   71,  11,  52,
+    48,  12,  12,  69,  78,  79,  12,  606, 18,  30,  12,  12,  3,   50,  302, 48,  304, 305, 12,  12,  276, 68,  504,
+    417, 312, 105, 528, 9,   65,  317, 40,  41,  320, 321, 71,  45,  581, 47,  326, 514, 608, 78,  79,  514, 20,  55,
+    56,  23,  24,  40,  41,  -1,  340, 341, 45,  -1,  344, 33,  68,  35,  348, -1,  -1,  -1,  55,  56,  42,  -1,  -1,
+    -1,  0,   1,   -1,  361, 4,   363, 6,   -1,  8,   9,   -1,  -1,  370, 13,  14,  15,  -1,  17,  -1,  19,  -1,  21,
+    22,  -1,  -1,  -1,  26,  27,  28,  29,  30,  -1,  -1,  -1,  34,  -1,  36,  37,  38,  39,  -1,  -1,  -1,  -1,  -1,
+    6,   46,  -1,  9,   -1,  11,  -1,  -1,  53,  54,  413, 56,  57,  58,  59,  60,  61,  62,  -1,  -1,  423, 66,  67,
+    29,  69,  70,  71,  72,  34,  74,  75,  -1,  77,  78,  79,  -1,  -1,  -1,  -1,  -1,  -1,  4,   48,  6,   -1,  -1,
+    9,   -1,  -1,  -1,  56,  14,  -1,  59,  -1,  -1,  -1,  -1,  -1,  22,  66,  -1,  -1,  69,  70,  71,  29,  30,  74,
+    75,  -1,  34,  78,  79,  37,  -1,  39,  -1,  -1,  -1,  -1,  6,   -1,  -1,  9,   -1,  489, -1,  491, 492, -1,  494,
+    495, 56,  57,  58,  59,  -1,  -1,  62,  -1,  504, -1,  66,  29,  -1,  69,  70,  71,  34,  -1,  74,  75,  -1,  77,
+    78,  79,  4,   -1,  6,   -1,  -1,  9,   -1,  -1,  -1,  51,  14,  -1,  -1,  -1,  56,  -1,  -1,  59,  22,  -1,  -1,
+    -1,  -1,  -1,  66,  29,  30,  69,  6,   71,  34,  9,   74,  37,  -1,  39,  78,  79,  558, -1,  -1,  -1,  -1,  -1,
+    -1,  3,   4,   -1,  -1,  -1,  -1,  29,  56,  57,  58,  59,  34,  -1,  62,  4,   -1,  6,   66,  -1,  9,   69,  70,
+    71,  -1,  14,  74,  75,  -1,  77,  78,  79,  -1,  22,  56,  -1,  -1,  59,  40,  41,  29,  30,  -1,  45,  66,  34,
+    -1,  69,  37,  71,  39,  -1,  74,  55,  56,  -1,  78,  79,  -1,  11,  12,  -1,  -1,  -1,  -1,  17,  -1,  56,  57,
+    58,  59,  -1,  -1,  62,  -1,  27,  -1,  66,  -1,  -1,  69,  70,  71,  -1,  6,   74,  75,  9,   -1,  78,  79,  -1,
+    -1,  -1,  -1,  -1,  48,  -1,  20,  -1,  52,  23,  24,  -1,  -1,  -1,  11,  29,  -1,  -1,  -1,  33,  34,  35,  66,
+    -1,  -1,  -1,  -1,  -1,  42,  -1,  -1,  -1,  29,  30,  31,  6,   -1,  34,  9,   -1,  -1,  -1,  56,  14,  -1,  59,
+    -1,  -1,  -1,  -1,  -1,  -1,  66,  -1,  -1,  69,  70,  71,  29,  30,  74,  75,  59,  34,  78,  79,  37,  -1,  39,
+    -1,  -1,  -1,  69,  -1,  71,  -1,  -1,  74,  75,  76,  77,  78,  79,  -1,  -1,  56,  57,  58,  59,  6,   -1,  -1,
+    9,   -1,  -1,  66,  -1,  14,  69,  70,  71,  -1,  -1,  74,  75,  -1,  -1,  78,  79,  -1,  11,  12,  29,  30,  -1,
+    -1,  17,  34,  -1,  -1,  37,  -1,  39,  -1,  -1,  -1,  27,  6,   -1,  -1,  9,   -1,  -1,  3,   4,   -1,  -1,  -1,
+    -1,  56,  57,  58,  59,  22,  -1,  -1,  -1,  48,  -1,  66,  29,  52,  69,  70,  71,  34,  6,   74,  75,  9,   -1,
+    78,  79,  -1,  -1,  66,  -1,  -1,  -1,  48,  40,  41,  22,  -1,  -1,  45,  -1,  56,  -1,  29,  59,  -1,  -1,  62,
+    34,  55,  56,  66,  -1,  -1,  69,  70,  71,  -1,  6,   74,  75,  9,   77,  78,  79,  -1,  52,  -1,  -1,  -1,  56,
+    -1,  -1,  59,  22,  -1,  62,  -1,  -1,  -1,  66,  29,  -1,  69,  70,  71,  34,  6,   74,  75,  9,   77,  78,  79,
+    -1,  -1,  -1,  -1,  -1,  -1,  48,  -1,  -1,  22,  -1,  -1,  -1,  -1,  56,  -1,  29,  59,  -1,  -1,  62,  34,  6,
+    -1,  66,  9,   -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  77,  78,  79,  22,  52,  -1,  -1,  -1,  56,  -1,  29,
+    59,  -1,  -1,  62,  34,  6,   -1,  66,  9,   -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  77,  78,  79,  22,  -1,
+    -1,  -1,  -1,  56,  -1,  29,  59,  -1,  -1,  62,  34,  6,   -1,  66,  9,   -1,  69,  70,  71,  -1,  -1,  74,  75,
+    -1,  77,  78,  79,  22,  -1,  -1,  -1,  -1,  56,  -1,  29,  59,  -1,  6,   62,  34,  9,   -1,  66,  12,  -1,  69,
+    70,  71,  -1,  -1,  74,  75,  -1,  77,  78,  79,  -1,  -1,  -1,  -1,  29,  56,  -1,  -1,  59,  34,  6,   62,  -1,
+    9,   -1,  66,  -1,  -1,  69,  70,  71,  17,  -1,  74,  75,  -1,  -1,  78,  79,  -1,  -1,  56,  -1,  29,  59,  -1,
+    -1,  -1,  34,  6,   -1,  66,  9,   -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  -1,  78,  79,  -1,  -1,  -1,  -1,
+    -1,  56,  -1,  29,  59,  -1,  -1,  -1,  34,  6,   -1,  66,  9,   -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  48,
+    78,  79,  -1,  -1,  -1,  -1,  -1,  56,  -1,  29,  59,  -1,  -1,  -1,  34,  6,   -1,  66,  9,   -1,  69,  70,  71,
+    -1,  -1,  74,  75,  -1,  48,  78,  79,  -1,  -1,  -1,  -1,  -1,  56,  -1,  29,  59,  -1,  -1,  -1,  34,  -1,  -1,
+    66,  -1,  -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  48,  78,  79,  -1,  -1,  3,   4,   -1,  56,  6,   -1,  59,
+    9,   -1,  11,  -1,  -1,  -1,  66,  -1,  18,  69,  70,  71,  -1,  -1,  74,  75,  -1,  -1,  78,  79,  29,  6,   -1,
+    -1,  9,   34,  -1,  -1,  -1,  -1,  40,  41,  -1,  -1,  -1,  45,  -1,  47,  -1,  49,  -1,  -1,  -1,  -1,  29,  55,
+    56,  56,  -1,  34,  59,  -1,  -1,  -1,  -1,  -1,  -1,  66,  68,  -1,  69,  70,  71,  -1,  -1,  74,  75,  -1,  -1,
+    78,  79,  56,  -1,  -1,  59,  -1,  -1,  -1,  -1,  -1,  -1,  66,  -1,  -1,  69,  70,  71,  3,   4,   74,  75,  -1,
+    -1,  78,  79,  -1,  -1,  -1,  14,  -1,  -1,  -1,  18,  -1,  20,  -1,  -1,  23,  24,  -1,  -1,  -1,  -1,  -1,  30,
+    -1,  -1,  33,  -1,  35,  -1,  37,  -1,  39,  40,  41,  42,  -1,  -1,  45,  -1,  47,  -1,  3,   4,   -1,  -1,  -1,
+    -1,  55,  56,  57,  58,  -1,  14,  -1,  -1,  -1,  18,  -1,  20,  -1,  68,  23,  24,  -1,  -1,  -1,  -1,  -1,  30,
+    -1,  -1,  33,  -1,  35,  -1,  37,  -1,  39,  40,  41,  42,  -1,  -1,  45,  -1,  47,  -1,  3,   4,   -1,  3,   4,
+    -1,  55,  56,  57,  58,  -1,  -1,  12,  -1,  -1,  18,  -1,  20,  18,  68,  23,  24,  -1,  -1,  -1,  -1,  -1,  -1,
+    -1,  -1,  33,  -1,  35,  -1,  3,   4,   -1,  40,  41,  42,  40,  41,  45,  12,  47,  45,  -1,  47,  -1,  18,  -1,
+    -1,  55,  56,  -1,  55,  56,  -1,  3,   4,   -1,  -1,  -1,  -1,  -1,  68,  -1,  -1,  68,  -1,  -1,  40,  41,  18,
+    -1,  -1,  45,  -1,  47,  -1,  -1,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  40,  41,
+    18,  -1,  68,  45,  -1,  47,  -1,  49,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  12,  -1,  -1,  -1,  40,
+    41,  18,  -1,  68,  45,  -1,  47,  -1,  49,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+    40,  41,  18,  -1,  68,  45,  -1,  47,  -1,  -1,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  -1,  -1,  -1,
+    -1,  40,  41,  18,  -1,  68,  45,  -1,  47,  -1,  49,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  -1,  -1,
+    -1,  -1,  40,  41,  18,  -1,  68,  45,  -1,  47,  -1,  49,  -1,  3,   4,   -1,  -1,  55,  56,  -1,  -1,  -1,  -1,
+    -1,  -1,  -1,  40,  41,  -1,  -1,  68,  45,  -1,  47,  -1,  3,   4,   -1,  3,   4,   -1,  55,  56,  -1,  -1,  -1,
+    -1,  -1,  -1,  -1,  40,  41,  -1,  -1,  68,  45,  -1,  47,  -1,  3,   4,   -1,  -1,  -1,  -1,  55,  56,  -1,  -1,
+    -1,  -1,  -1,  40,  41,  -1,  40,  41,  45,  68,  47,  45,  -1,  47,  -1,  29,  30,  31,  55,  56,  34,  55,  56,
+    -1,  -1,  -1,  -1,  40,  41,  -1,  -1,  68,  45,  -1,  47,  -1,  -1,  51,  -1,  -1,  -1,  -1,  55,  56,  -1,  59,
+    29,  30,  31,  -1,  -1,  34,  -1,  -1,  -1,  69,  -1,  71,  -1,  -1,  74,  75,  76,  77,  78,  79,  -1,  -1,  51,
+    29,  30,  31,  -1,  -1,  34,  -1,  59,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  69,  -1,  71,  -1,  -1,  74,
+    75,  76,  77,  78,  79,  -1,  -1,  59,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  69,  -1,  71,  -1,  -1,  74,
+    75,  76,  77,  78,  79};
 
-  const short
-  parser::yycheck_[] =
-  {
-       2,    11,     4,   116,   138,   137,    53,    25,     4,   277,
-      12,    13,   101,    15,    63,   388,    18,    19,   147,   321,
-     199,   176,    24,   143,   147,   391,   392,   444,    24,   377,
-      32,    33,    34,    35,    94,    18,     4,    84,    40,    53,
-     175,    43,   376,    42,    29,   386,     9,   179,    50,    32,
-      33,    14,   138,    10,    14,    10,   163,    59,   165,   166,
-      14,    63,   169,    59,     0,    42,    10,    50,    22,   116,
-      28,    73,    10,    91,    76,   283,   284,    79,   562,    81,
-      57,   565,    49,    79,    41,    53,    41,    14,   454,   136,
-      48,     9,    10,    78,     9,    10,    98,    41,   386,     5,
-     102,   474,   151,    72,    42,   154,   213,   156,    75,   241,
-      14,   224,    72,   115,   598,    82,    83,    14,   167,    57,
-      14,   135,    25,   246,    42,    80,    81,    42,     9,   176,
-      25,   479,   115,    14,    28,    28,   138,   478,   293,    57,
-     295,   475,    57,    10,    28,    42,    28,    14,   150,   151,
-     149,   153,   154,   526,   156,    48,   573,   292,   218,   219,
-     289,   340,   341,   297,   296,   167,   252,   135,    25,    61,
-      62,   170,   174,   175,   281,    42,    28,   224,   174,   226,
-     293,    28,   311,    39,   186,    28,    42,   189,   396,   606,
-     478,    39,   175,   189,    42,    25,   569,    10,   564,   501,
-     502,    14,   201,    39,   552,    49,    42,     5,   207,    49,
-       6,    28,     8,   215,    10,    41,    42,   583,   267,   268,
-     269,   270,   271,   272,   273,   274,   275,   347,    24,    42,
-      48,    75,    28,   356,   354,    75,    14,   326,    82,    83,
-       9,   529,    82,    83,    39,    41,   293,    42,   427,    10,
-     252,   430,   407,    49,   522,   543,    52,    41,    42,   319,
-     528,    57,    42,   323,   266,   267,   268,   269,   270,   271,
-     272,   273,   274,   275,    49,   277,    41,    73,    48,    75,
-     412,   415,    78,   301,     3,     4,    82,    83,   417,    26,
-     292,     9,    10,   581,   407,   297,    14,   344,   316,    26,
-      75,    39,    10,    75,    42,   593,    14,    82,    83,   292,
-     359,    39,   600,    14,    42,    34,    35,     4,    37,     6,
-      75,     8,    25,    39,    42,    12,    42,    82,    83,    48,
-      49,    18,    28,   462,    42,    41,    42,    24,    25,    14,
-     342,    28,    28,    30,    48,    32,    41,    42,   350,   483,
-     352,   480,    41,    42,   350,   357,   352,   359,    34,    35,
-     407,    37,    49,    50,    51,    52,    53,    25,     4,    21,
-      57,    73,    48,   375,   376,   377,    41,    42,    14,   389,
-      41,    42,    80,    81,   386,     4,    73,    74,    75,    25,
-      14,    78,    79,     5,    30,    82,    83,    34,    35,    35,
-      37,    41,    42,    42,   406,    41,     9,    10,    20,    21,
-     406,    48,    10,   415,    50,    27,    73,    29,   547,   468,
-      63,    57,   424,    14,    36,    68,    69,    70,   424,    82,
-      83,    64,    65,    69,    66,    67,    14,    26,   440,    48,
-      25,    41,   444,    79,    63,    64,    65,    66,    67,    68,
-      69,    70,    73,    10,    37,    91,    75,    93,    94,     9,
-      28,    97,    41,    82,    83,    26,   468,    73,    14,    14,
-      10,     9,    14,   475,    73,    14,   478,   479,    14,   115,
-     498,   483,   118,   119,   120,    73,   122,    14,    10,    41,
-      77,   127,   128,    10,   130,   131,   132,   133,   134,   135,
-      41,   137,    37,    28,   514,     9,    10,   143,    10,   145,
-      14,    42,     9,   515,    26,    26,   518,    40,    22,   529,
-     522,    14,   518,    14,    28,    14,   528,   163,    14,   165,
-     166,    40,    14,   169,   536,    39,     9,    40,    42,   175,
-     536,    41,     3,   179,     4,    39,     6,    42,     8,   185,
-     552,    39,    12,    57,   190,    26,    10,    25,    18,   569,
-      41,    48,    14,    73,    24,    25,    40,     9,    28,     9,
-      30,   573,    32,    34,    35,    40,    37,   213,    42,    10,
-     216,    39,   218,   219,    10,    10,    25,    48,    49,    49,
-      50,    51,    52,    53,     9,    10,    73,    57,    10,    14,
-      10,    39,    10,   357,   606,   241,   242,    22,    91,   153,
-     498,   528,   406,    73,    74,    75,     4,   581,    78,    79,
-     608,    81,    82,    83,    39,   515,   515,    42,    -1,     4,
-      -1,     6,    -1,     8,    -1,    -1,    -1,    12,    -1,    -1,
-      -1,    -1,    57,    18,    -1,   281,    -1,    -1,    -1,    24,
-      25,     9,    -1,    28,    -1,    30,   292,    32,    -1,   295,
-     296,    -1,    -1,    -1,    -1,   301,    24,    25,    26,    -1,
-      28,    -1,    -1,    -1,    49,    50,    51,    52,    53,   315,
-     316,    -1,    57,   319,    -1,    -1,    -1,   323,    -1,   325,
-      -1,   327,    -1,    -1,    52,    -1,   332,    -1,    73,    74,
-      75,    -1,    -1,    78,    79,    -1,    81,    82,    83,   345,
-      -1,   347,    -1,    -1,    -1,    73,    -1,    75,   354,    -1,
-      78,    79,    80,    81,    82,    83,    -1,    -1,     0,     1,
-      -1,    -1,     4,    -1,     6,    -1,     8,    -1,    -1,    11,
-      12,    -1,    14,    -1,    16,    17,    18,    -1,    -1,    -1,
-      22,    23,    24,    25,    -1,    -1,    28,    -1,    30,    31,
-      32,    33,    -1,    -1,    -1,   401,    -1,    -1,    -1,    -1,
-      -1,    43,    44,    45,    46,    47,   412,    49,    50,    51,
-      52,    53,    54,    -1,    -1,    57,    -1,    59,    -1,    -1,
-      24,    25,    26,    -1,    28,    -1,    -1,    -1,    -1,    71,
-      72,    73,    74,    75,    76,    -1,    78,    79,    -1,    81,
-      82,    83,     5,     6,    -1,     8,    -1,    -1,    52,    -1,
-      -1,    -1,    -1,    -1,     9,    10,    -1,    20,    21,    14,
-      -1,    24,    -1,    -1,    27,    28,    29,    22,    -1,    73,
-      -1,    75,    -1,    36,    78,    79,    80,    81,    82,    83,
-     486,   487,    -1,    -1,    39,    -1,    49,    42,    -1,    52,
-      -1,    -1,   498,    -1,    57,    -1,    -1,   503,    -1,   505,
-     506,    -1,    57,     6,    -1,     8,    -1,    -1,    -1,    12,
-      73,    74,    75,    -1,    -1,    78,    79,    -1,    -1,    82,
-      83,    24,    25,    -1,    -1,    28,    -1,    30,    -1,    32,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     6,    -1,
-       8,    -1,    -1,    -1,    12,    -1,    49,    50,    51,    52,
-      -1,    -1,    -1,   559,    57,    -1,    24,    25,    -1,    -1,
-      28,    -1,    30,    -1,    32,    -1,    -1,    -1,    -1,    -1,
-      73,    74,    75,    -1,    -1,    78,    79,    -1,    -1,    82,
-      83,    49,    50,    51,    52,    -1,     6,    -1,     8,    57,
-      -1,    -1,    -1,    -1,    -1,    -1,     3,     4,    18,    -1,
-       6,    -1,     8,    -1,    24,    73,    74,    75,    28,    -1,
-      78,    79,    18,    -1,    82,    83,    -1,    -1,    24,    39,
-      -1,    -1,    28,    -1,    -1,    -1,    -1,    34,    35,    49,
-      37,    38,    52,    53,    -1,    -1,    42,    57,     6,    -1,
-       8,    48,    49,    49,    -1,    -1,    52,    53,    -1,    -1,
-      18,    57,    -1,    73,    74,    75,    24,    -1,    78,    79,
-      28,    81,    82,    83,    -1,    -1,    -1,    73,    74,    75,
-      -1,    39,    78,    79,    -1,    81,    82,    83,    -1,    -1,
-       6,    49,     8,    -1,    52,    53,    -1,    -1,    -1,    57,
-      -1,    -1,    18,    -1,    -1,    -1,    -1,    -1,    24,    -1,
-      -1,    -1,    28,    -1,    -1,    73,    74,    75,    -1,    -1,
-      78,    79,    -1,    81,    82,    83,    42,     6,    -1,     8,
-      -1,    -1,    -1,    49,    -1,    -1,    52,    53,     6,    18,
-       8,    57,    -1,    -1,    -1,    24,    -1,    -1,    -1,    28,
-      18,    -1,    -1,    -1,    -1,    -1,    24,    73,    74,    75,
-      28,    -1,    78,    79,    -1,    81,    82,    83,    -1,    -1,
-      49,    -1,    -1,    52,    53,     6,    -1,     8,    57,    -1,
-      -1,    49,    -1,    -1,    52,    53,    -1,    18,    -1,    57,
-      -1,    -1,    -1,    24,    73,    74,    75,    28,    -1,    78,
-      79,    -1,    81,    82,    83,    73,    74,    75,    -1,    -1,
-      78,    79,    -1,    81,    82,    83,    -1,     6,    49,     8,
-       9,    52,    53,    -1,    -1,    -1,    57,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    24,     6,    -1,     8,    28,
-      10,    -1,    73,    74,    75,    -1,    -1,    78,    79,    -1,
-      39,    82,    83,    -1,    24,    -1,    -1,    -1,    28,    -1,
-      49,    -1,    -1,    52,    -1,     3,     4,    -1,    57,    -1,
-      -1,     9,    -1,     6,    -1,     8,    14,    15,    -1,    49,
-      -1,    14,    52,    -1,    73,    74,    75,    57,    -1,    78,
-      79,    24,    -1,    82,    83,    28,    34,    35,    -1,    37,
-      38,    -1,    -1,    73,    74,    75,    -1,    -1,    78,    79,
-      48,    49,    82,    83,    -1,     6,    49,     8,    -1,    52,
-      -1,    -1,    60,    -1,    57,     3,     4,    -1,    -1,     6,
-      -1,     8,    -1,    24,    -1,    -1,    -1,    28,    -1,    -1,
-      73,    74,    75,    -1,    -1,    78,    79,    24,    39,    82,
-      83,    28,    -1,    -1,    -1,    -1,    34,    35,    49,    37,
-      38,    52,    39,    -1,    -1,    -1,    57,     6,    -1,     8,
-      48,    49,    49,    -1,    -1,    52,    -1,    -1,    -1,    -1,
-      57,    -1,    73,    74,    75,    24,    -1,    78,    79,    28,
-      -1,    82,    83,    -1,    -1,    -1,    73,    74,    75,    -1,
-      39,    78,    79,    -1,    -1,    82,    83,    -1,    -1,     6,
-      49,     8,     9,    52,    -1,    -1,     3,     4,    57,     6,
-       6,    -1,     8,    10,    -1,    -1,    -1,    24,    15,    -1,
-      -1,    28,    -1,    -1,    73,    74,    75,    -1,    24,    78,
-      79,    -1,    28,    82,    83,    -1,    -1,    34,    35,    -1,
-      37,    38,    49,    -1,    -1,    52,    -1,     6,    -1,     8,
-      57,    48,    49,    49,    -1,    -1,    52,    -1,    -1,    -1,
-      -1,    57,     6,    60,     8,    24,    73,    74,    75,    28,
-      -1,    78,    79,    -1,    -1,    82,    83,    73,    74,    75,
-      24,    -1,    78,    79,    28,    -1,    82,    83,    -1,    -1,
-      49,    -1,    -1,    52,    -1,    -1,    -1,    41,    57,    -1,
-      24,    25,    26,    -1,    28,    49,    -1,    -1,    52,    -1,
-      -1,    -1,    -1,    57,    73,    -1,    75,    41,    -1,    78,
-      -1,    -1,    -1,    82,    83,    -1,    -1,    -1,    52,    73,
-      -1,    75,     3,     4,    78,    -1,    -1,    -1,    82,    83,
-      -1,    -1,     3,    24,    25,    26,    -1,    28,    -1,    73,
-      -1,    75,    -1,    -1,    78,    79,    80,    81,    82,    83,
-      41,    -1,    -1,    34,    35,    -1,    37,    38,    -1,    -1,
-      -1,    52,    -1,    34,    35,    -1,    37,    48,    49,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    57,    48,    49,    60,
-      -1,    -1,    73,    -1,    75,    -1,    -1,    78,    79,    80,
-      81,    82,    83,     3,     4,     5,    -1,    -1,    -1,     3,
-       4,    -1,    12,    -1,    -1,    15,    -1,    -1,    -1,    -1,
-      20,    21,    -1,    -1,    -1,    25,    -1,    27,    -1,    29,
-      30,    -1,    32,    -1,    34,    35,    36,    37,    38,    -1,
-      34,    35,    -1,    37,     3,     4,     5,    -1,    48,    49,
-      50,    51,    -1,    12,    48,    49,    15,    -1,    -1,    -1,
-      60,    20,    21,    -1,    -1,    -1,    25,    -1,    27,    -1,
-      29,    30,    -1,    32,    -1,    34,    35,    36,    37,    38,
-      -1,     3,     4,     5,    -1,    -1,    -1,    -1,    -1,    48,
-      49,    50,    51,    15,    -1,    -1,    -1,    -1,    20,    21,
-      -1,    60,    -1,    -1,    -1,    27,    -1,    29,     3,     4,
-      -1,     6,    34,    35,    36,    37,    38,     3,     4,    -1,
-      15,    -1,    -1,    -1,    10,    -1,    48,    49,    -1,    15,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    60,    34,
-      35,    -1,    37,    38,    -1,    -1,    -1,    -1,    34,    35,
-      -1,    37,    38,    48,    49,    -1,    -1,     3,     4,    -1,
-      -1,    -1,    48,    49,    10,    60,    -1,     9,    10,    15,
-      -1,    -1,    14,    -1,    60,     3,     4,    -1,    -1,    -1,
-      22,    -1,    -1,    -1,    -1,    -1,    28,    15,    34,    35,
-      -1,    37,    38,     3,     4,    -1,    -1,    39,    -1,    -1,
-      42,    -1,    48,    49,    -1,    15,    34,    35,    -1,    37,
-      38,    -1,    40,    -1,    60,    57,    -1,     3,     4,    -1,
-      48,    49,    -1,    -1,    34,    35,    -1,    37,    38,    15,
-      40,    -1,    60,     3,     4,    -1,    -1,    -1,    48,    49,
-      10,    -1,    -1,    -1,    -1,    15,    -1,    -1,    34,    35,
-      60,    37,    38,    -1,    40,    -1,    -1,     3,     4,    -1,
-      -1,    -1,    48,    49,    34,    35,    -1,    37,    38,    15,
-      -1,    -1,    -1,    -1,    60,     3,     4,    -1,    48,    49,
-      -1,    -1,    -1,    -1,     3,     4,    -1,    15,    34,    35,
-      60,    37,    38,    -1,    40,    -1,    15,    -1,    -1,    -1,
-      -1,    -1,    48,    49,     3,     4,    34,    35,    -1,    37,
-      38,    -1,    40,    -1,    60,    34,    35,    -1,    37,    38,
-      48,    49,     3,     4,    -1,    -1,    -1,    -1,    -1,    48,
-      49,    -1,    60,    14,    -1,    34,    35,    -1,    37,    38,
-      -1,    60,     3,     4,    -1,    -1,    -1,    -1,    -1,    48,
-      49,    -1,    -1,    34,    35,    -1,    37,    38,    -1,    -1,
-      -1,    60,    -1,    -1,    -1,    -1,    -1,    48,    49,    -1,
-      -1,    -1,    -1,    34,    35,    -1,    37,    38,    -1,    60,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    48,    49,    63,
-      64,    65,    66,    67,    68,    69,    70,    -1,    -1,    60,
-      -1,    75,    -1,    -1,    -1,    -1,    -1,    -1,    82,    83
-  };
+const unsigned char parser::yystos_[] = {
+    0,   43,  44,  81,  71,  78,  79,  84,  130, 82,  0,   20,  60,  1,   4,   6,   8,   9,   13,  14,  15,  17,  19,
+    21,  22,  26,  27,  28,  29,  30,  34,  36,  37,  38,  39,  46,  53,  54,  56,  57,  58,  59,  60,  61,  62,  66,
+    67,  69,  70,  72,  74,  75,  77,  83,  84,  88,  98,  100, 104, 114, 115, 118, 119, 123, 144, 6,   9,   29,  34,
+    56,  59,  66,  69,  74,  84,  85,  158, 84,  143, 84,  84,  56,  84,  88,  84,  56,  84,  34,  56,  84,  98,  98,
+    17,  120, 121, 35,  74,  48,  88,  100, 113, 12,  88,  90,  92,  93,  94,  30,  30,  56,  84,  98,  17,  88,  56,
+    84,  84,  88,  84,  88,  89,  17,  121, 34,  22,  62,  77,  88,  98,  34,  3,   4,   18,  20,  23,  24,  33,  35,
+    40,  41,  42,  45,  47,  55,  56,  68,  97,  99,  114, 11,  12,  52,  66,  117, 30,  88,  97,  110, 100, 17,  27,
+    84,  85,  12,  51,  85,  86,  85,  85,  34,  3,   4,   40,  41,  45,  47,  55,  56,  68,  17,  60,  34,  156, 34,
+    17,  34,  34,  20,  84,  55,  88,  96,  84,  34,  11,  17,  11,  17,  122, 30,  77,  88,  100, 104, 109, 111, 116,
+    144, 84,  17,  97,  11,  103, 48,  52,  12,  52,  92,  51,  48,  88,  125, 128, 48,  125, 129, 84,  55,  122, 11,
+    17,  84,  55,  34,  157, 52,  66,  31,  31,  71,  22,  62,  88,  98,  99,  90,  91,  95,  88,  88,  88,  88,  88,
+    88,  88,  88,  88,  88,  88,  114, 97,  110, 52,  100, 101, 102, 48,  91,  112, 88,  11,  12,  103, 117, 17,  121,
+    34,  51,  12,  51,  66,  86,  87,  85,  85,  85,  85,  85,  85,  85,  85,  85,  95,  30,  95,  84,  132, 133, 95,
+    85,  55,  69,  12,  51,  52,  34,  95,  17,  121, 131, 17,  121, 31,  48,  100, 107, 108, 77,  88,  111, 97,  109,
+    11,  12,  17,  52,  30,  110, 12,  17,  52,  17,  52,  24,  101, 102, 100, 88,  52,  17,  6,   12,  124, 48,  52,
+    17,  124, 48,  52,  55,  69,  121, 55,  69,  95,  30,  88,  125, 125, 51,  99,  12,  51,  52,  110, 88,  12,  117,
+    11,  48,  52,  52,  101, 87,  51,  85,  12,  51,  51,  29,  30,  31,  34,  59,  69,  74,  75,  76,  77,  84,  134,
+    135, 136, 137, 138, 140, 141, 142, 158, 51,  12,  51,  51,  17,  69,  17,  88,  122, 88,  95,  51,  131, 131, 31,
+    88,  103, 48,  52,  88,  111, 12,  17,  52,  109, 110, 102, 11,  48,  90,  105, 106, 17,  103, 88,  90,  11,  127,
+    17,  125, 127, 17,  125, 69,  17,  69,  17,  51,  4,   5,   7,   10,  16,  25,  32,  50,  65,  84,  150, 151, 153,
+    154, 155, 124, 124, 73,  91,  100, 100, 91,  117, 51,  138, 139, 139, 51,  137, 34,  134, 136, 135, 12,  158, 156,
+    156, 11,  84,  17,  131, 17,  12,  51,  31,  31,  88,  6,   12,  107, 12,  17,  52,  110, 102, 103, 48,  52,  100,
+    126, 124, 124, 17,  17,  150, 156, 48,  52,  49,  49,  17,  103, 11,  48,  49,  12,  51,  139, 136, 137, 103, 52,
+    48,  102, 31,  88,  88,  88,  49,  88,  88,  105, 12,  127, 127, 55,  30,  158, 151, 153, 100, 51,  138, 51,  140,
+    134, 158, 78,  79,  49,  49,  12,  49,  100, 69,  134, 147, 148, 149, 17,  103, 51,  137, 49,  49,  88,  11,  157,
+    156, 157, 158, 49,  150, 11,  52,  48,  12,  69,  147, 5,   10,  16,  25,  152, 156, 12,  30,  7,   65,  134, 145,
+    146, 12,  12,  157, 32,  50,  134, 48,  12,  150, 12,  152};
 
-  const unsigned char
-  parser::yystos_[] =
-  {
-       0,    61,    62,    85,    86,    75,    82,    83,    88,   134,
-       0,     1,     4,     6,     8,    11,    12,    14,    16,    17,
-      18,    22,    23,    24,    25,    28,    30,    31,    32,    33,
-      43,    44,    45,    46,    47,    49,    50,    51,    52,    53,
-      54,    57,    59,    71,    72,    73,    74,    76,    78,    79,
-      81,    87,    88,    92,   102,   104,   108,   118,   119,   122,
-     123,   127,   148,     5,    72,   162,    88,   147,    88,    49,
-      88,    92,    88,    49,    88,   102,    49,    88,    14,   124,
-     125,    29,    78,    39,    92,   104,   117,    10,    92,    94,
-      96,    97,    98,    25,    25,    14,    92,    28,    49,    88,
-     102,   102,    49,    88,    88,    92,    88,    92,    93,    14,
-     125,    88,    28,    18,    53,    81,    92,   102,    28,     3,
-       4,     5,    15,    20,    21,    27,    29,    34,    35,    36,
-      37,    38,    48,    49,    60,   101,   103,   118,     9,    10,
-      42,    57,   121,    25,    92,   101,   114,   104,    14,    22,
-       6,     8,    24,    28,    49,    52,    57,    73,    78,    88,
-      89,    14,    72,    28,   160,    28,    28,     5,    88,    28,
-       9,    14,    88,    48,    25,    81,    92,   104,   108,   113,
-     115,   120,   148,    88,    14,   101,     9,   107,    39,    42,
-      10,    42,    96,    41,    39,    92,   129,   132,    39,   129,
-     133,     9,    14,    92,   100,    88,    48,     9,    14,   126,
-     126,    88,    48,    28,    14,    28,    42,    57,    26,    26,
-     161,    75,    18,    53,    92,   102,   103,    94,    95,    99,
-      92,    92,    92,    92,    92,    92,    92,    92,    92,    92,
-      92,   118,   101,   114,    42,   104,   105,   106,    39,    95,
-     116,    92,     9,    10,   107,   121,    14,   125,    88,    89,
-      10,    41,    89,    90,    89,    89,    28,     3,     4,    34,
-      35,    37,    38,    48,    49,    60,    99,    25,    99,    99,
-      89,    28,    99,    14,   125,   135,    48,    73,    39,   104,
-     111,   112,    81,    92,   115,   101,   113,     9,    10,    14,
-      42,    25,   114,    10,    14,    42,    14,    42,    21,   105,
-     106,   104,    92,    42,    14,     6,    10,   128,    39,    42,
-      14,   128,    39,    42,   125,    10,    41,    42,    48,    73,
-      14,   125,    26,    48,    73,    99,    88,   136,   137,    92,
-     129,   129,    25,    41,   103,    10,    41,    42,   114,    92,
-      10,   121,     9,    39,    42,    42,   105,    28,    41,    10,
-      41,    57,    90,    91,    89,    89,    89,    89,    89,    89,
-      89,    89,    89,    41,    24,    25,    26,    28,    52,    73,
-      78,    79,    80,    81,    88,   138,   139,   140,   141,   142,
-     144,   145,   146,   162,    41,    41,    14,    99,    41,   135,
-     135,    26,    73,    14,   107,    39,    42,    92,   115,    10,
-      14,    42,   113,   114,   106,     9,    39,    94,   109,   110,
-      14,   107,    92,    94,     9,   131,    14,   129,   131,    14,
-     129,    92,   126,    92,    73,    14,    92,    73,    14,    41,
-      10,    41,   128,   128,     4,    63,    64,    65,    66,    67,
-      68,    69,    70,    88,   154,   155,   157,   158,   159,    77,
-      95,   104,   104,    95,   121,    91,    41,    89,    10,    41,
-     142,   143,   143,    41,   141,    28,   138,   140,   139,    10,
-     162,   160,   160,     9,   135,    41,    26,    26,    92,    14,
-     111,    10,    14,    42,   114,   106,   107,    39,    42,   104,
-     130,   128,   128,    10,    14,     6,    10,    14,    88,    14,
-      40,    40,   154,   160,    39,    42,    14,   107,     9,    41,
-      39,    40,    10,    41,   143,   140,   141,   107,    42,    39,
-     106,    26,    92,    92,    40,   109,    10,   131,   131,    92,
-      92,    92,    48,    25,   162,   155,   157,   104,    41,   142,
-      41,   144,   138,   162,    82,    83,    40,    40,   104,    10,
-      40,    73,   138,   151,   152,   153,    14,   107,    41,   141,
-      40,    40,    92,     9,   161,   160,   161,   162,    40,   154,
-       9,    42,    39,    10,    73,   151,    63,    68,    69,    70,
-     156,   160,    10,    25,    64,    65,   138,   149,   150,    10,
-      10,   161,    66,    67,   138,    39,    10,   154,    10,   156
-  };
+const unsigned char parser::yyr1_[] = {
+    0,   80,  81,  81,  82,  82,  83,  83,  83,  83,  84,  84,  84,  85,  85,  85,  85,  85,  85,  85,  85,  85,  85,
+    85,  85,  85,  85,  85,  85,  85,  85,  85,  85,  85,  85,  85,  85,  86,  86,  87,  87,  88,  88,  88,  88,  88,
+    88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  88,  89,  89,  90,  90,
+    91,  91,  92,  92,  92,  92,  93,  93,  94,  94,  95,  95,  96,  96,  97,  97,  97,  97,  97,  97,  98,  98,  98,
+    98,  99,  99,  100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 101, 101, 102, 102, 103, 103, 104, 104,
+    104, 104, 104, 105, 105, 106, 106, 107, 108, 108, 109, 109, 109, 109, 110, 110, 110, 111, 111, 111, 111, 112, 112,
+    113, 113, 114, 114, 114, 114, 115, 115, 115, 115, 116, 117, 117, 118, 118, 118, 118, 118, 118, 118, 118, 119, 119,
+    120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 121, 121, 121, 121, 121, 122, 122, 122, 123, 123, 123, 83,  83,
+    83,  83,  83,  124, 124, 125, 125, 126, 126, 127, 127, 127, 83,  83,  128, 128, 129, 129, 83,  83,  83,  83,  83,
+    83,  83,  83,  83,  83,  83,  83,  83,  83,  83,  83,  83,  130, 131, 83,  83,  83,  83,  83,  83,  132, 132, 133,
+    133, 83,  83,  83,  83,  83,  83,  83,  83,  134, 134, 135, 135, 136, 136, 136, 136, 136, 136, 136, 136, 136, 136,
+    136, 136, 136, 137, 137, 137, 138, 138, 139, 139, 140, 140, 141, 141, 142, 142, 143, 143, 144, 144, 144, 145, 145,
+    146, 146, 147, 147, 147, 148, 148, 149, 149, 150, 150, 150, 150, 150, 150, 150, 150, 150, 151, 152, 152, 152, 152,
+    153, 153, 154, 154, 154, 154, 155, 155, 83,  156, 157, 158};
 
-  const unsigned char
-  parser::yyr1_[] =
-  {
-       0,    84,    85,    85,    86,    86,    87,    87,    87,    87,
-      88,    88,    88,    89,    89,    89,    89,    89,    89,    89,
-      89,    89,    89,    89,    89,    89,    89,    89,    89,    89,
-      89,    89,    89,    89,    89,    89,    89,    90,    90,    91,
-      91,    92,    92,    92,    92,    92,    92,    92,    92,    92,
-      92,    92,    92,    92,    92,    92,    92,    92,    92,    92,
-      92,    92,    92,    92,    92,    93,    93,    94,    94,    95,
-      95,    96,    96,    96,    96,    97,    97,    98,    98,    99,
-      99,   100,   100,   101,   101,   101,   101,   101,   101,   102,
-     102,   102,   102,   103,   103,   104,   104,   104,   104,   104,
-     104,   104,   104,   104,   104,   104,   104,   105,   105,   106,
-     106,   107,   107,   108,   108,   108,   108,   108,   109,   109,
-     110,   110,   111,   112,   112,   113,   113,   113,   113,   114,
-     114,   114,   115,   115,   115,   115,   116,   116,   117,   117,
-     118,   118,   118,   118,   119,   119,   119,   119,   120,   121,
-     121,   122,   122,   122,   122,   122,   122,   122,   122,   123,
-     123,   124,   124,   124,   124,   124,   124,   124,   124,   124,
-     124,   125,   125,   125,   125,   125,   126,   126,   126,   127,
-     127,   127,    87,    87,    87,    87,    87,   128,   128,   129,
-     129,   130,   130,   131,   131,   131,    87,    87,   132,   132,
-     133,   133,    87,    87,    87,    87,    87,    87,    87,    87,
-      87,    87,    87,    87,    87,    87,    87,    87,    87,   134,
-     135,    87,    87,    87,    87,    87,    87,   136,   136,   137,
-     137,    87,    87,    87,    87,    87,    87,    87,    87,   138,
-     138,   139,   139,   140,   140,   140,   140,   140,   140,   140,
-     140,   140,   140,   140,   140,   140,   141,   141,   141,   142,
-     142,   143,   143,   144,   144,   145,   145,   146,   146,   147,
-     147,   148,   148,   148,   149,   149,   150,   150,   151,   151,
-     151,   152,   152,   153,   153,   154,   154,   154,   154,   154,
-     154,   154,   154,   154,   155,   156,   156,   156,   156,   157,
-     157,   158,   158,   158,   158,   159,   159,    87,   160,   161,
-     162
-  };
+const signed char parser::yyr2_[] = {
+    0, 2, 2, 3, 2,  0, 1, 1, 3, 3, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3,  3, 3, 2, 2, 2, 3, 3, 4, 4,  5, 3, 1, 2, 1, 1,
+    1, 1, 1, 3, 1,  0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 3, 4,  5, 3, 1, 2, 1, 1, 1, 1, 1,  1, 1, 3, 1, 3, 1,
+    0, 2, 1, 1, 0,  2, 3, 1, 2, 1, 3, 3, 5, 1, 1, 1, 1, 1, 1, 1,  4, 2, 5, 2, 3, 1, 2, 3, 1,  2, 3, 1, 2, 3, 2,
+    3, 4, 1, 3, 1,  0, 2, 0, 1, 1, 1, 1, 1, 2, 2, 1, 3, 2, 1, 3,  2, 3, 3, 4, 1, 2, 0, 3, 4,  2, 1, 6, 4, 2, 4,
+    3, 4, 2, 3, 3,  4, 2, 1, 3, 1, 1, 3, 3, 4, 5, 2, 2, 4, 3, 3,  3, 3, 3, 3, 3, 4, 4, 5, 5,  3, 0, 3, 3, 4, 5,
+    3, 1, 2, 2, 1,  1, 1, 2, 3, 3, 2, 2, 2, 0, 3, 1, 1, 3, 2, 1,  0, 6, 6, 3, 5, 3, 5, 4, 4,  5, 5, 5, 6, 2, 4,
+    3, 5, 6, 5, 10, 8, 5, 6, 3, 3, 0, 6, 9, 9, 6, 3, 5, 3, 1, 0,  1, 6, 3, 5, 5, 4, 8, 8, 7,  1, 1, 2, 1, 3, 3,
+    2, 3, 4, 5, 4,  1, 1, 1, 1, 1, 1, 3, 2, 1, 3, 1, 1, 0, 3, 3,  4, 1, 1, 0, 1, 4, 2, 8, 10, 1, 3, 1, 0, 6, 8,
+    8, 1, 4, 1, 0,  1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 1, 1, 1, 1, 16, 8, 3, 3, 1, 1, 1, 0, 8, 0,  0, 0};
 
-  const unsigned char
-  parser::yyr2_[] =
-  {
-       0,     2,     2,     3,     2,     0,     1,     1,     3,     3,
-       1,     1,     1,     3,     3,     3,     3,     3,     3,     3,
-       3,     3,     2,     2,     2,     3,     3,     4,     4,     5,
-       3,     1,     2,     1,     1,     1,     1,     1,     3,     1,
-       0,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,     2,     2,     3,     4,     5,     3,     1,     2,     1,
-       1,     1,     1,     1,     1,     1,     3,     1,     3,     1,
-       0,     2,     1,     1,     0,     2,     3,     1,     2,     1,
-       3,     3,     5,     1,     1,     1,     1,     1,     1,     1,
-       4,     2,     5,     2,     3,     1,     2,     3,     1,     2,
-       3,     1,     2,     3,     2,     3,     4,     1,     3,     1,
-       0,     2,     0,     1,     1,     1,     1,     1,     2,     2,
-       1,     3,     2,     1,     3,     2,     3,     3,     4,     1,
-       2,     0,     3,     4,     2,     1,     6,     4,     2,     4,
-       3,     4,     2,     3,     3,     4,     2,     1,     3,     1,
-       1,     3,     3,     4,     5,     2,     2,     4,     3,     3,
-       3,     3,     3,     3,     3,     4,     4,     5,     5,     3,
-       0,     3,     3,     4,     5,     3,     1,     2,     2,     1,
-       1,     1,     2,     3,     3,     2,     2,     2,     0,     3,
-       1,     1,     3,     2,     1,     0,     6,     6,     3,     5,
-       3,     5,     4,     4,     5,     5,     5,     6,     2,     4,
-       3,     5,     6,     5,    10,     8,     5,     6,     3,     3,
-       0,     6,     9,     9,     6,     3,     5,     3,     1,     0,
-       1,     6,     3,     5,     5,     4,     8,     8,     7,     1,
-       1,     2,     1,     3,     3,     2,     3,     4,     5,     4,
-       1,     1,     1,     1,     1,     1,     3,     2,     1,     3,
-       1,     1,     0,     3,     3,     4,     1,     1,     0,     1,
-       4,     2,     8,    10,     1,     3,     1,     0,     6,     8,
-       8,     1,     4,     1,     0,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     6,     1,     1,     1,     1,    16,
-       8,     3,     3,     1,     1,     1,     0,     8,     0,     0,
-       0
-  };
-
-
-
-  // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
-  // First, the terminals, then, starting at \a yyntokens_, nonterminals.
-  const char*
-  const parser::yytname_[] =
-  {
-  "\"<EOF>\"", "error", "$undefined", "\"+\"", "\"&\"", "\"=\"", "\"@\"",
-  "\"#base\"", "\"~\"", "\":\"", "\",\"", "\"#const\"", "\"#count\"",
-  "\"#cumulative\"", "\".\"", "\"..\"", "\"#external\"", "\"#defined\"",
-  "\"#false\"", "\"#forget\"", "\">=\"", "\">\"", "\":-\"", "\"#include\"",
-  "\"#inf\"", "\"{\"", "\"[\"", "\"<=\"", "\"(\"", "\"<\"", "\"#max\"",
-  "\"#maximize\"", "\"#min\"", "\"#minimize\"", "\"\\\\\"", "\"*\"",
-  "\"!=\"", "\"**\"", "\"?\"", "\"}\"", "\"]\"", "\")\"", "\";\"",
-  "\"#show\"", "\"#edge\"", "\"#project\"", "\"#heuristic\"",
-  "\"#showsig\"", "\"/\"", "\"-\"", "\"#sum\"", "\"#sum+\"", "\"#sup\"",
-  "\"#true\"", "\"#program\"", "UBNOT", "UMINUS", "\"|\"", "\"#volatile\"",
-  "\":~\"", "\"^\"", "\"<program>\"", "\"<define>\"", "\"any\"",
-  "\"unary\"", "\"binary\"", "\"left\"", "\"right\"", "\"head\"",
-  "\"body\"", "\"directive\"", "\"#theory\"", "\"EOF\"", "\"<NUMBER>\"",
-  "\"<ANONYMOUS>\"", "\"<IDENTIFIER>\"", "\"<SCRIPT>\"", "\"<CODE>\"",
-  "\"<STRING>\"", "\"<VARIABLE>\"", "\"<THEORYOP>\"", "\"not\"",
-  "\"default\"", "\"override\"", "$accept", "start", "program",
-  "statement", "identifier", "constterm", "consttermvec", "constargvec",
-  "term", "unaryargvec", "ntermvec", "termvec", "tuple", "tuplevec_sem",
-  "tuplevec", "argvec", "binaryargvec", "cmp", "atom", "rellitvec",
-  "literal", "nlitvec", "litvec", "optcondition", "aggregatefunction",
-  "bodyaggrelem", "bodyaggrelemvec", "altbodyaggrelem",
-  "altbodyaggrelemvec", "bodyaggregate", "upper", "lubodyaggregate",
-  "headaggrelemvec", "altheadaggrelemvec", "headaggregate",
-  "luheadaggregate", "conjunction", "dsym", "disjunctionsep",
-  "disjunction", "bodycomma", "bodydot", "bodyconddot", "head",
-  "optimizetuple", "optimizeweight", "optimizelitvec", "optimizecond",
-  "maxelemlist", "minelemlist", "define", "storecomment", "nidlist",
-  "idlist", "theory_op", "theory_op_list", "theory_term", "theory_opterm",
-  "theory_opterm_nlist", "theory_opterm_list", "theory_atom_element",
-  "theory_atom_element_nlist", "theory_atom_element_list",
-  "theory_atom_name", "theory_atom", "theory_operator_nlist",
-  "theory_operator_list", "theory_operator_definition",
-  "theory_operator_definition_nlist", "theory_operator_definiton_list",
-  "theory_definition_identifier", "theory_term_definition",
-  "theory_atom_type", "theory_atom_definition", "theory_definition_nlist",
-  "theory_definition_list", "enable_theory_lexing",
-  "enable_theory_definition_lexing", "disable_theory_lexing", YY_NULLPTR
-  };
+#if YYDEBUG || 1
+// YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
+// First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
+const char *const parser::yytname_[] = {"\"<EOF>\"",
+                                        "error",
+                                        "\"invalid token\"",
+                                        "\"+\"",
+                                        "\"&\"",
+                                        "\"any\"",
+                                        "\"@\"",
+                                        "\"binary\"",
+                                        "\"#program\"",
+                                        "\"~\"",
+                                        "\"body\"",
+                                        "\":\"",
+                                        "\",\"",
+                                        "\"#const\"",
+                                        "\"#count\"",
+                                        "\"#defined\"",
+                                        "\"directive\"",
+                                        "\".\"",
+                                        "\"..\"",
+                                        "\"#edge\"",
+                                        "\"=\"",
+                                        "\"#external\"",
+                                        "\"#false\"",
+                                        "\">=\"",
+                                        "\">\"",
+                                        "\"head\"",
+                                        "\"#heuristic\"",
+                                        "\":-\"",
+                                        "\"#include\"",
+                                        "\"#inf\"",
+                                        "\"{\"",
+                                        "\"[\"",
+                                        "\"left\"",
+                                        "\"<=\"",
+                                        "\"(\"",
+                                        "\"<\"",
+                                        "\"#maximize\"",
+                                        "\"#max\"",
+                                        "\"#minimize\"",
+                                        "\"#min\"",
+                                        "\"\\\\\"",
+                                        "\"*\"",
+                                        "\"!=\"",
+                                        "\"<define>\"",
+                                        "\"<program>\"",
+                                        "\"**\"",
+                                        "\"#project\"",
+                                        "\"?\"",
+                                        "\"}\"",
+                                        "\"]\"",
+                                        "\"right\"",
+                                        "\")\"",
+                                        "\";\"",
+                                        "\"#show\"",
+                                        "\"#showsig\"",
+                                        "\"/\"",
+                                        "\"-\"",
+                                        "\"#sum+\"",
+                                        "\"#sum\"",
+                                        "\"#sup\"",
+                                        "\"EOF\"",
+                                        "\"#theory\"",
+                                        "\"#true\"",
+                                        "UBNOT",
+                                        "UMINUS",
+                                        "\"unary\"",
+                                        "\"|\"",
+                                        "\":~\"",
+                                        "\"^\"",
+                                        "\"<NUMBER>\"",
+                                        "\"<ANONYMOUS>\"",
+                                        "\"<IDENTIFIER>\"",
+                                        "\"<SCRIPT>\"",
+                                        "\"<CODE>\"",
+                                        "\"<STRING>\"",
+                                        "\"<VARIABLE>\"",
+                                        "\"<THEORYOP>\"",
+                                        "\"not\"",
+                                        "\"default\"",
+                                        "\"override\"",
+                                        "$accept",
+                                        "start",
+                                        "program",
+                                        "statement",
+                                        "identifier",
+                                        "constterm",
+                                        "consttermvec",
+                                        "constargvec",
+                                        "term",
+                                        "unaryargvec",
+                                        "ntermvec",
+                                        "termvec",
+                                        "tuple",
+                                        "tuplevec_sem",
+                                        "tuplevec",
+                                        "argvec",
+                                        "binaryargvec",
+                                        "cmp",
+                                        "atom",
+                                        "rellitvec",
+                                        "literal",
+                                        "nlitvec",
+                                        "litvec",
+                                        "optcondition",
+                                        "aggregatefunction",
+                                        "bodyaggrelem",
+                                        "bodyaggrelemvec",
+                                        "altbodyaggrelem",
+                                        "altbodyaggrelemvec",
+                                        "bodyaggregate",
+                                        "upper",
+                                        "lubodyaggregate",
+                                        "headaggrelemvec",
+                                        "altheadaggrelemvec",
+                                        "headaggregate",
+                                        "luheadaggregate",
+                                        "conjunction",
+                                        "dsym",
+                                        "disjunctionsep",
+                                        "disjunction",
+                                        "bodycomma",
+                                        "bodydot",
+                                        "bodyconddot",
+                                        "head",
+                                        "optimizetuple",
+                                        "optimizeweight",
+                                        "optimizelitvec",
+                                        "optimizecond",
+                                        "maxelemlist",
+                                        "minelemlist",
+                                        "define",
+                                        "storecomment",
+                                        "nidlist",
+                                        "idlist",
+                                        "theory_op",
+                                        "theory_op_list",
+                                        "theory_term",
+                                        "theory_opterm",
+                                        "theory_opterm_nlist",
+                                        "theory_opterm_list",
+                                        "theory_atom_element",
+                                        "theory_atom_element_nlist",
+                                        "theory_atom_element_list",
+                                        "theory_atom_name",
+                                        "theory_atom",
+                                        "theory_operator_nlist",
+                                        "theory_operator_list",
+                                        "theory_operator_definition",
+                                        "theory_operator_definition_nlist",
+                                        "theory_operator_definiton_list",
+                                        "theory_definition_identifier",
+                                        "theory_term_definition",
+                                        "theory_atom_type",
+                                        "theory_atom_definition",
+                                        "theory_definition_nlist",
+                                        "theory_definition_list",
+                                        "enable_theory_lexing",
+                                        "enable_theory_definition_lexing",
+                                        "disable_theory_lexing",
+                                        YY_NULLPTR};
+#endif
 
 #if YYDEBUG
-  const unsigned short
-  parser::yyrline_[] =
-  {
-       0,   318,   318,   319,   323,   324,   330,   331,   332,   333,
-     337,   338,   339,   346,   347,   348,   349,   350,   351,   352,
-     353,   354,   355,   356,   357,   358,   359,   360,   361,   362,
-     363,   364,   365,   366,   367,   368,   369,   375,   376,   380,
-     381,   387,   388,   389,   390,   391,   392,   393,   394,   395,
-     396,   397,   398,   399,   400,   401,   402,   403,   404,   405,
-     406,   407,   408,   409,   410,   416,   417,   423,   424,   428,
-     429,   433,   434,   435,   436,   439,   440,   443,   444,   447,
-     448,   452,   453,   463,   464,   465,   466,   467,   468,   472,
-     473,   474,   475,   479,   480,   484,   485,   486,   487,   488,
-     489,   490,   491,   492,   493,   494,   495,   503,   504,   508,
-     509,   513,   514,   518,   519,   520,   521,   522,   528,   529,
-     533,   534,   540,   544,   545,   551,   552,   553,   554,   558,
-     559,   560,   564,   565,   566,   567,   573,   574,   578,   579,
-     585,   586,   587,   588,   592,   593,   594,   595,   602,   609,
-     610,   616,   617,   618,   619,   620,   621,   622,   623,   627,
-     628,   635,   636,   637,   638,   639,   640,   641,   642,   643,
-     644,   648,   649,   650,   651,   652,   656,   657,   658,   661,
-     662,   663,   667,   668,   669,   670,   671,   677,   678,   682,
-     683,   687,   688,   692,   693,   694,   698,   699,   703,   704,
-     708,   709,   713,   714,   715,   716,   722,   723,   724,   725,
-     726,   732,   733,   738,   744,   745,   751,   752,   753,   759,
-     763,   766,   767,   768,   774,   780,   781,   787,   788,   792,
-     793,   797,   798,   804,   805,   806,   807,   808,   809,   815,
-     816,   822,   823,   827,   828,   829,   830,   831,   832,   833,
-     834,   835,   836,   837,   838,   839,   843,   844,   845,   849,
-     850,   854,   855,   859,   860,   864,   865,   869,   870,   874,
-     875,   878,   879,   880,   886,   887,   891,   892,   896,   897,
-     898,   902,   903,   907,   908,   912,   913,   914,   915,   916,
-     917,   918,   919,   920,   924,   928,   929,   930,   931,   935,
-     937,   941,   942,   943,   944,   948,   949,   953,   959,   963,
-     967
-  };
+const short parser::yyrline_[] = {
+    0,   314, 314, 315, 319, 320, 326, 327, 328, 329, 333, 334, 335, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351,
+    352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 371, 372, 376, 377, 383, 384, 385, 386, 387,
+    388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 412, 413, 419, 420,
+    424, 425, 429, 430, 431, 432, 435, 436, 439, 440, 443, 444, 448, 449, 459, 460, 461, 462, 463, 464, 468, 469, 470,
+    471, 475, 476, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 499, 500, 504, 505, 509, 510, 514, 515,
+    516, 517, 518, 524, 525, 529, 530, 536, 540, 541, 547, 548, 549, 550, 554, 555, 556, 560, 561, 562, 563, 569, 570,
+    574, 575, 581, 582, 583, 584, 588, 589, 590, 591, 598, 605, 606, 612, 613, 614, 615, 616, 617, 618, 619, 623, 624,
+    631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 644, 645, 646, 647, 648, 652, 653, 654, 657, 658, 659, 663, 664,
+    665, 666, 667, 673, 674, 678, 679, 683, 684, 688, 689, 690, 694, 695, 699, 700, 704, 705, 709, 710, 711, 712, 718,
+    719, 720, 721, 722, 728, 729, 734, 740, 741, 747, 748, 749, 755, 759, 762, 763, 764, 770, 776, 777, 783, 784, 788,
+    789, 793, 794, 800, 801, 802, 803, 804, 805, 811, 812, 818, 819, 823, 824, 825, 826, 827, 828, 829, 830, 831, 832,
+    833, 834, 835, 839, 840, 841, 845, 846, 850, 851, 855, 856, 860, 861, 865, 866, 870, 871, 874, 875, 876, 882, 883,
+    887, 888, 892, 893, 894, 898, 899, 903, 904, 908, 909, 910, 911, 912, 913, 914, 915, 916, 920, 924, 925, 926, 927,
+    931, 933, 937, 938, 939, 940, 944, 945, 949, 955, 959, 963};
 
-  // Print the state stack on the debug stream.
-  void
-  parser::yystack_print_ ()
-  {
+void parser::yy_stack_print_() const {
     *yycdebug_ << "Stack now";
-    for (stack_type::const_iterator
-           i = yystack_.begin (),
-           i_end = yystack_.end ();
-         i != i_end; ++i)
-      *yycdebug_ << ' ' << i->state;
+    for (stack_type::const_iterator i = yystack_.begin(), i_end = yystack_.end(); i != i_end; ++i)
+        *yycdebug_ << ' ' << int(i->state);
     *yycdebug_ << '\n';
-  }
+}
 
-  // Report on the debug stream that the rule \a yyrule is going to be reduced.
-  void
-  parser::yy_reduce_print_ (int yyrule)
-  {
-    unsigned yylno = yyrline_[yyrule];
+void parser::yy_reduce_print_(int yyrule) const {
+    int yylno = yyrline_[yyrule];
     int yynrhs = yyr2_[yyrule];
     // Print the symbols being reduced, and their result.
-    *yycdebug_ << "Reducing stack by rule " << yyrule - 1
-               << " (line " << yylno << "):\n";
+    *yycdebug_ << "Reducing stack by rule " << yyrule - 1 << " (line " << yylno << "):\n";
     // The symbols being reduced.
     for (int yyi = 0; yyi < yynrhs; yyi++)
-      YY_SYMBOL_PRINT ("   $" << yyi + 1 << " =",
-                       yystack_[(yynrhs) - (yyi + 1)]);
-  }
+        YY_SYMBOL_PRINT("   $" << yyi + 1 << " =", yystack_[(yynrhs) - (yyi + 1)]);
+}
 #endif // YYDEBUG
 
-  parser::token_number_type
-  parser::yytranslate_ (int t)
-  {
+parser::symbol_kind_type parser::yytranslate_(int t) YY_NOEXCEPT {
     // YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to
     // TOKEN-NUM as returned by yylex.
-    static
-    const token_number_type
-    translate_table[] =
-    {
-       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    61,    62,    63,    64,
-      65,    66,    67,    68,    69,    70,    71,    72,    73,    74,
-      75,    76,    77,    78,    79,    80,    81,    82,    83
-    };
-    const unsigned user_token_number_max_ = 338;
-    const token_number_type undef_token_ = 2;
+    static const signed char translate_table[] = {
+        0,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
+        53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
+    // Last valid token kind.
+    const int code_max = 334;
 
-    if (static_cast<int> (t) <= yyeof_)
-      return yyeof_;
-    else if (static_cast<unsigned> (t) <= user_token_number_max_)
-      return translate_table[t];
+    if (t <= 0)
+        return symbol_kind::S_YYEOF;
+    else if (t <= code_max)
+        return static_cast<symbol_kind_type>(translate_table[t]);
     else
-      return undef_token_;
-  }
+        return symbol_kind::S_YYUNDEF;
+}
 
-#line 28 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy" // lalr1.cc:1242
-} } } // Gringo::Input::NonGroundGrammar
-#line 3595 "/mnt/scratch/kaminski/build/clingo/debug/libgringo/src/input/nongroundgrammar/grammar.cc" // lalr1.cc:1242
+#line 28 "/home/kaminski/Documents/git/potassco/clingo/libgringo/src/input/nongroundgrammar.yy"
+} // namespace NonGroundGrammar
+} // namespace Input
+} // namespace Gringo
+#line 3675 "/home/kaminski/Documents/git/potassco/clingo/build/debug/libgringo/src/input/nongroundgrammar/grammar.cc"

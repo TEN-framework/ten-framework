@@ -4,7 +4,7 @@ require("clingo")
 
 -- {{{1 Aux
 
-function max(a, b) 
+function max(a, b)
     if a < b then
         return b
     else

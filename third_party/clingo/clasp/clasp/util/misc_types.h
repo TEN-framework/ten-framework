@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -137,19 +137,91 @@ private:
 	uint32 seed_;
 };
 
-//! Updates the given exponential moving average with the given sample.
-/*!
- * Computes ema = currentEma + ((double(sample) - currentEma)*alpha);
- */
-template <class T>
-inline double exponentialMovingAverage(double currentEma, T sample, double alpha) {
-	return (static_cast<double>(sample) * alpha) + (currentEma * (1.0 - alpha));
-}
-//! Updates the given moving average with the given sample.
-template <class T>
-inline double cumulativeMovingAverage(double currentAvg, T sample, uint64 numSeen) {
-	return (static_cast<double>(sample) + (currentAvg * numSeen)) / static_cast<double>(numSeen + 1);
-}
+class MovingAvg {
+public:
+	enum Type { avg_sma = 0, avg_ema = 1, avg_ema_log = 2, avg_ema_smooth = 3, avg_ema_log_smooth = 4 };
+
+	MovingAvg(uint32 window, Type type)
+		: avg_(0.0), extra_(), pos_(0), win_(window), full_(window == 0), ema_(type != avg_sma), smooth_(0) {
+		assert(window > 0 || type == avg_sma);
+		if (ema_) {
+			smooth_      = (type >= avg_ema_smooth);
+			extra_.alpha = (type & 1u) != 0 ? 2.0 / (window + 1) : 1.0 / (1u << log2(window));
+		}
+		else if (window) {
+			extra_.sma = new uint32[window];
+		}
+		else {
+			extra_.num = 0;
+		}
+	}
+
+	~MovingAvg() {
+		if (!ema_ && win_)
+			delete [] extra_.sma;
+	}
+
+	//! Updates the given exponential moving average with the given sample.
+	/*!
+	 * Computes ema = current + ((sample - current)*alpha);
+	 */
+	static inline double ema(double current, double sample, double alpha) {
+		return current + (alpha * (sample - current));
+	}
+
+	//! Updates the given cumulative moving average with the given sample.
+	static inline double cma(double current, double sample, uint64 numSeen) {
+		return (sample + (current * static_cast<double>(numSeen))) / static_cast<double>(numSeen + 1);
+	}
+
+	//! Updates the given simple moving average with the given sample.
+	static inline double sma(double current, uint32 sample, uint32* buffer, uint32 cap, uint32 pos, bool full) {
+		assert(pos < cap);
+		double oldS = static_cast<double>(buffer[pos]);
+		double newS = static_cast<double>(sample);
+		buffer[pos] = sample;
+		return full ? current + ((newS - oldS) / cap) : cma(current, newS, pos);
+	}
+
+	static double smoothAlpha(double alpha, uint32 pos) {
+		return pos < 32 ? std::max(alpha, 1.0 / static_cast<double>(uint32(1) << pos)) : alpha;
+	}
+
+	bool push(uint32 val) {
+		if      (!win_)   { avg_ = cma(avg_, val, extra_.num++); }
+		else if (!ema_)   { avg_ = sma(avg_, val, extra_.sma, win_, pos_, valid()); }
+		else if (valid()) { avg_ = ema(avg_, val, extra_.alpha); }
+		else              { avg_ = smooth_ ? ema(avg_, val, smoothAlpha(extra_.alpha, pos_)) : cma(avg_, val, pos_); }
+		if (++pos_ == win_) { pos_ = 0; full_ = 1; }
+		return valid();
+	}
+
+	void clear() {
+		avg_  = 0.0;
+		pos_  = 0;
+		!win_ ? extra_.num = 0 : full_ = 0;
+	}
+
+	double get()   const { return avg_; }
+	bool   valid() const { return full_ != 0; }
+	uint32 win()   const { return win_; }
+
+private:
+	MovingAvg(const MovingAvg&);
+	MovingAvg& operator=(const MovingAvg&);
+	union Extra {
+		uint32* sma;   // Buffer for SMA
+		double  alpha; // Smoothing factor for EMA
+		uint64  num;   // Number of data points for CMA
+	};
+	double avg_;         // Current average
+	Extra  extra_;       // Additional data for active average type
+	uint32 pos_;         // Number of data points % window size
+	uint32 win_    : 29; // Window size (for SMA/EMA)
+	uint32 full_   :  1; // Enough data points seen?
+	uint32 ema_    :  1; // Exponential Moving Average?
+	uint32 smooth_ :  1; // Use smoothing or cumulative moving average for first (ema) data points?
+};
 
 //! An unary operator function that calls p->destroy().
 struct DestroyObject {

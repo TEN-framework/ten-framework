@@ -16,7 +16,10 @@ configure_file(
   format: 'cmake@',
   install_dir: get_option('includedir') / 'catch2',
   configuration: conf_data,
+  install: get_option('install')
 )
+
+fs = import('fs')
 
 benchmark_headers = [
   'benchmark/catch_benchmark.hpp',
@@ -32,6 +35,8 @@ benchmark_headers = [
   'benchmark/catch_sample_analysis.hpp',
   'benchmark/detail/catch_analyse.hpp',
   'benchmark/detail/catch_benchmark_function.hpp',
+  'benchmark/detail/catch_benchmark_stats.hpp',
+  'benchmark/detail/catch_benchmark_stats_fwd.hpp',
   'benchmark/detail/catch_complete_invoke.hpp',
   'benchmark/detail/catch_estimate_clock.hpp',
   'benchmark/detail/catch_measure.hpp',
@@ -43,6 +48,7 @@ benchmark_headers = [
 
 benchmark_sources = files(
   'benchmark/catch_chronometer.cpp',
+  'benchmark/detail/catch_analyse.cpp',
   'benchmark/detail/catch_benchmark_function.cpp',
   'benchmark/detail/catch_run_for_at_least.cpp',
   'benchmark/detail/catch_stats.cpp',
@@ -64,18 +70,19 @@ internal_headers = [
   'interfaces/catch_interfaces_registry_hub.hpp',
   'interfaces/catch_interfaces_reporter.hpp',
   'interfaces/catch_interfaces_reporter_factory.hpp',
-  'interfaces/catch_interfaces_reporter_registry.hpp',
   'interfaces/catch_interfaces_tag_alias_registry.hpp',
+  'interfaces/catch_interfaces_test_invoker.hpp',
   'interfaces/catch_interfaces_testcase.hpp',
   'internal/catch_assertion_handler.hpp',
   'internal/catch_case_insensitive_comparisons.hpp',
-  'internal/catch_case_sensitive.hpp',
   'internal/catch_clara.hpp',
   'internal/catch_commandline.hpp',
   'internal/catch_compare_traits.hpp',
   'internal/catch_compiler_capabilities.hpp',
   'internal/catch_config_android_logwrite.hpp',
   'internal/catch_config_counter.hpp',
+  'internal/catch_config_prefix_messages.hpp',
+  'internal/catch_config_static_analysis_support.hpp',
   'internal/catch_config_uncaught_exceptions.hpp',
   'internal/catch_config_wchar.hpp',
   'internal/catch_console_colour.hpp',
@@ -94,6 +101,7 @@ internal_headers = [
   'internal/catch_getenv.hpp',
   'internal/catch_istream.hpp',
   'internal/catch_is_permutation.hpp',
+  'internal/catch_jsonwriter.hpp',
   'internal/catch_lazy_expr.hpp',
   'internal/catch_leak_detector.hpp',
   'internal/catch_list.hpp',
@@ -108,7 +116,10 @@ internal_headers = [
   'internal/catch_platform.hpp',
   'internal/catch_polyfills.hpp',
   'internal/catch_preprocessor.hpp',
+  'internal/catch_preprocessor_internal_stringify.hpp',
   'internal/catch_preprocessor_remove_parens.hpp',
+  'internal/catch_random_floating_point_helpers.hpp',
+  'internal/catch_random_integer_helpers.hpp',
   'internal/catch_random_number_generator.hpp',
   'internal/catch_random_seed_generation.hpp',
   'internal/catch_reporter_registry.hpp',
@@ -133,10 +144,13 @@ internal_headers = [
   'internal/catch_test_failure_exception.hpp',
   'internal/catch_test_macro_impl.hpp',
   'internal/catch_test_registry.hpp',
+  'internal/catch_test_run_info.hpp',
   'internal/catch_test_spec_parser.hpp',
   'internal/catch_textflow.hpp',
   'internal/catch_to_string.hpp',
   'internal/catch_uncaught_exceptions.hpp',
+  'internal/catch_uniform_floating_point_distribution.hpp',
+  'internal/catch_uniform_integer_distribution.hpp',
   'internal/catch_unique_name.hpp',
   'internal/catch_unique_ptr.hpp',
   'internal/catch_void_type.hpp',
@@ -151,6 +165,7 @@ internal_headers = [
   'matchers/catch_matchers_floating_point.hpp',
   'matchers/catch_matchers_predicate.hpp',
   'matchers/catch_matchers_quantifiers.hpp',
+  'matchers/catch_matchers_range_equals.hpp',
   'matchers/catch_matchers_string.hpp',
   'matchers/catch_matchers_templated.hpp',
   'matchers/catch_matchers_vector.hpp',
@@ -159,6 +174,7 @@ internal_headers = [
   'catch_approx.hpp',
   'catch_assertion_info.hpp',
   'catch_assertion_result.hpp',
+  'catch_case_sensitive.hpp',
   'catch_config.hpp',
   'catch_get_random_seed.hpp',
   'catch_message.hpp',
@@ -189,7 +205,6 @@ internal_sources = files(
   'interfaces/catch_interfaces_registry_hub.cpp',
   'interfaces/catch_interfaces_reporter.cpp',
   'interfaces/catch_interfaces_reporter_factory.cpp',
-  'interfaces/catch_interfaces_reporter_registry.cpp',
   'interfaces/catch_interfaces_testcase.cpp',
   'internal/catch_assertion_handler.cpp',
   'internal/catch_case_insensitive_comparisons.cpp',
@@ -208,6 +223,7 @@ internal_sources = files(
   'internal/catch_floating_point_helpers.cpp',
   'internal/catch_getenv.cpp',
   'internal/catch_istream.cpp',
+  'internal/catch_jsonwriter.cpp',
   'internal/catch_lazy_expr.cpp',
   'internal/catch_leak_detector.cpp',
   'internal/catch_list.cpp',
@@ -219,7 +235,6 @@ internal_sources = files(
   'internal/catch_random_seed_generation.cpp',
   'internal/catch_reporter_registry.cpp',
   'internal/catch_reporter_spec_parser.cpp',
-  'internal/catch_result_type.cpp',
   'internal/catch_reusable_string_stream.cpp',
   'internal/catch_run_context.cpp',
   'internal/catch_section.cpp',
@@ -262,6 +277,7 @@ internal_sources = files(
   'catch_timer.cpp',
   'catch_tostring.cpp',
   'catch_totals.cpp',
+  'catch_translate_exception.cpp',
   'catch_version.cpp',
 )
 
@@ -273,6 +289,7 @@ reporter_headers = [
   'reporters/catch_reporter_cumulative_base.hpp',
   'reporters/catch_reporter_event_listener.hpp',
   'reporters/catch_reporter_helpers.hpp',
+  'reporters/catch_reporter_json.hpp',
   'reporters/catch_reporter_junit.hpp',
   'reporters/catch_reporter_multi.hpp',
   'reporters/catch_reporter_registrars.hpp',
@@ -292,6 +309,7 @@ reporter_sources = files(
   'reporters/catch_reporter_cumulative_base.cpp',
   'reporters/catch_reporter_event_listener.cpp',
   'reporters/catch_reporter_helpers.cpp',
+  'reporters/catch_reporter_json.cpp',
   'reporters/catch_reporter_junit.cpp',
   'reporters/catch_reporter_multi.cpp',
   'reporters/catch_reporter_registrars.cpp',
@@ -322,14 +340,26 @@ foreach file : headers
     endif
   endforeach
 
-  install_headers(file, subdir: join_paths(include_subdir, folder))
+  if get_option('install')
+    install_headers(file, subdir: join_paths(include_subdir, folder))
+  endif
 endforeach
+
+catch2_dependencies = []
+# Check if this is an Android NDK build.
+if ((host_machine.system() == 'android') or
+  # Check if this is an Android Termux build.
+  (host_machine.system() == 'linux' and fs.is_dir('/data/data/com.termux')))
+  log_dep = meson.get_compiler('cpp').find_library('log')
+  catch2_dependencies += log_dep
+endif
 
 catch2 = static_library(
   'Catch2',
   sources,
+  dependencies: catch2_dependencies,
   include_directories: '..',
-  install: true,
+  install: get_option('install'),
 )
 
 catch2_dep = declare_dependency(
@@ -337,19 +367,21 @@ catch2_dep = declare_dependency(
   include_directories: '..',
 )
 
-pkg.generate(
-  catch2,
-  filebase: 'catch2',
-  description: 'A modern, C++-native, test framework for C++14 and above',
-  url: 'https://github.com/catchorg/Catch2',
-)
+if get_option('install')
+  pkg.generate(
+    catch2,
+    filebase: 'catch2',
+    description: 'A modern, C++-native, test framework for C++14 and above',
+    url: 'https://github.com/catchorg/Catch2',
+  )
+endif
 
 catch2_with_main = static_library(
   'Catch2Main',
   'internal/catch_main.cpp',
   link_with: catch2,
   include_directories: '..',
-  install: true,
+  install: get_option('install'),
 )
 
 catch2_with_main_dep = declare_dependency(
@@ -357,9 +389,11 @@ catch2_with_main_dep = declare_dependency(
   include_directories: '..',
 )
 
-pkg.generate(
-  catch2_with_main,
-  filebase: 'catch2-with-main',
-  description: 'A modern, C++-native, test framework for C++14 and above (links in default main)',
-  requires: 'catch2 = ' + meson.project_version(),
-)
+if get_option('install')
+  pkg.generate(
+    catch2_with_main,
+    filebase: 'catch2-with-main',
+    description: 'A modern, C++-native, test framework for C++14 and above (links in default main)',
+    requires: 'catch2 = ' + meson.project_version(),
+  )
+endif

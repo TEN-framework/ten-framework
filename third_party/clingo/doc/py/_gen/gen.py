@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
+import importlib.machinery
 import os
 import re
-import importlib.machinery
 
 import pdoc
+
 import clingo
 
 SUB = [
     ("clingo_main", "Application", clingo.clingo_main),
     ("Control.register_observer", "Observer", clingo.Control.register_observer),
-    ("Control.register_propagator", "Propagator", clingo.Control.register_propagator)]
+    ("Control.register_propagator", "Propagator", clingo.Control.register_propagator),
+]
 
 
 def parse_class(aux, name, doc):
@@ -32,6 +34,7 @@ def parse_aux():
         for _, name, obj in SUB:
             parse_class(aux, name, obj.__doc__)
     import aux
+
     return aux
 
 
@@ -39,9 +42,14 @@ clingo.ast.__spec__ = importlib.machinery.ModuleSpec("clingo.ast", None)
 
 clingo.__pdoc__ = {}
 for key, name, obj in SUB:
-    clingo.__pdoc__[key] = re.sub(r"```python.*?class ({}(\([^)]*\))?):.*?```".format(name), "", obj.__doc__, flags=re.MULTILINE|re.DOTALL)
+    clingo.__pdoc__[key] = re.sub(
+        r"```python.*?class ({}(\([^)]*\))?):.*?```".format(name),
+        "",
+        obj.__doc__,
+        flags=re.MULTILINE | re.DOTALL,
+    )
 
-pdoc.tpl_lookup.directories.insert(0, './templates')
+pdoc.tpl_lookup.directories.insert(0, "./templates")
 ctx = pdoc.Context()
 
 cmod = pdoc.Module(clingo, context=ctx)
@@ -52,9 +60,23 @@ cmod.doc["Application"] = pdoc.Class("Application", cmod, xmod.Application)
 cmod.doc["Observer"] = pdoc.Class("Observer", cmod, xmod.Observer)
 cmod.doc["Propagator"] = pdoc.Class("Propagator", cmod, xmod.Propagator)
 cmod.doc["ast"] = amod
-cmod.doc["__version__"] = pdoc.Variable("__version__", cmod, "__version__: str\n\nVersion of the clingo module (`'{}'`).".format(clingo.__version__))
-cmod.doc["Infimum"] = pdoc.Variable("Infimum", cmod, '''Infimum: Symbol\n\nRepresents a symbol of type `clingo.SymbolType.Infimum`.''')
-cmod.doc["Supremum"] = pdoc.Variable("Supremum", cmod, '''Supremum: Symbol\n\nRepresents a symbol of type `clingo.SymbolType.Supremum`.''')
+cmod.doc["__version__"] = pdoc.Variable(
+    "__version__",
+    cmod,
+    "__version__: str\n\nVersion of the clingo module (`'{}'`).".format(
+        clingo.__version__
+    ),
+)
+cmod.doc["Infimum"] = pdoc.Variable(
+    "Infimum",
+    cmod,
+    """Infimum: Symbol\n\nRepresents a symbol of type `clingo.SymbolType.Infimum`.""",
+)
+cmod.doc["Supremum"] = pdoc.Variable(
+    "Supremum",
+    cmod,
+    """Supremum: Symbol\n\nRepresents a symbol of type `clingo.SymbolType.Supremum`.""",
+)
 pdoc.link_inheritance(ctx)
 
 prefix = "../clingo/python-api/{}".format(".".join(clingo.__version__.split(".")[:2]))
@@ -69,5 +91,9 @@ amod_html = amod.html(external_links=True)
 open("{}/index.html".format(prefix), "w").write(cmod_html)
 open("{}/ast/index.html".format(prefix), "w").write(amod_html)
 
-open("{}/index.html".format(cprefix), "w").write(cmod_html.replace("clingo/python-api/5.4", "clingo/python-api/current"))
-open("{}/ast/index.html".format(cprefix), "w").write(amod_html.replace("clingo/python-api/5.4", "clingo/python-api/current"))
+open("{}/index.html".format(cprefix), "w").write(
+    cmod_html.replace("clingo/python-api/5.4", "clingo/python-api/current")
+)
+open("{}/ast/index.html".format(cprefix), "w").write(
+    amod_html.replace("clingo/python-api/5.4", "clingo/python-api/current")
+)

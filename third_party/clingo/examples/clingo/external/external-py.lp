@@ -13,4 +13,3 @@ def main(prg):
     prg.ground([("succ", [Number(3)])])
     prg.solve()
 #end.
-

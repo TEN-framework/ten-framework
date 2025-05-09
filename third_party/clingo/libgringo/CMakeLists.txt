@@ -159,4 +159,3 @@ if (CLINGO_BUILD_TESTS)
     target_include_directories(test_gringo PRIVATE
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>")
 endif()
-

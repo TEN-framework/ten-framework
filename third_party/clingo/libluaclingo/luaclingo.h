@@ -28,28 +28,28 @@
 #include <clingo.h>
 
 #if defined _WIN32 || defined __CYGWIN__
-#   define LUACLINGO_WIN
+#define LUACLINGO_WIN
 #endif
 #ifdef LUACLINGO_NO_VISIBILITY
-#   define LUACLINGO_VISIBILITY_DEFAULT
-#   define LUACLINGO_VISIBILITY_PRIVATE
+#define LUACLINGO_VISIBILITY_DEFAULT
+#define LUACLINGO_VISIBILITY_PRIVATE
 #else
-#   ifdef LUACLINGO_WIN
-#       ifdef LUACLINGO_BUILD_LIBRARY
-#           define LUACLINGO_VISIBILITY_DEFAULT __declspec (dllexport)
-#       else
-#           define LUACLINGO_VISIBILITY_DEFAULT __declspec (dllimport)
-#       endif
-#       define LUACLINGO_VISIBILITY_PRIVATE
-#   else
-#       if __GNUC__ >= 4
-#           define LUACLINGO_VISIBILITY_DEFAULT  __attribute__ ((visibility ("default")))
-#           define LUACLINGO_VISIBILITY_PRIVATE __attribute__ ((visibility ("hidden")))
-#       else
-#           define LUACLINGO_VISIBILITY_DEFAULT
-#           define LUACLINGO_VISIBILITY_PRIVATE
-#       endif
-#   endif
+#ifdef LUACLINGO_WIN
+#ifdef LUACLINGO_BUILD_LIBRARY
+#define LUACLINGO_VISIBILITY_DEFAULT __declspec(dllexport)
+#else
+#define LUACLINGO_VISIBILITY_DEFAULT __declspec(dllimport)
+#endif
+#define LUACLINGO_VISIBILITY_PRIVATE
+#else
+#if __GNUC__ >= 4
+#define LUACLINGO_VISIBILITY_DEFAULT __attribute__((visibility("default")))
+#define LUACLINGO_VISIBILITY_PRIVATE __attribute__((visibility("hidden")))
+#else
+#define LUACLINGO_VISIBILITY_DEFAULT
+#define LUACLINGO_VISIBILITY_PRIVATE
+#endif
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -66,5 +66,3 @@ LUACLINGO_VISIBILITY_DEFAULT bool clingo_register_lua_(lua_State *L);
 #endif
 
 #endif // LUACLINGO_LUACLINGO_H
-
-

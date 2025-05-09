@@ -1,5 +1,5 @@
 ﻿///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2018 - 2022.                 //
+//  Copyright Christopher Kormanyos 2018 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -10,12 +10,13 @@
 // The Boost.Multiprecision code can be found here:
 // https://www.boost.org/doc/libs/1_78_0/libs/multiprecision/doc/html/boost_multiprecision/tut/primetest.html
 
-#include <ctime>
 #include <random>
 #include <sstream>
 #include <string>
 
 #include <boost/version.hpp>
+
+#include <util/utility/util_pseudorandom_time_point_seed.h>
 
 #if !defined(BOOST_VERSION)
 #error BOOST_VERSION is not defined. Ensure that <boost/version.hpp> is properly included.
@@ -48,7 +49,7 @@
 #endif
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #endif
@@ -104,13 +105,13 @@ auto ::math::wide_integer::example008a_miller_rabin_prime() -> bool
   using random_engine1_type = std::mt19937;
   using random_engine2_type = std::linear_congruential_engine<std::uint32_t, UINT32_C(48271), UINT32_C(0), UINT32_C(2147483647)>; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
-  const auto seed_start = std::clock();
+  const auto seed_start = ::util::util_pseudorandom_time_point_seed::value<std::uint64_t>();
 
   random_engine1_type gen1(static_cast<typename random_engine1_type::result_type>(seed_start));
   random_engine2_type gen2(static_cast<typename random_engine2_type::result_type>(seed_start));
 
   // Select prime candidates from a range of 10^150 ... max(uint512_t)-1.
-  WIDE_INTEGER_CONSTEXPR local_wide_integer_type
+  constexpr local_wide_integer_type
     dist_min
     (
       "1"
@@ -119,7 +120,7 @@ auto ::math::wide_integer::example008a_miller_rabin_prime() -> bool
       "00000000000000000000000000000000000000000000000000"
     );
 
-  WIDE_INTEGER_CONSTEXPR auto dist_max =
+  constexpr auto dist_max =
     local_wide_integer_type
     {
         (std::numeric_limits<local_wide_integer_type>::max)()
@@ -156,7 +157,7 @@ auto ::math::wide_integer::example008a_miller_rabin_prime() -> bool
     }
   }
 
-  const auto seed_next = std::clock();
+  const auto seed_next = ::util::util_pseudorandom_time_point_seed::value<std::uint64_t>();
 
   gen1.seed(static_cast<typename random_engine1_type::result_type>(seed_next));
 
@@ -206,7 +207,7 @@ auto main() -> int // NOLINT(bugprone-exception-escape)
 #endif
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic pop
 #endif
 #endif

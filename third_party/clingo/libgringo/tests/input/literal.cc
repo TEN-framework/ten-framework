@@ -22,14 +22,16 @@
 
 // }}}
 
-#include "tests/tests.hh"
-#include "tests/term_helper.hh"
 #include "tests/input/lit_helper.hh"
+#include "tests/term_helper.hh"
+#include "tests/tests.hh"
 
 #include <climits>
 #include <sstream>
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 using namespace Gringo::IO;
 
@@ -75,42 +77,63 @@ TEST_CASE("input-literal", "[input]") {
         CHECK(pred(NAF::POS, val(ID("x")))->hash() == pred(NAF::POS, val(ID("x")))->hash());
         CHECK(!(pred(NAF::POS, val(ID("x")))->hash() == pred(NAF::NOT, val(ID("x")))->hash()));
         CHECK(!(pred(NAF::POS, val(ID("x")))->hash() == pred(NAF::POS, val(ID("y")))->hash()));
-        CHECK(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() == rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash());
-        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() == rel(Relation::LT, val(ID("x")), val(ID("x")))->hash()));
-        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() == rel(Relation::EQ, val(ID("y")), val(ID("x")))->hash()));
-        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() == rel(Relation::EQ, val(ID("x")), val(ID("y")))->hash()));
-        CHECK(range(val(ID("x")), val(ID("y")), val(ID("z")))->hash() == range(val(ID("x")), val(ID("y")), val(ID("z")))->hash());
-        CHECK(!(range(val(ID("x")), val(ID("x")), val(ID("z")))->hash() == range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
-        CHECK(!(range(val(ID("x")), val(ID("y")), val(ID("x")))->hash() == range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
-        CHECK(!(range(val(ID("y")), val(ID("y")), val(ID("z")))->hash() == range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
+        CHECK(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() ==
+              rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash());
+        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() ==
+                rel(Relation::LT, val(ID("x")), val(ID("x")))->hash()));
+        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() ==
+                rel(Relation::EQ, val(ID("y")), val(ID("x")))->hash()));
+        CHECK(!(rel(Relation::EQ, val(ID("x")), val(ID("x")))->hash() ==
+                rel(Relation::EQ, val(ID("x")), val(ID("y")))->hash()));
+        CHECK(range(val(ID("x")), val(ID("y")), val(ID("z")))->hash() ==
+              range(val(ID("x")), val(ID("y")), val(ID("z")))->hash());
+        CHECK(!(range(val(ID("x")), val(ID("x")), val(ID("z")))->hash() ==
+                range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
+        CHECK(!(range(val(ID("x")), val(ID("y")), val(ID("x")))->hash() ==
+                range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
+        CHECK(!(range(val(ID("y")), val(ID("y")), val(ID("z")))->hash() ==
+                range(val(ID("x")), val(ID("y")), val(ID("z")))->hash()));
     }
 
     SECTION("equal") {
         REQUIRE(is_value_equal_to(pred(NAF::POS, val(ID("x"))), pred(NAF::POS, val(ID("x")))));
         REQUIRE(!is_value_equal_to(pred(NAF::POS, val(ID("x"))), pred(NAF::NOT, val(ID("x")))));
         REQUIRE(!is_value_equal_to(pred(NAF::POS, val(ID("x"))), pred(NAF::POS, val(ID("y")))));
-        REQUIRE(is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))), rel(Relation::EQ, val(ID("x")), val(ID("x")))));
-        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))), rel(Relation::LT, val(ID("x")), val(ID("x")))));
-        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))), rel(Relation::EQ, val(ID("y")), val(ID("x")))));
-        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))), rel(Relation::EQ, val(ID("x")), val(ID("y")))));
-        REQUIRE(is_value_equal_to(range(val(ID("x")), val(ID("y")), val(ID("z"))), range(val(ID("x")), val(ID("y")), val(ID("z")))));
-        REQUIRE(!is_value_equal_to(range(val(ID("x")), val(ID("x")), val(ID("z"))), range(val(ID("x")), val(ID("y")), val(ID("z")))));
-        REQUIRE(!is_value_equal_to(range(val(ID("x")), val(ID("y")), val(ID("x"))), range(val(ID("x")), val(ID("y")), val(ID("z")))));
-        REQUIRE(!is_value_equal_to(range(val(ID("y")), val(ID("y")), val(ID("z"))), range(val(ID("x")), val(ID("y")), val(ID("z")))));
+        REQUIRE(is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))),
+                                  rel(Relation::EQ, val(ID("x")), val(ID("x")))));
+        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))),
+                                   rel(Relation::LT, val(ID("x")), val(ID("x")))));
+        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))),
+                                   rel(Relation::EQ, val(ID("y")), val(ID("x")))));
+        REQUIRE(!is_value_equal_to(rel(Relation::EQ, val(ID("x")), val(ID("x"))),
+                                   rel(Relation::EQ, val(ID("x")), val(ID("y")))));
+        REQUIRE(is_value_equal_to(range(val(ID("x")), val(ID("y")), val(ID("z"))),
+                                  range(val(ID("x")), val(ID("y")), val(ID("z")))));
+        REQUIRE(!is_value_equal_to(range(val(ID("x")), val(ID("x")), val(ID("z"))),
+                                   range(val(ID("x")), val(ID("y")), val(ID("z")))));
+        REQUIRE(!is_value_equal_to(range(val(ID("x")), val(ID("y")), val(ID("x"))),
+                                   range(val(ID("x")), val(ID("y")), val(ID("z")))));
+        REQUIRE(!is_value_equal_to(range(val(ID("y")), val(ID("y")), val(ID("z"))),
+                                   range(val(ID("x")), val(ID("y")), val(ID("z")))));
     }
 
     SECTION("unpool") {
         REQUIRE("[x,y,z]" == to_string(pred(NAF::POS, pool(val(ID("x")), val(ID("y")), val(ID("z"))))->unpool(false)));
-        REQUIRE("[not x,not y,not z]" == to_string(pred(NAF::NOT, pool(val(ID("x")), val(ID("y")), val(ID("z"))))->unpool(false)));
-        REQUIRE("[a!=x,a!=y,b!=x,b!=y]" == to_string(rel(Relation::NEQ, pool(val(ID("a")), val(ID("b"))), pool(val(ID("x")), val(ID("y"))))->unpool(false)));
+        REQUIRE("[not x,not y,not z]" ==
+                to_string(pred(NAF::NOT, pool(val(ID("x")), val(ID("y")), val(ID("z"))))->unpool(false)));
+        REQUIRE(
+            "[a!=x,a!=y,b!=x,b!=y]" ==
+            to_string(
+                rel(Relation::NEQ, pool(val(ID("a")), val(ID("b"))), pool(val(ID("x")), val(ID("y"))))->unpool(false)));
     }
 
     SECTION("rewrite") {
         REQUIRE("p(3)" == to_string(rewrite(pred(NAF::POS, fun("p", binop(BinOp::ADD, val(NUM(1)), val(NUM(2))))))));
-        REQUIRE("3>7" == to_string(rewrite(rel(Relation::GT, binop(BinOp::ADD, val(NUM(1)), val(NUM(2))), binop(BinOp::ADD, val(NUM(3)), val(NUM(4)))))));
+        REQUIRE("3>7" == to_string(rewrite(rel(Relation::GT, binop(BinOp::ADD, val(NUM(1)), val(NUM(2))),
+                                               binop(BinOp::ADD, val(NUM(3)), val(NUM(4)))))));
     }
-
 }
 
-} } } // namespace Test Input Gringo
-
+} // namespace Test
+} // namespace Input
+} // namespace Gringo

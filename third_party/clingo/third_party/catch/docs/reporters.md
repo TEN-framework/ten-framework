@@ -5,7 +5,7 @@ Reporters are a customization point for most of Catch2's output, e.g.
 formatting and writing out [assertions (whether passing or failing),
 sections, test cases, benchmarks, and so on](reporter-events.md#top).
 
-Catch2 comes with a bunch of reporters by default (currently 8), and
+Catch2 comes with a bunch of reporters by default (currently 9), and
 you can also write your own reporter. Because multiple reporters can
 be active at the same time, your own reporters do not even have to handle
 all reporter event, just the ones you are interested in, e.g. benchmarks.
@@ -52,7 +52,7 @@ its machine-readable XML output to file `result-junit.xml`, and the
 uses ANSI colour codes for colouring the output.
 
 Using multiple reporters (or one reporter and one-or-more [event
-listeners](event-listener.md#top)) can have surprisingly complex semantics
+listeners](event-listeners.md#top)) can have surprisingly complex semantics
 when using customization points provided to reporters by Catch2, namely
 capturing stdout/stderr from test cases.
 

@@ -32,10 +32,10 @@ namespace Gringo {
 // {{{ defintion of Printable
 
 class Printable {
-public:
+  public:
     Printable() = default;
     Printable(Printable const &other) = default;
-    Printable(Printable && other) noexcept = default;
+    Printable(Printable &&other) noexcept = default;
     Printable &operator=(Printable const &other) = default;
     Printable &operator=(Printable &&other) noexcept = default;
     virtual ~Printable() noexcept = default;

@@ -31,61 +31,38 @@ namespace Gringo {
 // {{{1 TheoryOpDef
 
 TheoryOpDef::TheoryOpDef(Location const &loc, String op, unsigned priority, TheoryOperatorType type)
-: loc_(loc)
-, op_(op)
-, priority_(priority)
-, type_(type) { }
+    : loc_(loc), op_(op), priority_(priority), type_(type) {}
 
-String TheoryOpDef::op() const {
-    return op_;
-}
+String TheoryOpDef::op() const { return op_; }
 
-TheoryOpDef::Key TheoryOpDef::key() const noexcept {
-    return {op_, type_ == TheoryOperatorType::Unary};
-}
+TheoryOpDef::Key TheoryOpDef::key() const noexcept { return {op_, type_ == TheoryOperatorType::Unary}; }
 
-Location const &TheoryOpDef::loc() const {
-    return loc_;
-}
+Location const &TheoryOpDef::loc() const { return loc_; }
 
-void TheoryOpDef::print(std::ostream &out) const {
-    out << op_ << " :" << priority_ << "," << type_;
-}
+void TheoryOpDef::print(std::ostream &out) const { out << op_ << " :" << priority_ << "," << type_; }
 
-unsigned TheoryOpDef::priority() const {
-    return priority_;
-}
+unsigned TheoryOpDef::priority() const { return priority_; }
 
-TheoryOperatorType TheoryOpDef::type() const {
-    return type_;
-}
+TheoryOperatorType TheoryOpDef::type() const { return type_; }
 
 // {{{1 TheoryTermDef
 
-TheoryTermDef::TheoryTermDef(Location const &loc, String name)
-: loc_(loc)
-, name_(name) { }
+TheoryTermDef::TheoryTermDef(Location const &loc, String name) : loc_(loc), name_(name) {}
 
 void TheoryTermDef::addOpDef(TheoryOpDef &&def, Logger &log) const {
     auto it = opDefs_.find(def.key());
     if (it == opDefs_.end()) {
         opDefs_.insert(std::move(def));
-    }
-    else {
-        GRINGO_REPORT(log, Warnings::RuntimeError)
-            << def.loc() << ": error: redefinition of theory operator:" << "\n"
-            << "  " << def.op() << "\n"
-            << it->loc() << ": note: operator first defined here\n";
+    } else {
+        GRINGO_REPORT(log, Warnings::RuntimeError) << def.loc() << ": error: redefinition of theory operator:" << "\n"
+                                                   << "  " << def.op() << "\n"
+                                                   << it->loc() << ": note: operator first defined here\n";
     }
 }
 
-String const &TheoryTermDef::name() const noexcept {
-    return name_;
-}
+String const &TheoryTermDef::name() const noexcept { return name_; }
 
-Location const &TheoryTermDef::loc() const {
-    return loc_;
-}
+Location const &TheoryTermDef::loc() const { return loc_; }
 
 void TheoryTermDef::print(std::ostream &out) const {
     out << name_ << "{";
@@ -116,39 +93,23 @@ unsigned TheoryTermDef::getPrio(String op, bool unary) const {
 // {{{1 TheoryAtomDef
 
 TheoryAtomDef::TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type)
-: TheoryAtomDef(loc, name, arity, elemDef, type, {}, "") { }
+    : TheoryAtomDef(loc, name, arity, elemDef, type, {}, "") {}
 
-TheoryAtomDef::TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type, StringVec &&ops, String guardDef)
-: loc_(loc)
-, sig_(name, arity, false)
-, elemDef_(elemDef)
-, guardDef_(guardDef)
-, ops_(std::move(ops))
-, type_(type) { }
+TheoryAtomDef::TheoryAtomDef(Location const &loc, String name, unsigned arity, String elemDef, TheoryAtomType type,
+                             StringVec &&ops, String guardDef)
+    : loc_(loc), sig_(name, arity, false), elemDef_(elemDef), guardDef_(guardDef), ops_(std::move(ops)), type_(type) {}
 
-Sig TheoryAtomDef::sig() const {
-    return sig_;
-}
+Sig TheoryAtomDef::sig() const { return sig_; }
 
-bool TheoryAtomDef::hasGuard() const {
-    return !ops_.empty();
-}
+bool TheoryAtomDef::hasGuard() const { return !ops_.empty(); }
 
-TheoryAtomType TheoryAtomDef::type() const {
-    return type_;
-}
+TheoryAtomType TheoryAtomDef::type() const { return type_; }
 
-Location const &TheoryAtomDef::loc() const {
-    return loc_;
-}
+Location const &TheoryAtomDef::loc() const { return loc_; }
 
-StringVec const &TheoryAtomDef::ops() const {
-    return ops_;
-}
+StringVec const &TheoryAtomDef::ops() const { return ops_; }
 
-String TheoryAtomDef::elemDef() const {
-    return elemDef_;
-}
+String TheoryAtomDef::elemDef() const { return elemDef_; }
 
 String TheoryAtomDef::guardDef() const {
     assert(hasGuard());
@@ -167,28 +128,20 @@ void TheoryAtomDef::print(std::ostream &out) const {
 
 // {{{1 TheoryDef
 
-TheoryDef::TheoryDef(Location const &loc, String name)
-: loc_(loc)
-, name_(name) { }
+TheoryDef::TheoryDef(Location const &loc, String name) : loc_(loc), name_(name) {}
 
-String const &TheoryDef::name() const noexcept {
-    return name_;
-}
+String const &TheoryDef::name() const noexcept { return name_; }
 
-Location const &TheoryDef::loc() const {
-    return loc_;
-}
+Location const &TheoryDef::loc() const { return loc_; }
 
 void TheoryDef::addAtomDef(TheoryAtomDef &&def, Logger &log) const {
     auto it = atomDefs_.find(def.sig());
     if (it == atomDefs_.end()) {
         atomDefs_.insert(std::move(def));
-    }
-    else {
-        GRINGO_REPORT(log, Warnings::RuntimeError)
-            << def.loc() << ": error: redefinition of theory atom:" << "\n"
-            << "  " << def.sig() << "\n"
-            << it->loc() << ": note: atom first defined here\n";
+    } else {
+        GRINGO_REPORT(log, Warnings::RuntimeError) << def.loc() << ": error: redefinition of theory atom:" << "\n"
+                                                   << "  " << def.sig() << "\n"
+                                                   << it->loc() << ": note: atom first defined here\n";
     }
 }
 
@@ -196,12 +149,10 @@ void TheoryDef::addTermDef(TheoryTermDef &&def, Logger &log) const {
     auto it = termDefs_.find(def.name());
     if (it == termDefs_.end()) {
         termDefs_.insert(std::move(def));
-    }
-    else {
-        GRINGO_REPORT(log, Warnings::RuntimeError)
-            << def.loc() << ": error: redefinition of theory term:" << "\n"
-            << "  " << def.name() << "\n"
-            << it->loc() << ": note: term first defined term\n";
+    } else {
+        GRINGO_REPORT(log, Warnings::RuntimeError) << def.loc() << ": error: redefinition of theory term:" << "\n"
+                                                   << "  " << def.name() << "\n"
+                                                   << it->loc() << ": note: term first defined term\n";
     }
 }
 
@@ -212,13 +163,19 @@ void TheoryDef::print(std::ostream &out) const {
     }
     bool sep = false;
     for (auto const &def : termDefs_) {
-        if (sep) { out << ";\n"; }
-        else     { sep = true; }
+        if (sep) {
+            out << ";\n";
+        } else {
+            sep = true;
+        }
         out << "  " << def;
     }
     for (auto const &def : atomDefs_) {
-        if (sep) { out << ";\n"; }
-        else     { sep = true; }
+        if (sep) {
+            out << ";\n";
+        } else {
+            sep = true;
+        }
         out << "  " << def;
     }
     if (sep) {
@@ -237,11 +194,8 @@ TheoryTermDef const *TheoryDef::getTermDef(String name) const {
     return ret != termDefs_.end() ? &*ret : nullptr;
 }
 
-TheoryAtomDefs const &TheoryDef::atomDefs() const {
-    return atomDefs_;
-}
+TheoryAtomDefs const &TheoryDef::atomDefs() const { return atomDefs_; }
 
 // }}}1
 
-} // namspace Gringo
-
+} // namespace Gringo

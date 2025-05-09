@@ -18,15 +18,13 @@
 namespace detail {
 
 template <class T>
-inline typename std::enable_if<!(boost::multiprecision::detail::is_unsigned<T>::value || boost::multiprecision::is_unsigned_number<T>::value), T>::type
-abs(const T& a)
+constexpr auto abs(const T& a) -> typename std::enable_if_t<!(boost::multiprecision::detail::is_unsigned<T>::value || boost::multiprecision::is_unsigned_number<T>::value), T>
 {
    return a < 0 ? -a : a;
 }
 
 template <class T>
-inline typename std::enable_if<boost::multiprecision::detail::is_unsigned<T>::value || boost::multiprecision::is_unsigned_number<T>::value, T>::type
-abs(const T& a)
+constexpr auto abs(const T& a) -> typename std::enable_if_t<boost::multiprecision::detail::is_unsigned<T>::value || boost::multiprecision::is_unsigned_number<T>::value, T>
 {
    return a;
 }
@@ -34,13 +32,13 @@ abs(const T& a)
 } // namespace detail
 
 template <class T>
-typename std::enable_if<boost::multiprecision::number_category<T>::value == boost::multiprecision::number_kind_integer, T>::type relative_error(T a, T b)
+constexpr auto relative_error(T a, T b) -> typename std::enable_if_t<boost::multiprecision::number_category<T>::value == boost::multiprecision::number_kind_integer, T>
 {
    return a > b ? a - b : b - a;
 }
 
 template <class T>
-typename std::enable_if<!((boost::multiprecision::number_category<T>::value == boost::multiprecision::number_kind_integer) || boost::multiprecision::is_interval_number<T>::value), T>::type relative_error(T a, T b)
+constexpr auto relative_error(T a, T b) -> typename std::enable_if_t<!((boost::multiprecision::number_category<T>::value == boost::multiprecision::number_kind_integer) || boost::multiprecision::is_interval_number<T>::value), T>
 {
    using ::detail::abs;
    using std::abs;
@@ -84,7 +82,7 @@ typename std::enable_if<!((boost::multiprecision::number_category<T>::value == b
 }
 
 template <class T>
-typename std::enable_if<boost::multiprecision::is_interval_number<T>::value, T>::type relative_error(T a, T b)
+constexpr auto relative_error(T a, T b) -> typename std::enable_if_t<boost::multiprecision::is_interval_number<T>::value, T>
 {
    typename boost::multiprecision::component_type<T>::type am = median(a);
    typename boost::multiprecision::component_type<T>::type bm = median(b);
@@ -92,8 +90,7 @@ typename std::enable_if<boost::multiprecision::is_interval_number<T>::value, T>:
 }
 
 template <class T, class U>
-typename std::conditional<std::is_convertible<T, U>::value, U, T>::type
-relative_error(T a, U b)
+constexpr auto relative_error(T a, U b) -> typename std::conditional_t<std::is_convertible<T, U>::value, U, T>
 {
    typedef typename std::conditional<std::is_convertible<T, U>::value, U, T>::type cast_type;
    return relative_error<cast_type>(static_cast<cast_type>(a), static_cast<cast_type>(b));
@@ -107,19 +104,19 @@ enum
 };
 
 template <class T>
-inline T epsilon_of(const T&)
+T epsilon_of(const T&)
 {
    static_assert(std::numeric_limits<T>::is_specialized, "No numeric_limits support");
    return std::numeric_limits<T>::is_integer ? static_cast<T>(1) : std::numeric_limits<T>::epsilon();
 }
 
 template <class T>
-inline int digits_of(const T&)
+int digits_of(const T&)
 {
    return std::numeric_limits<T>::is_specialized ? std::numeric_limits<T>::digits10 + 3 : std::numeric_limits<long double>::digits10 + 3;
 }
 
-inline std::ostream& report_where(const char* file, int line, const char* function)
+std::ostream& report_where(const char* file, int line, const char* function)
 {
    if (function)
       BOOST_LIGHTWEIGHT_TEST_OSTREAM << "In function: " << function << std::endl;
@@ -129,7 +126,7 @@ inline std::ostream& report_where(const char* file, int line, const char* functi
 
 #define BOOST_MP_REPORT_WHERE report_where(__FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
 
-inline void report_severity(int severity)
+void report_severity(int severity)
 {
    if (severity == error_on_fail)
       ++boost::detail::test_errors();
@@ -215,7 +212,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
 #define BOOST_REQUIRE(x) BOOST_CHECK_IMP(x, abort_on_fail)
 
 #define BOOST_CLOSE_IMP(x, y, tol, severity)                                                \
-   BOOST_MP_TEST_TRY                                                                             \
+   BOOST_MP_TEST_TRY                                                                        \
    {                                                                                        \
       if (relative_error(x, y) > tol)                                                       \
       {                                                                                     \
@@ -232,7 +229,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_EQUAL_IMP(x, y, severity)                                              \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!((x) == (y)))                                                             \
       {                                                                              \
@@ -247,7 +244,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_NE_IMP(x, y, severity)                                                 \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!(x != y))                                                                 \
       {                                                                              \
@@ -262,7 +259,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_LT_IMP(x, y, severity)                                                 \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!(x < y))                                                                  \
       {                                                                              \
@@ -277,7 +274,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_GT_IMP(x, y, severity)                                                 \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!(x > y))                                                                  \
       {                                                                              \
@@ -292,7 +289,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_LE_IMP(x, y, severity)                                                 \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!(x <= y))                                                                 \
       {                                                                              \
@@ -307,7 +304,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
    BOOST_MP_UNEXPECTED_EXCEPTION_CHECK(severity)
 
 #define BOOST_GE_IMP(x, y, severity)                                                 \
-   BOOST_MP_TEST_TRY                                                                      \
+   BOOST_MP_TEST_TRY                                                                 \
    {                                                                                 \
       if (!(x >= y))                                                                 \
       {                                                                              \
@@ -323,7 +320,7 @@ std::ostream& operator<<(std::ostream& os, __float128 f)
 
 #ifndef BOOST_NO_EXCEPTIONS
 #define BOOST_MT_CHECK_THROW_IMP(x, E, severity)                                                                   \
-   BOOST_MP_TEST_TRY                                                                                                    \
+   BOOST_MP_TEST_TRY                                                                                               \
    {                                                                                                               \
       x;                                                                                                           \
       BOOST_MP_REPORT_WHERE << " Expected exception not thrown in expression " << BOOST_STRINGIZE(x) << std::endl; \

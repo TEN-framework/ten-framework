@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -179,11 +179,13 @@ void left_right_rep<L, R>::realloc() {
 	size_type min_cap = 4 * block_size;
 	if (new_cap < min_cap) new_cap = min_cap;
 	buf_type* temp = (buf_type*)::operator new(new_cap*sizeof(buf_type));
-	// copy left
-	std::memcpy(temp, begin(), left_size()*sizeof(L));
-	// copy right
 	size_type r = cap_ - right_;
-	std::memcpy(temp+(new_cap-r), right(), right_size() * sizeof(R));
+	if (!empty()) {
+		// copy left
+		std::memcpy(temp, begin(), left_size()*sizeof(L));
+		// copy right
+		std::memcpy(temp+(new_cap-r), right(), right_size() * sizeof(R));
+	}
 	// swap
 	release();
 	buf_   = temp;
@@ -282,8 +284,10 @@ public:
 			buf_type* e = this->extra();
 			size_type c = base_type::inline_raw_cap;
 			size_type r = c - (this->right_size()*sizeof(right_type));
-			std::memcpy(e,   this->begin(), this->left_size() * sizeof(left_type));
-			std::memcpy(e+r, this->right(), this->right_size()* sizeof(right_type));
+			if (!this->empty()) {
+				std::memcpy(e,   this->begin(), this->left_size() * sizeof(left_type));
+				std::memcpy(e+r, this->right(), this->right_size()* sizeof(right_type));
+			}
 			this->release();
 			this->buf_  = e;
 			this->cap_  = c;
@@ -330,8 +334,10 @@ void left_right_sequence<L, R, i>::copy(const left_right_sequence& other) {
 	}
 	this->left_ = other.left_;
 	this->right_= this->cap_ - (other.right_size()*sizeof(right_type));
-	std::memcpy(this->begin(), other.begin(), other.left_size()*sizeof(left_type));
-	std::memcpy(this->right(), const_cast<left_right_sequence&>(other).right(), other.right_size()*sizeof(right_type));
+	if (!other.empty()) {
+		std::memcpy(this->begin(), other.begin(), other.left_size()*sizeof(left_type));
+		std::memcpy(this->right(), const_cast<left_right_sequence&>(other).right(), other.right_size()*sizeof(right_type));
+	}
 }
 
 template <class L, class R, unsigned i>

@@ -29,12 +29,11 @@ namespace Gringo {
 
 // {{{ declaration of Clonable
 
-template <class Base>
-class Clonable {
-public:
+template <class Base> class Clonable {
+  public:
     Clonable() = default;
     Clonable(Clonable const &other) = default;
-    Clonable(Clonable && other) noexcept = default;
+    Clonable(Clonable &&other) noexcept = default;
     Clonable &operator=(Clonable const &other) = default;
     Clonable &operator=(Clonable &&other) noexcept = default;
     virtual ~Clonable() noexcept = default;
@@ -46,15 +45,11 @@ public:
 
 } // namespace Gringo
 
-#define GRINGO_CALL_CLONE(T) /* NOLINT */ \
-namespace Gringo { \
-template <> \
-struct clone<T> { \
-    inline T operator()(T const &x) const { /* NOLINT */ \
-        return x.clone(); \
-    } \
-}; \
-}
+#define GRINGO_CALL_CLONE(T) /* NOLINT */                                                                              \
+    namespace Gringo {                                                                                                 \
+    template <> struct clone<T> {                                                                                      \
+        inline T operator()(T const &x) const { /* NOLINT */ return x.clone(); }                                       \
+    };                                                                                                                 \
+    }
 
 #endif // GRINGO_CLONABLE_HH
-

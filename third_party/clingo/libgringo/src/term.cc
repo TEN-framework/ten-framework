@@ -27,10 +27,10 @@
 
 #include <math/wide_integer/uintwide_t.h>
 
-#include "gringo/term.hh"
 #include "gringo/base.hh"
-#include "gringo/logger.hh"
 #include "gringo/graph.hh"
+#include "gringo/logger.hh"
+#include "gringo/term.hh"
 
 // #define CLINGO_DEBUG_INEQUALITIES
 
@@ -40,29 +40,24 @@ using slack_t = math::wide_integer::int128_t;
 
 // {{{ definition of Defines
 
-Defines::DefMap const &Defines::defs() const {
-    return defs_;
-}
+Defines::DefMap const &Defines::defs() const { return defs_; }
 
 void Defines::add(Location const &loc, String name, UTerm &&value, bool defaultDef, Logger &log) {
     auto it = defs_.find(name);
     if (it == defs_.end()) {
         defs_.emplace(name, make_tuple(defaultDef, loc, std::move(value)));
-    }
-    else if (std::get<0>(it->second) && !defaultDef) {
+    } else if (std::get<0>(it->second) && !defaultDef) {
         it->second = make_tuple(defaultDef, loc, std::move(value));
-    }
-    else if (std::get<0>(it->second) || !defaultDef) {
-        GRINGO_REPORT(log, Warnings::RuntimeError)
-            << loc << ": error: redefinition of constant:\n"
-            << "  #const " << name << "=" << *value << ".\n"
-            << std::get<1>(it->second) << ": note: constant also defined here\n";
+    } else if (std::get<0>(it->second) || !defaultDef) {
+        GRINGO_REPORT(log, Warnings::RuntimeError) << loc << ": error: redefinition of constant:\n"
+                                                   << "  #const " << name << "=" << *value << ".\n"
+                                                   << std::get<1>(it->second) << ": note: constant also defined here\n";
     }
 }
 
 void Defines::init(Logger &log) {
     using DefineGraph = Graph<Defines::DefMap::iterator>;
-    using NodeMap     = std::unordered_map<String, DefineGraph::Node*>;
+    using NodeMap = std::unordered_map<String, DefineGraph::Node *>;
 
     DefineGraph graph;
     NodeMap nodes;
@@ -82,13 +77,11 @@ void Defines::init(Logger &log) {
     for (auto &scc : graph.tarjan()) {
         if (scc.size() > 1) {
             std::ostringstream msg;
-            msg
-                << std::get<1>(scc.back()->data->second) << ": error: cyclic constant definition:\n"
+            msg << std::get<1>(scc.back()->data->second) << ": error: cyclic constant definition:\n"
                 << "  #const " << scc.back()->data->first << "=" << *std::get<2>(scc.back()->data->second) << ".\n";
             scc.pop_back();
             for (auto &x : scc) {
-                msg
-                    << std::get<1>(x->data->second) << ": note: cycle involves definition:\n"
+                msg << std::get<1>(x->data->second) << ": note: cycle involves definition:\n"
                     << "  #const " << x->data->first << "=" << *std::get<2>(x->data->second) << ".\n";
             }
             GRINGO_REPORT(log, Warnings::RuntimeError) << msg.str();
@@ -99,9 +92,7 @@ void Defines::init(Logger &log) {
     }
 }
 
-bool Defines::empty() const {
-    return defs_.empty();
-}
+bool Defines::empty() const { return defs_.empty(); }
 
 void Defines::apply(Symbol x, Symbol &retVal, UTerm &retTerm, bool replace) {
     if (x.type() == SymbolType::Fun) {
@@ -136,16 +127,14 @@ void Defines::apply(Symbol x, Symbol &retVal, UTerm &retTerm, bool replace) {
                 }
                 if (args.back().type() == SymbolType::Special) {
                     args.back() = x.args()[i];
-                }
-                else {
+                } else {
                     changed = true;
                 }
             }
             if (changed) {
                 retVal = Symbol::createFun(x.name(), Potassco::toSpan(args));
             }
-        }
-        else if (replace) {
+        } else if (replace) {
             auto it(defs_.find(x.name()));
             if (it != defs_.end()) {
                 retVal = std::get<2>(it->second)->isEDB();
@@ -181,13 +170,9 @@ slack_t ceildiv(slack_t n, slack_t m) {
     return a;
 }
 
-template<typename I>
-I div(bool positive, I a, I b) {
-    return positive ? floordiv(a, b) : ceildiv(a, b);
-}
+template <typename I> I div(bool positive, I a, I b) { return positive ? floordiv(a, b) : ceildiv(a, b); }
 
-template<typename I>
-int clamp(I a) {
+template <typename I> int clamp(I a) {
     if (a > std::numeric_limits<int>::max()) {
         return std::numeric_limits<int>::max();
     }
@@ -195,7 +180,6 @@ int clamp(I a) {
         return std::numeric_limits<int>::min();
     }
     return static_cast<int>(a);
-
 }
 
 int clamp_div(bool positive, slack_t a, int64_t b) {
@@ -205,8 +189,7 @@ int clamp_div(bool positive, slack_t a, int64_t b) {
     return clamp(div<slack_t>(positive, a, b));
 }
 
-template<class It, class Merge>
-It merge_adjancent(It first, It last, Merge m) {
+template <class It, class Merge> It merge_adjancent(It first, It last, Merge m) {
     if (first == last) {
         return last;
     }
@@ -225,8 +208,7 @@ bool update_bound(IEBoundMap &bounds, IETerm const &term, slack_t slack, int num
     auto type = positive ? IEBound::Upper : IEBound::Lower;
     if (num_unbounded == 0) {
         slack += static_cast<slack_t>(term.coefficient) * bounds[term.variable].get(type);
-    }
-    else if (num_unbounded > 1 || bounds[term.variable].isSet(type)) {
+    } else if (num_unbounded > 1 || bounds[term.variable].isSet(type)) {
         return false;
     }
 
@@ -238,8 +220,7 @@ void update_slack(IEBoundMap &bounds, IETerm const &term, slack_t &slack, int &n
     auto type = term.coefficient > 0 ? IEBound::Upper : IEBound::Lower;
     if (bounds[term.variable].isSet(type)) {
         slack -= static_cast<slack_t>(term.coefficient) * bounds[term.variable].get(type);
-    }
-    else {
+    } else {
         ++num_unbounded;
     }
 }
@@ -250,15 +231,13 @@ std::ostream &operator<<(std::ostream &out, IEBound const &bound) {
     out << "[";
     if (bound.isSet(IEBound::Lower)) {
         out << bound.get(IEBound::Lower);
-    }
-    else {
+    } else {
         out << "-inf";
     }
     out << ",";
     if (bound.isSet(IEBound::Upper)) {
         out << bound.get(IEBound::Upper);
-    }
-    else {
+    } else {
         out << "+inf";
     }
     out << "]";
@@ -285,20 +264,15 @@ std::ostream &operator<<(std::ostream &out, IE const &ie) {
 
 } // namespace
 
-bool IEBound::isSet(Type type) const {
-    return type == Lower ? hasLower_ : hasUpper_;
-}
+bool IEBound::isSet(Type type) const { return type == Lower ? hasLower_ : hasUpper_; }
 
-int IEBound::get(Type type) const {
-    return type == Lower ? lower_ : upper_;
-}
+int IEBound::get(Type type) const { return type == Lower ? lower_ : upper_; }
 
 void IEBound::set(Type type, int bound) {
     if (type == Lower) {
         hasLower_ = true;
         lower_ = bound;
-    }
-    else {
+    } else {
         hasUpper_ = true;
         upper_ = bound;
     }
@@ -331,9 +305,7 @@ bool IEBound::refine(IEBound const &bound) {
     return ret;
 }
 
-bool IEBound::isBounded() const {
-    return hasLower_ && hasUpper_;
-}
+bool IEBound::isBounded() const { return hasLower_ && hasUpper_; }
 
 bool IEBound::isImproving(IEBound const &other) const {
     if (!other.isBounded() || !isBounded()) {
@@ -342,9 +314,7 @@ bool IEBound::isImproving(IEBound const &other) const {
     return other.lower_ < lower_ || upper_ < other.upper_;
 }
 
-bool VarTermCmp::operator()(VarTerm const *a, VarTerm const *b) const {
-    return a->name < b->name;
-}
+bool VarTermCmp::operator()(VarTerm const *a, VarTerm const *b) const { return a->name < b->name; }
 
 bool IESolver::isImproving(VarTerm const *var, IEBound const &bound) const {
     auto it = fixed_.find(var);
@@ -358,41 +328,34 @@ void IESolver::add(IE ie, bool ignoreIfFixed) {
     auto &terms = ie.terms;
 
     // remove terms not associated with a variable
-    auto last = std::partition(
-        terms.begin(), terms.end(),
-        [](auto &term) {
-            return term.variable != nullptr && term.coefficient != 0;
-        });
+    auto last = std::partition(terms.begin(), terms.end(),
+                               [](auto &term) { return term.variable != nullptr && term.coefficient != 0; });
     for (auto end = terms.end(), current = last; current != end; ++current) {
         ie.bound -= current->coefficient;
     }
     terms.erase(last, terms.end());
 
     // sort according to variables
-    std::sort(
-        terms.begin(), terms.end(),
-        [](auto const &a, auto const &b) {
-            return a.variable->name < b.variable->name;
-        });
+    std::sort(terms.begin(), terms.end(),
+              [](auto const &a, auto const &b) { return a.variable->name < b.variable->name; });
 
     // combine adjacent terms referring to the same variable
-    terms.erase(merge_adjancent(
-        terms.begin(), terms.end(),
-        [](auto &a, auto &b) {
-            if (a.variable->name == b.variable->name) {
-                a.coefficient += b.coefficient;
-                return true;
-            }
-            return false;
-        }), terms.end());
+    terms.erase(merge_adjancent(terms.begin(), terms.end(),
+                                [](auto &a, auto &b) {
+                                    if (a.variable->name == b.variable->name) {
+                                        a.coefficient += b.coefficient;
+                                        return true;
+                                    }
+                                    return false;
+                                }),
+                terms.end());
     ies_.emplace_back(std::move(ie));
 
     if (ies_.back().terms.size() == 1 && ignoreIfFixed) {
         auto term = ies_.back().terms.back();
         if (term.coefficient == 1) {
             fixed_[term.variable].refine(IEBound::Lower, clamp(ies_.back().bound));
-        }
-        else if (term.coefficient == -1) {
+        } else if (term.coefficient == -1) {
             fixed_[term.variable].refine(IEBound::Upper, clamp(-ies_.back().bound));
         }
     }
@@ -441,7 +404,8 @@ void IESolver::compute() {
                     if (update_bound(bounds_, term, slack, num_unbounded)) {
 #ifdef CLINGO_DEBUG_INEQUALITIES
                         std::cerr << "  update bound using " << ie << std::endl;
-                        std::cerr << "    the new bound for " << *term.variable << " is "<< bounds_[term.variable] << std::endl;
+                        std::cerr << "    the new bound for " << *term.variable << " is " << bounds_[term.variable]
+                                  << std::endl;
 #endif
                         changed = true;
                     }
@@ -461,30 +425,20 @@ void IESolver::compute() {
     }
 }
 
-void IESolver::add(IEContext &context) {
-    subSolvers_.emplace_front(context, this);
-}
+void IESolver::add(IEContext &context) { subSolvers_.emplace_front(context, this); }
 
 // }}}
 
 // {{{ definition of GRef
 
-GRef::GRef(UTerm &&name)
-    : type(EMPTY)
-    , name(std::move(name))
-    , value(Symbol::createNum(0))
-    , term(nullptr) { }
+GRef::GRef(UTerm &&name) : type(EMPTY), name(std::move(name)), value(Symbol::createNum(0)), term(nullptr) {}
 
-GRef::operator bool() const {
-    return type != EMPTY;
-}
+GRef::operator bool() const { return type != EMPTY; }
 
-void GRef::reset() {
-    type = EMPTY;
-}
+void GRef::reset() { type = EMPTY; }
 
 GRef &GRef::operator=(Symbol const &x) {
-    type  = VALUE;
+    type = VALUE;
     value = x;
     return *this;
 }
@@ -497,9 +451,15 @@ GRef &GRef::operator=(GTerm &x) {
 
 bool GRef::occurs(GRef &x) const {
     switch (type) {
-        case VALUE: { return false; }
-        case TERM:  { return term->occurs(x); }
-        case EMPTY: { return this == &x; }
+        case VALUE: {
+            return false;
+        }
+        case TERM: {
+            return term->occurs(x);
+        }
+        case EMPTY: {
+            return this == &x;
+        }
     }
     assert(false);
     return false;
@@ -507,19 +467,30 @@ bool GRef::occurs(GRef &x) const {
 
 bool GRef::match(Symbol const &x) const {
     switch (type) {
-        case VALUE: { return value == x; }
-        case TERM:  { return term->match(x); }
-        case EMPTY: { assert(false); }
+        case VALUE: {
+            return value == x;
+        }
+        case TERM: {
+            return term->match(x);
+        }
+        case EMPTY: {
+            assert(false);
+        }
     }
     return false;
 }
 
-template <class T>
-bool GRef::unify(T &x) {
+template <class T> bool GRef::unify(T &x) {
     switch (type) {
-        case VALUE: { return x.match(value); }
-        case TERM:  { return term->unify(x); }
-        case EMPTY: { assert(false); }
+        case VALUE: {
+            return x.match(value);
+        }
+        case TERM: {
+            return term->unify(x);
+        }
+        case EMPTY: {
+            assert(false);
+        }
     }
     return false;
 }
@@ -528,74 +499,46 @@ bool GRef::unify(T &x) {
 
 // {{{1 definition of GValTerm
 
-GValTerm::GValTerm(Symbol val)
-: val_(val) { }
+GValTerm::GValTerm(Symbol val) : val_(val) {}
 
 bool GValTerm::operator==(GTerm const &other) const {
-    const auto *t = dynamic_cast<GValTerm const*>(&other);
+    const auto *t = dynamic_cast<GValTerm const *>(&other);
     return (t != nullptr) && val_ == t->val_;
 }
 
-size_t GValTerm::hash() const {
-    return get_value_hash(typeid(GValTerm).hash_code(), val_);
-}
+size_t GValTerm::hash() const { return get_value_hash(typeid(GValTerm).hash_code(), val_); }
 
-void GValTerm::print(std::ostream &out) const {
-    out << val_;
-}
+void GValTerm::print(std::ostream &out) const { out << val_; }
 
-Sig GValTerm::sig() const {
-    return val_.sig();
-}
+Sig GValTerm::sig() const { return val_.sig(); }
 
-GTerm::EvalResult GValTerm::eval() const {
-    return {true, val_};
-}
+GTerm::EvalResult GValTerm::eval() const { return {true, val_}; }
 
-bool GValTerm::occurs(GRef &x) const {
-    return false;
-}
+bool GValTerm::occurs(GRef &x) const { return false; }
 
-void GValTerm::reset() { }
+void GValTerm::reset() {}
 
-bool GValTerm::match(Symbol const &x) {
-    return val_ == x;
-}
+bool GValTerm::match(Symbol const &x) { return val_ == x; }
 
-bool GValTerm::unify(GTerm &x) {
-    return x.match(val_);
-}
+bool GValTerm::unify(GTerm &x) { return x.match(val_); }
 
-bool GValTerm::unify(GFunctionTerm &x) {
-    return x.match(val_);
-}
+bool GValTerm::unify(GFunctionTerm &x) { return x.match(val_); }
 
-bool GValTerm::unify(GLinearTerm &x) {
-    return x.match(val_);
-}
+bool GValTerm::unify(GLinearTerm &x) { return x.match(val_); }
 
-bool GValTerm::unify(GVarTerm &x) {
-    return x.match(val_);
-}
+bool GValTerm::unify(GVarTerm &x) { return x.match(val_); }
 
 // {{{1 definition of GFunctionTerm
 
-GFunctionTerm::GFunctionTerm(String name, UGTermVec &&args)
-: sign_(false)
-, name_(name)
-, args_(std::move(args)) { }
+GFunctionTerm::GFunctionTerm(String name, UGTermVec &&args) : sign_(false), name_(name), args_(std::move(args)) {}
 
 // Note: uses structural comparisson of names of variable terms (VarTerm/LinearTerm)
 bool GFunctionTerm::operator==(GTerm const &other) const {
-    const auto *t = dynamic_cast<GFunctionTerm const*>(&other);
-    return t != nullptr &&
-           sig() == t->sig() &&
-           is_value_equal_to(args_, t->args_);
+    const auto *t = dynamic_cast<GFunctionTerm const *>(&other);
+    return t != nullptr && sig() == t->sig() && is_value_equal_to(args_, t->args_);
 }
 
-size_t GFunctionTerm::hash() const {
-    return get_value_hash(typeid(GFunctionTerm).hash_code(), sig(), args_);
-}
+size_t GFunctionTerm::hash() const { return get_value_hash(typeid(GFunctionTerm).hash_code(), sig(), args_); }
 
 void GFunctionTerm::print(std::ostream &out) const {
     if ((sig()).sign()) {
@@ -607,13 +550,9 @@ void GFunctionTerm::print(std::ostream &out) const {
     out << ")";
 }
 
-Sig GFunctionTerm::sig() const {
-    return {name_, numeric_cast<uint32_t>(args_.size()), sign_};
-}
+Sig GFunctionTerm::sig() const { return {name_, numeric_cast<uint32_t>(args_.size()), sign_}; }
 
-GTerm::EvalResult GFunctionTerm::eval() const {
-    return {false, Symbol()};
-}
+GTerm::EvalResult GFunctionTerm::eval() const { return {false, Symbol()}; }
 
 bool GFunctionTerm::occurs(GRef &x) const {
     for (const auto &y : args_) {
@@ -641,12 +580,9 @@ bool GFunctionTerm::match(Symbol const &x) {
         }
     }
     return true;
-
 }
 
-bool GFunctionTerm::unify(GTerm &x) {
-    return x.unify(*this);
-}
+bool GFunctionTerm::unify(GTerm &x) { return x.unify(*this); }
 
 bool GFunctionTerm::unify(GFunctionTerm &x) {
     if (sig() != x.sig()) {
@@ -678,49 +614,31 @@ bool GFunctionTerm::unify(GVarTerm &x) {
 
 // {{{1 definition of GLinearTerm
 
-GLinearTerm::GLinearTerm(const SGRef& ref, int m, int n)
-: ref_(ref), m_(m), n_(n) {
-    assert(ref);
-}
+GLinearTerm::GLinearTerm(const SGRef &ref, int m, int n) : ref_(ref), m_(m), n_(n) { assert(ref); }
 
 bool GLinearTerm::operator==(GTerm const &other) const {
-    const auto *t = dynamic_cast<GLinearTerm const*>(&other);
-    return t != nullptr &&
-           *ref_->name == *t->ref_->name &&
-           m_ == t->m_ &&
-           n_ == t->n_;
+    const auto *t = dynamic_cast<GLinearTerm const *>(&other);
+    return t != nullptr && *ref_->name == *t->ref_->name && m_ == t->m_ && n_ == t->n_;
 }
 
-size_t GLinearTerm::hash() const {
-    return get_value_hash(typeid(GLinearTerm).hash_code(), ref_->name, m_, n_);
-}
+size_t GLinearTerm::hash() const { return get_value_hash(typeid(GLinearTerm).hash_code(), ref_->name, m_, n_); }
 
-void GLinearTerm::print(std::ostream &out) const {
-    out << "(" << m_ << "*" << *ref_->name << "+" << n_ << ")";
-}
+void GLinearTerm::print(std::ostream &out) const { out << "(" << m_ << "*" << *ref_->name << "+" << n_ << ")"; }
 
-Sig GLinearTerm::sig() const {
-    throw std::logic_error("must not be called");
-}
+Sig GLinearTerm::sig() const { throw std::logic_error("must not be called"); }
 
-GTerm::EvalResult GLinearTerm::eval() const {
-    return {false, Symbol()};
-}
+GTerm::EvalResult GLinearTerm::eval() const { return {false, Symbol()}; }
 
-bool GLinearTerm::occurs(GRef &x) const {
-    return ref_->occurs(x);
-}
+bool GLinearTerm::occurs(GRef &x) const { return ref_->occurs(x); }
 
-void GLinearTerm::reset() {
-    ref_->reset();
-}
+void GLinearTerm::reset() { ref_->reset(); }
 
 bool GLinearTerm::match(Symbol const &x) {
     if (x.type() != SymbolType::Num) {
         return false;
     }
     int y = x.num();
-    y-= n_;
+    y -= n_;
     if (y % m_ != 0) {
         return false;
     }
@@ -732,9 +650,7 @@ bool GLinearTerm::match(Symbol const &x) {
     return true;
 }
 
-bool GLinearTerm::unify(GTerm &x) {
-    return x.unify(*this);
-}
+bool GLinearTerm::unify(GTerm &x) { return x.unify(*this); }
 
 bool GLinearTerm::unify(GLinearTerm &x) {
     static_cast<void>(x);
@@ -744,9 +660,7 @@ bool GLinearTerm::unify(GLinearTerm &x) {
     return true;
 }
 
-bool GLinearTerm::unify(GFunctionTerm &x) {
-    return false;
-}
+bool GLinearTerm::unify(GFunctionTerm &x) { return false; }
 
 bool GLinearTerm::unify(GVarTerm &x) {
     if (*x.ref) {
@@ -754,44 +668,28 @@ bool GLinearTerm::unify(GVarTerm &x) {
     }
     // see not at: GLinearTerm::unify(GLinearTerm &x)
     return true;
-
 }
 
 // {{{1 definition of GVarTerm
 
-GVarTerm::GVarTerm(const SGRef& ref)
-: ref(ref) {
-    assert(ref);
-}
+GVarTerm::GVarTerm(const SGRef &ref) : ref(ref) { assert(ref); }
 
 bool GVarTerm::operator==(GTerm const &other) const {
-    const auto *t = dynamic_cast<GVarTerm const*>(&other);
+    const auto *t = dynamic_cast<GVarTerm const *>(&other);
     return (t != nullptr) && *ref->name == *t->ref->name;
 }
 
-size_t GVarTerm::hash() const {
-    return get_value_hash(typeid(GVarTerm).hash_code(), ref->name);
-}
+size_t GVarTerm::hash() const { return get_value_hash(typeid(GVarTerm).hash_code(), ref->name); }
 
-void GVarTerm::print(std::ostream &out) const {
-    out << *ref->name;
-}
+void GVarTerm::print(std::ostream &out) const { out << *ref->name; }
 
-Sig GVarTerm::sig() const {
-    throw std::logic_error("must not be called");
-}
+Sig GVarTerm::sig() const { throw std::logic_error("must not be called"); }
 
-GTerm::EvalResult GVarTerm::eval() const {
-    return {false, Symbol()};
-}
+GTerm::EvalResult GVarTerm::eval() const { return {false, Symbol()}; }
 
-bool GVarTerm::occurs(GRef &x) const {
-    return ref->occurs(x);
-}
+bool GVarTerm::occurs(GRef &x) const { return ref->occurs(x); }
 
-void GVarTerm::reset() {
-    ref->reset();
-}
+void GVarTerm::reset() { ref->reset(); }
 
 bool GVarTerm::match(Symbol const &x) {
     if (*ref) {
@@ -799,12 +697,9 @@ bool GVarTerm::match(Symbol const &x) {
     }
     *ref = x;
     return true;
-
 }
 
-bool GVarTerm::unify(GTerm &x) {
-    return x.unify(*this);
-}
+bool GVarTerm::unify(GTerm &x) { return x.unify(*this); }
 
 bool GVarTerm::unify(GLinearTerm &x) {
     if (*ref) {
@@ -844,9 +739,15 @@ bool GVarTerm::unify(GVarTerm &x) {
 
 int eval(UnOp op, int x) {
     switch (op) {
-        case UnOp::NEG: { return -x; }
-        case UnOp::ABS: { return std::abs(x); }
-        case UnOp::NOT: { return ~x; }
+        case UnOp::NEG: {
+            return -x;
+        }
+        case UnOp::ABS: {
+            return std::abs(x);
+        }
+        case UnOp::NOT: {
+            return ~x;
+        }
     }
     assert(false);
     return 0;
@@ -854,9 +755,18 @@ int eval(UnOp op, int x) {
 
 std::ostream &operator<<(std::ostream &out, UnOp op) {
     switch (op) {
-        case UnOp::ABS: { out << "#abs"; break; }
-        case UnOp::NOT: { out << "~"; break; }
-        case UnOp::NEG: { out << "-"; break; }
+        case UnOp::ABS: {
+            out << "#abs";
+            break;
+        }
+        case UnOp::NOT: {
+            out << "~";
+            break;
+        }
+        case UnOp::NEG: {
+            out << "-";
+            break;
+        }
     }
     return out;
 }
@@ -869,7 +779,7 @@ inline int ipow(int a, int b) {
     }
     int r = 1;
     while (b > 0) {
-        if((b & 1) != 0) {
+        if ((b & 1) != 0) {
             r *= a;
         }
         b >>= 1;
@@ -906,17 +816,31 @@ bool toNum_(IETermVec const &terms, int64_t &res) {
 
 int eval(BinOp op, int x, int y) {
     switch (op) {
-        case BinOp::XOR: { return x ^ y; }
-        case BinOp::OR:  { return x | y; }
-        case BinOp::AND: { return x & y; }
-        case BinOp::ADD: { return x + y; }
-        case BinOp::SUB: { return x - y; }
-        case BinOp::MUL: { return x * y; }
+        case BinOp::XOR: {
+            return x ^ y;
+        }
+        case BinOp::OR: {
+            return x | y;
+        }
+        case BinOp::AND: {
+            return x & y;
+        }
+        case BinOp::ADD: {
+            return x + y;
+        }
+        case BinOp::SUB: {
+            return x - y;
+        }
+        case BinOp::MUL: {
+            return x * y;
+        }
         case BinOp::MOD: {
             assert(y != 0 && "must be checked before call");
             return x % y;
         }
-        case BinOp::POW: { return ipow(x, y); }
+        case BinOp::POW: {
+            return ipow(x, y);
+        }
         case BinOp::DIV: {
             assert(y != 0 && "must be checked before call");
             return x / y;
@@ -934,9 +858,8 @@ int Term::toNum(bool &undefined, Logger &log) {
         return y.num();
     }
     if (!undefined_arg) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: number expected:\n"
-            << "  " << *this << "\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: number expected:\n"
+                                                         << "  " << *this << "\n";
     }
     undefined = true;
     return 0;
@@ -944,26 +867,49 @@ int Term::toNum(bool &undefined, Logger &log) {
 
 std::ostream &operator<<(std::ostream &out, BinOp op) {
     switch (op) {
-        case BinOp::AND: { out << "&"; break; }
-        case BinOp::OR:  { out << "?"; break; }
-        case BinOp::XOR: { out << "^"; break; }
-        case BinOp::POW: { out << "**"; break; }
-        case BinOp::ADD: { out << "+"; break; }
-        case BinOp::SUB: { out << "-"; break; }
-        case BinOp::MUL: { out << "*"; break; }
-        case BinOp::DIV: { out << "/"; break; }
-        case BinOp::MOD: { out << "\\"; break; }
+        case BinOp::AND: {
+            out << "&";
+            break;
+        }
+        case BinOp::OR: {
+            out << "?";
+            break;
+        }
+        case BinOp::XOR: {
+            out << "^";
+            break;
+        }
+        case BinOp::POW: {
+            out << "**";
+            break;
+        }
+        case BinOp::ADD: {
+            out << "+";
+            break;
+        }
+        case BinOp::SUB: {
+            out << "-";
+            break;
+        }
+        case BinOp::MUL: {
+            out << "*";
+            break;
+        }
+        case BinOp::DIV: {
+            out << "/";
+            break;
+        }
+        case BinOp::MOD: {
+            out << "\\";
+            break;
+        }
     }
     return out;
 }
 
-void addIETerm(IETermVec &terms, IETerm const &term) {
-    add_(terms, term.coefficient, term.variable);
-}
+void addIETerm(IETermVec &terms, IETerm const &term) { add_(terms, term.coefficient, term.variable); }
 
-void subIETerm(IETermVec &terms, IETerm const &term) {
-    add_(terms, -term.coefficient, term.variable);
-}
+void subIETerm(IETermVec &terms, IETerm const &term) { add_(terms, -term.coefficient, term.variable); }
 
 // {{{1 definition of Term and auxiliary functions
 
@@ -998,7 +944,6 @@ UGTerm Term::gterm() const {
     return gterm(names, refs);
 }
 
-
 UGFunTerm Term::gfunterm(RenameMap &names, ReferenceMap &refs) const {
     static_cast<void>(names);
     static_cast<void>(refs);
@@ -1012,7 +957,6 @@ void Term::collect(VarTermSet &vars) const {
         vars.emplace(*y.first);
     }
 }
-
 
 bool Term::isZero(Logger &log) const {
     bool undefined = false;
@@ -1052,9 +996,7 @@ UTerm Term::insert(ArithmeticsMap &arith, AuxGen &auxGen, UTerm &&term, bool eq)
 
 // {{{1 definition of AuxGen
 
-String AuxGen::uniqueName(char const *prefix) {
-    return {(prefix + std::to_string((*auxNum_)++)).c_str()};
-}
+String AuxGen::uniqueName(char const *prefix) { return {(prefix + std::to_string((*auxNum_)++)).c_str()}; }
 
 UTerm AuxGen::uniqueVar(Location const &loc, unsigned level, const char *prefix) {
     return make_locatable<VarTerm>(loc, uniqueName(prefix), std::make_shared<Symbol>(), level);
@@ -1062,32 +1004,29 @@ UTerm AuxGen::uniqueVar(Location const &loc, unsigned level, const char *prefix)
 
 // {{{1 definition of SimplifyState
 
-String SimplifyState::createName(char const *prefix) {
-    return gen_.uniqueName(prefix);
-}
+String SimplifyState::createName(char const *prefix) { return gen_.uniqueName(prefix); }
 
 SimplifyState::SimplifyRet SimplifyState::createScript(Location const &loc, String name, UTermVec &&args, bool arith) {
     scripts_.emplace_back(gen_.uniqueVar(loc, level_, "#Script"), name, std::move(args));
     if (arith) {
-        return make_locatable<LinearTerm>(loc, static_cast<VarTerm&>(*std::get<0>(scripts_.back())), 1, 0); // NOLINT
+        return make_locatable<LinearTerm>(loc, static_cast<VarTerm &>(*std::get<0>(scripts_.back())), 1, 0); // NOLINT
     }
     return UTerm{std::get<0>(scripts_.back())->clone()};
-
 }
 
 std::unique_ptr<LinearTerm> SimplifyState::createDots(Location const &loc, UTerm &&left, UTerm &&right) {
     dots_.emplace_back(gen_.uniqueVar(loc, level_, "#Range"), std::move(left), std::move(right));
-    return make_locatable<LinearTerm>(loc, static_cast<VarTerm&>(*std::get<0>(dots_.back())), 1, 0); // NOLINT
+    return make_locatable<LinearTerm>(loc, static_cast<VarTerm &>(*std::get<0>(dots_.back())), 1, 0); // NOLINT
 }
-
 
 // {{{1 definition of SimplifyState::SimplifyRet
 
-SimplifyState::SimplifyRet::SimplifyRet(SimplifyRet &&x) noexcept
-: type_(x.type_) {
-    switch(type_) {
+SimplifyState::SimplifyRet::SimplifyRet(SimplifyRet &&x) noexcept : type_(x.type_) {
+    switch (type_) {
         case LINEAR:
-        case REPLACE:   { x.type_ = UNTOUCHED; }
+        case REPLACE: {
+            x.type_ = UNTOUCHED;
+        }
         case UNTOUCHED: {
             term_ = x.term_; // NOLINT
             break;
@@ -1102,9 +1041,9 @@ SimplifyState::SimplifyRet::SimplifyRet(SimplifyRet &&x) noexcept
 
 SimplifyState::SimplifyRet &SimplifyState::SimplifyRet::operator=(SimplifyRet &&x) noexcept {
     type_ = x.type_;
-    switch(type_) {
+    switch (type_) {
         case LINEAR:
-        case REPLACE:   {
+        case REPLACE: {
             x.type_ = UNTOUCHED;
         }
         case UNTOUCHED: {
@@ -1120,49 +1059,48 @@ SimplifyState::SimplifyRet &SimplifyState::SimplifyRet::operator=(SimplifyRet &&
     return *this;
 }
 
-SimplifyState::SimplifyRet::SimplifyRet(Term &x, bool project)
-: type_(UNTOUCHED)
-, project_(project), term_(&x) { }
+SimplifyState::SimplifyRet::SimplifyRet(Term &x, bool project) : type_(UNTOUCHED), project_(project), term_(&x) {}
 
-SimplifyState::SimplifyRet::SimplifyRet(std::unique_ptr<LinearTerm> &&x)
-: type_(LINEAR)
-, term_(x.release()) { }
+SimplifyState::SimplifyRet::SimplifyRet(std::unique_ptr<LinearTerm> &&x) : type_(LINEAR), term_(x.release()) {}
 
 SimplifyState::SimplifyRet::SimplifyRet(UTerm &&x) // NOLINT
-: type_(REPLACE)
-, term_(x.release()) { }
+    : type_(REPLACE), term_(x.release()) {}
 
 SimplifyState::SimplifyRet::SimplifyRet(Symbol const &x) // NOLINT
-: type_(CONSTANT)
-, val_(x) { }
+    : type_(CONSTANT), val_(x) {}
 
 SimplifyState::SimplifyRet::SimplifyRet() // NOLINT
-: type_(UNDEFINED) { }
+    : type_(UNDEFINED) {}
 
 bool SimplifyState::SimplifyRet::notNumeric() const {
     switch (type_) {
-        case UNDEFINED: { return true; }
-        case LINEAR:    { return false; }
-        case CONSTANT:  { return val_.type() != SymbolType::Num; } // NOLINT
+        case UNDEFINED: {
+            return true;
+        }
+        case LINEAR: {
+            return false;
+        }
+        case CONSTANT: {
+            return val_.type() != SymbolType::Num;
+        } // NOLINT
         case REPLACE:
-        case UNTOUCHED: { return term_->isNotNumeric(); } // NOLINT
+        case UNTOUCHED: {
+            return term_->isNotNumeric();
+        } // NOLINT
     }
     assert(false);
     return false;
 }
 
-bool SimplifyState::SimplifyRet::constant() const  {
-    return type_ == CONSTANT;
-}
+bool SimplifyState::SimplifyRet::constant() const { return type_ == CONSTANT; }
 
 bool SimplifyState::SimplifyRet::isZero() const {
-    return constant() &&
-           val_.type() == SymbolType::Num && // NOLINT
-           val_.num() == 0; // NOLINT
+    return constant() && val_.type() == SymbolType::Num && // NOLINT
+           val_.num() == 0;                                // NOLINT
 }
 
 LinearTerm &SimplifyState::SimplifyRet::lin() const {
-    return static_cast<LinearTerm&>(*term_); // NOLINT
+    return static_cast<LinearTerm &>(*term_); // NOLINT
 }
 
 SimplifyState::SimplifyRet &SimplifyState::SimplifyRet::update(UTerm &x, bool arith) {
@@ -1181,28 +1119,34 @@ SimplifyState::SimplifyRet &SimplifyState::SimplifyRet::update(UTerm &x, bool ar
                 return *this;
             }
         }
-        case REPLACE:  {
+        case REPLACE: {
             type_ = UNTOUCHED;
             x.reset(term_); // NOLINT
             return *this;
         }
         case UNDEFINED:
-        case UNTOUCHED: { return *this; }
+        case UNTOUCHED: {
+            return *this;
+        }
     }
     throw std::logic_error("SimplifyState::SimplifyRet::update: must not happen");
 }
 
-bool SimplifyState::SimplifyRet::undefined() const {
-    return type_ == UNDEFINED;
-}
+bool SimplifyState::SimplifyRet::undefined() const { return type_ == UNDEFINED; }
 
 bool SimplifyState::SimplifyRet::notFunction() const {
     switch (type_) {
         case UNDEFINED:
-        case LINEAR:    { return true; }
-        case CONSTANT:  { return val_.type() != SymbolType::Fun; } // NOLINT
+        case LINEAR: {
+            return true;
+        }
+        case CONSTANT: {
+            return val_.type() != SymbolType::Fun;
+        } // NOLINT
         case REPLACE:
-        case UNTOUCHED: { return term_->isNotFunction(); } // NOLINT
+        case UNTOUCHED: {
+            return term_->isNotFunction();
+        } // NOLINT
     }
     assert(false);
     return false;
@@ -1218,8 +1162,7 @@ SimplifyState::SimplifyRet::~SimplifyRet() noexcept {
 
 // {{{1 definition of PoolTerm
 
-PoolTerm::PoolTerm(UTermVec &&terms)
-: args_(std::move(terms)) { }
+PoolTerm::PoolTerm(UTermVec &&terms) : args_(std::move(terms)) {}
 
 void PoolTerm::rename(String name) {
     static_cast<void>(name);
@@ -1238,17 +1181,11 @@ unsigned PoolTerm::projectScore() const {
     throw std::logic_error("Term::projectScore must be called after Term::unpool");
 }
 
-bool PoolTerm::isNotNumeric() const {
-    return false;
-}
+bool PoolTerm::isNotNumeric() const { return false; }
 
-bool PoolTerm::isNotFunction() const {
-    return false;
-}
+bool PoolTerm::isNotFunction() const { return false; }
 
-Term::Invertibility PoolTerm::getInvertibility() const {
-    return Term::NOT_INVERTIBLE;
-}
+Term::Invertibility PoolTerm::getInvertibility() const { return Term::NOT_INVERTIBLE; }
 
 void PoolTerm::print(std::ostream &out) const {
     print_comma(out, args_, ";", [](std::ostream &out, UTerm const &y) { out << *y; });
@@ -1277,9 +1214,7 @@ bool PoolTerm::hasVar() const {
     return false;
 }
 
-bool PoolTerm::hasPool() const {
-    return true;
-}
+bool PoolTerm::hasPool() const { return true; }
 
 void PoolTerm::collect(VarTermBoundVec &vars, bool bound) const {
     for (const auto &y : args_) {
@@ -1287,7 +1222,7 @@ void PoolTerm::collect(VarTermBoundVec &vars, bool bound) const {
     }
 }
 
-void PoolTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void PoolTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     for (const auto &y : args_) {
         y->collect(vars, minLevel, maxLevel);
     }
@@ -1318,22 +1253,15 @@ UTerm PoolTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, 
 }
 
 bool PoolTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<PoolTerm const*>(&other);
-    return t != nullptr &&
-           is_value_equal_to(args_, t->args_);
+    const auto *t = dynamic_cast<PoolTerm const *>(&other);
+    return t != nullptr && is_value_equal_to(args_, t->args_);
 }
 
-size_t PoolTerm::hash() const {
-    return get_value_hash(typeid(PoolTerm).hash_code(), args_);
-}
+size_t PoolTerm::hash() const { return get_value_hash(typeid(PoolTerm).hash_code(), args_); }
 
-PoolTerm *PoolTerm::clone() const {
-    return make_locatable<PoolTerm>(loc(), get_clone(args_)).release();
-}
+PoolTerm *PoolTerm::clone() const { return make_locatable<PoolTerm>(loc(), get_clone(args_)).release(); }
 
-Sig PoolTerm::getSig() const {
-    throw std::logic_error("Term::getSig must not be called on PoolTerm");
-}
+Sig PoolTerm::getSig() const { throw std::logic_error("Term::getSig must not be called on PoolTerm"); }
 
 UTerm PoolTerm::renameVars(RenameMap &names) const {
     UTermVec args;
@@ -1366,9 +1294,7 @@ double PoolTerm::estimate(double size, VarSet const &bound) const {
     return 0;
 }
 
-Symbol PoolTerm::isEDB() const {
-    return {};
-}
+Symbol PoolTerm::isEDB() const { return {}; }
 
 bool PoolTerm::isAtom() const {
     for (const auto &x : args_) {
@@ -1386,8 +1312,7 @@ bool PoolTerm::addToLinearTerm(IETermVec &terms) const {
 
 // {{{1 definition of ValTerm
 
-ValTerm::ValTerm(Symbol value)
-: value_(value) { }
+ValTerm::ValTerm(Symbol value) : value_(value) {}
 
 bool ValTerm::addToLinearTerm(IETermVec &terms) const {
     if (value_.type() == SymbolType::Num) {
@@ -1397,33 +1322,19 @@ bool ValTerm::addToLinearTerm(IETermVec &terms) const {
     return false;
 }
 
-unsigned ValTerm::projectScore() const {
-    return 0;
-}
+unsigned ValTerm::projectScore() const { return 0; }
 
-void ValTerm::rename(String name) {
-    value_ = Symbol::createId(name);
-}
+void ValTerm::rename(String name) { value_ = Symbol::createId(name); }
 
-unsigned ValTerm::getLevel() const {
-    return 0;
-}
+unsigned ValTerm::getLevel() const { return 0; }
 
-bool ValTerm::isNotNumeric() const {
-    return value_.type() != SymbolType::Num;
-}
+bool ValTerm::isNotNumeric() const { return value_.type() != SymbolType::Num; }
 
-bool ValTerm::isNotFunction() const {
-    return value_.type() != SymbolType::Fun;
-}
+bool ValTerm::isNotFunction() const { return value_.type() != SymbolType::Fun; }
 
-Term::Invertibility ValTerm::getInvertibility() const {
-    return Term::CONSTANT;
-}
+Term::Invertibility ValTerm::getInvertibility() const { return Term::CONSTANT; }
 
-void ValTerm::print(std::ostream &out) const {
-    out << value_;
-}
+void ValTerm::print(std::ostream &out) const { out << value_; }
 
 Term::SimplifyRet ValTerm::simplify(SimplifyState &state, bool positional, bool arithmetic, Logger &log) {
     static_cast<void>(state);
@@ -1440,20 +1351,16 @@ Term::ProjectRet ValTerm::project(bool rename, AuxGen &auxGen) {
     return std::make_tuple(nullptr, UTerm(clone()), UTerm(clone()));
 }
 
-bool ValTerm::hasVar() const {
-    return false;
-}
+bool ValTerm::hasVar() const { return false; }
 
-bool ValTerm::hasPool() const {
-    return false;
-}
+bool ValTerm::hasPool() const { return false; }
 
 void ValTerm::collect(VarTermBoundVec &vars, bool bound) const {
     static_cast<void>(vars);
     static_cast<void>(bound);
 }
 
-void ValTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void ValTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     static_cast<void>(vars);
     static_cast<void>(minLevel);
     static_cast<void>(maxLevel);
@@ -1465,13 +1372,9 @@ Symbol ValTerm::eval(bool &undefined, Logger &log) const {
     return value_;
 }
 
-bool ValTerm::match(Symbol const &val) const {
-    return value_ == val;
-}
+bool ValTerm::match(Symbol const &val) const { return value_ == val; }
 
-void ValTerm::unpool(UTermVec &x) const {
-    x.emplace_back(UTerm(clone()));
-}
+void ValTerm::unpool(UTermVec &x) const { x.emplace_back(UTerm(clone())); }
 
 UTerm ValTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, bool forceDefined) {
     static_cast<void>(arith);
@@ -1481,24 +1384,19 @@ UTerm ValTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, b
 }
 
 bool ValTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<ValTerm const*>(&other);
+    const auto *t = dynamic_cast<ValTerm const *>(&other);
     return (t != nullptr) && value_ == t->value_;
 }
 
-size_t ValTerm::hash() const {
-    return get_value_hash(typeid(ValTerm).hash_code(), value_);
-}
+size_t ValTerm::hash() const { return get_value_hash(typeid(ValTerm).hash_code(), value_); }
 
-ValTerm *ValTerm::clone() const {
-    return make_locatable<ValTerm>(loc(), value_).release();
-}
+ValTerm *ValTerm::clone() const { return make_locatable<ValTerm>(loc(), value_).release(); }
 
 Sig ValTerm::getSig() const {
     if (value_.type() == SymbolType::Fun) {
         return value_.sig();
     }
     throw std::logic_error("Term::getSig must not be called on ValTerm");
-
 }
 
 UTerm ValTerm::renameVars(RenameMap &names) const {
@@ -1535,21 +1433,14 @@ double ValTerm::estimate(double size, VarSet const &bound) const {
     return 0;
 }
 
-Symbol ValTerm::isEDB() const {
-    return value_;
-}
+Symbol ValTerm::isEDB() const { return value_; }
 
-bool ValTerm::isAtom() const {
-    return value_.type() == SymbolType::Fun;
-}
+bool ValTerm::isAtom() const { return value_.type() == SymbolType::Fun; }
 
 // {{{1 definition of VarTerm
 
-VarTerm::VarTerm(String name, const SVal& ref, unsigned level, bool bindRef)
-: name(name)
-, ref(name == "_" ? std::make_shared<Symbol>() : ref)
-, bindRef(bindRef)
-, level(level) {
+VarTerm::VarTerm(String name, const SVal &ref, unsigned level, bool bindRef)
+    : name(name), ref(name == "_" ? std::make_shared<Symbol>() : ref), bindRef(bindRef), level(level) {
     assert(ref || name == "_");
 }
 
@@ -1558,34 +1449,22 @@ bool VarTerm::addToLinearTerm(IETermVec &terms) const {
     return true;
 }
 
-unsigned VarTerm::projectScore() const {
-    return 0;
-}
+unsigned VarTerm::projectScore() const { return 0; }
 
 void VarTerm::rename(String name) {
     static_cast<void>(name);
     throw std::logic_error("must not be called");
 }
 
-unsigned VarTerm::getLevel() const {
-    return level;
-}
+unsigned VarTerm::getLevel() const { return level; }
 
-bool VarTerm::isNotNumeric() const {
-    return false;
-}
+bool VarTerm::isNotNumeric() const { return false; }
 
-bool VarTerm::isNotFunction() const {
-    return false;
-}
+bool VarTerm::isNotFunction() const { return false; }
 
-Term::Invertibility VarTerm::getInvertibility() const {
-    return Term::INVERTIBLE;
-}
+Term::Invertibility VarTerm::getInvertibility() const { return Term::INVERTIBLE; }
 
-void VarTerm::print(std::ostream &out) const {
-    out << name;
-}
+void VarTerm::print(std::ostream &out) const { out << name; }
 
 Term::SimplifyRet VarTerm::simplify(SimplifyState &state, bool positional, bool arithmetic, Logger &log) {
     static_cast<void>(log);
@@ -1615,19 +1494,15 @@ Term::ProjectRet VarTerm::project(bool rename, AuxGen &auxGen) {
     return std::make_tuple(wrap(UTerm(clone())), std::move(x), std::move(y));
 }
 
-bool VarTerm::hasVar() const {
-    return true;
-}
+bool VarTerm::hasVar() const { return true; }
 
-bool VarTerm::hasPool() const {
-    return false;
-}
+bool VarTerm::hasPool() const { return false; }
 
 void VarTerm::collect(VarTermBoundVec &vars, bool bound) const {
-    vars.emplace_back(const_cast<VarTerm*>(this), bound); // NOLINT
+    vars.emplace_back(const_cast<VarTerm *>(this), bound); // NOLINT
 }
 
-void VarTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void VarTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     if (minLevel <= level && level <= maxLevel) {
         vars.emplace(name);
     }
@@ -1647,9 +1522,7 @@ bool VarTerm::match(Symbol const &val) const {
     return val == *ref;
 }
 
-void VarTerm::unpool(UTermVec &x) const {
-    x.emplace_back(UTerm(clone()));
-}
+void VarTerm::unpool(UTermVec &x) const { x.emplace_back(UTerm(clone())); }
 
 UTerm VarTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, bool forceDefined) {
     static_cast<void>(arith);
@@ -1659,11 +1532,8 @@ UTerm VarTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, b
 }
 
 bool VarTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<VarTerm const*>(&other);
-    return t != nullptr &&
-           name == t->name &&
-           level == t->level &&
-           (name != "_" || t == this);
+    const auto *t = dynamic_cast<VarTerm const *>(&other);
+    return t != nullptr && name == t->name && level == t->level && (name != "_" || t == this);
 }
 
 size_t VarTerm::hash() const {
@@ -1673,18 +1543,14 @@ size_t VarTerm::hash() const {
     return get_value_hash(typeid(VarTerm).hash_code(), name, level);
 }
 
-VarTerm *VarTerm::clone() const {
-    return make_locatable<VarTerm>(loc(), name, ref, level, bindRef).release();
-}
+VarTerm *VarTerm::clone() const { return make_locatable<VarTerm>(loc(), name, ref, level, bindRef).release(); }
 
-Sig VarTerm::getSig() const {
-    throw std::logic_error("Term::getSig must not be called on VarTerm");
-}
+Sig VarTerm::getSig() const { throw std::logic_error("Term::getSig must not be called on VarTerm"); }
 
 UTerm VarTerm::renameVars(RenameMap &names) const {
     auto ret(names.emplace(name, std::make_pair(name, nullptr)));
     if (ret.second) {
-        ret.first->second.first  = ((bindRef ? "X" : "Y") + std::to_string(names.size() - 1)).c_str();
+        ret.first->second.first = ((bindRef ? "X" : "Y") + std::to_string(names.size() - 1)).c_str();
         ret.first->second.second = std::make_shared<Symbol>();
     }
     return make_locatable<VarTerm>(loc(), ret.first->second.first, ret.first->second.second, level, bindRef);
@@ -1694,9 +1560,7 @@ UGTerm VarTerm::gterm(RenameMap &names, ReferenceMap &refs) const {
     return gringo_make_unique<GVarTerm>(_newRef(names, refs));
 }
 
-void VarTerm::collectIds(VarSet &vars) const {
-    static_cast<void>(vars);
-}
+void VarTerm::collectIds(VarSet &vars) const { static_cast<void>(vars); }
 
 UTerm VarTerm::replace(Defines &defs, bool replace) {
     static_cast<void>(defs);
@@ -1708,21 +1572,13 @@ double VarTerm::estimate(double size, VarSet const &bound) const {
     return bound.find(name) == bound.end() ? size : 0.0;
 }
 
-Symbol VarTerm::isEDB() const {
-    return {};
-}
+Symbol VarTerm::isEDB() const { return {}; }
 
 // {{{1 definition of LinearTerm
 
-LinearTerm::LinearTerm(VarTerm const &var, int m, int n)
-: var_(static_cast<VarTerm*>(var.clone()))
-, m_(m)
-, n_(n) { }
+LinearTerm::LinearTerm(VarTerm const &var, int m, int n) : var_(static_cast<VarTerm *>(var.clone())), m_(m), n_(n) {}
 
-LinearTerm::LinearTerm(UVarTerm &&var, int m, int n)
-: var_(std::move(var))
-, m_(m)
-, n_(n) { }
+LinearTerm::LinearTerm(UVarTerm &&var, int m, int n) : var_(std::move(var)), m_(m), n_(n) {}
 
 bool LinearTerm::addToLinearTerm(IETermVec &terms) const {
     add_(terms, m_, var_.get());
@@ -1730,76 +1586,50 @@ bool LinearTerm::addToLinearTerm(IETermVec &terms) const {
     return true;
 }
 
-bool LinearTerm::isVar() const {
-    return m_ == 1 && n_ == 0;
-}
+bool LinearTerm::isVar() const { return m_ == 1 && n_ == 0; }
 
-LinearTerm::UVarTerm LinearTerm::toVar() {
-    return std::move(var_);
-}
+LinearTerm::UVarTerm LinearTerm::toVar() { return std::move(var_); }
 
 void LinearTerm::invert() {
     m_ *= -1;
     n_ *= -1;
 }
 
-void LinearTerm::add(int c) {
-    n_ += c;
-}
+void LinearTerm::add(int c) { n_ += c; }
 
 void LinearTerm::mul(int c) {
     m_ *= c;
     n_ *= c;
 }
 
-unsigned LinearTerm::projectScore() const {
-    return 0;
-}
+unsigned LinearTerm::projectScore() const { return 0; }
 
-void LinearTerm::rename(String name) {
-    throw std::logic_error("must not be called");
-}
+void LinearTerm::rename(String name) { throw std::logic_error("must not be called"); }
 
-bool LinearTerm::hasVar() const {
-    return true;
-}
+bool LinearTerm::hasVar() const { return true; }
 
-bool LinearTerm::hasPool() const {
-    return false;
-}
+bool LinearTerm::hasPool() const { return false; }
 
-void LinearTerm::collect(VarTermBoundVec &vars, bool bound) const {
-    var_->collect(vars, bound);
-}
+void LinearTerm::collect(VarTermBoundVec &vars, bool bound) const { var_->collect(vars, bound); }
 
-void LinearTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void LinearTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     var_->collect(vars, minLevel, maxLevel);
 }
 
-unsigned LinearTerm::getLevel() const {
-    return var_->getLevel();
-}
+unsigned LinearTerm::getLevel() const { return var_->getLevel(); }
 
-bool LinearTerm::isNotNumeric() const {
-    return false;
-}
+bool LinearTerm::isNotNumeric() const { return false; }
 
-bool LinearTerm::isNotFunction() const {
-    return true;
-}
+bool LinearTerm::isNotFunction() const { return true; }
 
-Term::Invertibility LinearTerm::getInvertibility() const {
-    return Term::INVERTIBLE;
-}
+Term::Invertibility LinearTerm::getInvertibility() const { return Term::INVERTIBLE; }
 
-void LinearTerm::print(std::ostream &out) const  {
+void LinearTerm::print(std::ostream &out) const {
     if (m_ == 1) {
         out << "(" << *var_ << "+" << n_ << ")";
-    }
-    else if (n_ == 0) {
+    } else if (n_ == 0) {
         out << "(" << m_ << "*" << *var_ << ")";
-    }
-    else {
+    } else {
         out << "(" << m_ << "*" << *var_ << "+" << n_ << ")";
     }
 }
@@ -1813,10 +1643,12 @@ Term::SimplifyRet LinearTerm::simplify(SimplifyState &state, bool positional, bo
 }
 
 Term::ProjectRet LinearTerm::project(bool rename, AuxGen &auxGen) {
-    assert(!rename); static_cast<void>(rename);
+    assert(!rename);
+    static_cast<void>(rename);
     UTerm y(auxGen.uniqueVar(loc(), 0, "#X"));
     UTerm x(wrap(UTerm(y->clone())));
-    return std::make_tuple(wrap(make_locatable<LinearTerm>(loc(), std::move(var_), m_, n_)), std::move(x), std::move(y));
+    return std::make_tuple(wrap(make_locatable<LinearTerm>(loc(), std::move(var_), m_, n_)), std::move(x),
+                           std::move(y));
 }
 
 Symbol LinearTerm::eval(bool &undefined, Logger &log) const {
@@ -1827,9 +1659,8 @@ Symbol LinearTerm::eval(bool &undefined, Logger &log) const {
         return Symbol::createNum(m_ * value.num() + n_);
     }
     if (!undefined_arg) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: operation undefined:\n"
-            << "  " << *this << "\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                         << "  " << *this << "\n";
     }
     undefined = true;
     return Symbol::createNum(0);
@@ -1846,9 +1677,7 @@ bool LinearTerm::match(Symbol const &val) const {
     return false;
 }
 
-void LinearTerm::unpool(UTermVec &x) const {
-    x.emplace_back(UTerm(clone()));
-}
+void LinearTerm::unpool(UTermVec &x) const { x.emplace_back(UTerm(clone())); }
 
 UTerm LinearTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, bool forceDefined) {
     if (forceDefined) {
@@ -1858,36 +1687,26 @@ UTerm LinearTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen
 }
 
 bool LinearTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<LinearTerm const*>(&other);
-    return t != nullptr &&
-           m_ == t->m_ &&
-           n_ == t->n_ &&
-           is_value_equal_to(var_, t->var_);
+    const auto *t = dynamic_cast<LinearTerm const *>(&other);
+    return t != nullptr && m_ == t->m_ && n_ == t->n_ && is_value_equal_to(var_, t->var_);
 }
 
-size_t LinearTerm::hash() const {
-    return get_value_hash(typeid(LinearTerm).hash_code(), m_, n_, var_->hash());
-}
+size_t LinearTerm::hash() const { return get_value_hash(typeid(LinearTerm).hash_code(), m_, n_, var_->hash()); }
 
-LinearTerm *LinearTerm::clone() const {
-    return make_locatable<LinearTerm>(loc(), *var_, m_, n_).release();
-}
+LinearTerm *LinearTerm::clone() const { return make_locatable<LinearTerm>(loc(), *var_, m_, n_).release(); }
 
-Sig LinearTerm::getSig() const {
-    throw std::logic_error("Term::getSig must not be called on LinearTerm");
-}
+Sig LinearTerm::getSig() const { throw std::logic_error("Term::getSig must not be called on LinearTerm"); }
 
 UTerm LinearTerm::renameVars(RenameMap &names) const {
-    return make_locatable<LinearTerm>(loc(), UVarTerm(static_cast<VarTerm*>(var_->renameVars(names).release())), m_, n_); // NOLINT
+    return make_locatable<LinearTerm>(loc(), UVarTerm(static_cast<VarTerm *>(var_->renameVars(names).release())), m_,
+                                      n_); // NOLINT
 }
 
 UGTerm LinearTerm::gterm(RenameMap &names, ReferenceMap &refs) const {
     return gringo_make_unique<GLinearTerm>(var_->_newRef(names, refs), m_, n_);
 }
 
-void LinearTerm::collectIds(VarSet &vars) const {
-    static_cast<void>(vars);
-}
+void LinearTerm::collectIds(VarSet &vars) const { static_cast<void>(vars); }
 
 UTerm LinearTerm::replace(Defines &defs, bool replace) {
     static_cast<void>(defs);
@@ -1895,19 +1714,13 @@ UTerm LinearTerm::replace(Defines &defs, bool replace) {
     return nullptr;
 }
 
-double LinearTerm::estimate(double size, VarSet const &bound) const {
-    return var_->estimate(size, bound);
-}
+double LinearTerm::estimate(double size, VarSet const &bound) const { return var_->estimate(size, bound); }
 
-Symbol LinearTerm::isEDB() const {
-    return {};
-}
+Symbol LinearTerm::isEDB() const { return {}; }
 
 // {{{1 definition of UnOpTerm
 
-UnOpTerm::UnOpTerm(UnOp op, UTerm &&arg)
-: op_(op)
-, arg_(std::move(arg)) { }
+UnOpTerm::UnOpTerm(UnOp op, UTerm &&arg) : op_(op), arg_(std::move(arg)) {}
 
 bool UnOpTerm::addToLinearTerm(IETermVec &terms) const {
     IETermVec arg;
@@ -1920,8 +1733,7 @@ bool UnOpTerm::addToLinearTerm(IETermVec &terms) const {
                 return false;
             }
             add_(terms, -term.coefficient, term.variable);
-        }
-        else {
+        } else {
             // cannot happen because simplify is be called before bound extraction
             return false;
         }
@@ -1929,24 +1741,14 @@ bool UnOpTerm::addToLinearTerm(IETermVec &terms) const {
     return true;
 }
 
-unsigned UnOpTerm::projectScore() const {
-    return arg_->projectScore();
-}
+unsigned UnOpTerm::projectScore() const { return arg_->projectScore(); }
 
-void UnOpTerm::rename(String name) {
-    throw std::logic_error("must not be called");
-}
+void UnOpTerm::rename(String name) { throw std::logic_error("must not be called"); }
 
-unsigned UnOpTerm::getLevel() const {
-    return arg_->getLevel();
-}
+unsigned UnOpTerm::getLevel() const { return arg_->getLevel(); }
 
-bool UnOpTerm::isNotNumeric() const {
-    return false;
-}
-bool UnOpTerm::isNotFunction() const {
-    return op_ != UnOp::NEG;
-}
+bool UnOpTerm::isNotNumeric() const { return false; }
+bool UnOpTerm::isNotFunction() const { return op_ != UnOp::NEG; }
 
 Term::Invertibility UnOpTerm::getInvertibility() const {
     return op_ == UnOp::NEG ? Term::INVERTIBLE : Term::NOT_INVERTIBLE;
@@ -1955,8 +1757,7 @@ Term::Invertibility UnOpTerm::getInvertibility() const {
 void UnOpTerm::print(std::ostream &out) const {
     if (op_ == UnOp::ABS) {
         out << "|" << *arg_ << "|";
-    }
-    else {
+    } else {
         // TODO: parenthesis are problematic if I want to use this term for predicates
         out << "(" << op_ << *arg_ << ")";
     }
@@ -1969,9 +1770,8 @@ Term::SimplifyRet UnOpTerm::simplify(SimplifyState &state, bool positional, bool
         return {};
     }
     if ((multiNeg && ret.notNumeric() && ret.notFunction()) || (!multiNeg && ret.notNumeric())) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: operation undefined:\n"
-            << "  " << *this << "\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                         << "  " << *this << "\n";
         return {};
     }
     switch (ret.type()) {
@@ -1997,25 +1797,20 @@ Term::SimplifyRet UnOpTerm::simplify(SimplifyState &state, bool positional, bool
 }
 
 Term::ProjectRet UnOpTerm::project(bool rename, AuxGen &auxGen) {
-    assert(!rename); static_cast<void>(rename);
+    assert(!rename);
+    static_cast<void>(rename);
     UTerm y(auxGen.uniqueVar(loc(), 0, "#X"));
     UTerm x(wrap(UTerm(y->clone())));
     return std::make_tuple(wrap(make_locatable<UnOpTerm>(loc(), op_, std::move(arg_))), std::move(x), std::move(y));
 }
 
-bool UnOpTerm::hasVar() const {
-    return arg_->hasVar();
-}
+bool UnOpTerm::hasVar() const { return arg_->hasVar(); }
 
-bool UnOpTerm::hasPool() const {
-    return arg_->hasPool();
-}
+bool UnOpTerm::hasPool() const { return arg_->hasPool(); }
 
-void UnOpTerm::collect(VarTermBoundVec &vars, bool bound) const {
-    arg_->collect(vars, bound && op_ == UnOp::NEG);
-}
+void UnOpTerm::collect(VarTermBoundVec &vars, bool bound) const { arg_->collect(vars, bound && op_ == UnOp::NEG); }
 
-void UnOpTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void UnOpTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     arg_->collect(vars, minLevel, maxLevel);
 }
 
@@ -2026,9 +1821,15 @@ Symbol UnOpTerm::eval(bool &undefined, Logger &log) const {
         undefined = undefined || undefined_arg;
         int num = value.num();
         switch (op_) {
-            case UnOp::NEG: { return Symbol::createNum(-num); }
-            case UnOp::ABS: { return Symbol::createNum(std::abs(num)); }
-            case UnOp::NOT: { return Symbol::createNum(~num); }
+            case UnOp::NEG: {
+                return Symbol::createNum(-num);
+            }
+            case UnOp::ABS: {
+                return Symbol::createNum(std::abs(num));
+            }
+            case UnOp::NOT: {
+                return Symbol::createNum(~num);
+            }
         }
         assert(false);
         return Symbol::createNum(0);
@@ -2038,15 +1839,14 @@ Symbol UnOpTerm::eval(bool &undefined, Logger &log) const {
         return value.flipSign();
     }
     if (!undefined_arg) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: operation undefined:\n"
-            << "  " << *this << "\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                         << "  " << *this << "\n";
     }
     undefined = true;
     return Symbol::createNum(0);
 }
 
-bool UnOpTerm::match(Symbol const &val) const  {
+bool UnOpTerm::match(Symbol const &val) const {
     if (op_ != UnOp::NEG) {
         throw std::logic_error("Term::rewriteArithmetics must be called before Term::match");
     }
@@ -2069,22 +1869,18 @@ UTerm UnOpTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, 
         Term::replace(arg_, arg_->rewriteArithmetics(arith, auxGen, false));
         return nullptr;
     }
-            return Term::insert(arith, auxGen, make_locatable<UnOpTerm>(loc(), op_, std::move(arg_)), forceDefined && op_ == UnOp::NEG);
-
+    return Term::insert(arith, auxGen, make_locatable<UnOpTerm>(loc(), op_, std::move(arg_)),
+                        forceDefined && op_ == UnOp::NEG);
 }
 
 bool UnOpTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<UnOpTerm const*>(&other);
+    const auto *t = dynamic_cast<UnOpTerm const *>(&other);
     return (t != nullptr) && op_ == t->op_ && is_value_equal_to(arg_, t->arg_);
 }
 
-size_t UnOpTerm::hash() const {
-    return get_value_hash(typeid(UnOpTerm).hash_code(), size_t(op_), arg_);
-}
+size_t UnOpTerm::hash() const { return get_value_hash(typeid(UnOpTerm).hash_code(), size_t(op_), arg_); }
 
-UnOpTerm *UnOpTerm::clone() const {
-    return make_locatable<UnOpTerm>(loc(), op_, get_clone(arg_)).release();
-}
+UnOpTerm *UnOpTerm::clone() const { return make_locatable<UnOpTerm>(loc(), op_, get_clone(arg_)).release(); }
 
 Sig UnOpTerm::getSig() const {
     if (op_ == UnOp::NEG) {
@@ -2120,9 +1916,7 @@ UGFunTerm UnOpTerm::gfunterm(RenameMap &names, ReferenceMap &refs) const {
     return fun;
 }
 
-void UnOpTerm::collectIds(VarSet &vars) const {
-    arg_->collectIds(vars);
-}
+void UnOpTerm::collectIds(VarSet &vars) const { arg_->collectIds(vars); }
 
 UTerm UnOpTerm::replace(Defines &defs, bool replace) {
     static_cast<void>(replace);
@@ -2130,24 +1924,16 @@ UTerm UnOpTerm::replace(Defines &defs, bool replace) {
     return nullptr;
 }
 
-double UnOpTerm::estimate(double size, VarSet const &bound) const {
-    return 0;
-}
+double UnOpTerm::estimate(double size, VarSet const &bound) const { return 0; }
 
-Symbol UnOpTerm::isEDB() const {
-    return {};
-}
+Symbol UnOpTerm::isEDB() const { return {}; }
 
-bool UnOpTerm::isAtom() const {
-    return op_ == UnOp::NEG && arg_->isAtom();
-}
+bool UnOpTerm::isAtom() const { return op_ == UnOp::NEG && arg_->isAtom(); }
 
 // {{{1 definition of BinOpTerm
 
 BinOpTerm::BinOpTerm(BinOp op, UTerm &&left, UTerm &&right)
-: op_(op)
-, left_(std::move(left))
-, right_(std::move(right)) { }
+    : op_(op), left_(std::move(left)), right_(std::move(right)) {}
 
 bool BinOpTerm::addToLinearTerm(IETermVec &terms) const {
     IETermVec left;
@@ -2198,32 +1984,18 @@ bool BinOpTerm::addToLinearTerm(IETermVec &terms) const {
     return false;
 }
 
-unsigned BinOpTerm::projectScore() const {
-    return left_->projectScore() + right_->projectScore();
-}
+unsigned BinOpTerm::projectScore() const { return left_->projectScore() + right_->projectScore(); }
 
-void BinOpTerm::rename(String name) {
-    throw std::logic_error("must not be called");
-}
+void BinOpTerm::rename(String name) { throw std::logic_error("must not be called"); }
 
-unsigned BinOpTerm::getLevel() const {
-    return std::max(left_->getLevel(), right_->getLevel());
-}
+unsigned BinOpTerm::getLevel() const { return std::max(left_->getLevel(), right_->getLevel()); }
 
-bool BinOpTerm::isNotNumeric() const  {
-    return false;
-}
-bool BinOpTerm::isNotFunction() const {
-    return true;
-}
+bool BinOpTerm::isNotNumeric() const { return false; }
+bool BinOpTerm::isNotFunction() const { return true; }
 
-Term::Invertibility BinOpTerm::getInvertibility() const {
-    return Term::NOT_INVERTIBLE;
-}
+Term::Invertibility BinOpTerm::getInvertibility() const { return Term::NOT_INVERTIBLE; }
 
-void BinOpTerm::print(std::ostream &out) const {
-    out << "(" << *left_ << op_ << *right_ << ")";
-}
+void BinOpTerm::print(std::ostream &out) const { out << "(" << *left_ << op_ << *right_ << ")"; }
 
 Term::SimplifyRet BinOpTerm::simplify(SimplifyState &state, bool positional, bool arithmetic, Logger &log) {
     auto retLeft(left_->simplify(state, false, true, log));
@@ -2231,28 +2003,26 @@ Term::SimplifyRet BinOpTerm::simplify(SimplifyState &state, bool positional, boo
     if (retLeft.undefined() || retRight.undefined()) {
         return {};
     }
-    if (retLeft.notNumeric() || retRight.notNumeric() || ((op_ == BinOp::DIV || op_ == BinOp::MOD) && retRight.isZero())) {
-        retLeft.update(left_, true); retRight.update(right_, true);
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: operation undefined:\n"
-            << "  " << *this << "\n";
+    if (retLeft.notNumeric() || retRight.notNumeric() ||
+        ((op_ == BinOp::DIV || op_ == BinOp::MOD) && retRight.isZero())) {
+        retLeft.update(left_, true);
+        retRight.update(right_, true);
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                         << "  " << *this << "\n";
         return {};
     }
     if (op_ == BinOp::MUL && (retLeft.isZero() || retRight.isZero())) {
         // NOTE: keep binary operation untouched
-    }
-    else if (retLeft.type() == SimplifyRet::CONSTANT && retRight.type() == SimplifyRet::CONSTANT) {
-        auto left  = retLeft.value().num();
+    } else if (retLeft.type() == SimplifyRet::CONSTANT && retRight.type() == SimplifyRet::CONSTANT) {
+        auto left = retLeft.value().num();
         auto right = retRight.value().num();
         if (op_ == BinOp::POW && left == 0 && right < 0) {
-            GRINGO_REPORT(log, Warnings::OperationUndefined)
-                << loc() << ": info: operation undefined:\n"
-                << "  " << *this << "\n";
+            GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                             << "  " << *this << "\n";
             return {};
         }
         return {Symbol::createNum(Gringo::eval(op_, left, right))};
-    }
-    else if (retLeft.type() == SimplifyRet::CONSTANT && retRight.type() == SimplifyRet::LINEAR) {
+    } else if (retLeft.type() == SimplifyRet::CONSTANT && retRight.type() == SimplifyRet::LINEAR) {
         if (op_ == BinOp::ADD) {
             retRight.lin().add(retLeft.value().num());
             return retRight;
@@ -2266,8 +2036,7 @@ Term::SimplifyRet BinOpTerm::simplify(SimplifyState &state, bool positional, boo
             retRight.lin().mul(retLeft.value().num());
             return retRight;
         }
-    }
-    else if (retLeft.type() == SimplifyRet::LINEAR && retRight.type() == SimplifyRet::CONSTANT) {
+    } else if (retLeft.type() == SimplifyRet::LINEAR && retRight.type() == SimplifyRet::CONSTANT) {
         if (op_ == BinOp::ADD) {
             retLeft.lin().add(retRight.value().num());
             return retLeft;
@@ -2288,26 +2057,24 @@ Term::SimplifyRet BinOpTerm::simplify(SimplifyState &state, bool positional, boo
 }
 
 Term::ProjectRet BinOpTerm::project(bool rename, AuxGen &auxGen) {
-    assert(!rename); static_cast<void>(rename);
+    assert(!rename);
+    static_cast<void>(rename);
     UTerm y(auxGen.uniqueVar(loc(), 0, "#X"));
     UTerm x(wrap(UTerm(y->clone())));
-    return std::make_tuple(wrap(make_locatable<BinOpTerm>(loc(), op_, std::move(left_), std::move(right_))), std::move(x), std::move(y));
+    return std::make_tuple(wrap(make_locatable<BinOpTerm>(loc(), op_, std::move(left_), std::move(right_))),
+                           std::move(x), std::move(y));
 }
 
-bool BinOpTerm::hasVar() const {
-    return left_->hasVar() || right_->hasVar();
-}
+bool BinOpTerm::hasVar() const { return left_->hasVar() || right_->hasVar(); }
 
-bool BinOpTerm::hasPool() const {
-    return left_->hasPool() || right_->hasPool();
-}
+bool BinOpTerm::hasPool() const { return left_->hasPool() || right_->hasPool(); }
 
 void BinOpTerm::collect(VarTermBoundVec &vars, bool bound) const {
     left_->collect(vars, false);
     right_->collect(vars, false);
 }
 
-void BinOpTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void BinOpTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     left_->collect(vars, minLevel, maxLevel);
     right_->collect(vars, minLevel, maxLevel);
 }
@@ -2316,19 +2083,16 @@ Symbol BinOpTerm::eval(bool &undefined, Logger &log) const {
     bool undefined_arg = false;
     Symbol l(left_->eval(undefined_arg, log));
     Symbol r(right_->eval(undefined_arg, log));
-    bool defined =
-        l.type() == SymbolType::Num &&
-        r.type() == SymbolType::Num &&
-        ((op_ != BinOp::DIV && op_ != BinOp::MOD) || r.num() != 0) &&
-        (op_ != BinOp::POW || l.num() != 0 || r.num() >= 0);
+    bool defined = l.type() == SymbolType::Num && r.type() == SymbolType::Num &&
+                   ((op_ != BinOp::DIV && op_ != BinOp::MOD) || r.num() != 0) &&
+                   (op_ != BinOp::POW || l.num() != 0 || r.num() >= 0);
     if (defined) {
         undefined = undefined || undefined_arg;
         return Symbol::createNum(Gringo::eval(op_, l.num(), r.num()));
     }
     if (!undefined_arg) {
-        GRINGO_REPORT(log, Warnings::OperationUndefined)
-            << loc() << ": info: operation undefined:\n"
-            << "  " << *this << "\n";
+        GRINGO_REPORT(log, Warnings::OperationUndefined) << loc() << ": info: operation undefined:\n"
+                                                         << "  " << *this << "\n";
     }
     undefined = true;
     return Symbol::createNum(0);
@@ -2340,7 +2104,9 @@ bool BinOpTerm::match(Symbol const &val) const {
 }
 
 void BinOpTerm::unpool(UTermVec &x) const {
-    auto f = [&](UTerm &&l, UTerm &&r) { x.emplace_back(make_locatable<BinOpTerm>(loc(), op_, std::move(l), std::move(r))); };
+    auto f = [&](UTerm &&l, UTerm &&r) {
+        x.emplace_back(make_locatable<BinOpTerm>(loc(), op_, std::move(l), std::move(r)));
+    };
     Term::unpool(left_, right_, Gringo::unpool, Gringo::unpool, f);
 }
 
@@ -2349,21 +2115,18 @@ UTerm BinOpTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen,
 }
 
 bool BinOpTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<BinOpTerm const*>(&other);
-    return (t != nullptr) && op_ == t->op_ && is_value_equal_to(left_, t->left_) && is_value_equal_to(right_, t->right_);
+    const auto *t = dynamic_cast<BinOpTerm const *>(&other);
+    return (t != nullptr) && op_ == t->op_ && is_value_equal_to(left_, t->left_) &&
+           is_value_equal_to(right_, t->right_);
 }
 
-size_t BinOpTerm::hash() const {
-    return get_value_hash(typeid(BinOpTerm).hash_code(), size_t(op_), left_, right_);
-}
+size_t BinOpTerm::hash() const { return get_value_hash(typeid(BinOpTerm).hash_code(), size_t(op_), left_, right_); }
 
 BinOpTerm *BinOpTerm::clone() const {
     return make_locatable<BinOpTerm>(loc(), op_, get_clone(left_), get_clone(right_)).release();
 }
 
-Sig BinOpTerm::getSig() const {
-    throw std::logic_error("Term::getSig must not be called on DotsTerm");
-}
+Sig BinOpTerm::getSig() const { throw std::logic_error("Term::getSig must not be called on DotsTerm"); }
 
 UTerm BinOpTerm::renameVars(RenameMap &names) const {
     UTerm term(left_->renameVars(names));
@@ -2392,55 +2155,37 @@ double BinOpTerm::estimate(double size, VarSet const &bound) const {
     return 0;
 }
 
-Symbol BinOpTerm::isEDB() const {
-    return {};
-}
+Symbol BinOpTerm::isEDB() const { return {}; }
 
 // {{{1 definition of DotsTerm
 
-DotsTerm::DotsTerm(UTerm &&left, UTerm &&right)
-: left_(std::move(left))
-, right_(std::move(right)) { }
+DotsTerm::DotsTerm(UTerm &&left, UTerm &&right) : left_(std::move(left)), right_(std::move(right)) {}
 
 bool DotsTerm::addToLinearTerm(IETermVec &terms) const {
     static_cast<void>(terms);
     throw std::logic_error("PoolTerm::addToLinearTerm must not be called");
 }
 
-unsigned DotsTerm::projectScore() const {
-    return 2;
-}
+unsigned DotsTerm::projectScore() const { return 2; }
 
-void DotsTerm::rename(String name) {
-    throw std::logic_error("must not be called");
-}
+void DotsTerm::rename(String name) { throw std::logic_error("must not be called"); }
 
-unsigned DotsTerm::getLevel() const {
-    return std::max(left_->getLevel(), right_->getLevel());
-}
+unsigned DotsTerm::getLevel() const { return std::max(left_->getLevel(), right_->getLevel()); }
 
-bool DotsTerm::isNotNumeric() const  {
-    return false;
-}
+bool DotsTerm::isNotNumeric() const { return false; }
 
-bool DotsTerm::isNotFunction() const {
-    return true;
-}
+bool DotsTerm::isNotFunction() const { return true; }
 
-Term::Invertibility DotsTerm::getInvertibility() const {
-    return Term::NOT_INVERTIBLE;
-}
+Term::Invertibility DotsTerm::getInvertibility() const { return Term::NOT_INVERTIBLE; }
 
-void DotsTerm::print(std::ostream &out) const {
-    out << "(" << *left_ << ".." << *right_ << ")";
-}
+void DotsTerm::print(std::ostream &out) const { out << "(" << *left_ << ".." << *right_ << ")"; }
 
 Term::SimplifyRet DotsTerm::simplify(SimplifyState &state, bool positional, bool arithmetic, Logger &log) {
-    if (!left_->simplify(state, false, false, log).update(left_, true).undefined() && !right_->simplify(state, false, false, log).update(right_, true).undefined()) {
-        return { state.createDots(loc(), std::move(left_), std::move(right_)) };
+    if (!left_->simplify(state, false, false, log).update(left_, true).undefined() &&
+        !right_->simplify(state, false, false, log).update(right_, true).undefined()) {
+        return {state.createDots(loc(), std::move(left_), std::move(right_))};
     }
     return {};
-
 }
 
 Term::ProjectRet DotsTerm::project(bool rename, AuxGen &gen) {
@@ -2449,20 +2194,16 @@ Term::ProjectRet DotsTerm::project(bool rename, AuxGen &gen) {
     throw std::logic_error("Term::project must be called after Term::simplify");
 }
 
-bool DotsTerm::hasVar() const {
-    return left_->hasVar() || right_->hasVar();
-}
+bool DotsTerm::hasVar() const { return left_->hasVar() || right_->hasVar(); }
 
-bool DotsTerm::hasPool() const  {
-    return left_->hasPool() || right_->hasPool();
-}
+bool DotsTerm::hasPool() const { return left_->hasPool() || right_->hasPool(); }
 
 void DotsTerm::collect(VarTermBoundVec &vars, bool bound) const {
     left_->collect(vars, false);
     right_->collect(vars, false);
 }
 
-void DotsTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void DotsTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     left_->collect(vars, minLevel, maxLevel);
     right_->collect(vars, minLevel, maxLevel);
 }
@@ -2473,7 +2214,7 @@ Symbol DotsTerm::eval(bool &undefined, Logger &log) const {
     throw std::logic_error("Term::rewriteDots must be called before Term::eval");
 }
 
-bool DotsTerm::match(Symbol const &val) const  {
+bool DotsTerm::match(Symbol const &val) const {
     static_cast<void>(val);
     throw std::logic_error("Term::rewriteDots must be called before Term::match");
 }
@@ -2496,24 +2237,20 @@ bool DotsTerm::operator==(Term const &other) const {
     return false;
 }
 
-size_t DotsTerm::hash() const {
-    return get_value_hash(typeid(DotsTerm).hash_code(), left_, right_);
-}
+size_t DotsTerm::hash() const { return get_value_hash(typeid(DotsTerm).hash_code(), left_, right_); }
 
 DotsTerm *DotsTerm::clone() const {
     return make_locatable<DotsTerm>(loc(), get_clone(left_), get_clone(right_)).release();
 }
 
-Sig DotsTerm::getSig() const {
-    throw std::logic_error("Term::getSig must not be called on LuaTerm");
-}
+Sig DotsTerm::getSig() const { throw std::logic_error("Term::getSig must not be called on LuaTerm"); }
 
 UTerm DotsTerm::renameVars(RenameMap &names) const {
     UTerm term(left_->renameVars(names));
     return make_locatable<DotsTerm>(loc(), std::move(term), right_->renameVars(names));
 }
 
-UGTerm DotsTerm::gterm(RenameMap &names, ReferenceMap &refs) const  {
+UGTerm DotsTerm::gterm(RenameMap &names, ReferenceMap &refs) const {
     return gringo_make_unique<GVarTerm>(_newRef(names, refs));
 }
 
@@ -2535,28 +2272,20 @@ double DotsTerm::estimate(double size, VarSet const &bound) const {
     return 0;
 }
 
-Symbol DotsTerm::isEDB() const {
-    return {};
-}
+Symbol DotsTerm::isEDB() const { return {}; }
 
 // {{{1 definition of LuaTerm
 
-LuaTerm::LuaTerm(String name, UTermVec &&args)
-: name_(name)
-, args_(std::move(args)) { }
+LuaTerm::LuaTerm(String name, UTermVec &&args) : name_(name), args_(std::move(args)) {}
 
 bool LuaTerm::addToLinearTerm(IETermVec &terms) const {
     static_cast<void>(terms);
     throw std::logic_error("PoolTerm::addToLinearTerm must not be called");
 }
 
-unsigned LuaTerm::projectScore() const {
-    return 2;
-}
+unsigned LuaTerm::projectScore() const { return 2; }
 
-void LuaTerm::rename(String name) {
-    throw std::logic_error("must not be called");
-}
+void LuaTerm::rename(String name) { throw std::logic_error("must not be called"); }
 
 unsigned LuaTerm::getLevel() const {
     unsigned level = 0;
@@ -2566,16 +2295,10 @@ unsigned LuaTerm::getLevel() const {
     return level;
 }
 
-bool LuaTerm::isNotNumeric() const {
-    return false;
-}
-bool LuaTerm::isNotFunction() const {
-    return false;
-}
+bool LuaTerm::isNotNumeric() const { return false; }
+bool LuaTerm::isNotFunction() const { return false; }
 
-Term::Invertibility LuaTerm::getInvertibility() const {
-    return Term::NOT_INVERTIBLE;
-}
+Term::Invertibility LuaTerm::getInvertibility() const { return Term::NOT_INVERTIBLE; }
 
 void LuaTerm::print(std::ostream &out) const {
     out << "@" << name_ << "(";
@@ -2593,7 +2316,8 @@ Term::SimplifyRet LuaTerm::simplify(SimplifyState &state, bool positional, bool 
 }
 
 Term::ProjectRet LuaTerm::project(bool rename, AuxGen &auxGen) {
-    assert(!rename); static_cast<void>(rename);
+    assert(!rename);
+    static_cast<void>(rename);
     UTerm y(auxGen.uniqueVar(loc(), 0, "#X"));
     UTerm x(wrap(UTerm(y->clone())));
     return std::make_tuple(make_locatable<LuaTerm>(loc(), name_, std::move(args_)), std::move(x), std::move(y));
@@ -2623,7 +2347,7 @@ void LuaTerm::collect(VarTermBoundVec &vars, bool bound) const {
     }
 }
 
-void LuaTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void LuaTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     for (const auto &y : args_) {
         y->collect(vars, minLevel, maxLevel);
     }
@@ -2650,21 +2374,15 @@ UTerm LuaTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen, b
 }
 
 bool LuaTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<LuaTerm const*>(&other);
+    const auto *t = dynamic_cast<LuaTerm const *>(&other);
     return (t != nullptr) && name_ == t->name_ && is_value_equal_to(args_, t->args_);
 }
 
-size_t LuaTerm::hash() const {
-    return get_value_hash(typeid(LuaTerm).hash_code(), name_, args_);
-}
+size_t LuaTerm::hash() const { return get_value_hash(typeid(LuaTerm).hash_code(), name_, args_); }
 
-LuaTerm *LuaTerm::clone() const {
-    return make_locatable<LuaTerm>(loc(), name_, get_clone(args_)).release();
-}
+LuaTerm *LuaTerm::clone() const { return make_locatable<LuaTerm>(loc(), name_, get_clone(args_)).release(); }
 
-Sig LuaTerm::getSig() const {
-    return {name_, numeric_cast<uint32_t>(args_.size()), false};
-}
+Sig LuaTerm::getSig() const { return {name_, numeric_cast<uint32_t>(args_.size()), false}; }
 
 UTerm LuaTerm::renameVars(RenameMap &names) const {
     UTermVec args;
@@ -2698,24 +2416,18 @@ double LuaTerm::estimate(double size, VarSet const &bound) const {
     return 0;
 }
 
-Symbol LuaTerm::isEDB() const {
-    return {};
-}
+Symbol LuaTerm::isEDB() const { return {}; }
 
 // {{{1 definition of FunctionTerm
 
-FunctionTerm::FunctionTerm(String name, UTermVec &&args)
-: name_(name)
-, args_(std::move(args)) { }
+FunctionTerm::FunctionTerm(String name, UTermVec &&args) : name_(name), args_(std::move(args)) {}
 
 bool FunctionTerm::addToLinearTerm(IETermVec &terms) const {
     static_cast<void>(terms);
     return false;
 }
 
-UTermVec const &FunctionTerm::arguments() {
-    return args_;
-};
+UTermVec const &FunctionTerm::arguments() { return args_; };
 
 unsigned FunctionTerm::projectScore() const {
     unsigned ret = 0;
@@ -2725,9 +2437,7 @@ unsigned FunctionTerm::projectScore() const {
     return ret;
 }
 
-void FunctionTerm::rename(String name) {
-    name_ = name;
-}
+void FunctionTerm::rename(String name) { name_ = name; }
 
 unsigned FunctionTerm::getLevel() const {
     unsigned level = 0;
@@ -2737,16 +2447,10 @@ unsigned FunctionTerm::getLevel() const {
     return level;
 }
 
-bool FunctionTerm::isNotNumeric() const {
-    return true;
-}
-bool FunctionTerm::isNotFunction() const {
-    return false;
-}
+bool FunctionTerm::isNotNumeric() const { return true; }
+bool FunctionTerm::isNotFunction() const { return false; }
 
-Term::Invertibility FunctionTerm::getInvertibility() const {
-    return Term::INVERTIBLE;
-}
+Term::Invertibility FunctionTerm::getInvertibility() const { return Term::INVERTIBLE; }
 
 void FunctionTerm::print(std::ostream &out) const {
     out << name_ << "(";
@@ -2759,14 +2463,14 @@ void FunctionTerm::print(std::ostream &out) const {
 
 Term::SimplifyRet FunctionTerm::simplify(SimplifyState &state, bool positional, bool arithmetic, Logger &log) {
     static_cast<void>(arithmetic);
-    bool constant  = true;
+    bool constant = true;
     bool projected = false;
     for (auto &arg : args_) {
         auto ret(arg->simplify(state, positional, false, log));
         if (ret.undefined()) {
             return {};
         }
-        constant  = constant  && ret.constant();
+        constant = constant && ret.constant();
         projected = projected || ret.project();
         ret.update(arg, false);
     }
@@ -2790,10 +2494,8 @@ Term::ProjectRet FunctionTerm::project(bool rename, AuxGen &auxGen) {
     if (rename) {
         name_ = String((std::string("#p_") + name_.c_str()).c_str());
     }
-    return std::make_tuple(
-            nullptr,
-            make_locatable<FunctionTerm>(loc(), name_, std::move(argsProjected)),
-            make_locatable<FunctionTerm>(loc(), oldName, std::move(argsProject)));
+    return std::make_tuple(nullptr, make_locatable<FunctionTerm>(loc(), name_, std::move(argsProjected)),
+                           make_locatable<FunctionTerm>(loc(), oldName, std::move(argsProject)));
 }
 
 bool FunctionTerm::hasVar() const {
@@ -2820,7 +2522,7 @@ void FunctionTerm::collect(VarTermBoundVec &vars, bool bound) const {
     }
 }
 
-void FunctionTerm::collect(VarSet &vars, unsigned minLevel , unsigned maxLevel) const {
+void FunctionTerm::collect(VarSet &vars, unsigned minLevel, unsigned maxLevel) const {
     for (const auto &y : args_) {
         y->collect(vars, minLevel, maxLevel);
     }
@@ -2863,21 +2565,17 @@ UTerm FunctionTerm::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxG
 }
 
 bool FunctionTerm::operator==(Term const &other) const {
-    const auto *t = dynamic_cast<FunctionTerm const*>(&other);
+    const auto *t = dynamic_cast<FunctionTerm const *>(&other);
     return (t != nullptr) && name_ == t->name_ && is_value_equal_to(args_, t->args_);
 }
 
-size_t FunctionTerm::hash() const {
-    return get_value_hash(typeid(FunctionTerm).hash_code(), name_, args_);
-}
+size_t FunctionTerm::hash() const { return get_value_hash(typeid(FunctionTerm).hash_code(), name_, args_); }
 
 FunctionTerm *FunctionTerm::clone() const {
     return make_locatable<FunctionTerm>(loc(), name_, get_clone(args_)).release();
 }
 
-Sig FunctionTerm::getSig() const {
-    return {name_, numeric_cast<uint32_t>(args_.size()), false};
-}
+Sig FunctionTerm::getSig() const { return {name_, numeric_cast<uint32_t>(args_.size()), false}; }
 
 UTerm FunctionTerm::renameVars(RenameMap &names) const {
     UTermVec args;
@@ -2887,9 +2585,7 @@ UTerm FunctionTerm::renameVars(RenameMap &names) const {
     return make_locatable<FunctionTerm>(loc(), name_, std::move(args));
 }
 
-UGTerm FunctionTerm::gterm(RenameMap &names, ReferenceMap &refs) const {
-    return gfunterm(names, refs);
-}
+UGTerm FunctionTerm::gterm(RenameMap &names, ReferenceMap &refs) const { return gfunterm(names, refs); }
 
 UGFunTerm FunctionTerm::gfunterm(RenameMap &names, ReferenceMap &refs) const {
     UGTermVec args;
@@ -2937,9 +2633,7 @@ Symbol FunctionTerm::isEDB() const {
     return Symbol::createFun(name_, Potassco::toSpan(cache_));
 }
 
-bool FunctionTerm::isAtom() const {
-    return true;
-}
+bool FunctionTerm::isAtom() const { return true; }
 
 // }}}1
 

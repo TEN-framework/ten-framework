@@ -4,6 +4,8 @@
 <p align="center">
     <a href="https://github.com/ckormanyos/wide-integer/actions">
         <img src="https://github.com/ckormanyos/wide-integer/actions/workflows/wide_integer.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://github.com/ckormanyos/wide-integer/actions">
+        <img src="https://github.com/ckormanyos/wide-integer/actions/workflows/wide_integer_fuzzing.yml/badge.svg" alt="Build Status"></a>
     <a href="https://github.com/ckormanyos/wide-integer/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc">
         <img src="https://custom-icon-badges.herokuapp.com/github/issues-raw/ckormanyos/wide-integer?logo=github" alt="Issues" /></a>
     <a href="https://github.com/ckormanyos/wide-integer/actions?query=workflow%3ACodeQL">
@@ -22,7 +24,7 @@
         <img src="https://img.shields.io/github/commit-activity/y/ckormanyos/wide-integer" alt="GitHub commit activity" /></a>
     <a href="https://github.com/ckormanyos/wide-integer">
         <img src="https://img.shields.io/github/languages/code-size/ckormanyos/wide-integer" alt="GitHub code size in bytes" /></a>
-    <a href="https://godbolt.org/z/b6qoaMf4e" alt="godbolt">
+    <a href="https://godbolt.org/z/Gj7cEc3jc" alt="godbolt">
         <img src="https://img.shields.io/badge/try%20it%20on-godbolt-green" /></a>
 </p>
 
@@ -71,7 +73,7 @@ as shown in the [examples](./examples).
   - Clean header-only C++14 design.
   - Seamless portability to any modern C++14, 17, 20, 23 compiler and beyond.
   - Scalability with small memory footprint and efficiency suitable for both PC/workstation systems as well as _bare-metal_ embedded systems.
-  - C++20 `constexpr`-_ness_ for construction, cast to built-in types, binary arithmetic, comparison operations, some elementary functions and more.
+  - C++14, 17, 20, 23 and beyond `constexpr`-ness.
 
 ## Quick start
 
@@ -102,26 +104,27 @@ See also the following informative links to Wolfram Alpha(R).
 
 This example, compiled with successful output result,
 is shown in its entirety in the following
-[short link](https://godbolt.org/z/eWKzqx77G) to [godbolt](https://godbolt.org).
+[short link](https://godbolt.org/z/bjxxrK1xP) to [godbolt](https://godbolt.org).
 
 In particular,
 
 ```cpp
-#include <iostream>
-
 #include <math/wide_integer/uintwide_t.h>
 
-using uint512_t = ::math::wide_integer::uintwide_t<512U, std::uint32_t>;
-
-static const uint512_t x = 3U;
+#include <iostream>
 
 auto main() -> int
 {
-  // Compute x^301, i.e., 3^301.
+  using uint512_t = ::math::wide_integer::uintwide_t<512U, std::uint32_t>;
+
+  const uint512_t x { 3U };
+
   const auto p3 = pow(x, 301);
 
   // 410674437175765127973978082146264947899391086876012309414440570235106991532497229781400618467066824164751453321793982128440538198297087323698003
-  std::cout << p3 << std::endl;
+  std::cout << "p3: " << p3 << std::endl;
+
+  std::cout << "Cast p3 to double: " << double { p3 } << std::endl;
 }
 ```
 
@@ -337,10 +340,11 @@ as well as MSVC level 4 warnings active on the correspondoing platforms.
 For additional in-depth syntax checking, clang-tidy is used both in CI
 as well as in offline checks to improve static code quality.
 
-Both GCC's run-time
+GCC's run-time
 [sanitizers](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html)
-as well as [_valgrind_](https://valgrind.org) (see also [1] and [2] in the References below)
 are used in CI in order to help assure dynamic quality.
+This effort also includes _fuzzing_ with
+[libFuzzer](https://llvm.org/docs/LibFuzzer.html).
 
 Additional quality checks are performed on pull-request
 and merge to master using modern third party open-source services.
@@ -367,18 +371,19 @@ with a simple mixture of 256-bit and 512-bit unsigned integral types.
 
 This example, compiled with successful output result,
 is shown in its entirety in the following
-[short link](https://godbolt.org/z/fq9E5aW9v) to [godbolt](https://godbolt.org).
+[short link](https://godbolt.org/z/Gj7cEc3jc) to [godbolt](https://godbolt.org).
 
 ```cpp
+#include <math/wide_integer/uintwide_t.h>
+
 #include <iomanip>
 #include <iostream>
-
-#include <math/wide_integer/uintwide_t.h>
+#include <sstream>
 
 auto main() -> int
 {
-  using ::math::wide_integer::uint256_t;
-  using ::math::wide_integer::uint512_t;
+  using uint256_t = ::math::wide_integer::uint256_t;
+  using uint512_t = ::math::wide_integer::uint512_t;
 
   // Construction from string. Additional constructors
   // are available from other built-in types.
@@ -387,24 +392,24 @@ auto main() -> int
   const uint256_t b("0x166D63E0202B3D90ECCEAA046341AB504658F55B974A7FD63733ECF89DD0DF75");
 
   // Elementary arithmetic operations.
-  const auto c = uint512_t(a) * uint512_t(b);
-  const auto d = (a / b);
+  const uint512_t c = (uint512_t(a) * uint512_t(b));
+  const uint256_t d = (a / b);
 
   // Logical comparison.
   const auto result_is_ok = (   (c == "0x1573D6A7CEA734D99865C4F428184983CDB018B80E9CC44B83C773FBE11993E7E491A360C57EB4306C61F9A04F7F7D99BE3676AAD2D71C5592D5AE70F84AF076")
                              && (d == "0xA"));
 
   // Print the hexadecimal representation string output.
-  const auto flg = std::cout.flags();
+  std::stringstream strm;
 
-  std::cout << "0x" << std::hex << std::uppercase << c << std::endl;
-  std::cout << "0x" << std::hex << std::uppercase << d << std::endl;
+  strm << "0x" << std::hex << std::uppercase << c << '\n';
+  strm << "0x" << std::hex << std::uppercase << d << '\n';
 
   // Visualize if the result is OK.
 
-  std::cout << "result_is_ok: " << std::boolalpha << result_is_ok << std::endl;
+  strm << "result_is_ok: " << std::boolalpha << result_is_ok;
 
-  std::cout.flags(flg);
+  std::cout << strm.str() << std::endl;
 }
 ```
 
@@ -419,13 +424,13 @@ The example below calculates an integer square root.
 
 This example, compiled with successful output result,
 is shown in its entirety in the following
-[short link](https://godbolt.org/z/Gf4sfeP48) to [godbolt](https://godbolt.org).
+[short link](https://godbolt.org/z/KofWbMq8M) to [godbolt](https://godbolt.org).
 
 ```cpp
+#include <math/wide_integer/uintwide_t.h>
+
 #include <iomanip>
 #include <iostream>
-
-#include <math/wide_integer/uintwide_t.h>
 
 auto main() -> int
 {
@@ -437,20 +442,27 @@ auto main() -> int
 
   const auto result_is_ok = (s == "0xFA5FE7853F1D4AD92BDF244179CA178B");
 
+  const auto flg = std::cout.flags();
+
   std::cout << "result_is_ok: " << std::boolalpha << result_is_ok << std::endl;
+
+  std::cout.flags(flg);
+
+  return (result_is_ok ? 0 : -1);
 }
 ```
 
 The following sample performs add, subtract, multiply and divide of `uint48_t`.
 See this example also in the following
-[short link](https://godbolt.org/z/vMqWav5P6) to [godbolt](https://godbolt.org).
+[short link](https://godbolt.org/z/hc8GWMhed) to [godbolt](https://godbolt.org).
 
 ```cpp
+#include <math/wide_integer/uintwide_t.h>
+
 #include <iomanip>
 #include <iostream>
 #include <random>
-
-#include <math/wide_integer/uintwide_t.h>
+#include <sstream>
 
 auto main() -> int
 {
@@ -485,7 +497,11 @@ auto main() -> int
                                  && (static_cast<std::uint64_t>(c_mul) == static_cast<std::uint64_t>((a64 * b64) & static_cast<std::uint64_t>(UINT64_C(0x0000FFFFFFFFFFFF))))
                                  && (static_cast<std::uint64_t>(c_div) == static_cast<std::uint64_t>((a64 / b64) & static_cast<std::uint64_t>(UINT64_C(0x0000FFFFFFFFFFFF))))));
 
-  std::cout << "result_is_ok: " << std::boolalpha << result_is_ok << std::endl;
+  std::stringstream strm { };
+
+  strm << "result_is_ok: " << std::boolalpha << result_is_ok;
+
+  std::cout << strm.str() << std::endl;
 }
 ```
 
@@ -497,13 +513,14 @@ it is large enough to hold the value of $10^{3,333}$
 prior to (and following) the cube root operation.
 
 See this example fully worked out at the following
-[short link](https://godbolt.org/z/aKKesPK36) to [godbolt](https://godbolt.org)
+[short link](https://godbolt.org/z/nE1eq7h6M) to [godbolt](https://godbolt.org)
 
 ```cpp
+#include <math/wide_integer/uintwide_t.h>
+
 #include <iomanip>
 #include <iostream>
-
-#include <math/wide_integer/uintwide_t.h>
+#include <sstream>
 
 auto main() -> int
 {
@@ -526,9 +543,13 @@ auto main() -> int
 
   const auto result_is_ok = (s == uint11264_t(str_control.data()));
 
-  std::cout << s << std::endl;
+  std::stringstream strm { };
 
-  std::cout << "result_is_ok: " << std::boolalpha << result_is_ok << std::endl;
+  strm << s;
+
+  strm << "\nresult_is_ok: " << std::boolalpha << result_is_ok;
+
+  std::cout << strm.str() << std::endl;
 }
 ```
 
@@ -569,8 +590,6 @@ enabled or disabled at compile time with the compiler switches:
 #define WIDE_INTEGER_HAS_MUL_8_BY_8_UNROLL
 #define WIDE_INTEGER_DISABLE_TRIVIAL_COPY_AND_STD_LAYOUT_CHECKS
 #define WIDE_INTEGER_NAMESPACE
-#define WIDE_INTEGER_DISABLE_WIDE_INTEGER_CONSTEXPR
-#define WIDE_INTEGER_TEST_REPRESENTATION_AS_STD_LIST
 #define WIDE_INTEGER_DISABLE_PRIVATE_CLASS_DATA_MEMBERS
 #define WIDE_INTEGER_HAS_CLZ_LIMB_OPTIMIZATIONS
 ```
@@ -724,47 +743,6 @@ In this default state, `namespace` `::math::wide_integer` is used
 and the `uintwide_t` class and its associated implementation
 details reside therein.
 
-Domain-specific, non-supported prototyping can be (partially)
-enabled by defining the macro
-
-```cpp
-#define WIDE_INTEGER_DISABLE_WIDE_INTEGER_CONSTEXPR
-```
-
-This advanced macro disables most C++20 `constexpr` features.
-It also disables standard layout and trivially constructable
-attributes.This macro can be used (if needed)
-when progressive prototyping or other non-standard investigations
-require disabling most of wide-integer's default-supplied
-C++20 `constexpr`-handling.
-
-This might be useful when _manually_ substituting
-non-standard, alternate containers instead of using
-wide-integer's default-supplied containers.
-Note: During verification steps of wide-integer,
-for instance, this macro has been used when performing
-algorithmic proof-of-concept via use of `std::list`
-for storage containters (instead of the default-supplied
-dynamic/static array-like containers).
-
-```cpp
-#define WIDE_INTEGER_TEST_REPRESENTATION_AS_STD_LIST
-```
-
-This macro is used only for testing the correct functionality
-of wide-integer when the internal storage representation is
-`std::list<limb_type>`. This feature is useful for verifying
-that the internal algorithms used in wide-integer remain entirely
-iterator-based and do not require any use of random-access
-iteration whatsoever.
-
-When defining the macro `WIDE_INTEGER_TEST_REPRESENTATION_AS_STD_LIST`,
-the macro `WIDE_INTEGER_DISABLE_WIDE_INTEGER_CONSTEXPR` will also
-be defined automatically in order to _disable_
-wide-integer's C++20 `constexpr`-ness. This is necessary
-because the `std::list` container is incompatible with some or most
-of wide-integer's C++20 `constexpr`-ness.
-
 ```cpp
 #define WIDE_INTEGER_DISABLE_PRIVATE_CLASS_DATA_MEMBERS
 ```
@@ -773,7 +751,7 @@ This optional macro can be used to switch `uintwide_t`'s
 data member access from _private_ to _public_. This allows the
 `uintwide_t` class to be used as a so-called _structured_ class,
 such as is needed for constant-valued template parameters
-in the sense of C++20's `constexpr`-ness.
+in a `constexpr` context.
 This preprocessor switch was invented based on the discussion in
 [issue 335](https://github.com/ckormanyos/wide-integer/issues/335)
 
@@ -797,26 +775,24 @@ This preprocessor switch was motivated by the discussion in
 By default, the preprocessor switch `WIDE_INTEGER_HAS_CLZ_LIMB_OPTIMIZATIONS`
 is not defined and CLZ-limb optimizations are default-_disabled_.
 
-### C++14, 17, 20 `constexpr` support
+### C++14, 17, 20, 23 and beyond `constexpr` support
 
-When using C++20 `uintwide_t` supports compile-time
-`constexpr` construction and evaluation of results
-of binary arithmetic, comparison operators
-and various elementary functions.
-The following code, for instance, shows compile-time instantiations
+`uintwide_t` supports C++14, 17, 20, 23 and beyond compile-time
+`constexpr`-ness for all constructions, casts, operations,
+evaluation of function results, etc.
+
+The code below, for instance, shows compile-time instantiations
 of `uintwide_t` from character strings with subsequent `constexpr` evaluations
 of binary operations multiply, divide, intergal cast and comparison.
 
 See this example fully worked out at the following
-[short link](https://godbolt.org/z/vYsfWYhe4) to [godbolt](https://godbolt.org).
+[short link](https://godbolt.org/z/avWGasbdj) to [godbolt](https://godbolt.org).
 The generated assembly includes nothing other than the call to `main()`
 and its subsequent `return` of the value zero
 (i.e., `main()`'s successful return-value in this example).
 
 ```cpp
 #include <math/wide_integer/uintwide_t.h>
-
-// Use (at least) a C++20 compiler for this example.
 
 using uint256_t = ::math::wide_integer::uintwide_t<256U>;
 using uint512_t = ::math::wide_integer::uintwide_t<512U>;
@@ -836,47 +812,8 @@ constexpr auto result_is_ok = (   (c == "0x1573D6A7CEA734D99865C4F428184983CDB01
 // constexpr verification.
 static_assert(result_is_ok, "Error: example is not OK!");
 
-auto main() -> int
-{
-  return (result_is_ok ? 0 : -1);
-}
+auto main() -> int { }
 ```
-
-The so-called `constexpr`-_ness_ of `uintwide_t` has been checked on GCC 10 and up,
-clang 10 and up (with `-std=c++20`) and VC 14.2 (with `/std:c++latest`),
-also for various embedded compilers such as `avr-gcc` 10 and up,
-`arm-non-eabi-gcc` 10 and up, and more. In addition,
-some compilations using compilers having less modern standards
-such as C++14, 17, 2a have also been checked
-for `constexpr` usage of `uintwide_t`. If you have an older
-compiler, you might have to check the compiler's
-ability to obtain the entire benefit of `constexpr` with `uintwide_t`.
-
-If full `constexpr` compliance is not available or its
-availability is unknown, the preprocessor symbols below can be useful.
-These symbols are defined or set directly within the header(s)
-of the wide_integer library.
-
-```cpp
-WIDE_INTEGER_CONSTEXPR
-WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST
-```
-
-The preprocessor symbol `WIDE_INTEGER_CONSTEXPR` acts as either
-a synonym for `constexpr` or expands to nothing depending on
-whether the availability of `constexpr` support has been automatically
-detected or not.
-The preprocessor symbol `WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST`
-has the value of `0` or `1`, where `1` indicates that `uintwide_t`
-values qualified with `WIDE_INTEGER_CONSTEXPR` are actually
-compile-time constant (i.e., `constexpr`).
-
-Detection of availability of `constexpr` support is implemented
-[with preprocessor queries in uintwide_t.h](https://github.com/ckormanyos/wide-integer/blob/4ad2cb5e96acc0b326c8fc2bbb74546dc90053ef/math/wide_integer/uintwide_t.h#L36).
-These complicated proprocessor queries are not complete (in the sense of
-detecting all world-wide compiler/target systems). If you have
-a specific compiler/target system needing `constexpr` detection,
-please feel free to contact me directly so that this can be implemented.
 
 ### Signed integer support
 
@@ -894,7 +831,7 @@ using int256_t = ::math::wide_integer::uintwide_t<256U, std::uint32_t, void, tru
 const int256_t n1(-3);
 const int256_t n2(-3);
 
-// 9
+// +9
 const int256_t n3 = n1 * n2;
 ```
 
@@ -926,7 +863,15 @@ in the wide-integer project.
   - All wide-integer-types are move constructable.
   - All wide-integer types having the same widths and having the same limb-type (but possibly different sign) are move-assignable and `std::move()`-capable.
 
-### Importing and exporting bits
+### Importing and exporting characters and bits
+
+For sufficiently modern standards-conforming compilers,
+namespace-specific functions `to_chars()` and `from_chars()`
+are available. These each have the _usual_ `<charconv>`-like
+behavior, known from C++17. For motivational words on
+`to_chars()` and `from_chars()`,
+see also [issue 153](https://github.com/ckormanyos/wide-integer/issues/153)
+and [issue 398](https://github.com/ckormanyos/wide-integer/issues/398).
 
 Support for importing and exporting bits is granted by the subroutines
 `import_bits()` and `export_bits()`. Their interfaces, input/output forms
@@ -954,18 +899,3 @@ be done, but at the cost of using five 16-bit limbs.
 This degrades performance due to the higher limb count.
 This phenomenon was discussed in
 [issue 234](https://github.com/ckormanyos/wide-integer/issues/234)
-
-## References
-
-A original publications on [_valgrind_](https://valgrind.org)
-and its relation to memory errors can be found in [1] and [2].
-
-[1] Nicholas Nethercote and Julian Seward,
-_Valgrind:_ _A_ _Framework_ _for_ _Heavyweight_ _Dynamic_ _Binary_ _Instrumentation_,
-Proceedings of ACM SIGPLAN 2007 Conference on Programming Language Design and Implementation (PLDI 2007),
-San Diego, California, USA, June 2007.
-
-[2] Nicholas Nethercote and Julian Seward,
-_How_ _to_ _Shadow_ _Every_ _Byte_ _of_ _Memory_ _Used_ _by_ _a_ _Program_.
-Proceedings of the Third International ACM SIGPLAN/SIGOPS Conference on Virtual Execution Environments (VEE 2007),
-San Diego, California, USA, June 2007.

@@ -118,6 +118,3 @@ def main(prg):
 
 idocc(I,n) :- occ(I,n,Q).
 :- { idocc(I,n) } th-1.
-
-
-

@@ -1,5 +1,5 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2021 - 2022.
+//  Copyright Christopher Kormanyos 2021 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -13,6 +13,8 @@
   #include <math/wide_integer/uintwide_t.h>
   #include <test/test_uintwide_t_n_base.h>
   #include <test/test_uintwide_t_n_binary_ops_base.h>
+
+  #include <util/utility/util_pseudorandom_time_point_seed.h>
 
   #if defined(WIDE_INTEGER_NAMESPACE)
   template<const WIDE_INTEGER_NAMESPACE::math::wide_integer::size_t MyWidth2,
@@ -148,7 +150,7 @@
     {
       std::atomic_flag test_lock = ATOMIC_FLAG_INIT;
 
-      test_uintwide_t_n_binary_ops_base::my_gen().seed(static_cast<typename random_generator_type::result_type>(std::clock()));
+      test_uintwide_t_n_binary_ops_base::my_gen().seed(util::util_pseudorandom_time_point_seed::value<typename random_generator_type::result_type>());
       std::uniform_int_distribution<> dis(1, static_cast<int>(digits2 - 1U));
 
       bool result_is_ok = true;
@@ -196,7 +198,7 @@
 
       test_uintwide_t_n_base::my_random_generator().seed
       (
-        static_cast<typename std::linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>::result_type>(std::clock())  // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+        util::util_pseudorandom_time_point_seed::value<typename std::linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>::result_type>()  // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
       );
 
       #if defined(WIDE_INTEGER_NAMESPACE)

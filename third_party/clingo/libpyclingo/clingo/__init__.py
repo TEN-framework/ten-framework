@@ -97,16 +97,16 @@ The second example shows how to use Python code from clingo.
     q(@seq(1,2)).
 '''
 
+from .application import *
+from .backend import *
+from .configuration import *
+from .control import *
 from .core import *
+from .propagator import *
+from .solving import *
+from .statistics import *
 from .symbol import *
 from .symbolic_atoms import *
 from .theory_atoms import *
-from .solving import *
-from .propagator import *
-from .backend import *
-from .configuration import *
-from .statistics import *
-from .control import *
-from .application import *
 
 __version__ = ".".join(map(str, version()))

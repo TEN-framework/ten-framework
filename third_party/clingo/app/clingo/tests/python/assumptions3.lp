@@ -8,7 +8,7 @@ def main(prg):
     prg.solve(assumptions=[(Function("a"), True), (Function("b"), False), (Function("d"), True)])
     prg.solve(assumptions=[(Function("a"), False), (Function("c"), True)])
 
-#end.  
+#end.
 
 #external d.
 { a; b; c }.

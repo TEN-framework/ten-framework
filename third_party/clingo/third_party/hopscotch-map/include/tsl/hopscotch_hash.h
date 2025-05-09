@@ -29,12 +29,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <memory>
-#include <new>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
@@ -309,22 +309,12 @@ class hopscotch_bucket : public hopscotch_bucket_hash<StoreHash> {
 
   value_type& value() noexcept {
     tsl_hh_assert(!empty());
-#if defined(__cplusplus) && __cplusplus >= 201703L
-    return *std::launder(
-        reinterpret_cast<value_type*>(std::addressof(m_value)));
-#else
     return *reinterpret_cast<value_type*>(std::addressof(m_value));
-#endif
   }
 
   const value_type& value() const noexcept {
     tsl_hh_assert(!empty());
-#if defined(__cplusplus) && __cplusplus >= 201703L
-    return *std::launder(
-        reinterpret_cast<const value_type*>(std::addressof(m_value)));
-#else
     return *reinterpret_cast<const value_type*>(std::addressof(m_value));
-#endif
   }
 
   template <typename... Args>
@@ -671,13 +661,10 @@ class hopscotch_hash : private Hash, private KeyEqual, private GrowthPolicy {
   }
 
   hopscotch_hash(const hopscotch_hash& other)
-      : hopscotch_hash(other, other.get_allocator()) {}
-
-  hopscotch_hash(const hopscotch_hash& other, const Allocator& alloc)
       : Hash(other),
         KeyEqual(other),
         GrowthPolicy(other),
-        m_buckets_data(other.m_buckets_data, alloc),
+        m_buckets_data(other.m_buckets_data),
         m_overflow_elements(other.m_overflow_elements),
         m_buckets(m_buckets_data.empty() ? static_empty_bucket_ptr()
                                          : m_buckets_data.data()),

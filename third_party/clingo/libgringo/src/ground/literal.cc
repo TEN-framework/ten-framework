@@ -24,7 +24,8 @@
 
 #include "gringo/ground/literal.hh"
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 void Literal::collectImportant(Term::VarSet &vars) {
     auto *occ(occurrence());
@@ -37,4 +38,5 @@ void Literal::collectImportant(Term::VarSet &vars) {
     }
 }
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo

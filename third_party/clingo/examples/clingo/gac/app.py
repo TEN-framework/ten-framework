@@ -3,22 +3,22 @@ Example guess and check based solver for second level problems.
 """
 
 import sys
-from typing import Sequence, Tuple, List, cast
+from typing import List, Sequence, Tuple, cast
 
 from clingo import ast
-from clingo.solving import SolveResult
-from clingo.ast import ProgramBuilder
-from clingo.control import Control
-from clingo.application import clingo_main, Application
-from clingo.propagator import PropagateControl, PropagateInit, Propagator
+from clingo.application import Application, clingo_main
+from clingo.ast import AST, ASTType, ProgramBuilder, parse_files
 from clingo.backend import Backend
-from clingo.ast import parse_files, AST, ASTType
+from clingo.control import Control
+from clingo.propagator import PropagateControl, PropagateInit, Propagator
+from clingo.solving import SolveResult
 
 
 class Transformer:
     """
     Transformer for the guess and check solver.
     """
+
     _builder: ProgramBuilder
     _state: str
     _check: List[AST]
@@ -51,6 +51,7 @@ class Checker:
     """
     Class wrapping a solver to perform the second level check.
     """
+
     _ctl: Control
     _map: List[Tuple[int, int]]
 
@@ -108,6 +109,7 @@ class CheckPropagator(Propagator):
     Simple propagator verifying that a check program holds on total
     assignments.
     """
+
     _check: List[ast.AST]
     _checkers: List[Checker]
 
@@ -147,7 +149,6 @@ class CheckPropagator(Propagator):
 
             checker.ground(self._check)
 
-
     def check(self, control: PropagateControl):
         """
         Check total assignments.
@@ -157,7 +158,7 @@ class CheckPropagator(Propagator):
 
         if not checker.check(control):
             conflict = []
-            for level in range(1, assignment.decision_level+1):
+            for level in range(1, assignment.decision_level + 1):
                 conflict.append(-assignment.decision(level))
 
             control.add_clause(conflict)
@@ -167,6 +168,7 @@ class GACApp(Application):
     """
     Application class implementing a custom solver.
     """
+
     program_name: str
     version: str
 

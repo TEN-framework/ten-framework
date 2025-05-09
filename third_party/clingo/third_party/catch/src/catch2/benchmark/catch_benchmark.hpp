@@ -10,26 +10,28 @@
 #ifndef CATCH_BENCHMARK_HPP_INCLUDED
 #define CATCH_BENCHMARK_HPP_INCLUDED
 
-#include <catch2/interfaces/catch_interfaces_config.hpp>
+#include <catch2/catch_user_config.hpp>
 #include <catch2/internal/catch_compiler_capabilities.hpp>
 #include <catch2/internal/catch_context.hpp>
-#include <catch2/interfaces/catch_interfaces_reporter.hpp>
-#include <catch2/internal/catch_unique_name.hpp>
 #include <catch2/internal/catch_move_and_forward.hpp>
-#include <catch2/benchmark/catch_chronometer.hpp>
+#include <catch2/internal/catch_test_failure_exception.hpp>
+#include <catch2/internal/catch_unique_name.hpp>
+#include <catch2/interfaces/catch_interfaces_capture.hpp>
+#include <catch2/interfaces/catch_interfaces_config.hpp>
+#include <catch2/interfaces/catch_interfaces_registry_hub.hpp>
+#include <catch2/benchmark/detail/catch_benchmark_stats.hpp>
 #include <catch2/benchmark/catch_clock.hpp>
 #include <catch2/benchmark/catch_environment.hpp>
 #include <catch2/benchmark/catch_execution_plan.hpp>
 #include <catch2/benchmark/detail/catch_estimate_clock.hpp>
-#include <catch2/benchmark/detail/catch_complete_invoke.hpp>
 #include <catch2/benchmark/detail/catch_analyse.hpp>
 #include <catch2/benchmark/detail/catch_benchmark_function.hpp>
 #include <catch2/benchmark/detail/catch_run_for_at_least.hpp>
 
 #include <algorithm>
-#include <functional>
+#include <chrono>
+#include <exception>
 #include <string>
-#include <vector>
 #include <cmath>
 
 namespace Catch {
@@ -43,16 +45,18 @@ namespace Catch {
                 : fun(CATCH_MOVE(func)), name(CATCH_MOVE(benchmarkName)) {}
 
             template <typename Clock>
-            ExecutionPlan<FloatDuration<Clock>> prepare(const IConfig &cfg, Environment<FloatDuration<Clock>> env) const {
+            ExecutionPlan prepare(const IConfig &cfg, Environment env) {
                 auto min_time = env.clock_resolution.mean * Detail::minimum_ticks;
                 auto run_time = std::max(min_time, std::chrono::duration_cast<decltype(min_time)>(cfg.benchmarkWarmupTime()));
-                auto&& test = Detail::run_for_at_least<Clock>(std::chrono::duration_cast<ClockDuration<Clock>>(run_time), 1, fun);
+                auto&& test = Detail::run_for_at_least<Clock>(std::chrono::duration_cast<IDuration>(run_time), 1, fun);
                 int new_iters = static_cast<int>(std::ceil(min_time * test.iterations / test.elapsed));
-                return { new_iters, test.elapsed / test.iterations * new_iters * cfg.benchmarkSamples(), fun, std::chrono::duration_cast<FloatDuration<Clock>>(cfg.benchmarkWarmupTime()), Detail::warmup_iterations };
+                return { new_iters, test.elapsed / test.iterations * new_iters * cfg.benchmarkSamples(), CATCH_MOVE(fun), std::chrono::duration_cast<FDuration>(cfg.benchmarkWarmupTime()), Detail::warmup_iterations };
             }
 
             template <typename Clock = default_clock>
             void run() {
+                static_assert( Clock::is_steady,
+                               "Benchmarking clock should be steady" );
                 auto const* cfg = getCurrentContext().getConfig();
 
                 auto env = Detail::measure_environment<Clock>();
@@ -79,10 +83,10 @@ namespace Catch {
                         return plan.template run<Clock>(*cfg, env);
                     });
 
-                    auto analysis = Detail::analyse(*cfg, env, samples.begin(), samples.end());
-                    BenchmarkStats<FloatDuration<Clock>> stats{ CATCH_MOVE(info), CATCH_MOVE(analysis.samples), analysis.mean, analysis.standard_deviation, analysis.outliers, analysis.outlier_variance };
+                    auto analysis = Detail::analyse(*cfg, samples.data(), samples.data() + samples.size());
+                    BenchmarkStats<> stats{ CATCH_MOVE(info), CATCH_MOVE(analysis.samples), analysis.mean, analysis.standard_deviation, analysis.outliers, analysis.outlier_variance };
                     getResultCapture().benchmarkEnded(stats);
-                } CATCH_CATCH_ANON (TestFailureException) {
+                } CATCH_CATCH_ANON (TestFailureException const&) {
                     getResultCapture().benchmarkFailed("Benchmark failed due to failed assertion"_sr);
                 } CATCH_CATCH_ALL{
                     getResultCapture().benchmarkFailed(translateActiveException());

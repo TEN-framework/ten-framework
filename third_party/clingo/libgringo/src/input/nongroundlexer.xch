@@ -328,6 +328,17 @@ uint32_t NonGroundParser::aspif_unsigned_(Location &loc) {
 
 }
 
+void NonGroundParser::aspif_asp_(Location &loc) {
+    start(loc);
+    char yych;
+    /*!re2c
+    <aspif> "asp"    { return; }
+    <aspif> NL       { aspif_error_(loc, format("expected 'asp' but got ", eof() ? "<EOF>" : "<EOL>").c_str()); }
+    <aspif> WS       { aspif_error_(loc, "expected 'asp' but got <SPACE>"); }
+    <aspif> NOWSNL+  { aspif_error_(loc, format("expected 'asp' but got token ", string()).c_str()); }
+    */
+}
+
 } } // namespace Input Gringo
 
 #undef YYCTYPE

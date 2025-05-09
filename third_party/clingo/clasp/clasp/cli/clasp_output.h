@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2009-2017 Benjamin Kaufmann
+// Copyright (c) 2009-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -96,23 +96,22 @@ protected:
 	typedef std::pair<const char*, Literal> OutPair;
 	typedef uintp UPtr;
 	typedef std::pair<uint32, uint32> UPair;
-	const Model* getModel() const { return saved_.values ? &saved_ : 0; }
-	void         saveModel(const Model& m);
-	void         clearModel() { saved_.reset(); }
 	void         printWitness(const OutputTable& out, const Model& m, UPtr data);
 	virtual UPtr doPrint(const OutPair& out, uintp data);
 	UPair        numCons(const OutputTable& out, const Model& m) const;
 	bool         stats(const ClaspFacade::Summary& summary) const;
+	double       elapsedTime() const;
+	double       modelTime() const;
 private:
 	Output(const Output&);
 	Output& operator=(const Output&);
-	typedef const ClaspFacade::Summary* SumPtr ;
+	typedef const ClaspFacade::Summary* SumPtr;
+	double    time_;     // time of first event
+	double    model_;    // elapsed time on last model
 	SumPtr    summary_ ; // summary of last step
-	ValueVec  vals_    ; // saved values from most recent model
-	SumVec    costs_   ; // saved costs from most recent model
-	Model     saved_   ; // most recent model
 	uint32    verbose_ ; // verbosity level
 	uint8     quiet_[3]; // quiet levels for models, optimize, calls
+	bool      last_;     // print last model on summary
 };
 
 //! Prints models and solving statistics in Json-format to stdout.
@@ -121,13 +120,14 @@ public:
 	explicit JsonOutput(uint32 verb);
 	~JsonOutput();
 	virtual void run(const char* solver, const char* version, const std::string* begInput, const std::string* endInput);
-	virtual void shutdown(const ClaspFacade::Summary& summary);
 	virtual void shutdown();
 	virtual void printSummary(const ClaspFacade::Summary&    summary, bool final);
 	virtual void printStatistics(const ClaspFacade::Summary& summary, bool final);
 private:
 	virtual void startStep(const ClaspFacade&);
 	virtual void stopStep(const ClaspFacade::Summary& summary);
+	virtual void printModel(const OutputTable& out, const Model& m, PrintLevel x);
+	virtual void printUnsat(const OutputTable& out, const LowerBound* lower, const Model* prevModel);
 	virtual bool visitThreads(Operation op);
 	virtual bool visitTester(Operation op);
 	virtual bool visitHccs(Operation op);
@@ -141,7 +141,7 @@ private:
 	virtual UPtr doPrint(const OutPair& out, UPtr data);
 	void printChildren(const StatisticObject& s);
 	enum ObjType { type_object, type_array };
-	void pushObject(const char* k = 0, ObjType t = type_object);
+	void pushObject(const char* k = 0, ObjType t = type_object, bool startIndent = false);
 	char popObject();
 	void printKeyValue(const char* k, const char* v) ;
 	void printKeyValue(const char* k, uint64 v);
@@ -150,14 +150,17 @@ private:
 	void printKeyValue(const char* k, const StatisticObject& o);
 	void printString(const char* s, const char* sep);
 	void printKey(const char* k);
-	void printModel(const OutputTable& out, const Model& m, PrintLevel x);
 	void printCosts(const SumVec& costs, const char* name = "Costs");
+	void printSum(const char* name, Potassco::Span<wsum_t> sum, const wsum_t* last = 0);
 	void printCons(const UPair& cons);
 	void printCoreStats(const CoreStats&);
 	void printExtStats(const ExtendedStats&, bool generator);
 	void printJumpStats(const JumpStats&);
-	void startModel();
-	bool hasWitness() const { return !objStack_.empty() && *objStack_.rbegin() == '['; }
+	void printTime(const char* name, double t);
+	void startWitness(double time);
+	void endWitness();
+	bool hasWitnesses() const { return objStack_.size() > 2 && *objStack_.rbegin() == '['; }
+	void popUntil(uint32 sz);
 	uint32 indent()   const { return static_cast<uint32>(objStack_.size() * 2); }
 	const char* open_;
 	std::string objStack_;
@@ -167,7 +170,7 @@ private:
 /*!
  * Prints all output to stdout in given format:
  * - format_asp prints in clasp's default asp format
- * - format_aspcomp prints in in ASP competition format
+ * - format_aspcomp prints in ASP competition format
  * - format_sat09 prints in SAT-competition format
  * - format_pb09 in PB-competition format
  * .
@@ -180,7 +183,7 @@ class TextOutput : public Output, private StatsVisitor {
 public:
 	//! Supported text formats.
 	enum Format      { format_asp, format_aspcomp, format_sat09, format_pb09 };
-	enum ResultStr   { res_unknonw = 0, res_sat = 1, res_unsat = 2, res_opt = 3, num_str };
+	enum ResultStr   { res_unknown = 0, res_sat = 1, res_unsat = 2, res_opt = 3, num_str };
 	enum CategoryKey { cat_comment, cat_value, cat_objective, cat_result, cat_value_term, cat_atom_name, cat_atom_var, num_cat };
 
 	const char* result[num_str]; //!< Default result strings.
@@ -217,9 +220,17 @@ public:
 	virtual void onEvent(const Event& ev);
 	//! A solving step has started.
 	virtual void startStep(const ClaspFacade&);
+	//! A solving step has finished.
+	virtual void stopStep(const ClaspFacade::Summary& s);
 	//! Prints a comment message.
 	void comment(uint32 v, const char* fmt, ...) const;
 protected:
+	//! Called on each model to be printed.
+	/*!
+	 * The default implementation calls printValues().
+	 */
+	virtual void printModelValues(const OutputTable& out, const Model& m);
+
 	virtual bool visitThreads(Operation op);
 	virtual bool visitTester(Operation op);
 
@@ -249,6 +260,7 @@ private:
 	void        printCostsImpl(const SumVec&, char ifs, const char* ifsSuffix = "") const;
 	const char* getIfsSuffix(char ifs, CategoryKey cat) const;
 	const char* getIfsSuffix(CategoryKey cat) const;
+	bool        clearProgress(int nLines);
 	struct SolveProgress {
 		int lines;
 		int last;

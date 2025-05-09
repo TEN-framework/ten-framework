@@ -26,7 +26,7 @@ precompiled packages for various package managers:
   - other compilers might work
 - the [cmake](https://www.cmake.org/) build system
   - at least version 3.18 is recommended
-  - at least version 3.1 is *required*
+  - at least version 3.10 is *required*
 
 ## Development Dependencies
 
@@ -59,7 +59,7 @@ source releases, you can skip this step):
 To build gringo, clingo, and reify in their default configurations in release
 mode, run:
 
-    cmake -H<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release
+    cmake -S<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release
     cmake --build <BUILD_DIR>
 
 The resulting binaries and shared libraries will be in `<BUILD_DIR>/bin` and
@@ -80,11 +80,11 @@ options](#build-options)) and run:
 Cmake's `-L` option can be used to get an overview over the variables that can
 be set for building gringo/clingo. To get gringo/clingo specific options, run
 
-    cmake -H<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release -LH
+    cmake -S<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release -LH
 
 or, to also print important cmake specific configuration variables
 
-    cmake -H<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release -LAH
+    cmake -S<SOURCE_DIR> -B<BUILD_DIR> -DCMAKE_BUILD_TYPE=Release -LAH
 
 Options and variables can be passed to
 cmake on the command line using `-D<VARIABLE>=<VALUE>` or by editing
@@ -96,6 +96,7 @@ and Lua scripting support.
 Clingo uses [libpotassco](https://github.com/potassco/libpotassco) and
 [clasp](https://github.com/potassco/potassco).  Both components have their own
 sets of configuration variables:
+
 - [building libpotassco](https://github.com/potassco/libpotassco#installation)
 - [building clasp](https://github.com/potassco/clasp#building--installing)
 
@@ -180,7 +181,7 @@ assume that [Emscripten](https://kripken.github.io/emscripten-site/) has been
 installed. Only the web target and a subset of clingo's configuration are
 supported when compiling to JavaScript:
 
-    emcmake cmake -H<SOURCE_DIR> -B<BUILD_DIR> \
+    emcmake cmake -S<SOURCE_DIR> -B<BUILD_DIR> \
         -DCLINGO_BUILD_WEB=On \
         -DCLINGO_BUILD_WITH_PYTHON=Off \
         -DCLINGO_BUILD_WITH_LUA=Off \
@@ -200,6 +201,7 @@ about pointing clingo to a custom Lua installation.
 
 For examples how to use the resulting JavaScript code, check out one of the
 following:
+
 - [webclingo example by Lucas Bourneuf](https://github.com/Aluriak/webclingo-example), or
 - [the source of our website](https://github.com/potassco/potassco.github.io)
 
@@ -209,6 +211,7 @@ After installing the required packages clingo should compile on most \*nixes.
 If a dependency is missing or a software version too old, then there are
 typically community repositories that provide the necessary packages. To list a
 few:
+
 - the [ToolChain](https://wiki.ubuntu.com/ToolChain) repository for Ubuntu
   versions before 18.04.
 - the [Developer

@@ -38,7 +38,7 @@ inline my_locale_t default_locale() { return _create_locale(LC_ALL, "C"); }
 inline unsigned long long strtoull(const char* str, char** endptr, int base) { return  _strtoui64(str, endptr, base); }
 inline long long strtoll(const char* str, char** endptr, int base) { return  _strtoi64(str, endptr, base); }
 #endif
-#elif defined(__CYGWIN__) || defined (__MINGW32__) || defined (__OpenBSD__)
+#elif defined(__CYGWIN__) || defined (__MINGW32__) || defined (__OpenBSD__) || defined(__HAIKU__)
 #include <locale>
 typedef std::locale my_locale_t;
 static double strtod_l(const char* x, char** end, const my_locale_t& loc) {
@@ -232,6 +232,13 @@ int xconvert(const char* x, double& out, const char** errPos, int) {
 	char* err;
 	out = strtod_l(x, &err, default_locale_g.loc_);
 	return parsed(err != x, err, errPos);
+}
+
+int xconvert(const char* x, float& out, const char** errPos, int i) {
+	double temp;
+	int r = xconvert(x, temp, errPos, i);
+	if (r > 0) { out = static_cast<float>(temp); }
+	return r;
 }
 
 int xconvert(const char* x, const char*& out, const char** errPos, int) {
@@ -468,10 +475,11 @@ void fail(int ec, const char* file, unsigned line, const char* exp, const char* 
 		case error_logic  : throw std::logic_error(msg);
 		case error_assert : throw std::logic_error(msg);
 		case error_runtime: throw std::runtime_error(msg);
+		case E2BIG        : throw std::length_error(msg);
 		case ENOMEM       : throw std::bad_alloc();
 		case EINVAL       : throw std::invalid_argument(msg);
 		case EDOM         : throw std::domain_error(msg);
-		case ERANGE       : throw std::range_error(msg);
+		case ERANGE       : throw std::out_of_range(msg);
 #if defined(EOVERFLOW)
 		case EOVERFLOW    : throw std::overflow_error(msg);
 #endif

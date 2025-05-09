@@ -2,8 +2,8 @@
 Core functionality used throught the clingo package.
 """
 
-from typing import Callable, Tuple
 from enum import Enum
+from typing import Callable, Tuple
 
 from ._internal import _cb_error_panic, _ffi, _lib, _to_str
 

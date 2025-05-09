@@ -22,4 +22,3 @@ def main(prg):
 
 2 { a; b; c }.
 2 { b; c; d }.
-

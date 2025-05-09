@@ -12,7 +12,6 @@
 
 #include <catch2/benchmark/catch_clock.hpp>
 #include <catch2/benchmark/catch_optimizer.hpp>
-#include <catch2/benchmark/detail/catch_complete_invoke.hpp>
 #include <catch2/internal/catch_meta.hpp>
 #include <catch2/internal/catch_move_and_forward.hpp>
 
@@ -33,7 +32,10 @@ namespace Catch {
                 void start() override { started = Clock::now(); }
                 void finish() override { finished = Clock::now(); }
 
-                ClockDuration<Clock> elapsed() const { return finished - started; }
+                IDuration elapsed() const {
+                    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+                        finished - started );
+                }
 
                 TimePoint<Clock> started;
                 TimePoint<Clock> finished;

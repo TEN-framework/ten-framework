@@ -23,14 +23,14 @@
 // }}}
 
 #ifdef CLINGO_WITH_LUA
-#   include <luaclingo.h>
+#include <luaclingo.h>
 #endif
 #include "clingo/clingo_app.hh"
 #include "clingo/scripts.hh"
 #include <iterator>
 
 class ExitException : public std::exception {
-public:
+  public:
     ExitException(int status) : status_(status) {
         std::ostringstream oss;
         oss << "exited with status: " << status_;
@@ -39,15 +39,14 @@ public:
     int status() const { return status_; }
     char const *what() const noexcept { return msg_.c_str(); }
     ~ExitException() = default;
-private:
+
+  private:
     std::string msg_;
     int status_;
 };
 
 struct WebApp : Gringo::ClingoApp {
-    void exit(int status) const {
-        throw ExitException(status);
-    }
+    void exit(int status) const { throw ExitException(status); }
 };
 
 extern "C" int run(char const *program, char const *options) {
@@ -56,26 +55,24 @@ extern "C" int run(char const *program, char const *options) {
         Gringo::g_scripts() = Gringo::Scripts();
         clingo_register_lua_(nullptr);
 #endif
-        std::streambuf* orig = std::cin.rdbuf();
-        auto exit(Gringo::onExit([orig]{ std::cin.rdbuf(orig); }));
+        std::streambuf *orig = std::cin.rdbuf();
+        auto exit(Gringo::onExit([orig] { std::cin.rdbuf(orig); }));
         std::istringstream input(program);
         std::cin.rdbuf(input.rdbuf());
         std::vector<std::vector<char>> opts;
-        opts.emplace_back(std::initializer_list<char>{'c','l','i','n','g','o','\0'});
+        opts.emplace_back(std::initializer_list<char>{'c', 'l', 'i', 'n', 'g', 'o', '\0'});
         std::istringstream iss(options);
         for (std::istream_iterator<std::string> it(iss), ie; it != ie; ++it) {
             opts.emplace_back(it->c_str(), it->c_str() + it->size() + 1);
         }
-        std::vector<char*> args;
+        std::vector<char *> args;
         for (auto &opt : opts) {
             args.emplace_back(opt.data());
         }
         WebApp app;
         args.emplace_back(nullptr);
-        return app.main(args.size()-2, args.data());
-    }
-    catch (ExitException const &e) {
+        return app.main(args.size() - 2, args.data());
+    } catch (ExitException const &e) {
         return e.status();
     }
 }
-

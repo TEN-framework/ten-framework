@@ -23,16 +23,16 @@
 // }}}
 
 #include "tests.hh"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
-namespace Clingo { namespace Test {
+namespace Clingo {
+namespace Test {
 
 namespace {
 
-template <class V>
-std::vector<typename V::value_type> vec(V const &vec) {
+template <class V> std::vector<typename V::value_type> vec(V const &vec) {
     std::vector<typename V::value_type> ret;
     for (auto &&x : vec) {
         ret.emplace_back(x);
@@ -40,26 +40,24 @@ std::vector<typename V::value_type> vec(V const &vec) {
     return ret;
 }
 
-template <class V, class W>
-bool cmp(V const &a, W const &b) {
-    return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](auto &&x, auto &&y) {
-        return std::strcmp(x, y) == 0;
-    });
+template <class V, class W> bool cmp(V const &a, W const &b) {
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(),
+                      [](auto &&x, auto &&y) { return std::strcmp(x, y) == 0; });
 }
 
 struct CB {
-    CB(std::string &ret)
-    : ret(ret) { ret.clear(); }
+    CB(std::string &ret) : ret(ret) { ret.clear(); }
     void operator()(AST::Node const &x) {
         std::ostringstream oss;
         oss << x;
         if (first) {
             REQUIRE(oss.str() == "#program base.");
             first = false;
-        }
-        else {
-            if (!ret.empty()) { ret+= "\n"; }
-            ret+= oss.str();
+        } else {
+            if (!ret.empty()) {
+                ret += "\n";
+            }
+            ret += oss.str();
         }
     }
     bool first = true;
@@ -88,9 +86,8 @@ ModelVec solve(char const *prg, PartSpan parts = {{"base", {}}}) {
     ModelVec models;
     Control ctl{{"0"}, [&messages](WarningCode code, char const *msg) { messages.emplace_back(code, msg); }};
 
-    AST::with_builder(ctl, [prg](AST::ProgramBuilder &b){
-        AST::parse_string(prg, [&b](AST::Node const &stm) { b.add(stm); });
-    });
+    AST::with_builder(
+        ctl, [prg](AST::ProgramBuilder &b) { AST::parse_string(prg, [&b](AST::Node const &stm) { b.add(stm); }); });
     ctl.ground(parts);
     test_solve(ctl.solve(), models);
     return models;
@@ -101,7 +98,7 @@ StringVec parse_theory(char const *prg, char const *theory) {
     MessageVec messages;
     ModelVec models;
     Control ctl{{"0"}, [&messages](WarningCode code, char const *msg) { messages.emplace_back(code, msg); }};
-    AST::with_builder(ctl, [prg, theory](AST::ProgramBuilder &b){
+    AST::with_builder(ctl, [prg, theory](AST::ProgramBuilder &b) {
         AST::parse_string(theory, [&b](AST::Node const &ast) { b.add(ast); });
         AST::parse_string(prg, [&b](AST::Node const &ast) { b.add(ast); });
     });
@@ -145,7 +142,11 @@ TEST_CASE("parse-ast-v2", "[clingo]") {
         REQUIRE(parse("% test") == "% test");
     }
     SECTION("theory definition") {
-        REQUIRE(parse("#theory x { t { ++ : 1, unary } }.") == "#theory x {\n" "  t {\n" "    ++ : 1, unary\n" "  }\n" "}.");
+        REQUIRE(parse("#theory x { t { ++ : 1, unary } }.") == "#theory x {\n"
+                                                               "  t {\n"
+                                                               "    ++ : 1, unary\n"
+                                                               "  }\n"
+                                                               "}.");
         REQUIRE(parse("#theory x { &a/0: t, any }.") == "#theory x {\n  &a/0: t, any\n}.");
         REQUIRE(parse("#theory x { &a/0: t, {+, -}, u, any }.") == "#theory x {\n  &a/0: t, { +, - }, u, any\n}.");
     }
@@ -261,7 +262,9 @@ TEST_CASE("add-ast-v2", "[clingo]") {
         auto t = [](char const *s) { return ModelVec({{parse_term(s)}}); };
         auto tt = [](std::initializer_list<char const *> l) {
             SymbolVector ret;
-            for (auto const &s : l) { ret.emplace_back(parse_term(s)); }
+            for (auto const &s : l) {
+                ret.emplace_back(parse_term(s));
+            }
             return ModelVec{ret};
         };
         REQUIRE(solve("p(a).") == t("p(a)"));
@@ -339,10 +342,8 @@ TEST_CASE("build-ast-v2", "[clingo]") {
         REQUIRE(cmp(seq, lst));
     }
     SECTION("ast array") {
-        auto lst = std::vector<AST::Node>{
-            AST::Node(AST::Type::Id, loc, "x"),
-            AST::Node(AST::Type::Id, loc, "y"),
-            AST::Node(AST::Type::Id, loc, "z")};
+        auto lst = std::vector<AST::Node>{AST::Node(AST::Type::Id, loc, "x"), AST::Node(AST::Type::Id, loc, "y"),
+                                          AST::Node(AST::Type::Id, loc, "z")};
         auto prg = AST::Node(AST::Type::Program, loc, "p", lst);
         auto seq = prg.get(AST::Attribute::Parameters).get<AST::NodeVector>();
         REQUIRE(seq.size() == 3);
@@ -382,201 +383,183 @@ TEST_CASE("build-ast-v2", "[clingo]") {
 
 TEST_CASE("unpool-ast-v2", "[clingo]") {
     SECTION("terms") {
-        REQUIRE(unpool("a(f(1;2)).") ==
-            "a(f(1)).\n"
-            "a(f(2)).");
-        REQUIRE(unpool("a((1,;2,)).") ==
-            "a((1,)).\n"
-            "a((2,)).");
-        REQUIRE(unpool("a((1;2)).") ==
-            "a(1).\n"
-            "a(2).");
-        REQUIRE(unpool("a((X;1)).") ==
-            "a(X).\n"
-            "a(1).");
-        REQUIRE(unpool("a((1;2;3;4;5)).") ==
-            "a(1).\n"
-            "a(2).\n"
-            "a(3).\n"
-            "a(4).\n"
-            "a(5).");
-        REQUIRE(unpool("a(|X;Y|).") ==
-            "a(|X|).\n"
-            "a(|Y|).");
-        REQUIRE(unpool("a(1+(2;3)).") ==
-            "a((1+2)).\n"
-            "a((1+3)).");
-        REQUIRE(unpool("a((1;2)+3).") ==
-            "a((1+3)).\n"
-            "a((2+3)).");
-        REQUIRE(unpool("a((1;2)+(3;4)).") ==
-            "a((1+3)).\n"
-            "a((1+4)).\n"
-            "a((2+3)).\n"
-            "a((2+4)).");
-        REQUIRE(unpool("a((1;2)..(3;4)).") ==
-            "a((1..3)).\n"
-            "a((1..4)).\n"
-            "a((2..3)).\n"
-            "a((2..4)).");
+        REQUIRE(unpool("a(f(1;2)).") == "a(f(1)).\n"
+                                        "a(f(2)).");
+        REQUIRE(unpool("a((1,;2,)).") == "a((1,)).\n"
+                                         "a((2,)).");
+        REQUIRE(unpool("a((1;2)).") == "a(1).\n"
+                                       "a(2).");
+        REQUIRE(unpool("a((X;1)).") == "a(X).\n"
+                                       "a(1).");
+        REQUIRE(unpool("a((1;2;3;4;5)).") == "a(1).\n"
+                                             "a(2).\n"
+                                             "a(3).\n"
+                                             "a(4).\n"
+                                             "a(5).");
+        REQUIRE(unpool("a(|X;Y|).") == "a(|X|).\n"
+                                       "a(|Y|).");
+        REQUIRE(unpool("a(1+(2;3)).") == "a((1+2)).\n"
+                                         "a((1+3)).");
+        REQUIRE(unpool("a((1;2)+3).") == "a((1+3)).\n"
+                                         "a((2+3)).");
+        REQUIRE(unpool("a((1;2)+(3;4)).") == "a((1+3)).\n"
+                                             "a((1+4)).\n"
+                                             "a((2+3)).\n"
+                                             "a((2+4)).");
+        REQUIRE(unpool("a((1;2)..(3;4)).") == "a((1..3)).\n"
+                                              "a((1..4)).\n"
+                                              "a((2..3)).\n"
+                                              "a((2..4)).");
     }
     SECTION("head literal") {
-        REQUIRE(unpool("a(1;2).") ==
-            "a(1).\n"
-            "a(2).");
-        REQUIRE(unpool("a(1;2):a(3).") ==
-            "a(1): a(3).\n"
-            "a(2): a(3).");
+        REQUIRE(unpool("a(1;2).") == "a(1).\n"
+                                     "a(2).");
+        REQUIRE(unpool("a(1;2):a(3).") == "a(1): a(3).\n"
+                                          "a(2): a(3).");
         // Note: I hope that this one matches what clingo currently does
         //       (in any case, it won't affect existing programs)
         REQUIRE(unpool("a(1):a(2;3).") == "a(1): a(2); a(1): a(3).");
-        REQUIRE(unpool("a(1;2):a(3;4).") ==
-            "a(1): a(3); a(1): a(4).\n"
-            "a(2): a(3); a(1): a(4).\n"
-            "a(1): a(3); a(2): a(4).\n"
-            "a(2): a(3); a(2): a(4).");
+        REQUIRE(unpool("a(1;2):a(3;4).") == "a(1): a(3); a(1): a(4).\n"
+                                            "a(2): a(3); a(1): a(4).\n"
+                                            "a(1): a(3); a(2): a(4).\n"
+                                            "a(2): a(3); a(2): a(4).");
         REQUIRE(unpool("(1;2) { a(2;3): a(4;5) } (6;7).") ==
-            "1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
-            "1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.\n"
-            "2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
-            "2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.");
+                "1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
+                "1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.\n"
+                "2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
+                "2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.");
         REQUIRE(unpool("(1;2) #min { (2;3): a(4;5): a(6;7) } (8;9).") ==
-            "1 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); 3: a(5): a(6); 3: a(5): a(7) } <= 8.\n"
-            "1 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); 3: a(5): a(6); 3: a(5): a(7) } <= 9.\n"
-            "2 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); 3: a(5): a(6); 3: a(5): a(7) } <= 8.\n"
-            "2 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); 3: a(5): a(6); 3: a(5): a(7) } <= 9.");
+                "1 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); "
+                "3: a(5): a(6); 3: a(5): a(7) } <= 8.\n"
+                "1 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); "
+                "3: a(5): a(6); 3: a(5): a(7) } <= 9.\n"
+                "2 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); "
+                "3: a(5): a(6); 3: a(5): a(7) } <= 8.\n"
+                "2 <= #min { 2: a(4): a(6); 2: a(4): a(7); 2: a(5): a(6); 2: a(5): a(7); 3: a(4): a(6); 3: a(4): a(7); "
+                "3: a(5): a(6); 3: a(5): a(7) } <= 9.");
         REQUIRE(unpool("&a(1;2) { 1 : a(3;4), a(5;6) }.") ==
-            "&a(1) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.\n"
-            "&a(2) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.");
-        REQUIRE(unpool("&a(0) { 1 : X=(1;2;3) }.") ==
-            "&a(0) { 1: X = 1; 1: X = 2; 1: X = 3 }.");
-        REQUIRE(unpool("(1;2) < (3;4).") ==
-            "1 < 3.\n"
-            "1 < 4.\n"
-            "2 < 3.\n"
-            "2 < 4.");
+                "&a(1) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.\n"
+                "&a(2) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.");
+        REQUIRE(unpool("&a(0) { 1 : X=(1;2;3) }.") == "&a(0) { 1: X = 1; 1: X = 2; 1: X = 3 }.");
+        REQUIRE(unpool("(1;2) < (3;4).") == "1 < 3.\n"
+                                            "1 < 4.\n"
+                                            "2 < 3.\n"
+                                            "2 < 4.");
     }
     SECTION("body literal") {
-        REQUIRE(unpool(":- a(1;2).") ==
-            "#false :- a(1).\n"
-            "#false :- a(2).");
-        REQUIRE(unpool(":- a(1;2):a(3).") ==
-            "#false :- a(1): a(3).\n"
-            "#false :- a(2): a(3).");
-        REQUIRE(unpool(":- a(1):a(2;3).") ==
-            "#false :- a(1): a(2); a(1): a(3).");
-        REQUIRE(unpool(":- a(1;2):a(3;4).") ==
-            "#false :- a(1): a(3); a(1): a(4).\n"
-            "#false :- a(2): a(3); a(1): a(4).\n"
-            "#false :- a(1): a(3); a(2): a(4).\n"
-            "#false :- a(2): a(3); a(2): a(4).");
+        REQUIRE(unpool(":- a(1;2).") == "#false :- a(1).\n"
+                                        "#false :- a(2).");
+        REQUIRE(unpool(":- a(1;2):a(3).") == "#false :- a(1): a(3).\n"
+                                             "#false :- a(2): a(3).");
+        REQUIRE(unpool(":- a(1):a(2;3).") == "#false :- a(1): a(2); a(1): a(3).");
+        REQUIRE(unpool(":- a(1;2):a(3;4).") == "#false :- a(1): a(3); a(1): a(4).\n"
+                                               "#false :- a(2): a(3); a(1): a(4).\n"
+                                               "#false :- a(1): a(3); a(2): a(4).\n"
+                                               "#false :- a(2): a(3); a(2): a(4).");
         REQUIRE(unpool(":- (1;2) { a(2;3): a(4;5) } (6;7).") ==
-            "#false :- 1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
-            "#false :- 1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.\n"
-            "#false :- 2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
-            "#false :- 2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.");
+                "#false :- 1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
+                "#false :- 1 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.\n"
+                "#false :- 2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 6.\n"
+                "#false :- 2 <= { a(2): a(4); a(2): a(5); a(3): a(4); a(3): a(5) } <= 7.");
         REQUIRE(unpool(":- (1;2) #min { (2;3): a(4;5), a(6;7) } (8;9).") ==
-            "#false :- 1 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 8.\n"
-            "#false :- 1 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 9.\n"
-            "#false :- 2 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 8.\n"
-            "#false :- 2 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 9.");
+                "#false :- 1 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: "
+                "a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 8.\n"
+                "#false :- 1 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: "
+                "a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 9.\n"
+                "#false :- 2 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: "
+                "a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 8.\n"
+                "#false :- 2 <= #min { 2: a(4), a(6); 2: a(5), a(6); 2: a(4), a(7); 2: a(5), a(7); 3: a(4), a(6); 3: "
+                "a(5), a(6); 3: a(4), a(7); 3: a(5), a(7) } <= 9.");
         REQUIRE(unpool(":- &a(1;2) { 1 : a(3;4), a(5;6) }.") ==
-            "#false :- &a(1) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.\n"
-            "#false :- &a(2) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.");
-        REQUIRE(unpool(":- (1;2) < (3;4).") ==
-            "#false :- 1 < 3.\n"
-            "#false :- 1 < 4.\n"
-            "#false :- 2 < 3.\n"
-            "#false :- 2 < 4.");
+                "#false :- &a(1) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.\n"
+                "#false :- &a(2) { 1: a(3), a(5); 1: a(4), a(5); 1: a(3), a(6); 1: a(4), a(6) }.");
+        REQUIRE(unpool(":- (1;2) < (3;4).") == "#false :- 1 < 3.\n"
+                                               "#false :- 1 < 4.\n"
+                                               "#false :- 2 < 3.\n"
+                                               "#false :- 2 < 4.");
     }
     SECTION("statements") {
-        REQUIRE(unpool("a(1;2) :- a(3;4); a(5;6).") ==
-            "a(1) :- a(3); a(5).\n"
-            "a(2) :- a(3); a(5).\n"
-            "a(1) :- a(4); a(5).\n"
-            "a(2) :- a(4); a(5).\n"
-            "a(1) :- a(3); a(6).\n"
-            "a(2) :- a(3); a(6).\n"
-            "a(1) :- a(4); a(6).\n"
-            "a(2) :- a(4); a(6).");
-        REQUIRE(unpool("#show a(1;2) : a(3;4).") ==
-            "#show a(1) : a(3).\n"
-            "#show a(2) : a(3).\n"
-            "#show a(1) : a(4).\n"
-            "#show a(2) : a(4).");
-        REQUIRE(unpool(":~ a(1;2). [(3;4)@(5;6),(7;8)]") ==
-            ":~ a(1). [3@5,7]\n"
-            ":~ a(1). [3@5,8]\n"
-            ":~ a(1). [3@6,7]\n"
-            ":~ a(1). [3@6,8]\n"
-            ":~ a(1). [4@5,7]\n"
-            ":~ a(1). [4@5,8]\n"
-            ":~ a(1). [4@6,7]\n"
-            ":~ a(1). [4@6,8]\n"
-            ":~ a(2). [3@5,7]\n"
-            ":~ a(2). [3@5,8]\n"
-            ":~ a(2). [3@6,7]\n"
-            ":~ a(2). [3@6,8]\n"
-            ":~ a(2). [4@5,7]\n"
-            ":~ a(2). [4@5,8]\n"
-            ":~ a(2). [4@6,7]\n"
-            ":~ a(2). [4@6,8]");
-        REQUIRE(unpool("#external a(1;2) : a(3;4). [(5;6)]") ==
-            "#external a(1) : a(3). [5]\n"
-            "#external a(1) : a(3). [6]\n"
-            "#external a(2) : a(3). [5]\n"
-            "#external a(2) : a(3). [6]\n"
-            "#external a(1) : a(4). [5]\n"
-            "#external a(1) : a(4). [6]\n"
-            "#external a(2) : a(4). [5]\n"
-            "#external a(2) : a(4). [6]");
-        REQUIRE(unpool("#edge ((1;2),(3;4)) : a(5;6).") ==
-            "#edge (1,3) : a(5).\n"
-            "#edge (1,4) : a(5).\n"
-            "#edge (2,3) : a(5).\n"
-            "#edge (2,4) : a(5).\n"
-            "#edge (1,3) : a(6).\n"
-            "#edge (1,4) : a(6).\n"
-            "#edge (2,3) : a(6).\n"
-            "#edge (2,4) : a(6).");
+        REQUIRE(unpool("a(1;2) :- a(3;4); a(5;6).") == "a(1) :- a(3); a(5).\n"
+                                                       "a(2) :- a(3); a(5).\n"
+                                                       "a(1) :- a(4); a(5).\n"
+                                                       "a(2) :- a(4); a(5).\n"
+                                                       "a(1) :- a(3); a(6).\n"
+                                                       "a(2) :- a(3); a(6).\n"
+                                                       "a(1) :- a(4); a(6).\n"
+                                                       "a(2) :- a(4); a(6).");
+        REQUIRE(unpool("#show a(1;2) : a(3;4).") == "#show a(1) : a(3).\n"
+                                                    "#show a(2) : a(3).\n"
+                                                    "#show a(1) : a(4).\n"
+                                                    "#show a(2) : a(4).");
+        REQUIRE(unpool(":~ a(1;2). [(3;4)@(5;6),(7;8)]") == ":~ a(1). [3@5,7]\n"
+                                                            ":~ a(1). [3@5,8]\n"
+                                                            ":~ a(1). [3@6,7]\n"
+                                                            ":~ a(1). [3@6,8]\n"
+                                                            ":~ a(1). [4@5,7]\n"
+                                                            ":~ a(1). [4@5,8]\n"
+                                                            ":~ a(1). [4@6,7]\n"
+                                                            ":~ a(1). [4@6,8]\n"
+                                                            ":~ a(2). [3@5,7]\n"
+                                                            ":~ a(2). [3@5,8]\n"
+                                                            ":~ a(2). [3@6,7]\n"
+                                                            ":~ a(2). [3@6,8]\n"
+                                                            ":~ a(2). [4@5,7]\n"
+                                                            ":~ a(2). [4@5,8]\n"
+                                                            ":~ a(2). [4@6,7]\n"
+                                                            ":~ a(2). [4@6,8]");
+        REQUIRE(unpool("#external a(1;2) : a(3;4). [(5;6)]") == "#external a(1) : a(3). [5]\n"
+                                                                "#external a(1) : a(3). [6]\n"
+                                                                "#external a(2) : a(3). [5]\n"
+                                                                "#external a(2) : a(3). [6]\n"
+                                                                "#external a(1) : a(4). [5]\n"
+                                                                "#external a(1) : a(4). [6]\n"
+                                                                "#external a(2) : a(4). [5]\n"
+                                                                "#external a(2) : a(4). [6]");
+        REQUIRE(unpool("#edge ((1;2),(3;4)) : a(5;6).") == "#edge (1,3) : a(5).\n"
+                                                           "#edge (1,4) : a(5).\n"
+                                                           "#edge (2,3) : a(5).\n"
+                                                           "#edge (2,4) : a(5).\n"
+                                                           "#edge (1,3) : a(6).\n"
+                                                           "#edge (1,4) : a(6).\n"
+                                                           "#edge (2,3) : a(6).\n"
+                                                           "#edge (2,4) : a(6).");
         REQUIRE(unpool("#heuristic a(1;2) : a(3;4). [a(5;6)@a(7;8),a(9;10)]") ==
-            "#heuristic a(1) : a(3). [a(5)@a(7),a(9)]\n"
-            "#heuristic a(1) : a(3). [a(5)@a(7),a(10)]\n"
-            "#heuristic a(1) : a(3). [a(5)@a(8),a(9)]\n"
-            "#heuristic a(1) : a(3). [a(5)@a(8),a(10)]\n"
-            "#heuristic a(1) : a(3). [a(6)@a(7),a(9)]\n"
-            "#heuristic a(1) : a(3). [a(6)@a(7),a(10)]\n"
-            "#heuristic a(1) : a(3). [a(6)@a(8),a(9)]\n"
-            "#heuristic a(1) : a(3). [a(6)@a(8),a(10)]\n"
-            "#heuristic a(2) : a(3). [a(5)@a(7),a(9)]\n"
-            "#heuristic a(2) : a(3). [a(5)@a(7),a(10)]\n"
-            "#heuristic a(2) : a(3). [a(5)@a(8),a(9)]\n"
-            "#heuristic a(2) : a(3). [a(5)@a(8),a(10)]\n"
-            "#heuristic a(2) : a(3). [a(6)@a(7),a(9)]\n"
-            "#heuristic a(2) : a(3). [a(6)@a(7),a(10)]\n"
-            "#heuristic a(2) : a(3). [a(6)@a(8),a(9)]\n"
-            "#heuristic a(2) : a(3). [a(6)@a(8),a(10)]\n"
-            "#heuristic a(1) : a(4). [a(5)@a(7),a(9)]\n"
-            "#heuristic a(1) : a(4). [a(5)@a(7),a(10)]\n"
-            "#heuristic a(1) : a(4). [a(5)@a(8),a(9)]\n"
-            "#heuristic a(1) : a(4). [a(5)@a(8),a(10)]\n"
-            "#heuristic a(1) : a(4). [a(6)@a(7),a(9)]\n"
-            "#heuristic a(1) : a(4). [a(6)@a(7),a(10)]\n"
-            "#heuristic a(1) : a(4). [a(6)@a(8),a(9)]\n"
-            "#heuristic a(1) : a(4). [a(6)@a(8),a(10)]\n"
-            "#heuristic a(2) : a(4). [a(5)@a(7),a(9)]\n"
-            "#heuristic a(2) : a(4). [a(5)@a(7),a(10)]\n"
-            "#heuristic a(2) : a(4). [a(5)@a(8),a(9)]\n"
-            "#heuristic a(2) : a(4). [a(5)@a(8),a(10)]\n"
-            "#heuristic a(2) : a(4). [a(6)@a(7),a(9)]\n"
-            "#heuristic a(2) : a(4). [a(6)@a(7),a(10)]\n"
-            "#heuristic a(2) : a(4). [a(6)@a(8),a(9)]\n"
-            "#heuristic a(2) : a(4). [a(6)@a(8),a(10)]");
-        REQUIRE(unpool("#project a(1;2) : a(3;4).") ==
-            "#project a(1) : a(3).\n"
-            "#project a(2) : a(3).\n"
-            "#project a(1) : a(4).\n"
-            "#project a(2) : a(4).");
+                "#heuristic a(1) : a(3). [a(5)@a(7),a(9)]\n"
+                "#heuristic a(1) : a(3). [a(5)@a(7),a(10)]\n"
+                "#heuristic a(1) : a(3). [a(5)@a(8),a(9)]\n"
+                "#heuristic a(1) : a(3). [a(5)@a(8),a(10)]\n"
+                "#heuristic a(1) : a(3). [a(6)@a(7),a(9)]\n"
+                "#heuristic a(1) : a(3). [a(6)@a(7),a(10)]\n"
+                "#heuristic a(1) : a(3). [a(6)@a(8),a(9)]\n"
+                "#heuristic a(1) : a(3). [a(6)@a(8),a(10)]\n"
+                "#heuristic a(2) : a(3). [a(5)@a(7),a(9)]\n"
+                "#heuristic a(2) : a(3). [a(5)@a(7),a(10)]\n"
+                "#heuristic a(2) : a(3). [a(5)@a(8),a(9)]\n"
+                "#heuristic a(2) : a(3). [a(5)@a(8),a(10)]\n"
+                "#heuristic a(2) : a(3). [a(6)@a(7),a(9)]\n"
+                "#heuristic a(2) : a(3). [a(6)@a(7),a(10)]\n"
+                "#heuristic a(2) : a(3). [a(6)@a(8),a(9)]\n"
+                "#heuristic a(2) : a(3). [a(6)@a(8),a(10)]\n"
+                "#heuristic a(1) : a(4). [a(5)@a(7),a(9)]\n"
+                "#heuristic a(1) : a(4). [a(5)@a(7),a(10)]\n"
+                "#heuristic a(1) : a(4). [a(5)@a(8),a(9)]\n"
+                "#heuristic a(1) : a(4). [a(5)@a(8),a(10)]\n"
+                "#heuristic a(1) : a(4). [a(6)@a(7),a(9)]\n"
+                "#heuristic a(1) : a(4). [a(6)@a(7),a(10)]\n"
+                "#heuristic a(1) : a(4). [a(6)@a(8),a(9)]\n"
+                "#heuristic a(1) : a(4). [a(6)@a(8),a(10)]\n"
+                "#heuristic a(2) : a(4). [a(5)@a(7),a(9)]\n"
+                "#heuristic a(2) : a(4). [a(5)@a(7),a(10)]\n"
+                "#heuristic a(2) : a(4). [a(5)@a(8),a(9)]\n"
+                "#heuristic a(2) : a(4). [a(5)@a(8),a(10)]\n"
+                "#heuristic a(2) : a(4). [a(6)@a(7),a(9)]\n"
+                "#heuristic a(2) : a(4). [a(6)@a(7),a(10)]\n"
+                "#heuristic a(2) : a(4). [a(6)@a(8),a(9)]\n"
+                "#heuristic a(2) : a(4). [a(6)@a(8),a(10)]");
+        REQUIRE(unpool("#project a(1;2) : a(3;4).") == "#project a(1) : a(3).\n"
+                                                       "#project a(2) : a(3).\n"
+                                                       "#project a(1) : a(4).\n"
+                                                       "#project a(2) : a(4).");
     }
     SECTION("options") {
         std::vector<AST::Node> prg;
@@ -590,20 +573,12 @@ TEST_CASE("unpool-ast-v2", "[clingo]") {
             return ret;
         };
 
-        REQUIRE(unpool(true, true) == std::vector<std::string>{
-            "a(1): a(3)",
-            "a(1): a(4)",
-            "a(2): a(3)",
-            "a(2): a(4)"});
-        REQUIRE(unpool(false, true) == std::vector<std::string>{
-            "a(1;2): a(3)",
-            "a(1;2): a(4)"});
-        REQUIRE(unpool(true, false) == std::vector<std::string>{
-            "a(1): a(3;4)",
-            "a(2): a(3;4)"});
-        REQUIRE(unpool(false, false) == std::vector<std::string>{
-            "a(1;2): a(3;4)"});
+        REQUIRE(unpool(true, true) == std::vector<std::string>{"a(1): a(3)", "a(1): a(4)", "a(2): a(3)", "a(2): a(4)"});
+        REQUIRE(unpool(false, true) == std::vector<std::string>{"a(1;2): a(3)", "a(1;2): a(4)"});
+        REQUIRE(unpool(true, false) == std::vector<std::string>{"a(1): a(3;4)", "a(2): a(3;4)"});
+        REQUIRE(unpool(false, false) == std::vector<std::string>{"a(1;2): a(3;4)"});
     }
 }
 
-} } // namespace Test Clingo
+} // namespace Test
+} // namespace Clingo

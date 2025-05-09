@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2009-2017 Benjamin Kaufmann
+// Copyright (c) 2009-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -111,7 +111,7 @@ private:
 struct ScoreLook {
 	enum Mode { score_max, score_max_min };
 	typedef PodVector<VarScore>::type VarScores; /**< A vector of variable-scores */
-	ScoreLook() : best(0), mode(score_max), addDeps(true), nant(false) {}
+	ScoreLook() : best(0), limit(UINT32_MAX), mode(score_max), addDeps(true), nant(false) {}
 	bool    validVar(Var v) const { return v < score.size(); }
 	void    scoreLits(const Solver& s, const Literal* b, const Literal *e);
 	void    clearDeps();
@@ -129,6 +129,7 @@ struct ScoreLook {
 	VarVec    deps;   //!< Tested vars and those that follow from them.
 	VarType   types;  //!< Var types to consider.
 	Var       best;   //!< Var with best score among those in deps.
+	uint32    limit;  //!< Stop after this number of tests
 	Mode      mode;   //!< Score mode to apply.
 	bool      addDeps;//!< Add/score dependent vars?
 	bool      nant;   //!< Score only atoms in NegAnte(P)?
@@ -172,7 +173,7 @@ public:
 	bool    empty() const { return head()->next == head_id; }
 	//! Adds literal p to the lookahead list.
 	void    append(Literal p, bool testBoth);
-	//! Executes a single-step lookahead on all vars in the loookahead list.
+	//! Executes a single-step lookahead on all vars in the lookahead list.
 	bool    propagateFixpoint(Solver& s, PostPropagator*);
 	//! Returns PostPropagator::priority_reserved_look.
 	uint32  priority() const;

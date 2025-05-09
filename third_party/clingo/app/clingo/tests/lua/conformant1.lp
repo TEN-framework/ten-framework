@@ -1,4 +1,4 @@
-#script (lua) 
+#script (lua)
 function main(prg)
     local step   = 0
     local check  = false
@@ -29,7 +29,7 @@ function main(prg)
                 if ret.satisfiable then
                     break
                 end
-            else 
+            else
                 break
             end
         end
@@ -60,7 +60,7 @@ contradict(F)  :- complement(F,L,M), effect(A,L,N1), effect(A,M,N2),
 { holds(F,0) } :- complement(F,L,M), not initially(L), not initially(M).
   holds(F,0)   :- initially(L), complement(F,L,M).
 
-holds_oneof(N,B)  :- 
+holds_oneof(N,B)  :-
     initially_oneof(N,_,B);
     not holds(F,0) : initially_oneof(N,M,B), complement(F,L,M);
         holds(F,0) : initially_oneof(N,L,B), complement(F,L,M).
@@ -80,7 +80,7 @@ holds(L,t) :- occurs(A,t), effect(A,L,N), holds(C,t-1) : condition(A,C,N).
 holds(L,t) :- holds(L,t-1), complement(L,M), not holds(M,t).
  :- contradict(F), complement(F,L,M), holds((L),t), holds((M),t).
 
-caused(L,t) :- occurs(A,t), effect(A,L,N), 
+caused(L,t) :- occurs(A,t), effect(A,L,N),
                not holds(F',t-1) : condition(A,M',N), complement(F',L',M');
                    holds(F',t-1) : condition(A,L',N), complement(F',L',M').
 holds(F,t) :- caused(L,t), complement(F,L,M).
@@ -126,9 +126,9 @@ pos_executable(T,t)   :- occurs(A,T), alt_holds(C,T-1,t) : executable(A,C), C !=
 pos_goal_or(N,t) :- goal_or(N,L,B), alt_holds(L,t,t), vol(t).
 pos_goal_or(N,t) :- goal_or(N,L,B), goal(L), vol(t).
 
-bottom(t) :- pos_goal_or(N,t)  : goal_or(N,_,_); 
+bottom(t) :- pos_goal_or(N,t)  : goal_or(N,_,_);
              alt_holds(L,t,t)  : goal(L);
-             pos_executable(R,t)     : R = 1..t; 
+             pos_executable(R,t)     : R = 1..t;
              not_contradict(F,S,t) : contradict(F), S = 1..t;
              vol(t).
 
@@ -159,7 +159,7 @@ fluent(cpa_coin_at(cpa_c0, cpa_f1, cpa_p1)).
 fluent(cpa_coin_at(cpa_c1, cpa_f1, cpa_p0)).
 fluent(cpa_coin_at(cpa_c1, cpa_f1, cpa_p1)).
 
-%% actions ------ 
+%% actions ------
 
 action(cpa_collect(cpa_c0, cpa_f0, cpa_p0)).
 action(cpa_collect(cpa_c0, cpa_f0, cpa_p1)).
@@ -186,7 +186,7 @@ action(cpa_step_out(cpa_e0, cpa_f1, cpa_p0)).
 action(cpa_step_out(cpa_e1, cpa_f0, cpa_p1)).
 action(cpa_step_out(cpa_e1, cpa_f1, cpa_p1)).
 
-%% executable ------ 
+%% executable ------
 
 executable(cpa_collect(cpa_c0, cpa_f0, cpa_p0),cpa_at(cpa_f0, cpa_p0)).
 executable(cpa_collect(cpa_c0, cpa_f0, cpa_p1),cpa_at(cpa_f0, cpa_p1)).
@@ -209,7 +209,7 @@ executable(cpa_step_out(cpa_e0, cpa_f1, cpa_p0),cpa_inside(cpa_e0)).
 executable(cpa_step_out(cpa_e1, cpa_f0, cpa_p1),cpa_inside(cpa_e1)).
 executable(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_inside(cpa_e1)).
 
-%% effects ------ 
+%% effects ------
 
 effect(cpa_collect(cpa_c0, cpa_f1, cpa_p0),cpa_have(cpa_c0),1).
 effect(cpa_collect(cpa_c0, cpa_f1, cpa_p0),neg(cpa_coin_at(cpa_c0, cpa_f1, cpa_p0)),1).
@@ -268,7 +268,7 @@ effect(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_at(cpa_f1, cpa_p1),1).
 effect(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),neg(cpa_inside(cpa_e1)),1).
 condition(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_in(cpa_e1, cpa_f1),1).
 
-%% initial state ------ 
+%% initial state ------
 
 initially(cpa_at(cpa_f0, cpa_p0)).
 initially(neg(cpa_at(cpa_f0, cpa_p1))).
@@ -287,8 +287,7 @@ initially_oneof(3,cpa_coin_at(cpa_c1, cpa_f1, cpa_p0),1).
 initially_oneof(3,cpa_coin_at(cpa_c0, cpa_f1, cpa_p1),2).
 initially_oneof(3,cpa_coin_at(cpa_c1, cpa_f1, cpa_p1),2).
 
-%% goal state ---------- 
+%% goal state ----------
 
 goal(cpa_have(cpa_c0)).
 goal(cpa_have(cpa_c1)).
-

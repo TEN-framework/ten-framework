@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(test_insert_pointer) {
   set.insert(value_ptr);
   set.emplace(value_ptr);
 
-  BOOST_CHECK_EQUAL(set.size(), 1);
+  BOOST_CHECK_EQUAL(set.size(), 1u);
   BOOST_CHECK_EQUAL(**set.begin(), value);
 }
 

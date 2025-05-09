@@ -1,15 +1,13 @@
-#include "tests/tests.hh"
 #include "gringo/term.hh"
+#include "tests/tests.hh"
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 struct DummyContext : IEContext {
-    void gatherIEs(IESolver &solver) const override {
-        static_cast<void>(solver);
-    }
-    void addIEBound(VarTerm const &var, IEBound const &bound) override {
-        bounds.emplace(&var, bound);
-    }
+    void gatherIEs(IESolver &solver) const override { static_cast<void>(solver); }
+    void addIEBound(VarTerm const &var, IEBound const &bound) override { bounds.emplace(&var, bound); }
     IEBoundMap bounds;
 };
 
@@ -57,11 +55,11 @@ TEST_CASE("iesolver", "[iesolver]") {
         slv.add({{{1, X.get()}}, 1}, false);   // X>=1
         slv.add({{{-1, X.get()}}, -2}, false); // X<=2
         // Y=0
-        slv.add({{{1, Y.get()}}, 0}, false);   // Y>=0
-        slv.add({{{-1, Y.get()}}, 0}, false);  // Y<=0
+        slv.add({{{1, Y.get()}}, 0}, false);  // Y>=0
+        slv.add({{{-1, Y.get()}}, 0}, false); // Y<=0
         // Z-X-3*Y=0
         slv.add({{{1, Z.get()}, {-1, X.get()}, {-3, Y.get()}}, 0}, false); // Z-X-3*Y>=0
-        slv.add({{{-1, Z.get()}, {1, X.get()}, {3, Y.get()}}, 0}, false); // -Z+X+3*Y<=0
+        slv.add({{{-1, Z.get()}, {1, X.get()}, {3, Y.get()}}, 0}, false);  // -Z+X+3*Y<=0
 
         slv.compute();
         auto const bounds = std::move(ctx.bounds);
@@ -87,4 +85,6 @@ TEST_CASE("iesolver", "[iesolver]") {
     }
 }
 
-} } } // namespace Test Input Gringo
+} // namespace Test
+} // namespace Input
+} // namespace Gringo

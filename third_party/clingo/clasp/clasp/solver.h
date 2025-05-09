@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -257,11 +257,8 @@ public:
 
 
 	//! Returns to the maximum of rootLevel() and backtrackLevel() and increases the number of restarts.
-	void restart() {
-		undoUntil(0);
-		++stats.restarts;
-		ccInfo_.score().bumpActivity();
-	}
+	void restart();
+
 	enum UndoMode { undo_default = 0u, undo_pop_bt_level = 1u, undo_pop_proj_level = 2u, undo_save_phases = 4u };
 	//! Sets the backtracking level to dl.
 	/*!
@@ -282,14 +279,22 @@ public:
 
 	//! Returns whether the solver can split-off work.
 	bool splittable() const;
-
-	//! Tries to split-off disjoint work from the solver's currrent guiding path and returns it in out.
+	//! Notifies the solver about a split request.
 	/*!
+	 * \return splittable()
+	 */
+	bool requestSplit();
+	//! Clears last split request and returns true if there was an open request.
+	bool clearSplitRequest();
+
+	//! Tries to split-off disjoint work from the solver's current guiding path and returns it in out.
+	/*!
+	 * On split, any open split request is also cleared.
 	 * \return splittable()
 	 */
 	bool split(LitVec& out);
 
-	//! Copies the solver's currrent guiding path to gp.
+	//! Copies the solver's current guiding path to gp.
 	/*!
 	 * \note The solver's guiding path consists of:
 	 *   - the decisions from levels [1, rootLevel()]
@@ -438,7 +443,7 @@ public:
 	//! Executes a one-step lookahead on p.
 	/*!
 	 * Assumes p and propagates this assumption. If propagations leads to
-	 * a conflict, false is returned. Otherwise the assumption is undone and
+	 * a conflict, false is returned. Otherwise, the assumption is undone and
 	 * the function returns true.
 	 * \param p The literal to test.
 	 * \param c The constraint that wants to test p (can be 0).
@@ -460,7 +465,7 @@ public:
 	//! Computes the number of in-edges for each assigned literal.
 	/*!
 	 * \pre  !hasConflict()
-	 * \note For a literal p assigned on level level(p), only in-edges from
+	 * \note For a literal p assigned on level(p), only in-edges from
 	 *       levels < level(p) are counted.
 	 * \return The maximum number of in-edges.
 	 */
@@ -620,7 +625,7 @@ public:
 	const LitVec&     conflict()                     const { return conflict_; }
 	//! Returns the most recently derived conflict clause.
 	const LitVec&     conflictClause()               const { return cc_; }
-	//! Returns the set of eliminated literals that are unconstraint w.r.t the last model.
+	//! Returns the set of eliminated literals that are unconstrained w.r.t the last model.
 	const LitVec&     symmetric()                    const { return temp_; }
 	//! Returns the enumeration constraint set by the enumerator used.
 	Constraint*       enumerationConstraint()        const { return enum_; }
@@ -752,7 +757,7 @@ public:
 	}
 
 	//! Helper function for increasing antecedent activities during conflict clause minimization.
-	bool updateOnMinimize(ConstraintScore& sc) {
+	bool updateOnMinimize(ConstraintScore& sc) const {
 		return !strategy_.ccMinKeepAct && (sc.bumpActivity(), true);
 	}
 
@@ -871,6 +876,7 @@ private:
 	Constraint*       enum_;        // enumeration constraint - set by enumerator
 	uint64            memUse_;      // memory used by learnt constraints (estimate)
 	Dirty*            lazyRem_;     // set of watch lists that contain invalid constraints
+	DynamicLimit*     dynLimit_;    // active dynamic limit
 	SmallClauseAlloc  smallAlloc_;  // allocator object for small clauses
 	Assignment        assign_;      // three-valued assignment.
 	DecisionLevels    levels_;      // information (e.g. position in trail) on each decision level
@@ -891,6 +897,7 @@ private:
 	uint32            lastSimp_ :30;// number of top-level assignments on last call to simplify
 	uint32            shufSimp_ : 1;// shuffle db on next simplify?
 	uint32            initPost_ : 1;// initialize new post propagators?
+	bool              splitReq_;    // unhandled split request?
 };
 inline bool isRevLit(const Solver& s, Literal p, uint32 maxL) {
 	return s.isFalse(p) && (s.seen(p) || s.level(p.var()) < maxL);
@@ -989,7 +996,7 @@ public:
 	virtual void simplify(const Solver& s, LitVec::size_type st) { (void)s; (void)st; }
 
 	/*!
-	 * Called whenever the solver backracks.
+	 * Called whenever the solver backtracks.
 	 * Literals in the range [s.trail()[st], s.trail().size()) are subject to backtracking.
 	 * The default-implementation is a noop.
 	 * \param s The solver that is about to backtrack.
@@ -1060,7 +1067,7 @@ public:
 		(void)s; (void)last;
 		return *first;
 	}
-	static Literal selectLiteral(Solver& s, Var v, int signScore) {
+	static Literal selectLiteral(const Solver& s, Var v, int signScore) {
 		ValueSet prefs = s.pref(v);
 		if (signScore != 0 && !prefs.has(ValueSet::user_value | ValueSet::saved_value | ValueSet::pref_value)) {
 			return Literal(v, signScore < 0);

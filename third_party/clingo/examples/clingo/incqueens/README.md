@@ -7,4 +7,3 @@ board sizes, which can be given as a list of intervals on the command line.
 
     clingo incqueens.lp incqueens-py.lp -c calls="list((1,1),(3,5),(8,9))"
     clingo incqueens.lp incqueens-lua.lp -c calls="list((1,1),(3,5),(8,9))"
-

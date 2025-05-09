@@ -1,4 +1,4 @@
-#script (lua) 
+#script (lua)
 function main(prg)
     local step   = 0
     local check  = false
@@ -27,7 +27,7 @@ function main(prg)
                 if ret.satisfiable then
                     break
                 end
-            else 
+            else
                 break
             end
         end

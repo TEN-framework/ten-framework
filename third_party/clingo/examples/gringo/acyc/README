@@ -2,4 +2,3 @@ Example showcasing the #edge directive.
 
 Example calls:
     clingo encoding.lp instance.lp
-

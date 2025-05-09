@@ -247,7 +247,7 @@ int matchDomHeuPred(const char*& in, StringSpan& atom, Heuristic_t& type, int& b
 	if (!matchAtomArg(in, atom) || !match(in, ",")) { return -1; }
 	if (!match(in, type)        || !match(in, ",")) { return -2; }
 	if (!match(in, bias)) { return -3; }
-	prio = static_cast<unsigned>(bias < 0 ? -bias : bias);
+	prio = bias < 0 ? static_cast<unsigned>(~bias) + 1u : static_cast<unsigned>(bias);
 	if (!match(in, ",")) { return match(in, ")") ? 1 : -3; }
 	if (!match(in, p) || p < 0) { return -4; }
 	prio = static_cast<unsigned>(p);
@@ -289,10 +289,10 @@ void MemoryRegion::swap(MemoryRegion& other) {
 }
 void MemoryRegion::grow(std::size_t n) {
 	if (n > size()) {
-		std::size_t nc = std::max(n, (size() * 3) >> 1);
+		std::size_t nc = std::max(n, (size() * 3 + 1) >> 1);
 		void* t = std::realloc(beg_, nc);
 		POTASSCO_CHECK(t, ENOMEM);
-		beg_ = t; end_ = static_cast<unsigned char*>(t)+n;
+		beg_ = t; end_ = static_cast<unsigned char*>(t)+nc;
 	}
 }
 

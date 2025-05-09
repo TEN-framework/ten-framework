@@ -25,6 +25,8 @@ namespace Catch {
         using size_type = std::size_t;
         using const_iterator = const char*;
 
+        static constexpr size_type npos{ static_cast<size_type>( -1 ) };
+
     private:
         static constexpr char const* const s_empty = "";
 
@@ -75,7 +77,7 @@ namespace Catch {
         }
 
         // Returns a substring of [start, start + length).
-        // If start + length > size(), then the substring is [start, start + size()).
+        // If start + length > size(), then the substring is [start, size()).
         // If start > size(), then the substring is empty.
         constexpr StringRef substr(size_type start, size_type length) const noexcept {
             if (start < m_size) {
@@ -95,8 +97,8 @@ namespace Catch {
         constexpr const_iterator end() const { return m_start + m_size; }
 
 
-        friend std::string& operator += (std::string& lhs, StringRef sr);
-        friend std::ostream& operator << (std::ostream& os, StringRef sr);
+        friend std::string& operator += (std::string& lhs, StringRef rhs);
+        friend std::ostream& operator << (std::ostream& os, StringRef str);
         friend std::string operator+(StringRef lhs, StringRef rhs);
 
         /**

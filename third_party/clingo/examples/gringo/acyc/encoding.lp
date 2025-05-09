@@ -4,4 +4,3 @@ start(X) :- X = #min { Y : node(Y) }.
 #edge (X,Y) : path(X,Y), not start(Y).
 
 #show path/2.
-

@@ -24,17 +24,14 @@
 
 #include "gringo/input/literal.hh"
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ definition of Projections
 
-Projections::ProjectionMap::iterator Projections::begin() {
-    return proj.begin();
-}
+Projections::ProjectionMap::iterator Projections::begin() { return proj.begin(); }
 
-Projections::ProjectionMap::iterator Projections::end() {
-    return proj.end();
-}
+Projections::ProjectionMap::iterator Projections::end() { return proj.end(); }
 
 UTerm Projections::add(Term &term) {
     AuxGen gen;
@@ -59,10 +56,9 @@ ULitVecVec Literal::unpoolComparison() const {
     return ret;
 }
 
-bool Literal::hasUnpoolComparison() const {
-    return false;
-}
+bool Literal::hasUnpoolComparison() const { return false; }
 
 // }}}
 //
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

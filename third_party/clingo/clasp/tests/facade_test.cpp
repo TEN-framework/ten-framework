@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -22,7 +22,6 @@
 // IN THE SOFTWARE.
 //
 #include <clasp/solver.h>
-#include <clasp/clause.h>
 #include <clasp/clasp_facade.h>
 #include <clasp/minimize_constraint.h>
 #include <clasp/heuristics.h>
@@ -303,27 +302,154 @@ TEST_CASE("Facade", "[facade]") {
 		REQUIRE(libclasp.summary().numEnum == 5);
 	}
 
+	SECTION("testIssue101 - preserve heuristic") {
+		REQUIRE_FALSE(libclasp.ctx.preserveHeuristic());
+		REQUIRE(static_cast<uint32>(libclasp.ctx.defaultDomPref()) > 32u);
+		SECTION("preserve heuristic") {
+			SECTION("if incremental") {
+				Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, true);
+				libclasp.prepare();
+				REQUIRE(libclasp.ctx.preserveHeuristic());
+			}
+			SECTION("if domain heuristic is used") {
+				config.addSolver(0).heuId = Heuristic_t::Domain;
+				Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, false);
+				lpAdd(asp, "{a;b;c;d}. #heuristic a. [1@1,true] #output b : b.");
+				libclasp.prepare();
+				REQUIRE(libclasp.ctx.preserveHeuristic());
+				config.addSolver(0).heuristic.domMod  = HeuParams::mod_level;
+				config.addSolver(0).heuristic.domPref = HeuParams::pref_show | HeuParams::pref_min;
+				REQUIRE(libclasp.ctx.defaultDomPref() == uint32(HeuParams::pref_show | HeuParams::pref_min));
+				REQUIRE_FALSE(libclasp.ctx.varInfo(1).frozen());
+				REQUIRE_FALSE(libclasp.ctx.varInfo(2).frozen());
+			}
+			SECTION("if explicitly set") {
+				Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, false);
+				libclasp.ctx.setPreserveHeuristic(true);
+				REQUIRE(libclasp.ctx.preserveHeuristic());
+			}
+		}
+		SECTION("freeze vars") {
+			config.satPre.type = SatPreParams::sat_pre_full;
+			config.addSolver(0).heuId = Heuristic_t::Domain;
+			Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, false);
+			lpAdd(asp, "{a;b;c;d}. #heuristic a. [1@1,true] #output b : b.");
+			SECTION("with explicit heuristic mod") {
+				libclasp.prepare();
+				REQUIRE(libclasp.ctx.varInfo(1).frozen());
+				REQUIRE_FALSE(libclasp.ctx.varInfo(2).frozen());
+			}
+			SECTION("with implicit heuristic mod") {
+				config.addSolver(0).heuristic.domMod  = HeuParams::mod_level;
+				config.addSolver(0).heuristic.domPref = HeuParams::pref_show;
+				libclasp.prepare();
+				REQUIRE(libclasp.ctx.varInfo(1).frozen());
+				REQUIRE(libclasp.ctx.varInfo(2).frozen());
+				REQUIRE_FALSE(libclasp.ctx.varInfo(3).frozen());
+			}
+		}
+	}
+
+
 	SECTION("testComputeBrave") {
 		config.solve.numModels = 0;
 		config.solve.enumMode = EnumOptions::enum_brave;
 		Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, true);
+		Asp::LogicProgram::OutputState expectedState;
 		std::string prg(
 			"x1 :- not x2.\n"
 			"x2 :- not x1.\n"
 			"x3 :- not x1.\n");
 		SECTION("via output") {
 			prg.append("#output a : x1.\n #output b : x2.\n");
+			expectedState = Asp::LogicProgram::out_shown;
 		}
 		SECTION("via project") {
 			prg.append("#project{x1, x2, x3}.");
+			expectedState = Asp::LogicProgram::out_projected;
 		}
+#if CLASP_HAS_THREADS
+		SECTION("with mt") {
+			config.solve.algorithm.threads = 4;
+			libclasp.update(true);
+			prg.append("#output a : x1.\n #output b : x2.\n");
+			expectedState = Asp::LogicProgram::out_shown;
+		}
+#endif
 		lpAdd(asp, prg.c_str());
 		libclasp.prepare();
+		REQUIRE(asp.getOutputState(1) == expectedState);
+		REQUIRE(asp.getOutputState(2) == expectedState);
 		REQUIRE(libclasp.solve().sat());
 		const Model& m = *libclasp.summary().model();
 		REQUIRE(m.isDef(asp.getLiteral(1)));
 		REQUIRE(m.isDef(asp.getLiteral(2)));
 	}
+
+	SECTION("testProjectCautious") {
+		int testId = 0;
+		SECTION("show-def")      { testId = 1; }
+		SECTION("show-query")    { testId = 2; }
+		SECTION("project-def")   { testId = 3; }
+		SECTION("project-query") { testId = 4; }
+		CHECK(testId != 0);
+		bool query   = (testId & 1) == 0;
+		bool project = testId > 2;
+		int expectedModels = 2;
+		Asp::LogicProgram::OutputState outState = project ? Asp::LogicProgram::out_all : Asp::LogicProgram::out_shown;
+		std::string testName = std::string(project ? "project-" : "show-") + std::string(query ? "query" : "def");
+		std::string prg = "a. b. c.\n{d}.\ne :- not d.\n";
+		for (const char* c = "abcde"; *c; ++c) {
+			prg.append("#output ").append(1, *c).append(" : ").append(1, *c).append(".\n");
+		}
+		if (project) {
+			prg.append("#project{a,b}.");
+			expectedModels = 1;
+		}
+		CAPTURE(testName);
+		config.solve.numModels = 0;
+		config.solve.enumMode = query ? EnumOptions::enum_query : EnumOptions::enum_cautious;
+		Clasp::Asp::LogicProgram& asp = libclasp.startAsp(config, true);
+		lpAdd(asp, prg.c_str());
+		libclasp.prepare();
+		CHECK(asp.getOutputState(1) == outState);
+		CHECK(asp.getOutputState(2) == outState);
+		CHECK(asp.getOutputState(3) == Asp::LogicProgram::out_shown);
+		CHECK(asp.getOutputState(4) == Asp::LogicProgram::out_shown);
+		CHECK(asp.getOutputState(5) == Asp::LogicProgram::out_shown);
+		Literal a = asp.getLiteral(1), b = asp.getLiteral(2), c = asp.getLiteral(3);
+		Literal d = asp.getLiteral(4), e = asp.getLiteral(5);
+		int count = 0;
+		for (ClaspFacade::SolveHandle it = libclasp.solve(SolveMode_t::Yield); it.next();) {
+			CAPTURE(count);
+			const Model& m = *it.model();
+			CHECK_FALSE(m.def);
+			CHECK(m.isDef(a));
+			CHECK(m.isDef(b));
+			CHECK(m.isDef(c));
+			CHECK_FALSE(m.isDef(d));
+			CHECK_FALSE(m.isDef(e));
+			if (project) {
+				CHECK_FALSE(m.isEst(d));
+				CHECK_FALSE(m.isEst(e));
+			}
+			else {
+				CHECK(m.isEst(d) == m.isTrue(d));
+				CHECK(m.isEst(e) == m.isTrue(e));
+			}
+			++count;
+		}
+		REQUIRE(expectedModels == count);
+		REQUIRE(libclasp.summary().numEnum == count);
+		const Model& m = *libclasp.summary().model();
+		REQUIRE(m.def);
+		REQUIRE(m.isDef(a));
+		REQUIRE(m.isDef(b));
+		REQUIRE(m.isDef(c));
+		REQUIRE_FALSE(m.isDef(d));
+		REQUIRE_FALSE(m.isDef(e));
+	}
+
 	SECTION("testComputeQuery") {
 		config.solve.numModels = 0;
 		config.solve.enumMode = EnumOptions::enum_query;
@@ -444,7 +570,7 @@ TEST_CASE("Facade", "[facade]") {
 		REQUIRE(libclasp.summary().model()->isTrue(asp.getLiteral(1)));
 		REQUIRE(libclasp.summary().model()->isTrue(asp.getLiteral(2)));
 	}
-	SECTION("testUncoreUndoerAssumptions") {
+	SECTION("testUncoreUndoesAssumptions") {
 		config.solve.numModels = 0;
 		config.solve.optMode   = MinimizeMode_t::enumOpt;
 		config.addSolver(0).heuId = Heuristic_t::Domain;
@@ -783,6 +909,28 @@ TEST_CASE("Facade", "[facade]") {
 		REQUIRE(libclasp.solve().sat());
 		REQUIRE(libclasp.summary().numEnum == 8);
 	}
+
+	SECTION("testIssue104") {
+		config.solve.numModels = 1;
+		config.parse.enableAssume();
+		config.satPre.type = SatPreParams::sat_pre_full;
+		std::stringstream prg;
+		prg << "p cnf 3 0\n";
+		prg << "c assume 1 -2 3\n";
+		SECTION("no clause") {
+			libclasp.start(config, prg);
+			CHECK(libclasp.read());
+			CHECK(libclasp.solve().sat());
+			CHECK(libclasp.summary().numEnum == 1);
+		}
+		SECTION("one clause") {
+			prg << "1 2 3 0\n";
+			libclasp.start(config, prg);
+			CHECK(libclasp.read());
+			CHECK(libclasp.solve().sat());
+			CHECK(libclasp.summary().numEnum == 1);
+		}
+	}
 };
 
 TEST_CASE("Regressions", "[facade][regression]") {
@@ -859,6 +1007,7 @@ TEST_CASE("Regressions", "[facade][regression]") {
 		  "b | a | c | d :-e.\n"
 		  ":- d, e.\n");
 		libclasp.prepare();
+		REQUIRE(libclasp.summary().lpStats()->gammas == 8);
 		REQUIRE(libclasp.solve().sat());
 		REQUIRE(libclasp.summary().numEnum == 5);
 	}
@@ -1238,7 +1387,7 @@ TEST_CASE("Facade mt", "[facade][mt]") {
 					else {
 						ev->fire();
 						if (et == alloc) { throw std::bad_alloc(); }
-						else             { throw std::logic_error("Something happend"); }
+						else             { throw std::logic_error("Something happened"); }
 					}
 					return true;
 				}
@@ -1416,7 +1565,7 @@ TEST_CASE("Facade statistics", "[facade]") {
 			REQUIRE(result == stats->get(r, it->c_str()));
 			REQUIRE(stats->type(result) == Potassco::Statistics_t::Value);
 		}
-		REQUIRE(keys.size() == 238);
+		REQUIRE(keys.size() == 242);
 
 		Key_t result;
 		REQUIRE(stats->find(r, "problem.lp", &result));
@@ -1459,7 +1608,7 @@ TEST_CASE("Facade statistics", "[facade]") {
 		Key_t hcc0Vars = stats->get(hcc0, "vars");
 		REQUIRE(stats->value(hcc0Vars) != 0.0);
 		libclasp.update();
-		libclasp.ctx.removeMinimize();
+		asp.removeMinimize();
 		lpAdd(asp,
 			"x7 | x8 :- x9, not x1."
 			"x9 :- x7, x8, not x2."
@@ -1598,18 +1747,21 @@ TEST_CASE("Facade statistics", "[facade]") {
 			REQUIRE(stats->find(r, it->c_str(), 0));
 			REQUIRE(stats->type(stats->get(r, it->c_str())) == Potassco::Statistics_t::Value);
 		}
-		REQUIRE(keys.size() == 256);
+		REQUIRE(keys.size() == 260);
 	}
 }
 namespace {
 class MyProp : public Potassco::AbstractPropagator {
 public:
-	MyProp() : fire(lit_false()), clProp(Potassco::Clause_t::Learnt) {}
+	MyProp() : fire(lit_false()), clProp(Potassco::Clause_t::Learnt), inProp(false) {}
 	virtual void propagate(Potassco::AbstractSolver& s, const ChangeList& changes) {
+		inProp = true;
 		map(changes);
 		addClause(s);
+		inProp = false;
 	}
 	virtual void undo(const Potassco::AbstractSolver&, const ChangeList& changes) {
+		POTASSCO_REQUIRE(!inProp, "invalid call to undo from propagate");
 		map(changes);
 	}
 	virtual void check(Potassco::AbstractSolver& s) {
@@ -1638,6 +1790,7 @@ public:
 	LitVec change;
 	Potassco::LitVec   clause;
 	Potassco::Clause_t clProp;
+	bool inProp;
 };
 
 struct PropagatorTest {
@@ -1842,8 +1995,18 @@ TEST_CASE("Clingo propagator", "[facade][propagator]") {
 		ctx.endInit();
 		Solver& s = *ctx.master();
 		s.assume(negLit(v[2])) && s.propagate();
+		uint32 learntExpected = 0;
+		SECTION("default") {
+			prop.clProp = Potassco::Clause_t::Learnt;
+			learntExpected = 1;
+		}
+		SECTION("static") {
+			prop.clProp = Potassco::Clause_t::Static;
+			learntExpected = 0;
+		}
 		s.assume(negLit(v[3])) && s.propagate();
-		REQUIRE(ctx.numLearntShort() == 1);
+		INFO("clause type: " << prop.clProp);
+		REQUIRE(ctx.numLearntShort() == learntExpected);
 		REQUIRE(s.isTrue(posLit(v[1])));
 		REQUIRE((prop.change.size() == 1 && prop.change[0] == negLit(v[3])));
 	}
@@ -1861,8 +2024,18 @@ TEST_CASE("Clingo propagator", "[facade][propagator]") {
 		s.assume(negLit(v[1])) && s.propagate();
 		s.assume(posLit(v[4])) && s.propagate();
 		s.assume(negLit(v[2])) && s.propagate();
+		uint32 learntExpected = 0;
+		SECTION("default") {
+			prop.clProp = Potassco::Clause_t::Learnt;
+			learntExpected = 1;
+		}
+		SECTION("static") {
+			prop.clProp = Potassco::Clause_t::Static;
+			learntExpected = 0;
+		}
+		INFO("clause type: " << prop.clProp);
 		s.assume(posLit(v[5])) && s.propagate();
-		REQUIRE(ctx.numLearntShort() == 1);
+		REQUIRE(ctx.numLearntShort() == learntExpected);
 		REQUIRE(s.decisionLevel() == 3);
 		s.undoUntil(2);
 		REQUIRE(std::find(prop.change.begin(), prop.change.end(), posLit(v[3])) != prop.change.end());
@@ -1879,6 +2052,13 @@ TEST_CASE("Clingo propagator", "[facade][propagator]") {
 		s.assume(negLit(v[1])) && s.propagate();
 		s.assume(negLit(v[3]));
 		s.pushRootLevel(2);
+		SECTION("default") {
+			prop.clProp = Potassco::Clause_t::Learnt;
+		}
+		SECTION("static") {
+			prop.clProp = Potassco::Clause_t::Static;
+		}
+		INFO("clause type: " << prop.clProp);
 		REQUIRE_FALSE(s.propagate());
 		INFO("do not add conflicting constraint");
 		REQUIRE(ctx.numLearntShort() == 0);
@@ -1961,6 +2141,90 @@ TEST_CASE("Clingo propagator", "[facade][propagator]") {
 		s.reduceLearnts(1.0);
 		REQUIRE(s.numWatches(negLit(v[2])) == 1);
 	}
+	SECTION("testAddStaticAsserting") {
+		test.addVars(2);
+		prop.addToClause(posLit(v[1]));
+		prop.addToClause(posLit(v[2]));
+		prop.fire = negLit(v[2]);
+		prop.clProp = Potassco::Clause_t::Static;
+
+		tp.addWatch(negLit(v[2]));
+		tp.applyConfig(*ctx.master());
+		ctx.endInit();
+
+		Solver& s = *ctx.master();
+		s.assume(negLit(v[1])) && s.propagate();
+		REQUIRE(s.assume(negLit(v[2])));
+		REQUIRE(s.propagate());
+		REQUIRE(s.numLearntConstraints() == 0);
+		REQUIRE(s.isTrue(posLit(v[2])));
+		REQUIRE(s.decisionLevel() == 1);
+
+		prop.fire = lit_false();
+		s.undoUntil(0);
+		s.assume(negLit(v[1])) && s.propagate();
+		REQUIRE(s.isTrue(posLit(v[2])));
+	}
+
+	SECTION("testAddStaticConflicting") {
+		ctx.setShortMode(ContextParams::short_explicit);
+		test.addVars(4);
+		ctx.addTernary(posLit(v[1]), negLit(v[2]), posLit(v[3]));
+		prop.addToClause(posLit(v[1]));
+		prop.addToClause(posLit(v[2]));
+		prop.addToClause(posLit(v[3]));
+		prop.fire = negLit(v[4]);
+		prop.clProp = Potassco::Clause_t::Static;
+
+		tp.addWatch(negLit(v[4]));
+		tp.applyConfig(*ctx.master());
+		ctx.endInit();
+
+		Solver& s = *ctx.master();
+		s.assume(negLit(v[1])) && s.propagate();
+		s.assume(negLit(v[3])) && s.propagate();
+		REQUIRE(s.propagate());
+		REQUIRE(s.isTrue(negLit(v[2])));
+
+		s.assume(negLit(4));
+		REQUIRE_FALSE(s.propagate());
+		REQUIRE(s.resolveConflict());
+		REQUIRE(s.numLearntConstraints() == 1);
+
+		s.undoUntil(0);
+		s.reduceLearnts(1.0f);
+		REQUIRE(s.numLearntConstraints() == 0);
+
+		prop.fire = lit_false();
+		s.assume(negLit(v[1])) && s.propagate();
+		s.assume(negLit(v[3]));
+		REQUIRE_FALSE(s.propagate());
+	}
+
+	SECTION("testAddStaticBacktrackUnit") {
+		test.addVars(4);
+		prop.addToClause(posLit(v[1]));
+		prop.addToClause(posLit(v[2]));
+		prop.addToClause(posLit(v[3]));
+		prop.fire = negLit(v[4]);
+		prop.clProp = Potassco::Clause_t::Static;
+
+		tp.addWatch(negLit(v[4]));
+		tp.applyConfig(*ctx.master());
+		ctx.endInit();
+
+		Solver& s = *ctx.master();
+		s.assume(negLit(v[1])) && s.propagate();
+		s.assume(negLit(v[3])) && s.propagate();
+
+		s.assume(negLit(v[4]));
+		REQUIRE(s.decisionLevel() == 3);
+		REQUIRE(s.propagate());
+		REQUIRE(s.decisionLevel() == 2);
+		REQUIRE(s.isTrue(posLit(v[2])));
+		REQUIRE(s.numLearntConstraints() == 0);
+	}
+
 	SECTION("with facade") {
 		ClaspConfig config;
 		ClaspFacade libclasp;

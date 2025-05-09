@@ -22,7 +22,7 @@
 // IN THE SOFTWARE.
 //
 // Add the libclasp directory to the list of
-// include directoies of your build system.
+// include directories of your build system.
 #include <clasp/clasp_facade.h>
 #include <clasp/solver.h>
 #include "example.h"

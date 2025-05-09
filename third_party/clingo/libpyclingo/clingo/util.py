@@ -2,8 +2,8 @@
 Utility functions and classes.
 """
 
-from typing import Optional, cast
 from collections import abc
+from typing import Optional, cast
 
 # pylint: disable=too-many-ancestors
 

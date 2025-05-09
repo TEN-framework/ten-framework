@@ -28,7 +28,8 @@
 #include <gringo/domain.hh>
 #include <gringo/types.hh>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 using ClauseId = std::pair<Id_t, Id_t>;
 using ClauseSpan = Potassco::Span<ClauseId>;
@@ -41,6 +42,7 @@ class OutputPredicates;
 enum class OutputDebug { NONE, TEXT, TRANSLATE, ALL };
 enum class OutputFormat { TEXT, INTERMEDIATE, SMODELS, REIFY };
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo
 
 #endif // GRINGO_OUTPUT_TYPES_HH

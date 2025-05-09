@@ -174,12 +174,18 @@ TEST_CASE("b") {
 If you are seeing a problem like this, i.e. weird test paths that trigger only under Clang with `libc++`, or only under very specific version of `libstdc++`, it is very likely you are seeing this. The only known workaround is to use a fixed version of your standard library.
 
 
-### libstdc++, `_GLIBCXX_DEBUG` macro and random ordering of tests
+### Visual Studio 2022 -- can't compile assertion with the spaceship operator
 
-Running a Catch2 binary compiled against libstdc++ with `_GLIBCXX_DEBUG`
-macro defined with `--order rand` will cause a debug check to trigger and
-abort the run due to self-assignment.
-[This is a known bug inside libstdc++](https://stackoverflow.com/questions/22915325/avoiding-self-assignment-in-stdshuffle/23691322)
+[The C++ standard requires that `std::foo_ordering` is only comparable with
+a literal 0](https://eel.is/c++draft/cmp#categories.pre-3). There are
+multiple strategies a stdlib implementation can take to achieve this, and
+MSVC's STL has changed the strategy they use between two releases of VS 2022.
 
-Workaround: Don't use `--order rand` when compiling against debug-enabled
-libstdc++.
+With the new strategy, `REQUIRE((a <=> b) == 0)` no longer compiles under
+MSVC. Note that Catch2 can compile code using MSVC STL's new strategy,
+but only when compiled with a C++20 conforming compiler. MSVC is currently
+not conformant enough, but `clang-cl` will compile the assertion above
+using MSVC STL without problem.
+
+This change got in with MSVC v19.37](https://godbolt.org/z/KG9obzdvE).
+

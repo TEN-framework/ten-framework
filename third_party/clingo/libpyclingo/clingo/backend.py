@@ -30,8 +30,8 @@ observe the corresponding rule passed to the backend:
     SAT
 """
 
-from typing import ContextManager, Sequence, Optional, Tuple
 from abc import ABCMeta
+from typing import ContextManager, Optional, Sequence, Tuple
 
 from ._internal import _c_call, _cb_error_handler, _ffi, _handle_error, _lib, _to_str
 from .core import OrderedEnum, TruthValue
@@ -951,7 +951,7 @@ class Backend(ContextManager["Backend"]):
             An optional program atom or zero for theory directives.
         """
         if atom_id_or_zero is None:
-            atom_id_or_zero = 0xffffffff
+            atom_id_or_zero = 0xFFFFFFFF
         return _c_call(
             "clingo_atom_t",
             _lib.clingo_backend_theory_atom,
@@ -992,7 +992,7 @@ class Backend(ContextManager["Backend"]):
         Backend.add_theory_atom
         """
         if atom_id_or_zero is None:
-            atom_id_or_zero = 0xffffffff
+            atom_id_or_zero = 0xFFFFFFFF
         return _c_call(
             "clingo_atom_t",
             _lib.clingo_backend_theory_atom_with_guard,

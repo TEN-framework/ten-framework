@@ -18,4 +18,3 @@ player cannot place her tokens in a winning position:
     Calls        : 1
     Time         : 0.013s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
     CPU Time     : 0.012s
-

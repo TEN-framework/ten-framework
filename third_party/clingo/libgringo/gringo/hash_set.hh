@@ -25,40 +25,34 @@
 #ifndef GRINGO_HASH_SET_HH
 #define GRINGO_HASH_SET_HH
 
-#include <potassco/basic_types.h>
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <gringo/utility.hh>
 #include <iterator>
 #include <memory>
-#include <cassert>
-#include <algorithm>
+#include <potassco/basic_types.h>
 #include <stdexcept>
-#include <array>
-#include <gringo/utility.hh>
 #include <tl/optional.hpp>
-#include <tsl/ordered_set.h>
 #include <tsl/ordered_map.h>
+#include <tsl/ordered_set.h>
 #include <unordered_set>
 #if CLINGO_MAP_TYPE == 0
-#   include <tsl/hopscotch_set.h>
-#   include <tsl/hopscotch_map.h>
+#include <tsl/hopscotch_map.h>
+#include <tsl/hopscotch_set.h>
 #elif CLINGO_MAP_TYPE == 1
-#   include <tsl/sparse_set.h>
-#   include <tsl/sparse_map.h>
+#include <tsl/sparse_map.h>
+#include <tsl/sparse_set.h>
 #endif
 
 namespace Gringo {
 
-template <class Key,
-          class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
-          class Allocator = std::allocator<Key>,
-          class ValueTypeContainer = std::vector<Key, Allocator>,
+template <class Key, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
+          class Allocator = std::allocator<Key>, class ValueTypeContainer = std::vector<Key, Allocator>,
           class IndexType = std::uint_least32_t>
 using ordered_set = tsl::ordered_set<Key, Hash, KeyEqual, Allocator, ValueTypeContainer, IndexType>;
 
-template <class Key,
-          class Value,
-          class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
+template <class Key, class Value, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
           class Allocator = std::allocator<std::pair<Key, Value>>,
           class ValueTypeContainer = std::vector<std::pair<Key, Value>, Allocator>,
           class IndexType = std::uint_least32_t>
@@ -66,111 +60,74 @@ using ordered_map = tsl::ordered_map<Key, Value, Hash, KeyEqual, Allocator, Valu
 
 #if CLINGO_MAP_TYPE == 0
 
-template <class Key, class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
-          class Allocator = std::allocator<Key>,
-          unsigned int NeighborhoodSize = 62, bool StoreHash = false>
+template <class Key, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
+          class Allocator = std::allocator<Key>, unsigned int NeighborhoodSize = 62, bool StoreHash = false>
 using hash_set = tsl::hopscotch_set<Key, Hash, KeyEqual, Allocator, NeighborhoodSize, StoreHash>;
 
-template <class Key,
-          class Value,
-          class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
-          class Allocator = std::allocator<std::pair<Key, Value>>,
-          unsigned int NeighborhoodSize = 62,
+template <class Key, class Value, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
+          class Allocator = std::allocator<std::pair<Key, Value>>, unsigned int NeighborhoodSize = 62,
           bool StoreHash = false>
 using hash_map = tsl::hopscotch_map<Key, Value, Hash, KeyEqual, Allocator, NeighborhoodSize, StoreHash>;
 
 #elif CLINGO_MAP_TYPE == 1
 
-template <class Key, class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
+template <class Key, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
           class Allocator = std::allocator<Key>>
 using hash_set = tsl::sparse_set<Key, Hash, KeyEqual, Allocator>;
 
-template <class Key,
-          class Value,
-          class Hash = mix_hash<Key>,
-          class KeyEqual = std::equal_to<>,
+template <class Key, class Value, class Hash = mix_hash<Key>, class KeyEqual = std::equal_to<>,
           class Allocator = std::allocator<std::pair<Key, Value>>>
 using hash_map = tsl::sparse_map<Key, Value, Hash, KeyEqual, Allocator>;
 
 #endif
 
 struct CallHash {
-    template <typename T>
-    size_t operator()(T const &x) const {
-        return x.hash();
-    }
+    template <typename T> size_t operator()(T const &x) const { return x.hash(); }
 };
 
 struct EqualTo {
-    template <typename T, typename U>
-    size_t operator()(T const &a, U const &b) const {
-        return a == b;
-    }
+    template <typename T, typename U> size_t operator()(T const &a, U const &b) const { return a == b; }
 };
 
-template <typename T>
-struct Cast {
-    template <typename U>
-    T const &operator()(U const &x) const {
-        return static_cast<T const &>(x);
-    }
+template <typename T> struct Cast {
+    template <typename U> T const &operator()(U const &x) const { return static_cast<T const &>(x); }
 };
 
-template <typename T>
-struct First {
-    template <typename U>
-    T const &operator()(U const &x) const {
-        return std::get<0>(x);
-    }
+template <typename T> struct First {
+    template <typename U> T const &operator()(U const &x) const { return std::get<0>(x); }
 };
 
-template <typename T, typename Get=Cast<T>, typename Hash=std::hash<T>>
-struct HashKey : private Get, private Hash {
+template <typename T, typename Get = Cast<T>, typename Hash = std::hash<T>> struct HashKey : private Get, private Hash {
     // Note: to support lookup with key
-    size_t operator()(T const &x) const {
-        return Hash::operator()(x);
-    }
-    template <class U>
-    size_t operator()(U const &x) const {
-        return Hash::operator()(Get::operator()(x));
-    }
+    size_t operator()(T const &x) const { return Hash::operator()(x); }
+    template <class U> size_t operator()(U const &x) const { return Hash::operator()(Get::operator()(x)); }
 };
 
-template <typename T, typename Get=Cast<T>, typename EqualTo=std::equal_to<T>>
+template <typename T, typename Get = Cast<T>, typename EqualTo = std::equal_to<T>>
 struct EqualToKey : private Get, private EqualTo {
     using is_transparent = void;
     // Note: to support lookup with key
-    template <typename U>
-    bool operator()(T const &a, U const &b) const {
+    template <typename U> bool operator()(T const &a, U const &b) const {
         return EqualTo::operator()(a, Get::operator()(b));
     }
-    template <typename U>
-    bool operator()(U const &a, T const &b) const {
+    template <typename U> bool operator()(U const &a, T const &b) const {
         return EqualTo::operator()(Get::operator()(a), b);
     }
-    template <typename U>
-    bool operator()(U const &a, U const &b) const {
+    template <typename U> bool operator()(U const &a, U const &b) const {
         return EqualTo::operator()(Get::operator()(a), Get::operator()(b));
     }
 };
 
-template <typename T, typename Hash=std::hash<T>>
-using HashFirst = HashKey<T,First<T>,Hash>;
+template <typename T, typename Hash = std::hash<T>> using HashFirst = HashKey<T, First<T>, Hash>;
 
-template <typename T, typename EqualTo=std::equal_to<T>>
-using EqualToFirst = EqualToKey<T,First<T>,EqualTo>;
+template <typename T, typename EqualTo = std::equal_to<T>> using EqualToFirst = EqualToKey<T, First<T>, EqualTo>;
 
-template <typename C>
-Potassco::Span<typename C::value_type> make_span(C const &container) {
+template <typename C> Potassco::Span<typename C::value_type> make_span(C const &container) {
     return {container.data(), container.size()};
 }
 
-template <typename Key, typename Hash=std::hash<Key>, typename KeyEqual=std::equal_to<Key>>
-class array_set {
-public:
+template <typename Key, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>> class array_set {
+  public:
     using key_type = typename Potassco::Span<Key>;
     using value_type = typename Potassco::Span<Key>;
     using index_type = std::pair<uint32_t, uint32_t>;
@@ -210,21 +167,14 @@ public:
         }
         return key_type{nullptr, 0};
     }
-    void clear() {
-        impl_.clear();
-    }
-    bool empty() const {
-        return impl_.empty();
-    }
-private:
+    void clear() { impl_.clear(); }
+    bool empty() const { return impl_.empty(); }
+
+  private:
     struct Impl : private Hash, private KeyEqual {
         struct Hasher {
-            size_t operator()(index_type const &idx) const {
-                return impl->hash_(impl->at(idx));
-            }
-            friend void swap(Hasher &a, Hasher &b) {
-                std::swap(a.impl, b.impl);
-            }
+            size_t operator()(index_type const &idx) const { return impl->hash_(impl->at(idx)); }
+            friend void swap(Hasher &a, Hasher &b) { std::swap(a.impl, b.impl); }
             Impl *impl;
         };
         struct EqualTo {
@@ -238,27 +188,21 @@ private:
                 auto span_a = impl->at(a);
                 return std::equal(begin(span_a), end(span_a), begin(b));
             }
-            bool operator()(key_type const &a, index_type const &b) const {
-                return operator()(b, a);
-            }
-            friend void swap(EqualTo &a, EqualTo &b) {
-                std::swap(a.impl, b.impl);
-            }
+            bool operator()(key_type const &a, index_type const &b) const { return operator()(b, a); }
+            friend void swap(EqualTo &a, EqualTo &b) { std::swap(a.impl, b.impl); }
             Impl *impl;
         };
 
-        Impl()
-        : data{0, Hasher{this}, EqualTo{this}} { }
+        Impl() : data{0, Hasher{this}, EqualTo{this}} {}
 
         size_t hash_(key_type const &key) {
-            return hash_mix(hash_range(begin(key), end(key), static_cast<Hash&>(*this)));
+            return hash_mix(hash_range(begin(key), end(key), static_cast<Hash &>(*this)));
         }
 
         std::pair<index_type, bool> insert(key_type const &key) {
             size_t index = values.size();
             values.insert(values.end(), begin(key), end(key));
-            auto ret = data.insert({numeric_cast<uint32_t>(index / key.size),
-                                    numeric_cast<uint32_t>(key.size)});
+            auto ret = data.insert({numeric_cast<uint32_t>(index / key.size), numeric_cast<uint32_t>(key.size)});
             if (!ret.second) {
                 values.resize(index);
             }

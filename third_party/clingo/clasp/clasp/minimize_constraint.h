@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -102,7 +102,7 @@ public:
 	//! Returns the adjustment for level x.
 	wsum_t         adjust(uint32 x) const{ return adjust_[x]; }
 	const wsum_t*  adjust()         const{ return &adjust_[0]; }
-	//! Returns the current (ajusted and possibly tentative) optimum for level x.
+	//! Returns the current (adjusted and possibly tentative) optimum for level x.
 	wsum_t         optimum(uint32 x)const;
 	//! Returns the highest level of the literal with the given index i.
 	uint32         level(uint32 i)  const{ return numRules() == 1 ? 0 : weights[lits[i].second].level; }
@@ -221,7 +221,7 @@ public:
 	 * The function creates a new minimize data object from
 	 * the previously added literals to minimize. The returned
 	 * object can be used to attach one or more MinimizeConstraints.
-	 * \param ctx A ctx object to be associated with the new minmize constraint.
+	 * \param ctx A ctx object to be associated with the new minimize constraint.
 	 * \return A data object representing previously added minimize statements or 0 if empty().
 	 * \pre !ctx.frozen()
 	 * \post empty()
@@ -251,7 +251,7 @@ private:
 	LitVec lits_;
 };
 
-//! Base class for implementing (mulit-level) minimize statements.
+//! Base class for implementing (multi-level) minimize statements.
 /*!
  * \ingroup constraint
  * A solver contains at most one minimize constraint, but a minimize constraint

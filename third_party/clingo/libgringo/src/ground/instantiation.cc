@@ -27,40 +27,28 @@
 
 #define DEBUG_INSTANTIATION 0
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ definition of SolutionBinder
 
-IndexUpdater *SolutionBinder::getUpdater() {
-    return nullptr;
-}
+IndexUpdater *SolutionBinder::getUpdater() { return nullptr; }
 
-void SolutionBinder::match(Logger &log) {
-    static_cast<void>(log);
-}
+void SolutionBinder::match(Logger &log) { static_cast<void>(log); }
 
-bool SolutionBinder::next() {
-    return false;
-}
+bool SolutionBinder::next() { return false; }
 
-void SolutionBinder::print(std::ostream &out) const {
-    out << "#end";
-}
+void SolutionBinder::print(std::ostream &out) const { out << "#end"; }
 
 // }}}
 // {{{ definition of BackjumpBinder
 
 BackjumpBinder::BackjumpBinder(UIdx &&index, DependVec &&depends)
-: index(std::move(index))
-, depends(std::move(depends)) { }
+    : index(std::move(index)), depends(std::move(depends)) {}
 
-void BackjumpBinder::match(Logger &log) const {
-    index->match(log);
-}
+void BackjumpBinder::match(Logger &log) const { index->match(log); }
 
-bool BackjumpBinder::next() const {
-    return index->next();
-}
+bool BackjumpBinder::next() const { return index->next(); }
 
 bool BackjumpBinder::first(Logger &log) const {
     index->match(log);
@@ -77,8 +65,7 @@ void BackjumpBinder::print(std::ostream &out) const {
 // }}}
 // {{{ definition of Instantiator
 
-Instantiator::Instantiator(SolutionCallback &callback)
-: callback(&callback) { }
+Instantiator::Instantiator(SolutionCallback &callback) : callback(&callback) {}
 
 void Instantiator::add(UIdx &&index, DependVec &&depends) {
     binders.emplace_back(std::move(index), std::move(depends));
@@ -104,22 +91,31 @@ void Instantiator::instantiate(Output::OutputBase &out, Logger &log) {
 #endif
         it->backjumpable = true;
         if (it->next()) {
-            for (--it; it->first(log); --it) { it->backjumpable = true; }
+            for (--it; it->first(log); --it) {
+                it->backjumpable = true;
+            }
 #if DEBUG_INSTANTIATION > 1
             std::cerr << "    advanced to: " << *it << std::endl;
 #endif
         }
-        if (it == ib) { callback->report(out, log); }
-        for (auto &x : it->depends) { binders[x].backjumpable = false; }
-        for (++it; it != ie && it->backjumpable; ++it) { }
+        if (it == ib) {
+            callback->report(out, log);
+        }
+        for (auto &x : it->depends) {
+            binders[x].backjumpable = false;
+        }
+        for (++it; it != ie && it->backjumpable; ++it) {
+        }
 #if DEBUG_INSTANTIATION > 1
         std::cerr << "    backfumped to: ";
-        if (it != ie) { it->print(std::cerr); }
-        else          { std::cerr << "the head :)"; }
+        if (it != ie) {
+            it->print(std::cerr);
+        } else {
+            std::cerr << "the head :)";
+        }
         std::cerr << std::endl;
 #endif
-    }
-    while (it != ie);
+    } while (it != ie);
 }
 
 void Instantiator::print(std::ostream &out) const {
@@ -131,9 +127,7 @@ void Instantiator::print(std::ostream &out) const {
     out << ".";
 }
 
-unsigned Instantiator::priority() const {
-    return callback->priority();
-}
+unsigned Instantiator::priority() const { return callback->priority(); }
 
 // }}}
 // {{{ definition of Queue
@@ -152,7 +146,9 @@ void Queue::process(Output::OutputBase &out, Logger &log) {
                     x.instantiate(out, log);
                     x.enqueued = false;
                 }
-                for (Instantiator &x : current) { x.callback->propagate(*this); }
+                for (Instantiator &x : current) {
+                    x.callback->propagate(*this);
+                }
                 current.clear();
                 // OPEN -> NEW, NEW -> OLD
                 auto jt = std::remove_if(domains.begin(), domains.end(), [](Domain &x) -> bool {
@@ -164,12 +160,13 @@ void Queue::process(Output::OutputBase &out, Logger &log) {
                 break;
             }
         }
-    }
-    while (!empty);
+    } while (!empty);
     // NEW -> OLD
     for (Domain &x : domains) {
         x.nextGeneration();
-        if (x.dequeue()) { assert(false); }
+        if (x.dequeue()) {
+            assert(false);
+        }
     }
     domains.clear();
 }
@@ -189,4 +186,5 @@ void Queue::enqueue(Domain &dom) {
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo

@@ -1,11 +1,10 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2019 - 2022.
+//  Copyright Christopher Kormanyos 2019 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <chrono>
 #include <random>
 #include <string>
 #include <vector>
@@ -57,7 +56,7 @@
 #endif
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #endif
@@ -68,6 +67,8 @@
 
 #include <math/wide_integer/uintwide_t.h>
 #include <test/test_uintwide_t.h>
+
+#include <util/utility/util_pseudorandom_time_point_seed.h>
 
 #if defined(__clang__)
   #if defined __has_feature && __has_feature(thread_sanitizer)
@@ -83,6 +84,10 @@
   #endif
 #endif
 
+auto local_inf_f () -> float;
+auto local_inf_d () -> double;
+auto local_inf_ld() -> long double;
+
 namespace test_uintwide_t_edge {
 
 namespace local_edge_cases {
@@ -91,6 +96,7 @@ namespace local_edge_cases {
   constexpr auto local_digits2       = static_cast<std::size_t>(UINT16_C(16384));
   #endif
   constexpr auto local_digits2_small = static_cast<std::size_t>(UINT16_C(256));
+  constexpr auto local_digits2_half  = static_cast<std::size_t>(UINT16_C(128));
 
 } // namespace local_edge_cases
 
@@ -102,17 +108,14 @@ constexpr auto loop_count_lo = static_cast<std::uint32_t>(UINT16_C(4));
 constexpr auto loop_count_hi = static_cast<std::uint32_t>(UINT16_C(8));
 #endif
 
-// Forward declaration
-template<typename IntegralTimePointType,
-         typename ClockType = std::chrono::high_resolution_clock>
-auto time_point() -> IntegralTimePointType;
-
 #if defined(WIDE_INTEGER_NAMESPACE)
-using local_uintwide_t_small_unsigned_type =
-  WIDE_INTEGER_NAMESPACE::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_small, std::uint16_t, void, false>;
+using local_uintwide_t_small_unsigned_type = WIDE_INTEGER_NAMESPACE::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_small, std::uint16_t, void, false>;
+using local_uintwide_t_half_unsigned_type  = WIDE_INTEGER_NAMESPACE::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_half, std::uint16_t, void, false>;
+using local_uintwide_t_half_signed_type    = WIDE_INTEGER_NAMESPACE::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_half, std::uint16_t, void, true>;
 #else
-using local_uintwide_t_small_unsigned_type =
-  ::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_small, std::uint16_t, void, false>;
+using local_uintwide_t_small_unsigned_type = ::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_small, std::uint16_t, void, false>;
+using local_uintwide_t_half_unsigned_type  = ::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_half, std::uint16_t, void, false>;
+using local_uintwide_t_half_signed_type    = ::math::wide_integer::uintwide_t<local_edge_cases::local_digits2_half, std::uint16_t, void, true>;
 #endif
 
 #if defined(WIDE_INTEGER_NAMESPACE)
@@ -147,7 +150,37 @@ using boost_uint_type =
                                 boost::multiprecision::et_off>;
 #endif
 
-enum class local_base
+} // namespace test_uintwide_t_edge
+
+// LCOV_EXCL_START
+#if (defined(__cpp_lib_to_chars) && (__cpp_lib_to_chars >= 201611L))
+constexpr auto constexpr_test_from_chars() -> ::test_uintwide_t_edge::local_uintwide_t_small_signed_type
+{
+  const char str_oct[] = "03065217317131113762053502330331263237375335355677425522565630540315656637703556251373"; // NOLINT(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
+
+  ::test_uintwide_t_edge::local_uintwide_t_small_signed_type val { };
+
+  using std::from_chars;
+
+  const auto fc_result =
+    from_chars
+    (
+      str_oct + static_cast<std::size_t>(UINT8_C(1)),                                             // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      str_oct + static_cast<std::size_t>(sizeof(str_oct) - static_cast<std::size_t>(UINT8_C(1))), // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      val,
+      8
+    );
+
+  static_cast<void>(fc_result);
+
+  return val;
+}
+#endif
+// LCOV_EXCL_STOP
+
+namespace test_uintwide_t_edge {
+
+enum class local_base // NOLINT(performance-enum-size)
 {
   dec,
   hex,
@@ -156,6 +189,7 @@ enum class local_base
 
 using eng_sgn_type = std::ranlux24;
 using eng_dig_type = std::ranlux48;
+using eng_flt_type = eng_dig_type;
 
 std::uniform_int_distribution<std::uint32_t> dist_sgn    (UINT32_C(0), UINT32_C(1));  // NOLINT(cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
 std::uniform_int_distribution<std::uint32_t> dist_dig_dec(UINT32_C(1), UINT32_C(9));  // NOLINT(cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
@@ -164,30 +198,12 @@ std::uniform_int_distribution<std::uint32_t> dist_dig_oct(UINT32_C(1), UINT32_C(
 
 eng_sgn_type eng_sgn; // NOLINT(cert-msc32-c,cert-msc51-cpp,cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
 eng_dig_type eng_dig; // NOLINT(cert-msc32-c,cert-msc51-cpp,cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
+eng_flt_type eng_flt; // NOLINT(cert-msc32-c,cert-msc51-cpp,cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
 
 auto zero_as_limb               () -> const typename local_uintwide_t_small_unsigned_type::limb_type&;
 auto zero_as_small_unsigned_type() -> const local_uintwide_t_small_unsigned_type&;
 auto one_as_small_unsigned_type () -> const local_uintwide_t_small_unsigned_type&;
 auto m_one_as_small_signed_type () -> const local_uintwide_t_small_signed_type&;
-
-template<typename IntegralTimePointType,
-         typename ClockType>
-auto time_point() -> IntegralTimePointType
-{
-  using local_integral_time_point_type = IntegralTimePointType;
-  using local_clock_type               = ClockType;
-
-  const auto current_now =
-    static_cast<std::uintmax_t>
-    (
-      std::chrono::duration_cast<std::chrono::nanoseconds>
-      (
-        local_clock_type::now().time_since_epoch()
-      ).count()
-    );
-
-  return static_cast<local_integral_time_point_type>(current_now);
-}
 
 template<typename IntegralTypeWithStringConstruction>
 auto generate_wide_integer_value(bool       is_positive           = true,
@@ -211,19 +227,24 @@ auto generate_wide_integer_value(bool       is_positive           = true,
                   if(base_to_get == local_base::oct)
                   {
                     c = static_cast<char>(dist_dig_oct(eng_dig));
-                    c = static_cast<char>(c + static_cast<char>(INT8_C(0x30)));
+                    c = static_cast<char>(c + '0');
                   }
                   else if(base_to_get == local_base::hex)
                   {
                     c = static_cast<char>(dist_dig_hex(eng_dig));
 
-                    if(c < static_cast<char>(INT8_C(0xA)))
+                    if(c < static_cast<char>(INT8_C(10)))
                     {
-                      c = static_cast<char>(c + static_cast<char>(INT8_C(0x30)));
+                      c = static_cast<char>(c + '0');
                     }
                     else
                     {
-                      c = static_cast<char>(c + static_cast<char>(INT8_C(0x41)));
+                      c =
+                        static_cast<char>
+                        (
+                            static_cast<char>(c + 'A')
+                          - static_cast<char>(INT8_C(10))
+                        );
                     }
                   }
                   else
@@ -245,17 +266,20 @@ auto generate_wide_integer_value(bool       is_positive           = true,
     str_x.insert(str_x.begin(), static_cast<std::size_t>(UINT8_C(1)), '0');
   }
 
-  // Insert either a positive sign or a negative sign
-  // (always one or the other) depending on the sign of x.
-  const auto sign_char_to_insert =
-    static_cast<char>
-    (
-      is_positive
-        ? '+'
-        : static_cast<char>((dist_sgn(eng_sgn) != static_cast<std::uint32_t>(UINT32_C(0))) ? '+' : '-')
-    );
+  if(base_to_get == local_base::dec)
+  {
+    // Insert either a positive sign or a negative sign
+    // (always one or the other) depending on the sign of x.
+    const auto sign_char_to_insert =
+      static_cast<char>
+      (
+        is_positive
+          ? '+'
+          : static_cast<char>((dist_sgn(eng_sgn) != static_cast<std::uint32_t>(UINT32_C(0))) ? '+' : '-') // NOLINT(readability-avoid-nested-conditional-operator)
+      );
 
-  str_x.insert(str_x.begin(), static_cast<std::size_t>(UINT8_C(1)), sign_char_to_insert);
+    str_x.insert(str_x.begin(), static_cast<std::size_t>(UINT8_C(1)), sign_char_to_insert);
+  }
 
   return local_integral_type(str_x.c_str());
 }
@@ -383,8 +407,8 @@ auto test_various_ostream_ops() -> bool
 {
   auto result_is_ok = true;
 
-  eng_sgn.seed(time_point<typename eng_sgn_type::result_type>());
-  eng_dig.seed(time_point<typename eng_dig_type::result_type>());
+  eng_sgn.seed(util::util_pseudorandom_time_point_seed::value<typename eng_sgn_type::result_type>());
+  eng_dig.seed(util::util_pseudorandom_time_point_seed::value<typename eng_dig_type::result_type>());
 
   {
     const auto u = local_uintwide_t_small_unsigned_type(static_cast<std::uint32_t>(UINT32_C(29363)));
@@ -640,6 +664,189 @@ auto test_various_ostream_ops() -> bool
   return result_is_ok;
 }
 
+auto test_ops_n_half_by_n_half() -> bool
+{
+  auto result_is_ok = true;
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(0));
+             i < static_cast<unsigned>(UINT8_C(24));
+           ++i)
+  {
+    const auto left_half =
+      generate_wide_integer_value<local_uintwide_t_half_unsigned_type>
+      (
+        true,
+        local_base::hex,
+        static_cast<int>
+        (
+            static_cast<int>(std::numeric_limits<local_uintwide_t_half_unsigned_type>::digits / 8)
+          - static_cast<int>(INT8_C(1))
+        )
+      );
+
+    const auto right_half =
+      generate_wide_integer_value<local_uintwide_t_half_unsigned_type>
+      (
+        true,
+        local_base::hex,
+        static_cast<int>
+        (
+            static_cast<int>(std::numeric_limits<local_uintwide_t_half_unsigned_type>::digits / 8)
+          - static_cast<int>(INT8_C(1))
+        )
+      );
+
+    const auto prod_half = left_half * right_half;
+    const auto prod_ctrl =   local_uintwide_t_small_unsigned_type(left_half)
+                           * local_uintwide_t_small_unsigned_type(right_half);
+
+
+    const auto result_multiply_is_ok = (local_uintwide_t_small_unsigned_type(prod_half) == prod_ctrl);
+
+    result_is_ok = (result_multiply_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(2));
+             i < static_cast<unsigned>(UINT8_C(8));
+           ++i)
+  {
+    const auto x_half =
+      generate_wide_integer_value<local_uintwide_t_half_unsigned_type>
+      (
+        true,
+        local_base::hex,
+        static_cast<int>(INT8_C(4))
+      );
+
+    const auto pow_half = pow(x_half, i);
+
+    const auto pow_ctrl = pow(local_uintwide_t_small_unsigned_type(x_half), i);
+
+    const auto result_pow_is_ok = (local_uintwide_t_small_unsigned_type(pow_half) == pow_ctrl);
+
+    result_is_ok = (result_pow_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(0));
+             i < static_cast<unsigned>(UINT8_C(8));
+           ++i)
+  {
+    const auto arg_half  =   generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto zero_half =   generate_wide_integer_value<local_uintwide_t_half_unsigned_type>()
+                           * local_uintwide_t_half_unsigned_type(zero_as_small_unsigned_type());
+
+    const auto pow_zero_half = pow(arg_half, zero_half);
+
+    const auto pow_zero_ctrl = pow(local_uintwide_t_small_unsigned_type(arg_half), local_uintwide_t_small_unsigned_type(zero_half));
+
+    const auto result_pow_zero_is_ok = ((local_uintwide_t_small_unsigned_type(pow_zero_half) == pow_zero_ctrl) && (pow_zero_half == 1));
+
+    result_is_ok = (result_pow_zero_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<std::uint_fast8_t>(UINT8_C(3));
+             i < static_cast<std::uint_fast8_t>(UINT8_C(14));
+           ++i)
+  {
+    const auto x_half =
+      generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto rootk_half = rootk(x_half, i);
+
+    const auto rootk_ctrl = rootk(local_uintwide_t_small_unsigned_type(x_half), i);
+
+    const auto result_rootk_is_ok = (local_uintwide_t_small_unsigned_type(rootk_half) == rootk_ctrl);
+
+    result_is_ok = (result_rootk_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<signed>(INT8_C(2));
+             i < static_cast<signed>(INT8_C(40));
+           ++i)
+  {
+    const auto x_half = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto shr_half = x_half >> i;
+
+    const auto shr_ctrl = local_uintwide_t_small_unsigned_type(x_half) >> i;
+
+    const auto result_shr_is_ok = (local_uintwide_t_small_unsigned_type(shr_half) == shr_ctrl);
+
+    result_is_ok = (result_shr_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<signed>(INT16_C(1002));
+             i < static_cast<signed>(INT16_C(1012));
+           ++i)
+  {
+    const auto x_half = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto shr_half = x_half >> i;
+
+    const auto shr_ctrl = local_uintwide_t_small_unsigned_type(x_half) >> i;
+
+    const auto result_shr_is_ok = ((local_uintwide_t_small_unsigned_type(shr_half) == shr_ctrl) && (shr_half == 0));
+
+    result_is_ok = (result_shr_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(0));
+             i < static_cast<unsigned>(UINT8_C(24));
+           ++i)
+  {
+    const auto left_half = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto right_half = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto xor_half = left_half ^ right_half;
+    const auto xor_ctrl = (  local_uintwide_t_small_unsigned_type(left_half)
+                           ^ local_uintwide_t_small_unsigned_type(right_half));
+
+
+    const auto result_xor_is_ok = (local_uintwide_t_small_unsigned_type(xor_half) == xor_ctrl);
+
+    result_is_ok = (result_xor_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(0));
+             i < static_cast<unsigned>(UINT8_C(32));
+           ++i)
+  {
+    const auto left_half  = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+    const auto right_half = generate_wide_integer_value<local_uintwide_t_half_unsigned_type>();
+
+    const auto gcd_half = gcd(left_half, right_half);
+    const auto gcd_ctrl = gcd(local_uintwide_t_small_unsigned_type(left_half), local_uintwide_t_small_unsigned_type(right_half));
+
+    const auto result_gcd_is_ok = (local_uintwide_t_small_unsigned_type(gcd_half) == gcd_ctrl);
+
+    result_is_ok = (result_gcd_is_ok && result_is_ok);
+  }
+
+  for(auto   i = static_cast<std::uint_fast8_t>(UINT8_C(0));
+             i < static_cast<std::uint_fast8_t>(UINT8_C(32));
+           ++i)
+  {
+    const auto x_half_signed =
+      generate_wide_integer_value<local_uintwide_t_half_signed_type>
+      (
+        false,
+        local_base::dec,
+        static_cast<int>(std::numeric_limits<local_uintwide_t_half_signed_type>::digits10 - 7)
+      );
+
+    const auto x_small_unsigned = local_uintwide_t_small_unsigned_type(x_half_signed);
+    const auto x_ctrl_signed    = static_cast<local_uintwide_t_half_signed_type>(x_small_unsigned);
+
+    const auto result_convert_is_ok = (x_half_signed == x_ctrl_signed);
+
+    result_is_ok = (result_convert_is_ok && result_is_ok);
+  }
+
+  return result_is_ok;
+}
+
 auto test_various_roots_and_pow_etc() -> bool
 {
   auto result_is_ok = true;
@@ -661,6 +868,18 @@ auto test_various_roots_and_pow_etc() -> bool
 
     const auto result_u_root_is_ok = (   (u_root == ten_pow_twenty)
                                       && (u_root == sqrt(ten_pow_forty)));
+
+    result_is_ok = (result_u_root_is_ok && result_is_ok);
+  }
+
+  {
+    const auto ten_pow_thirty_nine = ten_pow_forty / 10;
+
+    const auto u_root = rootk(ten_pow_thirty_nine, static_cast<std::uint_fast8_t>(UINT8_C(3)));
+
+    const auto ten_pow_thirteen = local_uintwide_t_small_unsigned_type(static_cast<std::uint64_t>(UINT64_C(10000000000000)));
+
+    const auto result_u_root_is_ok = (u_root == ten_pow_thirteen);
 
     result_is_ok = (result_u_root_is_ok && result_is_ok);
   }
@@ -738,7 +957,7 @@ auto test_various_roots_and_pow_etc() -> bool
     {
       const auto cbrt_u = cbrt(u);
 
-      const auto result_cbrt_is_ok = (cbrt_u == cbrt_ctrl[i++]);
+      const auto result_cbrt_is_ok = (cbrt_u == cbrt_ctrl[i++]); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
 
       result_is_ok = (result_cbrt_is_ok && result_is_ok);
     }
@@ -855,7 +1074,7 @@ auto test_small_prime_and_non_prime() -> bool
 
   using local_random_engine_result_type = typename random_engine_type::result_type;
 
-  auto generator = random_engine_type(time_point<local_random_engine_result_type>());
+  auto generator = random_engine_type(util::util_pseudorandom_time_point_seed::value<local_random_engine_result_type>());
 
   random_engine_type local_generator(generator);
 
@@ -1239,7 +1458,7 @@ auto test_various_isolated_edge_cases() -> bool // NOLINT(readability-function-c
     rep =
       local_rep_type
       (
-        static_cast<typename local_rep_type::size_type>(rep.size()),
+        static_cast<typename local_rep_type::size_type>(rep.size()), // NOLINT(readability-static-accessed-through-instance)
         (std::numeric_limits<local_value_type>::max)(),
         typename local_rep_type::allocator_type()
       );
@@ -1252,10 +1471,23 @@ auto test_various_isolated_edge_cases() -> bool // NOLINT(readability-function-c
     result_is_ok = (rep_as_max3_is_ok && result_is_ok);
   }
 
+
+  for(auto   i = static_cast<unsigned>(UINT8_C(0));
+             i < static_cast<unsigned>(UINT8_C(16));
+           ++i)
   {
-    WIDE_INTEGER_CONSTEXPR auto inf_f  = std::numeric_limits<float>::infinity();
-    WIDE_INTEGER_CONSTEXPR auto inf_d  = std::numeric_limits<double>::infinity();
-    WIDE_INTEGER_CONSTEXPR auto inf_ld = std::numeric_limits<long double>::infinity();
+    eng_flt.seed(util::util_pseudorandom_time_point_seed::value<typename eng_flt_type::result_type>());
+
+    auto dis =
+      std::uniform_real_distribution<float>
+      {
+        static_cast<float>(1.01F), // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+        static_cast<float>(1.04F)  // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+      };
+
+    const auto inf_f  = ::local_inf_f () * dis(eng_flt);
+    const auto inf_d  = ::local_inf_d () * static_cast<double>(dis(eng_flt));
+    const auto inf_ld = ::local_inf_ld() * static_cast<long double>(dis(eng_flt));
 
     local_uintwide_t_small_unsigned_type u_inf_f (inf_f);
     local_uintwide_t_small_unsigned_type u_inf_d (inf_d);
@@ -1415,15 +1647,16 @@ auto test_various_isolated_edge_cases() -> bool // NOLINT(readability-function-c
              i < static_cast<unsigned>(loop_count_hi);
            ++i)
   {
-    auto shift_amount =
+    auto shift_amount = // NOLINT(altera-id-dependent-backward-branch)
       static_cast<unsigned>
       (
+          static_cast<int>
           (
-                (std::numeric_limits<local_uintwide_t_small_unsigned_type>::digits / 100)                // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
-            + (((std::numeric_limits<local_uintwide_t_small_unsigned_type>::digits % 100) != 0) ? 1 : 0) // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+                (std::numeric_limits<local_uintwide_t_small_unsigned_type>::digits / static_cast<int>(INT8_C(100)))
+            + (((std::numeric_limits<local_uintwide_t_small_unsigned_type>::digits % static_cast<int>(INT8_C(100))) != 0) ? 1 : 0)
           )
         *
-          100 // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+          static_cast<int>(INT8_C(100))
       );
 
     for( ; shift_amount  < static_cast<unsigned>(UINT32_C(2000)); // NOLINT(altera-id-dependent-backward-branch)
@@ -1488,14 +1721,14 @@ auto test_various_isolated_edge_cases() -> bool // NOLINT(readability-function-c
   return result_is_ok;
 }
 
-auto test_to_chars_and_to_string() -> bool // NOLINT(readability-function-cognitive-complexity)
+auto test_to_and_from_chars_and_to_string() -> bool // NOLINT(readability-function-cognitive-complexity)
 {
-  eng_sgn.seed(time_point<typename eng_sgn_type::result_type>());
-  eng_dig.seed(time_point<typename eng_dig_type::result_type>());
+  eng_sgn.seed(util::util_pseudorandom_time_point_seed::value<typename eng_sgn_type::result_type>());
+  eng_dig.seed(util::util_pseudorandom_time_point_seed::value<typename eng_dig_type::result_type>());
 
   auto result_is_ok = true;
 
-  #if defined(__cpp_lib_to_chars)
+  #if (defined(__cpp_lib_to_chars) && (__cpp_lib_to_chars >= 201611L))
   for(auto   i = static_cast<unsigned>(UINT8_C(0));
              i < static_cast<unsigned>(loop_count_hi);
            ++i)
@@ -1578,7 +1811,129 @@ auto test_to_chars_and_to_string() -> bool // NOLINT(readability-function-cognit
 
     result_is_ok = (result_n_to_from_string_dec_is_ok && result_is_ok);
   }
-  #endif // __cpp_lib_to_chars
+
+  {
+    using from_chars_vals_array_type = std::array<local_uintwide_t_small_signed_type, static_cast<std::size_t>(UINT8_C(3))>;
+    using from_chars_str_array_type  = std::array<std::string, static_cast<std::size_t>(UINT8_C(3))>;
+
+    const from_chars_str_array_type from_chars_strings_dec =
+    {{
+      std::string("15144643305917092583843275533505256431413500728112133531049985787371431391573"),
+      std::string("32468694466796117852331137634732746549554240939117027005983522724188427316919"),
+      std::string("22464118857179526662260684853039985803178920824202321315045157411980838523643")
+    }};
+
+    const from_chars_vals_array_type from_chars_vals =
+    {{
+      local_uintwide_t_small_signed_type(from_chars_strings_dec[0U].c_str()),
+      local_uintwide_t_small_signed_type(from_chars_strings_dec[1U].c_str()),
+      local_uintwide_t_small_signed_type(from_chars_strings_dec[2U].c_str())
+    }};
+
+    // Test constexpr-context of from_chars().
+    {
+      constexpr local_uintwide_t_small_signed_type compile_time_val("22464118857179526662260684853039985803178920824202321315045157411980838523643");
+
+      static_assert(::constexpr_test_from_chars() == compile_time_val, "Error: Can not perform constexpr-from_chars() at compile-time");
+
+      const auto result_constexpr_test_from_chars_is_ok = (::constexpr_test_from_chars() == compile_time_val);
+
+      result_is_ok = (result_constexpr_test_from_chars_is_ok && result_is_ok);
+    }
+
+    // Successively test one success and one known failing case.
+    {
+      auto str_false = from_chars_strings_dec.back();
+
+      local_uintwide_t_small_signed_type val_false { };
+
+      const auto fc_result_ok = from_chars(str_false.data(), str_false.data() + str_false.length(), val_false, 10); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+      const auto result_false_correct_is_ok = ((val_false == from_chars_vals.back()) && (fc_result_ok.ec == std::errc()));
+
+      // Now ensure that the failing test-string is actually wrong and should/will fail.
+      str_false.back() = 'Z';
+
+      const auto fc_result_not_ok = from_chars(str_false.data(), str_false.data() + str_false.length(), val_false, 10); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+      const auto result_false_false_is_ok = ((val_false != from_chars_vals.back()) && (fc_result_not_ok.ec != std::errc()) && (val_false == 0));
+
+      const auto result_both_vals_false_are_ok = (result_false_correct_is_ok && result_false_false_is_ok);
+
+      result_is_ok = (result_both_vals_false_are_ok && result_is_ok);
+    }
+
+    const from_chars_str_array_type from_chars_strings_hex =
+    {{
+      std::string("0x217B907900B4119043037FA80D33976A08FCA38343D756BD61F2744C273FF155"),
+      std::string("0x47C8A13C35D6BFC31A75B127413559683B4FD3E725429CBC7221E5351BD2EEB7"),
+      std::string("0x31AA3D9E5925FC857426C365669F7EB75DBBF8AD4AEB98B03375D9FE1DB952FB")
+    }};
+
+    const from_chars_str_array_type from_chars_strings_oct =
+    {{
+      std::string("02057344074400550106202060157752006463456650107712160320753526572607623504604717770525"),
+      std::string("04371050236065655377030647266111640465262640732375174711241234570710417123243364567267"),
+      std::string("03065217317131113762053502330331263237375335355677425522565630540315656637703556251373")
+    }};
+
+    // Test from_chars for decimal, hexadecimal and octal bases.
+
+    {
+      // Decimal.
+      std::size_t index { };
+
+      for(const auto& str : from_chars_strings_dec)
+      {
+        local_uintwide_t_small_signed_type val { };
+
+        const auto fc_result = from_chars(str.data(), str.data() + str.length(), val, 10); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+        const auto result_from_chars_val_is_ok = ((val == from_chars_vals[index]) && (fc_result.ec == std::errc())); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+
+        result_is_ok = (result_from_chars_val_is_ok && result_is_ok);
+
+        ++index;
+      }
+    }
+
+    {
+      // Hexadecimal.
+      std::size_t index { };
+
+      for(const auto& str : from_chars_strings_hex)
+      {
+        local_uintwide_t_small_signed_type val { };
+
+        const auto fc_result = from_chars(str.data() + static_cast<std::string::size_type>(UINT8_C(2)), str.data() + str.length(), val, 16); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+        const auto result_from_chars_val_is_ok = ((val == from_chars_vals[index]) && (fc_result.ec == std::errc())); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+
+        result_is_ok = (result_from_chars_val_is_ok && result_is_ok);
+
+        ++index;
+      }
+    }
+
+    {
+      // Octal.
+      std::size_t index { };
+
+      for(const auto& str : from_chars_strings_oct)
+      {
+        local_uintwide_t_small_signed_type val { };
+
+        const auto fc_result = from_chars(str.data() + static_cast<std::string::size_type>(UINT8_C(1)), str.data() + str.length(), val, 8); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
+        const auto result_from_chars_val_is_ok = ((val == from_chars_vals[index]) && (fc_result.ec == std::errc())); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
+
+        result_is_ok = (result_from_chars_val_is_ok && result_is_ok);
+
+        ++index;
+      }
+    }
+  }
+  #endif // (defined(__cpp_lib_to_chars) && (__cpp_lib_to_chars >= 201611L))
 
   #if !defined(WIDE_INTEGER_DISABLE_TO_STRING)
   for(auto   i = static_cast<unsigned>(UINT8_C(0));
@@ -1685,8 +2040,8 @@ auto test_to_chars_and_to_string() -> bool // NOLINT(readability-function-cognit
 
 auto test_import_bits() -> bool // NOLINT(readability-function-cognitive-complexity)
 {
-  eng_sgn.seed(time_point<typename eng_sgn_type::result_type>());
-  eng_dig.seed(time_point<typename eng_dig_type::result_type>());
+  eng_sgn.seed(util::util_pseudorandom_time_point_seed::value<typename eng_sgn_type::result_type>());
+  eng_dig.seed(util::util_pseudorandom_time_point_seed::value<typename eng_dig_type::result_type>());
 
   using local_boost_small_uint_backend_type =
     boost::multiprecision::cpp_int_backend<local_edge_cases::local_digits2_small,
@@ -1941,7 +2296,7 @@ auto test_import_bits() -> bool // NOLINT(readability-function-cognitive-complex
               index + static_cast<local_size_type>(UINT8_C(1))
             );
 
-          elem = make_large(bits[index], bits[index_plus_one]);
+          elem = make_large(bits[index], bits[index_plus_one]); // NOLINT(cppcoreguidelines-pro-bounds-constant-array-index)
 
           index = static_cast<local_size_type>(index + static_cast<local_size_type>(UINT8_C(2)));
         }
@@ -2004,8 +2359,8 @@ auto test_import_bits() -> bool // NOLINT(readability-function-cognitive-complex
 
 auto test_export_bits() -> bool // NOLINT(readability-function-cognitive-complexity)
 {
-  eng_sgn.seed(time_point<typename eng_sgn_type::result_type>());
-  eng_dig.seed(time_point<typename eng_dig_type::result_type>());
+  eng_sgn.seed(util::util_pseudorandom_time_point_seed::value<typename eng_sgn_type::result_type>());
+  eng_dig.seed(util::util_pseudorandom_time_point_seed::value<typename eng_dig_type::result_type>());
 
   using local_boost_small_uint_backend_type =
     boost::multiprecision::cpp_int_backend<local_edge_cases::local_digits2_small,
@@ -2192,6 +2547,43 @@ auto test_export_bits() -> bool // NOLINT(readability-function-cognitive-complex
   return result_is_ok;
 }
 
+auto test_edge_uintwide_t_backend() -> bool
+{
+  using local_small_uintwide_t_backend_type = boost::multiprecision::uintwide_t_backend<local_edge_cases::local_digits2_small>;
+
+  using local_small_uintwide_t_type = boost::multiprecision::number<local_small_uintwide_t_backend_type, boost::multiprecision::et_off>;
+
+  auto result_is_ok = true;
+
+  {
+    // This odd-looking code is intended to pick up some non-covered lines
+    // in the Boost-intended uintwide_t_backend class.
+
+    local_small_uintwide_t_type gcd_max { 0 };
+
+    for(auto   i = static_cast<unsigned>(UINT8_C(0));
+               i < static_cast<unsigned>(UINT32_C(64));
+             ++i)
+    {
+      const auto u = generate_wide_integer_value<local_small_uintwide_t_type>();
+      const auto v = generate_wide_integer_value<local_small_uintwide_t_type>();
+
+      const auto gcd_uv = gcd(-u, -v);
+
+      if(gcd_uv > gcd_max)
+      {
+        gcd_max = gcd_uv;
+      }
+    }
+
+    const bool result_gcd_is_ok = (gcd_max > 0);
+
+    result_is_ok = (result_gcd_is_ok && result_is_ok);
+  }
+
+  return result_is_ok;
+}
+
 } // namespace test_uintwide_t_edge
 
 // LCOV_EXCL_START
@@ -2201,23 +2593,25 @@ auto WIDE_INTEGER_NAMESPACE::math::wide_integer::test_uintwide_t_edge_cases() ->
 auto ::math::wide_integer::test_uintwide_t_edge_cases() -> bool
 #endif
 {
-  test_uintwide_t_edge::eng_sgn.seed(test_uintwide_t_edge::time_point<typename test_uintwide_t_edge::eng_sgn_type::result_type>());
-  test_uintwide_t_edge::eng_dig.seed(test_uintwide_t_edge::time_point<typename test_uintwide_t_edge::eng_dig_type::result_type>());
+  test_uintwide_t_edge::eng_sgn.seed(::util::util_pseudorandom_time_point_seed::value<typename test_uintwide_t_edge::eng_sgn_type::result_type>());
+  test_uintwide_t_edge::eng_dig.seed(::util::util_pseudorandom_time_point_seed::value<typename test_uintwide_t_edge::eng_dig_type::result_type>());
 
   auto result_is_ok = true;
 
   #if !defined(UINTWIDE_T_REDUCE_TEST_DEPTH)
-  result_is_ok = (test_uintwide_t_edge::test_various_edge_operations    () && result_is_ok);
+  result_is_ok = (test_uintwide_t_edge::test_various_edge_operations        () && result_is_ok);
   #endif
   // LCOV_EXCL_STOP
   result_is_ok = (test_uintwide_t_edge::test_various_ostream_ops            () && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_various_roots_and_pow_etc      () && result_is_ok);
+  result_is_ok = (test_uintwide_t_edge::test_ops_n_half_by_n_half           () && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_small_prime_and_non_prime      () && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_some_gcd_and_equal_left_right  () && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_various_isolated_edge_cases    () && result_is_ok);
-  result_is_ok = (test_uintwide_t_edge::test_to_chars_and_to_string         () && result_is_ok);
+  result_is_ok = (test_uintwide_t_edge::test_to_and_from_chars_and_to_string() && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_import_bits                    () && result_is_ok);
   result_is_ok = (test_uintwide_t_edge::test_export_bits                    () && result_is_ok);
+  result_is_ok = (test_uintwide_t_edge::test_edge_uintwide_t_backend        () && result_is_ok);
 
   return result_is_ok;
 }
@@ -2231,7 +2625,6 @@ auto test_uintwide_t_edge::zero_as_limb() -> const typename test_uintwide_t_edge
 
   return local_zero_limb;
 }
-// LCOV_EXCL_STOP
 
 auto test_uintwide_t_edge::zero_as_small_unsigned_type() -> const test_uintwide_t_edge::local_uintwide_t_small_unsigned_type& // LCOV_EXCL_LINE
 {
@@ -2246,34 +2639,30 @@ auto test_uintwide_t_edge::zero_as_small_unsigned_type() -> const test_uintwide_
   return local_zero_as_small_unsigned_type;
 }
 
-auto test_uintwide_t_edge::one_as_small_unsigned_type() -> const test_uintwide_t_edge::local_uintwide_t_small_unsigned_type&
+extern test_uintwide_t_edge::local_uintwide_t_small_unsigned_type local_one_plus_as_small_signed_type;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp,)
+extern test_uintwide_t_edge::local_uintwide_t_small_signed_type   local_one_minus_as_small_signed_type; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp,)
+
+auto test_uintwide_t_edge::one_as_small_unsigned_type() -> const test_uintwide_t_edge::local_uintwide_t_small_unsigned_type& { return local_one_plus_as_small_signed_type; }
+auto test_uintwide_t_edge::m_one_as_small_signed_type() -> const test_uintwide_t_edge::local_uintwide_t_small_signed_type&   { return local_one_minus_as_small_signed_type; }
+
+test_uintwide_t_edge::local_uintwide_t_small_unsigned_type local_one_plus_as_small_signed_type // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp)
 {
-  using local_limb_type = typename local_uintwide_t_small_unsigned_type::limb_type;
+  static_cast<std::make_signed_t<typename test_uintwide_t_edge::local_uintwide_t_small_signed_type::limb_type>>(UINT8_C(1))
+};
 
-  static const auto local_one_as_small_signed_type =
-    local_uintwide_t_small_unsigned_type
-    (
-      static_cast<std::make_signed_t<local_limb_type>>(UINT8_C(1))
-    );
-
-  return local_one_as_small_signed_type;
-}
-
-auto test_uintwide_t_edge::m_one_as_small_signed_type() -> const test_uintwide_t_edge::local_uintwide_t_small_signed_type&
+test_uintwide_t_edge::local_uintwide_t_small_signed_type local_one_minus_as_small_signed_type // NOLINT(cppcoreguidelines-avoid-non-const-global-variables,cert-err58-cpp)
 {
-  using local_limb_type = typename local_uintwide_t_small_signed_type::limb_type;
+  static_cast<std::make_signed_t<typename test_uintwide_t_edge::local_uintwide_t_small_signed_type::limb_type>>(INT8_C(-1))
+};
 
-  static const auto local_m_one_as_small_signed_type =
-    local_uintwide_t_small_signed_type
-    (
-      static_cast<std::make_signed_t<local_limb_type>>(INT8_C(-1))
-    );
+auto local_inf_f () -> float       { return std::numeric_limits<float>::infinity(); }
+auto local_inf_d () -> double      { return std::numeric_limits<double>::infinity(); }
+auto local_inf_ld() -> long double { return std::numeric_limits<long double>::infinity(); }
 
-  return local_m_one_as_small_signed_type;
-}
+// LCOV_EXCL_STOP
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic pop
 #endif
 #endif

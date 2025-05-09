@@ -1,11 +1,11 @@
 #script (lua)
 
-function tostringTable(t) 
+function tostringTable(t)
     ret   = ""
     comma = False
     for _, elem in pairs(t) do
         if comma then ret = ret .. ", "
-        else          comma = true 
+        else          comma = true
         end
         ret = ret .. tostring(elem)
     end

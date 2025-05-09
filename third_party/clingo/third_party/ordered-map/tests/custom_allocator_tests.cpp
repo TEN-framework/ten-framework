@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(test_custom_allocator_1) {
     map.insert({i, i * 2});
   }
 
-  BOOST_CHECK_NE(nb_custom_allocs, 0);
+  BOOST_CHECK_NE(nb_custom_allocs, 0u);
   //    BOOST_CHECK_EQUAL(nb_global_new, 0);
 }
 

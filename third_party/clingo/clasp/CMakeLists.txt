@@ -1,10 +1,7 @@
-cmake_minimum_required(VERSION 3.1)
-project(CLASP VERSION 3.3.10 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.10)
+project(CLASP VERSION 3.4.0 LANGUAGES CXX)
 # Enable folders in IDEs like Visual Studio
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-if (POLICY CMP0063)
-	cmake_policy(SET CMP0063 NEW)
-endif()
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 	message(STATUS "No build type selected - using 'Release'")
 	set(CMAKE_BUILD_TYPE "Release")

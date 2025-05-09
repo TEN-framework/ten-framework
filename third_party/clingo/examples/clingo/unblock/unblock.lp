@@ -21,7 +21,7 @@ blocked(t,X+(0..L-1),Y) :- stone(t-1,S,x,X,Y,L).
 blocked(t,X,Y+(0..L-1)) :- stone(t-1,S,y,X,Y,L).
 
 %:- 2 { move(t,_,_,_) }.
-% allow for parallel moves 
+% allow for parallel moves
 :- 2 { move(t,S,x,X) }, field(X,_).
 :- 2 { move(t,S,y,Y) }, field(_,Y).
 :- move(t,_,x,_), move(t,_,y,_).

@@ -23,35 +23,33 @@
 // }}}
 
 #include "tests.hh"
-#include <unordered_map>
-#include <map>
-#include <unordered_set>
 #include <cassert>
-#include <mutex>
 #include <condition_variable>
+#include <map>
+#include <mutex>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <iostream>
 
-namespace Clingo { namespace Test {
+namespace Clingo {
+namespace Test {
 
-template <class K, class V>
-std::ostream &operator<<(std::ostream &out, std::unordered_map<K, V> const &map);
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::vector<T> const &vec);
-template <class K, class V>
-std::ostream &operator<<(std::ostream &out, std::pair<K, V> const &pair);
+template <class K, class V> std::ostream &operator<<(std::ostream &out, std::unordered_map<K, V> const &map);
+template <class T> std::ostream &operator<<(std::ostream &out, std::vector<T> const &vec);
+template <class K, class V> std::ostream &operator<<(std::ostream &out, std::pair<K, V> const &pair);
 
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::vector<T> const &vec) {
+template <class T> std::ostream &operator<<(std::ostream &out, std::vector<T> const &vec) {
     out << "{";
-    for (auto &x : vec) { out << " " << x; }
+    for (auto &x : vec) {
+        out << " " << x;
+    }
     out << " }";
     return out;
 }
 
-template <class K, class V>
-std::ostream &operator<<(std::ostream &out, std::unordered_map<K, V> const &map) {
+template <class K, class V> std::ostream &operator<<(std::ostream &out, std::unordered_map<K, V> const &map) {
     using T = std::pair<K, V>;
     std::vector<T> vec;
     vec.assign(map.begin(), map.end());
@@ -60,42 +58,39 @@ std::ostream &operator<<(std::ostream &out, std::unordered_map<K, V> const &map)
     return out;
 }
 
-template <class K, class V>
-std::ostream &operator<<(std::ostream &out, std::pair<K, V> const &pair) {
+template <class K, class V> std::ostream &operator<<(std::ostream &out, std::pair<K, V> const &pair) {
     out << "( " << pair.first << " " << pair.second << " )";
     return out;
 }
 
 class SequenceMiningPropagator : public Propagator {
-private:
+  private:
     // {{{2 data
 
     struct TrailItem {
-        TrailItem(uint32_t dl, int si)
-        : decision_level(dl)
-        , stack_index(si) { }
+        TrailItem(uint32_t dl, int si) : decision_level(dl), stack_index(si) {}
         uint32_t decision_level;
         int stack_index;
     };
     struct PatternItem {
-        PatternItem()
-        : PatternItem(0, 0) { }
-        PatternItem(int lit, int idx)
-        : literal(lit)
-        , item_index(idx) { }
+        PatternItem() : PatternItem(0, 0) {}
+        PatternItem(int lit, int idx) : literal(lit), item_index(idx) {}
         operator bool() const { return literal != 0; }
         literal_t literal;
         int item_index;
     };
     enum class IndexType { SequenceIndex, PatternIndex };
     class StackItem {
-    public:
+      public:
         StackItem(IndexType type, int idx)
-        : pattern_or_sequence_index_(type == IndexType::PatternIndex ? idx : -idx - 1) { }
-        IndexType type() const { return pattern_or_sequence_index_ >= 0 ? IndexType::PatternIndex : IndexType::SequenceIndex; }
+            : pattern_or_sequence_index_(type == IndexType::PatternIndex ? idx : -idx - 1) {}
+        IndexType type() const {
+            return pattern_or_sequence_index_ >= 0 ? IndexType::PatternIndex : IndexType::SequenceIndex;
+        }
         int pattern_index() const { return pattern_or_sequence_index_; }
         int sequence_index() const { return -pattern_or_sequence_index_ - 1; }
-    private:
+
+      private:
         int pattern_or_sequence_index_;
     };
     struct State {
@@ -110,8 +105,7 @@ private:
         int pattern_assigned = 0;
     };
     struct SequenceAtoms {
-        SequenceAtoms()
-        : literal(0) { }
+        SequenceAtoms() : literal(0) {}
         int literal;
         std::vector<int> items;
         friend std::ostream &operator<<(std::ostream &out, SequenceAtoms const &a) {
@@ -120,9 +114,7 @@ private:
         }
     };
     struct PatternAtom {
-        PatternAtom(int pidx, int iidx)
-        : pattern_index(pidx)
-        , item_index(iidx) { }
+        PatternAtom(int pidx, int iidx) : pattern_index(pidx), item_index(iidx) {}
         int pattern_index;
         int item_index;
         friend std::ostream &operator<<(std::ostream &out, PatternAtom const &a) {
@@ -140,9 +132,10 @@ private:
 
     // {{{2 initialization
 
-    template <class T>
-    void reserve(T &vec, size_t s, typename T::value_type v = typename T::value_type()) {
-        if (s >= vec.size()) { vec.resize(s + 1, v); }
+    template <class T> void reserve(T &vec, size_t s, typename T::value_type v = typename T::value_type()) {
+        if (s >= vec.size()) {
+            vec.resize(s + 1, v);
+        }
     }
 
     int map_item(std::string &&item) {
@@ -171,7 +164,9 @@ private:
             assert(index >= 0);
             int item = map_item(args[1].to_string());
             auto ret = pattern_atoms_.emplace(lit, std::vector<PatternAtom>{});
-            if (ret.second) { init.add_watch(lit); }
+            if (ret.second) {
+                init.add_watch(lit);
+            }
             ret.first->second.emplace_back(index, item);
             pattern_length_ = std::max(pattern_length_, index + 1);
         }
@@ -184,7 +179,9 @@ private:
         for (auto &seq : sequence_atoms_) {
             for (auto &item : seq.items) {
                 assert(item >= 0);
-                if (seen.emplace(item).second) { occurrence_list_[item].emplace_back(sid); }
+                if (seen.emplace(item).second) {
+                    occurrence_list_[item].emplace_back(sid);
+                }
             }
             seen.clear();
             ++sid;
@@ -192,7 +189,9 @@ private:
     }
 
     void initialize_states(PropagateInit &init) {
-        for (int i = 0; i < init.number_of_threads(); ++i) { states_.emplace_back(pattern_length_, static_cast<int>(sequence_atoms_.size())); }
+        for (int i = 0; i < init.number_of_threads(); ++i) {
+            states_.emplace_back(pattern_length_, static_cast<int>(sequence_atoms_.size()));
+        }
     }
 
     // {{{2 propagation
@@ -205,7 +204,9 @@ private:
             klaus.reserve(1 + pattern_length_);
             klaus.emplace_back(lit);
             for (auto &pat : state.pattern) {
-                if (pat.literal != 0) { klaus.emplace_back(-pat.literal); }
+                if (pat.literal != 0) {
+                    klaus.emplace_back(-pat.literal);
+                }
             }
             return ctl.add_clause(klaus) && ctl.propagate();
         }
@@ -219,24 +220,31 @@ private:
         auto it = atoms.items.begin(), ie = atoms.items.end();
         for (auto &pat : state.pattern) {
             while (true) {
-                if (it == ie) { return propagate_sequence_literal(state, ctl, sid, -atoms.literal); }
+                if (it == ie) {
+                    return propagate_sequence_literal(state, ctl, sid, -atoms.literal);
+                }
                 ++it;
-                if (pat.literal == 0 || *(it-1) == pat.item_index) { break; }
+                if (pat.literal == 0 || *(it - 1) == pat.item_index) {
+                    break;
+                }
             }
         }
         return state.pattern_assigned < pattern_length_ || propagate_sequence_literal(state, ctl, sid, atoms.literal);
     }
 
     // }}}2
-public:
-    SequenceMiningPropagator() { }
+  public:
+    SequenceMiningPropagator() {}
 
     void init(PropagateInit &init) override {
         for (auto atom : init.theory_atoms()) {
             auto term = atom.term();
             auto args = term.arguments();
-            if (std::strcmp(term.name(), "seq") == 0 && args.size() == 1) { add_sequence_atom(init, args[0].number(), atom); }
-            else if (std::strcmp(term.name(), "pat") == 0 && args.empty()) { add_pattern_atoms(init, atom); }
+            if (std::strcmp(term.name(), "seq") == 0 && args.size() == 1) {
+                add_sequence_atom(init, args[0].number(), atom);
+            } else if (std::strcmp(term.name(), "pat") == 0 && args.empty()) {
+                add_pattern_atoms(init, atom);
+            }
         }
         initialize_occurrence_lists();
         initialize_states(init);
@@ -258,8 +266,7 @@ public:
                     ctl.add_clause({-lit, -old}) && ctl.propagate();
                     return;
 
-                }
-                else {
+                } else {
                     state.stack.emplace_back(IndexType::PatternIndex, pat_atom.pattern_index);
                     ++state.pattern_assigned;
                     pat = {lit, pat_atom.item_index};
@@ -273,7 +280,7 @@ public:
         }
     }
 
-    void undo(PropagateControl const &ctl , LiteralSpan) noexcept override {
+    void undo(PropagateControl const &ctl, LiteralSpan) noexcept override {
         auto &state = states_[ctl.thread_id()];
         int sid = state.trail.back().stack_index;
         auto ib = state.stack.begin() + sid, ie = state.stack.end();
@@ -281,18 +288,16 @@ public:
             if (it->type() == IndexType::PatternIndex) {
                 state.pattern[it->pattern_index()] = {};
                 --state.pattern_assigned;
-            }
-            else {
+            } else {
                 state.seq_active[it->sequence_index()] = true;
             }
         }
         state.stack.erase(ib, ie);
         state.trail.pop_back();
     }
-
 };
 
-constexpr char const * const sequence_mining_encoding = R"(
+constexpr char const *const sequence_mining_encoding = R"(
 #show pat/2.
 
 #theory seq {
@@ -331,19 +336,20 @@ seq(2,4,a).
 )";
 
 class PigeonPropagator : public Propagator {
-public:
+  public:
     void init(PropagateInit &init) override {
         unsigned nHole = 0, nPig = 0, nWatch = 0, p, h;
         state_.clear();
         p2h_[0] = 0;
-        for (auto it = init.symbolic_atoms().begin(Signature("place", 2)), ie = init.symbolic_atoms().end(); it != ie; ++it) {
+        for (auto it = init.symbolic_atoms().begin(Signature("place", 2)), ie = init.symbolic_atoms().end(); it != ie;
+             ++it) {
             literal_t lit = init.solver_literal(it->literal());
             p = it->symbol().arguments()[0].number();
             h = it->symbol().arguments()[1].number();
             p2h_[lit] = h;
             init.add_watch(lit);
             nHole = std::max(h, nHole);
-            nPig  = std::max(p, nPig);
+            nPig = std::max(p, nPig);
             ++nWatch;
         }
         assert(p2h_[0] == 0);
@@ -354,11 +360,12 @@ public:
     }
     void propagate(PropagateControl &ctl, LiteralSpan changes) override {
         assert(ctl.thread_id() < state_.size());
-        Hole2Lit& holes = state_[ctl.thread_id()];
+        Hole2Lit &holes = state_[ctl.thread_id()];
         for (literal_t lit : changes) {
-            literal_t& prev = holes[ p2h_[lit] ];
-            if (prev == 0) { prev = lit; }
-            else {
+            literal_t &prev = holes[p2h_[lit]];
+            if (prev == 0) {
+                prev = lit;
+            } else {
                 if (!ctl.add_clause({-lit, -prev}) || !ctl.propagate()) {
                     return;
                 }
@@ -368,7 +375,7 @@ public:
     }
     void undo(PropagateControl const &ctl, LiteralSpan undo) noexcept override {
         assert(ctl.thread_id() < state_.size());
-        Hole2Lit& holes = state_[ctl.thread_id()];
+        Hole2Lit &holes = state_[ctl.thread_id()];
         for (literal_t lit : undo) {
             unsigned hole = p2h_[lit];
             if (holes[hole] == lit) {
@@ -376,17 +383,18 @@ public:
             }
         }
     }
-private:
+
+  private:
     using Lit2Hole = std::unordered_map<literal_t, unsigned>;
     using Hole2Lit = std::vector<literal_t>;
-    using State    = std::vector<Hole2Lit>;
+    using State = std::vector<Hole2Lit>;
 
     Lit2Hole p2h_;
-    State    state_;
+    State state_;
 };
 
 class TestAssignment : public Propagator {
-public:
+  public:
     void init(PropagateInit &init) override {
         a_ = init.solver_literal(init.symbolic_atoms().find(Id("a"))->literal());
         b_ = init.solver_literal(init.symbolic_atoms().find(Id("b"))->literal());
@@ -425,7 +433,7 @@ public:
     void propagate(PropagateControl &ctl, LiteralSpan changes) override {
         auto ass = ctl.assignment();
         auto trail = ass.trail();
-        count_+= changes.size();
+        count_ += changes.size();
         REQUIRE(ass.is_fixed(c_));
         REQUIRE(!ass.is_fixed(a_));
         REQUIRE(!ass.is_fixed(b_));
@@ -461,10 +469,9 @@ public:
             REQUIRE(ass.is_true(b_));
         }
     }
-    void undo(PropagateControl const &, LiteralSpan undo) noexcept override {
-        count_-= undo.size();
-    }
-private:
+    void undo(PropagateControl const &, LiteralSpan undo) noexcept override { count_ -= undo.size(); }
+
+  private:
     literal_t a_;
     literal_t b_;
     literal_t c_;
@@ -475,25 +482,19 @@ literal_t get_literal(PropagateInit &init, char const *name) {
     return init.solver_literal(init.symbolic_atoms().find(Id(name))->literal());
 }
 
-template <typename T>
-class TestInit : public Propagator {
-public:
-    TestInit(T &&f) : f_{std::forward<T>(f)} { }
-    void init(PropagateInit &init) override {
-        f_(init);
-    }
-private:
+template <typename T> class TestInit : public Propagator {
+  public:
+    TestInit(T &&f) : f_{std::forward<T>(f)} {}
+    void init(PropagateInit &init) override { f_(init); }
+
+  private:
     T f_;
 };
 
-template <typename T>
-static TestInit<T> make_init(T &&f) {
-    return {std::forward<T>(f)};
-}
-
+template <typename T> static TestInit<T> make_init(T &&f) { return {std::forward<T>(f)}; }
 
 class TestAddClause : public Propagator {
-public:
+  public:
     void init(PropagateInit &init) override {
         a_ = init.solver_literal(init.symbolic_atoms().find(Id("a"))->literal());
         b_ = init.solver_literal(init.symbolic_atoms().find(Id("b"))->literal());
@@ -501,23 +502,23 @@ public:
         init.add_watch(b_);
     }
     void propagate(PropagateControl &ctl, LiteralSpan changes) override {
-        count_+= changes.size();
+        count_ += changes.size();
         REQUIRE_FALSE((enable && count_ == 2 && ctl.add_clause({-a_, -b_}, type) && ctl.propagate()));
     }
-    void undo(PropagateControl const &, LiteralSpan undo) noexcept override {
-        count_-= undo.size();
-    }
-public:
+    void undo(PropagateControl const &, LiteralSpan undo) noexcept override { count_ -= undo.size(); }
+
+  public:
     ClauseType type = ClauseType::Learnt;
     bool enable = true;
-private:
+
+  private:
     literal_t a_;
     literal_t b_;
     size_t count_ = 0;
 };
 
 class TestAddWatch : public Propagator {
-public:
+  public:
     void init(PropagateInit &init) override {
         REQUIRE(init.number_of_threads() == 2);
         a = init.solver_literal(init.symbolic_atoms().find(Id("a"))->literal());
@@ -542,8 +543,7 @@ public:
             // wait for thread 1 to propagate b
             std::unique_lock<decltype(mut_)> lock(mut_);
             cv.wait(lock, [this]() { return done_; });
-        }
-        else {
+        } else {
             for (auto lit : changes) {
                 std::lock_guard<decltype(mut_)> lock(mut_);
                 done_ = true;
@@ -552,25 +552,25 @@ public:
             cv.notify_one();
         }
     }
-public:
+
+  public:
     std::set<literal_t> propagated;
     literal_t a;
     literal_t b;
-private:
+
+  private:
     std::mutex mut_;
     std::condition_variable cv;
     bool done_;
 };
 
 class TestException : public Propagator {
-public:
-    void check(PropagateControl &) override {
-        throw std::runtime_error("the answer is 42");
-    }
+  public:
+    void check(PropagateControl &) override { throw std::runtime_error("the answer is 42"); }
 };
 
 class TestMode : public Propagator {
-public:
+  public:
     void init(PropagateInit &init) override {
         auto atoms = init.symbolic_atoms();
         auto sig = Clingo::Signature("p", 1);
@@ -580,7 +580,7 @@ public:
         init.set_check_mode(Clingo::PropagatorCheckMode::Partial);
     }
     void check(PropagateControl &ctl) override {
-        //if (!ctl.assignment().is_total()) { throw std::logic_error("unexpected total check"); }
+        // if (!ctl.assignment().is_total()) { throw std::logic_error("unexpected total check"); }
         for (auto &lit : lits_) {
             if (ctl.assignment().truth_value(lit) == Clingo::TruthValue::Free) {
                 ctl.add_clause({lit});
@@ -588,7 +588,8 @@ public:
             }
         }
     }
-private:
+
+  private:
     std::set<Clingo::literal_t> lits_;
 };
 
@@ -610,7 +611,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         SECTION("sat") {
             ctl.ground({{"pigeon", {Number(2), Number(2)}}}, nullptr);
             test_solve(ctl.solve(), models);
-            REQUIRE(models == ModelVec({{place(1,1), place(2,2)}, {place(1,2), place(2,1)}}));
+            REQUIRE(models == ModelVec({{place(1, 1), place(2, 2)}, {place(1, 2), place(2, 1)}}));
         }
     }
     SECTION("assignment") {
@@ -628,7 +629,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         ctl.ground({{"base", {}}}, nullptr);
         test_solve(ctl.solve(), models);
         auto p = [](int n) { return Function("p", {Number(n)}); };
-        REQUIRE(models == ModelVec({{ p(1), p(2), p(3), p(4), p(5), p(6), p(7), p(8), p(9) }}));
+        REQUIRE(models == ModelVec({{p(1), p(2), p(3), p(4), p(5), p(6), p(7), p(8), p(9)}}));
     }
     SECTION("add_watch") {
         TestAddWatch prop;
@@ -640,7 +641,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         auto a = Function("a", {});
         auto b = Function("b", {});
         auto c = Function("c", {});
-        REQUIRE(models == ModelVec({{ a, b, c }, { a, c }, { b, c }, { c }}));
+        REQUIRE(models == ModelVec({{a, b, c}, {a, c}, {b, c}, {c}}));
         REQUIRE(prop.propagated == std::set<literal_t>{prop.b});
     }
     SECTION("exception") {
@@ -651,15 +652,20 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         try {
             test_solve(ctl.solve(), models);
             FAIL("solve must throw");
+        } catch (std::runtime_error const &e) {
+            REQUIRE(e.what() == S("the answer is 42"));
         }
-        catch (std::runtime_error const &e) { REQUIRE(e.what() == S("the answer is 42")); }
     }
     SECTION("exception-t2") {
         bool skip = false;
-        try { ctl.configuration()["solve.parallel_mode"] = "2"; }
-        catch (std::exception const &e) {
-            if (std::strcmp(e.what(), "invalid key") == 0) { skip = true; }
-            else { throw; }
+        try {
+            ctl.configuration()["solve.parallel_mode"] = "2";
+        } catch (std::exception const &e) {
+            if (std::strcmp(e.what(), "invalid key") == 0) {
+                skip = true;
+            } else {
+                throw;
+            }
         }
         if (!skip) {
             TestException p;
@@ -669,8 +675,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
             try {
                 test_solve(ctl.solve(), models);
                 FAIL("solve must throw");
-            }
-            catch (std::runtime_error const &e) {
+            } catch (std::runtime_error const &e) {
                 REQUIRE(e.what() == S("the answer is 42"));
             }
         }
@@ -727,15 +732,14 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         ctl.add("base", {}, "{a; b}. c. :- a, b.");
         ctl.ground({{"base", {}}}, nullptr);
         SECTION("conflict") {
-            auto p = make_init([](Clingo::PropagateInit &init){
-                REQUIRE_FALSE(init.add_clause({-get_literal(init, "c")}));
-            });
+            auto p = make_init(
+                [](Clingo::PropagateInit &init) { REQUIRE_FALSE(init.add_clause({-get_literal(init, "c")})); });
             ctl.register_propagator(p, false);
             test_solve(ctl.solve(), models);
             REQUIRE(models.size() == 0);
         }
         SECTION("propagate") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 REQUIRE(init.add_clause({get_literal(init, "a")}));
                 REQUIRE(init.assignment().is_true(get_literal(init, "a")));
                 REQUIRE(init.propagate());
@@ -746,7 +750,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
             REQUIRE(models.size() == 1);
         }
         SECTION("propagate") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 auto ass = init.assignment();
                 auto lit = init.add_literal();
                 auto a = get_literal(init, "a");
@@ -762,7 +766,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
             REQUIRE(models.size() == 1);
         }
         SECTION("propagate") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 auto ass = init.assignment();
                 auto lit = init.add_literal();
                 auto a = get_literal(init, "a");
@@ -778,7 +782,7 @@ TEST_CASE("propagator", "[clingo][propagator]") {
             REQUIRE(models.size() == 1);
         }
         SECTION("propagate") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 auto ass = init.assignment();
                 auto lit = init.add_literal();
                 auto a = get_literal(init, "a");
@@ -798,13 +802,14 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         ctl.add("base", {}, "{a; b}.");
         ctl.ground({{"base", {}}}, nullptr);
         SECTION("equal") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 auto t = init.add_literal();
                 auto a = get_literal(init, "a");
                 auto b = get_literal(init, "b");
                 REQUIRE(init.add_clause({t}));
                 auto l = init.add_literal();
-                REQUIRE(init.add_weight_constraint(t, {{a,1}, {b,1}, {l,1}}, 2, Clingo::WeightConstraintType::Equivalence, true));
+                REQUIRE(init.add_weight_constraint(t, {{a, 1}, {b, 1}, {l, 1}}, 2,
+                                                   Clingo::WeightConstraintType::Equivalence, true));
             });
             ctl.register_propagator(p, false);
             test_solve(ctl.solve(), models);
@@ -815,8 +820,8 @@ TEST_CASE("propagator", "[clingo][propagator]") {
         ctl.add("base", {}, "2 {a; b; c}. 2 {b; c; d}.");
         ctl.ground({{"base", {}}}, nullptr);
         ctl.configuration()["solve"]["opt_mode"] = "optN";
-            SECTION("minimize") {
-            auto p = make_init([](Clingo::PropagateInit &init){
+        SECTION("minimize") {
+            auto p = make_init([](Clingo::PropagateInit &init) {
                 init.add_minimize(get_literal(init, "a"), 1, 0);
                 init.add_minimize(get_literal(init, "b"), 1, 0);
                 init.add_minimize(get_literal(init, "c"), 1, 0);
@@ -826,7 +831,9 @@ TEST_CASE("propagator", "[clingo][propagator]") {
             {
                 MCB mcb{models};
                 for (auto &m : ctl.solve()) {
-                    if (m.optimality_proven()) { mcb(m); }
+                    if (m.optimality_proven()) {
+                        mcb(m);
+                    }
                 }
             }
             REQUIRE(models.size() == 1);
@@ -863,7 +870,8 @@ TEST_CASE("propgator-sequence-mining", "[clingo][propagator]") {
                 for (auto &lit : elem.second) {
                     ctl.backend().rule(false, {atom}, {lit});
                 }
-                ctl.backend().rule(false, {}, {-ctl.symbolic_atoms()[Function("sup", {elem.first})].literal(), literal_t(atom)});
+                ctl.backend().rule(false, {},
+                                   {-ctl.symbolic_atoms()[Function("sup", {elem.first})].literal(), literal_t(atom)});
             }
         }
         // :- sup(U), pat(_,I), not seq(U,_,I).
@@ -885,7 +893,8 @@ TEST_CASE("propgator-sequence-mining", "[clingo][propagator]") {
         }
         for (auto it = ctl.symbolic_atoms().begin({"sup", 1}), ie = ctl.symbolic_atoms().end(); it != ie; ++it) {
             for (auto &pat : projected_pat) {
-                if (grouped_seq.find(Function("", {it->symbol().arguments().front(), pat.first})) == grouped_seq.end()) {
+                if (grouped_seq.find(Function("", {it->symbol().arguments().front(), pat.first})) ==
+                    grouped_seq.end()) {
                     ctl.backend().rule(false, {}, {it->literal(), literal_t(pat.second)});
                 }
             }
@@ -899,17 +908,18 @@ TEST_CASE("propgator-sequence-mining", "[clingo][propagator]") {
                     models.back().emplace_back(sym);
                 }
                 std::sort(models.back().begin(), models.back().end());
+            } else {
+                optimum = opt;
             }
-            else { optimum = opt; }
         }
         std::sort(models.begin(), models.end());
         auto pat = [](int num, char const *item) { return Function("pat", {Number(num), Id(item)}); };
-        ModelVec solution = {
-            { pat(0,"a"), pat(1,"b"), pat(2,"a"), pat(3,"c"), pat(4,"a") },
-            { pat(0,"a"), pat(1,"b"), pat(2,"d"), pat(3,"c"), pat(4,"a") },
-            { pat(0,"a"), pat(1,"e"), pat(2,"d"), pat(3,"c"), pat(4,"a") } };
+        ModelVec solution = {{pat(0, "a"), pat(1, "b"), pat(2, "a"), pat(3, "c"), pat(4, "a")},
+                             {pat(0, "a"), pat(1, "b"), pat(2, "d"), pat(3, "c"), pat(4, "a")},
+                             {pat(0, "a"), pat(1, "e"), pat(2, "d"), pat(3, "c"), pat(4, "a")}};
         REQUIRE(models == solution);
     }
 }
 
-} } // namespace Test Clingo
+} // namespace Test
+} // namespace Clingo

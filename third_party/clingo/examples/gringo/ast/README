@@ -3,4 +3,3 @@ additional parameter to all symbolic atoms occurring in a program.
 
 Example calls:
     gringo --text visitor.lp
-

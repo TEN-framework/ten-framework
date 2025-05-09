@@ -8,6 +8,7 @@
 [`CATCH_CONFIG_*` customization options in CMake](#catch_config_-customization-options-in-cmake)<br>
 [Installing Catch2 from git repository](#installing-catch2-from-git-repository)<br>
 [Installing Catch2 from vcpkg](#installing-catch2-from-vcpkg)<br>
+[Installing Catch2 from Bazel](#installing-catch2-from-bazel)<br>
 
 Because we use CMake to build Catch2, we also provide a couple of
 integration points for our users.
@@ -51,7 +52,7 @@ Include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.0.1 # or a later release
+  GIT_TAG        v3.4.0 # or a later release
 )
 
 FetchContent_MakeAvailable(Catch2)
@@ -80,12 +81,11 @@ to your CMake module path.
 
 `Catch.cmake` provides function `catch_discover_tests` to get tests from
 a target. This function works by running the resulting executable with
-`--list-test-names-only` flag, and then parsing the output to find all
-existing tests.
+`--list-test` flag, and then parsing the output to find all existing tests.
 
 #### Usage
 ```cmake
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(baz LANGUAGES CXX VERSION 0.0.1)
 
@@ -126,6 +126,9 @@ catch_discover_tests(target
                      [OUTPUT_DIR dir]
                      [OUTPUT_PREFIX prefix]
                      [OUTPUT_SUFFIX suffix]
+                     [DISCOVERY_MODE <POST_BUILD|PRE_TEST>]
+                     [SKIP_IS_FAILURE]
+                     [ADD_TAGS_AS_LABELS]
 )
 ```
 
@@ -198,6 +201,25 @@ If specified, `suffix` is added to each output file name, like so
 `--out dir/<test_name>suffix`. This can be used to add a file extension to
 the output file name e.g. ".xml".
 
+* `DISCOVERY_MODE mode`
+
+If specified allows control over when test discovery is performed.
+For a value of `POST_BUILD` (default) test discovery is performed at build time.
+For a value of `PRE_TEST` test discovery is delayed until just prior to test
+execution (useful e.g. in cross-compilation environments).
+``DISCOVERY_MODE`` defaults to the value of the
+``CMAKE_CATCH_DISCOVER_TESTS_DISCOVERY_MODE`` variable if it is not passed when
+calling ``catch_discover_tests``. This provides a mechanism for globally
+selecting a preferred test discovery behavior.
+
+* `SKIP_IS_FAILURE`
+
+Skipped tests will be marked as failed instead.
+
+* `ADD_TAGS_AS_LABELS`
+
+Add the tags from tests as labels to CTest.
+
 
 ### `ParseAndAddCatchTests.cmake`
 
@@ -217,7 +239,7 @@ parsed are *silently ignored*.
 #### Usage
 
 ```cmake
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(baz LANGUAGES CXX VERSION 0.0.1)
 
@@ -373,7 +395,7 @@ install it to the default location, like so:
 ```
 $ git clone https://github.com/catchorg/Catch2.git
 $ cd Catch2
-$ cmake -Bbuild -H. -DBUILD_TESTING=OFF
+$ cmake -B build -S . -DBUILD_TESTING=OFF
 $ sudo cmake --build build/ --target install
 ```
 
@@ -396,6 +418,24 @@ cd vcpkg
 
 The catch2 port in vcpkg is kept up to date by microsoft team members and community contributors.
 If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
+## Installing Catch2 from Bazel
+
+Catch2 is now a supported module in the Bazel Central Registry. You only need to add one line to your MODULE.bazel file;
+please see https://registry.bazel.build/modules/catch2 for the latest supported version.
+
+You can then add `catch2_main` to each of your C++ test build rules as follows:
+
+```
+cc_test(
+    name = "example_test",
+    srcs = ["example_test.cpp"],
+    deps = [
+        ":example",
+        "@catch2//:catch2_main",
+    ],
+)
+```
 
 ---
 

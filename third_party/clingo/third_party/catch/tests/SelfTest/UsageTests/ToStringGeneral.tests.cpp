@@ -14,31 +14,20 @@
 
 TEST_CASE( "Character pretty printing" ){
     SECTION("Specifically escaped"){
-        char tab = '\t';
-        char newline = '\n';
-        char carr_return = '\r';
-        char form_feed = '\f';
-        CHECK(tab == '\t');
-        CHECK(newline == '\n');
-        CHECK(carr_return == '\r');
-        CHECK(form_feed == '\f');
+        CHECK(::Catch::Detail::stringify('\t') == "'\\t'");
+        CHECK(::Catch::Detail::stringify('\n') == "'\\n'");
+        CHECK(::Catch::Detail::stringify('\r') == "'\\r'");
+        CHECK(::Catch::Detail::stringify('\f') == "'\\f'");
     }
     SECTION("General chars"){
-        char space = ' ';
-        CHECK(space == ' ');
-        char chars[] = {'a', 'z', 'A', 'Z'};
-        for (int i = 0; i < 4; ++i){
-            char c = chars[i];
-            REQUIRE(c == chars[i]);
-        }
+        CHECK(::Catch::Detail::stringify( ' ' ) == "' '" );
+        CHECK(::Catch::Detail::stringify( 'A' ) == "'A'" );
+        CHECK(::Catch::Detail::stringify( 'z' ) == "'z'" );
     }
     SECTION("Low ASCII"){
-        char null_terminator = '\0';
-        CHECK(null_terminator == '\0');
-        for (int i = 2; i < 6; ++i){
-            char c = static_cast<char>(i);
-            REQUIRE(c == i);
-        }
+        CHECK(::Catch::Detail::stringify( '\0' ) == "0" );
+        CHECK(::Catch::Detail::stringify( static_cast<char>(2) ) == "2" );
+        CHECK(::Catch::Detail::stringify( static_cast<char>(5) ) == "5" );
     }
 }
 
@@ -135,8 +124,8 @@ TEST_CASE("Precision of floating point stringification can be set", "[toString][
         const auto oldPrecision = sm::precision;
 
         const float testFloat = 1.12345678901234567899f;
-        auto str1 = sm::convert(testFloat);
         sm::precision = 5;
+        auto str1 = sm::convert( testFloat );
         // "1." prefix = 2 chars, f suffix is another char
         CHECK(str1.size() == 3 + 5);
 

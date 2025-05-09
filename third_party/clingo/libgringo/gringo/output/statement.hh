@@ -25,20 +25,21 @@
 #ifndef GRINGO_OUTPUT_STATEMENT_HH
 #define GRINGO_OUTPUT_STATEMENT_HH
 
-#include <gringo/output/literal.hh>
 #include <gringo/backend.hh>
-#include <gringo/locatable.hh>
-#include <gringo/symbol.hh>
 #include <gringo/domain.hh>
+#include <gringo/locatable.hh>
+#include <gringo/output/literal.hh>
+#include <gringo/symbol.hh>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 class Statement;
 
 // {{{1 declaration of AbstractOutput
 
 class AbstractOutput {
-public:
+  public:
     AbstractOutput() = default;
     AbstractOutput(AbstractOutput const &other) = default;
     AbstractOutput(AbstractOutput &&other) noexcept = default;
@@ -58,7 +59,7 @@ void translate(DomainData &data, Translator &x, LiteralId &lit);
 void translate(DomainData &data, Translator &x, LitVec &lits);
 
 class Statement {
-public:
+  public:
     Statement() = default;
     Statement(Statement const &other) = default;
     Statement(Statement &&other) noexcept = default;
@@ -76,7 +77,7 @@ public:
 
 // }}}1
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo
 
 #endif // GRINGO_OUTPUT_STATEMENT_HH
-

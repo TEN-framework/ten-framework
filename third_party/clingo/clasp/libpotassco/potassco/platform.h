@@ -28,7 +28,7 @@
 #include <cstdlib>
 #include <cerrno>
 #if !defined(POTASSCO_HAS_STATIC_ASSERT)
-#	if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1600) || (defined(static_assert) && !defined(_LIBCPP_VERSION))
+#	if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSC_VER >= 1600) || defined(static_assert)
 #		define POTASSCO_HAS_STATIC_ASSERT 1
 #	else
 #		define POTASSCO_HAS_STATIC_ASSERT 0

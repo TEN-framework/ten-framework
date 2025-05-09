@@ -30,7 +30,8 @@
 #include <gringo/terms.hh>
 #include <list>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 enum class RuleType : unsigned short;
 using ULitVec = std::vector<ULit>;
@@ -66,7 +67,7 @@ using UHeadAggrVec = std::vector<UHeadAggr>;
 // {{{ declaration of AssignLevel
 
 class AssignLevel {
-public:
+  public:
     using BoundSet = std::unordered_map<Term::SVal, unsigned>;
 
     AssignLevel() = default;
@@ -76,26 +77,25 @@ public:
     AssignLevel &operator=(AssignLevel &&other) noexcept = delete;
     ~AssignLevel() noexcept = default;
 
-
     void add(VarTermBoundVec &vars);
     AssignLevel &subLevel();
     void assignLevels();
     void assignLevels(unsigned level, BoundSet const &bound);
 
-private:
+  private:
     std::list<AssignLevel> children_;
-    std::unordered_map<Term::SVal, std::vector<VarTerm*>> occurr_;
+    std::unordered_map<Term::SVal, std::vector<VarTerm *>> occurr_;
 };
 
 // }}}
 // {{{ declaration of CheckLevel
 
 class CheckLevel {
-public:
+  public:
     struct Ent {
         bool operator<(Ent const &x) const;
     };
-    using SC     = SafetyChecker<VarTerm*, Ent>;
+    using SC = SafetyChecker<VarTerm *, Ent>;
     using VarMap = std::unordered_map<String, SC::VarNode *>;
 
     CheckLevel(Location const &loc, Printable const &p);
@@ -108,11 +108,11 @@ public:
     SC::VarNode &var(VarTerm &var);
     void check(Logger &log);
 
-    Location         loc;
+    Location loc;
     Printable const &p;
-    SC               dep;
-    SC::EntNode     *current = nullptr;
-    VarMap           vars;
+    SC dep;
+    SC::EntNode *current = nullptr;
+    VarMap vars;
 };
 using ChkLvlVec = std::vector<CheckLevel>;
 void addVars(ChkLvlVec &levels, VarTermBoundVec &vars);
@@ -120,15 +120,15 @@ void addVars(ChkLvlVec &levels, VarTermBoundVec &vars);
 // }}}
 // {{{ declaration of ToGroundArg
 
-using CreateLit     = std::function<void (Ground::ULitVec &, bool)>;
-using CreateStm     = std::function<Ground::UStm (Ground::ULitVec &&)>;
-using CreateStmVec  = std::vector<CreateStm>;
-using CreateBody    = std::pair<CreateLit, CreateStmVec>;
+using CreateLit = std::function<void(Ground::ULitVec &, bool)>;
+using CreateStm = std::function<Ground::UStm(Ground::ULitVec &&)>;
+using CreateStmVec = std::vector<CreateStm>;
+using CreateBody = std::pair<CreateLit, CreateStmVec>;
 using CreateBodyVec = std::vector<CreateBody>;
-using CreateHead    = CreateStm;
+using CreateHead = CreateStm;
 
 class ToGroundArg {
-public:
+  public:
     ToGroundArg(unsigned &auxNames, DomainData &domains);
     ToGroundArg(ToGroundArg const &other) = delete;
     ToGroundArg(ToGroundArg &&other) = delete;
@@ -140,14 +140,13 @@ public:
     UTermVec getGlobal(VarTermBoundVec const &vars);
     UTermVec getLocal(VarTermBoundVec const &vars);
     UTerm newId(UTermVec &&global, Location const &loc, bool increment = true);
-    template <class T>
-    UTerm newId(T const &x) {
+    template <class T> UTerm newId(T const &x) {
         VarTermBoundVec vars;
         x.collect(vars);
         return newId(getGlobal(vars), x.loc());
     }
 
-    unsigned   &auxNames;
+    unsigned &auxNames;
     DomainData &domains;
 };
 
@@ -155,8 +154,12 @@ public:
 
 // {{{ declaration of BodyAggregate
 
-class BodyAggregate : public Printable, public Hashable, public Locatable, public Clonable<BodyAggregate>, public Comparable<BodyAggregate> {
-public:
+class BodyAggregate : public Printable,
+                      public Hashable,
+                      public Locatable,
+                      public Clonable<BodyAggregate>,
+                      public Comparable<BodyAggregate> {
+  public:
     BodyAggregate() = default;
     BodyAggregate(BodyAggregate const &other) = default;
     BodyAggregate(BodyAggregate &&other) noexcept = default;
@@ -167,7 +170,10 @@ public:
     //! Add inequalities bounding variables to the given solver.
     virtual void addToSolver(IESolver &solver);
     //! Removes RawTheoryTerms from TheoryLiterals
-    virtual void initTheory(TheoryDefs &def, Logger &log) { (void)def; (void)log; };
+    virtual void initTheory(TheoryDefs &def, Logger &log) {
+        (void)def;
+        (void)log;
+    };
     virtual unsigned projectScore() const { return 2; }
     //! Check if the aggregate needs unpooling.
     virtual bool hasPool() const = 0;
@@ -209,8 +215,12 @@ public:
 
 // {{{ declaration of HeadAggregate
 
-class HeadAggregate : public Printable, public Hashable, public Locatable, public Clonable<HeadAggregate>, public Comparable<HeadAggregate> {
-public:
+class HeadAggregate : public Printable,
+                      public Hashable,
+                      public Locatable,
+                      public Clonable<HeadAggregate>,
+                      public Comparable<HeadAggregate> {
+  public:
     HeadAggregate() = default;
     HeadAggregate(HeadAggregate const &other) = default;
     HeadAggregate(HeadAggregate &&other) noexcept = default;
@@ -254,7 +264,8 @@ public:
 
 std::vector<ULitVec> unpoolComparison_(ULitVec const &cond);
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 GRINGO_HASH(Gringo::Input::BodyAggregate)
 GRINGO_HASH(Gringo::Input::HeadAggregate)

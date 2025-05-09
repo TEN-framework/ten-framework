@@ -1,5 +1,5 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2019 - 2022.
+//  Copyright Christopher Kormanyos 2019 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -15,6 +15,8 @@
   #include <vector>
 
   #include <test/test_uintwide_t_n_binary_ops_base.h>
+
+  #include <util/utility/util_pseudorandom_time_point_seed.h>
 
   #if defined(WIDE_INTEGER_NAMESPACE)
   template<const WIDE_INTEGER_NAMESPACE::math::wide_integer::size_t MyDigits2,
@@ -199,7 +201,7 @@
     {
       std::atomic_flag test_lock = ATOMIC_FLAG_INIT;
 
-      my_gen().seed(static_cast<typename random_generator_type::result_type>(std::clock()));
+      my_gen().seed(util::util_pseudorandom_time_point_seed::value<typename random_generator_type::result_type>());
       std::uniform_int_distribution<> dis(1, static_cast<int>(digits2 - 1U));
 
       bool result_is_ok = true;
@@ -233,7 +235,7 @@
     {
       std::atomic_flag test_lock = ATOMIC_FLAG_INIT;
 
-      my_gen().seed(static_cast<typename random_generator_type::result_type>(std::clock()));
+      my_gen().seed(util::util_pseudorandom_time_point_seed::value<typename random_generator_type::result_type>());
       std::uniform_int_distribution<> dis(1, static_cast<int>(digits2 - 1U));
 
       bool result_is_ok = true;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -193,7 +193,10 @@ DefaultMinimize::DefaultMinimize(SharedData* d, const OptParams& params)
 	, pos_(d->lits)
 	, undo_(0)
 	, undoTop_(0)
-	, size_(d->numRules()) {
+	, posTop_(0)
+	, size_(d->numRules())
+	, actLev_(0)
+	, step_() {
 	step_.type = params.algo;
 	if (step_.type == OptParams::bb_hier && d->numRules() == 1) {
 		step_.type = 0;
@@ -1558,17 +1561,14 @@ bool UncoreMinimize::Todo::shrinkNext(UncoreMinimize& self, ValueRep result) {
 		default:
 		case OptParams::usc_trim_lin: step_ = s = 1;                break;
 		case OptParams::usc_trim_inv: step_ = s = (mx - next_) - 1; break;
-		case OptParams::usc_trim_rgs:
-			if      (s == 0u)          { step_ = s = uint32(last_ == 0u); }
-			else if ((next_ + s) > mx) { step_ = 2; s = 1; }
-			else                       { step_ = s * 2; }
-			break;
-		case OptParams::usc_trim_exp:
-			if      (s == 0u)          { s = step_ = uint32(last_ == 0u); }
-			else if ((next_ + s) < mx) { step_ = s * 2; }
-			else                       { s = (mx - next_) / 2; }
-			break;
 		case OptParams::usc_trim_bin: step_ = s = (mx - next_) / 2; break;
+		case OptParams::usc_trim_rgs: // fallthrough
+		case OptParams::usc_trim_exp:
+			if      (s == 0u)                      { step_ = s = uint32(last_ == 0u); }
+			else if ((next_ + s) < mx)             { step_ = s * 2; }
+			else if (t == OptParams::usc_trim_rgs) { step_ = 2; s = 1; }
+			else                                   { s = (mx - next_) / 2; }
+			break;
 	}
 	return s && (next_ += s) < mx;
 }

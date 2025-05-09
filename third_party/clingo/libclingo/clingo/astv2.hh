@@ -25,8 +25,8 @@
 #ifndef CLINGO_AST_HH
 #define CLINGO_AST_HH
 
-#include <gringo/input/programbuilder.hh>
 #include <clingo.h>
+#include <gringo/input/programbuilder.hh>
 
 #include <mpark/variant.hpp>
 #include <tl/optional.hpp>
@@ -34,14 +34,15 @@
 // TODO:
 // - the way OAST and SAST are handled is really realy ugly
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 class AST;
 
 // Note: we do not need all the shared pointer functionality and also want to
 //       have control about the refcount for the C binding.
 class SAST {
-public:
+  public:
     SAST();
     SAST(SAST const &ast);
     SAST(SAST &&ast) noexcept;
@@ -57,18 +58,19 @@ public:
     unsigned use_count() const;
     void clear();
     ~SAST();
-private:
+
+  private:
     AST *ast_;
 };
 
-using SASTCallback = std::function<void (SAST ast)>;
+using SASTCallback = std::function<void(SAST ast)>;
 
 struct OAST {
     SAST ast;
 };
 
 class AST {
-public:
+  public:
     using StrVec = std::vector<String>;
     using ASTVec = std::vector<SAST>;
     using Value = mpark::variant<int, Symbol, Location, String, SAST, OAST, StrVec, ASTVec>;
@@ -88,8 +90,7 @@ public:
     void value(clingo_ast_attribute_e name, Value value);
     clingo_ast_type_e type() const;
     SAST copy();
-    template <class... Args>
-    SAST update(Args&&... args) {
+    template <class... Args> SAST update(Args &&...args) {
         auto ast = SAST{type_};
         for (auto &val : values_) {
             ast->values_.emplace_back(update_(val, std::forward<Args>(args)...));
@@ -106,14 +107,14 @@ public:
     void decRef();
     unsigned refCount() const;
     bool unique() const;
-private:
+
+  private:
     AttributeVector::iterator find_(clingo_ast_attribute_e name);
     AttributeVector::const_iterator find_(clingo_ast_attribute_e name) const;
-    AttributeVector::value_type update_(AttributeVector::value_type const &x) {
-        return x;
-    }
+    AttributeVector::value_type update_(AttributeVector::value_type const &x) { return x; }
     template <class V, class... Args>
-    AttributeVector::value_type update_(AttributeVector::value_type const &x, clingo_ast_attribute_e name, V &&value, Args&&... args) {
+    AttributeVector::value_type update_(AttributeVector::value_type const &x, clingo_ast_attribute_e name, V &&value,
+                                        Args &&...args) {
         if (x.first == name) {
             return {name, std::forward<V>(value)};
         }
@@ -130,9 +131,10 @@ std::ostream &operator<<(std::ostream &out, AST const &ast);
 std::unique_ptr<INongroundProgramBuilder> build(SASTCallback cb);
 void parse(INongroundProgramBuilder &prg, Logger &log, AST const &ast);
 
-tl::optional<AST::ASTVec> unpool(SAST &ast, clingo_ast_unpool_type_bitset_t type=clingo_ast_unpool_type_all);
+tl::optional<AST::ASTVec> unpool(SAST &ast, clingo_ast_unpool_type_bitset_t type = clingo_ast_unpool_type_all);
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 struct clingo_ast {
     Gringo::Input::AST ast;

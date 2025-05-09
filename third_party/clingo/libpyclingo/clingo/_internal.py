@@ -2,10 +2,10 @@
 Internal functions and classes of the clingo module.
 """
 
-from os import _exit
-from traceback import print_exception
 import os
 import sys
+from os import _exit
+from traceback import print_exception
 
 try:
     _FLAGS = None
@@ -16,9 +16,15 @@ try:
         sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
     try:
         # Note: imported first to correctly handle the embedded case
-        from _clingo import ffi as _ffi, lib as _lib  # type: ignore # pylint: disable=no-name-in-module
+        from _clingo import (
+            ffi as _ffi,  # type: ignore # pylint: disable=no-name-in-module
+        )
+        from _clingo import lib as _lib
     except ImportError:
-        from ._clingo import ffi as _ffi, lib as _lib  # type: ignore # pylint: disable=no-name-in-module
+        from ._clingo import (
+            ffi as _ffi,  # type: ignore # pylint: disable=no-name-in-module
+        )
+        from ._clingo import lib as _lib
 finally:
     if _FLAGS is not None:
         sys.setdlopenflags(_FLAGS)

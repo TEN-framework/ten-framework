@@ -80,6 +80,3 @@ x(A,D,t) :- h(a(A,F),t-1), o(A,G+D,D), p(A,D), i(a(A,G)), D*F < D*G,
 
 #show.
 #show h/2.
-
-
-

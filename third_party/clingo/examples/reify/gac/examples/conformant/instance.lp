@@ -15,7 +15,7 @@ fluent(cpa_coin_at(cpa_c0, cpa_f1, cpa_p1)).
 fluent(cpa_coin_at(cpa_c1, cpa_f1, cpa_p0)).
 fluent(cpa_coin_at(cpa_c1, cpa_f1, cpa_p1)).
 
-%% actions ------ 
+%% actions ------
 
 action(cpa_collect(cpa_c0, cpa_f0, cpa_p0)).
 action(cpa_collect(cpa_c0, cpa_f0, cpa_p1)).
@@ -42,7 +42,7 @@ action(cpa_step_out(cpa_e0, cpa_f1, cpa_p0)).
 action(cpa_step_out(cpa_e1, cpa_f0, cpa_p1)).
 action(cpa_step_out(cpa_e1, cpa_f1, cpa_p1)).
 
-%% executable ------ 
+%% executable ------
 
 executable(cpa_collect(cpa_c0, cpa_f0, cpa_p0),cpa_at(cpa_f0, cpa_p0)).
 executable(cpa_collect(cpa_c0, cpa_f0, cpa_p1),cpa_at(cpa_f0, cpa_p1)).
@@ -65,7 +65,7 @@ executable(cpa_step_out(cpa_e0, cpa_f1, cpa_p0),cpa_inside(cpa_e0)).
 executable(cpa_step_out(cpa_e1, cpa_f0, cpa_p1),cpa_inside(cpa_e1)).
 executable(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_inside(cpa_e1)).
 
-%% effects ------ 
+%% effects ------
 
 effect(cpa_collect(cpa_c0, cpa_f1, cpa_p0),cpa_have(cpa_c0),1).
 effect(cpa_collect(cpa_c0, cpa_f1, cpa_p0),neg(cpa_coin_at(cpa_c0, cpa_f1, cpa_p0)),1).
@@ -124,7 +124,7 @@ effect(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_at(cpa_f1, cpa_p1),1).
 effect(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),neg(cpa_inside(cpa_e1)),1).
 condition(cpa_step_out(cpa_e1, cpa_f1, cpa_p1),cpa_in(cpa_e1, cpa_f1),1).
 
-%% initial state ------ 
+%% initial state ------
 
 initially(cpa_at(cpa_f0, cpa_p0)).
 initially(neg(cpa_at(cpa_f0, cpa_p1))).
@@ -143,7 +143,7 @@ initially_oneof(3,cpa_coin_at(cpa_c1, cpa_f1, cpa_p0),1).
 initially_oneof(3,cpa_coin_at(cpa_c0, cpa_f1, cpa_p1),2).
 initially_oneof(3,cpa_coin_at(cpa_c1, cpa_f1, cpa_p1),2).
 
-%% goal state ---------- 
+%% goal state ----------
 
 goal(cpa_have(cpa_c0)).
 goal(cpa_have(cpa_c1)).

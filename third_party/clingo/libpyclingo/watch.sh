@@ -5,7 +5,7 @@ export PYTHONPATH=../build/release/bin/python
 last=""
 inotifywait -m clingo -e modify |
     while read fpath action file; do
-        case "$file" in 
+        case "$file" in
             *.py)
                 echo "file: $file"
                 current="$(/usr/bin/md5sum "$fpath/$file")"

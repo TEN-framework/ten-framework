@@ -25,17 +25,19 @@
 #ifndef _GRINGO_GROUND_TEST_GROUNDER_HELPER_HH
 #define _GRINGO_GROUND_TEST_GROUNDER_HELPER_HH
 
-#include "gringo/logger.hh"
 #include "gringo/ground/dependency.hh"
 #include "gringo/input/nongroundparser.hh"
 #include "gringo/input/program.hh"
+#include "gringo/logger.hh"
 #include "gringo/output/output.hh"
 
 #include "tests/tests.hh"
 
 #include <regex>
 
-namespace Gringo { namespace Ground { namespace Test {
+namespace Gringo {
+namespace Ground {
+namespace Test {
 
 inline void ground(std::string const &str, Output::OutputFormat fmt, std::ostream &ss) {
     Gringo::Test::TestGringoModule module;
@@ -45,9 +47,9 @@ inline void ground(std::string const &str, Output::OutputFormat fmt, std::ostrea
     Defines defs;
     Gringo::Test::TestContext context;
     NullBackend bck;
-    Input::NongroundProgramBuilder pb{ context, prg, out.outPreds, defs };
+    Input::NongroundProgramBuilder pb{context, prg, out.outPreds, defs};
     bool incmode;
-    Input::NonGroundParser ngp{ pb, bck, incmode };
+    Input::NonGroundParser ngp{pb, bck, incmode};
     ngp.pushStream("-", gringo_make_unique<std::stringstream>(str), module.logger);
     ngp.parse(module.logger);
     prg.rewrite(defs, module.logger);
@@ -74,11 +76,9 @@ inline std::string groundText(std::string const &str, std::initializer_list<std:
         std::smatch m;
         if (std::regex_match(line, m, delayedDef)) {
             delayedMap[m[1]] = m[2];
-        }
-        else if (!line.compare(0, 9, "#delayed(")) {
+        } else if (!line.compare(0, 9, "#delayed(")) {
             res.emplace_back(std::move(line));
-        }
-        else {
+        } else {
             for (auto &x : filter) {
                 if (!line.compare(0, x.size(), x)) {
                     res.emplace_back(std::move(line));
@@ -90,7 +90,8 @@ inline std::string groundText(std::string const &str, std::initializer_list<std:
     for (auto &x : res) {
         std::string r;
         auto st = x.cbegin();
-        for (auto it = std::sregex_iterator(x.begin(), x.end(), delayedOcc), ie = std::sregex_iterator(); it != ie; ++it) {
+        for (auto it = std::sregex_iterator(x.begin(), x.end(), delayedOcc), ie = std::sregex_iterator(); it != ie;
+             ++it) {
             std::smatch match = *it;
             r.append(st, match.prefix().second);
             st = match.suffix().first;
@@ -101,7 +102,9 @@ inline std::string groundText(std::string const &str, std::initializer_list<std:
     }
     std::stringstream oss;
     std::sort(res.begin(), res.end());
-    for (auto &x : res) { oss << x << "\n"; }
+    for (auto &x : res) {
+        oss << x << "\n";
+    }
     return oss.str();
 }
 
@@ -111,6 +114,8 @@ inline std::string groundAspif(std::string const &str) {
     return ss.str();
 }
 
-} } } // namespace Test Ground Gringo
+} // namespace Test
+} // namespace Ground
+} // namespace Gringo
 
 #endif // _GRINGO_GROUND_TEST_GROUNDER_HELPER_HH

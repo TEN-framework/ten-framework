@@ -24,22 +24,23 @@
 
 #include "gringo/input/nongroundparser.hh"
 #include "gringo/input/programbuilder.hh"
-#include "input/nongroundgrammar/grammar.hh"
 #include "gringo/symbol.hh"
+#include "input/nongroundgrammar/grammar.hh"
 #include "tests/tests.hh"
 
 #include <climits>
 #include <sstream>
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 namespace {
 
 // {{{ declaration of TestNongroundProgramBuilder
 
 class TestNongroundProgramBuilder : public INongroundProgramBuilder {
-public:
-
+  public:
     // {{{ terms
     virtual TermUid term(Location const &loc, Symbol val) override;
     virtual TermUid term(Location const &loc, String name) override;
@@ -68,7 +69,8 @@ public:
     virtual LitUid boollit(Location const &loc, bool type) override;
     virtual LitUid predlit(Location const &loc, NAF naf, TermUid termUid) override;
     virtual RelLitVecUid rellitvec(Location const &loc, Relation rel, TermUid termUidLeft) override;
-    virtual RelLitVecUid rellitvec(Location const &loc, RelLitVecUid vecUidLeft, Relation rel, TermUid termUidRight) override;
+    virtual RelLitVecUid rellitvec(Location const &loc, RelLitVecUid vecUidLeft, Relation rel,
+                                   TermUid termUidRight) override;
     virtual LitUid rellit(Location const &loc, NAF naf, TermUid termUidLeft, RelLitVecUid vecUidRight) override;
     // }}}
     // {{{ literal vectors
@@ -85,7 +87,8 @@ public:
     // }}}
     // {{{ head aggregate elements
     virtual HdAggrElemVecUid headaggrelemvec() override;
-    virtual HdAggrElemVecUid headaggrelemvec(HdAggrElemVecUid uid, TermVecUid termvec, LitUid lit, LitVecUid litvec) override;
+    virtual HdAggrElemVecUid headaggrelemvec(HdAggrElemVecUid uid, TermVecUid termvec, LitUid lit,
+                                             LitVecUid litvec) override;
     // }}}
     // {{{ bounds
     virtual BoundVecUid boundvec() override;
@@ -94,16 +97,20 @@ public:
     // {{{ heads
     virtual HdLitUid headlit(LitUid lit) override;
     virtual HdLitUid headaggr(Location const &loc, TheoryAtomUid atom) override;
-    virtual HdLitUid headaggr(Location const &loc, AggregateFunction fun, BoundVecUid bounds, HdAggrElemVecUid headaggrelemvec) override;
-    virtual HdLitUid headaggr(Location const &loc, AggregateFunction fun, BoundVecUid bounds, CondLitVecUid headaggrelemvec) override;
+    virtual HdLitUid headaggr(Location const &loc, AggregateFunction fun, BoundVecUid bounds,
+                              HdAggrElemVecUid headaggrelemvec) override;
+    virtual HdLitUid headaggr(Location const &loc, AggregateFunction fun, BoundVecUid bounds,
+                              CondLitVecUid headaggrelemvec) override;
     virtual HdLitUid disjunction(Location const &loc, CondLitVecUid condlitvec) override;
     // }}}
     // {{{ bodies
     virtual BdLitVecUid body() override;
     virtual BdLitVecUid bodylit(BdLitVecUid body, LitUid bodylit) override;
     virtual BdLitVecUid bodyaggr(BdLitVecUid body, Location const &loc, NAF naf, TheoryAtomUid atom) override;
-    virtual BdLitVecUid bodyaggr(BdLitVecUid body, Location const &loc, NAF naf, AggregateFunction fun, BoundVecUid bounds, BdAggrElemVecUid bodyaggrelemvec) override;
-    virtual BdLitVecUid bodyaggr(BdLitVecUid body, Location const &loc, NAF naf, AggregateFunction fun, BoundVecUid bounds, CondLitVecUid bodyaggrelemvec) override;
+    virtual BdLitVecUid bodyaggr(BdLitVecUid body, Location const &loc, NAF naf, AggregateFunction fun,
+                                 BoundVecUid bounds, BdAggrElemVecUid bodyaggrelemvec) override;
+    virtual BdLitVecUid bodyaggr(BdLitVecUid body, Location const &loc, NAF naf, AggregateFunction fun,
+                                 BoundVecUid bounds, CondLitVecUid bodyaggrelemvec) override;
     virtual BdLitVecUid conjunction(BdLitVecUid body, Location const &loc, LitUid head, LitVecUid litvec) override;
     // }}}
     // {{{ statements
@@ -141,24 +148,31 @@ public:
     virtual TheoryOpVecUid theoryops(TheoryOpVecUid ops, String op) override;
 
     virtual TheoryOptermVecUid theoryopterms() override;
-    virtual TheoryOptermVecUid theoryopterms(TheoryOptermVecUid opterms, Location const &loc, TheoryOptermUid opterm) override;
-    virtual TheoryOptermVecUid theoryopterms(Location const &loc, TheoryOptermUid opterm, TheoryOptermVecUid opterms) override;
+    virtual TheoryOptermVecUid theoryopterms(TheoryOptermVecUid opterms, Location const &loc,
+                                             TheoryOptermUid opterm) override;
+    virtual TheoryOptermVecUid theoryopterms(Location const &loc, TheoryOptermUid opterm,
+                                             TheoryOptermVecUid opterms) override;
 
     virtual TheoryElemVecUid theoryelems() override;
     virtual TheoryElemVecUid theoryelems(TheoryElemVecUid elems, TheoryOptermVecUid opterms, LitVecUid cond) override;
 
     virtual TheoryAtomUid theoryatom(TermUid term, TheoryElemVecUid elems) override;
-    virtual TheoryAtomUid theoryatom(TermUid term, TheoryElemVecUid elems, String op, Location const &loc, TheoryOptermUid opterm) override;
+    virtual TheoryAtomUid theoryatom(TermUid term, TheoryElemVecUid elems, String op, Location const &loc,
+                                     TheoryOptermUid opterm) override;
     // }}}
     // {{{ theory definitions
 
-    virtual TheoryOpDefUid theoryopdef(Location const &loc, String op, unsigned priority, TheoryOperatorType type) override;
+    virtual TheoryOpDefUid theoryopdef(Location const &loc, String op, unsigned priority,
+                                       TheoryOperatorType type) override;
     virtual TheoryOpDefVecUid theoryopdefs() override;
     virtual TheoryOpDefVecUid theoryopdefs(TheoryOpDefVecUid defs, TheoryOpDefUid def) override;
 
-    virtual TheoryTermDefUid theorytermdef(Location const &loc, String name, TheoryOpDefVecUid defs, Logger &log) override;
-    virtual TheoryAtomDefUid theoryatomdef(Location const &loc, String name, unsigned arity, String termDef, TheoryAtomType type) override;
-    virtual TheoryAtomDefUid theoryatomdef(Location const &loc, String name, unsigned arity, String termDef, TheoryAtomType type, TheoryOpVecUid ops, String guardDef) override;
+    virtual TheoryTermDefUid theorytermdef(Location const &loc, String name, TheoryOpDefVecUid defs,
+                                           Logger &log) override;
+    virtual TheoryAtomDefUid theoryatomdef(Location const &loc, String name, unsigned arity, String termDef,
+                                           TheoryAtomType type) override;
+    virtual TheoryAtomDefUid theoryatomdef(Location const &loc, String name, unsigned arity, String termDef,
+                                           TheoryAtomType type, TheoryOpVecUid ops, String guardDef) override;
 
     virtual TheoryDefVecUid theorydefs() override;
     virtual TheoryDefVecUid theorydefs(TheoryDefVecUid defs, TheoryTermDefUid def) override;
@@ -172,7 +186,7 @@ public:
 
     virtual ~TestNongroundProgramBuilder();
 
-private:
+  private:
     // {{{ typedefs
     using StringVec = std::vector<std::string>;
     using StringVecVec = std::vector<StringVec>;
@@ -255,9 +269,7 @@ private:
 
 // {{{ id vectors
 
-IdVecUid TestNongroundProgramBuilder::idvec() {
-    return idvecs_.emplace();
-}
+IdVecUid TestNongroundProgramBuilder::idvec() { return idvecs_.emplace(); }
 
 IdVecUid TestNongroundProgramBuilder::idvec(IdVecUid uid, Location const &, String id) {
     idvecs_[uid].emplace_back(id.c_str());
@@ -278,19 +290,28 @@ TermUid TestNongroundProgramBuilder::term(Location const &, String name) {
 }
 
 TermUid TestNongroundProgramBuilder::term(Location const &, UnOp op, TermUid a) {
-    if(op == UnOp::ABS) { current_ << "|"; }
-    else { current_ << op; }
+    if (op == UnOp::ABS) {
+        current_ << "|";
+    } else {
+        current_ << op;
+    }
     current_ << terms_.erase(a) << (op == UnOp::ABS ? "|" : "");
     return terms_.emplace(str());
 }
 
 TermUid TestNongroundProgramBuilder::term(Location const &, UnOp op, TermVecUid a) {
     auto v = termvecs_.erase(a);
-    if(op == UnOp::ABS) { current_ << "|"; }
-    else { current_ << op << (v.size() > 1 ? "(" : ""); }
+    if (op == UnOp::ABS) {
+        current_ << "|";
+    } else {
+        current_ << op << (v.size() > 1 ? "(" : "");
+    }
     print(v, ";");
-    if(op == UnOp::ABS) { current_ << "|"; }
-    else if (v.size() > 1) { current_ << ")"; }
+    if (op == UnOp::ABS) {
+        current_ << "|";
+    } else if (v.size() > 1) {
+        current_ << ")";
+    }
     return terms_.emplace(str());
 }
 
@@ -308,18 +329,26 @@ TermUid TestNongroundProgramBuilder::term(Location const &, String name, TermVec
     assert(name != "");
     assert(!termvecvecs_[a].empty());
     bool nempty = lua || termvecvecs_[a].size() > 1 || !termvecvecs_[a].front().empty();
-    if (lua) { current_ << "@"; }
+    if (lua) {
+        current_ << "@";
+    }
     current_ << name;
-    if (nempty) { current_ << "("; }
+    if (nempty) {
+        current_ << "(";
+    }
     print(termvecvecs_.erase(a));
-    if (nempty) { current_ << ")"; }
+    if (nempty) {
+        current_ << ")";
+    }
     return terms_.emplace(str());
 }
 
 TermUid TestNongroundProgramBuilder::term(Location const &, TermVecUid args, bool forceTuple) {
     current_ << "(";
     print(termvecs_.erase(args), ",");
-    if (forceTuple) { current_ << ","; }
+    if (forceTuple) {
+        current_ << ",";
+    }
     current_ << ")";
     return terms_.emplace(str());
 }
@@ -334,9 +363,7 @@ TermUid TestNongroundProgramBuilder::pool(Location const &, TermVecUid args) {
 // }}}
 // {{{ term vectors
 
-TermVecUid TestNongroundProgramBuilder::termvec() {
-    return termvecs_.emplace();
-}
+TermVecUid TestNongroundProgramBuilder::termvec() { return termvecs_.emplace(); }
 
 TermVecUid TestNongroundProgramBuilder::termvec(TermVecUid uid, TermUid term) {
     termvecs_[uid].emplace_back(terms_.erase(term));
@@ -346,9 +373,7 @@ TermVecUid TestNongroundProgramBuilder::termvec(TermVecUid uid, TermUid term) {
 // }}}
 // {{{ term vector vectors
 
-TermVecVecUid TestNongroundProgramBuilder::termvecvec() {
-    return termvecvecs_.emplace();
-}
+TermVecVecUid TestNongroundProgramBuilder::termvecvec() { return termvecvecs_.emplace(); }
 
 TermVecVecUid TestNongroundProgramBuilder::termvecvec(TermVecVecUid uid, TermVecUid termvecUid) {
     termvecvecs_[uid].push_back(termvecs_.erase(termvecUid));
@@ -373,13 +398,15 @@ RelLitVecUid TestNongroundProgramBuilder::rellitvec(Location const &loc, Relatio
     return rellitvec(loc, uid, rel, termUidLeft);
 }
 
-RelLitVecUid TestNongroundProgramBuilder::rellitvec(Location const &loc, RelLitVecUid vecUidLeft, Relation rel, TermUid termUidRight) {
-    current_<< rel << terms_.erase(termUidRight);
+RelLitVecUid TestNongroundProgramBuilder::rellitvec(Location const &loc, RelLitVecUid vecUidLeft, Relation rel,
+                                                    TermUid termUidRight) {
+    current_ << rel << terms_.erase(termUidRight);
     rellitvecs_[vecUidLeft].emplace_back(str());
     return vecUidLeft;
 }
 
-LitUid TestNongroundProgramBuilder::rellit(Location const &loc, NAF naf, TermUid termUidLeft, RelLitVecUid vecUidRight) {
+LitUid TestNongroundProgramBuilder::rellit(Location const &loc, NAF naf, TermUid termUidLeft,
+                                           RelLitVecUid vecUidRight) {
     print(naf);
     current_ << terms_.erase(termUidLeft);
     print(rellitvecs_.erase(vecUidRight), "");
@@ -389,9 +416,7 @@ LitUid TestNongroundProgramBuilder::rellit(Location const &loc, NAF naf, TermUid
 // }}}
 // {{{ literal vectors
 
-LitVecUid TestNongroundProgramBuilder::litvec() {
-    return litvecs_.emplace();
-}
+LitVecUid TestNongroundProgramBuilder::litvec() { return litvecs_.emplace(); }
 
 LitVecUid TestNongroundProgramBuilder::litvec(LitVecUid uid, LitUid literalUid) {
     litvecs_[uid].emplace_back(lits_.erase(literalUid));
@@ -401,9 +426,7 @@ LitVecUid TestNongroundProgramBuilder::litvec(LitVecUid uid, LitUid literalUid) 
 // }}}
 // {{{ count aggregate elements (body/head)
 
-CondLitVecUid TestNongroundProgramBuilder::condlitvec() {
-    return condlitvecs_.emplace();
-}
+CondLitVecUid TestNongroundProgramBuilder::condlitvec() { return condlitvecs_.emplace(); }
 
 CondLitVecUid TestNongroundProgramBuilder::condlitvec(CondLitVecUid uid, LitUid lit, LitVecUid litvec) {
     current_ << lits_.erase(lit);
@@ -416,11 +439,10 @@ CondLitVecUid TestNongroundProgramBuilder::condlitvec(CondLitVecUid uid, LitUid 
 // }}}
 // {{{ body aggregate elements
 
-BdAggrElemVecUid TestNongroundProgramBuilder::bodyaggrelemvec() {
-    return bodyaggrelemvecs_.emplace();
-}
+BdAggrElemVecUid TestNongroundProgramBuilder::bodyaggrelemvec() { return bodyaggrelemvecs_.emplace(); }
 
-BdAggrElemVecUid TestNongroundProgramBuilder::bodyaggrelemvec(BdAggrElemVecUid uid, TermVecUid termvec, LitVecUid litvec) {
+BdAggrElemVecUid TestNongroundProgramBuilder::bodyaggrelemvec(BdAggrElemVecUid uid, TermVecUid termvec,
+                                                              LitVecUid litvec) {
     print(termvecs_.erase(termvec), ",");
     current_ << ":";
     print(litvecs_.erase(litvec), ",");
@@ -431,11 +453,10 @@ BdAggrElemVecUid TestNongroundProgramBuilder::bodyaggrelemvec(BdAggrElemVecUid u
 // }}}
 // {{{ head aggregate elements
 
-HdAggrElemVecUid TestNongroundProgramBuilder::headaggrelemvec() {
-    return headaggrelemvecs_.emplace();
-}
+HdAggrElemVecUid TestNongroundProgramBuilder::headaggrelemvec() { return headaggrelemvecs_.emplace(); }
 
-HdAggrElemVecUid TestNongroundProgramBuilder::headaggrelemvec(HdAggrElemVecUid uid, TermVecUid termvec, LitUid lit, LitVecUid litvec) {
+HdAggrElemVecUid TestNongroundProgramBuilder::headaggrelemvec(HdAggrElemVecUid uid, TermVecUid termvec, LitUid lit,
+                                                              LitVecUid litvec) {
     print(termvecs_.erase(termvec), ",");
     current_ << ":" << lits_.erase(lit) << ":";
     print(litvecs_.erase(litvec), ",");
@@ -446,9 +467,7 @@ HdAggrElemVecUid TestNongroundProgramBuilder::headaggrelemvec(HdAggrElemVecUid u
 // }}}
 // {{{ bounds
 
-BoundVecUid TestNongroundProgramBuilder::boundvec() {
-    return bounds_.emplace();
-}
+BoundVecUid TestNongroundProgramBuilder::boundvec() { return bounds_.emplace(); }
 
 BoundVecUid TestNongroundProgramBuilder::boundvec(BoundVecUid uid, Relation rel, TermUid term) {
     std::stringstream ss;
@@ -462,20 +481,20 @@ BoundVecUid TestNongroundProgramBuilder::boundvec(BoundVecUid uid, Relation rel,
 // }}}
 // {{{ heads
 
-HdLitUid TestNongroundProgramBuilder::headlit(LitUid lit) {
-    return heads_.emplace(lits_.erase(lit));
-}
+HdLitUid TestNongroundProgramBuilder::headlit(LitUid lit) { return heads_.emplace(lits_.erase(lit)); }
 
 HdLitUid TestNongroundProgramBuilder::headaggr(Location const &, TheoryAtomUid atom) {
     return heads_.emplace(theoryAtoms_.erase(atom));
 }
 
-HdLitUid TestNongroundProgramBuilder::headaggr(Location const &, AggregateFunction fun, BoundVecUid boundvecuid, HdAggrElemVecUid headaggrelemvec) {
+HdLitUid TestNongroundProgramBuilder::headaggr(Location const &, AggregateFunction fun, BoundVecUid boundvecuid,
+                                               HdAggrElemVecUid headaggrelemvec) {
     print(fun, boundvecuid, headaggrelemvecs_.erase(headaggrelemvec));
     return heads_.emplace(str());
 }
 
-HdLitUid TestNongroundProgramBuilder::headaggr(Location const &, AggregateFunction fun, BoundVecUid boundvecuid, CondLitVecUid headaggrelemvec) {
+HdLitUid TestNongroundProgramBuilder::headaggr(Location const &, AggregateFunction fun, BoundVecUid boundvecuid,
+                                               CondLitVecUid headaggrelemvec) {
     print(fun, boundvecuid, condlitvecs_.erase(headaggrelemvec));
     return heads_.emplace(str());
 }
@@ -488,9 +507,7 @@ HdLitUid TestNongroundProgramBuilder::disjunction(Location const &, CondLitVecUi
 // }}}
 // {{{ bodies
 
-BdLitVecUid TestNongroundProgramBuilder::body() {
-    return bodies_.emplace();
-}
+BdLitVecUid TestNongroundProgramBuilder::body() { return bodies_.emplace(); }
 
 BdLitVecUid TestNongroundProgramBuilder::bodylit(BdLitVecUid uid, LitUid lit) {
     bodies_[uid].emplace_back(lits_.erase(lit));
@@ -504,14 +521,16 @@ BdLitVecUid TestNongroundProgramBuilder::bodyaggr(BdLitVecUid body, Location con
     return body;
 }
 
-BdLitVecUid TestNongroundProgramBuilder::bodyaggr(BdLitVecUid uid, Location const &, NAF naf, AggregateFunction fun, BoundVecUid bounds, BdAggrElemVecUid bodyaggrelemvec) {
+BdLitVecUid TestNongroundProgramBuilder::bodyaggr(BdLitVecUid uid, Location const &, NAF naf, AggregateFunction fun,
+                                                  BoundVecUid bounds, BdAggrElemVecUid bodyaggrelemvec) {
     print(naf);
     print(fun, bounds, bodyaggrelemvecs_.erase(bodyaggrelemvec));
     bodies_[uid].emplace_back(str());
     return uid;
 }
 
-BdLitVecUid TestNongroundProgramBuilder::bodyaggr(BdLitVecUid uid, Location const &, NAF naf, AggregateFunction fun, BoundVecUid bounds, CondLitVecUid bodyaggrelemvec) {
+BdLitVecUid TestNongroundProgramBuilder::bodyaggr(BdLitVecUid uid, Location const &, NAF naf, AggregateFunction fun,
+                                                  BoundVecUid bounds, CondLitVecUid bodyaggrelemvec) {
     print(naf);
     print(fun, bounds, condlitvecs_.erase(bodyaggrelemvec));
     bodies_[uid].emplace_back(str());
@@ -546,11 +565,14 @@ void TestNongroundProgramBuilder::rule(Location const &, HdLitUid head, BdLitVec
 
 void TestNongroundProgramBuilder::define(Location const &, String name, TermUid value, bool def, Logger &) {
     current_ << "#const " << name << "=" << terms_.erase(value) << ".";
-    if (!def) { current_ << " [override]"; }
+    if (!def) {
+        current_ << " [override]";
+    }
     statements_.emplace_back(str());
 }
 
-void TestNongroundProgramBuilder::optimize(Location const &, TermUid weight, TermUid priority, TermVecUid cond, BdLitVecUid body) {
+void TestNongroundProgramBuilder::optimize(Location const &, TermUid weight, TermUid priority, TermVecUid cond,
+                                           BdLitVecUid body) {
     current_ << ":~";
     StringVec bd(bodies_.erase(body));
     print(bd, ";");
@@ -621,7 +643,8 @@ void TestNongroundProgramBuilder::edge(Location const &, TermVecVecUid edges, Bd
     statements_.emplace_back(str());
 }
 
-void TestNongroundProgramBuilder::heuristic(Location const &, TermUid termUid, BdLitVecUid bodyuid, TermUid a, TermUid b, TermUid mod) {
+void TestNongroundProgramBuilder::heuristic(Location const &, TermUid termUid, BdLitVecUid bodyuid, TermUid a,
+                                            TermUid b, TermUid mod) {
     current_ << "#heuristic " << terms_.erase(termUid);
     StringVec body(bodies_.erase(bodyuid));
     if (!body.empty()) {
@@ -641,7 +664,6 @@ void TestNongroundProgramBuilder::project(Location const &, TermUid termUid, BdL
     }
     current_ << ".";
     statements_.emplace_back(str());
-
 }
 
 void TestNongroundProgramBuilder::project(Location const &, Sig sig) {
@@ -681,7 +703,9 @@ TheoryTermUid TestNongroundProgramBuilder::theorytermtuple(Location const &, The
     current_ << "(";
     auto size = theoryOptermVecs_[args].size();
     print(theoryOptermVecs_.erase(args), ",");
-    if (size == 1) { current_ << ","; }
+    if (size == 1) {
+        current_ << ",";
+    }
     current_ << ")";
     return theoryTerms_.emplace(str());
 }
@@ -706,49 +730,50 @@ TheoryTermUid TestNongroundProgramBuilder::theorytermvar(Location const &, Strin
 TheoryOptermUid TestNongroundProgramBuilder::theoryopterm(TheoryOpVecUid ops, TheoryTermUid term) {
     auto to = theoryOps_.erase(ops);
     print(to, " ");
-    if (!to.empty()) { current_ << " "; }
+    if (!to.empty()) {
+        current_ << " ";
+    }
     current_ << theoryTerms_.erase(term);
     return theoryOpterms_.emplace(str());
-
 }
 
-TheoryOptermUid TestNongroundProgramBuilder::theoryopterm(TheoryOptermUid opterm, TheoryOpVecUid ops, TheoryTermUid term) {
+TheoryOptermUid TestNongroundProgramBuilder::theoryopterm(TheoryOptermUid opterm, TheoryOpVecUid ops,
+                                                          TheoryTermUid term) {
     auto to = theoryOps_.erase(ops);
-    if (!to.empty()) { current_ << " "; }
+    if (!to.empty()) {
+        current_ << " ";
+    }
     print(to, " ");
     current_ << " " << theoryTerms_.erase(term);
     theoryOpterms_[opterm] += str();
     return opterm;
 }
 
-TheoryOpVecUid TestNongroundProgramBuilder::theoryops() {
-    return theoryOps_.emplace();
-}
+TheoryOpVecUid TestNongroundProgramBuilder::theoryops() { return theoryOps_.emplace(); }
 
 TheoryOpVecUid TestNongroundProgramBuilder::theoryops(TheoryOpVecUid ops, String op) {
     theoryOps_[ops].emplace_back(op.c_str());
     return ops;
 }
 
-TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms() {
-    return theoryOptermVecs_.emplace();
-}
+TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms() { return theoryOptermVecs_.emplace(); }
 
-TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms(TheoryOptermVecUid opterms, Location const &, TheoryOptermUid opterm) {
+TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms(TheoryOptermVecUid opterms, Location const &,
+                                                              TheoryOptermUid opterm) {
     theoryOptermVecs_[opterms].emplace_back(theoryOpterms_.erase(opterm));
     return opterms;
 }
 
-TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms(Location const &, TheoryOptermUid opterm, TheoryOptermVecUid opterms) {
+TheoryOptermVecUid TestNongroundProgramBuilder::theoryopterms(Location const &, TheoryOptermUid opterm,
+                                                              TheoryOptermVecUid opterms) {
     theoryOptermVecs_[opterms].emplace(theoryOptermVecs_[opterms].begin(), theoryOpterms_.erase(opterm));
     return opterms;
 }
 
-TheoryElemVecUid TestNongroundProgramBuilder::theoryelems() {
-    return theoryElemVecs_.emplace();
-}
+TheoryElemVecUid TestNongroundProgramBuilder::theoryelems() { return theoryElemVecs_.emplace(); }
 
-TheoryElemVecUid TestNongroundProgramBuilder::theoryelems(TheoryElemVecUid elems, TheoryOptermVecUid opterms, LitVecUid cond) {
+TheoryElemVecUid TestNongroundProgramBuilder::theoryelems(TheoryElemVecUid elems, TheoryOptermVecUid opterms,
+                                                          LitVecUid cond) {
     print(theoryOptermVecs_.erase(opterms), ",");
     current_ << ":";
     print(litvecs_.erase(cond), ",");
@@ -763,7 +788,8 @@ TheoryAtomUid TestNongroundProgramBuilder::theoryatom(TermUid term, TheoryElemVe
     return theoryAtoms_.emplace(str());
 }
 
-TheoryAtomUid TestNongroundProgramBuilder::theoryatom(TermUid term, TheoryElemVecUid elems, String op, Location const &, TheoryOptermUid opterm) {
+TheoryAtomUid TestNongroundProgramBuilder::theoryatom(TermUid term, TheoryElemVecUid elems, String op, Location const &,
+                                                      TheoryOptermUid opterm) {
     current_ << "&" << terms_.erase(term) << "{";
     print(theoryElemVecs_.erase(elems), " ; ");
     current_ << "} " << op << " " << theoryOpterms_.erase(opterm);
@@ -773,42 +799,43 @@ TheoryAtomUid TestNongroundProgramBuilder::theoryatom(TermUid term, TheoryElemVe
 // }}}
 // {{{ theory definitions
 
-TheoryOpDefUid TestNongroundProgramBuilder::theoryopdef(Location const &, String op, unsigned priority, TheoryOperatorType type) {
+TheoryOpDefUid TestNongroundProgramBuilder::theoryopdef(Location const &, String op, unsigned priority,
+                                                        TheoryOperatorType type) {
     current_ << op << " :" << priority << "," << type;
     return theoryOpDefs_.emplace(str());
 }
 
-TheoryOpDefVecUid TestNongroundProgramBuilder::theoryopdefs() {
-    return theoryOpDefVecs_.emplace();
-}
+TheoryOpDefVecUid TestNongroundProgramBuilder::theoryopdefs() { return theoryOpDefVecs_.emplace(); }
 
 TheoryOpDefVecUid TestNongroundProgramBuilder::theoryopdefs(TheoryOpDefVecUid defs, TheoryOpDefUid def) {
     theoryOpDefVecs_[defs].emplace_back(theoryOpDefs_.erase(def));
     return defs;
 }
 
-TheoryTermDefUid TestNongroundProgramBuilder::theorytermdef(Location const &, String name, TheoryOpDefVecUid defs, Logger &) {
+TheoryTermDefUid TestNongroundProgramBuilder::theorytermdef(Location const &, String name, TheoryOpDefVecUid defs,
+                                                            Logger &) {
     current_ << name << "{";
     print(theoryOpDefVecs_.erase(defs), ",");
     current_ << "}";
     return theoryTermDefs_.emplace(str());
 }
 
-TheoryAtomDefUid TestNongroundProgramBuilder::theoryatomdef(Location const &, String name, unsigned arity, String termDef, TheoryAtomType type) {
+TheoryAtomDefUid TestNongroundProgramBuilder::theoryatomdef(Location const &, String name, unsigned arity,
+                                                            String termDef, TheoryAtomType type) {
     current_ << "&" << name << "/" << arity << ":" << termDef << "," << type;
     return theoryAtomDefs_.emplace(str());
 }
 
-TheoryAtomDefUid TestNongroundProgramBuilder::theoryatomdef(Location const &, String name, unsigned arity, String termDef, TheoryAtomType type, TheoryOpVecUid ops, String guardDef) {
+TheoryAtomDefUid TestNongroundProgramBuilder::theoryatomdef(Location const &, String name, unsigned arity,
+                                                            String termDef, TheoryAtomType type, TheoryOpVecUid ops,
+                                                            String guardDef) {
     current_ << "&" << name << "/" << arity << ":" << termDef << ",{";
     print(theoryOps_.erase(ops), ",");
     current_ << "}," << guardDef << "," << type;
     return theoryAtomDefs_.emplace(str());
 }
 
-TheoryDefVecUid TestNongroundProgramBuilder::theorydefs() {
-    return theoryDefVecs_.emplace();
-}
+TheoryDefVecUid TestNongroundProgramBuilder::theorydefs() { return theoryDefVecs_.emplace(); }
 
 TheoryDefVecUid TestNongroundProgramBuilder::theorydefs(TheoryDefVecUid defs, TheoryTermDefUid def) {
     theoryDefVecs_[defs].emplace_back(theoryTermDefs_.erase(def));
@@ -833,18 +860,31 @@ void TestNongroundProgramBuilder::theorydef(Location const &, String name, Theor
 void TestNongroundProgramBuilder::print(AggregateFunction fun, BoundVecUid boundvecuid, StringVec const &elems) {
     StringPairVec bounds(bounds_.erase(boundvecuid));
     auto it = bounds.begin(), end = bounds.end();
-    if (it != end) { current_ << it->first; ++it; }
+    if (it != end) {
+        current_ << it->first;
+        ++it;
+    }
     current_ << fun << "{";
     print(elems, ";");
     current_ << "}";
-    for (; it != end; ++it) { current_ << it->second; }
+    for (; it != end; ++it) {
+        current_ << it->second;
+    }
 }
 
 void TestNongroundProgramBuilder::print(NAF naf) {
     switch (naf) {
-        case NAF::NOT:    { current_ << "#not "; break; }
-        case NAF::NOTNOT: { current_ << "#not #not "; break; }
-        case NAF::POS:    { break; }
+        case NAF::NOT: {
+            current_ << "#not ";
+            break;
+        }
+        case NAF::NOTNOT: {
+            current_ << "#not #not ";
+            break;
+        }
+        case NAF::POS: {
+            break;
+        }
     }
 }
 
@@ -858,7 +898,9 @@ void TestNongroundProgramBuilder::print(StringVec const &vec, char const *sep) {
     auto it = vec.begin(), end = vec.end();
     if (it != end) {
         current_ << *it++;
-        for (; it != end; ++it) { current_ << sep << *it; }
+        for (; it != end; ++it) {
+            current_ << sep << *it;
+        }
     }
 }
 
@@ -879,13 +921,15 @@ std::string TestNongroundProgramBuilder::toString() {
     auto it = statements_.begin(), end = statements_.end();
     if (it != end) {
         current_ << *it;
-        for (++it; it != end; ++it) { current_ << '\n' << *it; }
+        for (++it; it != end; ++it) {
+            current_ << '\n' << *it;
+        }
     }
     statements_.clear();
     return str();
 }
 
-TestNongroundProgramBuilder::~TestNongroundProgramBuilder() { }
+TestNongroundProgramBuilder::~TestNongroundProgramBuilder() {}
 
 // }}}
 
@@ -952,7 +996,8 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         // precedence
         REQUIRE("#program base().\np(((1+2)+((3*4)*(5**(6**7)))))." == parse("p(1+2+3*4*5**6**7)."));
         // nesting
-        REQUIRE("#program base().\np((f(1,(();();();(1,(x..Y));(3)),3)+p(f(1,#sup,3))))." == parse("p(f(1,(;;;1,x..Y;3),3)+p(f(1,#sup,3)))."));
+        REQUIRE("#program base().\np((f(1,(();();();(1,(x..Y));(3)),3)+p(f(1,#sup,3))))." ==
+                parse("p(f(1,(;;;1,x..Y;3),3)+p(f(1,#sup,3)))."));
     }
 
     SECTION("atomargs") {
@@ -1136,8 +1181,10 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         REQUIRE("#program base().\n#false:-#not #count{};#not #count{}." == parse(":-not{};not{}."));
         REQUIRE("#program base().\n#false:-#not #not #count{};#not #not #count{}." == parse(":-not not{},not not{}."));
         REQUIRE("#program base().\n#false:-#not #not #count{};#not #not #count{}." == parse(":-not not{};not not{}."));
-        REQUIRE("#program base().\n#false:-#not #not nott<=#count{};#not #not nott<=#count{}." == parse(":-not not nott{},not not nott{}."));
-        REQUIRE("#program base().\n#false:-#not #not nott<=#count{};#not #not nott<=#count{}." == parse(":-not not nott{};not not nott{}."));
+        REQUIRE("#program base().\n#false:-#not #not nott<=#count{};#not #not nott<=#count{}." ==
+                parse(":-not not nott{},not not nott{}."));
+        REQUIRE("#program base().\n#false:-#not #not nott<=#count{};#not #not nott<=#count{}." ==
+                parse(":-not not nott{};not not nott{}."));
         // conjunction
         REQUIRE("#program base().\n#false:-a:;b:." == parse(":-a:;b:."));
         // head literal
@@ -1204,9 +1251,11 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
     SECTION("optimize") {
         REQUIRE("#program base().\n:~p(X,Y).[X@Y,a]" == parse(":~ p(X,Y). [X@Y,a]"));
         REQUIRE("#program base().\n:~p(X,Y);r;s.[X@0]" == parse(":~ p(X,Y),r,s. [X]"));
-        REQUIRE("#program base().\n:~p(X,Y);s.[X@Y,a]\n:~q(Y).[Y@f]\n:~.[1@0]" == parse("#minimize { X@Y,a : p(X,Y),s; Y@f : q(Y); 1 }."));
+        REQUIRE("#program base().\n:~p(X,Y);s.[X@Y,a]\n:~q(Y).[Y@f]\n:~.[1@0]" ==
+                parse("#minimize { X@Y,a : p(X,Y),s; Y@f : q(Y); 1 }."));
         REQUIRE("#program base()." == parse("#minimize { }."));
-        REQUIRE("#program base().\n:~p(X,Y);r.[-X@Y,a]\n:~q(Y).[-Y@f]\n:~.[-2@0]" == parse("#maximize { X@Y,a : p(X,Y), r; Y@f : q(Y); 2 }."));
+        REQUIRE("#program base().\n:~p(X,Y);r.[-X@Y,a]\n:~q(Y).[-Y@f]\n:~.[-2@0]" ==
+                parse("#maximize { X@Y,a : p(X,Y), r; Y@f : q(Y); 2 }."));
         REQUIRE("#program base()." == parse("#maximize { }."));
     }
 
@@ -1218,16 +1267,15 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         REQUIRE("#program base().\n#show X:p(X);1<=#count{q(X):p(X)}." == parse("#show X:p(X), 1 { q(X):p(X) }."));
     }
 
-    SECTION("input") {
-        REQUIRE("#program base().\n#defined p/1." == parse("#defined p/1."));
-    }
+    SECTION("input") { REQUIRE("#program base().\n#defined p/1." == parse("#defined p/1.")); }
 
     SECTION("include") {
         struct Del {
-            Del()  { std::ofstream("test_include.lp") << "b.\n"; }
+            Del() { std::ofstream("test_include.lp") << "b.\n"; }
             ~Del() { std::remove("test_include.lp"); }
         } del;
-        REQUIRE("#program base().\na.\nb.\n#program base().\nc.\nd." == parse("a.\n#include \"test_include.lp\".\nc.\nd.\n"));
+        REQUIRE("#program base().\na.\nb.\n#program base().\nc.\nd." ==
+                parse("a.\n#include \"test_include.lp\".\nc.\nd.\n"));
     }
 
     SECTION("edge") {
@@ -1268,7 +1316,8 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         REQUIRE("#program base().\n#false:-&x{} < 42 + 17 ^- 1." == parse(":-&x { } < 42+17^-1."));
         REQUIRE("#program base().\n&x{u,v: ; u: ; u: ; : ; :p ; :p,q}." == parse("&x { u,v; u ; u: ; : ; :p; :p,q }."));
         REQUIRE("#program base().\n&x{u: ; u: ; : ; :p ; :p,q}." == parse("&x { u ; u: ; : ; :p; :p,q }."));
-        REQUIRE("#program base().\n&x{i(u + v ^ (a +- 3 * b),7 + (1,) *** (2) - () + [a ; b] ? {1 ; 2 ; 3}):}." == parse("&x { i(u+v^(a+- 3 * b),7+(1,)***(2)-()+[a,b]?{1,2,3}) }."));
+        REQUIRE("#program base().\n&x{i(u + v ^ (a +- 3 * b),7 + (1,) *** (2) - () + [a ; b] ? {1 ; 2 ; 3}):}." ==
+                parse("&x { i(u+v^(a+- 3 * b),7+(1,)***(2)-()+[a,b]?{1,2,3}) }."));
     }
 
     SECTION("theoryDefinition") {
@@ -1276,10 +1325,13 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         REQUIRE("#program base().\n#theory t{x{}}." == parse("#theory t { x { } }."));
         REQUIRE("#program base().\n#theory t{x{};y{}}." == parse("#theory t { x { }; y{} }."));
         REQUIRE("#program base().\n#theory t{x{++ :42,unary}}." == parse("#theory t { x { ++ : 42, unary } }."));
-        REQUIRE("#program base().\n#theory t{x{++ :42,unary,** :21,binary,left,-* :1,binary,right}}." == parse("#theory t { x { ++ : 42, unary; ** : 21, binary, left; -* : 1, binary, right } }."));
+        REQUIRE("#program base().\n#theory t{x{++ :42,unary,** :21,binary,left,-* :1,binary,right}}." ==
+                parse("#theory t { x { ++ : 42, unary; ** : 21, binary, left; -* : 1, binary, right } }."));
         REQUIRE("#program base().\n#theory t{x{};&a/0:x,any}." == parse("#theory t { x{}; &a/0: x, any }."));
-        REQUIRE("#program base().\n#theory t{x{};&a/0:x,any;&b/0:x,head;&c/0:x,body;&d/0:x,directive}." == parse("#theory t { x{}; &a/0: x, any; &b/0: x, head; &c/0: x, body; &d/0: x, directive }."));
-        REQUIRE("#program base().\n#theory t{x{};&a/0:x,{+,-,++,**},x,any}." == parse("#theory t { x{}; &a/0: x, {+,-, ++, **}, x, any }."));
+        REQUIRE("#program base().\n#theory t{x{};&a/0:x,any;&b/0:x,head;&c/0:x,body;&d/0:x,directive}." ==
+                parse("#theory t { x{}; &a/0: x, any; &b/0: x, head; &c/0: x, body; &d/0: x, directive }."));
+        REQUIRE("#program base().\n#theory t{x{};&a/0:x,{+,-,++,**},x,any}." ==
+                parse("#theory t { x{}; &a/0: x, {+,-, ++, **}, x, any }."));
     }
 
     SECTION("comment") {
@@ -1287,8 +1339,8 @@ TEST_CASE("input-nongroundprogrambuilder", "[input]") {
         REQUIRE("#program base().\n% test" == parse("% test"));
         REQUIRE("#program base().\n% before\na:-b.\n% after" == parse("a :- % before\n b. % after"));
     }
-
 }
 
-} } } // namespace Test Input Gringo
-
+} // namespace Test
+} // namespace Input
+} // namespace Gringo

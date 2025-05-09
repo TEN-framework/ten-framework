@@ -25,15 +25,16 @@
 #ifndef GRINGO_INPUT_LITERALS_HH
 #define GRINGO_INPUT_LITERALS_HH
 
-#include <gringo/terms.hh>
 #include <gringo/input/literal.hh>
+#include <gringo/terms.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{1 declaration of PredicateLiteral
 
 class PredicateLiteral : public Literal {
-public:
+  public:
     PredicateLiteral(NAF naf, UTerm &&repr, bool auxiliary = false);
     PredicateLiteral(PredicateLiteral const &other) = delete;
     PredicateLiteral(PredicateLiteral &&other) noexcept = default;
@@ -48,7 +49,8 @@ public:
     void print(std::ostream &out) const override;
     bool operator==(Literal const &other) const override;
     size_t hash() const override;
-    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) override;
+    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                  bool singleton = false) override;
     void rewriteArithmetics(Term::ArithmeticsMap &arith, RelationVec &assign, AuxGen &auxGen) override;
     ULitVec unpool(bool head) const override;
     Symbol isEDB() const override;
@@ -60,14 +62,14 @@ public:
     bool auxiliary() const override;
     void auxiliary(bool auxiliary) override;
 
-private:
+  private:
     NAF naf_;
     bool auxiliary_;
     UTerm repr_;
 };
 
 class ProjectionLiteral : public PredicateLiteral {
-public:
+  public:
     ProjectionLiteral(UTerm &&repr);
     ProjectionLiteral(ProjectionLiteral const &other) = delete;
     ProjectionLiteral(ProjectionLiteral &&other) noexcept = default;
@@ -80,7 +82,7 @@ public:
     Ground::ULit toGround(DomainData &x, bool auxiliary) const override;
     ULit shift(bool negate) override;
 
-private:
+  private:
     mutable bool initialized_;
 };
 
@@ -88,7 +90,7 @@ private:
 // {{{ declaration of RelationLiteral
 
 class RelationLiteral : public Literal {
-public:
+  public:
     using Terms = std::vector<std::pair<Relation, UTerm>>;
 
     RelationLiteral(NAF naf, UTerm &&left, Terms &&right);
@@ -113,7 +115,8 @@ public:
     void print(std::ostream &out) const override;
     bool operator==(Literal const &other) const override;
     size_t hash() const override;
-    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) override;
+    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                  bool singleton = false) override;
     void rewriteArithmetics(Term::ArithmeticsMap &arith, RelationVec &assign, AuxGen &auxGen) override;
     ULitVec unpool(bool head) const override;
     ULitVecVec unpoolComparison() const override;
@@ -127,7 +130,7 @@ public:
     void auxiliary(bool aux) override;
     // }}}
 
-private:
+  private:
     UTerm left_;
     Terms right_;
     NAF naf_;
@@ -137,7 +140,7 @@ private:
 // {{{ declaration of RangeLiteral
 
 class RangeLiteral : public Literal {
-public:
+  public:
     RangeLiteral(UTerm &&assign, UTerm &&lower, UTerm &&upper);
     RangeLiteral(RangeLiteral const &other) = delete;
     RangeLiteral(RangeLiteral &&other) noexcept = default;
@@ -155,7 +158,8 @@ public:
     void print(std::ostream &out) const override;
     bool operator==(Literal const &other) const override;
     size_t hash() const override;
-    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) override;
+    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                  bool singleton = false) override;
     void rewriteArithmetics(Term::ArithmeticsMap &arith, RelationVec &assign, AuxGen &auxGen) override;
     ULitVec unpool(bool head) const override;
     bool hasPool(bool head) const override;
@@ -166,7 +170,7 @@ public:
     bool auxiliary() const override;
     void auxiliary(bool aux) override;
 
-private:
+  private:
     UTerm assign_;
     UTerm lower_;
     UTerm upper_;
@@ -176,7 +180,7 @@ private:
 // {{{ declaration of ScriptLiteral
 
 class ScriptLiteral : public Literal {
-public:
+  public:
     ScriptLiteral(UTerm &&assign, String name, UTermVec &&args);
     ScriptLiteral(ScriptLiteral const &other) = delete;
     ScriptLiteral(ScriptLiteral &&other) noexcept = default;
@@ -192,7 +196,8 @@ public:
     void print(std::ostream &out) const override;
     bool operator==(Literal const &other) const override;
     size_t hash() const override;
-    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) override;
+    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                  bool singleton = false) override;
     void rewriteArithmetics(Term::ArithmeticsMap &arith, RelationVec &assign, AuxGen &auxGen) override;
     ULitVec unpool(bool head) const override;
     bool hasPool(bool head) const override;
@@ -203,7 +208,7 @@ public:
     bool auxiliary() const override;
     void auxiliary(bool aux) override;
 
-private:
+  private:
     UTerm assign_;
     String name_;
     UTermVec args_;
@@ -213,7 +218,7 @@ private:
 // {{{ declaration of VoidLiteral
 
 class VoidLiteral : public Literal {
-public:
+  public:
     VoidLiteral() = default;
     VoidLiteral(VoidLiteral const &other) = delete;
     VoidLiteral(VoidLiteral &&other) noexcept = default;
@@ -228,7 +233,8 @@ public:
     void print(std::ostream &out) const override;
     bool operator==(Literal const &other) const override;
     size_t hash() const override;
-    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) override;
+    bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                  bool singleton = false) override;
     void rewriteArithmetics(Term::ArithmeticsMap &arith, RelationVec &assign, AuxGen &auxGen) override;
     ULitVec unpool(bool head) const override;
     bool hasPool(bool head) const override;
@@ -242,6 +248,7 @@ public:
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_LITERALS_HH

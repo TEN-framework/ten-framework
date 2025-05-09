@@ -22,58 +22,57 @@
 
 // }}}
 
+#include "clingo.h"
+#include "reify/program.hh"
 #include <fstream>
 #include <potassco/application.h>
 #include <potassco/program_opts/typed_value.h>
-#include "reify/program.hh"
-#include "clingo.h"
 
 #define CLINGO_QUOTE_(name) #name
 #define CLINGO_QUOTE(name) CLINGO_QUOTE_(name)
 #ifdef CLINGO_BUILD_REVISION
-#   define CLINGO_VERSION_STRING CLINGO_VERSION " (" CLINGO_QUOTE(CLINGO_BUILD_REVISION) ")"
+#define CLINGO_VERSION_STRING CLINGO_VERSION " (" CLINGO_QUOTE(CLINGO_BUILD_REVISION) ")"
 #else
-#   define CLINGO_VERSION_STRING CLINGO_VERSION
+#define CLINGO_VERSION_STRING CLINGO_VERSION
 #endif
 
 struct ReifyOptions {
     bool calculateSCCs = false;
-    bool reifyStep     = false;
+    bool reifyStep = false;
 };
 
 class ReifyApp : public Potassco::Application {
-public:
-    virtual const char* getName() const    { return "reify"; }
+  public:
+    virtual const char *getName() const { return "reify"; }
 
-    virtual const char* getVersion() const { return CLINGO_VERSION_STRING; }
+    virtual const char *getVersion() const { return CLINGO_VERSION_STRING; }
 
-protected:
-    virtual void initOptions(Potassco::ProgramOptions::OptionContext& root) {
+  protected:
+    virtual void initOptions(Potassco::ProgramOptions::OptionContext &root) {
         using namespace Potassco::ProgramOptions;
         OptionGroup reify("Reify Options");
-        reify.addOptions()
-            ("sccs,c", flag(opts_.calculateSCCs), "calculate strongly connected components\n")
-            ("steps,s", flag(opts_.reifyStep), "add step numbers to generated facts\n");
+        reify.addOptions()("sccs,c", flag(opts_.calculateSCCs), "calculate strongly connected components\n")(
+            "steps,s", flag(opts_.reifyStep), "add step numbers to generated facts\n");
         root.add(reify);
         OptionGroup basic("Basic Options");
-        basic.addOptions()
-            ("file,f,@2", storeTo(input_), "Input files")
-            ;
+        basic.addOptions()("file,f,@2", storeTo(input_), "Input files");
         root.add(basic);
     }
 
-    virtual void validateOptions(const Potassco::ProgramOptions::OptionContext&, const Potassco::ProgramOptions::ParsedOptions&, const Potassco::ProgramOptions::ParsedValues&) { }
+    virtual void validateOptions(const Potassco::ProgramOptions::OptionContext &,
+                                 const Potassco::ProgramOptions::ParsedOptions &,
+                                 const Potassco::ProgramOptions::ParsedValues &) {}
 
-    virtual void setup() { }
+    virtual void setup() {}
 
-    static bool parsePositional(std::string const &, std::string& out) {
+    static bool parsePositional(std::string const &, std::string &out) {
         out = "file";
         return true;
     }
 
     virtual Potassco::ProgramOptions::PosOption getPositional() const { return parsePositional; }
 
-    virtual void printHelp(const Potassco::ProgramOptions::OptionContext& root) {
+    virtual void printHelp(const Potassco::ProgramOptions::OptionContext &root) {
         printf("%s version %s\n", getName(), getVersion());
         printUsage();
         Potassco::ProgramOptions::FileOut out(stdout);
@@ -92,13 +91,13 @@ protected:
         Reify::Reifier reify(std::cout, opts_.calculateSCCs, opts_.reifyStep);
         if (input_.empty() || input_ == "-") {
             reify.parse(std::cin);
-        }
-        else {
+        } else {
             std::ifstream ifs(input_);
             reify.parse(ifs);
         }
     }
-private:
+
+  private:
     std::string input_;
     ReifyOptions opts_;
 };
@@ -107,4 +106,3 @@ int main(int argc, char **argv) {
     ReifyApp app;
     return app.main(argc, argv);
 }
-

@@ -22,13 +22,14 @@
 
 // }}}
 
-#include <gringo/output/statements.hh>
-#include <gringo/output/theory.hh>
+#include <gringo/logger.hh>
 #include <gringo/output/aggregates.hh>
 #include <gringo/output/output.hh>
-#include <gringo/logger.hh>
+#include <gringo/output/statements.hh>
+#include <gringo/output/theory.hh>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 // {{{1 definition of helpers to print interval sets
 
@@ -95,19 +96,15 @@ void printPlainHead(PrintPlain out, LitVec const &body, bool choice) {
     }
 }
 
-bool showSig(OutputPredicates const &outPreds, Sig sig) {
-    return outPreds.contains(sig);
-}
+bool showSig(OutputPredicates const &outPreds, Sig sig) { return outPreds.contains(sig); }
 
 } // namespace
-
 
 // }}}1
 
 // {{{1 definition of Rule
 
-Rule::Rule(bool choice)
-: choice_(choice) { }
+Rule::Rule(bool choice) : choice_(choice) {}
 
 Rule &Rule::reset(bool choice) {
     choice_ = choice;
@@ -147,15 +144,17 @@ void Rule::print(PrintPlain out, char const *prefix) const {
 }
 
 void Rule::translate(DomainData &data, Translator &trans) {
-    head_.erase(std::remove_if(head_.begin(), head_.end(), [&](LiteralId &lit) {
-        if (!call(data, lit, &Literal::isHeadAtom)) {
-            if (!choice_) {
-                body_.emplace_back(lit.negate());
-            }
-            return true;
-        }
-        return false;
-    }), head_.end());
+    head_.erase(std::remove_if(head_.begin(), head_.end(),
+                               [&](LiteralId &lit) {
+                                   if (!call(data, lit, &Literal::isHeadAtom)) {
+                                       if (!choice_) {
+                                           body_.emplace_back(lit.negate());
+                                       }
+                                       return true;
+                                   }
+                                   return false;
+                               }),
+                head_.end());
     Gringo::Output::translate(data, trans, head_);
     Gringo::Output::translate(data, trans, body_);
     trans.output(data, *this);
@@ -182,9 +181,7 @@ void Rule::replaceDelayed(DomainData &data, LitVec &delayed) {
 
 // {{{1 definition of External
 
-External::External(LiteralId head, Potassco::Value_t type)
-: head_(head)
-, type_(type) { }
+External::External(LiteralId head, Potassco::Value_t type) : head_(head), type_(type) {}
 
 void External::print(PrintPlain out, char const *prefix) const {
     out << prefix << "#external ";
@@ -209,9 +206,7 @@ void External::print(PrintPlain out, char const *prefix) const {
     }
 }
 
-void External::translate(DomainData &data, Translator &trans) {
-    trans.output(data, *this);
-}
+void External::translate(DomainData &data, Translator &trans) { trans.output(data, *this); }
 
 void External::output(DomainData &data, UBackend &out) const {
     Atom_t head = call(data, head_, &Literal::uid);
@@ -225,9 +220,7 @@ void External::replaceDelayed(DomainData &data, LitVec &delayed) {
 
 // {{{1 definition of ShowStatement
 
-ShowStatement::ShowStatement(Symbol term, LitVec body)
-: term_(term)
-, body_(std::move(body)) { }
+ShowStatement::ShowStatement(Symbol term, LitVec body) : term_(term), body_(std::move(body)) {}
 
 void ShowStatement::print(PrintPlain out, char const *prefix) const {
     out << prefix;
@@ -256,8 +249,7 @@ void ShowStatement::output(DomainData &data, UBackend &out) const {
 
 // {{{1 definition of ProjectStatement
 
-ProjectStatement::ProjectStatement(LiteralId atom)
-: atom_(atom) {
+ProjectStatement::ProjectStatement(LiteralId atom) : atom_(atom) {
     assert(atom.sign() == NAF::POS);
     assert(atom.type() == AtomType::Predicate);
 }
@@ -268,9 +260,7 @@ void ProjectStatement::print(PrintPlain out, char const *prefix) const {
     out << ".\n";
 }
 
-void ProjectStatement::translate(DomainData &data, Translator &trans) {
-    trans.output(data, *this);
-}
+void ProjectStatement::translate(DomainData &data, Translator &trans) { trans.output(data, *this); }
 
 void ProjectStatement::output(DomainData &data, UBackend &out) const {
     BackendAtomVec atoms;
@@ -286,11 +276,7 @@ void ProjectStatement::replaceDelayed(DomainData &data, LitVec &delayed) {
 // {{{1 definition of HeuristicStatement
 
 HeuristicStatement::HeuristicStatement(LiteralId atom, int value, int priority, Potassco::Heuristic_t mod, LitVec body)
-: atom_(atom)
-, value_(value)
-, priority_(priority)
-, mod_(mod)
-, body_(std::move(body)) {
+    : atom_(atom), value_(value), priority_(priority), mod_(mod), body_(std::move(body)) {
     assert(atom.sign() == NAF::POS);
     assert(atom.type() == AtomType::Predicate);
 }
@@ -326,12 +312,7 @@ void HeuristicStatement::replaceDelayed(DomainData &data, LitVec &delayed) {
 // {{{1 definition of EdgeStatement
 
 EdgeStatement::EdgeStatement(Symbol u, Symbol v, LitVec body)
-: u_(u)
-, v_(v)
-, uidU_(0)
-, uidV_(0)
-, body_(std::move(body))
-{ }
+    : u_(u), v_(v), uidU_(0), uidV_(0), body_(std::move(body)) {}
 
 void EdgeStatement::print(PrintPlain out, char const *prefix) const {
     out << prefix;
@@ -364,8 +345,7 @@ void EdgeStatement::replaceDelayed(DomainData &data, LitVec &delayed) {
 
 // {{{1 definition of TheoryDirective
 
-TheoryDirective::TheoryDirective(LiteralId theoryLit)
-: theoryLit_(theoryLit) {
+TheoryDirective::TheoryDirective(LiteralId theoryLit) : theoryLit_(theoryLit) {
     assert(theoryLit_.type() == AtomType::Theory);
 }
 
@@ -377,7 +357,8 @@ void TheoryDirective::print(PrintPlain out, char const *prefix) const {
 
 void TheoryDirective::translate(DomainData &data, Translator &x) {
     x.output(data, *this);
-    assert(!data.getAtom<TheoryDomain>(theoryLit_).recursive() && data.getAtom<TheoryDomain>(theoryLit_).type() == TheoryAtomType::Directive);
+    assert(!data.getAtom<TheoryDomain>(theoryLit_).recursive() &&
+           data.getAtom<TheoryDomain>(theoryLit_).type() == TheoryAtomType::Directive);
     call(data, theoryLit_, &Literal::translate, x);
 }
 
@@ -429,13 +410,12 @@ void WeakConstraint::replaceDelayed(DomainData &data, LitVec &delayed) {
 
 // {{{1 definition of Translator
 
-Translator::Translator(UAbstractOutput out, bool preserveFacts)
-: out_(std::move(out))
-, preserveFacts_{preserveFacts}
-{ }
+Translator::Translator(UAbstractOutput out, bool preserveFacts) : out_(std::move(out)), preserveFacts_{preserveFacts} {}
 
-void Translator::addMinimize(TupleId tuple, LiteralId cond) {
-    minimize_.emplace_back(tuple, cond);
+void Translator::addMinimize(TupleId tuple, LiteralId cond) { minimize_.emplace_back(tuple, cond); }
+void Translator::removeMinimize() {
+    minimize_.clear();
+    tuples_.clear();
 }
 
 void Translator::translate(DomainData &data, OutputPredicates const &outPreds, Logger &log) {
@@ -458,12 +438,16 @@ void Translator::outputSymbols(DomainData &data, OutputPredicates const &outPred
         for (auto it = data.predDoms().begin(), ie = data.predDoms().end(); it != ie; ++it) {
             Sig sig = **it;
             auto name(sig.name());
-            if (!name.startsWith("#")) { showAtom(data, it); }
+            if (!name.startsWith("#")) {
+                showAtom(data, it);
+            }
         }
     }
     // show terms
     for (auto const &todo : termOutput_.todo) {
-        if (todo.second.empty()) { continue; }
+        if (todo.second.empty()) {
+            continue;
+        }
         showValue(data, todo.first, updateCond(data, todo));
     }
     termOutput_.todo.clear();
@@ -478,15 +462,15 @@ LitVec Translator::updateCond(DomainData &data, OutputTable::Todo::value_type co
         LiteralId includeOldCond = getEqualClause(data, *this, data.clause(LitVec{oldCond, newCond}), false, false);
         excludeOldCond = getEqualClause(data, *this, data.clause(LitVec{oldCond.negate(), newCond}), true, false);
         entry.first.value() = includeOldCond;
-    }
-    else {
+    } else {
         excludeOldCond = getEqualFormula(data, *this, todo.second, false, false);
         entry.first.value() = excludeOldCond;
     }
     return {excludeOldCond};
 }
 
-void Translator::atoms(DomainData &data, unsigned atomset, IsTrueLookup const &isTrue, SymVec &atoms, OutputPredicates const &outPreds) {
+void Translator::atoms(DomainData &data, unsigned atomset, IsTrueLookup const &isTrue, SymVec &atoms,
+                       OutputPredicates const &outPreds) {
     auto isComp = [isTrue, atomset](unsigned x) {
         return (atomset & static_cast<unsigned>(ShowType::Complement)) != 0 ? !isTrue(x) : isTrue(x);
     };
@@ -499,7 +483,7 @@ void Translator::atoms(DomainData &data, unsigned atomset, IsTrueLookup const &i
             auto name = sig.name();
             bool show = showAtoms || (showShown && showSig(outPreds, sig));
             if (show && !name.empty() && !name.startsWith("#")) {
-                for (auto &y: *x) {
+                for (auto &y : *x) {
                     if (y.defined() && y.hasUid() && isComp(y.uid())) {
                         atoms.emplace_back(y);
                     }
@@ -517,16 +501,17 @@ void Translator::atoms(DomainData &data, unsigned atomset, IsTrueLookup const &i
 }
 
 void Translator::simplify(DomainData &data, Mappings &mappings, AssignmentLookup assignment) {
-    minimize_.erase(std::remove_if(minimize_.begin(), minimize_.end(), [&](MinimizeList::value_type &elem) {
-        elem.second = call(data, elem.second, &Literal::simplify, mappings, assignment);
-        return elem.second == data.getTrueLit().negate();
-    }), minimize_.end());
+    minimize_.erase(std::remove_if(minimize_.begin(), minimize_.end(),
+                                   [&](MinimizeList::value_type &elem) {
+                                       elem.second = call(data, elem.second, &Literal::simplify, mappings, assignment);
+                                       return elem.second == data.getTrueLit().negate();
+                                   }),
+                    minimize_.end());
     for (auto it = tuples_.begin(); it != tuples_.end();) {
         it.value() = call(data, it.value(), &Literal::simplify, mappings, assignment);
         if (it.value() == data.getTrueLit().negate()) {
             it = tuples_.unordered_erase(it);
-        }
-        else {
+        } else {
             ++it;
         }
     }
@@ -534,23 +519,19 @@ void Translator::simplify(DomainData &data, Mappings &mappings, AssignmentLookup
         it.value() = call(data, it.value(), &Literal::simplify, mappings, assignment);
         if (it.value() == data.getTrueLit().negate()) {
             it = termOutput_.table.unordered_erase(it);
-        }
-        else {
+        } else {
             ++it;
         }
     }
 }
 
-void Translator::output(DomainData &data, Statement &x) {
-    out_->output(data, x);
-}
+void Translator::output(DomainData &data, Statement &x) { out_->output(data, x); }
 
 namespace {
 
 class Atomtab : public Statement {
-public:
-    Atomtab(PredicateDomain::Iterator atom, bool preserveFacts)
-    : atom_(atom), preserveFacts_{preserveFacts} { }
+  public:
+    Atomtab(PredicateDomain::Iterator atom, bool preserveFacts) : atom_(atom), preserveFacts_{preserveFacts} {}
 
     void output(DomainData &data, UBackend &out) const override {
         static_cast<void>(data);
@@ -577,7 +558,7 @@ public:
         static_cast<void>(delayed);
     }
 
-private:
+  private:
     PredicateDomain::Iterator atom_;
     bool preserveFacts_;
 };
@@ -614,8 +595,7 @@ void Translator::translateMinimize(DomainData &data) {
             auto tuple = it->first;
             do {
                 condLits.emplace_back(it++->second);
-            }
-            while (it != iE && it->first == tuple);
+            } while (it != iE && it->first == tuple);
             int weight(data.tuple(tuple).first->num());
             // Note: extends the minimize constraint incrementally
             auto ret = tuples_.try_emplace(tuple);
@@ -626,8 +606,7 @@ void Translator::translateMinimize(DomainData &data) {
             LiteralId lit = getEqualClause(data, *this, data.clause(std::move(condLits)), false, false);
             ret.first.value() = lit;
             lm.add(lit, weight);
-        }
-        while (it != iE && data.tuple(it->first)[1].num() == priority);
+        } while (it != iE && data.tuple(it->first)[1].num() == priority);
         out_->output(data, lm);
     }
     minimize_.clear();
@@ -637,9 +616,7 @@ void Translator::showTerm(DomainData &data, Symbol term, LitVec cond) {
     termOutput_.todo.try_emplace(term, Formula{}).first.value().emplace_back(data.clause(std::move(cond)));
 }
 
-unsigned Translator::nodeUid(Symbol v) {
-    return nodeUids_.try_emplace(v, nodeUids_.size()).first.value();
-}
+unsigned Translator::nodeUid(Symbol v) { return nodeUids_.try_emplace(v, nodeUids_.size()).first.value(); }
 
 LiteralId Translator::removeNotNot(DomainData &data, LiteralId lit) {
     if (lit.sign() == NAF::NOTNOT) {
@@ -654,12 +631,14 @@ constexpr Translator::ClauseKey Translator::ClauseKeyLiterals::open;
 constexpr Translator::ClauseKey Translator::ClauseKeyLiterals::deleted;
 
 LiteralId Translator::clause(ClauseId id, bool conjunctive, bool equivalence) {
-    auto it = clauses_.find(ClauseKey{id.first, id.second, conjunctive ? 1U : 0U, equivalence ? 1U : 0U, LiteralId().repr()});
+    auto it =
+        clauses_.find(ClauseKey{id.first, id.second, conjunctive ? 1U : 0U, equivalence ? 1U : 0U, LiteralId().repr()});
     return it != clauses_.end() ? LiteralId{it->literal} : LiteralId{};
 }
 
 void Translator::clause(LiteralId lit, ClauseId id, bool conjunctive, bool equivalence) {
-    auto ret = clauses_.insert(ClauseKey{id.first, id.second, conjunctive ? 1U : 0U, equivalence ? 1U : 0U, lit.repr()});
+    auto ret =
+        clauses_.insert(ClauseKey{id.first, id.second, conjunctive ? 1U : 0U, equivalence ? 1U : 0U, lit.repr()});
     static_cast<void>(ret);
     assert(ret.second);
 }
@@ -668,9 +647,7 @@ void Translator::clause(LiteralId lit, ClauseId id, bool conjunctive, bool equiv
 
 // {{{1 definition of Symtab
 
-Symtab::Symtab(Symbol symbol, LitVec body)
-: symbol_(symbol)
-, body_(std::move(body)) { }
+Symtab::Symtab(Symbol symbol, LitVec body) : symbol_(symbol), body_(std::move(body)) {}
 
 void Symtab::print(PrintPlain out, char const *prefix) const {
     out << prefix << "#show " << symbol_;
@@ -698,14 +675,11 @@ void Symtab::output(DomainData &data, UBackend &out) const {
     out->output(symbol_, Potassco::toSpan(bd));
 }
 
-void Symtab::replaceDelayed(DomainData &data, LitVec &delayed) {
-    Gringo::Output::replaceDelayed(data, body_, delayed);
-}
+void Symtab::replaceDelayed(DomainData &data, LitVec &delayed) { Gringo::Output::replaceDelayed(data, body_, delayed); }
 
 // {{{1 definition of Minimize
 
-Minimize::Minimize(int priority)
-: priority_(priority) { }
+Minimize::Minimize(int priority) : priority_(priority) {}
 
 Minimize &Minimize::add(LiteralId lit, Potassco::Weight_t weight) {
     lits_.emplace_back(lit, weight);
@@ -747,9 +721,7 @@ void Minimize::replaceDelayed(DomainData &data, LitVec &delayed) {
 // {{{1 definition of WeightRule
 
 WeightRule::WeightRule(LiteralId head, Potassco::Weight_t lower, LitUintVec body)
-: head_(head)
-, body_(std::move(body))
-, lower_(lower) { }
+    : head_(head), body_(std::move(body)), lower_(lower) {}
 
 void WeightRule::print(PrintPlain out, char const *prefix) const {
     out << prefix;
@@ -800,4 +772,5 @@ void WeightRule::replaceDelayed(DomainData &data, LitVec &delayed) {
 
 // }}}1
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo

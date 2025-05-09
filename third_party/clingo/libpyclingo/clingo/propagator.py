@@ -37,14 +37,14 @@ SAT
 ```
 """
 
-from typing import Iterable, Iterator, Optional, Sequence, Tuple
 from abc import ABCMeta
+from typing import Iterable, Iterator, Optional, Sequence, Tuple
 
-from ._internal import _cb_error_handler, _c_call, _ffi, _handle_error, _lib
+from ._internal import _c_call, _cb_error_handler, _ffi, _handle_error, _lib
 from .core import OrderedEnum
-from .util import Slice, SlicedSequence
 from .symbolic_atoms import SymbolicAtoms
 from .theory_atoms import TheoryAtom
+from .util import Slice, SlicedSequence
 
 __all__ = [
     "Assignment",

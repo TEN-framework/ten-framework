@@ -10,4 +10,3 @@ c(X,k) :- a(X).
 #program base.
 
 a(2).
-

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -36,7 +36,6 @@
 #include <clasp/solver.h>
 #include <clasp/pod_vector.h>
 #include <clasp/util/indexed_priority_queue.h>
-#include <list>
 namespace Clasp {
 
 //! Computes a moms-like score for var v.
@@ -185,11 +184,16 @@ protected:
 	Literal doSelect(Solver& s);
 private:
 	Literal selectRange(Solver& s, const Literal* first, const Literal* last);
-	typedef std::list<Var> VarList;
-	typedef VarList::iterator VarPos;
+	void    addToList(Var v);
+	void    removeFromList(Var v);
+	void    moveToFront(Var v);
+	Var     getNext(Var v) const { return score_[v].next_; }
+	Var     getFront()     const { return score_[0].next_; }
+
 	struct VarInfo {
-		VarInfo(VarPos it) : pos_(it), activity_(0), occ_(0), decay_(0) { }
-		VarPos  pos_;       // position of var in var list
+		VarInfo() : prev_(0), next_(0), activity_(0), occ_(0), decay_(0) { }
+		Var     prev_;      // link to prev node in intrusive linked list
+		Var     next_;      // link to next node in intrusive linked list
 		uint32  activity_;  // activity of var - initially 0
 		int32   occ_;       // which literal of var occurred more often in learnt constraints?
 		uint32  decay_;     // counter for lazy decaying activity
@@ -200,6 +204,7 @@ private:
 			}
 			return activity_;
 		}
+		bool inList() const { return prev_ != next_; }
 	};
 	typedef PodVector<VarInfo>::type Score;
 
@@ -217,15 +222,15 @@ private:
 		const Solver& s_;
 		const Score&  sc_;
 	};
-	Score   score_; // For each var v score_[v] stores heuristic score of v
-	VarList vars_;  // List of possible choices, initially ordered by MOMs-like score
-	VarVec  mtf_;   // Vars to be moved to the front of vars_
-	VarPos  front_; // Current front-position in var list - reset on backtracking
-	uint32  decay_; // "Global" decay counter. Increased every 512 decisions
-	uint32  nMove_; // Limit on number of vars to move
-	TypeSet types_; // Type of nogoods to score during resolution
-	uint32  scType_;// Type of scoring
-	bool    nant_;  // only move vars v with varInfo(v).nant()?
+	Score   score_;  // For each var v score_[v] stores heuristic score of v
+	VarVec  mtf_;    // Vars to be moved to the front of vars_
+	Var     front_;  // Current front in var list - reset on backtracking
+	uint32  decay_;  // "Global" decay counter. Increased every 512 decisions
+	uint32  nMove_;  // Limit on number of vars to move
+	TypeSet types_;  // Type of nogoods to score during resolution
+	uint32  scType_; // Type of scoring
+	uint32  nList_;  // Num vars in vmtf-list
+	bool    nant_;   // only move vars v with varInfo(v).nant()?
 };
 
 //! Score type for VSIDS heuristic.
@@ -391,13 +396,13 @@ private:
 	void    pushUndo(uint32& head, uint32 actionId);
 	void    applyAction(Solver& s, DomAction& act, uint16& oldPrio);
 	uint16& prio(Var v, uint32 mod) { return prios_[score_[v].domP][mod]; }
-	PrioVec   prios_;    // priorities for domain vars
-	ActionVec actions_;  // dynamic modifications
-	FrameVec  frames_;   // dynamic undo information
-	uint32    domSeen_;  // offset into domain table
-	uint32    defMax_;   // max var with default modification
-	uint16    defMod_;   // default modifier
-	uint16    defPref_;  // default preferences
+	PrioVec   prios_;   // priorities for domain vars
+	ActionVec actions_; // dynamic modifications
+	FrameVec  frames_;  // dynamic undo information
+	uint32    domSeen_; // offset into domain table
+	uint32    defMax_;  // max var with default modification
+	uint16    defMod_;  // default modifier
+	uint16    defPref_; // default preferences
 };
 }
 #endif

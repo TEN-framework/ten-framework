@@ -11,13 +11,10 @@
 #include <catch2/catch_assertion_info.hpp>
 #include <catch2/internal/catch_decomposer.hpp>
 #include <catch2/interfaces/catch_interfaces_capture.hpp>
-#include <catch2/internal/catch_lazy_expr.hpp>
 
 #include <string>
 
 namespace Catch {
-
-    class IResultCapture;
 
     struct AssertionReaction {
         bool shouldDebugBreak = false;
@@ -45,12 +42,12 @@ namespace Catch {
 
 
         template<typename T>
-        void handleExpr( ExprLhs<T> const& expr ) {
+        constexpr void handleExpr( ExprLhs<T> const& expr ) {
             handleExpr( expr.makeUnaryExpr() );
         }
         void handleExpr( ITransientExpression const& expr );
 
-        void handleMessage(ResultWas::OfType resultType, StringRef message);
+        void handleMessage(ResultWas::OfType resultType, std::string&& message);
 
         void handleExceptionThrownAsExpected();
         void handleUnexpectedExceptionNotThrown();
@@ -59,7 +56,6 @@ namespace Catch {
         void handleUnexpectedInflightException();
 
         void complete();
-        void setCompleted();
 
         // query
         auto allowThrows() const -> bool;

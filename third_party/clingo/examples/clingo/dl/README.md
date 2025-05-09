@@ -25,7 +25,7 @@ Enumerating all solutions of a flowshop problem.
     Answer: 6
     dl((a,1),5) dl(bound,20) dl((a,2),10) dl((b,1),8) dl((b,2),14) dl((c,1),0) dl((c,2),5) permutation(c,a) permutation(a,b)
     SATISFIABLE
-    
+
     Models       : 6
     Calls        : 1
     Time         : 0.006s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
@@ -43,7 +43,7 @@ Finding the optimal solution of a flowshop problem.
     Solving...
     Optimum found
     UNSATISFIABLE
-    
+
     Models       : 1
     Calls        : 2
     Time         : 0.006s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)

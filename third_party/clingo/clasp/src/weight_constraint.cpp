@@ -420,7 +420,7 @@ void WeightConstraint::updateConstraint(Solver& s, uint32 level, uint32 idx, Act
 // as they are added to the propagation queue, we distinguish processed from unprocessed literals.
 // Processed literals are those for which propagate was already called and the corresponding bound
 // was updated; they are flagged in updateConstraint().
-// Unprocessed literals are either free or were not yet propagated. During propagation
+// Unprocessed literals are either free or were not yet propagated. During propagation,
 // we treat all unprocessed literals as free. This way, conflicts are detected early.
 // Consider: x :- 3 [a=3, b=2, c=1,d=1] and PropQ: b, ~Body, c.
 // Initially b, ~Body, c are unprocessed and the bound is 3.

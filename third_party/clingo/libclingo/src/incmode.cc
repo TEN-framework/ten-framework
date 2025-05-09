@@ -24,13 +24,14 @@
 
 #include <clingo/incmode.hh>
 
-namespace Gringo { namespace {
+namespace Gringo {
+namespace {
 
 struct Incmode {
-    Incmode(Control &ctl_) : ctl_(ctl_), istop(""), res(Gringo::SolveResult::Unknown, false, false) { }
+    Incmode(Control &ctl_) : ctl_(ctl_), istop(""), res(Gringo::SolveResult::Unknown, false, false) {}
 
     int get_max() {
-        auto imax  = ctl_.getConst("imax");
+        auto imax = ctl_.getConst("imax");
         if (imax.type() == Gringo::SymbolType::Num) {
             return imax.num();
         }
@@ -38,7 +39,7 @@ struct Incmode {
     }
 
     int get_min() {
-        auto imin  = ctl_.getConst("imin");
+        auto imin = ctl_.getConst("imin");
         if (imin.type() == Gringo::SymbolType::Num) {
             return imin.num();
         }
@@ -46,26 +47,33 @@ struct Incmode {
     }
 
     String get_stop() {
-        auto istop  = ctl_.getConst("istop");
-        if (istop.type() == Gringo::SymbolType::Str) { return istop.string(); }
-        else if (istop.type() == Gringo::SymbolType::Fun && istop.args().size == 0) { return istop.name(); }
+        auto istop = ctl_.getConst("istop");
+        if (istop.type() == Gringo::SymbolType::Str) {
+            return istop.string();
+        } else if (istop.type() == Gringo::SymbolType::Fun && istop.args().size == 0) {
+            return istop.name();
+        }
         return "SAT";
     }
 
     bool check_run() {
-        if (step >= imax) { return false; }
-        if (step == 0 || step < imin) { return true; }
+        if (step >= imax) {
+            return false;
+        }
+        if (step == 0 || step < imin) {
+            return true;
+        }
         auto sat = res.satisfiable();
-        if (istop == "SAT" && sat == SolveResult::Satisfiable) { return false; }
-        if (istop == "UNSAT" && sat == SolveResult::Unsatisfiable) { return false; }
-        if (istop == "UNKNOWN" && sat == SolveResult::Unknown) { return false; }
+        if (istop == "SAT" && sat == SolveResult::Satisfiable) {
+            return false;
+        }
+        if (istop == "UNSAT" && sat == SolveResult::Unsatisfiable) {
+            return false;
+        }
+        if (istop == "UNKNOWN" && sat == SolveResult::Unknown) {
+            return false;
+        }
         return true;
-    }
-
-    void assign_external_(Symbol sym, Potassco::Value_t val) {
-        auto &dom = ctl_.getDomain();
-        auto atm = dom.lookup(sym);
-        if (!dom.eq(atm, dom.end())) { ctl_.assignExternal(dom.literal(atm), val); }
     }
 
     void run() {
@@ -79,14 +87,14 @@ struct Incmode {
             parts.reserve(2);
             parts.push_back({"check", {Symbol::createNum(step)}});
             if (step > 0) {
-                assign_external_(Symbol::createFun("query", {Symbol::createNum(step - 1)}), Potassco::Value_t::Release);
+                ctl_.assignExternal(Symbol::createFun("query", {Symbol::createNum(step - 1)}),
+                                    Potassco::Value_t::Release);
                 parts.push_back({"step", {Symbol::createNum(step)}});
-            }
-            else {
+            } else {
                 parts.push_back({"base", {}});
             }
             ctl_.ground(parts, nullptr);
-            assign_external_(Symbol::createFun("query", {Symbol::createNum(step)}), Potassco::Value_t::True);
+            ctl_.assignExternal(Symbol::createFun("query", {Symbol::createNum(step)}), Potassco::Value_t::True);
             res = ctl_.solve({nullptr, 0}, 0)->get();
             step += 1;
         }
@@ -108,5 +116,3 @@ void incmode(Gringo::Control &ctl_) {
 }
 
 } // namespace Gringo
-
-

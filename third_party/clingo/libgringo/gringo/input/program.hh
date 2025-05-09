@@ -25,12 +25,13 @@
 #ifndef GRINGO_INPUT_PROGRAM_HH
 #define GRINGO_INPUT_PROGRAM_HH
 
-#include <gringo/terms.hh>
+#include <gringo/ground/program.hh>
 #include <gringo/input/literal.hh>
 #include <gringo/input/statement.hh>
-#include <gringo/ground/program.hh>
+#include <gringo/terms.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ declaration of Program
 
@@ -38,36 +39,29 @@ using IdVec = Ground::IdVec;
 
 struct Block {
     struct Hash {
-        size_t operator()(Ground::SEdb const &edb) const {
-            return hash_mix(edb->first->hash());
-        }
+        size_t operator()(Ground::SEdb const &edb) const { return hash_mix(edb->first->hash()); }
     };
 
     struct Equal {
-        bool operator()(Ground::SEdb const &a, Ground::SEdb const &b) const {
-            return *a->first == *b->first;
-        }
+        bool operator()(Ground::SEdb const &a, Ground::SEdb const &b) const { return *a->first == *b->first; }
     };
 
-    Block(Location const &loc, String name, IdVec &&params)
-    : loc(loc)
-    , name(name)
-    , params(std::move(params)) { }
+    Block(Location const &loc, String name, IdVec &&params) : loc(loc), name(name), params(std::move(params)) {}
 
     Ground::SEdb make_sig() const;
 
-    Location        loc;
-    String          name;
-    IdVec           params;
-    SymVec          addedEdb;
-    UStmVec         addedStms;
-    UStmVec         stms;
+    Location loc;
+    String name;
+    IdVec params;
+    SymVec addedEdb;
+    UStmVec addedStms;
+    UStmVec stms;
 };
 
 using BlockMap = ordered_map<Ground::SEdb, Block, Block::Hash, Block::Equal>;
 
 class Program {
-public:
+  public:
     Program();
     Program(Program const &other) = delete;
     Program(Program &&other) noexcept = default;
@@ -85,27 +79,28 @@ public:
     bool empty() const;
     Ground::Program toGround(std::set<Sig> const &sigs, DomainData &domains, Logger &log);
 
-private:
+  private:
     void rewriteDots();
     void rewriteArithmetics();
     void unpool();
 
-    unsigned              auxNames_ = 0;
-    Ground::LocSet        locs_;
-    Ground::SigSet        sigs_;
-    BlockMap              blocks_;
-    Block                *current_ = nullptr;
-    Projections           project_;
-    UStmVec               stms_;
-    TheoryDefs            theoryDefs_;
-    UGTermVec             pheads;
-    UGTermVec             nheads;
+    unsigned auxNames_ = 0;
+    Ground::LocSet locs_;
+    Ground::SigSet sigs_;
+    BlockMap blocks_;
+    Block *current_ = nullptr;
+    Projections project_;
+    UStmVec stms_;
+    TheoryDefs theoryDefs_;
+    UGTermVec pheads;
+    UGTermVec nheads;
 };
 
 std::ostream &operator<<(std::ostream &out, Program const &p);
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_PROGRAM_HH

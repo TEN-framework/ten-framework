@@ -11,7 +11,7 @@ def main(prg):
     prg.ground([("base", [])])
     prg.solve(assumptions=[(p(3), False), lit(p(4))])
     prg.solve(assumptions=[(p(3), True), -lit(p(4))])
-    
+
     prg.assign_external(p(1), True)
     prg.solve(assumptions=[-lit(p(3)), -lit(p(4))])
     prg.assign_external(-lit(p(1)), True)
@@ -21,7 +21,7 @@ def main(prg):
 
     prg.solve(assumptions=[-lit(p(3)), -lit(p(4)), bot])
     prg.solve(assumptions=[-lit(p(3)), -lit(p(4)), -bot])
-    
+
     # note: this actually creates the external
     #       hence, the subsequent call with the assumption is unsatisfiable
     prg.assign_external(bot, True)

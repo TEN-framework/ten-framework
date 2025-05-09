@@ -21,4 +21,3 @@ call to see that ground logic program:
 The grounding process applies simplifications that may eliminate some atoms of
 the input program. To avoid this, in `example1.lp` we have added an external
 declaration. You can comment it and run the call again to see what happens.
-

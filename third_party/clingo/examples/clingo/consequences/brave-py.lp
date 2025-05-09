@@ -22,4 +22,3 @@ def main(prg):
 #program brave.
 
 :- not holds(X) : atom(X), @is_brave(X) == 0.
-

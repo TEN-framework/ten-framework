@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2018 Benjamin Kaufmann
+// Copyright (c) 2016-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -63,7 +63,7 @@ bool StatisticObject::empty() const {
 }
 uint32 StatisticObject::size() const {
 	switch (type()) {
-		default: throw std::logic_error("invalid object");
+		default: POTASSCO_REQUIRE(false, "invalid object");
 		case Potassco::Statistics_t::Empty: return 0;
 		case Potassco::Statistics_t::Value: return 0;
 		case Potassco::Statistics_t::Map:   return static_cast<const M*>(tid())->size(self());
@@ -104,7 +104,7 @@ StatisticObject StatisticObject::fromRep(uint64 x) {
 /////////////////////////////////////////////////////////////////////////////////////////
 StatisticObject StatsMap::at(const char* k) const {
 	if (const StatisticObject* o = find(k)) { return *o; }
-	throw std::out_of_range(POTASSCO_FORMAT("StatsMap::at with key '%s'", k));
+	POTASSCO_CHECK(false, ERANGE, "StatsMap::at with key '%s'", k);
 }
 const StatisticObject* StatsMap::find(const char* k) const {
 	for (MapType::const_iterator it = keys_.begin(), end = keys_.end(); it != end; ++it) {
@@ -354,7 +354,7 @@ StatisticObject ClaspStatistics::findObject(Key_t root, const char* path, Key_t*
 			o = o[uint32(pos)];
 		}
 		else {
-			throw std::out_of_range(POTASSCO_FORMAT("invalid path: '%s' at key '%s'", parent, top));
+			POTASSCO_CHECK(false, ERANGE, "invalid path: '%s' at key '%s'", parent, top);
 		}
 		t = o.type();
 	}

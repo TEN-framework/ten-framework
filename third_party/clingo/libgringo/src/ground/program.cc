@@ -27,12 +27,14 @@
 
 #define DEBUG_INSTANTIATION 0
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ definition of Parameters
 
 void Parameters::add(String name, SymVec &&args) {
-    params_[Sig((std::string("#inc_") + name.c_str()).c_str(), static_cast<uint32_t>(args.size()), false)].emplace(std::move(args));
+    params_[Sig((std::string("#inc_") + name.c_str()).c_str(), static_cast<uint32_t>(args.size()), false)].emplace(
+        std::move(args));
 }
 
 bool Parameters::find(Sig sig) const {
@@ -40,39 +42,28 @@ bool Parameters::find(Sig sig) const {
     return it != params_.end() && !it->second.empty();
 }
 
-ParamSet::const_iterator Parameters::begin() const {
-    return params_.begin();
-}
+ParamSet::const_iterator Parameters::begin() const { return params_.begin(); }
 
-ParamSet::const_iterator Parameters::end() const {
-    return params_.end();
-}
+ParamSet::const_iterator Parameters::end() const { return params_.end(); }
 
-bool Parameters::empty() const {
-    return params_.empty();
-}
+bool Parameters::empty() const { return params_.empty(); }
 
-void Parameters::clear() {
-    params_.clear();
-}
+void Parameters::clear() { params_.clear(); }
 
 // }}}
 // {{{ definition of Program
 
-Program::Program(SEdbVec &&edb, Statement::Dep::ComponentVec &&stms)
-: edb_(std::move(edb))
-, stms_(std::move(stms)) { }
+Program::Program(SEdbVec &&edb, Statement::Dep::ComponentVec &&stms) : edb_(std::move(edb)), stms_(std::move(stms)) {}
 
 std::ostream &operator<<(std::ostream &out, Program const &prg) {
     bool comma = false;
     for (auto const &component : prg) {
         if (comma) {
             out << "\n";
-        }
-        else {
+        } else {
             comma = true;
         }
-        out << "%" << (component.second ? " positive" : "") <<  " component";
+        out << "%" << (component.second ? " positive" : "") << " component";
         for (auto const &stm : component.first) {
             out << "\n" << *stm;
         }
@@ -105,7 +96,8 @@ void Program::prepare(Parameters const &params, Output::OutputBase &out, Logger 
             // This prevents redefinition errors from projections.
             for (auto &atom : *dom) {
                 if (!atom.fact() && atom.hasUid() && atom.defined()) {
-                    Output::Rule &rule = out.tempRule(false);;
+                    Output::Rule &rule = out.tempRule(false);
+                    ;
                     Atom_t oldUid = atom.uid();
                     Atom_t newUid = out.data.newAtom();
                     rule.addHead(Output::LiteralId{NAF::POS, Output::AtomType::Aux, newUid, dom->domainOffset()});
@@ -114,8 +106,7 @@ void Program::prepare(Parameters const &params, Output::OutputBase &out, Logger 
                     atom.resetUid(newUid);
                 }
             }
-        }
-        else if (name.startsWith("#inc_")) {
+        } else if (name.startsWith("#inc_")) {
             // clear incremental domains
             dom->clear();
         }
@@ -142,8 +133,7 @@ void Program::prepare(Parameters const &params, Output::OutputBase &out, Logger 
             for (auto const &args : p.second) {
                 if (args.empty()) {
                     (*base)->define(Symbol::createId(p.first.name()), true);
-                }
-                else {
+                } else {
                     (*base)->define(Symbol::createFun(p.first.name(), Potassco::toSpan(args)), true);
                 }
             }
@@ -185,4 +175,5 @@ void Program::ground(Context &context, Output::OutputBase &out, Logger &log) {
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo

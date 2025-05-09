@@ -2,8 +2,9 @@
 Tests for the propagator.
 """
 
-from unittest import TestCase
 from typing import cast
+from unittest import TestCase
+
 from clingo import (
     Assignment,
     Control,
@@ -66,6 +67,7 @@ class TestPropagatorMode(Propagator):
     """
     Test check/undo mode.
     """
+
     def __init__(self, case: TestCase):
         self._case = case
         self.num_check = 0
@@ -262,3 +264,55 @@ class TestSymbol(TestCase):
         self.ctl.register_propagator(TestHeuristic(self))
         self.ctl.solve(on_model=self.mcb.on_model)
         self.assertEqual(self.mcb.models, _p(["a"]))
+
+
+class TestAddAssertingClause(TestCase):
+    class Prop(Propagator):
+        def __init__(self, tc, lock=False):
+            self._start_lit = 0
+            self._end_lit = 0
+            self._value_lit = 0
+            self._test = tc
+            self._lock = lock
+
+        def init(self, init: PropagateInit) -> None:
+            for atom in init.symbolic_atoms.by_signature("start", 0):
+                self._start_lit = init.solver_literal(atom.literal)
+            for atom in init.symbolic_atoms.by_signature("end", 0):
+                self._end_lit = init.solver_literal(atom.literal)
+            for atom in init.symbolic_atoms.by_signature("value", 0):
+                self._value_lit = init.solver_literal(atom.literal)
+            for lit in sorted([self._start_lit, self._end_lit, self._value_lit]):
+                init.add_watch(lit)
+                init.add_watch(-lit)
+
+        def propagate(self, control: PropagateControl, changes):
+            ass = control.assignment
+            if ass.is_false(self._value_lit) and ass.is_false(self._end_lit):
+                nogood = [self._start_lit, -self._end_lit, -self._value_lit]
+                dl = ass.decision_level
+                result = control.add_nogood(nogood, tag=False, lock=self._lock)
+                self._test.assertEqual(dl, ass.decision_level)
+                self._test.assertFalse(result)
+
+        def decide(self, thread_id: int, assignment: Assignment, fallback: int) -> int:
+            if assignment.is_free(self._end_lit):
+                return -self._end_lit
+            if assignment.is_free(self._value_lit):
+                return -self._value_lit
+            return fallback
+
+    def setUp(self):
+        self.ctl = Control(["0"])
+        self.ctl.add("base", [], "start. {value}. {end}.")
+        self.ctl.ground([("base", [])])
+
+    def test_default(self):
+        prop = TestAddAssertingClause.Prop(self, lock=False)
+        self.ctl.register_propagator(prop)
+        self.ctl.solve()
+
+    def test_locked(self):
+        prop = TestAddAssertingClause.Prop(self, lock=True)
+        self.ctl.register_propagator(prop)
+        self.ctl.solve()

@@ -261,6 +261,10 @@ TEST_CASE("Copy and then generate a range", "[generators]") {
     }
 }
 
+#if defined( __clang__ )
+#    pragma clang diagnostic pop
+#endif
+
 TEST_CASE("#1913 - GENERATE inside a for loop should not keep recreating the generator", "[regression][generators]") {
     static int counter = 0;
     for (int i = 0; i < 3; ++i) {
@@ -301,13 +305,19 @@ namespace {
 
 } // namespace
 
-TEST_CASE( "#2615 - Throwing in constructor generator fails test case but does not abort", "[!shouldfail]" ) {
+TEST_CASE( "#2615 - Throwing in constructor generator fails test case but does not abort",
+           "[!shouldfail][regression][generators]" ) {
     // this should fail the test case, but not abort the application
     auto sample = GENERATE( make_test_generator() );
     // this assertion shouldn't trigger
-    REQUIRE( sample == 0U );
+    REQUIRE( sample == 0 );
 }
 
-#if defined( __clang__ )
-#    pragma clang diagnostic pop
-#endif
+TEST_CASE( "GENERATE can combine literals and generators", "[generators]" ) {
+    auto i = GENERATE( 2,
+                       4,
+                       take( 2,
+                             filter( []( int val ) { return val % 2 == 0; },
+                                     random( -100, 100 ) ) ) );
+    REQUIRE( i % 2 == 0 );
+}

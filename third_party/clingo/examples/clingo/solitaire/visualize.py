@@ -1,14 +1,17 @@
 #!/usr/bin/python
 
-import urwid
 import sys
-from clingo import SymbolType, Number, Function, clingo_main
+
+import urwid
+
+from clingo import Function, Number, SymbolType, clingo_main
+
 
 class Board:
 
     def __init__(self, plan):
-        self.display = urwid.Text("", align='center')
-        self.plan    = plan
+        self.display = urwid.Text("", align="center")
+        self.plan = plan
         self.current = plan.first()
         self.update()
 
@@ -21,13 +24,16 @@ class Board:
         self.update()
 
     def update(self):
-        brd = [[" "] * (self.plan.width * 2 + 1) for _ in range(0, (self.plan.height * 2 + 1))]
+        brd = [
+            [" "] * (self.plan.width * 2 + 1)
+            for _ in range(0, (self.plan.height * 2 + 1))
+        ]
 
-        for (x, y) in self.plan.field:
+        for x, y in self.plan.field:
             brd[2 * y + 1][2 * x + 0] = "|"
             brd[2 * y + 1][2 * x + 2] = "|"
 
-        for (x, y) in self.plan.field:
+        for x, y in self.plan.field:
             brd[2 * y + 0][2 * x + 0] = "-"
             brd[2 * y + 0][2 * x + 1] = "-"
             brd[2 * y + 0][2 * x + 2] = "-"
@@ -35,19 +41,18 @@ class Board:
             brd[2 * y + 2][2 * x + 1] = "-"
             brd[2 * y + 2][2 * x + 2] = "-"
 
-        for (x, y) in self.plan.steps(self.current):
+        for x, y in self.plan.steps(self.current):
             brd[2 * y + 1][2 * x + 1] = "o"
 
         j = self.plan.jumped(self.current)
         if j != None:
             (x, y) = j
-            brd[2 * y  + 1][2 * x  + 1] = ("blue", "o")
-
+            brd[2 * y + 1][2 * x + 1] = ("blue", "o")
 
         j = self.plan.jump(self.current)
         if j != None:
             (x, y, xx, yy) = j
-            brd[2 * y  + 1][2 * x  + 1] = ("red",   "o")
+            brd[2 * y + 1][2 * x + 1] = ("red", "o")
             brd[2 * yy + 1][2 * xx + 1] = ("green", " ")
 
         markup = []
@@ -57,9 +62,10 @@ class Board:
 
         self.display.set_text(markup)
 
+
 class MainWindow:
     def __init__(self):
-           self.loop = None
+        self.loop = None
 
     def exit(self, button):
         raise urwid.ExitMainLoop()
@@ -76,40 +82,53 @@ class MainWindow:
         bc = urwid.Button("next")
         bd = urwid.Button("quit")
 
-        urwid.connect_signal(bb, 'click', self.exit)
-        urwid.connect_signal(bd, 'click', self.quit)
-        urwid.connect_signal(bc, 'click', c.next)
-        urwid.connect_signal(ba, 'click', c.prev)
+        urwid.connect_signal(bb, "click", self.exit)
+        urwid.connect_signal(bd, "click", self.quit)
+        urwid.connect_signal(bc, "click", c.next)
+        urwid.connect_signal(ba, "click", c.prev)
 
         sf = urwid.Text("")
 
-        b = urwid.Columns([sf, ('fixed', len(bc.label) + 4, bc), ('fixed', len(ba.label) + 4, ba), ('fixed', len(bb.label) + 4, bb), ('fixed', len(bd.label) + 4, bd), sf], 1)
-        f = urwid.Frame(urwid.Filler(c.display), None, b, 'footer')
+        b = urwid.Columns(
+            [
+                sf,
+                ("fixed", len(bc.label) + 4, bc),
+                ("fixed", len(ba.label) + 4, ba),
+                ("fixed", len(bb.label) + 4, bb),
+                ("fixed", len(bd.label) + 4, bd),
+                sf,
+            ],
+            1,
+        )
+        f = urwid.Frame(urwid.Filler(c.display), None, b, "footer")
 
         palette = [
-            ('red', 'black', 'light red'),
-            ('green', 'black', 'light green'),
-            ('blue', 'black', 'light blue'), ]
+            ("red", "black", "light red"),
+            ("green", "black", "light green"),
+            ("blue", "black", "light blue"),
+        ]
 
         self.loop = urwid.MainLoop(f, palette)
         self.loop.run()
 
+
 class Plan:
     def __init__(self, field, init, jumps):
-        mx          = min(x for (x, y) in field)
-        my          = min(y for (x, y) in field)
-        self.width  = max(x for (x, y) in field) - mx + 1
+        mx = min(x for (x, y) in field)
+        my = min(y for (x, y) in field)
+        self.width = max(x for (x, y) in field) - mx + 1
         self.height = max(y for (x, y) in field) - my + 1
-        self.field  = [ (x - mx, y - my) for (x, y) in field ]
+        self.field = [(x - mx, y - my) for (x, y) in field]
 
         pjumps = {}
-        for (t, k) in jumps.items(): pjumps[t] = [ (x - mx, y - my, xx - mx, yy - my) for (x, y, xx, yy) in k ]
+        for t, k in jumps.items():
+            pjumps[t] = [(x - mx, y - my, xx - mx, yy - my) for (x, y, xx, yy) in k]
         self._jumps = []
         self._steps = []
-        self._steps.append([ (x - mx, y - my) for (x, y) in init ])
+        self._steps.append([(x - mx, y - my) for (x, y) in init])
 
         for t in sorted(pjumps.keys()):
-            for (x, y, xx, yy) in pjumps[t]:
+            for x, y, xx, yy in pjumps[t]:
                 self._jumps.append((x, y, xx, yy))
                 self._steps.append(self._steps[-1][:])
                 self._steps[-1].append((xx, yy))
@@ -134,14 +153,15 @@ class Plan:
     def first(self):
         return 0
 
+
 class Application:
     def __init__(self, name):
         self.program_name = name
         self.version = "1.0"
 
     def __on_model(self, model):
-        sx = { "east": 2, "west": -2, "north":  0, "south": 0 }
-        sy = { "east": 0, "west":  0, "north": -2, "south": 2 }
+        sx = {"east": 2, "west": -2, "north": 0, "south": 0}
+        sy = {"east": 0, "west": 0, "north": -2, "south": 2}
 
         field, init, jumps = [], [], {}
 
@@ -153,7 +173,10 @@ class Application:
                 x, y = (n.number for n in atom.arguments)
                 init.append((x, y))
             elif atom.name == "jump" and len(atom.arguments) == 4:
-                ox, oy, d, t = ((n.number if n.type == SymbolType.Number else str(n)) for n in atom.arguments)
+                ox, oy, d, t = (
+                    (n.number if n.type == SymbolType.Number else str(n))
+                    for n in atom.arguments
+                )
                 jumps.setdefault(t, []).append((ox, oy, ox + sx[d], oy + sy[d]))
 
         try:
@@ -174,8 +197,9 @@ class Application:
             t += 1
             prg.ground([("step", [Number(t)])])
             prg.ground([("check", [Number(t)])])
-            prg.release_external(Function("query", [Number(t-1)]))
+            prg.release_external(Function("query", [Number(t - 1)]))
             prg.assign_external(Function("query", [Number(t)]), True)
             sat = prg.solve(on_model=self.__on_model).satisfiable
+
 
 sys.exit(int(clingo_main(Application("visualize"), sys.argv[1:])))

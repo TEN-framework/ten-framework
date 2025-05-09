@@ -16,4 +16,4 @@ def main(prg):
     for x in prg.symbolic_atoms.signatures:
         print (("~" if not x[2] else "") + x[0] + "/" + str(x[1]))
 
-#end. 
+#end.

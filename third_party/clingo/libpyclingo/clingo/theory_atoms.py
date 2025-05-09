@@ -23,8 +23,8 @@ Examples
     t: c
 '''
 
-from typing import List, Optional, Tuple
 from functools import total_ordering
+from typing import List, Optional, Tuple
 
 from ._internal import _c_call, _c_call2, _lib, _str, _to_str
 from .core import OrderedEnum

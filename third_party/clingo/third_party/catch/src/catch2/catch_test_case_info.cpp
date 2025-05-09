@@ -9,6 +9,7 @@
 #include <catch2/internal/catch_enforce.hpp>
 #include <catch2/internal/catch_string_manip.hpp>
 #include <catch2/internal/catch_case_insensitive_comparisons.hpp>
+#include <catch2/internal/catch_test_registry.hpp>
 
 #include <cassert>
 #include <cctype>
@@ -21,26 +22,26 @@ namespace Catch {
         static_assert(sizeof(TestCaseProperties) == sizeof(TCP_underlying_type),
                       "The size of the TestCaseProperties is different from the assumed size");
 
-        TestCaseProperties operator|(TestCaseProperties lhs, TestCaseProperties rhs) {
+        constexpr TestCaseProperties operator|(TestCaseProperties lhs, TestCaseProperties rhs) {
             return static_cast<TestCaseProperties>(
                 static_cast<TCP_underlying_type>(lhs) | static_cast<TCP_underlying_type>(rhs)
             );
         }
 
-        TestCaseProperties& operator|=(TestCaseProperties& lhs, TestCaseProperties rhs) {
+        constexpr TestCaseProperties& operator|=(TestCaseProperties& lhs, TestCaseProperties rhs) {
             lhs = static_cast<TestCaseProperties>(
                 static_cast<TCP_underlying_type>(lhs) | static_cast<TCP_underlying_type>(rhs)
             );
             return lhs;
         }
 
-        TestCaseProperties operator&(TestCaseProperties lhs, TestCaseProperties rhs) {
+        constexpr TestCaseProperties operator&(TestCaseProperties lhs, TestCaseProperties rhs) {
             return static_cast<TestCaseProperties>(
                 static_cast<TCP_underlying_type>(lhs) & static_cast<TCP_underlying_type>(rhs)
             );
         }
 
-        bool applies(TestCaseProperties tcp) {
+        constexpr bool applies(TestCaseProperties tcp) {
             static_assert(static_cast<TCP_underlying_type>(TestCaseProperties::None) == 0,
                           "TestCaseProperties::None must be equal to 0");
             return tcp != TestCaseProperties::None;
@@ -79,13 +80,15 @@ namespace Catch {
             return "Anonymous test case " + std::to_string(++counter);
         }
 
-        StringRef extractFilenamePart(StringRef filename) {
+        constexpr StringRef extractFilenamePart(StringRef filename) {
             size_t lastDot = filename.size();
             while (lastDot > 0 && filename[lastDot - 1] != '.') {
                 --lastDot;
             }
-            --lastDot;
+            // In theory we could have filename without any extension in it
+            if ( lastDot == 0 ) { return StringRef(); }
 
+            --lastDot;
             size_t nameStart = lastDot;
             while (nameStart > 0 && filename[nameStart - 1] != '/' && filename[nameStart - 1] != '\\') {
                 --nameStart;
@@ -95,7 +98,7 @@ namespace Catch {
         }
 
         // Returns the upper bound on size of extra tags ([#file]+[.])
-        size_t sizeOfExtraTags(StringRef filepath) {
+        constexpr size_t sizeOfExtraTags(StringRef filepath) {
             // [.] is 3, [#] is another 3
             const size_t extras = 3 + 3;
             return extractFilenamePart(filepath).size() + extras;
@@ -139,12 +142,20 @@ namespace Catch {
         for (size_t idx = 0; idx < originalTags.size(); ++idx) {
             auto c = originalTags[idx];
             if (c == '[') {
-                assert(!inTag);
+                CATCH_ENFORCE(
+                    !inTag,
+                    "Found '[' inside a tag while registering test case '"
+                        << _nameAndTags.name << "' at " << _lineInfo );
+
                 inTag = true;
                 tagStart = idx;
             }
             if (c == ']') {
-                assert(inTag);
+                CATCH_ENFORCE(
+                    inTag,
+                    "Found unmatched ']' while registering test case '"
+                        << _nameAndTags.name << "' at " << _lineInfo );
+
                 inTag = false;
                 tagEnd = idx;
                 assert(tagStart < tagEnd);
@@ -153,7 +164,11 @@ namespace Catch {
                 // it over to backing storage and actually reference the
                 // backing storage in the saved tags
                 StringRef tagStr = originalTags.substr(tagStart+1, tagEnd - tagStart - 1);
-                CATCH_ENFORCE(!tagStr.empty(), "Empty tags are not allowed");
+                CATCH_ENFORCE( !tagStr.empty(),
+                               "Found an empty tag while registering test case '"
+                                   << _nameAndTags.name << "' at "
+                                   << _lineInfo );
+
                 enforceNotReservedTag(tagStr, lineInfo);
                 properties |= parseSpecialTag(tagStr);
                 // When copying a tag to the backing storage, we need to
@@ -167,8 +182,12 @@ namespace Catch {
                 // the tags.
                 internalAppendTag(tagStr);
             }
-            (void)inTag; // Silence "set-but-unused" warning in release mode.
         }
+        CATCH_ENFORCE( !inTag,
+                       "Found an unclosed tag while registering test case '"
+                           << _nameAndTags.name << "' at " << _lineInfo );
+
+
         // Add [.] if relevant
         if (isHidden()) {
             internalAppendTag("."_sr);
@@ -238,10 +257,6 @@ namespace Catch {
             return cmpClassName < 0;
         }
         return lhs.tags < rhs.tags;
-    }
-
-    TestCaseInfo const& TestCaseHandle::getTestCaseInfo() const {
-        return *m_info;
     }
 
 } // end namespace Catch

@@ -26,15 +26,15 @@
 #define GRINGO_BASE_HH
 
 #include <cassert>
-#include <gringo/term.hh>
 #include <deque>
+#include <gringo/term.hh>
 
 namespace Gringo {
 
 // {{{1 declaration of Context
 
 class Context {
-public:
+  public:
     Context() = default;
     Context(Context const &other) = default;
     Context(Context &&other) noexcept = default;
@@ -116,10 +116,22 @@ struct Bound {
 
 inline std::ostream &operator<<(std::ostream &out, TheoryAtomType type) {
     switch (type) {
-        case TheoryAtomType::Head:      { out << "head"; break; }
-        case TheoryAtomType::Body:      { out << "body"; break; }
-        case TheoryAtomType::Any:       { out << "any"; break; }
-        case TheoryAtomType::Directive: { out << "directive"; break; }
+        case TheoryAtomType::Head: {
+            out << "head";
+            break;
+        }
+        case TheoryAtomType::Body: {
+            out << "body";
+            break;
+        }
+        case TheoryAtomType::Any: {
+            out << "any";
+            break;
+        }
+        case TheoryAtomType::Directive: {
+            out << "directive";
+            break;
+        }
     }
     return out;
 }
@@ -128,9 +140,18 @@ inline std::ostream &operator<<(std::ostream &out, TheoryAtomType type) {
 
 inline std::ostream &operator<<(std::ostream &out, TheoryOperatorType type) {
     switch (type) {
-        case TheoryOperatorType::Unary:       { out << "unary"; break; }
-        case TheoryOperatorType::BinaryLeft:  { out << "binary,left"; break; }
-        case TheoryOperatorType::BinaryRight: { out << "binary,right"; break; }
+        case TheoryOperatorType::Unary: {
+            out << "unary";
+            break;
+        }
+        case TheoryOperatorType::BinaryLeft: {
+            out << "binary,left";
+            break;
+        }
+        case TheoryOperatorType::BinaryRight: {
+            out << "binary,right";
+            break;
+        }
     }
     return out;
 }
@@ -139,9 +160,15 @@ inline std::ostream &operator<<(std::ostream &out, TheoryOperatorType type) {
 
 inline NAF inv(NAF naf, bool recursive) {
     switch (naf) {
-        case NAF::NOTNOT: { return NAF::NOT; }
-        case NAF::NOT:    { return recursive ? NAF::NOTNOT : NAF::POS; }
-        case NAF::POS:    { return NAF::NOT; }
+        case NAF::NOTNOT: {
+            return NAF::NOT;
+        }
+        case NAF::NOT: {
+            return recursive ? NAF::NOTNOT : NAF::POS;
+        }
+        case NAF::POS: {
+            return NAF::NOT;
+        }
     }
     assert(false);
     return NAF::POS;
@@ -149,28 +176,44 @@ inline NAF inv(NAF naf, bool recursive) {
 
 inline std::ostream &operator<<(std::ostream &out, NAF naf) {
     switch (naf) {
-        case NAF::NOTNOT: { out << "not "; } // NOLINT
-        case NAF::NOT:    { out << "not "; }
-        case NAF::POS:    { }
+        case NAF::NOTNOT: {
+            out << "not ";
+        } // NOLINT
+        case NAF::NOT: {
+            out << "not ";
+        }
+        case NAF::POS: {
+        }
     }
     return out;
 }
 
 inline std::ostream &operator<<(std::ostream &out, RECNAF naf) {
     switch (naf) {
-        case RECNAF::NOTNOT: { out << "not "; } // NOLINT
+        case RECNAF::NOTNOT: {
+            out << "not ";
+        } // NOLINT
         case RECNAF::RECNOT:
-        case RECNAF::NOT:    { out << "not "; }
-        case RECNAF::POS:    { }
+        case RECNAF::NOT: {
+            out << "not ";
+        }
+        case RECNAF::POS: {
+        }
     }
     return out;
 }
 
 inline RECNAF recnaf(NAF naf, bool recursive) {
     switch (naf) {
-        case NAF::POS:    { return RECNAF::POS; }
-        case NAF::NOT:    { return recursive ? RECNAF::RECNOT : RECNAF::NOT; }
-        case NAF::NOTNOT: { return recursive ? RECNAF::NOTNOT : RECNAF::POS; }
+        case NAF::POS: {
+            return RECNAF::POS;
+        }
+        case NAF::NOT: {
+            return recursive ? RECNAF::RECNOT : RECNAF::NOT;
+        }
+        case NAF::NOTNOT: {
+            return recursive ? RECNAF::NOTNOT : RECNAF::POS;
+        }
     }
     return RECNAF::POS;
 }
@@ -179,24 +222,54 @@ inline RECNAF recnaf(NAF naf, bool recursive) {
 
 inline std::ostream &operator<<(std::ostream &out, Relation rel) {
     switch (rel) {
-        case Relation::GT:     { out << ">"; break; }
-        case Relation::LT:     { out << "<"; break; }
-        case Relation::LEQ:    { out << "<="; break; }
-        case Relation::GEQ:    { out << ">="; break; }
-        case Relation::NEQ:    { out << "!="; break; }
-        case Relation::EQ: { out << "="; break; }
+        case Relation::GT: {
+            out << ">";
+            break;
+        }
+        case Relation::LT: {
+            out << "<";
+            break;
+        }
+        case Relation::LEQ: {
+            out << "<=";
+            break;
+        }
+        case Relation::GEQ: {
+            out << ">=";
+            break;
+        }
+        case Relation::NEQ: {
+            out << "!=";
+            break;
+        }
+        case Relation::EQ: {
+            out << "=";
+            break;
+        }
     }
     return out;
 }
 
 inline Relation inv(Relation rel) {
     switch (rel) {
-        case Relation::NEQ:    { return Relation::NEQ; }
-        case Relation::GEQ:    { return Relation::LEQ; }
-        case Relation::LEQ:    { return Relation::GEQ; }
-        case Relation::EQ: { return Relation::EQ; }
-        case Relation::LT:     { return Relation::GT; }
-        case Relation::GT:     { return Relation::LT; }
+        case Relation::NEQ: {
+            return Relation::NEQ;
+        }
+        case Relation::GEQ: {
+            return Relation::LEQ;
+        }
+        case Relation::LEQ: {
+            return Relation::GEQ;
+        }
+        case Relation::EQ: {
+            return Relation::EQ;
+        }
+        case Relation::LT: {
+            return Relation::GT;
+        }
+        case Relation::GT: {
+            return Relation::LT;
+        }
     }
     assert(false);
     return Relation(-1);
@@ -204,12 +277,24 @@ inline Relation inv(Relation rel) {
 
 inline Relation neg(Relation rel) {
     switch (rel) {
-        case Relation::NEQ:    { return Relation::EQ; }
-        case Relation::GEQ:    { return Relation::LT; }
-        case Relation::LEQ:    { return Relation::GT; }
-        case Relation::EQ: { return Relation::NEQ; }
-        case Relation::LT:     { return Relation::GEQ; }
-        case Relation::GT:     { return Relation::LEQ; }
+        case Relation::NEQ: {
+            return Relation::EQ;
+        }
+        case Relation::GEQ: {
+            return Relation::LT;
+        }
+        case Relation::LEQ: {
+            return Relation::GT;
+        }
+        case Relation::EQ: {
+            return Relation::NEQ;
+        }
+        case Relation::LT: {
+            return Relation::GEQ;
+        }
+        case Relation::GT: {
+            return Relation::LEQ;
+        }
     }
     assert(false);
     return Relation(-1);
@@ -219,24 +304,35 @@ inline Relation neg(Relation rel) {
 
 inline std::ostream &operator<<(std::ostream &out, AggregateFunction fun) {
     switch (fun) {
-        case AggregateFunction::MIN:   { out << "#min"; break; }
-        case AggregateFunction::MAX:   { out << "#max"; break; }
-        case AggregateFunction::SUM:   { out << "#sum"; break; }
-        case AggregateFunction::SUMP:  { out << "#sum+"; break; }
-        case AggregateFunction::COUNT: { out << "#count"; break; }
+        case AggregateFunction::MIN: {
+            out << "#min";
+            break;
+        }
+        case AggregateFunction::MAX: {
+            out << "#max";
+            break;
+        }
+        case AggregateFunction::SUM: {
+            out << "#sum";
+            break;
+        }
+        case AggregateFunction::SUMP: {
+            out << "#sum+";
+            break;
+        }
+        case AggregateFunction::COUNT: {
+            out << "#count";
+            break;
+        }
     }
     return out;
 }
 
 // {{{1 definition of Bound
 
-inline Bound::Bound(Relation rel, UTerm &&bound)
-    : rel(rel)
-    , bound(std::move(bound)) { }
+inline Bound::Bound(Relation rel, UTerm &&bound) : rel(rel), bound(std::move(bound)) {}
 
-inline size_t Bound::hash() const {
-    return get_value_hash(size_t(rel), bound);
-}
+inline size_t Bound::hash() const { return get_value_hash(size_t(rel), bound); }
 
 inline bool Bound::operator==(Bound const &other) const {
     return rel == other.rel && is_value_equal_to(bound, other.bound);
@@ -258,11 +354,8 @@ inline void Bound::rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGe
     Term::replace(bound, bound->rewriteArithmetics(arith, auxGen, true));
 }
 
-template <>
-struct clone<Bound> {
-    Bound operator()(Bound const &bound) const {
-        return {bound.rel, get_clone(bound.bound)};
-    }
+template <> struct clone<Bound> {
+    Bound operator()(Bound const &bound) const { return {bound.rel, get_clone(bound.bound)}; }
 };
 
 // }}}1
@@ -273,22 +366,19 @@ namespace std {
 
 // {{{1 definition of hash<Gringo::Bound>
 
-template <>
-struct hash<Gringo::Bound> {
+template <> struct hash<Gringo::Bound> {
     size_t operator()(Gringo::Bound const &x) const { return x.hash(); }
 };
 
 // {{{1 definition of hash<Gringo::Relation>
 
-template <>
-struct hash<Gringo::Relation> {
+template <> struct hash<Gringo::Relation> {
     size_t operator()(Gringo::Relation const &x) const { return static_cast<unsigned>(x); }
 };
 
 // {{{1 definition of hash<Gringo::NAF>
 
-template <>
-struct hash<Gringo::NAF> {
+template <> struct hash<Gringo::NAF> {
     size_t operator()(Gringo::NAF const &x) const { return static_cast<unsigned>(x); }
 };
 

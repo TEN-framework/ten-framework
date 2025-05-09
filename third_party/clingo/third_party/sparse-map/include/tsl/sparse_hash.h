@@ -2047,9 +2047,7 @@ class sparse_hash : private Allocator,
 
   template <typename K>
   void insert_on_rehash(K &&key_value) {
-    const key_type &key = KeySelect()(key_value);
-
-    const std::size_t hash = hash_key(key);
+    const std::size_t hash = hash_key(KeySelect()(key_value));
     std::size_t ibucket = bucket_for_hash(hash);
 
     std::size_t probe = 0;
@@ -2065,9 +2063,10 @@ class sparse_hash : private Allocator,
 
         return;
       } else {
-        tsl_sh_assert(!compare_keys(
-            key, KeySelect()(*m_sparse_buckets[sparse_ibucket].value(
-                     index_in_sparse_bucket))));
+        tsl_sh_assert(
+            !compare_keys(KeySelect()(key_value),
+                          KeySelect()(*m_sparse_buckets[sparse_ibucket].value(
+                              index_in_sparse_bucket))));
       }
 
       probe++;

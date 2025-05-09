@@ -25,9 +25,9 @@
 #ifndef GRINGO_INPUT_THEORY_HH
 #define GRINGO_INPUT_THEORY_HH
 
-#include <gringo/terms.hh>
-#include <gringo/output/theory.hh>
 #include <gringo/input/aggregate.hh>
+#include <gringo/output/theory.hh>
+#include <gringo/terms.hh>
 
 namespace Gringo {
 
@@ -47,7 +47,7 @@ class TheoryElement;
 using TheoryElementVec = std::vector<TheoryElement>;
 
 class TheoryElement {
-public:
+  public:
     TheoryElement(Output::UTheoryTermVec &&tuple, ULitVec &&cond);
     TheoryElement(TheoryElement const &other) = delete;
     TheoryElement(TheoryElement &&other) noexcept = default;
@@ -69,21 +69,26 @@ public:
     bool simplify(Projections &project, SimplifyState &state, Logger &log);
     void rewriteArithmetics(Term::ArithmeticsMap &arith, AuxGen &auxGen);
     void initTheory(Output::TheoryParser &p, Logger &log);
-    std::unique_ptr<Ground::TheoryAccumulate> toGround(ToGroundArg &x, Ground::TheoryComplete &completeRef, Ground::ULitVec &&lits) const;
+    std::unique_ptr<Ground::TheoryAccumulate> toGround(ToGroundArg &x, Ground::TheoryComplete &completeRef,
+                                                       Ground::ULitVec &&lits) const;
 
-private:
+  private:
     Output::UTheoryTermVec tuple_;
     ULitVec cond_;
 };
-inline std::ostream &operator<<(std::ostream &out, TheoryElement const &elem) { elem.print(out); return out; }
+inline std::ostream &operator<<(std::ostream &out, TheoryElement const &elem) {
+    elem.print(out);
+    return out;
+}
 
 // {{{1 declaration of TheoryAtom
 
 class TheoryAtom {
-public:
+  public:
     // Note: name must be a term that (after unpooling) has a signature
     TheoryAtom(UTerm &&name, TheoryElementVec &&elems);
-    TheoryAtom(UTerm &&name, TheoryElementVec &&elems, String op, Output::UTheoryTerm &&guard, TheoryAtomType type = TheoryAtomType::Any);
+    TheoryAtom(UTerm &&name, TheoryElementVec &&elems, String op, Output::UTheoryTerm &&guard,
+               TheoryAtomType type = TheoryAtomType::Any);
     TheoryAtom(TheoryAtom const &other) = delete;
     TheoryAtom(TheoryAtom &&other) noexcept = default;
     TheoryAtom &operator=(TheoryAtom const &other) = delete;
@@ -96,8 +101,7 @@ public:
     bool hasGuard() const;
     size_t hash() const;
     bool hasPool() const;
-    template <class T>
-    void unpool(T f);
+    template <class T> void unpool(T f);
     bool hasUnpoolComparison() const;
     void unpoolComparison();
     void replace(Defines &x);
@@ -109,21 +113,24 @@ public:
     void initTheory(Location const &loc, TheoryDefs &def, bool inBody, bool hasBody, Logger &log);
     TheoryAtomType type() const { return type_; }
     CreateBody toGroundBody(ToGroundArg &x, Ground::UStmVec &stms, NAF naf, UTerm &&id) const;
-    static CreateHead toGroundHead() ;
+    static CreateHead toGroundHead();
 
-private:
-    UTerm               name_;
-    TheoryElementVec    elems_;
-    String              op_;
+  private:
+    UTerm name_;
+    TheoryElementVec elems_;
+    String op_;
     Output::UTheoryTerm guard_;
-    TheoryAtomType      type_ = TheoryAtomType::Any;
+    TheoryAtomType type_ = TheoryAtomType::Any;
 };
-inline std::ostream &operator<<(std::ostream &out, TheoryAtom const &atom) { atom.print(out); return out; }
+inline std::ostream &operator<<(std::ostream &out, TheoryAtom const &atom) {
+    atom.print(out);
+    return out;
+}
 
 // {{{1 declaration of BodyTheoryLiteral
 
 class BodyTheoryLiteral : public BodyAggregate {
-public:
+  public:
     BodyTheoryLiteral(NAF naf, TheoryAtom &&atom, bool rewritten = false);
     BodyTheoryLiteral(BodyTheoryLiteral const &other) = delete;
     BodyTheoryLiteral(BodyTheoryLiteral &&other) noexcept = default;
@@ -156,7 +163,7 @@ public:
     bool operator==(BodyAggregate const &other) const override;
     // }}}2
 
-private:
+  private:
     TheoryAtom atom_;
     NAF naf_;
     bool rewritten_;
@@ -167,7 +174,7 @@ private:
 // {{{1 declaration of HeadTheoryLiteral
 
 class HeadTheoryLiteral : public HeadAggregate {
-public:
+  public:
     HeadTheoryLiteral(TheoryAtom &&atom, bool rewritten = false);
     HeadTheoryLiteral(HeadTheoryLiteral const &other) = delete;
     HeadTheoryLiteral(HeadTheoryLiteral &&other) noexcept = default;
@@ -198,12 +205,13 @@ public:
     bool operator==(HeadAggregate const &other) const override;
     // }}}2
 
-private:
+  private:
     TheoryAtom atom_;
     bool rewritten_;
 };
 
-} } // namespace Gringo Input
+} // namespace Input
+} // namespace Gringo
 
 GRINGO_CALL_HASH(Gringo::Input::TheoryAtom)
 GRINGO_CALL_HASH(Gringo::Input::TheoryElement)

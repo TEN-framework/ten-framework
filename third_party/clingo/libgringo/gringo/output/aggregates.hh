@@ -25,12 +25,13 @@
 #ifndef GRINGO_OUTPUT_AGGREGATES_HH
 #define GRINGO_OUTPUT_AGGREGATES_HH
 
-#include <gringo/terms.hh>
 #include <gringo/domain.hh>
 #include <gringo/intervals.hh>
 #include <gringo/output/literal.hh>
+#include <gringo/terms.hh>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 using BodyAggregateElements = ordered_map<TupleId, Formula>;
 using HeadFormula = std::vector<std::pair<LiteralId, ClauseId>>;
@@ -43,15 +44,17 @@ using LitValVec = std::vector<std::pair<LiteralId, Symbol>>;
 using LitUintVec = std::vector<std::pair<LiteralId, unsigned>>;
 
 class AggregateAnalyzer {
-public:
+  public:
     enum Monotonicity { MONOTONE, ANTIMONOTONE, CONVEX, NONMONOTONE };
     enum WeightType { MIXED, POSITIVE, NEGATIVE };
     enum Truth { True, False, Open };
     using ConjunctiveBounds = std::vector<std::pair<Interval, Interval>>;
 
-    AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBounds const &disjunctiveBounds, AggregateFunction fun, Interval range, BodyAggregateElements const &elems);
+    AggregateAnalyzer(DomainData &data, NAF naf, DisjunctiveBounds const &disjunctiveBounds, AggregateFunction fun,
+                      Interval range, BodyAggregateElements const &elems);
     void print(std::ostream &out);
-    LitValVec translateElems(DomainData &data, Translator &x, AggregateFunction fun, BodyAggregateElements const &bdElems, bool incomplete) const;
+    LitValVec translateElems(DomainData &data, Translator &x, AggregateFunction fun,
+                             BodyAggregateElements const &bdElems, bool incomplete) const;
 
     Monotonicity monotonicity;
     WeightType weightType;
@@ -80,8 +83,11 @@ inline Symbol getNeutral(AggregateFunction fun) {
 
 LiteralId getEqualClause(DomainData &data, Translator &x, ClauseId clause, bool conjunctive, bool equivalence);
 LiteralId getEqualFormula(DomainData &data, Translator &x, Formula const &formula, bool conjunctive, bool equivalence);
-LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction fun, NAF naf, DisjunctiveBounds const &bounds, Interval const &range, BodyAggregateElements const &bdElems, bool recursive);
+LiteralId getEqualAggregate(DomainData &data, Translator &x, AggregateFunction fun, NAF naf,
+                            DisjunctiveBounds const &bounds, Interval const &range,
+                            BodyAggregateElements const &bdElems, bool recursive);
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo
 
 #endif // GRINGO_OUTPUT_AGGREGATES_HH

@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2023.                        //
+//  Copyright Christopher Kormanyos 2023 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -69,7 +69,7 @@ namespace example014_pi_spigot
 
     using output_value_type = std::uint8_t;
 
-    WIDE_INTEGER_CONSTEXPR pi_spigot()
+    pi_spigot()
     {
       if(my_pi_in.empty())
       {
@@ -80,17 +80,17 @@ namespace example014_pi_spigot
       }
     }
 
-    WIDE_INTEGER_CONSTEXPR pi_spigot(const pi_spigot&) = delete;
+    pi_spigot(const pi_spigot&) = delete;
 
-    WIDE_INTEGER_CONSTEXPR pi_spigot(pi_spigot&&) = delete;
+    pi_spigot(pi_spigot&&) = delete;
 
     ~pi_spigot() = default; // LCOV_EXCL_LINE
 
-    WIDE_INTEGER_CONSTEXPR auto operator=(const pi_spigot&) -> pi_spigot& = delete;
+    auto operator=(const pi_spigot&) -> pi_spigot& = delete;
 
-    WIDE_INTEGER_CONSTEXPR auto operator=(pi_spigot&&) -> pi_spigot& = delete;
+    auto operator=(pi_spigot&&) noexcept -> pi_spigot& = delete;
 
-    WIDE_INTEGER_NODISCARD WIDE_INTEGER_CONSTEXPR auto get_operation_count() const noexcept -> std::uintmax_t { return my_operation_count; }
+    WIDE_INTEGER_NODISCARD auto get_operation_count() const noexcept -> std::uintmax_t { return my_operation_count; }
 
     template<typename OutputIteratorType>
     auto calculate(OutputIteratorType output_first) -> void
@@ -113,7 +113,7 @@ namespace example014_pi_spigot
       my_output_count    = static_cast<std::uint32_t>(UINT8_C(0));
       my_operation_count = static_cast<std::uintmax_t>(UINT8_C(0));
 
-      WIDE_INTEGER_CONSTEXPR auto local_pow10 = static_cast<unsigned_large_type>(pow10(loop_digit()));
+      const auto local_pow10 = static_cast<unsigned_large_type>(pow10(loop_digit()));
 
       // Operation count Mathematica(R), example for loop_digit=9.
       // Sum[Floor[((d - j) (Floor[((10 9)/3)] + 1))/9], {j, 0, Floor[d/9] 9, 9}]
@@ -137,10 +137,12 @@ namespace example014_pi_spigot
               - i
             );
 
-          const auto di =
-            ((j == static_cast<std::uint32_t>(UINT8_C(0)))
-              ? static_cast<unsigned_large_type>(d_init())
-              : static_cast<unsigned_large_type>(my_pi_in[my_index]));
+          unsigned_large_type di { my_pi_in[my_index] };
+
+          if(j == static_cast<std::uint32_t>(UINT8_C(0)))
+          {
+            di = std::move(static_cast<unsigned_large_type>(d_init()));
+          }
 
           val_d += (di * local_pow10);
 
@@ -216,7 +218,7 @@ namespace example014_pi_spigot
     std::uintmax_t my_operation_count { }; // NOLINT(readability-identifier-naming)
     std::uint32_t  my_output_count    { }; // NOLINT(readability-identifier-naming)
 
-    static WIDE_INTEGER_CONSTEXPR auto pow10(std::uint32_t n) -> unsigned_small_type // NOLINT(misc-no-recursion)
+    static auto pow10(std::uint32_t n) -> unsigned_small_type // NOLINT(misc-no-recursion)
     {
       return
       (
@@ -226,7 +228,7 @@ namespace example014_pi_spigot
       );
     }
 
-    static WIDE_INTEGER_CONSTEXPR auto d_init() -> unsigned_small_type
+    static auto d_init() -> unsigned_small_type
     {
       return
         static_cast<unsigned_small_type>

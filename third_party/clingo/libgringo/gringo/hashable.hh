@@ -25,23 +25,31 @@
 #ifndef GRINGO_HASHABLE_HH
 #define GRINGO_HASHABLE_HH
 
-#include <ostream>
-#include <typeinfo>
 #include <functional>
 #include <gringo/utility.hh>
+#include <ostream>
+#include <typeinfo>
 
-#define GRINGO_HASH(T) namespace std { template <> struct hash<T> : hash<Gringo::Hashable> { }; } // NOLINT
-#define GRINGO_CALL_HASH(T) namespace std { template <> struct hash<T> { size_t operator()(T const &x) const { return x.hash(); } }; } // NOLINT
+#define GRINGO_HASH(T)                                                                                                 \
+    namespace std {                                                                                                    \
+    template <> struct hash<T> : hash<Gringo::Hashable> {};                                                            \
+    } // NOLINT
+#define GRINGO_CALL_HASH(T)                                                                                            \
+    namespace std {                                                                                                    \
+    template <> struct hash<T> {                                                                                       \
+        size_t operator()(T const &x) const { return x.hash(); }                                                       \
+    };                                                                                                                 \
+    } // NOLINT
 
 namespace Gringo {
 
 // {{{ declaration of Hashable
 
 class Hashable {
-public:
+  public:
     Hashable() = default;
     Hashable(Hashable const &other) = default;
-    Hashable(Hashable && other) noexcept = default;
+    Hashable(Hashable &&other) noexcept = default;
     Hashable &operator=(Hashable const &other) = default;
     Hashable &operator=(Hashable &&other) noexcept = default;
     virtual ~Hashable() noexcept = default;
@@ -56,8 +64,7 @@ namespace std {
 
 // {{{ definition of hash<Gringo::Hashable>
 
-template <>
-struct hash<Gringo::Hashable> {
+template <> struct hash<Gringo::Hashable> {
     size_t operator()(Gringo::Hashable const &x) const { return x.hash(); }
 };
 
@@ -66,4 +73,3 @@ struct hash<Gringo::Hashable> {
 } // namespace std
 
 #endif // GRINGO_HASHABLE_HH
-

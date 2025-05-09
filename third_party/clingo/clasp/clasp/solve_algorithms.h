@@ -45,7 +45,7 @@ struct SolveLimits {
 		, restarts(r) {
 	}
 	bool   reached() const { return conflicts == 0 || restarts == 0; }
-	bool   enabled() const { return conflicts != UINT64_MAX || restarts != UINT32_MAX; }
+	bool   enabled() const { return conflicts != UINT64_MAX || restarts != UINT64_MAX; }
 	uint64 conflicts; /*!< Number of conflicts. */
 	uint64 restarts;  /*!< Number of restarts.  */
 };
@@ -150,6 +150,7 @@ public:
 	void setEnumerator(Enumerator& e);
 	void setEnumLimit(uint64 m)          { enumLimit_= m;  }
 	void setLimits(const SolveLimits& x) { limits_   = x;  }
+	void setOptLimit(const SumVec& bound);
 	//! If set to false, SharedContext::report() is not called for models.
 	/*!
 	 * \note The default is true, i.e. models are reported via SharedContext::report().
@@ -240,6 +241,8 @@ private:
 	enum { value_stop = value_false|value_true };
 	bool attach(SharedContext& ctx, ModelHandler* onModel);
 	void detach();
+	bool hasLimit(const Model& m) const;
+	bool reportModel(Solver& s, bool sym) const;
 	SolveLimits    limits_;
 	SharedContext* ctx_;
 	EnumPtr        enum_;
@@ -247,6 +250,7 @@ private:
 	PathPtr        path_;
 	CorePtr        core_;
 	uint64         enumLimit_;
+	SumVec         optLimit_;
 	double         time_;
 	int            last_;
 	bool           reportM_;

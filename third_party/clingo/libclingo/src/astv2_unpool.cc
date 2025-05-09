@@ -24,16 +24,14 @@
 
 #include <clingo/astv2.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 namespace {
 
-template <class T>
-T &get(AST &ast, clingo_ast_attribute_e name) {
-    return mpark::get<T>(ast.value(name));
-}
+template <class T> T &get(AST &ast, clingo_ast_attribute_e name) { return mpark::get<T>(ast.value(name)); }
 
-tl::optional<std::vector<OAST>> unpool(OAST &ast, clingo_ast_unpool_type_bitset_t type=clingo_ast_unpool_type_all) {
+tl::optional<std::vector<OAST>> unpool(OAST &ast, clingo_ast_unpool_type_bitset_t type = clingo_ast_unpool_type_all) {
     if (ast.ast.get() == nullptr) {
         return {};
     }
@@ -48,7 +46,8 @@ tl::optional<std::vector<OAST>> unpool(OAST &ast, clingo_ast_unpool_type_bitset_
     return ret;
 }
 
-tl::optional<std::vector<AST::ASTVec>> unpool(AST::ASTVec &vec, clingo_ast_unpool_type_bitset_t type=clingo_ast_unpool_type_all) {
+tl::optional<std::vector<AST::ASTVec>> unpool(AST::ASTVec &vec,
+                                              clingo_ast_unpool_type_bitset_t type = clingo_ast_unpool_type_all) {
     // unpool the elements of the vector
     bool has_pool = false;
     std::vector<tl::optional<AST::ASTVec>> pools;
@@ -70,8 +69,7 @@ tl::optional<std::vector<AST::ASTVec>> unpool(AST::ASTVec &vec, clingo_ast_unpoo
     for (auto &pool : pools) {
         if (pool.has_value()) {
             size *= pool->size();
-        }
-        else {
+        } else {
             pool = AST::ASTVec{*it};
         }
         ++it;
@@ -96,61 +94,52 @@ tl::optional<std::vector<AST::ASTVec>> unpool(AST::ASTVec &vec, clingo_ast_unpoo
     return product;
 }
 
-template <int i, bool cond>
-struct unpool_cross_ {
+template <int i, bool cond> struct unpool_cross_ {
     template <class V, class... Args>
-    static void apply_(V &val, tl::optional<AST::ASTVec> &ret, AST &ast, clingo_ast_attribute_e name, Args&&... args) {
+    static void apply_(V &val, tl::optional<AST::ASTVec> &ret, AST &ast, clingo_ast_attribute_e name, Args &&...args) {
         auto pool = cond ? unpool(val, clingo_ast_unpool_type_other) : unpool(val);
         if (!pool.has_value()) {
-            unpool_cross_<i-1, cond>::apply(ret, ast, std::forward<Args>(args)..., name, AST::Value{val});
-        }
-        else {
+            unpool_cross_<i - 1, cond>::apply(ret, ast, std::forward<Args>(args)..., name, AST::Value{val});
+        } else {
             if (!ret.has_value()) {
                 ret = AST::ASTVec{};
             }
             for (auto &unpooled : *pool) {
-                unpool_cross_<i-1, cond>::apply(ret, ast, args..., name, AST::Value{std::move(unpooled)});
+                unpool_cross_<i - 1, cond>::apply(ret, ast, args..., name, AST::Value{std::move(unpooled)});
             }
         }
     }
     template <class... Args>
-    static void apply(tl::optional<AST::ASTVec> &ret, AST &ast, clingo_ast_attribute_e name, Args&&... args) {
+    static void apply(tl::optional<AST::ASTVec> &ret, AST &ast, clingo_ast_attribute_e name, Args &&...args) {
         auto &val = ast.value(name);
         if (mpark::holds_alternative<SAST>(val)) {
             assert(mpark::get<SAST>(val).get() != nullptr);
             apply_(mpark::get<SAST>(val), ret, ast, name, std::forward<Args>(args)...);
-        }
-        else if (mpark::holds_alternative<OAST>(val)) {
+        } else if (mpark::holds_alternative<OAST>(val)) {
             apply_(mpark::get<OAST>(val), ret, ast, name, std::forward<Args>(args)...);
-        }
-        else if (mpark::holds_alternative<AST::ASTVec>(val)) {
+        } else if (mpark::holds_alternative<AST::ASTVec>(val)) {
             apply_(mpark::get<AST::ASTVec>(val), ret, ast, name, std::forward<Args>(args)...);
-        }
-        else {
+        } else {
             assert(false);
         }
     }
 };
 
-template <bool cond>
-struct unpool_cross_<0, cond> {
-    template <class... Args>
-    static void apply(tl::optional<AST::ASTVec> &ret, AST &ast, Args&&... args) {
+template <bool cond> struct unpool_cross_<0, cond> {
+    template <class... Args> static void apply(tl::optional<AST::ASTVec> &ret, AST &ast, Args &&...args) {
         if (ret.has_value()) {
             ret->emplace_back(ast.update(std::forward<Args>(args)...));
         }
     }
 };
 
-template <class... Args>
-tl::optional<AST::ASTVec> unpool_cross(AST &ast, Args&&... args) {
+template <class... Args> tl::optional<AST::ASTVec> unpool_cross(AST &ast, Args &&...args) {
     tl::optional<AST::ASTVec> ret;
     unpool_cross_<sizeof...(Args), false>::apply(ret, ast, std::forward<Args>(args)...);
     return ret;
 }
 
-template <bool cond=false>
-tl::optional<SAST> unpool_chain(AST &ast, clingo_ast_attribute_e name) {
+template <bool cond = false> tl::optional<SAST> unpool_chain(AST &ast, clingo_ast_attribute_e name) {
     auto &val = mpark::get<AST::ASTVec>(ast.value(name));
     AST::ASTVec chain;
     chain.reserve(val.size());
@@ -160,8 +149,7 @@ tl::optional<SAST> unpool_chain(AST &ast, clingo_ast_attribute_e name) {
         if (pool.has_value()) {
             has_pool = true;
             std::move(pool->begin(), pool->end(), std::back_inserter(chain));
-        }
-        else {
+        } else {
             chain.emplace_back(elem);
         }
     }
@@ -172,14 +160,13 @@ tl::optional<SAST> unpool_chain(AST &ast, clingo_ast_attribute_e name) {
 }
 
 template <bool cond, class... Args>
-tl::optional<AST::ASTVec> unpool_chain_cross(AST &ast, clingo_ast_attribute_e name, Args&&... args) {
+tl::optional<AST::ASTVec> unpool_chain_cross(AST &ast, clingo_ast_attribute_e name, Args &&...args) {
     auto chain = unpool_chain<cond>(ast, name);
     tl::optional<AST::ASTVec> ret;
     if (chain.has_value()) {
         ret = AST::ASTVec{};
         unpool_cross_<sizeof...(Args), cond>::apply(ret, **chain, std::forward<Args>(args)...);
-    }
-    else {
+    } else {
         unpool_cross_<sizeof...(Args), cond>::apply(ret, ast, std::forward<Args>(args)...);
     }
     return ret;
@@ -241,8 +228,7 @@ tl::optional<AST::ASTVec> unpool(SAST &ast, clingo_ast_unpool_type_bitset_t type
                 auto pool = unpool(term);
                 if (pool.has_value()) {
                     std::move(pool->begin(), pool->end(), std::back_inserter(ret));
-                }
-                else {
+                } else {
                     ret.emplace_back(term);
                 }
             }
@@ -273,7 +259,8 @@ tl::optional<AST::ASTVec> unpool(SAST &ast, clingo_ast_unpool_type_bitset_t type
         case clingo_ast_type_body_aggregate:
         case clingo_ast_type_head_aggregate:
         case clingo_ast_type_aggregate: {
-            return unpool_chain_cross<false>(*ast, clingo_ast_attribute_elements, clingo_ast_attribute_left_guard, clingo_ast_attribute_right_guard);
+            return unpool_chain_cross<false>(*ast, clingo_ast_attribute_elements, clingo_ast_attribute_left_guard,
+                                             clingo_ast_attribute_right_guard);
         }
         case clingo_ast_type_disjunction: {
             return unpool_chain_cross<true>(*ast, clingo_ast_attribute_elements, clingo_ast_attribute_elements);
@@ -288,28 +275,38 @@ tl::optional<AST::ASTVec> unpool(SAST &ast, clingo_ast_unpool_type_bitset_t type
             return unpool_cross(*ast, clingo_ast_attribute_atom);
         }
         case clingo_ast_type_rule: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_head);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_head);
         }
         case clingo_ast_type_show_term: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_term);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_term);
         }
         case clingo_ast_type_minimize: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_weight, clingo_ast_attribute_priority, clingo_ast_attribute_terms);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_weight, clingo_ast_attribute_priority,
+                                            clingo_ast_attribute_terms);
         }
         case clingo_ast_type_external: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_atom, clingo_ast_attribute_external_type);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_atom, clingo_ast_attribute_external_type);
         }
         case clingo_ast_type_edge: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_node_u, clingo_ast_attribute_node_v);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_node_u, clingo_ast_attribute_node_v);
         }
         case clingo_ast_type_heuristic: {
-            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_atom, clingo_ast_attribute_bias, clingo_ast_attribute_priority, clingo_ast_attribute_modifier);
+            return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                            clingo_ast_attribute_atom, clingo_ast_attribute_bias,
+                                            clingo_ast_attribute_priority, clingo_ast_attribute_modifier);
         }
         case clingo_ast_type_project_atom: {
             break;
         }
     }
-    return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body, clingo_ast_attribute_atom);
+    return unpool_chain_cross<true>(*ast, clingo_ast_attribute_body, clingo_ast_attribute_body,
+                                    clingo_ast_attribute_atom);
 }
 
-} } //namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

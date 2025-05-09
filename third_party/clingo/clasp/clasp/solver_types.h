@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -45,117 +45,6 @@ class SharedLiterals;
  */
 //@{
 ///////////////////////////////////////////////////////////////////////////////
-// SearchLimits
-///////////////////////////////////////////////////////////////////////////////
-struct DynamicLimit;
-struct BlockLimit;
-
-//! Parameter-Object for managing search limits.
-struct SearchLimits {
-	typedef DynamicLimit* LimitPtr;
-	typedef BlockLimit*   BlockPtr;
-	SearchLimits();
-	uint64 used;
-	struct {
-		uint64   conflicts; //!< Soft limit on number of conflicts for restart.
-		LimitPtr dynamic;   //!< Use dynamic restarts based on lbd or conflict level.
-		BlockPtr block;     //!< Optional strategy to increase restart limit.
-		bool     local;     //!< Apply conflict limit against active branch.
-	} restart;            //!< Restart limits.
-	uint64 conflicts; //!< Soft limit on number of conflicts.
-	uint64 memory;    //!< Soft memory limit for learnt lemmas (in bytes).
-	uint32 learnts;   //!< Limit on number of learnt lemmas.
-};
-
-//! Type for implementing Glucose-style dynamic restarts.
-/*!
- * \see  G. Audemard, L. Simon. "Refining Restarts Strategies for SAT and UNSAT"
- * \note In contrast to Glucose's dynamic restarts, this class also implements
- * a heuristic for dynamically adjusting the margin ratio K.
- */
-struct DynamicLimit {
-	enum Type { lbd_limit, level_limit };
-	//! Creates new limit with bounded queue of the given window size.
-	static DynamicLimit* create(uint32 window);
-	//! Destroys this object and its bounded queue.
-	void   destroy();
-	//! Resets moving average and adjust limit.
-	void   init(float k, Type type, uint32 uLimit = 16000);
-	//! Resets moving average, i.e. clears the bounded queue.
-	void   resetRun();
-	//! Resets moving and global average.
-	void   reset();
-	//! Adds an observation and updates the moving average. Typically called on conflict.
-	void   update(uint32 conflictLevel, uint32 lbd);
-	//! Notifies this object about a restart.
-	/*!
-	 * The function checks whether to adjust the active margin ratio and/or
-	 * whether to switch from LBD based to conflict level based restarts.
-	 *
-	 * \param maxLBD Threshold for switching between lbd and conflict level queue.
-	 * \param k Lower bound for margin ratio.
-	 */
-	uint32 restart(uint32 maxLBD, float k);
-	//! Returns the number of updates since last restart.
-	uint32 runLen()  const { return num_;  }
-	//! Returns the maximal size of the bounded queue.
-	uint32 window()  const { return cap_; }
-	//! Returns whether it is time to restart.
-	bool   reached() const { return runLen() >= window() && (sma(adjust.type) * adjust.rk) > global.avg(adjust.type); }
-	struct {
-		//! Returns the global lbd or conflict level average.
-		double avg(Type t) const { return ratio(sum[t], samples); }
-		uint64 sum[2]; //!< Sum of lbds/conflict levels since last call to resetGlobal().
-		uint64 samples;//!< Samples since last call to resetGlobal().
-	} global; //!< Global lbd/conflict level data.
-	struct {
-		//! Returns the average restart length, i.e. number of conflicts between restarts.
-		double avgRestart() const { return ratio(samples, restarts); }
-		uint32 limit;   //!< Number of conflicts before an update is forced.
-		uint32 restarts;//!< Number of restarts since last update.
-		uint32 samples; //!< Number of samples since last update.
-		float  rk;      //!< BD/CFL dynamic limit factor (typically < 1.0).
-		Type   type;    //!< Dynamic limit based on lbd or confllict level.
-	} adjust; //!< Data for dynamically adjusting margin ratio (rk).
-private:
-	DynamicLimit(uint32 size);
-	DynamicLimit(const DynamicLimit&);
-	DynamicLimit& operator=(const DynamicLimit&);
-	double sma(Type t)  const { return sum_[t] / double(cap_); }
-	uint32 smaU(Type t) const { return static_cast<uint32>(sum_[t] / cap_); }
-	uint64 sum_[2];
-	uint32 cap_;
-	uint32 pos_;
-	uint32 num_;
-POTASSCO_WARNING_BEGIN_RELAXED
-	uint32 buffer_[0];
-POTASSCO_WARNING_END_RELAXED
-};
-
-//! Type for implementing Glucose-style blocking of restarts.
-/*!
- * \see G. Audemard, L. Simon "Refining Restarts Strategies for SAT and UNSAT"
- * \see A. Biere, A. Froehlich "Evaluating CDCL Variable Scoring Schemes"
- */
-struct BlockLimit {
-	explicit BlockLimit(uint32 windowSize, double R = 1.4);
-	bool push(uint32 nAssign) {
-		ema = n >= span
-			? exponentialMovingAverage(ema, nAssign, alpha)
-			: cumulativeMovingAverage(ema, nAssign, n);
-		return ++n >= next;
-	}
-	//! Returns the exponential moving average scaled by r.
-	double scaled() const { return ema * r; }
-	double ema;   //!< Current exponential moving average.
-	double alpha; //!< Smoothing factor: 2/(span+1).
-	uint64 next;  //!< Enable once n >= next.
-	uint64 inc;   //!< Block restart for next inc conflicts.
-	uint64 n;     //!< Number of data points seen so far.
-	uint32 span;  //!< Minimum observation window.
-	float  r;     //!< Scale factor for ema.
-};
-///////////////////////////////////////////////////////////////////////////////
 // Statistics
 ///////////////////////////////////////////////////////////////////////////////
 class StatisticObject;
@@ -181,8 +70,9 @@ struct CoreStats {
 	STAT(uint64 choices;    DOXY(number of choices)     , "choices"           , VALUE(choices)    , LHS.choices    += RHS.choices   )\
 	STAT(uint64 conflicts;  DOXY(number of conflicts)   , "conflicts"         , VALUE(conflicts)  , LHS.conflicts  += RHS.conflicts )\
 	STAT(uint64 analyzed;   DOXY(number of conflicts analyzed), "conflicts_analyzed", VALUE(analyzed)   , LHS.analyzed   += RHS.analyzed  )\
-	STAT(uint64 restarts;   DOXY(number of restarts)    , "restarts"          , VALUE(restarts)   , LHS.restarts   += RHS.restarts  )\
-	STAT(uint64 lastRestart;DOXY(length of last restart), "restarts_last"     , VALUE(lastRestart), LHS.lastRestart = std::max(LHS.lastRestart, RHS.lastRestart))
+	STAT(uint64 restarts;   DOXY(number of restarts)        , "restarts"        , VALUE(restarts)   , LHS.restarts   += RHS.restarts  )\
+	STAT(uint64 lastRestart;DOXY(length of last restart)    , "restarts_last"   , VALUE(lastRestart), LHS.lastRestart = std::max(LHS.lastRestart, RHS.lastRestart)) \
+	STAT(uint64 blRestarts; DOXY(number of blocked restarts), "restarts_blocked", VALUE(blRestarts), LHS.blRestarts = std::max(LHS.blRestarts, RHS.blRestarts))
 
 	CoreStats() { reset(); }
 	void reset();
@@ -298,7 +188,6 @@ struct SolverStats : public CoreStats {
 	~SolverStats();
 	bool enableExtended();
 	bool enable(const SolverStats& o) { return !o.extra || enableExtended(); }
-	void enableLimit(uint32 size);
 	void reset();
 	void accu(const SolverStats& o);
 	void accu(const SolverStats& o, bool enableRhs);
@@ -321,7 +210,6 @@ struct SolverStats : public CoreStats {
 	inline void addIntegrated(uint32 num = 1);
 	inline void removeIntegrated(uint32 num = 1);
 	inline void addPath(const LitVec::size_type& sz);
-	DynamicLimit*  limit; /**< Optional dynamic limit.       */
 	ExtendedStats* extra; /**< Optional extended statistics. */
 	SolverStats*   multi; /**< Not owned: set to accu stats in multishot solving. */
 private: SolverStats& operator=(const SolverStats&);
@@ -342,7 +230,6 @@ inline void SolverStats::addIntegratedAsserting(uint32 rDL, uint32 jDL) {
 }
 inline void SolverStats::addConflict(uint32 dl, uint32 uipLevel, uint32 bLevel, uint32 lbd) {
 	++analyzed;
-	if (limit) { limit->update(dl, lbd); }
 	if (extra) { extra->jumps.update(dl, uipLevel, bLevel); }
 }
 #undef CLASP_STAT_DEFINE

@@ -1,4 +1,4 @@
-#script (python) 
+#script (python)
 
 import clingo
 

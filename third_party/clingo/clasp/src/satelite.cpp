@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -337,7 +337,7 @@ bool SatElite::strengthenClause(uint32 clauseId, Literal l) {
 	Clause& c = *clause(clauseId);
 	if (c[0] == l) {
 		occurs_[c[0].var()].removeWatch(clauseId);
-		// Note: Clause::strengthen shifts literals after l to the left. Thus
+		// Note: Clause::strengthen shifts literals after l to the left. Thus,
 		// c[1] will be c[0] after strengthen
 		occurs_[c[1].var()].addWatch(clauseId);
 	}
@@ -570,7 +570,7 @@ void SatElite::doExtendModel(ValueVec& m, LitVec& unconstr) {
 			m[last] = value_eliminated;
 		}
 		if (uv != us && unconstr[uv].var() == last) {
-			// last is unconstraint w.r.t the current model -
+			// last is unconstrained w.r.t the current model -
 			// set remembered value
 			check   = false;
 			m[last] = trueValue(unconstr[uv]);
@@ -597,17 +597,17 @@ void SatElite::doExtendModel(ValueVec& m, LitVec& unconstr) {
 			r = r->next();
 		} while (r && (x = (*r)[0]).var() == last);
 		if (m[last] == value_eliminated) {
-			// last seems unconstraint w.r.t the model
+			// last seems unconstrained w.r.t the model
 			m[last] |= value_true;
 			unconstr.push_back(posLit(last));
 		}
 	} while (r);
-	// check whether newly added unconstraint vars are really unconstraint w.r.t the model
+	// check whether newly added unconstrained vars are really unconstrained w.r.t the model
 	// or if they are implied by some blocked clause.
 	LitVec::iterator j = unconstr.begin()+us;
 	for (LitVec::iterator it = j, end = unconstr.end(); it != end; ++it) {
 		if ((m[it->var()] & value_eliminated) != 0) {
-			// var is unconstraint - assign to true and remember it
+			// var is unconstrained - assign to true and remember it
 			// so that we can later enumerate the model containing ~var
 			m[it->var()] = value_true;
 			*j++ = *it;

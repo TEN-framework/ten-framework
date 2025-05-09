@@ -19,4 +19,3 @@ def main(prg):
 #end.
 
 { a; b; c }.
-

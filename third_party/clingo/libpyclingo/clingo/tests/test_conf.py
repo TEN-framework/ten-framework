@@ -2,8 +2,9 @@
 Tests for configuration and statistics.
 """
 
-from unittest import TestCase
 from typing import cast
+from unittest import TestCase
+
 from clingo import Configuration, Control
 
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -336,13 +336,23 @@ void DefaultUnfoundedCheck::forwardSource(const BodyPtr& n) {
 
 // n is no longer a valid source, forward propagate this information to its heads
 void DefaultUnfoundedCheck::forwardUnsource(const BodyPtr& n, bool add) {
-	for (const NodeId* x = n.node->heads_begin(); x != n.node->heads_end() && graph_->getAtom(*x).scc == n.node->scc; ++x) {
-		if (atoms_[*x].hasSource() && atoms_[*x].watch() == n.id) {
-			atoms_[*x].markSourceInvalid();
-			sourceQ_.push_back(*x);
-		}
-		if (add && atoms_[*x].watch() == n.id) {
-			pushTodo(*x);
+	for (const NodeId* x = n.node->heads_begin(), *end = n.node->heads_end(); x != end; ++x) {
+		// Treat disjunctions as separate rules when it comes to source pointer propagation.
+		// E.g. a | b :- B is (source) propagated as:
+		// a :- B, and
+		// b :- B
+		if (*x != DependencyGraph::sentinel_atom) {
+			NodeId aId = *x;
+			if (graph_->getAtom(aId).scc != n.node->scc) {
+				break;
+			}
+			if (atoms_[aId].hasSource() && atoms_[aId].watch() == n.id) {
+				atoms_[aId].markSourceInvalid();
+				sourceQ_.push_back(aId);
+			}
+			if (add && atoms_[aId].watch() == n.id) {
+				pushTodo(aId);
+			}
 		}
 	}
 }
@@ -354,7 +364,7 @@ void DefaultUnfoundedCheck::setSource(NodeId head, const BodyPtr& body) {
 	assert(!solver_->isFalse(body.node->lit));
 	// For normal rules from not false B follows not false head, but
 	// for choice rules this is not the case. Therefore, the
-	// check for isFalse(head) is needed so that we do not inadvertantly
+	// check for isFalse(head) is needed so that we do not inadvertently
 	// source a head that is currently false.
 	if (!atoms_[head].hasSource() && !solver_->isFalse(graph_->getAtom(head).lit)) {
 		updateSource(atoms_[head], body);
@@ -393,8 +403,8 @@ void DefaultUnfoundedCheck::updateAssignment(Solver& s) {
 		}
 		else if (type == watch_head_false) {
 			// an atom in the head of a choice rule became false
-			// normally head false -> body false and hence the head has its source autmatically removed
-			// for choice rules we must force source removal explicity
+			// normally head false -> body false and hence the head has its source automatically removed
+			// for choice rules we must force source removal explicitly
 			if (atoms_[index].hasSource() && !s.isFalse(graph_->getBody(atoms_[index].watch()).lit)) {
 				atoms_[index].markSourceInvalid();
 				graph_->getAtom(index).visitSuccessors(RemoveSource(this, true));
@@ -444,7 +454,7 @@ DefaultUnfoundedCheck::UfsType DefaultUnfoundedCheck::findUfs(Solver& s, bool ch
 
 // searches a new source for the atom node head.
 // If a new source is found the function returns true.
-// Otherwise the function returns false and unfounded_ contains head
+// Otherwise, the function returns false and unfounded_ contains head
 // as well as atoms with no source that circularly depend on head.
 bool DefaultUnfoundedCheck::findSource(NodeId headId) {
 	assert(ufs_.empty() && invalidQ_.empty());
@@ -517,7 +527,7 @@ bool DefaultUnfoundedCheck::isValidSource(const BodyPtr& n) {
 			}
 		}
 		// We check all external literals here because we do not update
-		// the body on backtracking. Therefore some external literals that were false
+		// the body on backtracking. Therefore, some external literals that were false
 		// may now be true/free.
 		for (++x; *x != idMax; x += inc, ++p) {
 			if (!solver_->isFalse(Literal::fromRep(*x)) && !ext->inWs(p)) {

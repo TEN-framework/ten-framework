@@ -498,10 +498,11 @@ TEST_CASE("Aspif parser", "[parser][asp]") {
 	SECTION("testOutputDirective") {
 		in.toAspif("{x1;x2}."
 			"#output fact.\n"
-			"#output conj : x1, x2.");
+			"#output conj : x1, x2."
+			"#output lit : not x1.");
 		REQUIRE(parse(api, in));
 		REQUIRE((api.endProgram() && ctx.endInit()));
-		REQUIRE(ctx.output.size() == 2);
+		REQUIRE(ctx.output.size() == 3);
 		REQUIRE(ctx.output.numFacts() == 1);
 		REQUIRE(sameProgram(api, in));
 	}
@@ -525,6 +526,7 @@ TEST_CASE("Aspif parser", "[parser][asp]") {
 			"#output d : x4.\n"
 			"#project{x1, x3}.");
 		REQUIRE(parse(api, in));
+		api.enableOutputState();
 		REQUIRE(api.endProgram());
 		REQUIRE(ctx.output.size() == 4);
 		Literal a = api.getLiteral(1);
@@ -537,6 +539,11 @@ TEST_CASE("Aspif parser", "[parser][asp]") {
 		REQUIRE(std::find(proj_begin, proj_end, c) != proj_end);
 		REQUIRE_FALSE(std::find(proj_begin, proj_end, d) != proj_end);
 		REQUIRE(sameProgram(api, in));
+
+		CHECK(api.getOutputState(1) == Asp::LogicProgram::out_all);
+		CHECK(api.getOutputState(2) == Asp::LogicProgram::out_shown);
+		CHECK(api.getOutputState(3) == Asp::LogicProgram::out_all);
+		CHECK(api.getOutputState(4) == Asp::LogicProgram::out_shown);
 	}
 	SECTION("testEmptyProjectionDirective") {
 		in.toAspif("{x1;x2;x3;x4}."
@@ -690,6 +697,31 @@ TEST_CASE("Dimacs parser", "[parser][sat]") {
 		REQUIRE(ctx.numConstraints() == 3);
 	}
 
+	SECTION("invalid") {
+		prg << "c simple test case\n";
+		SECTION("missing problem line") {
+			prg << "1 2 0\n";
+			REQUIRE_THROWS_AS(parse(api, prg), std::logic_error);
+		}
+		SECTION("invalid element in clause") {
+			prg << "p cnf 4 3\n";
+			prg << "-1 2 -x3 0";
+			REQUIRE_THROWS_AS(parse(api, prg), std::logic_error);
+		}
+		SECTION("invalid character") {
+			prg << "p cnf 4 3\n" << "1 2 0\n" << "3 4 0\n";
+			prg << "foo";
+			REQUIRE_THROWS_AS(parse(api, prg), std::logic_error);
+		}
+		SECTION("duplicate problem line") {
+			prg << "p cnf 2 1\n"
+				<< "1 2 0\n"
+				<< "p cnf 2 1\n"
+				<< "2 -1 0\n";
+			REQUIRE_THROWS_AS(parse(api, prg), std::logic_error);
+		}
+	}
+
 	SECTION("testDimacsDontAddTaut") {
 		prg << "c simple test case\n"
 		    << "p cnf 4 4\n"
@@ -721,6 +753,28 @@ TEST_CASE("Dimacs parser", "[parser][sat]") {
 		REQUIRE_THROWS_AS(parse(api, prg), std::logic_error);
 	}
 
+	SECTION("testCnf+") {
+		prg << "p cnf+ 7 3\n"
+		       "1 -2 3 5 -7 <= 3\n"
+		       "4 5 6 -7    >= 2\n"
+		       "3 5 7 0\n";
+		REQUIRE((parse(api, prg) && api.endProgram()));
+		REQUIRE(ctx.numVars() == 7);
+		REQUIRE(ctx.output.size() == 7);
+		REQUIRE(ctx.numConstraints() == 3);
+	}
+
+	SECTION("testCnf+Pb") {
+		prg << "p cnf+ 7 3\n"
+		       "1 -2 3 5 -7 <= 3\n"
+		       "w 1*4 2*5 1*6 3*-7 >= 2\n"
+		       "3 5 7 0\n";
+		REQUIRE((parse(api, prg) && api.endProgram()));
+		REQUIRE(ctx.numVars() == 7);
+		REQUIRE(ctx.output.size() == 7);
+		REQUIRE(ctx.numConstraints() == 3);
+	}
+
 	SECTION("testWcnf") {
 		prg << "c comments Weighted Max-SAT\n"
 		    << "p wcnf 3 5\n"
@@ -740,6 +794,7 @@ TEST_CASE("Dimacs parser", "[parser][sat]") {
 		REQUIRE(wLits->lits[1].second == 8);
 		REQUIRE(wLits->lits[2].second == 5);
 		REQUIRE(wLits->lits[3].second == 3);
+		REQUIRE(wLits->lits[4].second == 2);
 	}
 
 	SECTION("testPartialWcnf") {
@@ -760,6 +815,28 @@ TEST_CASE("Dimacs parser", "[parser][sat]") {
 		REQUIRE(wLits->lits[1].second == 4);
 		REQUIRE(wLits->lits[2].second == 1);
 	}
+
+	SECTION("testWcnfPlus") {
+		prg << "p wcnf+ 7 3 10\n"
+		       "10 1 -2 3 5 -7 <= 3\n"
+		       "10 w 1*4 2*5 1*6 3*-7 >= 2\n";
+		REQUIRE((parse(api, prg) && api.endProgram()));
+		REQUIRE(ctx.numVars() == 7);
+		REQUIRE(ctx.output.size() == 7);
+		REQUIRE(ctx.numConstraints() == 2);
+	}
+
+	SECTION("testKnf") {
+		prg << "p knf 4 2\n"
+		       "1 2 0\n"
+		       "3 4 0\n"
+		       "k 2 1 2 3 4 0\n";
+		REQUIRE((parse(api, prg) && api.endProgram()));
+		REQUIRE(ctx.numVars() == 4);
+		REQUIRE(ctx.output.size() == 4);
+		REQUIRE(ctx.numConstraints() == 3);
+	}
+
 	SECTION("testDimacsExtSupportsGraph") {
 		prg
 			<< "p cnf 4 3\n"
@@ -830,6 +907,17 @@ TEST_CASE("Dimacs parser", "[parser][sat]") {
 		REQUIRE(ass[0] == posLit(1));
 		REQUIRE(ass[1] == negLit(2));
 		REQUIRE(ass[2] == posLit(3));
+		REQUIRE(ctx.numVars() == 4);
+		REQUIRE(ctx.numEliminatedVars() == 1);
+		REQUIRE(ctx.eliminated(4));
+		REQUIRE_FALSE(ctx.eliminated(1));
+		REQUIRE_FALSE(ctx.eliminated(2));
+		REQUIRE_FALSE(ctx.eliminated(3));
+		REQUIRE_FALSE(ctx.master()->pref(1).sign());
+		REQUIRE(ctx.master()->pref(2).sign());
+		REQUIRE(ctx.varInfo(1).frozen());
+		REQUIRE(ctx.varInfo(2).frozen());
+		REQUIRE(ctx.varInfo(3).frozen());
 	}
 	SECTION("testDimacsExtSupportsOutputRange") {
 		prg
@@ -942,6 +1030,9 @@ TEST_CASE("Opb parser", "[parser][pb]") {
 		REQUIRE(ass.size() == 2);
 		REQUIRE(ass[0] == posLit(1));
 		REQUIRE(ass[1] == negLit(5));
+		REQUIRE(ctx.varInfo(1).frozen());
+		REQUIRE_FALSE(ctx.varInfo(2).frozen());
+		REQUIRE(ctx.varInfo(5).frozen());
 	}
 	SECTION("testPBOutput") {
 		prg << "* #variable= 6 #constraint= 0\n"

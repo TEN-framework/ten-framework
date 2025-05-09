@@ -33,7 +33,7 @@
 #undef _GLIBCXX_MAKE_MOVE_ITERATOR
 #undef _GLIBCXX_MAKE_MOVE_IF_NOEXCEPT_ITERATOR
 
-#define _GLIBCXX_MAKE_MOVE_ITERATOR(_Iter) std::make_move_iterator(_Iter) // NOLINT
+#define _GLIBCXX_MAKE_MOVE_ITERATOR(_Iter) std::make_move_iterator(_Iter)             // NOLINT
 #define _GLIBCXX_MAKE_MOVE_IF_NOEXCEPT_ITERATOR(_Iter) std::make_move_iterator(_Iter) // NOLINT
 
 #ifdef MISSING_STD_TO_STRING

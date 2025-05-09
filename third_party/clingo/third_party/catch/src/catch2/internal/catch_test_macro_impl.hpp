@@ -10,6 +10,7 @@
 
 #include <catch2/catch_user_config.hpp>
 #include <catch2/internal/catch_assertion_handler.hpp>
+#include <catch2/internal/catch_preprocessor_internal_stringify.hpp>
 #include <catch2/interfaces/catch_interfaces_capture.hpp>
 #include <catch2/internal/catch_stringref.hpp>
 #include <catch2/internal/catch_source_line_info.hpp>
@@ -22,12 +23,6 @@
 
 #if !defined(CATCH_CONFIG_DISABLE)
 
-#if !defined(CATCH_CONFIG_DISABLE_STRINGIFICATION)
-  #define CATCH_INTERNAL_STRINGIFY(...) #__VA_ARGS__##_catch_sr
-#else
-  #define CATCH_INTERNAL_STRINGIFY(...) "Disabled by CATCH_CONFIG_DISABLE_STRINGIFICATION"_catch_sr
-#endif
-
 #if defined(CATCH_CONFIG_FAST_COMPILE) || defined(CATCH_CONFIG_DISABLE_EXCEPTIONS)
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,11 +34,9 @@
 #else // CATCH_CONFIG_FAST_COMPILE
 
 #define INTERNAL_CATCH_TRY try
-#define INTERNAL_CATCH_CATCH( handler ) catch(...) { handler.handleUnexpectedInflightException(); }
+#define INTERNAL_CATCH_CATCH( handler ) catch(...) { (handler).handleUnexpectedInflightException(); }
 
 #endif
-
-#define INTERNAL_CATCH_REACT( handler ) handler.complete();
 
 ///////////////////////////////////////////////////////////////////////////////
 #define INTERNAL_CATCH_TEST( macroName, resultDisposition, ... ) \
@@ -54,10 +47,10 @@
         INTERNAL_CATCH_TRY { \
             CATCH_INTERNAL_START_WARNINGS_SUPPRESSION \
             CATCH_INTERNAL_SUPPRESS_PARENTHESES_WARNINGS \
-            catchAssertionHandler.handleExpr( Catch::Decomposer() <= __VA_ARGS__ ); \
+            catchAssertionHandler.handleExpr( Catch::Decomposer() <= __VA_ARGS__ ); /* NOLINT(bugprone-chained-comparison) */ \
             CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION \
         } INTERNAL_CATCH_CATCH( catchAssertionHandler ) \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( (void)0, (false) && static_cast<const bool&>( !!(__VA_ARGS__) ) ) // the expression here is never evaluated at runtime but it forces the compiler to give it a look
     // The double negation silences MSVC's C4800 warning, the static_cast forces short-circuit evaluation if the type has overloaded &&.
 
@@ -85,7 +78,7 @@
         catch( ... ) { \
             catchAssertionHandler.handleUnexpectedInflightException(); \
         } \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( false )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,6 +88,7 @@
         if( catchAssertionHandler.allowThrows() ) \
             try { \
                 CATCH_INTERNAL_START_WARNINGS_SUPPRESSION \
+                CATCH_INTERNAL_SUPPRESS_UNUSED_RESULT \
                 CATCH_INTERNAL_SUPPRESS_USELESS_CAST_WARNINGS \
                 static_cast<void>(__VA_ARGS__); \
                 CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION \
@@ -105,7 +99,7 @@
             } \
         else \
             catchAssertionHandler.handleThrowingCallSkipped(); \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( false )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,6 +109,7 @@
         if( catchAssertionHandler.allowThrows() ) \
             try { \
                 CATCH_INTERNAL_START_WARNINGS_SUPPRESSION \
+                CATCH_INTERNAL_SUPPRESS_UNUSED_RESULT \
                 CATCH_INTERNAL_SUPPRESS_USELESS_CAST_WARNINGS \
                 static_cast<void>(expr); \
                 CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION \
@@ -128,7 +123,7 @@
             } \
         else \
             catchAssertionHandler.handleThrowingCallSkipped(); \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( false )
 
 
@@ -141,6 +136,7 @@
         if( catchAssertionHandler.allowThrows() ) \
             try { \
                 CATCH_INTERNAL_START_WARNINGS_SUPPRESSION \
+                CATCH_INTERNAL_SUPPRESS_UNUSED_RESULT \
                 CATCH_INTERNAL_SUPPRESS_USELESS_CAST_WARNINGS \
                 static_cast<void>(__VA_ARGS__); \
                 CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION \
@@ -151,7 +147,7 @@
             } \
         else \
             catchAssertionHandler.handleThrowingCallSkipped(); \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( false )
 
 #endif // CATCH_CONFIG_DISABLE

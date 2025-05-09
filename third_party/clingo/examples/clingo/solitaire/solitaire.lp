@@ -30,4 +30,3 @@ stone(X,Y,t)           :- stone(X,Y,t-1), not jump(X,Y,_,t), not remove(X,Y,t).
 
  :- query(t), goal(X,Y), not stone(X,Y,t).
  :- query(t), not goal(X,Y), stone(X,Y,t).
-

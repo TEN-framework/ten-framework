@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -282,7 +282,7 @@ bool Preprocessor::addHeadsToUpper(PrgBody* body) {
 	return ok;
 }
 
-// Propagates that a was added to the "upper"-closure.
+// Propagates that `a` was added to the "upper"-closure.
 // If atom a has a truth-value or is eq to a', we'll remove
 // it from all bodies. If there is an atom x, s.th. a.lit == ~x.lit, we mark all
 // bodies containing both a and x for simplification in order to detect
@@ -372,7 +372,7 @@ bool Preprocessor::propagateAtomVar(PrgAtom* a, PrgEdge source) {
 	return true;
 }
 
-// Propagates the assignment of val to a.
+// Propagates the assignment of val to atom.
 bool Preprocessor::propagateAtomValue(PrgAtom* atom, ValueRep val, PrgEdge sup) {
 	// No backpropagation possible because supports are not yet fully established.
 	return prg_->assignValue(atom, val, sup) && prg_->propagate(false);
@@ -473,7 +473,7 @@ ValueRep Preprocessor::simplifyBody(PrgBody* b, bool reclass, VarVec& supported)
 
 // Simplify the classified head h.
 // Update list of bodies defining this head and check
-// if atom or disjunction has a distinct var although it is eq to some body.
+// if atom or disjunction has a distinct var, although it is eq to some body.
 // Return:
 //  value_false    : conflict
 //  value_true     : ok

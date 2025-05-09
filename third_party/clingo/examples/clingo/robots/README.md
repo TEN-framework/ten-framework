@@ -10,4 +10,3 @@ robots. If you run out of ideas, you can click on solve! to get a little
 help from ASP. To start, call
 
     python visualize.py
-

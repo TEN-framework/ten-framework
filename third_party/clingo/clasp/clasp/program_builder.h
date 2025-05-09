@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -33,7 +33,6 @@
 #include <clasp/literal.h>
 #include <clasp/util/misc_types.h>
 #include <potassco/basic_types.h>
-#include POTASSCO_EXT_INCLUDE(unordered_map)
 #include <iosfwd>
 
 namespace Clasp {
@@ -90,7 +89,6 @@ protected:
 	void setCtx(SharedContext* x){ ctx_    = x; }
 	void markOutputVariables() const;
 private:
-	typedef SingleOwnerPtr<MinimizeBuilder> MinBuildPtr;
 	typedef SingleOwnerPtr<ProgramParser>   ParserPtr;
 	ProgramBuilder(const ProgramBuilder&);
 	ProgramBuilder& operator=(ProgramBuilder&);
@@ -131,7 +129,7 @@ public:
 	 * does not equal hardClauseWeight (typically 0), the clause is a
 	 * soft clause and not satisfying it results in a penalty of cw.
 	 *
-	 * \pre v <= numVars(), for all variables v occuring in clause.
+	 * \pre v <= numVars(), for all variables v occurring in clause.
 	 * \pre cw >= 0.
 	 * \param clause The clause to add.
 	 * \param cw     The weight associated with the clause.
@@ -156,6 +154,7 @@ private:
 	bool satisfied(LitVec& clause);
 	bool markAssigned();
 	void markLit(Literal x) { varState_[x.var()] |= 1 + x.sign(); }
+	void markOcc(Literal x) { varState_[x.var()] |= (trueValue(x) << 2u); }
 	VarState varState_;
 	LitVec   softClauses_;
 	LitVec   assume_;
@@ -168,6 +167,8 @@ private:
 class PBBuilder : public ProgramBuilder {
 public:
 	PBBuilder();
+	~PBBuilder();
+
 	// program definition
 	//! Creates necessary variables and prepares the problem.
 	/*!
@@ -184,7 +185,7 @@ public:
 	 * A PB-constraint consists of a list of weighted Boolean literals (lhs),
 	 * a comparison operator (either >= or =), and an integer bound (rhs).
 	 *
-	 * \pre v <= numVars(), for all variables v occuring in lits.
+	 * \pre v <= numVars(), for all variables v occurring in lits.
 	 *
 	 * \param lits  The lhs of the PB-constraint.
 	 * \param bound The rhs of the PB-constraint.
@@ -213,7 +214,9 @@ private:
 		std::size_t operator()(const PKey& k)                    const { return k.lits[0].rep(); }
 		bool        operator()(const PKey& lhs, const PKey& rhs) const { return lhs.lits == rhs.lits; }
 	};
-	typedef POTASSCO_EXT_NS::unordered_map<PKey, Literal, PKey, PKey> ProductIndex;
+	struct ProductIndex;
+	typedef SingleOwnerPtr<ProductIndex> ProductIndexPtr;
+
 	bool doStartProgram();
 	void doGetWeakBounds(SumVec& out) const;
 	int  doType() const                    { return Problem_t::Pb; }
@@ -224,12 +227,12 @@ private:
 	bool productSubsumed(LitVec& lits, PKey& prod);
 	void addProductConstraints(Literal eqLit, LitVec& lits);
 	Var  getAuxVar();
-	ProductIndex products_;
-	PKey         prod_;
-	LitVec       assume_;
-	uint32       auxVar_;
-	uint32       endVar_;
-	wsum_t       soft_;
+	ProductIndexPtr products_;
+	PKey            prod_;
+	LitVec          assume_;
+	uint32          auxVar_;
+	uint32          endVar_;
+	wsum_t          soft_;
 };
 
 //! Adapts a Sat or PB builder to the Potassco::AbstractProgram interface.

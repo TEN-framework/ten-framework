@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2022 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -103,33 +103,32 @@ struct ParallelSolve::SharedData {
 				initVec -= m;
 				return path;
 			}
-			else if (initVec.exchange(0) != 0) {
+			if (initVec.exchange(0) != 0) {
 				// splitting mode - only one solver must start with initial path
 				return path;
 			}
 		}
 		if (!allowSplit()) { return 0; }
-		// try to get work from split
 		ctx->report(MessageEvent(s, "SPLIT", MessageEvent::sent));
-		return waitWork();
+		// try to get work from split
+		const LitVec* ret = 0;
+		for (unique_lock<mutex> lock(workM); !hasControl(uint32(terminate_flag|sync_flag));) {
+			if (!workQ.empty()) {
+				ret = workQ.pop_ret();
+				if (workQ.empty()) { workQ.clear(); }
+				break;
+			}
+			postMessage(msg_split, false);
+			if (!enterWait(lock))
+				break;
+		}
+		ctx->report("resume after wait", &s);
+		return ret;
 	}
 	void pushWork(const LitVec* v) {
 		unique_lock<mutex> lock(workM);
 		workQ.push(v);
 		notifyWaitingThreads(&lock, 1);
-	}
-	const LitVec* waitWork(bool postSplit = true) {
-		for (unique_lock<mutex> lock(workM); !hasControl(uint32(terminate_flag|sync_flag));) {
-			if (!workQ.empty()) {
-				const LitVec* res = workQ.pop_ret();
-				if (workQ.empty()) { workQ.clear(); }
-				return res;
-			}
-			postSplit = postSplit && !postMessage(SharedData::msg_split, false);
-			if (!enterWait(lock))
-				break;
-		}
-		return 0;
 	}
 	void notifyWaitingThreads(unique_lock<mutex>* lock = 0, int n = 0) {
 		assert(!lock || lock->owns_lock());
@@ -203,8 +202,14 @@ struct ParallelSolve::SharedData {
 	atomic<uint32>   restartReq;  // == numThreads(): restart
 	atomic<uint32>   control;     // set of active message flags
 	atomic<uint32>   modCount;    // counter for synchronizing models
-	uint32           errorCode;   // global error code
+	int32            errorCode;   // global error code
 };
+
+static void* alignedAllocChecked(size_t size, size_t align = 64) {
+	void* mem = Clasp::alignedAlloc(size, align);
+	POTASSCO_REQUIRE(mem, "alignedAlloc failed");
+	return mem;
+}
 
 // post message to all threads
 bool ParallelSolve::SharedData::postMessage(Message m, bool notifyWaiting) {
@@ -212,7 +217,7 @@ bool ParallelSolve::SharedData::postMessage(Message m, bool notifyWaiting) {
 		if (++workReq == 1) { updateSplitFlag(); }
 		return true;
 	}
-	else if (setControl(m)) {
+	if (setControl(m)) {
 		// control message - notify all if requested
 		if (notifyWaiting) notifyWaitingThreads();
 		if ((uint32(m) & uint32(terminate_flag|sync_flag)) != 0) {
@@ -321,7 +326,7 @@ void ParallelSolve::allocThread(uint32 id, Solver& s) {
 		std::fill(thread_, thread_+n, static_cast<ParallelHandler*>(0));
 	}
 	size_t sz   = ((sizeof(ParallelHandler)+63) / 64) * 64;
-	thread_[id] = new (alignedAlloc(sz, 64)) ParallelHandler(*this, s);
+	thread_[id] = new (alignedAllocChecked(sz)) ParallelHandler(*this, s);
 }
 
 void ParallelSolve::destroyThread(uint32 id) {
@@ -399,13 +404,7 @@ void ParallelSolve::doStop() {
 	int err = joinThreads();
 	shared_->generator = 0;
 	shared_->ctx->distributor.reset(0);
-	switch(err) {
-		case 0: break;
-		case LogicError:   throw std::logic_error(shared_->msg.c_str());
-		case RuntimeError: throw std::runtime_error(shared_->msg.c_str());
-		case OutOfMemory:  throw std::bad_alloc();
-		default:           throw std::runtime_error(shared_->msg.c_str());
-	}
+	POTASSCO_CHECK(err == 0, err, shared_->msg.c_str());
 }
 
 void ParallelSolve::doDetach() {
@@ -442,18 +441,20 @@ void ParallelSolve::solveParallel(uint32 id) {
 			agg.accu(s.stats);
 			s.stats.reset();
 			thread_[id]->setGpType(t = ((a.is_owner() || modeSplit_) ? gp_split : gp_fixed));
+			reportProgress(s, "solving path...");
 			if (enumerator().start(s, *a, a.is_owner()) && thread_[id]->solveGP(solve, t, shared_->maxConflict) == value_free) {
 				terminate(s, false);
 			}
 			s.clearStopConflict();
 			s.undoUntil(0);
 			enumerator().end(s);
+			reportProgress(s, "done with path");
 		}
 	}
-	catch (const std::bad_alloc&)       { exception(id, a, OutOfMemory,  "bad alloc"); }
-	catch (const std::logic_error& e)   { exception(id, a, LogicError,   e.what()); }
-	catch (const std::exception& e)     { exception(id, a, RuntimeError, e.what()); }
-	catch (...)                         { exception(id, a, UnknownError, "unknown");  }
+	catch (const std::bad_alloc&)       { exception(id, a, ENOMEM,  "bad alloc"); }
+	catch (const std::logic_error& e)   { exception(id, a, Potassco::FailType::error_logic,   e.what()); }
+	catch (const std::exception& e)     { exception(id, a, Potassco::FailType::error_runtime, e.what()); }
+	catch (...)                         { exception(id, a, Potassco::FailType::error_runtime, "unknown");  }
 	assert(shared_->terminate() || thread_[id]->error());
 	int remaining = shared_->leaveAlgorithm();
 	// update stats
@@ -470,9 +471,9 @@ void ParallelSolve::solveParallel(uint32 id) {
 	}
 }
 
-void ParallelSolve::exception(uint32 id, PathPtr& path, ErrorCode e, const char* what) {
+void ParallelSolve::exception(uint32 id, PathPtr& path, int e, const char* what) {
 	try {
-		if (!thread_[id]->setError(e) || e != OutOfMemory || id == masterId) {
+		if (!thread_[id]->setError(e) || e != ENOMEM || id == masterId) {
 			ParallelSolve::doInterrupt();
 			if (shared_->errorSet.fetch_or(bit_mask<uint64>(id)) == 0) {
 				shared_->errorCode = e;
@@ -482,7 +483,7 @@ void ParallelSolve::exception(uint32 id, PathPtr& path, ErrorCode e, const char*
 		else if (path.get() && shared_->allowSplit()) {
 			shared_->pushWork(path.release());
 		}
-		reportProgress(thread_[id]->solver(), e == OutOfMemory ? "Thread failed with out of memory" : "Thread failed with error");
+		reportProgress(thread_[id]->solver(), e == ENOMEM ? "Thread failed with out of memory" : "Thread failed with error");
 	}
 	catch(...) { ParallelSolve::doInterrupt(); }
 }
@@ -507,7 +508,7 @@ bool ParallelSolve::requestWork(Solver& s, PathPtr& out) {
 		}
 		else if (shared_->synchronize()) {
 			// a synchronize request is active - we are fine with
-			// this but did not yet had a chance to react on it
+			// this but did not yet have a chance to react on it
 			waitOnSync(s);
 		}
 		else if (a || (a = shared_->requestWork(s)) != 0) {
@@ -663,6 +664,7 @@ bool ParallelSolve::commitModel(Solver& s) {
 			shared_->setControl(SharedData::forbid_restart_flag | SharedData::allow_split_flag);
 			thread_[s.id()]->setGpType(gp_split);
 			enumerator().setDisjoint(s, true);
+			shared_->initVec = 0;
 		}
 		if (shared_->generator.get()) {
 			shared_->generator->pushModel();
@@ -712,7 +714,7 @@ bool ParallelSolve::handleMessages(Solver& s) {
 		}
 		return true;
 	}
-	if (h->disjointPath() && s.splittable() && shared_->workReq > 0) {
+	if (shared_->split() && s.requestSplit() && h->disjointPath()) {
 		// First declare split request as handled
 		// and only then do the actual split.
 		// This way, we minimize the chance for
@@ -836,10 +838,10 @@ void ParallelHandler::handleTerminateMessage() {
 // split-off new guiding path and add it to solve object
 void ParallelHandler::handleSplitMessage() {
 	assert(solver_ && "ParallelHandler::handleSplitMessage(): not attached!");
-	assert(solver_->splittable());
 	Solver& s = *solver_;
 	SingleOwnerPtr<LitVec> newPath(new LitVec());
-	s.split(*newPath);
+	bool ok = s.split(*newPath);
+	POTASSCO_ASSERT(ok, "unexpected call to split");
 	ctrl_->pushWork(newPath.release());
 }
 
@@ -869,7 +871,7 @@ bool ParallelHandler::simplify(Solver& s, bool sh) {
 
 bool ParallelHandler::propagateFixpoint(Solver& s, PostPropagator* ctx) {
 	// Check for messages and integrate any new information from
-	// models/lemma exchange but only if path is setup.
+	// models/lemma exchange but only if path is set up.
 	// Skip updates if called from other post propagator so that we do not
 	// disturb any active propagation.
 	if (int up = (ctx == 0 && up_ != 0)) {
@@ -965,24 +967,23 @@ uint64 ParallelSolveOptions::initPeerMask(uint32 id, Integration::Topology topo,
 		uint32 next = (id + 1) % maxT;
 		return Distributor::mask(prev) | Distributor::mask(next);
 	}
-	bool ext = topo == Integration::topo_cubex;
-	uint32 n = maxT;
-	uint32 k = 1;
-	for (uint32 i = n / 2; i > 0; i /= 2, k *= 2) { }
-	uint64 res = 0, x = 1;
+	const uint32 n = maxT;
+	const uint32 k = (1u << Clasp::log2(n));
+	const uint32 s = k ^ id;
+	const bool ext = topo == Integration::topo_cubex;
+	uint64 res = 0;
 	for (uint32 m = 1; m <= k; m *= 2) {
 		uint32 i = m ^ id;
-		if      (i < n)         { res |= (x << i);     }
-		else if (ext && k != m) { res |= (x << (i^k)); }
+		if      (i < n)         { res |= Distributor::mask(i);   }
+		else if (ext && k != m) { res |= Distributor::mask(i^k); }
 	}
-	if (ext) {
-		uint32 s = k ^ id;
-		for(uint32 m = 1; m < k && s >= n; m *= 2) {
+	if (ext && s >= n) {
+		for(uint32 m = 1; m < k; m *= 2) {
 			uint32 i = m ^ s;
-			if (i < n) { res |= (x << i); }
+			if (i < n) { res |= Distributor::mask(i); }
 		}
 	}
-	assert( (res & (x<<id)) == 0 );
+	assert(!Distributor::inSet(res, id));
 	return res;
 }
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -993,7 +994,7 @@ GlobalDistribution::GlobalDistribution(const Policy& p, uint32 maxT, uint32 topo
 	assert(maxT <= ParallelSolveOptions::supportedSolvers());
 	Topology t = static_cast<Topology>(topo);
 	queue_     = new Queue(maxT);
-	threadId_  = (ThreadInfo*)alignedAlloc((maxT * sizeof(ThreadInfo)), 64);
+	threadId_  = (ThreadInfo*)alignedAllocChecked((maxT * sizeof(ThreadInfo)));
 	for (uint32 i = 0; i != maxT; ++i) {
 		new (&threadId_[i]) ThreadInfo;
 		threadId_[i].id       = queue_->addThread();
@@ -1046,8 +1047,8 @@ LocalDistribution::LocalDistribution(const Policy& p, uint32 maxT, uint32 topo) 
 	thread_    = new ThreadData*[numThread_ = maxT];
 	size_t sz  = ((sizeof(ThreadData) + 63) / 64) * 64;
 	for (uint32 i = 0; i != maxT; ++i) {
-		ThreadData* ti = new (alignedAlloc(sz, 64)) ThreadData;
-		ti->received.init(&ti->sentinal);
+		ThreadData* ti = new (alignedAllocChecked(sz)) ThreadData;
+		ti->received.init(&ti->sentinel);
 		ti->peers = ParallelSolveOptions::initPeerMask(i, t, maxT);
 		ti->free  = 0;
 		thread_[i]= ti;
@@ -1070,7 +1071,7 @@ LocalDistribution::~LocalDistribution() {
 }
 
 void LocalDistribution::freeNode(uint32 tId, QNode* n) const {
-	if (n != &thread_[tId]->sentinal) {
+	if (n != &thread_[tId]->sentinel) {
 		n->next = thread_[tId]->free;
 		thread_[tId]->free = n;
 	}
@@ -1085,7 +1086,7 @@ LocalDistribution::QNode* LocalDistribution::allocNode(uint32 tId, SharedLiteral
 		}
 		// alloc a new block of node;
 		const uint32 nNodes = 128;
-		QNode* raw = (QNode*)alignedAlloc(sizeof(QNode) * nNodes, 64);
+		QNode* raw = (QNode*)alignedAllocChecked(sizeof(QNode) * nNodes);
 		// add nodes [1, nNodes) to free list
 		for (uint32 i = 1; i != nNodes-1; ++i) {
 			raw[i].next = &raw[i+1];

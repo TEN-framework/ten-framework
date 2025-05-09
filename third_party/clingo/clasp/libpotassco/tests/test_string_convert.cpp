@@ -142,19 +142,30 @@ TEST_CASE("String conversion", "[string]") {
 
 	SECTION("double parsing is locale-independent") {
 		typedef std::pair<std::string, std::string> P;
-		P lcg[] = {P("de", "DE"), P("el", "GR"), P("ru", "RU"), P("es", "ES"), P("it", "IT")};
-		const char* x = 0;
-#if defined(_MSC_VER) && _MSC_VER <= 1600
-		x = setlocale(LC_ALL, "deu_deu");
-#endif
-		for (const P* it = lcg, *end = it + sizeof(lcg)/sizeof(P); it != end && !x; ++it) {
-			x = setlocale(LC_ALL, std::string(it->first).append(1, '_').append(it->second).c_str());
-			if (x != 0) { break; }
-			x = setlocale(LC_ALL, std::string(it->first).append(1, '-').append(it->second).c_str());
+		typedef std::pair<std::string, std::locale> R;
+		P lcg[] = {P("deu", "deu"), P("de", "DE"), P("el", "GR"), P("ru", "RU"), P("es", "ES"), P("it", "IT")};
+		char sep[3] = {'_', '-', 0};
+		const char* codeset[3] = {"", ".utf8", 0};
+		R restore(setlocale(LC_ALL, nullptr), std::locale());
+		bool set = false;
+		for (const P* it = lcg, *end = it + sizeof(lcg)/sizeof(P); it != end && !set; ++it) {
+			for (const char* s = sep; *s && !set; ++s) {
+				for (const char** code = codeset; *code && !set; ++code) {
+					std::string loc(it->first);
+					loc.append(1, *s).append(it->second).append(*code);
+					if (setlocale(LC_ALL, loc.c_str())) {
+						INFO("Set locale to " << loc);
+						set = true;
+						CHECK_NOFAIL((restore.second = std::locale::global(std::locale(loc)), true));
+					}
+				}
+			}
 		}
-		if (x) {
-			REQUIRE(Potassco::string_cast<double>("12.32") == 12.32);
-			setlocale(LC_ALL, "C");
+		if (set) {
+			CHECK_NOTHROW(Potassco::string_cast<double>("12.32") == 12.32);
+			CHECK_NOTHROW(Potassco::string_cast<float>("12.32") == 12.32f);
+			setlocale(LC_ALL, restore.first.c_str());
+			REQUIRE_NOTHROW(std::locale::global(restore.second));
 		}
 		else {
 			WARN("could not set locale - test ignored");

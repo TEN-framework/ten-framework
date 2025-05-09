@@ -23,16 +23,17 @@
 // }}}
 
 #include "gringo/input/program.hh"
-#include "gringo/input/literals.hh"
-#include "gringo/input/aggregates.hh"
+#include "gringo/graph.hh"
 #include "gringo/ground/literal.hh"
 #include "gringo/ground/statements.hh"
-#include "gringo/term.hh"
+#include "gringo/input/aggregates.hh"
+#include "gringo/input/literals.hh"
 #include "gringo/logger.hh"
-#include "gringo/graph.hh"
 #include "gringo/safetycheck.hh"
+#include "gringo/term.hh"
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ definition of Block
 
@@ -44,8 +45,7 @@ Ground::SEdb Block::make_sig() const {
     }
     if (args.empty()) {
         std::get<0>(*edb) = make_locatable<ValTerm>(loc, Symbol::createId(name));
-    }
-    else {
+    } else {
         std::get<0>(*edb) = make_locatable<FunctionTerm>(loc, name, std::move(args));
     }
     return edb;
@@ -54,13 +54,9 @@ Ground::SEdb Block::make_sig() const {
 // }}}
 // {{{ definition of Program
 
-Program::Program() {
-    begin(Location("<internal>", 1, 1, "<internal>", 1, 1), "base", IdVec({}));
-}
+Program::Program() { begin(Location("<internal>", 1, 1, "<internal>", 1, 1), "base", IdVec({})); }
 
-bool Program::empty() const {
-    return blocks_.empty() && sigs_.empty() && theoryDefs_.empty();
-}
+bool Program::empty() const { return blocks_.empty() && sigs_.empty() && theoryDefs_.empty(); }
 
 void Program::begin(Location const &loc, String name, IdVec &&params) {
     auto block = Block{loc, (std::string("#inc_") + name.c_str()).c_str(), std::move(params)};
@@ -76,27 +72,22 @@ void Program::add(UStm &&stm) {
     }
 }
 
-void Program::addInput(Sig sig) {
-    sigs_.insert(sig);
-}
+void Program::addInput(Sig sig) { sigs_.insert(sig); }
 
 void Program::add(TheoryDef &&def, Logger &log) {
     auto it = theoryDefs_.find(def.name());
     if (it == theoryDefs_.end()) {
         theoryDefs_.insert(std::move(def));
+    } else {
+        GRINGO_REPORT(log, Warnings::RuntimeError) << def.loc() << ": error: redefinition of theory:" << "\n"
+                                                   << "  " << def.name() << "\n"
+                                                   << it->loc() << ": note: theory first defined here\n";
     }
-    else {
-        GRINGO_REPORT(log, Warnings::RuntimeError)
-            << def.loc() << ": error: redefinition of theory:" << "\n"
-            << "  " << def.name() << "\n"
-            << it->loc() << ": note: theory first defined here\n";
-    }
-
 }
 
 void Program::rewrite(Defines &defs, Logger &log) {
     for (auto it = blocks_.begin(), ie = blocks_.end(); it != ie; ++it) {
-        auto &block  = it.value();
+        auto &block = it.value();
         auto const &sig = it.key();
         // replacing definitions
         Defines incDefs;
@@ -108,9 +99,8 @@ void Program::rewrite(Defines &defs, Logger &log) {
             incDefs.add(param.first, param.second, get_clone(args.back()), false, log);
         }
         sigs_.insert(Sig(block.name, static_cast<uint32_t>(args.size()), false));
-        UTerm blockTerm(args.empty()
-            ? (UTerm)make_locatable<ValTerm>(block.loc, Symbol::createId(block.name))
-            : make_locatable<FunctionTerm>(block.loc, block.name, get_clone(args)));
+        UTerm blockTerm(args.empty() ? (UTerm)make_locatable<ValTerm>(block.loc, Symbol::createId(block.name))
+                                     : make_locatable<FunctionTerm>(block.loc, block.name, get_clone(args)));
         VarTermBoundVec blockBound;
         blockTerm->collect(blockBound, true);
         incDefs.init(log);
@@ -119,13 +109,19 @@ void Program::rewrite(Defines &defs, Logger &log) {
             sigs_.insert(fact.sig());
         }
         auto replace = [&](Defines &defs, Symbol fact) -> Symbol {
-            if (defs.empty() || fact.type() == SymbolType::Special) { return fact; }
+            if (defs.empty() || fact.type() == SymbolType::Special) {
+                return fact;
+            }
             UTerm rt;
             Symbol rv;
             defs.apply(fact, rv, rt, false);
             if (rt) {
                 Location loc{rt->loc()};
-                block.addedStms.emplace_back(make_locatable<Statement>(loc, gringo_make_unique<SimpleHeadLiteral>(make_locatable<PredicateLiteral>(loc, NAF::POS, std::move(rt))), UBodyAggrVec{}));
+                block.addedStms.emplace_back(
+                    make_locatable<Statement>(loc,
+                                              gringo_make_unique<SimpleHeadLiteral>(
+                                                  make_locatable<PredicateLiteral>(loc, NAF::POS, std::move(rt))),
+                                              UBodyAggrVec{}));
                 return {};
             }
             if (rv.type() != SymbolType::Special) {
@@ -141,11 +137,9 @@ void Program::rewrite(Defines &defs, Logger &log) {
                 }
             }
             block.addedEdb.clear();
-        }
-        else if (std::get<1>(*sig).empty()) {
+        } else if (std::get<1>(*sig).empty()) {
             std::swap(std::get<1>(*sig), block.addedEdb);
-        }
-        else {
+        } else {
             std::copy(block.addedEdb.begin(), block.addedEdb.end(), std::back_inserter(std::get<1>(*sig)));
         }
         // rewriting
@@ -163,8 +157,7 @@ void Program::rewrite(Defines &defs, Logger &log) {
                 x->rewrite();
                 block.stms.emplace_back(std::move(x));
                 std::get<1>(*sig).pop_back();
-            }
-            else {
+            } else {
                 sigs_.insert(std::get<1>(*sig).back().sig());
             }
         };
@@ -184,8 +177,7 @@ void Program::rewrite(Defines &defs, Logger &log) {
                 for (auto &y : x->unpool()) {
                     rewrite1(y);
                 }
-            }
-            else {
+            } else {
                 rewrite1(x);
             }
         }
@@ -196,11 +188,13 @@ void Program::rewrite(Defines &defs, Logger &log) {
         if (!it.value().second) {
             Location loc(it.value().first->loc());
             UBodyAggrVec body;
-            body.emplace_back(gringo_make_unique<SimpleBodyLiteral>(make_locatable<ProjectionLiteral>(loc, get_clone(it.value().first))));
-            stms_.emplace_back(make_locatable<Statement>(
-                loc,
-                gringo_make_unique<SimpleHeadLiteral>(make_locatable<PredicateLiteral>(loc, NAF::POS, get_clone(it.key()))),
-                std::move(body)));
+            body.emplace_back(gringo_make_unique<SimpleBodyLiteral>(
+                make_locatable<ProjectionLiteral>(loc, get_clone(it.value().first))));
+            stms_.emplace_back(
+                make_locatable<Statement>(loc,
+                                          gringo_make_unique<SimpleHeadLiteral>(
+                                              make_locatable<PredicateLiteral>(loc, NAF::POS, get_clone(it.key()))),
+                                          std::move(body)));
             it.value().second = true;
         }
     }
@@ -232,24 +226,30 @@ void Program::print(std::ostream &out) const {
         out << def << "\n";
     }
     for (auto const &block : blocks_) {
-        for (auto const &x : block.second.addedEdb)     { out << x << "." << "\n"; }
-        for (auto const &x : std::get<1>(*block.first)) { out << x << "." << "\n"; }
-        for (auto const &x : block.second.addedStms)    { out << *x << "\n"; }
-        for (auto const &x : block.second.stms)         { out << *x << "\n"; }
+        for (auto const &x : block.second.addedEdb) {
+            out << x << "." << "\n";
+        }
+        for (auto const &x : std::get<1>(*block.first)) {
+            out << x << "." << "\n";
+        }
+        for (auto const &x : block.second.addedStms) {
+            out << *x << "\n";
+        }
+        for (auto const &x : block.second.stms) {
+            out << *x << "\n";
+        }
     }
-    for (auto const &x : stms_) { out << *x << "\n"; }
+    for (auto const &x : stms_) {
+        out << *x << "\n";
+    }
 }
 
 // Defines atoms that have been seen in earlier steps
 class DummyStatement : public Ground::Statement, private Ground::HeadOccurrence {
-public:
-    DummyStatement(UGTermVec terms, bool normal)
-    : terms_{std::move(terms)}
-    , normal_{normal}  {}
+  public:
+    DummyStatement(UGTermVec terms, bool normal) : terms_{std::move(terms)}, normal_{normal} {}
 
-    bool isNormal() const override {
-        return normal_;
-    }
+    bool isNormal() const override { return normal_; }
 
     void analyze(Dep::Node &node, Dep &dep) override {
         for (auto &term : terms_) {
@@ -257,9 +257,7 @@ public:
         }
     }
 
-    void startLinearize(bool active) override {
-        static_cast<void>(active);
-    }
+    void startLinearize(bool active) override { static_cast<void>(active); }
 
     void linearize(Context &context, bool positive, Logger &log) override {
         static_cast<void>(context);
@@ -267,16 +265,14 @@ public:
         static_cast<void>(log);
     }
 
-    void enqueue(Ground::Queue &q) override {
-        static_cast<void>(q);
-    }
+    void enqueue(Ground::Queue &q) override { static_cast<void>(q); }
 
     void print(std::ostream &out) const override {
         print_comma(out, terms_, ";", [](std::ostream &out, UGTerm const &term) { out << *term; });
         out << ".";
     }
 
-private:
+  private:
     void defines(IndexUpdater &update, Ground::Instantiator *inst) override {
         static_cast<void>(update);
         static_cast<void>(inst);
@@ -298,7 +294,8 @@ Ground::Program Program::toGround(std::set<Sig> const &sigs, DomainData &domains
     ToGroundArg arg(auxNames_, domains);
     Ground::SEdbVec edb;
     for (auto const &block : blocks_) {
-        if (sigs.find(Sig{block.second.name.c_str() + 5, numeric_cast<uint32_t>(block.second.params.size()), false}) != sigs.end()) { // NOLINT
+        if (sigs.find(Sig{block.second.name.c_str() + 5, numeric_cast<uint32_t>(block.second.params.size()), false}) !=
+            sigs.end()) { // NOLINT
             edb.emplace_back(block.first);
             for (auto const &x : block.second.stms) {
                 x->toGround(arg, stms);
@@ -327,11 +324,12 @@ Ground::Program Program::toGround(std::set<Sig> const &sigs, DomainData &domains
             (*std::get<0>(y)).checkDefined(locs_, sigs_, undef);
         }
     }
-    std::sort(undef.begin(), undef.end(), [](Ground::UndefVec::value_type const &a, Ground::UndefVec::value_type const &b) { return a.first < b.first; });
+    std::sort(
+        undef.begin(), undef.end(),
+        [](Ground::UndefVec::value_type const &a, Ground::UndefVec::value_type const &b) { return a.first < b.first; });
     for (auto &x : undef) {
-        GRINGO_REPORT(log, Warnings::AtomUndefined)
-            << x.first << ": info: atom does not occur in any rule head:\n"
-            << "  " << *x.second << "\n";
+        GRINGO_REPORT(log, Warnings::AtomUndefined) << x.first << ": info: atom does not occur in any rule head:\n"
+                                                    << "  " << *x.second << "\n";
     }
     return prg;
 }
@@ -345,4 +343,5 @@ std::ostream &operator<<(std::ostream &out, Program const &p) {
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

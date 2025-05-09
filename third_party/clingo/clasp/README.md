@@ -79,11 +79,11 @@ and pre-compiled binaries are available at: http://potassco.org/
   or via the `doc_clasp` target when using cmake.
 
 ## USAGE
-  clasp reads problem instances either from stdin, e.g
+  clasp reads problem instances either from stdin, e.g.
   
     cat problem | clasp
   
-  or from a given file, e.g
+  or from a given file, e.g.
   
     clasp problem
 
@@ -97,7 +97,7 @@ and pre-compiled binaries are available at: http://potassco.org/
   
   for a more detailed list.
 
-  In addition to printing status information, clasp also
+  In addition to printing [status information](doc/output.md), clasp also
   provides information about the computation via its exit status.
   The exit status is either one or a combination of:
     

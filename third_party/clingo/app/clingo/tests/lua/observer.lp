@@ -200,10 +200,10 @@ function Observer:theory_term_compound(term_id, name_id_or_type, arguments)
 end
 
 function Observer:theory_element(element_id, terms, condition)
-    self.__elems[element_id] = function () 
+    self.__elems[element_id] = function ()
         condition = table.sort_unique(self:__map_lits(condition))
         return Function("elem", {Tuple(table.map(terms, function (i)
-            return self.__terms[i]() 
+            return self.__terms[i]()
         end)), Tuple(condition)})
     end
 end

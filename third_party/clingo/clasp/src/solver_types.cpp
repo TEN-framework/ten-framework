@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -30,89 +30,6 @@
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
 namespace Clasp {
-///////////////////////////////////////////////////////////////////////////////
-// SearchLimits
-///////////////////////////////////////////////////////////////////////////////
-SearchLimits::SearchLimits() {
-	std::memset(this, 0, sizeof(SearchLimits));
-	restart.conflicts = UINT64_MAX;
-	conflicts = UINT64_MAX;
-	memory = UINT64_MAX;
-	learnts = UINT32_MAX;
-}
-/////////////////////////////////////////////////////////////////////////////////////////
-// DynamicLimit
-/////////////////////////////////////////////////////////////////////////////////////////
-DynamicLimit* DynamicLimit::create(uint32 size) {
-	POTASSCO_REQUIRE(size != 0, "size must be > 0");
-	void* m = ::operator new(sizeof(DynamicLimit) + (size*sizeof(uint32)));
-	return new (m)DynamicLimit(size);
-}
-DynamicLimit::DynamicLimit(uint32 sz) : cap_(sz), pos_(0), num_(0) {
-	std::memset(&global, 0, sizeof(global));
-	init(0.7f, lbd_limit);
-}
-void DynamicLimit::init(float k, Type t, uint32 uLimit) {
-	resetRun();
-	std::memset(&adjust, 0, sizeof(adjust));
-	adjust.limit = uLimit;
-	adjust.rk = k;
-	adjust.type = t;
-}
-void DynamicLimit::destroy() {
-	this->~DynamicLimit();
-	::operator delete(this);
-}
-void DynamicLimit::resetRun() {
-	sum_[0] = sum_[1] = pos_ = num_ = 0;
-}
-void DynamicLimit::reset() {
-	std::memset(&global, 0, sizeof(global));
-	resetRun();
-}
-void DynamicLimit::update(uint32 dl, uint32 lbd) {
-	// update global avg
-	++adjust.samples;
-	++global.samples;
-	global.sum[lbd_limit] += lbd;
-	global.sum[level_limit] += dl;
-	// update moving avg
-	sum_[lbd_limit] += lbd;
-	sum_[level_limit] += dl;
-	if (++num_ > cap_) {
-		sum_[lbd_limit] -= (buffer_[pos_] & 127u);
-		sum_[level_limit] -= (buffer_[pos_] >> 7u);
-	}
-	buffer_[pos_++] = ((dl << 7) + lbd);
-	if (pos_ == cap_) { pos_ = 0; }
-}
-uint32 DynamicLimit::restart(uint32 maxLBD, float k) {
-	++adjust.restarts;
-	if (adjust.samples >= adjust.limit) {
-		Type nt = global.avg(lbd_limit) > maxLBD ? level_limit : lbd_limit;
-		if (nt == adjust.type) {
-			double rLen = adjust.avgRestart();
-			bool   sx = num_ >= adjust.limit;
-			float  rk = adjust.rk;
-			uint32 uLim = adjust.limit;
-			if      (rLen >= 16000.0) { rk += 0.1f;  uLim = 16000; }
-			else if (sx)              { rk += 0.05f; uLim = std::max(uint32(16000), uLim-10000); }
-			else if (rLen >= 4000.0)  { rk += 0.05f; }
-			else if (rLen >= 1000.0)  { uLim += 10000u; }
-			else if (rk > k)          { rk -= 0.05f; }
-			init(rk, nt, uLim);
-		}
-		else { init(k, nt); }
-	}
-	else { resetRun(); }
-	return adjust.limit;
-}
-BlockLimit::BlockLimit(uint32 windowSize, double R)
-	: ema(0.0), alpha(2.0/(windowSize+1))
-	, next(windowSize), inc(50), n(0)
-	, span(windowSize)
-	, r(static_cast<float>(R)) {}
-
 /////////////////////////////////////////////////////////////////////////////////////////
 // Statistics
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +40,7 @@ BlockLimit::BlockLimit(uint32 windowSize, double R)
 #define CLASP_DEFINE_ISTATS_COMMON(T, STATS, name) \
 	static const char* const T ## _s[] = { STATS(CLASP_STAT_KEY, NO_ARG, NO_ARG) name };\
 	uint32 T::size()                     { return (sizeof(T ## _s)/sizeof(T ## _s[0]))-1; } \
-	const char* T::key(uint32 i)         { return i < size() ? T ## _s[i] : throw std::out_of_range(#T "::key"); } \
+	const char* T::key(uint32 i)         { POTASSCO_CHECK(i < size(), ERANGE); return T ## _s[i]; } \
 	void T::accu(const T& o)             { STATS(CLASP_STAT_ACCU, (*this), o);}
 /////////////////////////////////////////////////////////////////////////////////////////
 // CoreStats
@@ -133,7 +50,7 @@ StatisticObject CoreStats::at(const char* key) const {
 #define VALUE(X) StatisticObject::value(&X)
 	CLASP_CORE_STATS(CLASP_STAT_GET, NO_ARG, NO_ARG);
 #undef VALUE
-	throw std::out_of_range(POTASSCO_FUNC_NAME);
+	POTASSCO_CHECK(false, ERANGE);
 }
 void CoreStats::reset() { std::memset(this, 0, sizeof(*this)); }
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +63,7 @@ StatisticObject JumpStats::at(const char* key) const {
 #define VALUE(X) StatisticObject::value(&X)
 	CLASP_JUMP_STATS(CLASP_STAT_GET, NO_ARG, NO_ARG);
 #undef VALUE
-	throw std::out_of_range(POTASSCO_FUNC_NAME);
+	POTASSCO_CHECK(false, ERANGE);
 }
 void JumpStats::reset() { std::memset(this, 0, sizeof(*this)); }
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -165,7 +82,7 @@ StatisticObject ExtendedStats::at(const char* key) const {
 #undef VALUE
 #undef MEM_FUN
 #undef MAP
-	throw std::out_of_range(POTASSCO_FUNC_NAME);
+	POTASSCO_CHECK(false, ERANGE);
 }
 void ExtendedStats::reset() {
 	std::memset(this, 0, sizeof(ExtendedStats) - sizeof(JumpStats));
@@ -174,24 +91,18 @@ void ExtendedStats::reset() {
 /////////////////////////////////////////////////////////////////////////////////////////
 // SolverStats
 /////////////////////////////////////////////////////////////////////////////////////////
-SolverStats::SolverStats() : limit(0), extra(0), multi(0) {}
-SolverStats::SolverStats(const SolverStats& o) : CoreStats(o), limit(0), extra(0), multi(0) {
+SolverStats::SolverStats() : extra(0), multi(0) {}
+SolverStats::SolverStats(const SolverStats& o) : CoreStats(o), extra(0), multi(0) {
 	if (o.extra && enableExtended()) { extra->accu(*o.extra); }
 }
 SolverStats::~SolverStats() {
 	delete extra;
-	if (limit) limit->destroy();
 }
 bool SolverStats::enableExtended() {
 	return extra != 0 || (extra = new (std::nothrow) ExtendedStats()) != 0;
 }
-void SolverStats::enableLimit(uint32 size) {
-	if (limit && limit->window() != size) { limit->destroy(); limit = 0; }
-	if (!limit)                           { limit = DynamicLimit::create(size); }
-}
 void SolverStats::reset() {
 	CoreStats::reset();
-	if (limit) limit->reset();
 	if (extra) extra->reset();
 }
 void SolverStats::accu(const SolverStats& o) {
@@ -217,7 +128,7 @@ uint32 SolverStats::size() const {
 	return CoreStats::size() + (extra != 0);
 }
 const char* SolverStats::key(uint32 i) const {
-	if (i >= size()) { throw std::out_of_range(POTASSCO_FUNC_NAME); }
+	POTASSCO_CHECK(i < size(), ERANGE);
 	return i < CoreStats::size() ? CoreStats::key(i) : "extra";
 }
 template <unsigned n>

@@ -27,7 +27,7 @@ holds(L,t) :- occurs(A,t), effect(A,L,N), holds(C,t-1) : condition(A,C,N).
 holds(L,t) :- holds(L,t-1), complement(L,M), not holds(M,t).
  :- contradict(F), complement(F,L,M), holds((L;M),t).
 
-caused(L,t) :- occurs(A,t), effect(A,L,N), 
+caused(L,t) :- occurs(A,t), effect(A,L,N),
                not holds(F',t-1) : condition(A,M',N), complement(F',L',M');
                    holds(F',t-1) : condition(A,L',N), complement(F',L',M').
 holds(F,t) :- caused(L,t), complement(F,L,M).
@@ -73,9 +73,9 @@ pos_executable(T,t)   :- occurs(A,T), alt_holds(C,T-1,t) : executable(A,C), C !=
 pos_goal_or(N,t) :- goal_or(N,L), alt_holds(L,t,t), vol(t).
 pos_goal_or(N,t) :- goal_or(N,L), goal(L), vol(t).
 
-bottom(t) :- pos_goal_or(N,t)      : goal_or(N,_); 
+bottom(t) :- pos_goal_or(N,t)      : goal_or(N,_);
              alt_holds(L,t,t)      : goal(L);
-             pos_executable(R,t)   : R = 1..t; 
+             pos_executable(R,t)   : R = 1..t;
              not_contradict(F,S,t) : contradict(F), S = 1..t;
              vol(t).
 

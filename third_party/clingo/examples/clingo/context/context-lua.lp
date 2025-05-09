@@ -1,4 +1,4 @@
-#script (lua) 
+#script (lua)
 
 State = { }
 State.__index = State
@@ -22,7 +22,7 @@ function State:run(prg)
     prg:solve{on_model=function (...) self:on_model(...) end}
 end
 
-function main(prg) 
+function main(prg)
     x = State.new(21)
     x:run(prg)
 end

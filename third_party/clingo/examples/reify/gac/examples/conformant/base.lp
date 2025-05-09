@@ -21,7 +21,7 @@ contradict(F)  :- complement(F,L,M), effect(A,L,N1), effect(A,M,N2),
 { holds(F,0) } :- complement(F,L,M), not initially(L), not initially(M).
   holds(F,0)   :- initially(L), complement(F,L,M).
 
-holds_oneof(N,B)  :- 
+holds_oneof(N,B)  :-
     initially_oneof(N,_,B);
     not holds(F,0) : initially_oneof(N,M,B), complement(F,L,M);
         holds(F,0) : initially_oneof(N,L,B), complement(F,L,M).
@@ -39,8 +39,8 @@ holds(L,T) :- occurs(A,T), effect(A,L,N), holds(C,T-1) : condition(A,C,N).
 holds(L,T) :- time(T), holds(L,T-1), complement(L,M), not holds(M,T).
 fail :- contradict(F), complement(F,L,M), holds(L,T), holds(M,T).
 
-caused(L,T) :- 
-    occurs(A,T), effect(A,L,N), 
+caused(L,T) :-
+    occurs(A,T), effect(A,L,N),
     not holds(F',T-1) : condition(A,M',N), complement(F',L',M');
         holds(F',T-1) : condition(A,L',N), complement(F',L',M').
 holds(F,T) :- caused(L,T), complement(F,L,M).

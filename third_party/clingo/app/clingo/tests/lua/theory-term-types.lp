@@ -1,7 +1,7 @@
 #script (lua)
 clingo = require("clingo")
 
-function types() 
+function types()
     return {
         tostring(clingo.TheoryTermType.Tuple),
         tostring(clingo.TheoryTermType.List),
@@ -15,4 +15,3 @@ end
 #end.
 
 p(@types()).
-

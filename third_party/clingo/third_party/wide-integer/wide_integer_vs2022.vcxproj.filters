@@ -62,6 +62,15 @@
     <Filter Include="target\micros\stm32f429\make\single">
       <UniqueIdentifier>{d00c386f-1e4f-4741-8c73-e2c26bc38edb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{876be41b-c9a3-4a46-bc46-8624178094fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util\utility">
+      <UniqueIdentifier>{d0da75c7-dd48-4e37-b1ee-283464e3ce9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\test\fuzzing">
+      <UniqueIdentifier>{597ab5f0-b045-443a-8da2-1b929052b42f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="boost\multiprecision\uintwide_t_backend.hpp">
@@ -104,6 +113,12 @@
       <Filter>Source Files\test</Filter>
     </ClInclude>
     <ClInclude Include="test\test_arithmetic.hpp">
+      <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="util\utility\util_pseudorandom_time_point_seed.h">
+      <Filter>Source Files\util\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="test\stopwatch.h">
       <Filter>Source Files\test</Filter>
     </ClInclude>
   </ItemGroup>
@@ -213,6 +228,30 @@
     <ClCompile Include="examples\example014_pi_spigot_wide.cpp">
       <Filter>Source Files\examples</Filter>
     </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_add.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_div.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_sub.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_mul.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_prime.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_sdiv.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_sqrt.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
+    <ClCompile Include="test\fuzzing\test_fuzzing_powm.cpp">
+      <Filter>Source Files\test\fuzzing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".github\workflows\wide_integer.yml">
@@ -248,7 +287,7 @@
       <Filter>.github\workflows</Filter>
     </None>
     <None Include="codecov.yml" />
-    <None Include="target\build\test_examples_emulator.py">
+    <None Include="target\build\test_examples_emulator.gdb">
       <Filter>target\build</Filter>
     </None>
     <None Include="target\micros\stm32f429\make\stm32f429.ld">
@@ -257,6 +296,10 @@
     <None Include=".github\workflows\CodeQL.yml">
       <Filter>.github\workflows</Filter>
     </None>
+    <None Include=".github\workflows\wide_integer_fuzzing.yml">
+      <Filter>.github\workflows</Filter>
+    </None>
+    <None Include="run_fuzzing.sh" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\CMakeLists.txt">

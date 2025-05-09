@@ -22,6 +22,8 @@
 #include <catch2/benchmark/detail/catch_benchmark_function.hpp>
 #include <catch2/benchmark/detail/catch_estimate_clock.hpp>
 
+#include <numeric>
+
 namespace {
     struct manual_clock {
     public:
@@ -154,8 +156,12 @@ TEST_CASE("uniform samples", "[benchmark]") {
     std::vector<double> samples(100);
     std::fill(samples.begin(), samples.end(), 23);
 
-    using it = std::vector<double>::iterator;
-    auto e = Catch::Benchmark::Detail::bootstrap(0.95, samples.begin(), samples.end(), samples, [](it a, it b) {
+    auto e = Catch::Benchmark::Detail::bootstrap(
+        0.95,
+        samples.data(),
+        samples.data() + samples.size(),
+        samples,
+        []( double const* a, double const* b ) {
         auto sum = std::accumulate(a, b, 0.);
         return sum / (b - a);
     });
@@ -166,7 +172,7 @@ TEST_CASE("uniform samples", "[benchmark]") {
 }
 
 
-TEST_CASE("normal_cdf", "[benchmark]") {
+TEST_CASE("normal_cdf", "[benchmark][approvals]") {
     using Catch::Benchmark::Detail::normal_cdf;
     using Catch::Approx;
     CHECK(normal_cdf(0.000000) == Approx(0.50000000000000000));
@@ -196,7 +202,7 @@ TEST_CASE("normal_quantile", "[benchmark]") {
 TEST_CASE("mean", "[benchmark]") {
     std::vector<double> x{ 10., 20., 14., 16., 30., 24. };
 
-    auto m = Catch::Benchmark::Detail::mean(x.begin(), x.end());
+    auto m = Catch::Benchmark::Detail::mean(x.data(), x.data() + x.size());
 
     REQUIRE(m == 19.);
 }
@@ -204,9 +210,9 @@ TEST_CASE("mean", "[benchmark]") {
 TEST_CASE("weighted_average_quantile", "[benchmark]") {
     std::vector<double> x{ 10., 20., 14., 16., 30., 24. };
 
-    auto q1 = Catch::Benchmark::Detail::weighted_average_quantile(1, 4, x.begin(), x.end());
-    auto med = Catch::Benchmark::Detail::weighted_average_quantile(1, 2, x.begin(), x.end());
-    auto q3 = Catch::Benchmark::Detail::weighted_average_quantile(3, 4, x.begin(), x.end());
+    auto q1 = Catch::Benchmark::Detail::weighted_average_quantile(1, 4, x.data(), x.data() + x.size());
+    auto med = Catch::Benchmark::Detail::weighted_average_quantile(1, 2, x.data(), x.data() + x.size());
+    auto q3 = Catch::Benchmark::Detail::weighted_average_quantile(3, 4, x.data(), x.data() + x.size());
 
     REQUIRE(q1 == 14.5);
     REQUIRE(med == 18.);
@@ -225,7 +231,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("none") {
         std::vector<double> x{ 10., 20., 14., 16., 30., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 0, 0, 0, 0);
@@ -233,7 +240,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("low severe") {
         std::vector<double> x{ -12., 20., 14., 16., 30., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 1, 0, 0, 0);
@@ -241,7 +249,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("low mild") {
         std::vector<double> x{ 1., 20., 14., 16., 30., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 0, 1, 0, 0);
@@ -249,7 +258,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("high mild") {
         std::vector<double> x{ 10., 20., 14., 16., 36., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 0, 0, 1, 0);
@@ -257,7 +267,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("high severe") {
         std::vector<double> x{ 10., 20., 14., 16., 49., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 0, 0, 0, 1);
@@ -265,7 +276,8 @@ TEST_CASE("classify_outliers", "[benchmark]") {
     SECTION("mixed") {
         std::vector<double> x{ -20., 20., 14., 16., 39., 24. };
 
-        auto o = Catch::Benchmark::Detail::classify_outliers(x.begin(), x.end());
+        auto o = Catch::Benchmark::Detail::classify_outliers(
+            x.data(), x.data() + x.size() );
 
         REQUIRE(o.samples_seen == static_cast<int>(x.size()));
         require_outliers(o, 1, 0, 1, 0);
@@ -280,15 +292,13 @@ TEST_CASE("analyse", "[approvals][benchmark]") {
     data.benchmarkSamples = 99;
     Catch::Config config{data};
 
-    using Duration = Catch::Benchmark::FloatDuration<Catch::Benchmark::default_clock>;
-
-    Catch::Benchmark::Environment<Duration> env;
-    std::vector<Duration> samples(99);
+    using FDuration = Catch::Benchmark::FDuration;
+    std::vector<FDuration> samples(99);
     for (size_t i = 0; i < samples.size(); ++i) {
-        samples[i] = Duration(23 + (i % 3 - 1));
+        samples[i] = FDuration(23 + (i % 3 - 1));
     }
 
-    auto analysis = Catch::Benchmark::Detail::analyse(config, env, samples.begin(), samples.end());
+    auto analysis = Catch::Benchmark::Detail::analyse(config, samples.data(), samples.data() + samples.size());
     CHECK( analysis.mean.point.count() == 23 );
     CHECK( analysis.mean.lower_bound.count() < 23 );
     CHECK(analysis.mean.lower_bound.count() > 22);
@@ -321,15 +331,13 @@ TEST_CASE("analyse no analysis", "[benchmark]") {
     data.benchmarkSamples = 99;
     Catch::Config config{ data };
 
-    using Duration = Catch::Benchmark::FloatDuration<Catch::Benchmark::default_clock>;
-
-    Catch::Benchmark::Environment<Duration> env;
-    std::vector<Duration> samples(99);
+    using FDuration = Catch::Benchmark::FDuration;
+    std::vector<FDuration> samples(99);
     for (size_t i = 0; i < samples.size(); ++i) {
-        samples[i] = Duration(23 + (i % 3 - 1));
+        samples[i] = FDuration(23 + (i % 3 - 1));
     }
 
-    auto analysis = Catch::Benchmark::Detail::analyse(config, env, samples.begin(), samples.end());
+    auto analysis = Catch::Benchmark::Detail::analyse(config, samples.data(), samples.data() + samples.size());
     CHECK(analysis.mean.point.count() == 23);
     CHECK(analysis.mean.lower_bound.count() == 23);
     CHECK(analysis.mean.upper_bound.count() == 23);
@@ -442,6 +450,6 @@ TEST_CASE("Failing benchmarks", "[!benchmark][.approvals]") {
 }
 
 TEST_CASE( "Failing benchmark respects should-fail",
-           "[!shouldfail][!benchmark][.approvals]" ) {
+           "[!shouldfail][!benchmark][approvals]" ) {
     BENCHMARK( "Asserting benchmark" ) { REQUIRE( 1 == 2 ); };
 }

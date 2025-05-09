@@ -381,7 +381,7 @@ TEST_CASE("Usage of AllTrue range matcher", "[matchers][templated][quantifiers]"
             std::array<bool, 0> const data{};
             REQUIRE_THAT( data, AllTrue() );
         }
-        SECTION( "One false evalutes to false" ) {
+        SECTION( "One false evaluates to false" ) {
             std::array<bool, 5> const data{ { true, true, false, true, true } };
             REQUIRE_THAT( data, !AllTrue() );
         }
@@ -398,7 +398,7 @@ TEST_CASE("Usage of AllTrue range matcher", "[matchers][templated][quantifiers]"
                 { { true }, { true }, { true }, { true }, { true } } };
             REQUIRE_THAT( data, AllTrue() );
         }
-        SECTION( "One false evalutes to false" ) {
+        SECTION( "One false evaluates to false" ) {
             std::array<ConvertibleToBool, 5> const data{
                 { { true }, { true }, { false }, { true }, { true } } };
             REQUIRE_THAT( data, !AllTrue() );
@@ -446,7 +446,7 @@ TEST_CASE( "Usage of NoneTrue range matcher", "[matchers][templated][quantifiers
             std::array<bool, 0> const data{};
             REQUIRE_THAT( data, NoneTrue() );
         }
-        SECTION( "One true evalutes to false" ) {
+        SECTION( "One true evaluates to false" ) {
             std::array<bool, 5> const data{
                 { false, false, true, false, false } };
             REQUIRE_THAT( data, !NoneTrue() );
@@ -464,7 +464,7 @@ TEST_CASE( "Usage of NoneTrue range matcher", "[matchers][templated][quantifiers
                 { { true }, { true }, { true }, { true }, { true } } };
             REQUIRE_THAT( data, !NoneTrue() );
         }
-        SECTION( "One true evalutes to false" ) {
+        SECTION( "One true evaluates to false" ) {
             std::array<ConvertibleToBool, 5> const data{
                 { { false }, { false }, { true }, { false }, { false } } };
             REQUIRE_THAT( data, !NoneTrue() );
@@ -512,7 +512,7 @@ TEST_CASE( "Usage of AnyTrue range matcher", "[matchers][templated][quantifiers]
             std::array<bool, 0> const data{};
             REQUIRE_THAT( data, !AnyTrue() );
         }
-        SECTION( "One true evalutes to true" ) {
+        SECTION( "One true evaluates to true" ) {
             std::array<bool, 5> const data{
                 { false, false, true, false, false } };
             REQUIRE_THAT( data, AnyTrue() );
@@ -530,7 +530,7 @@ TEST_CASE( "Usage of AnyTrue range matcher", "[matchers][templated][quantifiers]
                 { { true }, { true }, { true }, { true }, { true } } };
             REQUIRE_THAT( data, AnyTrue() );
         }
-        SECTION( "One true evalutes to true" ) {
+        SECTION( "One true evaluates to true" ) {
             std::array<ConvertibleToBool, 5> const data{
                 { { false }, { false }, { true }, { false }, { false } } };
             REQUIRE_THAT( data, AnyTrue() );
@@ -727,6 +727,15 @@ TEST_CASE( "Usage of RangeEquals range matcher", "[matchers][templated][quantifi
                       } ) );
     }
 
+    SECTION( "Compare against std::initializer_list" ) {
+        const std::array<int, 3> array_a{ { 1, 2, 3 } };
+
+        REQUIRE_THAT( array_a, RangeEquals( { 1, 2, 3 } ) );
+        REQUIRE_THAT( array_a, RangeEquals( { 2, 4, 6 }, []( int l, int r ) {
+                          return l * 2 == r;
+                      } ) );
+    }
+
     SECTION("Check short-circuiting behaviour") {
         with_mocked_iterator_access<int> const mocked1{ 1, 2, 3, 4 };
 
@@ -819,6 +828,16 @@ TEST_CASE( "Usage of UnorderedRangeEquals range matcher",
             needs_adl2{ 1, 2, 3, 4, 5 };
 
         REQUIRE_THAT( needs_adl1, UnorderedRangeEquals( needs_adl2 ) );
+    }
+
+    SECTION( "Compare against std::initializer_list" ) {
+        const std::array<int, 3> array_a{ { 1, 10, 20 } };
+
+        REQUIRE_THAT( array_a, UnorderedRangeEquals( { 10, 20, 1 } ) );
+        REQUIRE_THAT( array_a,
+                      UnorderedRangeEquals( { 11, 21, 2 }, []( int l, int r ) {
+                          return std::abs( l - r ) <= 1;
+                      } ) );
     }
 }
 

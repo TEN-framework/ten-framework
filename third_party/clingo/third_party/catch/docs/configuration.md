@@ -15,6 +15,7 @@
 [Enabling stringification](#enabling-stringification)<br>
 [Disabling exceptions](#disabling-exceptions)<br>
 [Overriding Catch's debug break (`-b`)](#overriding-catchs-debug-break--b)<br>
+[Static analysis support](#static-analysis-support)<br>
 
 Catch2 is designed to "just work" as much as possible, and most of the
 configuration options below are changed automatically during compilation,
@@ -25,7 +26,8 @@ with the same name.
 
 ## Prefixing Catch macros
 
-    CATCH_CONFIG_PREFIX_ALL
+    CATCH_CONFIG_PREFIX_ALL       // Prefix all macros with CATCH_
+    CATCH_CONFIG_PREFIX_MESSAGES  // Prefix only INFO, UNSCOPED_INFO, WARN and CAPTURE
 
 To keep test code clean and uncluttered Catch uses short macro names (e.g. ```TEST_CASE``` and ```REQUIRE```). Occasionally these may conflict with identifiers from platform headers or the system under test. In this case the above identifier can be defined. This will cause all the Catch user macros to be prefixed with ```CATCH_``` (e.g. ```CATCH_TEST_CASE``` and ```CATCH_REQUIRE```).
 
@@ -156,10 +158,13 @@ by using `_NO_` in the macro, e.g. `CATCH_CONFIG_NO_CPP17_UNCAUGHT_EXCEPTIONS`.
     CATCH_CONFIG_ANDROID_LOGWRITE           // Use android's logging system for debug output
     CATCH_CONFIG_GLOBAL_NEXTAFTER           // Use nextafter{,f,l} instead of std::nextafter
     CATCH_CONFIG_GETENV                     // System has a working `getenv`
+    CATCH_CONFIG_USE_BUILTIN_CONSTANT_P     // Use __builtin_constant_p to trigger warnings
 
 > [`CATCH_CONFIG_ANDROID_LOGWRITE`](https://github.com/catchorg/Catch2/issues/1743) and [`CATCH_CONFIG_GLOBAL_NEXTAFTER`](https://github.com/catchorg/Catch2/pull/1739) were introduced in Catch2 2.10.0
 
 > `CATCH_CONFIG_GETENV` was [introduced](https://github.com/catchorg/Catch2/pull/2562) in Catch2 3.2.0
+
+> `CATCH_CONFIG_USE_BUILTIN_CONSTANT_P` was introduced in Catch2 vX.Y.Z
 
 Currently Catch enables `CATCH_CONFIG_WINDOWS_SEH` only when compiled with MSVC, because some versions of MinGW do not have the necessary Win32 API support.
 
@@ -180,6 +185,12 @@ it is only used in support for DJGPP cross-compiler.
 With the exception of `CATCH_CONFIG_EXPERIMENTAL_REDIRECT`,
 these toggles can be disabled by using `_NO_` form of the toggle,
 e.g. `CATCH_CONFIG_NO_WINDOWS_SEH`.
+
+`CATCH_CONFIG_USE_BUILTIN_CONSTANT_P` is ON by default for Clang and GCC
+(but as far as possible, not for other compilers masquerading for these
+two). However, it can cause bugs where the enclosed code is evaluated, even
+though it should not be, e.g. in [#2925](https://github.com/catchorg/Catch2/issues/2925).
+
 
 ### `CATCH_CONFIG_FAST_COMPILE`
 This compile-time flag speeds up compilation of assertion macros by ~20%,
@@ -262,6 +273,31 @@ not know your platform, or your platform is misdetected.
 
 The macro will be used as is, that is, `CATCH_BREAK_INTO_DEBUGGER();`
 must compile and must break into debugger.
+
+
+## Static analysis support
+
+> Introduced in Catch2 3.4.0.
+
+Some parts of Catch2, e.g. `SECTION`s, can be hard for static analysis
+tools to reason about. Catch2 can change its internals to help static
+analysis tools reason about the tests.
+
+Catch2 automatically detects some static analysis tools (initial
+implementation checks for clang-tidy and Coverity), but you can override
+its detection (in either direction) via
+
+```
+CATCH_CONFIG_EXPERIMENTAL_STATIC_ANALYSIS_SUPPORT     // force enables static analysis help
+CATCH_CONFIG_NO_EXPERIMENTAL_STATIC_ANALYSIS_SUPPORT  // force disables static analysis help
+```
+
+_As the name suggests, this is currently experimental, and thus we provide
+no backwards compatibility guarantees._
+
+**DO NOT ENABLE THIS FOR BUILDS YOU INTEND TO RUN.** The changed internals
+are not meant to be runnable, only "scannable".
+
 
 
 ---

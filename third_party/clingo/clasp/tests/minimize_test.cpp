@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -542,7 +542,7 @@ TEST_CASE("Model-guided minimize", "[constraint][asp]") {
 		REQUIRE((solver.assume(f) && solver.propagate()));
 		newMin->commitUpperBound(solver);
 		solver.backtrack();
-		// disbale backjumping
+		// disable backjumping
 		solver.setBacktrackLevel(2, Solver::undo_pop_proj_level);
 		REQUIRE(newMin->integrateBound(solver));
 		REQUIRE(solver.decisionLevel() == 2);
@@ -1100,8 +1100,8 @@ TEST_CASE("Core-guided minimize", "[constraint][asp]") {
 		p.opts |= OptParams::usc_disjoint;
 		MinimizeConstraint* m1 = data->attach(s1, p);
 		MinimizeConstraint* m2 = data->attach(s2, p);
-		s1.setEnumerationConstraint(m1);
-		s2.setEnumerationConstraint(m2);
+		SingleOwnerPtr<Constraint, DestroyObject> del1(m1);
+		SingleOwnerPtr<Constraint, DestroyObject> del2(m2);
 		BasicSolve solve(s1);
 		LitVec gp;
 		while (m1->integrate(s1) || m1->handleUnsat(s1, true, gp)) {

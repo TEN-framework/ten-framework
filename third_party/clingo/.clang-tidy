@@ -421,4 +421,3 @@ CheckOptions:
   - key:             llvm-else-after-return.WarnOnUnfixable
     value:           'false'
 ...
-

@@ -39,4 +39,3 @@ stone(I,y,X,Y,L) :- not brick(I,X,Y-1), brick(I,X,Y), brick(I,X,Y+1), count(I,L)
 target(r,5,4).
 
 field(1..6,1..6).
-

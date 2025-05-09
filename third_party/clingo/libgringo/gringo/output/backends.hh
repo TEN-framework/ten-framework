@@ -26,25 +26,25 @@
 #define GRINGO_OUTPUT_BACKENDS_HH
 
 #include <gringo/backend.hh>
-#include <potassco/convert.h>
 #include <potassco/aspif.h>
+#include <potassco/convert.h>
 #include <potassco/smodels.h>
 #include <potassco/theory_data.h>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 class SmodelsFormatBackend : public Potassco::SmodelsConvert {
-public:
-    SmodelsFormatBackend(std::ostream& os)
-    : Potassco::SmodelsConvert(out_, true)
-    , out_(os, true, 0) { }
-private:
+  public:
+    SmodelsFormatBackend(std::ostream &os) : Potassco::SmodelsConvert(out_, true), out_(os, true, 0) {}
+
+  private:
     Potassco::SmodelsOutput out_;
 };
 
 using IntermediateFormatBackend = Potassco::AspifOutput;
 
-} } // namespace Output Gringo
+} // namespace Output
+} // namespace Gringo
 
 #endif // GRINGO_OUTPUT_BACKENDS_HH
-

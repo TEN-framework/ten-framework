@@ -25,13 +25,13 @@
 #ifndef _GRINGO_TEST_TESTS_HH
 #define _GRINGO_TEST_TESTS_HH
 
-#include <catch2/catch_test_macros.hpp>
 #include "gringo/backend.hh"
-#include "gringo/utility.hh"
-#include "gringo/logger.hh"
 #include "gringo/base.hh"
 #include "gringo/input/groundtermparser.hh"
+#include "gringo/logger.hh"
+#include "gringo/utility.hh"
 #include <algorithm>
+#include <catch2/catch_test_macros.hpp>
 #include <unordered_map>
 
 namespace Gringo {
@@ -40,24 +40,15 @@ namespace Gringo {
 
 namespace IO {
 
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::unique_ptr<T> const &x);
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::vector<T...> const &x);
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::initializer_list<T> const &x);
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::set<T...> const &x);
-template <class T, class U>
-std::ostream &operator<<(std::ostream &out, std::pair<T, U> const &x);
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::tuple<T...> const &x);
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::map<T...> const &x);
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::unordered_map<T...> const &x);
-template <class T>
-std::string to_string(T const &x);
+template <class T> std::ostream &operator<<(std::ostream &out, std::unique_ptr<T> const &x);
+template <class... T> std::ostream &operator<<(std::ostream &out, std::vector<T...> const &x);
+template <class T> std::ostream &operator<<(std::ostream &out, std::initializer_list<T> const &x);
+template <class... T> std::ostream &operator<<(std::ostream &out, std::set<T...> const &x);
+template <class T, class U> std::ostream &operator<<(std::ostream &out, std::pair<T, U> const &x);
+template <class... T> std::ostream &operator<<(std::ostream &out, std::tuple<T...> const &x);
+template <class... T> std::ostream &operator<<(std::ostream &out, std::map<T...> const &x);
+template <class... T> std::ostream &operator<<(std::ostream &out, std::unordered_map<T...> const &x);
+template <class T> std::string to_string(T const &x);
 
 } // namespace IO
 
@@ -67,121 +58,117 @@ std::string to_string(T const &x);
 
 namespace IO {
 
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::unique_ptr<T> const &x) {
+template <class T> std::ostream &operator<<(std::ostream &out, std::unique_ptr<T> const &x) {
     out << *x;
     return out;
 }
 
-template <class T, class U>
-std::ostream &operator<<(std::ostream &out, std::pair<T, U> const &x) {
+template <class T, class U> std::ostream &operator<<(std::ostream &out, std::pair<T, U> const &x) {
     out << "(" << x.first << "," << x.second << ")";
     return out;
 }
 
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::vector<T...> const &vec) {
+template <class... T> std::ostream &operator<<(std::ostream &out, std::vector<T...> const &vec) {
     out << "[";
     auto it(vec.begin()), end(vec.end());
     if (it != end) {
         out << *it;
-        for (++it; it != end; ++it) { out << "," << *it; }
+        for (++it; it != end; ++it) {
+            out << "," << *it;
+        }
     }
     out << "]";
     return out;
 }
 
-template <class T>
-std::ostream &operator<<(std::ostream &out, std::initializer_list<T> const &vec) {
+template <class T> std::ostream &operator<<(std::ostream &out, std::initializer_list<T> const &vec) {
     out << "[";
     auto it(vec.begin()), end(vec.end());
     if (it != end) {
         out << *it;
-        for (++it; it != end; ++it) { out << "," << *it; }
+        for (++it; it != end; ++it) {
+            out << "," << *it;
+        }
     }
     out << "]";
     return out;
 }
 
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::set<T...> const &x) {
+template <class... T> std::ostream &operator<<(std::ostream &out, std::set<T...> const &x) {
     out << "{";
     auto it(x.begin()), end(x.end());
     if (it != end) {
         out << *it;
-        for (++it; it != end; ++it) { out << "," << *it; }
+        for (++it; it != end; ++it) {
+            out << "," << *it;
+        }
     }
     out << "}";
     return out;
 }
 
-
 namespace detail {
-    template <int N>
-    struct print {
-        template <class... T>
-        void operator()(std::ostream &out, std::tuple<T...> const &x) const {
-            out << std::get<sizeof...(T) - N>(x) << ",";
-            print<N-1>()(out, x);
-        }
-    };
-    template <>
-    struct print<1> {
-        template <class... T>
-        void operator()(std::ostream &out, std::tuple<T...> const &x) const {
-            out << std::get<sizeof...(T) - 1>(x);
-        }
-    };
-    template <>
-    struct print<0> {
-        template <class... T>
-        void operator()(std::ostream &, std::tuple<T...> const &) const { }
-    };
-}
+template <int N> struct print {
+    template <class... T> void operator()(std::ostream &out, std::tuple<T...> const &x) const {
+        out << std::get<sizeof...(T) - N>(x) << ",";
+        print<N - 1>()(out, x);
+    }
+};
+template <> struct print<1> {
+    template <class... T> void operator()(std::ostream &out, std::tuple<T...> const &x) const {
+        out << std::get<sizeof...(T) - 1>(x);
+    }
+};
+template <> struct print<0> {
+    template <class... T> void operator()(std::ostream &, std::tuple<T...> const &) const {}
+};
+} // namespace detail
 
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::tuple<T...> const &x) {
+template <class... T> std::ostream &operator<<(std::ostream &out, std::tuple<T...> const &x) {
     out << "(";
     detail::print<sizeof...(T)>()(out, x);
     out << ")";
     return out;
 }
 
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::unordered_map<T...> const &x) {
+template <class... T> std::ostream &operator<<(std::ostream &out, std::unordered_map<T...> const &x) {
     std::vector<std::pair<std::string, std::string>> vals;
-    for (auto const &y : x) { vals.emplace_back(to_string(y.first), to_string(y.second)); }
+    for (auto const &y : x) {
+        vals.emplace_back(to_string(y.first), to_string(y.second));
+    }
     std::sort(vals.begin(), vals.end());
     out << "{";
     auto it = vals.begin(), end = vals.end();
     if (it != end) {
         out << it->first << ":" << it->second;
-        for (++it; it != end; ++it) { out << "," << it->first << ":" << it->second; }
+        for (++it; it != end; ++it) {
+            out << "," << it->first << ":" << it->second;
+        }
     }
     out << "}";
     return out;
 }
 
-template <class... T>
-std::ostream &operator<<(std::ostream &out, std::map<T...> const &x) {
+template <class... T> std::ostream &operator<<(std::ostream &out, std::map<T...> const &x) {
     out << "{";
     auto it = x.begin(), end = x.end();
     if (it != end) {
         out << it->first << ":" << it->second;
-        for (++it; it != end; ++it) { out << "," << it->first << ":" << it->second; }
+        for (++it; it != end; ++it) {
+            out << "," << it->first << ":" << it->second;
+        }
     }
     out << "}";
     return out;
 }
 
-template <class T>
-std::string to_string(T const &x) {
+template <class T> std::string to_string(T const &x) {
     std::stringstream ss;
     ss << x;
     return ss.str();
 }
 
-} // namesapce IO
+} // namespace IO
 
 // }}}
 
@@ -189,7 +176,8 @@ inline std::string &replace_all(std::string &haystack, std::string const &needle
     size_t index = 0;
     while (true) {
         index = haystack.find(needle, index);
-        if (index == std::string::npos) break;
+        if (index == std::string::npos)
+            break;
         haystack.replace(index, needle.length(), replace);
         index += replace.length();
     }
@@ -201,92 +189,77 @@ inline std::string replace_all(std::string &&haystack, std::string const &needle
     return std::move(haystack);
 }
 
-}
+} // namespace Gringo
 
-namespace Gringo { namespace Test {
+namespace Gringo {
+namespace Test {
 
 // {{{1 definition of helpers to initialize vectors
 
 namespace Detail {
 
-template <int, class, int, class...>
-struct walker;
+template <int, class, int, class...> struct walker;
 
-template <class, int, int, int, class...>
-struct emplacer;
+template <class, int, int, int, class...> struct emplacer;
 
-template <class V, int S1, int S2, int S3, class A, class... T>
-struct emplacer<V, S1, S2, S3, A, T...> {
-    void operator()(V& v, A&& a, T&&... args) const {
+template <class V, int S1, int S2, int S3, class A, class... T> struct emplacer<V, S1, S2, S3, A, T...> {
+    void operator()(V &v, A &&a, T &&...args) const {
         // reverse
-        emplacer<V, S1-1, S2, S3, T..., A>()(v, std::forward<T>(args)..., std::forward<A>(a));
+        emplacer<V, S1 - 1, S2, S3, T..., A>()(v, std::forward<T>(args)..., std::forward<A>(a));
     }
 };
 
-template <class V, int S2, int S3, class A, class... T>
-struct emplacer<V, 0, S2, S3, A, T...> {
-    void operator()(V& v, A&&, T&&... args) const {
+template <class V, int S2, int S3, class A, class... T> struct emplacer<V, 0, S2, S3, A, T...> {
+    void operator()(V &v, A &&, T &&...args) const {
         // drop
-        emplacer<V, 0, S2-1, S3, T...>()(v, std::forward<T>(args)...);
+        emplacer<V, 0, S2 - 1, S3, T...>()(v, std::forward<T>(args)...);
     }
 };
 
-template <class V, int S3, class A, class... T>
-struct emplacer<V, 0, 0, S3, A, T...> {
-    void operator()(V& v, A&& a, T&&... args) const {
+template <class V, int S3, class A, class... T> struct emplacer<V, 0, 0, S3, A, T...> {
+    void operator()(V &v, A &&a, T &&...args) const {
         // reverse
-        emplacer<V, 0, 0, S3-1, T..., A>()(v, std::forward<T>(args)..., std::forward<A>(a));
+        emplacer<V, 0, 0, S3 - 1, T..., A>()(v, std::forward<T>(args)..., std::forward<A>(a));
     }
 };
 
-template <class V, class A, class... T>
-struct emplacer<V, 0, 0, 0, A, T...> {
-    void operator()(V &v, A&& a, T&&... args) const {
-        v.emplace_back(std::forward<A>(a), std::forward<T>(args)...);
-    }
+template <class V, class A, class... T> struct emplacer<V, 0, 0, 0, A, T...> {
+    void operator()(V &v, A &&a, T &&...args) const { v.emplace_back(std::forward<A>(a), std::forward<T>(args)...); }
 };
 
-template <int N, class V, int I, class A, class... T>
-struct walker<N, V, I, A, T...> {
-    void operator()(V& v, A&&, T&&... args) const {
-        walker<N, V, I-1, T...>()(v, std::forward<T>(args)...);
-    }
+template <int N, class V, int I, class A, class... T> struct walker<N, V, I, A, T...> {
+    void operator()(V &v, A &&, T &&...args) const { walker<N, V, I - 1, T...>()(v, std::forward<T>(args)...); }
 };
 
-template <int N, class V, class A, class... T>
-struct walker<N, V, 0, A, T...> {
-    void operator()(V& v, A&& a, T&&... args) const {
-        emplacer<V, N, sizeof...(T)+1-N, N, A, T...>()(v, std::forward<A>(a), std::forward<T>(args)...);
-        walker<N, V, N-1, T...>()(v, std::forward<T>(args)...);
+template <int N, class V, class A, class... T> struct walker<N, V, 0, A, T...> {
+    void operator()(V &v, A &&a, T &&...args) const {
+        emplacer<V, N, sizeof...(T) + 1 - N, N, A, T...>()(v, std::forward<A>(a), std::forward<T>(args)...);
+        walker<N, V, N - 1, T...>()(v, std::forward<T>(args)...);
     }
 };
 
 // Note: optimization for N=1
-template <class V, class A, class... T>
-struct walker<1, V, 0, A, T...> {
-    void operator()(V& v, A&& a, T&&... args) const {
+template <class V, class A, class... T> struct walker<1, V, 0, A, T...> {
+    void operator()(V &v, A &&a, T &&...args) const {
         v.emplace_back(std::forward<A>(a));
         walker<1, V, 0, T...>()(v, std::forward<T>(args)...);
     }
 };
 
-template <int N, class V, int I>
-struct walker<N, V, I> {
+template <int N, class V, int I> struct walker<N, V, I> {
     static_assert(N > 0, "think - makes no sense!");
-    void operator()(V&) const { }
+    void operator()(V &) const {}
 };
 
 } // namespace Detail
 
-template <class V, class... T>
-V init(T&&... args) {
+template <class V, class... T> V init(T &&...args) {
     V v;
     Detail::walker<1, V, 0, T...>()(v, std::forward<T>(args)...);
     return v;
 }
 
-template <int N, class V, class... T>
-V init(T&&... args) {
+template <int N, class V, class... T> V init(T &&...args) {
     static_assert(N > 0, "think - makes no sense!");
     V v;
     Detail::walker<N, V, 0, T...>()(v, std::forward<T>(args)...);
@@ -297,9 +270,8 @@ V init(T&&... args) {
 
 struct TestGringoModule {
     TestGringoModule()
-    : logger([&](Warnings, char const *msg){
-        messages_.emplace_back(msg);
-    }, std::numeric_limits<unsigned>::max()) { }
+        : logger([&](Warnings, char const *msg) { messages_.emplace_back(msg); },
+                 std::numeric_limits<unsigned>::max()) {}
 
     Gringo::Symbol parseValue(std::string const &str, Logger::Printer = nullptr, unsigned = 0) {
         return parser.parse(str, logger);
@@ -326,6 +298,7 @@ inline std::ostream &operator<<(std::ostream &out, TestGringoModule const &mod) 
 
 // }}}1
 
-} } // namespace Test Gringo
+} // namespace Test
+} // namespace Gringo
 
 #endif // _GRINGO_TEST_TESTS_HH

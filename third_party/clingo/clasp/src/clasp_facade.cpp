@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -229,7 +229,7 @@ public:
 	}
 	Result result() {
 		wait(-1.0);
-		if (error()) { throw std::runtime_error(error_.c_str()); }
+		POTASSCO_EXPECT(!error(), error_.c_str());
 		return result_;
 	}
 	const Model* model() {
@@ -346,9 +346,9 @@ void ClaspFacade::SolveStrategy::detachAlgo(bool more, int nException, int state
 	try {
 		if (nException == 1) { throw; }
 		switch (state) {
-			case 0: ++state; PROTECT(nException, algo_->stop());  // FALLTHRU
-			case 1: ++state; PROTECT(nException, facade_->stopStep(signal_, !more));  // FALLTHRU
-			case 2: ++state; if (handler_) { PROTECT(nException, handler_->onEvent(StepReady(facade_->summary()))); }   // FALLTHRU
+			case 0: ++state; PROTECT(nException, algo_->stop());  // FALLTHROUGH
+			case 1: ++state; PROTECT(nException, facade_->stopStep(signal_, !more));  // FALLTHROUGH
+			case 2: ++state; if (handler_) { PROTECT(nException, handler_->onEvent(StepReady(facade_->summary()))); }   // FALLTHROUGH
 			case 3: state = -1;
 				result_ = facade_->result();
 				facade_->assume_.resize(aTop_);
@@ -426,7 +426,7 @@ ClaspFacade::SolveStrategy* ClaspFacade::SolveStrategy::create(SolveMode_t m, Cl
 #if CLASP_HAS_THREADS
 	return new SolveStrategy::Async(m, f, &algo);
 #else
-	throw std::logic_error("Solve mode not supported!");
+	POTASSCO_REQUIRE(CLASP_HAS_THREADS, "Solve mode not supported!");
 #endif
 }
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -470,7 +470,7 @@ struct ClaspFacade::SolveData {
 	~SolveData() { reset(); }
 	void init(SolveAlgorithm* algo, Enumerator* en);
 	void reset();
-	void prepareEnum(SharedContext& ctx, int64 numM, EnumOptions::OptMode opt, EnumMode mode, ProjectMode prj);
+	void prepareEnum(SharedContext& ctx, EnumMode mode, const EnumOptions& options);
 	bool interrupt(int sig) {
 		if (solving()) { return active->interrupt(sig); }
 		if (!qSig && sig != SolveStrategy::SIGCANCEL) { qSig = sig; }
@@ -522,18 +522,20 @@ void ClaspFacade::SolveData::reset() {
 	if (en.get())   { en->reset(); }
 	prepared = solved = false;
 }
-void ClaspFacade::SolveData::prepareEnum(SharedContext& ctx, int64 numM, EnumOptions::OptMode opt, EnumMode mode, ProjectMode proj) {
+void ClaspFacade::SolveData::prepareEnum(SharedContext& ctx, EnumMode mode, const EnumOptions& options) {
 	POTASSCO_REQUIRE(!active, "Solve operation still active");
 	if (ctx.ok() && !ctx.frozen() && !prepared) {
 		if (mode == enum_volatile && ctx.solveMode() == SharedContext::solve_multi) {
 			ctx.requestStepVar();
 		}
-		ctx.output.setProjectMode(proj);
-		int lim = en->init(ctx, opt, (int)Range<int64>(-1, INT_MAX).clamp(numM));
-		if (lim == 0 || numM < 0) {
+		ctx.output.setProjectMode(options.proMode);
+		int64 numM = options.numModels;
+		int lim = en->init(ctx, options.optMode, (int)Range<int64>(-1, INT_MAX).clamp(numM));
+		if (lim == 0 || options.numModels < 0) {
 			numM = lim;
 		}
 		algo->setEnumLimit(numM ? static_cast<uint64>(numM) : UINT64_MAX);
+		algo->setOptLimit(options.optStop);
 		prepared = true;
 	}
 }
@@ -577,12 +579,12 @@ struct SummaryStats {
 		range_ = r;
 	}
 	uint32          size()        const { return range_.hi - range_.lo; }
-	const char*     key(uint32 i) const { return i < size() ? sumKeys_s[i + range_.lo].key : throw std::out_of_range(POTASSCO_FUNC_NAME); }
+	const char*     key(uint32 i) const { POTASSCO_CHECK(i < size(), ERANGE); return sumKeys_s[i + range_.lo].key; }
 	StatisticObject at(const char* key) const {
 		for (const KV* x = sumKeys_s + range_.lo, *end = sumKeys_s + range_.hi; x != end; ++x) {
 			if (std::strcmp(x->key, key) == 0) { return x->get(stats_); }
 		}
-		throw std::out_of_range(POTASSCO_FUNC_NAME);
+		POTASSCO_CHECK(false, ERANGE);
 	}
 	StatisticObject toStats() const { return StatisticObject::map(this); }
 	const ClaspFacade::Summary* stats_;
@@ -833,7 +835,7 @@ ProgramBuilder& ClaspFacade::start(ClaspConfig& config, ProblemType t) {
 	if      (t == Problem_t::Sat) { return startSat(config); }
 	else if (t == Problem_t::Pb)  { return startPB(config);  }
 	else if (t == Problem_t::Asp) { return startAsp(config); }
-	else                          { throw std::domain_error("Unknown problem type!"); }
+	else                          { POTASSCO_CHECK(false, EDOM, "Unknown problem type!"); }
 }
 
 ProgramBuilder& ClaspFacade::start(ClaspConfig& config, std::istream& str) {
@@ -896,6 +898,9 @@ void Clasp::ClaspFacade::keepProgram() {
 	POTASSCO_REQUIRE(program(), "Program was already released!");
 	POTASSCO_ASSERT(solve_.get(), "Active program required!");
 	solve_->keepPrg = true;
+	if (isAsp()) {
+		static_cast<Asp::LogicProgram*>(builder_.get())->enableOutputState();
+	}
 }
 
 void ClaspFacade::startStep(uint32 n) {
@@ -979,7 +984,7 @@ void ClaspFacade::prepare(EnumMode enumMode) {
 	EnumOptions& en = config_->solve;
 	if (solved()) {
 		doUpdate(0, false, SIG_DFL);
-		solve_->prepareEnum(ctx, en.numModels, en.optMode, enumMode, en.proMode);
+		solve_->prepareEnum(ctx, enumMode, en);
 		ctx.endInit();
 	}
 	if (prepared()) { return; }
@@ -999,8 +1004,11 @@ void ClaspFacade::prepare(EnumMode enumMode) {
 			ctx.warn("opt-mode=enum: No bound given, optimize statement ignored.");
 		}
 	}
+	if (incremental() || config_->solver(0).heuId == Heuristic_t::Domain) {
+		ctx.setPreserveHeuristic(true);
+	}
 	POTASSCO_REQUIRE(!ctx.ok() || !ctx.frozen());
-	solve_->prepareEnum(ctx, en.numModels, en.optMode, enumMode, en.proMode);
+	solve_->prepareEnum(ctx, enumMode, en);
 	if      (!solve_->keepPrg) { builder_ = 0; }
 	else if (isAsp())          { static_cast<Asp::LogicProgram*>(builder_.get())->dispose(false); }
 	if (!builder_.get() && !ctx.heuristic.empty()) {

@@ -51,15 +51,15 @@ SymVec Scripts::call(Location const &loc, String name, SymSpan args, Logger &log
             return std::get<2>(script)->call(loc, name, args, log);
         }
     }
-    GRINGO_REPORT(log, Warnings::OperationUndefined)
-        << loc << ": info: operation undefined:\n"
-        << "  function '" << name << "' not found\n"
-        ;
+    GRINGO_REPORT(log, Warnings::OperationUndefined) << loc << ": info: operation undefined:\n"
+                                                     << "  function '" << name << "' not found\n";
     return {};
 }
 
 void Scripts::registerScript(String type, UScript script) {
-    if (script) { scripts_.emplace_back(type, false, std::move(script)); }
+    if (script) {
+        scripts_.emplace_back(type, false, std::move(script));
+    }
 }
 
 void Scripts::exec(String type, Location loc, String code) {

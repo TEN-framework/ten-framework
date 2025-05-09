@@ -7,19 +7,11 @@
 // SPDX-License-Identifier: BSL-1.0
 #include <catch2/interfaces/catch_interfaces_reporter.hpp>
 #include <catch2/interfaces/catch_interfaces_config.hpp>
-#include <catch2/internal/catch_console_colour.hpp>
-#include <catch2/internal/catch_console_width.hpp>
 #include <catch2/catch_message.hpp>
-#include <catch2/internal/catch_list.hpp>
-#include <catch2/internal/catch_string_manip.hpp>
-#include <catch2/catch_test_case_info.hpp>
-#include <catch2/reporters/catch_reporter_helpers.hpp>
 #include <catch2/internal/catch_move_and_forward.hpp>
 #include <catch2/internal/catch_istream.hpp>
 
-#include <algorithm>
 #include <cassert>
-#include <iomanip>
 
 namespace Catch {
 
@@ -54,8 +46,6 @@ namespace Catch {
         infoMessages( _infoMessages ),
         totals( _totals )
     {
-        assertionResult.m_resultData.lazyExpression.m_transientExpression = _assertionResult.m_resultData.lazyExpression.m_transientExpression;
-
         if( assertionResult.hasMessage() ) {
             // Copy message into messages list.
             // !TBD This should have been done earlier, somewhere

@@ -32,6 +32,8 @@ statistics in json format:
         "unsat": 0.0
     }
 """
+
+from collections import abc
 from typing import (
     Any,
     ItemsView,
@@ -45,7 +47,6 @@ from typing import (
     ValuesView,
     cast,
 )
-from collections import abc
 
 from ._internal import _c_call, _handle_error, _lib, _to_str
 

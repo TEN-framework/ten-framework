@@ -1,3 +1,6 @@
+# Enable Bzlmod for every Bazel command
+common --enable_bzlmod
+
 build --enable_platform_specific_config
 
 build:gcc9 --cxxopt=-std=c++2a
@@ -8,3 +11,4 @@ build:vs2022 --cxxopt=/std:c++17
 
 build:windows --config=vs2022
 build:linux --config=gcc11
+build:macos --cxxopt=-std=c++2b

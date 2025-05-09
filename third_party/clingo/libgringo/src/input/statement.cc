@@ -22,21 +22,20 @@
 
 // }}}
 
-#include "gringo/bug.hh"
 #include "gringo/input/statement.hh"
-#include "gringo/input/literals.hh"
-#include "gringo/input/aggregates.hh"
+#include "gringo/bug.hh"
 #include "gringo/ground/statements.hh"
+#include "gringo/input/aggregates.hh"
+#include "gringo/input/literals.hh"
 #include "gringo/safetycheck.hh"
 
 #include <algorithm>
 #include <numeric>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
-Statement::Statement(UHeadAggr &&head, UBodyAggrVec &&body)
-: head_(std::move(head))
-, body_(std::move(body)) { }
+Statement::Statement(UHeadAggr &&head, UBodyAggrVec &&body) : head_(std::move(head)), body_(std::move(body)) {}
 
 void Statement::initTheory(TheoryDefs &def, Logger &log) {
     head_->initTheory(def, !body_.empty(), log);
@@ -50,22 +49,20 @@ void Statement::add(ULit &&lit) {
     body_.emplace_back(make_locatable<SimpleBodyLiteral>(loc, std::move(lit)));
 }
 
-void Statement::print(std::ostream &out) const {
-    head_->printWithCondition(out, body_);
-}
+void Statement::print(std::ostream &out) const { head_->printWithCondition(out, body_); }
 
-Symbol Statement::isEDB() const {
-    return body_.empty() ? head_->isEDB() : Symbol();
-}
+Symbol Statement::isEDB() const { return body_.empty() ? head_->isEDB() : Symbol(); }
 
 UStmVec Statement::unpool() {
     std::vector<UBodyAggrVec> bodies;
-    Term::unpool(body_.begin(), body_.end(),
-        [] (UBodyAggr &x) -> UBodyAggrVec {
+    Term::unpool(
+        body_.begin(), body_.end(),
+        [](UBodyAggr &x) -> UBodyAggrVec {
             UBodyAggrVec body;
             x->unpool(body);
             return body;
-        }, [&bodies](UBodyAggrVec &&x) { bodies.push_back(std::move(x)); });
+        },
+        [&bodies](UBodyAggrVec &&x) { bodies.push_back(std::move(x)); });
     UHeadAggrVec heads;
     head_->unpool(heads);
     UStmVec x;
@@ -78,8 +75,7 @@ UStmVec Statement::unpool() {
 }
 
 bool Statement::hasPool() const {
-    return std::any_of(body_.begin(), body_.end(), [](auto const &lit) { return lit->hasPool(); }) ||
-           head_->hasPool();
+    return std::any_of(body_.begin(), body_.end(), [](auto const &lit) { return lit->hasPool(); }) || head_->hasPool();
 }
 
 UStmVec Statement::unpoolComparison() {
@@ -97,14 +93,11 @@ UStmVec Statement::unpoolComparison() {
     if (hasPool) {
         UBodyAggrVecVec bodies;
         Term::unpool(
-            body_.begin(), body_.end(),
-            [](UBodyAggr const &lit) {
-                return lit->unpoolComparison();
-            }, [&] (std::vector<UBodyAggrVec> body) {
+            body_.begin(), body_.end(), [](UBodyAggr const &lit) { return lit->unpoolComparison(); },
+            [&](std::vector<UBodyAggrVec> body) {
                 bodies.emplace_back();
                 for (auto &lits : body) {
-                    bodies.back().insert(bodies.back().end(),
-                                         std::make_move_iterator(lits.begin()),
+                    bodies.back().insert(bodies.back().end(), std::make_move_iterator(lits.begin()),
                                          std::make_move_iterator(lits.end()));
                 }
             });
@@ -112,8 +105,7 @@ UStmVec Statement::unpoolComparison() {
         for (auto &body : bodies) {
             ret.emplace_back(make_locatable<Statement>(loc(), get_clone(head_), std::move(body)));
         }
-    }
-    else {
+    } else {
         ret.emplace_back(make_locatable<Statement>(loc(), std::move(head_), std::move(body_)));
     }
     return ret;
@@ -134,12 +126,9 @@ bool Statement::simplify(Projections &project, Logger &log) {
     if (!head_->simplify(project, state, log)) {
         return false;
     }
-    bool singleton = std::accumulate(body_.begin(),
-                                     body_.end(),
-                                     0,
-                                     [](unsigned x, UBodyAggr const &y) {
-                                         return x + y->projectScore();
-                                     }) == 1 && head_->isPredicate();
+    bool singleton = std::accumulate(body_.begin(), body_.end(), 0,
+                                     [](unsigned x, UBodyAggr const &y) { return x + y->projectScore(); }) == 1 &&
+                     head_->isPredicate();
     for (auto &y : body_) {
         if (!y->simplify(project, state, singleton, log)) {
             return false;
@@ -183,8 +172,8 @@ void _rewriteAggregates(UBodyAggrVec &body) {
 //
 
 void _rewriteAssignments(UBodyAggrVec &body) {
-    using LitDep = SafetyChecker<VarTerm*, UBodyAggr>;
-    using VarMap = std::unordered_map<String, LitDep::VarNode*>;
+    using LitDep = SafetyChecker<VarTerm *, UBodyAggr>;
+    using VarMap = std::unordered_map<String, LitDep::VarNode *>;
     LitDep dep;
     VarMap map;
     for (auto &y : body) {
@@ -197,8 +186,11 @@ void _rewriteAssignments(UBodyAggrVec &body) {
                 if (var == nullptr) {
                     var = &dep.insertVar(occ.first);
                 }
-                if (occ.second) { dep.insertEdge(ent, *var); }
-                else            { dep.insertEdge(*var, ent); }
+                if (occ.second) {
+                    dep.insertEdge(ent, *var);
+                } else {
+                    dep.insertEdge(*var, ent);
+                }
             }
         }
     }
@@ -208,14 +200,15 @@ void _rewriteAssignments(UBodyAggrVec &body) {
     body.clear();
     dep.init(open);
     UBodyAggrVec sorted;
-    for (std::size_t it = 0; it != open.size(); ) {
+    for (std::size_t it = 0; it != open.size();) {
         LitDep::EntVec assign;
         for (; it != open.size(); ++it) {
             if (!(open[it])->data->isAssignment()) {
                 dep.propagate(open[it], open, &bound);
                 sorted.emplace_back(std::move((open[it])->data));
+            } else {
+                assign.emplace_back(open[it]);
             }
-            else { assign.emplace_back(open[it]); }
         }
         LitDep::EntVec nextAssign;
         while (!assign.empty()) {
@@ -229,8 +222,7 @@ void _rewriteAssignments(UBodyAggrVec &body) {
                 }
                 if (!allBound) {
                     nextAssign.emplace_back(x);
-                }
-                else {
+                } else {
                     x->data->removeAssignment();
                     dep.propagate(x, open, &bound);
                     sorted.emplace_back(std::move(x->data));
@@ -247,7 +239,7 @@ void _rewriteAssignments(UBodyAggrVec &body) {
     }
     for (auto &x : dep.entNodes_) {
         if (x.depends > 0) {
-            sorted.emplace_back(std::move(x.data));\
+            sorted.emplace_back(std::move(x.data));
         }
     }
     body = std::move(sorted);
@@ -339,4 +331,5 @@ void Statement::toGround(ToGroundArg &x, Ground::UStmVec &stms) const {
     Gringo::Input::toGround(head_->toGround(x, stms), body_, x, stms);
 }
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo

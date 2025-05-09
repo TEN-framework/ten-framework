@@ -8,8 +8,9 @@
 #ifndef CATCH_RUN_CONTEXT_HPP_INCLUDED
 #define CATCH_RUN_CONTEXT_HPP_INCLUDED
 
-#include <catch2/interfaces/catch_interfaces_reporter.hpp>
+#include <catch2/interfaces/catch_interfaces_capture.hpp>
 #include <catch2/internal/catch_test_registry.hpp>
+#include <catch2/internal/catch_test_run_info.hpp>
 #include <catch2/internal/catch_fatal_condition_handler.hpp>
 #include <catch2/catch_test_case_info.hpp>
 #include <catch2/catch_message.hpp>
@@ -24,13 +25,15 @@
 
 namespace Catch {
 
-    class IMutableContext;
     class IGeneratorTracker;
     class IConfig;
+    class IEventListener;
+    using IEventListenerPtr = Detail::unique_ptr<IEventListener>;
+    class OutputRedirect;
 
     ///////////////////////////////////////////////////////////////////////////
 
-    class RunContext : public IResultCapture {
+    class RunContext final : public IResultCapture {
 
     public:
         RunContext( RunContext const& ) = delete;
@@ -52,14 +55,14 @@ namespace Catch {
         void handleMessage
                 (   AssertionInfo const& info,
                     ResultWas::OfType resultType,
-                    StringRef message,
+                    std::string&& message,
                     AssertionReaction& reaction ) override;
         void handleUnexpectedExceptionNotThrown
                 (   AssertionInfo const& info,
                     AssertionReaction& reaction ) override;
         void handleUnexpectedInflightException
                 (   AssertionInfo const& info,
-                    std::string const& message,
+                    std::string&& message,
                     AssertionReaction& reaction ) override;
         void handleIncomplete
                 (   AssertionInfo const& info ) override;
@@ -68,6 +71,7 @@ namespace Catch {
                     ResultWas::OfType resultType,
                     AssertionReaction &reaction ) override;
 
+        void notifyAssertionStarted( AssertionInfo const& info ) override;
         bool sectionStarted( StringRef sectionName,
                              SourceLineInfo const& sectionLineInfo,
                              Counts& assertions ) override;
@@ -112,13 +116,13 @@ namespace Catch {
 
     private:
 
-        void runCurrentTest( std::string& redirectedCout, std::string& redirectedCerr );
+        void runCurrentTest();
         void invokeActiveTestCase();
 
         void resetAssertionInfo();
         bool testForMissingAssertions( Counts& assertions );
 
-        void assertionEnded( AssertionResult const& result );
+        void assertionEnded( AssertionResult&& result );
         void reportExpr
                 (   AssertionInfo const &info,
                     ResultWas::OfType resultType,
@@ -132,7 +136,6 @@ namespace Catch {
         void handleUnfinishedSections();
 
         TestRunInfo m_runInfo;
-        IMutableContext& m_context;
         TestCaseHandle const* m_activeTestCase = nullptr;
         ITracker* m_testCaseTracker = nullptr;
         Optional<AssertionResult> m_lastResult;
@@ -146,6 +149,7 @@ namespace Catch {
         std::vector<SectionEndInfo> m_unfinishedSections;
         std::vector<ITracker*> m_activeSections;
         TrackerContext m_trackerContext;
+        Detail::unique_ptr<OutputRedirect> m_outputRedirect;
         FatalConditionHandler m_fatalConditionhandler;
         bool m_lastAssertionPassed = false;
         bool m_shouldReportUnexpected = true;

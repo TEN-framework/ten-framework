@@ -8,7 +8,7 @@ end
 
 function main(prg)
     local bot = 100
-    local lit = function (sym) 
+    local lit = function (sym)
         return prg.symbolic_atoms:lookup(sym).literal
     end
     prg:ground({{"base", {}}})

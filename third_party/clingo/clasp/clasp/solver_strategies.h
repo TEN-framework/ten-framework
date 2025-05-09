@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -59,7 +59,7 @@ namespace Clasp {
  * \<limit\> is the initial outer-limit and j is the number of times the
  * sequence was already repeated.
  *
- * \note For luby's seqeuence, j is not a repetition counter
+ * \note For luby's sequence, j is not a repetition counter
  * but the index where the sequence grows to the next power of two.
  *
  * \see Luby et al. "Optimal speedup of las vegas algorithms."
@@ -68,7 +68,7 @@ namespace Clasp {
 struct ScheduleStrategy {
 public:
 	//! Supported strategies.
-	enum Type { Geometric = 0, Arithmetic = 1, Luby = 2, User = 3 };
+	enum Type { Geometric = 0, Arithmetic = 1, Luby = 2 };
 
 	ScheduleStrategy(Type t = Geometric, uint32 b = 100, double g = 1.5, uint32 o = 0);
 	//! Creates luby's sequence with unit-length unit and optional outer limit.
@@ -80,11 +80,11 @@ public:
 	//! Creates fixed sequence with length base.
 	static ScheduleStrategy fixed(uint32 base)                               { return ScheduleStrategy(Arithmetic, base, 0, 0);  }
 	static ScheduleStrategy none()                                           { return ScheduleStrategy(Geometric, 0); }
-	static ScheduleStrategy def()                                            { return ScheduleStrategy(User, 0, 0.0); }
+	static ScheduleStrategy def()                                            { return ScheduleStrategy(Arithmetic, 0); }
 	uint64 current()  const;
 	bool   disabled() const { return base == 0; }
-	bool   defaulted()const { return base == 0 && type == User; }
-	void   reset()          { idx  = 0;         }
+	bool   defaulted()const { return base == 0 && type == Arithmetic; }
+	void   reset()          { idx  = 0; }
 	uint64 next();
 	void   advanceTo(uint32 idx);
 	uint32 base : 30; // base of sequence (n1)
@@ -189,7 +189,7 @@ struct HeuParams {
 	uint32 nant     : 1;  /*!< Prefer elements in NegAnte(P).      */
 	uint32 huang    : 1;  /*!< Only for Berkmin.   */
 	uint32 acids    : 1;  /*!< Only for Vsids/Dom. */
-	uint32 domPref  : 5;  /*!< Default pref for doamin heuristic (set of DomPref). */
+	uint32 domPref  : 5;  /*!< Default pref for domain heuristic (set of DomPref). */
 	uint32 domMod   : 3;  /*!< Default mod for domain heuristic (one of DomMod). */
 	union {
 		uint32     extra;
@@ -275,31 +275,139 @@ struct SolverParams : SolverStrategies  {
 
 typedef Range<uint32> Range32;
 
+struct RestartSchedule : ScheduleStrategy {
+	typedef MovingAvg::Type AvgType;
+	enum Keep { keep_never = 0, keep_restart = 1, keep_block = 2, keep_always = 3 };
+	RestartSchedule() : ScheduleStrategy() {}
+	//! Creates dynamic sequence.
+	static RestartSchedule dynamic(uint32 base, float k, uint32 lim, AvgType fast, Keep keep,AvgType slow, uint32 slowW);
+
+	bool    isDynamic() const { return type == 3u; }
+	// only valid if isDynamic() is true.
+	float   k()         const { return grow; }
+	uint32  lbdLim()    const { return len; }
+	uint32  adjustLim() const { return lbdLim() != UINT32_MAX ? 16000 : UINT32_MAX; }
+	AvgType fastAvg()   const;
+	AvgType slowAvg()   const;
+	uint32  slowWin()   const;
+	Keep    keepAvg()   const;
+};
+
 //! Aggregates restart-parameters to configure restarts during search.
 /*!
  * \see ScheduleStrategy
  */
 struct RestartParams {
-	RestartParams();
 	enum SeqUpdate { seq_continue = 0, seq_repeat = 1, seq_disable = 2 };
+	typedef RestartSchedule Schedule;
+	RestartParams();
 	uint32    prepare(bool withLookback);
 	void      disable();
-	bool      dynamic() const { return dynRestart != 0; }
-	bool      local()   const { return cntLocal   != 0; }
-	SeqUpdate update()  const { return static_cast<SeqUpdate>(upRestart); }
-	ScheduleStrategy sched;  /**< Restart schedule to use. */
-	float  blockScale;       /**< Scaling factor for blocking restarts. */
-	uint32 blockWindow: 16;  /**< Size of moving assignment average for blocking restarts (0: disable). */
-	uint32 blockFirst : 16;  /**< Enable blocking restarts after blockFirst conflicts. */
+	bool      disabled() const { return base() == 0; }
+	bool      local()    const { return cntLocal   != 0; }
+	SeqUpdate update()   const { return static_cast<SeqUpdate>(upRestart); }
+	uint32    base()     const { return rsSched.base; }
+	Schedule rsSched;
+	struct Block {
+		float scale() const { return static_cast<float>(fscale) / 100.0f; }
+		uint32 window : 23; /**< Size of moving assignment average for blocking restarts (0: disable). */
+		uint32 fscale :  9; /**< Scaling factor for blocking restarts. */
+		CLASP_ALIGN_BITFIELD(uint32)
+		uint32 first  : 29; /**< Disable blocking restarts for first conflicts. */
+		uint32 avg    :  3; /**< Use avg strategy (see MovingAvg::Type) */
+	}      block;             /**< Blocking restarts options. */
+	uint32 counterRestart:16; /**< Apply counter implication bump every counterRestart restarts (0: disable). */
+	uint32 counterBump   :16; /**< Bump factor for counter implication restarts. */
 	CLASP_ALIGN_BITFIELD(uint32)
-	uint32 counterRestart:16;/**< Apply counter implication bump every counterRestart restarts (0: disable). */
-	uint32 counterBump:16;   /**< Bump factor for counter implication restarts. */
-	CLASP_ALIGN_BITFIELD(uint32)
-	uint32 shuffle    :14;   /**< Shuffle program after shuffle restarts (0: disable). */
-	uint32 shuffleNext:14;   /**< Re-Shuffle program every shuffleNext restarts (0: disable). */
-	uint32 upRestart  : 2;   /**< How to update restart sequence after a model was found (one of SeqUpdate). */
-	uint32 cntLocal   : 1;   /**< Count conflicts globally or relative to current branch? */
-	uint32 dynRestart : 1;   /**< Dynamic restarts enabled? */
+	uint32 shuffle       :14; /**< Shuffle program after shuffle restarts (0: disable). */
+	uint32 shuffleNext   :14; /**< Re-Shuffle program every shuffleNext restarts (0: disable). */
+	uint32 upRestart     : 2; /**< How to update restart sequence after a model was found (one of SeqUpdate). */
+	uint32 cntLocal      : 1; /**< Count conflicts globally or relative to current branch? */
+};
+
+//! Type for implementing Glucose-style dynamic restarts.
+/*!
+ * \see  G. Audemard, L. Simon. "Refining Restarts Strategies for SAT and UNSAT"
+ * \note In contrast to Glucose's dynamic restarts, this class also implements a heuristic for
+ *       dynamically adjusting the margin ratio K.
+ */
+struct DynamicLimit {
+	typedef RestartSchedule::Keep Keep;
+	enum Type { lbd_limit, level_limit };
+	//! Creates new limit with moving average of the given window size.
+	DynamicLimit(float k, uint32 window, MovingAvg::Type fast, Keep keep, MovingAvg::Type slow, uint32 slowWin = 0, uint32 adjustLimit = 16000);
+
+	//! Resets adjust strategy and optionally the moving (fast) average.
+	void resetAdjust(float k, Type type, uint32 lim, bool resetAvg = false);
+	//! Resets current run - depending on the Keep strategy this also clears the moving average.
+	void block();
+	//! Resets moving and global average.
+	void reset();
+	//! Adds an observation and updates the moving average. Typically called on conflict.
+	void update(uint32 conflictLevel, uint32 lbd);
+	//! Notifies this object about a restart.
+	/*!
+	 * The function checks whether to adjust the active margin ratio and/or
+	 * whether to switch from LBD based to conflict level based restarts.
+	 *
+	 * \param maxLBD Threshold for switching between lbd and conflict level queue.
+	 * \param k Lower bound for margin ratio.
+	 */
+	uint32 restart(uint32 maxLBD, float k);
+	//! Returns the number of updates since last restart.
+	uint32 runLen()  const { return num_;  }
+	//! Returns whether it is time to restart.
+	bool   reached() const { return runLen() >= avg_.win() && (movingAverage() * adjust.rk) > globalAverage(); }
+	struct {
+		//! Returns the average restart length, i.e. number of conflicts between restarts.
+		double avgRestart() const { return ratio(samples, restarts); }
+		uint32 limit;   //!< Number of conflicts before an update is forced.
+		uint32 restarts;//!< Number of restarts since last update.
+		uint32 samples; //!< Number of samples since last update.
+		float  rk;      //!< LBD/CFL dynamic limit factor (typically < 1.0).
+		Type   type;    //!< Dynamic limit based on lbd or conflict level.
+	} adjust; //!< Data for dynamically adjusting margin ratio (rk).
+
+	double globalAverage() const { return global_.avg(adjust.type); }
+	double movingAverage() const { return avg_.get(); }
+private:
+	DynamicLimit(const DynamicLimit&);
+	DynamicLimit& operator=(const DynamicLimit&);
+	void resetRun(Keep k);
+	struct Global {
+		explicit Global(MovingAvg::Type type, uint32 size = 0);
+		//! Returns the global lbd or conflict level average.
+		double avg(Type t) const { return (t == lbd_limit ? lbd : cfl).get(); }
+		void reset() {
+			lbd.clear();
+			cfl.clear();
+		}
+		MovingAvg lbd; //!< Moving average of lbds
+		MovingAvg cfl; //!< Moving average of conflict levels
+	}         global_; //!< Global lbd/conflict level data.
+	MovingAvg avg_;    //!< (Fast) moving average.
+	uint32    num_;    //!< Number of samples in this run.
+	Keep      keep_;   //!< Strategy for keeping fast moving average.
+};
+
+//! Type for implementing Glucose-style blocking of restarts.
+/*!
+ * \see G. Audemard, L. Simon "Refining Restarts Strategies for SAT and UNSAT"
+ * \see A. Biere, A. Froehlich "Evaluating CDCL Restart Schemes"
+ */
+struct BlockLimit {
+	explicit BlockLimit(uint32 windowSize, double R = 1.4, MovingAvg::Type t = MovingAvg::avg_ema);
+	bool push(uint32 nAssign) {
+		avg.push(nAssign);
+		return ++n >= next;
+	}
+	//! Returns the exponential moving average scaled by r.
+	double scaled() const { return avg.get() * r; }
+	MovingAvg avg;  //!< Moving average.
+	uint64    next; //!< Enable once n >= next.
+	uint64    n;    //!< Number of data points seen so far.
+	uint32    inc;  //!< Block restart for next inc conflicts.
+	float     r;    //!< Scale factor for moving average.
 };
 
 //! Reduce strategy used during solving.
@@ -378,8 +486,8 @@ struct ReduceParams {
 	Range32 sizeInit(const SharedContext& ctx) const;
 	uint32  cflInit(const SharedContext& ctx)  const;
 	uint32  getBase(const SharedContext& ctx)  const;
-	float   fReduce()  const { return strategy.fReduce / 100.0f; }
-	float   fRestart() const { return strategy.fRestart/ 100.0f; }
+	float   fReduce()  const { return static_cast<float>(strategy.fReduce) / 100.0f; }
+	float   fRestart() const { return static_cast<float>(strategy.fRestart)/ 100.0f; }
 	static uint32 getLimit(uint32 base, double f, const Range<uint32>& r);
 	ScheduleStrategy cflSched;   /**< Conflict-based deletion schedule.               */
 	ScheduleStrategy growSched;  /**< Growth-based deletion schedule.                 */
@@ -462,7 +570,7 @@ struct ContextParams {
 		share_all     = 3, /*!< Share all constraints.                                    */
 		share_auto    = 4, /*!< Use share_no or share_all depending on number of solvers. */
 	};
-	ContextParams() : shareMode(share_auto), stats(0), shortMode(short_implicit), seed(1), hasConfig(0), cliConfig(0), cliId(0), cliMode(0) {}
+	ContextParams() : shareMode(share_auto), stats(0), shortMode(short_implicit), seed(1), hasConfig(0), cliConfig(0) {}
 	SatPreParams satPre;        /*!< Preprocessing options.                    */
 	uint8        shareMode : 3; /*!< Physical sharing mode (one of ShareMode). */
 	uint8        stats     : 2; /*!< See SharedContext::enableStats().         */
@@ -470,8 +578,6 @@ struct ContextParams {
 	uint8        seed      : 1; /*!< Apply new seed when adding solvers.       */
 	uint8        hasConfig : 1; /*!< Reserved for command-line interface.      */
 	uint8        cliConfig;     /*!< Reserved for command-line interface.      */
-	uint8        cliId;         /*!< Reserved for command-line interface.      */
-	uint8        cliMode;       /*!< Reserved for command-line interface.      */
 };
 
 //! Interface for configuring a SharedContext object and its associated solvers.
@@ -567,6 +673,25 @@ private:
 	SolverVec  solver_;
 	SearchVec  search_;
 	HeuFactory heu_;
+};
+///////////////////////////////////////////////////////////////////////////////
+// SearchLimits
+///////////////////////////////////////////////////////////////////////////////
+//! Parameter-Object for managing search limits.
+struct SearchLimits {
+	typedef DynamicLimit* LimitPtr;
+	typedef BlockLimit*   BlockPtr;
+	SearchLimits();
+	uint64 used;
+	struct {
+		uint64   conflicts; //!< Soft limit on number of conflicts for restart.
+		LimitPtr dynamic;   //!< Use dynamic restarts based on lbd or conflict level.
+		BlockPtr block;     //!< Optional strategy to increase restart limit.
+		bool     local;     //!< Apply conflict limit against active branch.
+	} restart;        //!< Restart limits.
+	uint64 conflicts; //!< Soft limit on number of conflicts.
+	uint64 memory;    //!< Soft memory limit for learnt lemmas (in bytes).
+	uint32 learnts;   //!< Limit on number of learnt lemmas.
 };
 
 //! Base class for solving related events.

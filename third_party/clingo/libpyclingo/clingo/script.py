@@ -38,15 +38,16 @@ a(2)
 ```
 '''
 
-from platform import python_version
 from abc import ABCMeta, abstractmethod
-from typing import Any, List, Iterable, Tuple, Union
 from collections.abc import Iterable as IterableABC
+from platform import python_version
 from traceback import format_exception
+from typing import Any, Iterable, List, Tuple, Union
+
 from clingo._internal import _c_call, _ffi, _handle_error, _lib
+from clingo.ast import Location, _py_location
 from clingo.control import Control
 from clingo.symbol import Symbol
-from clingo.ast import Location, _py_location
 
 try:
     import __main__  # type: ignore

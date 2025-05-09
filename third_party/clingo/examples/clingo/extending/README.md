@@ -5,7 +5,7 @@ Examples
 
 Embedding python code to implement a function evaluated during grounding:
 
-    $ clingo embedded.lp example.lp 
+    $ clingo embedded.lp example.lp
     clingo version 5.5.0
     Reading from embedded.lp ...
     Solving...

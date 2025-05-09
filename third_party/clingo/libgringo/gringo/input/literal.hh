@@ -25,23 +25,25 @@
 #ifndef GRINGO_INPUT_LITERAL_HH
 #define GRINGO_INPUT_LITERAL_HH
 
-#include <gringo/utility.hh>
-#include <gringo/term.hh>
 #include <gringo/domain.hh>
-#include <gringo/input/types.hh>
 #include <gringo/ground/literal.hh>
+#include <gringo/input/types.hh>
+#include <gringo/term.hh>
+#include <gringo/utility.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
-using Output::PredicateDomain;
-using Output::PredDomMap;
 using Output::DomainData;
+using Output::PredDomMap;
+using Output::PredicateDomain;
 
 // {{{ declaration of Literal
 
 class Projections {
-public:
-    using ProjectionMap = ordered_map<UTerm, std::pair<UTerm, bool>, mix_value_hash<UTerm>, value_equal_to<UTerm>>; // NOLINT
+  public:
+    using ProjectionMap =
+        ordered_map<UTerm, std::pair<UTerm, bool>, mix_value_hash<UTerm>, value_equal_to<UTerm>>; // NOLINT
 
     Projections() = default;
     Projections(Projections const &other) = delete;
@@ -59,17 +61,21 @@ public:
 };
 
 class Literal;
-using ULit    = std::unique_ptr<Literal>;
+using ULit = std::unique_ptr<Literal>;
 using ULitVec = std::vector<ULit>;
 using ULitVecVec = std::vector<ULitVec>;
 
-class Literal : public Printable, public Hashable, public Locatable, public Comparable<Literal>, public Clonable<Literal> {
-public:
+class Literal : public Printable,
+                public Hashable,
+                public Locatable,
+                public Comparable<Literal>,
+                public Clonable<Literal> {
+  public:
     using RelationVec = std::vector<std::tuple<Relation, UTerm, UTerm>>;
 
     Literal() = default;
     Literal(Literal const &other) = default;
-    Literal(Literal && other) noexcept = default;
+    Literal(Literal &&other) noexcept = default;
     Literal &operator=(Literal const &other) = default;
     Literal &operator=(Literal &&other) noexcept = default;
     ~Literal() noexcept override = default;
@@ -103,7 +109,8 @@ public:
     //!
     //! Flag positional=true indicates that anonymous variables in this literal can be projected.
     //! Flag singleton=true disables projections for positive predicate literals (e.g., in non-monotone aggregates)
-    virtual bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true, bool singleton = false) = 0;
+    virtual bool simplify(Logger &log, Projections &project, SimplifyState &state, bool positional = true,
+                          bool singleton = false) = 0;
     //! Collects variables.
     //! \pre Must be called after simplify to properly account for bound variables.
     virtual void collect(VarTermBoundVec &vars, bool bound) const = 0;
@@ -131,7 +138,8 @@ public:
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 GRINGO_HASH(Gringo::Input::Literal)
 

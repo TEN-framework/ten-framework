@@ -115,9 +115,6 @@ class bhopscotch_set {
   explicit bhopscotch_set(const Allocator& alloc)
       : bhopscotch_set(ht::DEFAULT_INIT_BUCKETS_SIZE, alloc) {}
 
-  bhopscotch_set(const bhopscotch_set& other, const Allocator& alloc)
-      : m_ht(other.m_ht, alloc) {}
-
   template <class InputIt>
   bhopscotch_set(InputIt first, InputIt last,
                  size_type bucket_count = ht::DEFAULT_INIT_BUCKETS_SIZE,

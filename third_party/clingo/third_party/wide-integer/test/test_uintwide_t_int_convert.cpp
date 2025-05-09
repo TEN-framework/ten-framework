@@ -1,17 +1,15 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2021 - 2022.
+//  Copyright Christopher Kormanyos 2021 - 2024.
 //  Distributed under the Boost Software License,
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <cstdint>
-#include <ctime>
 #include <random>
-#include <sstream>
-#include <string>
 
 #include <boost/version.hpp>
+
+#include <util/utility/util_pseudorandom_time_point_seed.h>
 
 #if !defined(BOOST_VERSION)
 #error BOOST_VERSION is not defined. Ensure that <boost/version.hpp> is properly included.
@@ -53,7 +51,7 @@
 #endif
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #endif
@@ -146,7 +144,7 @@ namespace local_int_convert
   }
 
   template<typename UnsignedIntegralType>
-  static auto hexlexical_cast(const UnsignedIntegralType& u) -> std::string
+  auto hexlexical_cast(const UnsignedIntegralType& u) -> std::string
   {
     std::stringstream ss;
 
@@ -183,9 +181,9 @@ auto ::math::wide_integer::test_uintwide_t_int_convert() -> bool
   using local_sint_type = ::math::wide_integer::uintwide_t<digits2, local_limb_type, void, true>;
   #endif
 
-  local_int_convert::engine_val().seed(static_cast<typename std::mt19937::result_type>                                                        (std::clock()));
-  local_int_convert::engine_sgn().seed(static_cast<typename std::ranlux24_base::result_type>                                                  (std::clock()));
-  local_int_convert::engine_len().seed(static_cast<typename std::linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>::result_type>(std::clock())); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+  local_int_convert::engine_val().seed(::util::util_pseudorandom_time_point_seed::value<typename std::mt19937::result_type                                                        >());
+  local_int_convert::engine_sgn().seed(::util::util_pseudorandom_time_point_seed::value<typename std::ranlux24_base::result_type                                                  >());
+  local_int_convert::engine_len().seed(::util::util_pseudorandom_time_point_seed::value<typename std::linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>::result_type>()); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
   bool result_is_ok = true;
 
@@ -212,7 +210,7 @@ auto ::math::wide_integer::test_uintwide_t_int_convert() -> bool
 }
 
 #if (BOOST_VERSION < 108000)
-#if (defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__)
+#if ((defined(__clang__) && (__clang_major__ > 9)) && !defined(__APPLE__))
 #pragma GCC diagnostic pop
 #endif
 #endif

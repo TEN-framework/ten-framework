@@ -32,6 +32,10 @@ namespace {
         int m_a;
     };
 
+    struct Persistent_Fixture {
+        mutable int m_a = 0;
+    };
+
     template <typename T> struct Template_Fixture {
         Template_Fixture(): m_a( 1 ) {}
 
@@ -39,7 +43,7 @@ namespace {
     };
 
     template <typename T> struct Template_Fixture_2 {
-        Template_Fixture_2() {}
+        Template_Fixture_2() = default;
 
         T m_a;
     };
@@ -62,6 +66,17 @@ METHOD_AS_TEST_CASE( TestClass::failingCase, "A METHOD_AS_TEST_CASE based test r
 TEST_CASE_METHOD( Fixture, "A TEST_CASE_METHOD based test run that succeeds", "[class]" )
 {
     REQUIRE( m_a == 1 );
+}
+
+TEST_CASE_PERSISTENT_FIXTURE( Persistent_Fixture, "A TEST_CASE_PERSISTENT_FIXTURE based test run that succeeds", "[class]" )
+{
+    SECTION( "First partial run" ) {
+        REQUIRE( m_a++ == 0 );
+    }
+
+    SECTION( "Second partial run" ) {
+        REQUIRE( m_a == 1 );
+    }
 }
 
 TEMPLATE_TEST_CASE_METHOD(Template_Fixture, "A TEMPLATE_TEST_CASE_METHOD based test run that succeeds", "[class][template]", int, float, double) {
@@ -94,6 +109,17 @@ namespace Inner
     TEST_CASE_METHOD( Fixture, "A TEST_CASE_METHOD based test run that fails", "[.][class][failing]" )
     {
         REQUIRE( m_a == 2 );
+    }
+
+    TEST_CASE_PERSISTENT_FIXTURE( Persistent_Fixture, "A TEST_CASE_PERSISTENT_FIXTURE based test run that fails", "[.][class][failing]" )
+    {
+        SECTION( "First partial run" ) {
+            REQUIRE( m_a++ == 0 );
+        }
+
+        SECTION( "Second partial run" ) {
+            REQUIRE( m_a == 0 );
+        }
     }
 
     TEMPLATE_TEST_CASE_METHOD(Template_Fixture,"A TEMPLATE_TEST_CASE_METHOD based test run that fails", "[.][class][template][failing]", int, float, double)

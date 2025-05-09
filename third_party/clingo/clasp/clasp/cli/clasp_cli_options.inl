@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2017 Benjamin Kaufmann
+// Copyright (c) 2013-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -49,9 +49,9 @@
  * \note The following set actions may be used:
  *  - STORE(obj): converts the string value to the type of obj and stores the result in obj.
  *  - STORE_U(E, n): converts the string value to type E and stores it as unsigned int in n.
- *  - STORE_LEQ(n, max): converts the string value to an unsinged int and stores the result in n if it is <= max.
+ *  - STORE_LEQ(n, max): converts the string value to an unsigned int and stores the result in n if it is <= max.
  *  - STORE_FLAG(n): converts the string value to a bool and stores the result in n as either 0 or 1.
- *  - STORE_OR_FILL(n): converts the string value to an unsinged int t and sets n to std::min(t, maxValue(n)).
+ *  - STORE_OR_FILL(n): converts the string value to an unsigned int t and sets n to std::min(t, maxValue(n)).
  *  - FUN(arg): anonymous function of type bool (ArgStream& arg), where arg provides the following interface:
  *    - arg.ok()     : returns whether arg is still valid
  *    - arg.empty()  : returns whether arg is empty (i.e. all tokens were extracted)
@@ -89,7 +89,10 @@
 #endif
 
 //! Options for configuring a SharedContext object stored in a Clasp::ContextParams object.
-#if defined(CLASP_CONTEXT_OPTIONS)
+#if defined(CLASP_CONTEXT_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_CONTEXT_OPTIONS)
+#define CLASP_CONTEXT_OPTIONS (*base)
+#endif
 #define SELF CLASP_CONTEXT_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(share, "!,@1", ARG_EXT(defaultsTo("auto")->state(Value::value_defaulted), DEFINE_ENUM_MAPPING(ContextParams::ShareMode, \
@@ -118,7 +121,10 @@ GROUP_END(SELF)
 #endif
 
 //! Global options only valid in facade.
-#if defined(CLASP_GLOBAL_OPTIONS)
+#if defined(CLASP_GLOBAL_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_GLOBAL_OPTIONS)
+#define CLASP_GLOBAL_OPTIONS (*this)
+#endif
 #define SELF CLASP_GLOBAL_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(stats, ",s", ARG(implicit("1")->arg("<n>[,<t>]")), "Enable {1=basic|2=full} statistics (<t> for tester)",\
@@ -139,7 +145,10 @@ GROUP_END(SELF)
 #endif
 
 //! Solver options (see SolverParams).
-#if defined(CLASP_SOLVER_OPTIONS)
+#if defined(CLASP_SOLVER_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_SOLVER_OPTIONS)
+#define CLASP_SOLVER_OPTIONS (*solver)
+#endif
 #define SELF CLASP_SOLVER_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(opt_strategy , ""  , ARG_EXT(arg("<arg>"),\
@@ -318,7 +327,10 @@ GROUP_END(SELF)
 #endif
 
 //! Search-related options (see SolveParams).
-#if defined(CLASP_SEARCH_OPTIONS)
+#if defined(CLASP_SEARCH_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_SEARCH_OPTIONS)
+#define CLASP_SEARCH_OPTIONS (*search)
+#endif
 #define SELF CLASP_SEARCH_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(partial_check, "", ARG(implicit("50")), "Configure partial stability tests\n" \
@@ -338,22 +350,35 @@ OPTION(rand_prob, "", ARG(arg("<n>[,<m>]")), "Do <n> random searches with [<m>=1
        GET_IF(SELF.randRuns, SELF.randRuns,SELF.randConf))
 #undef SELF
 //! Options for configuring the restart strategy of a solver.
+#if !defined(CLASP_SEARCH_RESTART_OPTIONS)
+#define CLASP_SEARCH_RESTART_OPTIONS (search->restart)
+#endif
 #define SELF CLASP_SEARCH_RESTART_OPTIONS
 #if defined(NOTIFY_SUBGROUPS)
 GROUP_BEGIN(SELF)
 #endif
-OPTION(restarts, "!,r", ARG(arg("<sched>")), "Configure restart policy\n" \
-       "      %A: <type {D|F|L|x|+}>,<n {1..umax}>[,<args>][,<lim>]\n"                    \
-       "        F,<n>    : Run fixed sequence of <n> conflicts\n"                         \
-       "        L,<n>    : Run Luby et al.'s sequence with unit length <n>\n"             \
-       "        x,<n>,<f>: Run geometric seq. of <n>*(<f>^i) conflicts  (<f> >= 1.0)\n"   \
-       "        +,<n>,<m>: Run arithmetic seq. of <n>+(<m>*i) conflicts (<m {0..umax}>)\n"\
-       "        ...,<lim>: Repeat seq. every <lim>+j restarts           (<type> != F)\n"  \
-       "        D,<n>,<f>: Restart based on moving LBD average over last <n> conflicts\n" \
-       "                   Mavg(<n>,LBD)*<f> > avg(LBD)\n"                                \
-       "                   use conflict level average if <lim> > 0 and avg(LBD) > <lim>\n"\
-       "      no|0       : Disable restarts", FUN(arg) { return ITE(arg.off(), (SELF.disable(),true), \
-       arg>>SELF.sched && SET(SELF.dynRestart, uint32(SELF.sched.type == ScheduleStrategy::User)));}, GET(SELF.sched))
+OPTION(restarts, "!,r", ARG_EXT(arg("<sched>"), DEFINE_ENUM_MAPPING(RestartSchedule::Keep, \
+       MAP("n", RestartSchedule::keep_never), MAP("r", RestartSchedule::keep_restart),     \
+       MAP("b", RestartSchedule::keep_block), MAP("br",  RestartSchedule::keep_always),    \
+       MAP("rb", RestartSchedule::keep_always))), "Configure restart policy\n"             \
+       "      %A: <type {F|L|x|+}>,<n {1..umax}>[,<args>][,<lim>]\n"                       \
+       "        F,<n>    : Run fixed sequence of <n> conflicts\n"                          \
+       "        L,<n>    : Run Luby et al.'s sequence with unit length <n>\n"              \
+       "        x,<n>,<f>: Run geometric seq. of <n>*(<f>^i) conflicts  (<f> >= 1.0)\n"    \
+       "        +,<n>,<m>: Run arithmetic seq. of <n>+(<m>*i) conflicts (<m {0..umax}>)\n" \
+       "        ...,<lim>: Repeat sequence every <lim>+j restarts       (<type> != F)\n"   \
+       "      %A: D,<n>,<K>[,<args>]: Dynamic restarts based on moving LBD average\n"      \
+       "        <n>      : Fast moving average window size\n"                              \
+       "        <K>      : Fast margin (restart if fastAvg * <K> > slowAvg)\n"             \
+       "        <L>      : LBD average limit                                [0 = none]\n"  \
+       "        <f>      : Fast moving average type                         [d = SMA]\n"   \
+       "          d      : Default\n"                                                      \
+       "          e|l    : EMA with alpha = 2/(<n>+1) or 1/log2(<n>)\n"                    \
+       "          es|ls  : e or l with exponentially decreasing alpha for first samples\n" \
+       "        <k>      : keep fast moving average on (r)estarts/(b)locks  [n = never]\n" \
+       "        <s>      : slow moving average type                         [d = CMA]\n"   \
+       "        <w>      : slow moving average window size (<s> != d)       [200*<n>]\n"   \
+       "      no|0       : Disable restarts", FUN(arg) { return ITE(arg.off(), (SELF.disable(),true), arg>>SELF.rsSched);}, GET(SELF.rsSched))
 OPTION(reset_restarts  , ",@2", ARG_EXT(arg("<arg>"), DEFINE_ENUM_MAPPING(RestartParams::SeqUpdate, \
        MAP("no",RestartParams::seq_continue), MAP("repeat", RestartParams::seq_repeat), MAP("disable", RestartParams::seq_disable))),\
        "Update restart seq. on model {no|repeat|disable}",\
@@ -366,15 +391,19 @@ OPTION(counter_restarts, ""   , ARG(arg("<arg>")), "Use counter implication rest
        FUN(arg) { uint32 n = 0; uint32 m = SELF.counterBump; \
        return (arg.off() || (arg >> n >> opt(m) && n > 0)) && SET_OR_FILL(SELF.counterRestart, n) && SET_OR_FILL(SELF.counterBump, m); },\
        GET_IF(SELF.counterRestart, SELF.counterRestart, SELF.counterBump))
-OPTION(block_restarts  , ""   , ARG(arg("<arg>")), "Use glucose-style blocking restarts\n" \
-       "      %A: <n>[,<R {1.0..5.0}>][,<c>]\n" \
-       "        <n>: Window size for moving average (0=disable blocking)\n" \
-       "        <R>: Block restart if assignment > average * <R>  [1.4]\n"             \
-       "        <c>: Disable blocking for the first <c> conflicts [10000]\n", FUN(arg) { \
-       uint32 n = 0; double R = 0.0; uint32 x = 0;\
-       return (arg.off() || (arg>>n>>opt(R = 1.4)>>opt(x = 10000) && n && R >= 1.0 && R <= 5.0))\
-         && SET(SELF.blockWindow, n) && SET(SELF.blockScale, (float)R) && SET_OR_FILL(SELF.blockFirst, x);},\
-       GET_IF(SELF.blockWindow, SELF.blockWindow, SELF.blockScale, SELF.blockFirst))
+OPTION(block_restarts  , ""   , ARG_EXT(arg("<arg>"), DEFINE_ENUM_MAPPING(MovingAvg::Type, \
+       MAP("d", MovingAvg::avg_sma), MAP("e", MovingAvg::avg_ema), MAP("l", MovingAvg::avg_ema_log), \
+       MAP("es",  MovingAvg::avg_ema_smooth), MAP("ls", MovingAvg::avg_ema_log_smooth))),\
+	   "Use glucose-style blocking restarts\n"                               \
+       "      %A: <n>[,<R {1.0..5.0}>][,<c>][,<a>]\n"                        \
+       "        <n>: Window size for moving average (0=disable blocking)\n"  \
+       "        <R>: Block restart if assignment > average * <R>  [1.4]\n"   \
+       "        <c>: Disable blocking for the first <c> conflicts [10000]\n" \
+       "        <a>: Type of moving average (see restarts)        [e]\n",    \
+       FUN(arg) { uint32 n = 0; float R = 1.4; uint32 c = 10000; MovingAvg::Type a = MovingAvg::avg_ema; \
+         return ITE(arg.off(), (SELF.block=RestartParams::Block(), true), arg>>n>>opt(R)>>opt(c)>>opt(a) && SET_GEQ(SELF.block.window, n, 1) \
+           && R >= 1.0 && R <= 5.0 && SET(SELF.block.fscale, static_cast<uint32>(R*100.0f)) && SET(SELF.block.first, c) && SET(SELF.block.avg, a)); },\
+       GET_FUN(str) { ITE(!SELF.block.window, str<<off, str<<SELF.block.window<<SELF.block.scale()<<SELF.block.first<<static_cast<MovingAvg::Type>(SELF.block.avg)); })
 OPTION(shuffle         , "!"  , ARG(arg("<n1>,<n2>")), "Shuffle problem after <n1>+(<n2>*i) restarts\n", FUN(arg) { uint32 n1 = 0; uint32 n2 = 0;\
        return (arg.off() || (arg>>n1>>opt(n2) && n1)) && SET_OR_FILL(SELF.shuffle, n1) && SET_OR_FILL(SELF.shuffleNext, n2);},\
        GET_IF(SELF.shuffle, SELF.shuffle, SELF.shuffleNext))
@@ -384,6 +413,9 @@ GROUP_END(SELF)
 #undef SELF
 #undef CLASP_SEARCH_RESTART_OPTIONS
 //! Options for configuring the deletion strategy of a solver.
+#if !defined(CLASP_SEARCH_REDUCE_OPTIONS)
+#define CLASP_SEARCH_REDUCE_OPTIONS (search->reduce)
+#endif
 #define SELF CLASP_SEARCH_REDUCE_OPTIONS
 #if defined(NOTIFY_SUBGROUPS)
 GROUP_BEGIN(SELF)
@@ -410,11 +442,11 @@ OPTION(del_grow    , "!", NO_ARG, "Configure size-based deletion policy\n" \
        "        <sched> : Set grow schedule (<type {F|L|x|+}>) [grow on restart]", FUN(arg){ double f; double g; ScheduleStrategy sc = ScheduleStrategy::def();\
        return ITE(arg.off(), (SELF.growSched = ScheduleStrategy::none(), SELF.fGrow = 0.0f, true),\
          arg>>f>>opt(g = 3.0)>>opt(sc) && SET_R(SELF.fGrow, (float)f, 1.0f, FLT_MAX) && SET_R(SELF.fMax, (float)g, 0.0f, FLT_MAX)\
-           && (sc.defaulted() || sc.type != ScheduleStrategy::User) && (SELF.growSched=sc, true));},\
+           && (SELF.growSched=sc, true));},\
        GET_FUN(str) { if (SELF.fGrow == 0.0f) str<<off; else { str<<SELF.fGrow<<SELF.fMax; if (!SELF.growSched.disabled()) str<<SELF.growSched;}})
 OPTION(del_cfl     , "!", ARG(arg("<sched>")), "Configure conflict-based deletion policy\n" \
        "      %A:   <type {F|L|x|+}>,<args>... (see restarts)", FUN(arg){\
-       return ITE(arg.off(), (SELF.cflSched=ScheduleStrategy::none()).disabled(), arg>>SELF.cflSched && SELF.cflSched.type != ScheduleStrategy::User);}, GET(SELF.cflSched))
+       return ITE(arg.off(), (SELF.cflSched=ScheduleStrategy::none()).disabled(), arg>>SELF.cflSched);}, GET(SELF.cflSched))
 OPTION(del_init  , ""  , ARG(defaultsTo("3.0")->state(Value::value_defaulted)), "Configure initial deletion limit\n"\
        "      %A: <f>[,<n>,<o>] (<f> > 0)\n" \
        "        <f>    : Set initial limit to P=estimated problem size/<f> [%D]\n" \
@@ -440,7 +472,10 @@ GROUP_END(CLASP_SEARCH_OPTIONS)
 #endif
 
 //! ASP-front-end options stored in an Clasp::Asp::LogicProgram::AspOptions object.
-#if defined(CLASP_ASP_OPTIONS)
+#if defined(CLASP_ASP_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_ASP_OPTIONS)
+#define CLASP_ASP_OPTIONS (this->asp)
+#endif
 #define SELF CLASP_ASP_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(trans_ext  , "!", ARG_EXT(arg("<mode>"), DEFINE_ENUM_MAPPING(Asp::LogicProgram::ExtendedRuleMode,\
@@ -471,7 +506,10 @@ GROUP_END(SELF)
 #endif
 
 //! Options for the solving algorithm (see Clasp::SolveOptions)
-#if defined(CLASP_SOLVE_OPTIONS)
+#if defined(CLASP_SOLVE_OPTIONS) || defined(CLASP_ALL_GROUPS)
+#if !defined(CLASP_SOLVE_OPTIONS)
+#define CLASP_SOLVE_OPTIONS (this->solve)
+#endif
 #define SELF CLASP_SOLVE_OPTIONS
 GROUP_BEGIN(SELF)
 OPTION(solve_limit , ",@1", ARG(arg("<n>[,<m>]")), "Stop search after <n> conflicts or <m> restarts\n", FUN(arg) {\
@@ -493,7 +531,7 @@ OPTION(global_restarts, ",@1", ARG(arg("<X>")), "Configure global restart policy
        "        <n> : Maximal number of global restarts (0=disable)\n"    \
        "     <sched>: Restart schedule [x,100,1.5] (<type {F|L|x|+}>)\n", FUN(arg) {\
        return ITE(arg.off(), (SELF.restarts = SolveOptions::GRestarts(), true), arg>>SELF.restarts.maxR>>opt(SELF.restarts.sched = ScheduleStrategy())\
-         && SELF.restarts.maxR && SELF.restarts.sched.type != ScheduleStrategy::User);},\
+         && SELF.restarts.maxR);},\
        GET_IF(SELF.restarts.maxR, SELF.restarts.maxR, SELF.restarts.sched))
 OPTION(distribute, "!,@1", ARG_EXT(defaultsTo("conflict,global,4"), \
        DEFINE_ENUM_MAPPING(Distributor::Policy::Types, MAP("all", Distributor::Policy::all), MAP("short", Distributor::Policy::implicit), MAP("conflict", Distributor::Policy::conflict), MAP("loop" , Distributor::Policy::loop))\
@@ -563,6 +601,9 @@ OPTION(opt_mode   , "", ARG_EXT(arg("<arg>"), DEFINE_ENUM_MAPPING(MinimizeMode_t
        "      <bound> : Set initial bound for objective function(s)", \
        FUN(arg) { MinimizeMode_t::Mode m = MinimizeMode_t::optimize; SumVec B; return (arg >> m >> opt(B)) && SET(SELF.optMode, m) && (SELF.optBound.swap(B), true); }, \
        GET_FUN(str) { str << SELF.optMode; if (!SELF.optBound.empty()) str << SELF.optBound; })
+OPTION(opt_stop, "", ARG(arg("<bound>...")), "Stop optimization on model with cost <= <bound> \n",
+       FUN(arg)     { SumVec B; return ITE(arg.peek() != '0' && arg.off(), true, arg >> B) && (SELF.optStop = B, true); },
+       GET_FUN(str) { ITE(SELF.optStop.empty(), str << off, str << SELF.optStop); })
 GROUP_END(SELF)
 #undef CLASP_SOLVE_OPTIONS
 #undef SELF
@@ -575,3 +616,4 @@ GROUP_END(SELF)
 #undef ARG
 #undef ARG_EXT
 #undef NO_ARG
+#undef CLASP_ALL_GROUPS

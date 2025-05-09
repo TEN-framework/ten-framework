@@ -11,6 +11,7 @@
 #include <catch2/internal/catch_platform.hpp>
 #include <catch2/internal/catch_string_manip.hpp>
 #include <catch2/internal/catch_textflow.hpp>
+#include <catch2/internal/catch_reusable_string_stream.hpp>
 
 #include <algorithm>
 #include <ostream>
@@ -24,13 +25,29 @@ namespace {
             ;
     }
 
-    std::string normaliseOpt( std::string const& optName ) {
-#ifdef CATCH_PLATFORM_WINDOWS
-        if ( optName[0] == '/' )
-            return "-" + optName.substr( 1 );
-        else
+    Catch::StringRef normaliseOpt( Catch::StringRef optName ) {
+        if ( optName[0] == '-'
+#if defined(CATCH_PLATFORM_WINDOWS)
+             || optName[0] == '/'
 #endif
-            return optName;
+        ) {
+            return optName.substr( 1, optName.size() );
+        }
+
+        return optName;
+    }
+
+    static size_t find_first_separator(Catch::StringRef sr) {
+        auto is_separator = []( char c ) {
+            return c == ' ' || c == ':' || c == '=';
+        };
+        size_t pos = 0;
+        while (pos < sr.size()) {
+            if (is_separator(sr[pos])) { return pos; }
+            ++pos;
+        }
+
+        return Catch::StringRef::npos;
     }
 
 } // namespace
@@ -48,23 +65,23 @@ namespace Catch {
                 }
 
                 if ( it != itEnd ) {
-                    auto const& next = *it;
+                    StringRef next = *it;
                     if ( isOptPrefix( next[0] ) ) {
-                        auto delimiterPos = next.find_first_of( " :=" );
-                        if ( delimiterPos != std::string::npos ) {
+                        auto delimiterPos = find_first_separator(next);
+                        if ( delimiterPos != StringRef::npos ) {
                             m_tokenBuffer.push_back(
                                 { TokenType::Option,
                                   next.substr( 0, delimiterPos ) } );
                             m_tokenBuffer.push_back(
                                 { TokenType::Argument,
-                                  next.substr( delimiterPos + 1 ) } );
+                                  next.substr( delimiterPos + 1, next.size() ) } );
                         } else {
-                            if ( next[1] != '-' && next.size() > 2 ) {
-                                std::string opt = "- ";
+                            if ( next.size() > 1 && next[1] != '-' && next.size() > 2 ) {
+                                // Combined short args, e.g. "-ab" for "-a -b"
                                 for ( size_t i = 1; i < next.size(); ++i ) {
-                                    opt[1] = next[i];
                                     m_tokenBuffer.push_back(
-                                        { TokenType::Option, opt } );
+                                        { TokenType::Option,
+                                          next.substr( i, 1 ) } );
                                 }
                             } else {
                                 m_tokenBuffer.push_back(
@@ -124,12 +141,12 @@ namespace Catch {
             size_t ParserBase::cardinality() const { return 1; }
 
             InternalParseResult ParserBase::parse( Args const& args ) const {
-                return parse( args.exeName(), TokenStream( args ) );
+                return parse( static_cast<std::string>(args.exeName()), TokenStream( args ) );
             }
 
             ParseState::ParseState( ParseResultType type,
-                                    TokenStream const& remainingTokens ):
-                m_type( type ), m_remainingTokens( remainingTokens ) {}
+                                    TokenStream remainingTokens ):
+                m_type( type ), m_remainingTokens( CATCH_MOVE(remainingTokens) ) {}
 
             ParserResult BoundFlagRef::setFlag( bool flag ) {
                 m_ref = flag;
@@ -147,34 +164,34 @@ namespace Catch {
 } // namespace Detail
 
         Detail::InternalParseResult Arg::parse(std::string const&,
-                                               Detail::TokenStream const& tokens) const {
+                                               Detail::TokenStream tokens) const {
             auto validationResult = validate();
             if (!validationResult)
                 return Detail::InternalParseResult(validationResult);
 
-            auto remainingTokens = tokens;
-            auto const& token = *remainingTokens;
+            auto token = *tokens;
             if (token.type != Detail::TokenType::Argument)
                 return Detail::InternalParseResult::ok(Detail::ParseState(
-                    ParseResultType::NoMatch, remainingTokens));
+                    ParseResultType::NoMatch, CATCH_MOVE(tokens)));
 
             assert(!m_ref->isFlag());
             auto valueRef =
                 static_cast<Detail::BoundValueRefBase*>(m_ref.get());
 
-            auto result = valueRef->setValue(remainingTokens->token);
-            if (!result)
-                return Detail::InternalParseResult(result);
+            auto result = valueRef->setValue(static_cast<std::string>(token.token));
+            if ( !result )
+                return Detail::InternalParseResult( result );
             else
-                return Detail::InternalParseResult::ok(Detail::ParseState(
-                    ParseResultType::Matched, ++remainingTokens));
+                return Detail::InternalParseResult::ok(
+                    Detail::ParseState( ParseResultType::Matched,
+                                        CATCH_MOVE( ++tokens ) ) );
         }
 
         Opt::Opt(bool& ref) :
             ParserRefImpl(std::make_shared<Detail::BoundFlagRef>(ref)) {}
 
-        std::vector<Detail::HelpColumns> Opt::getHelpColumns() const {
-            std::ostringstream oss;
+        Detail::HelpColumns Opt::getHelpColumns() const {
+            ReusableStringStream oss;
             bool first = true;
             for (auto const& opt : m_optNames) {
                 if (first)
@@ -185,10 +202,10 @@ namespace Catch {
             }
             if (!m_hint.empty())
                 oss << " <" << m_hint << '>';
-            return { { oss.str(), m_description } };
+            return { oss.str(), m_description };
         }
 
-        bool Opt::isMatch(std::string const& optToken) const {
+        bool Opt::isMatch(StringRef optToken) const {
             auto normalisedToken = normaliseOpt(optToken);
             for (auto const& name : m_optNames) {
                 if (normaliseOpt(name) == normalisedToken)
@@ -198,15 +215,14 @@ namespace Catch {
         }
 
         Detail::InternalParseResult Opt::parse(std::string const&,
-                                       Detail::TokenStream const& tokens) const {
+                                       Detail::TokenStream tokens) const {
             auto validationResult = validate();
             if (!validationResult)
                 return Detail::InternalParseResult(validationResult);
 
-            auto remainingTokens = tokens;
-            if (remainingTokens &&
-                remainingTokens->type == Detail::TokenType::Option) {
-                auto const& token = *remainingTokens;
+            if (tokens &&
+                tokens->type == Detail::TokenType::Option) {
+                auto const& token = *tokens;
                 if (isMatch(token.token)) {
                     if (m_ref->isFlag()) {
                         auto flagRef =
@@ -218,35 +234,35 @@ namespace Catch {
                         if (result.value() ==
                             ParseResultType::ShortCircuitAll)
                             return Detail::InternalParseResult::ok(Detail::ParseState(
-                                result.value(), remainingTokens));
+                                result.value(), CATCH_MOVE(tokens)));
                     } else {
                         auto valueRef =
                             static_cast<Detail::BoundValueRefBase*>(
                                 m_ref.get());
-                        ++remainingTokens;
-                        if (!remainingTokens)
+                        ++tokens;
+                        if (!tokens)
                             return Detail::InternalParseResult::runtimeError(
                                 "Expected argument following " +
                                 token.token);
-                        auto const& argToken = *remainingTokens;
+                        auto const& argToken = *tokens;
                         if (argToken.type != Detail::TokenType::Argument)
                             return Detail::InternalParseResult::runtimeError(
                                 "Expected argument following " +
                                 token.token);
-                        const auto result = valueRef->setValue(argToken.token);
+                        const auto result = valueRef->setValue(static_cast<std::string>(argToken.token));
                         if (!result)
                             return Detail::InternalParseResult(result);
                         if (result.value() ==
                             ParseResultType::ShortCircuitAll)
                             return Detail::InternalParseResult::ok(Detail::ParseState(
-                                result.value(), remainingTokens));
+                                result.value(), CATCH_MOVE(tokens)));
                     }
                     return Detail::InternalParseResult::ok(Detail::ParseState(
-                        ParseResultType::Matched, ++remainingTokens));
+                        ParseResultType::Matched, CATCH_MOVE(++tokens)));
                 }
             }
             return Detail::InternalParseResult::ok(
-                Detail::ParseState(ParseResultType::NoMatch, remainingTokens));
+                Detail::ParseState(ParseResultType::NoMatch, CATCH_MOVE(tokens)));
         }
 
         Detail::Result Opt::validate() const {
@@ -278,9 +294,9 @@ namespace Catch {
 
         Detail::InternalParseResult
             ExeName::parse(std::string const&,
-                           Detail::TokenStream const& tokens) const {
+                           Detail::TokenStream tokens) const {
             return Detail::InternalParseResult::ok(
-                Detail::ParseState(ParseResultType::NoMatch, tokens));
+                Detail::ParseState(ParseResultType::NoMatch, CATCH_MOVE(tokens)));
         }
 
         ParserResult ExeName::set(std::string const& newName) {
@@ -310,9 +326,9 @@ namespace Catch {
 
         std::vector<Detail::HelpColumns> Parser::getHelpColumns() const {
             std::vector<Detail::HelpColumns> cols;
+            cols.reserve( m_options.size() );
             for ( auto const& o : m_options ) {
-                auto childCols = o.getHelpColumns();
-                cols.insert( cols.end(), childCols.begin(), childCols.end() );
+                cols.push_back(o.getHelpColumns());
             }
             return cols;
         }
@@ -350,12 +366,12 @@ namespace Catch {
 
             optWidth = ( std::min )( optWidth, consoleWidth / 2 );
 
-            for ( auto const& cols : rows ) {
-                auto row = TextFlow::Column( cols.left )
+            for ( auto& cols : rows ) {
+                auto row = TextFlow::Column( CATCH_MOVE(cols.left) )
                                .width( optWidth )
                                .indent( 2 ) +
                            TextFlow::Spacer( 4 ) +
-                           TextFlow::Column( cols.right )
+                           TextFlow::Column( static_cast<std::string>(cols.descriptions) )
                                .width( consoleWidth - 7 - optWidth );
                 os << row << '\n';
             }
@@ -377,7 +393,7 @@ namespace Catch {
 
         Detail::InternalParseResult
         Parser::parse( std::string const& exeName,
-                       Detail::TokenStream const& tokens ) const {
+                       Detail::TokenStream tokens ) const {
 
             struct ParserInfo {
                 ParserBase const* parser = nullptr;
@@ -395,7 +411,7 @@ namespace Catch {
             m_exeName.set( exeName );
 
             auto result = Detail::InternalParseResult::ok(
-                Detail::ParseState( ParseResultType::NoMatch, tokens ) );
+                Detail::ParseState( ParseResultType::NoMatch, CATCH_MOVE(tokens) ) );
             while ( result.value().remainingTokens() ) {
                 bool tokenParsed = false;
 
@@ -403,7 +419,7 @@ namespace Catch {
                     if ( parseInfo.parser->cardinality() == 0 ||
                          parseInfo.count < parseInfo.parser->cardinality() ) {
                         result = parseInfo.parser->parse(
-                            exeName, result.value().remainingTokens() );
+                            exeName, CATCH_MOVE(result).value().remainingTokens() );
                         if ( !result )
                             return result;
                         if ( result.value().type() !=
@@ -429,7 +445,7 @@ namespace Catch {
         Args::Args(int argc, char const* const* argv) :
             m_exeName(argv[0]), m_args(argv + 1, argv + argc) {}
 
-        Args::Args(std::initializer_list<std::string> args) :
+        Args::Args(std::initializer_list<StringRef> args) :
             m_exeName(*args.begin()),
             m_args(args.begin() + 1, args.end()) {}
 

@@ -1,6 +1,7 @@
 """
 Test clingo's Symbol class.
 """
+
 from unittest import TestCase
 
 from clingo import (

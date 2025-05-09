@@ -25,10 +25,12 @@
 #ifndef _GRINGO_TEST_LIT_HELPER_HH
 #define _GRINGO_TEST_LIT_HELPER_HH
 
-#include "tests/tests.hh"
 #include "gringo/input/literals.hh"
+#include "tests/tests.hh"
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 using namespace Gringo::Test;
 
@@ -49,13 +51,12 @@ inline ULit range(UTerm &&assign, UTerm &&lower, UTerm &&upper) {
     return make_locatable<RangeLiteral>(loc, std::move(assign), std::move(lower), std::move(upper));
 }
 
-template <class... T>
-ULitVec litvec(T&&... args) {
-    return init<ULitVec>(std::forward<T>(args)...);
-}
+template <class... T> ULitVec litvec(T &&...args) { return init<ULitVec>(std::forward<T>(args)...); }
 
 // }}}
 
-} } } // namespace Test Input Gringo
+} // namespace Test
+} // namespace Input
+} // namespace Gringo
 
 #endif // _GRINGO_TEST_LIT_HELPER_HH

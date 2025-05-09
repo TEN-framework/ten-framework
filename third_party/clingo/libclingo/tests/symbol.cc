@@ -23,10 +23,11 @@
 // }}}
 
 #include "tests.hh"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-namespace Clingo { namespace Test {
+namespace Clingo {
+namespace Test {
 
 TEST_CASE("symbol", "[clingo]") {
     SECTION("signature") {
@@ -81,9 +82,13 @@ TEST_CASE("symbol", "[clingo]") {
         REQUIRE(!sym.is_negative());
         REQUIRE(S("f") == sym.name());
         REQUIRE("f(42,#inf,#sup,\"x\",-x)" == sym.to_string());
-        REQUIRE((args.size() == sym.arguments().size() && std::equal(args.begin(), args.end(), sym.arguments().begin())));
-        try { sym.number(); }
-        catch (std::exception const &e) { REQUIRE(e.what() == S("unexpected")); }
+        REQUIRE(
+            (args.size() == sym.arguments().size() && std::equal(args.begin(), args.end(), sym.arguments().begin())));
+        try {
+            sym.number();
+        } catch (std::exception const &e) {
+            REQUIRE(e.what() == S("unexpected"));
+        }
         // comparison
         auto a = Number(1), b = Number(2);
         REQUIRE(a < b);
@@ -107,4 +112,5 @@ TEST_CASE("symbol", "[clingo]") {
     }
 }
 
-} } // namespace Test Clingo
+} // namespace Test
+} // namespace Clingo

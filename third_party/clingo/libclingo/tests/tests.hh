@@ -25,16 +25,15 @@
 #include "clingo.hh"
 #include <catch2/catch_test_macros.hpp>
 
-namespace Clingo { namespace Test {
+namespace Clingo {
+namespace Test {
 
 using S = std::string;
 using ModelVec = std::vector<SymbolVector>;
 using MessageVec = std::vector<std::pair<WarningCode, std::string>>;
 
 struct MCB {
-    MCB(ModelVec &models) : models(models) {
-        models.clear();
-    }
+    MCB(ModelVec &models) : models(models) { models.clear(); }
     bool operator()(Model const &m) {
         models.emplace_back();
         for (auto sym : m.symbols(ShowType::Shown)) {
@@ -43,26 +42,27 @@ struct MCB {
         std::sort(models.back().begin(), models.back().end());
         return true;
     }
-    ~MCB() {
-        std::sort(models.begin(), models.end());
-    }
+    ~MCB() { std::sort(models.begin(), models.end()); }
     ModelVec &models;
 };
 
-template <class Handle>
-inline SolveResult test_solve(Handle &&sh, ModelVec &models) {
+template <class Handle> inline SolveResult test_solve(Handle &&sh, ModelVec &models) {
     MCB cb(models);
     SolveResult ret;
-    for (auto &m : sh) { cb(m); }
+    for (auto &m : sh) {
+        cb(m);
+    }
     return sh.get();
 }
 
 class LCB {
-public:
-    LCB(MessageVec &messages) : messages_(messages) { }
+  public:
+    LCB(MessageVec &messages) : messages_(messages) {}
     void operator()(WarningCode code, char const *msg) { messages_.emplace_back(code, msg); }
-private:
+
+  private:
     MessageVec &messages_;
 };
 
-} } // namespace Test Clingo
+} // namespace Test
+} // namespace Clingo

@@ -55,7 +55,7 @@ web: lua
 		-DCLASP_BUILD_WITH_THREADS=Off \
 		-DCMAKE_VERBOSE_MAKEFILE=On \
 		-DCMAKE_BUILD_TYPE=release \
-		-DCMAKE_CXX_FLAGS="-std=c++11 -Wall -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1" \
+		-DCMAKE_CXX_FLAGS="-std=c++11 -Wall -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1 -s ENVIRONMENT='worker' -s MODULARIZE=1" \
 		-DCMAKE_CXX_FLAGS_RELEASE="-Os -DNDEBUG" \
 		-DCMAKE_EXE_LINKER_FLAGS="" \
 		-DCMAKE_EXE_LINKER_FLAGS_RELEASE="" \
@@ -66,7 +66,7 @@ web: lua
 	$(MAKE) -C build/web web
 
 lua: build/lua/source/CMakeLists.txt
-	source "emsdk_env.sh" && emcmake cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build/lua/install -Hbuild/lua/source -Bbuild/lua/build
+	source "emsdk_env.sh" && emcmake cmake -DCMAKE_C_FLAGS="-s ENVIRONMENT='worker' -s MODULARIZE=1" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build/lua/install -Hbuild/lua/source -Bbuild/lua/build
 	$(MAKE) -C build/lua/build
 	$(MAKE) -C build/lua/build install
 

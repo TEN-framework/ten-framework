@@ -5,10 +5,10 @@
 //        https://www.boost.org/LICENSE_1_0.txt)
 
 // SPDX-License-Identifier: BSL-1.0
+#include <catch2/internal/catch_move_and_forward.hpp>
 #include <catch2/internal/catch_string_manip.hpp>
 #include <catch2/internal/catch_stringref.hpp>
 
-#include <algorithm>
 #include <ostream>
 #include <cstring>
 #include <cctype>
@@ -32,9 +32,9 @@ namespace Catch {
         return s.find( infix ) != std::string::npos;
     }
     void toLowerInPlace( std::string& s ) {
-        std::transform( s.begin(), s.end(), s.begin(), []( char c ) {
-            return toLower( c );
-        } );
+        for ( char& c : s ) {
+            c = toLower( c );
+        }
     }
     std::string toLower( std::string const& s ) {
         std::string lc = s;
@@ -66,17 +66,29 @@ namespace Catch {
     }
 
     bool replaceInPlace( std::string& str, std::string const& replaceThis, std::string const& withThis ) {
-        bool replaced = false;
         std::size_t i = str.find( replaceThis );
-        while( i != std::string::npos ) {
-            replaced = true;
-            str = str.substr( 0, i ) + withThis + str.substr( i+replaceThis.size() );
-            if( i < str.size()-withThis.size() )
-                i = str.find( replaceThis, i+withThis.size() );
+        if (i == std::string::npos) {
+            return false;
+        }
+        std::size_t copyBegin = 0;
+        std::string origStr = CATCH_MOVE(str);
+        str.clear();
+        // There is at least one replacement, so reserve with the best guess
+        // we can make without actually counting the number of occurences.
+        str.reserve(origStr.size() - replaceThis.size() + withThis.size());
+        do {
+            str.append(origStr, copyBegin, i-copyBegin );
+            str += withThis;
+            copyBegin = i + replaceThis.size();
+            if( copyBegin < origStr.size() )
+                i = origStr.find( replaceThis, copyBegin );
             else
                 i = std::string::npos;
+        } while( i != std::string::npos );
+        if ( copyBegin < origStr.size() ) {
+            str.append(origStr, copyBegin, origStr.size() );
         }
-        return replaced;
+        return true;
     }
 
     std::vector<StringRef> splitStringRef( StringRef str, char delimiter ) {

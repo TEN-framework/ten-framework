@@ -131,9 +131,6 @@ class hopscotch_set {
                 const Allocator& alloc)
       : hopscotch_set(bucket_count, hash, KeyEqual(), alloc) {}
 
-  hopscotch_set(const hopscotch_set& other, const Allocator& alloc)
-      : m_ht(other.m_ht, alloc) {}
-
   explicit hopscotch_set(const Allocator& alloc)
       : hopscotch_set(ht::DEFAULT_INIT_BUCKETS_SIZE, alloc) {}
 

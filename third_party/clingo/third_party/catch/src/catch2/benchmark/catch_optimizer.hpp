@@ -10,7 +10,7 @@
 #ifndef CATCH_OPTIMIZER_HPP_INCLUDED
 #define CATCH_OPTIMIZER_HPP_INCLUDED
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__IAR_SYSTEMS_ICC__)
 #   include <atomic> // atomic_thread_fence
 #endif
 
@@ -32,16 +32,23 @@ namespace Catch {
         namespace Detail {
             inline void optimizer_barrier() { keep_memory(); }
         } // namespace Detail
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(__IAR_SYSTEMS_ICC__)
 
+#if defined(_MSVC_VER)
 #pragma optimize("", off)
+#elif defined(__IAR_SYSTEMS_ICC__)
+// For IAR the pragma only affects the following function
+#pragma optimize=disable
+#endif
         template <typename T>
         inline void keep_memory(T* p) {
             // thanks @milleniumbug
             *reinterpret_cast<char volatile*>(p) = *reinterpret_cast<char const volatile*>(p);
         }
         // TODO equivalent keep_memory()
+#if defined(_MSVC_VER)
 #pragma optimize("", on)
+#endif
 
         namespace Detail {
             inline void optimizer_barrier() {
@@ -63,7 +70,7 @@ namespace Catch {
 
         template <typename Fn, typename... Args>
         inline auto invoke_deoptimized(Fn&& fn, Args&&... args) -> std::enable_if_t<std::is_same<void, decltype(fn(args...))>::value> {
-            CATCH_FORWARD(fn) (CATCH_FORWARD(args)...);
+            CATCH_FORWARD((fn)) (CATCH_FORWARD(args)...);
         }
     } // namespace Benchmark
 } // namespace Catch

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -142,39 +142,37 @@ private:
 	ParallelSolve(const ParallelSolve&);
 	ParallelSolve& operator=(const ParallelSolve&);
 	typedef SingleOwnerPtr<const LitVec> PathPtr;
-	enum ErrorCode { LogicError = 1, RuntimeError = 2, OutOfMemory = 3, UnknownError = 4 };
-	enum           { masterId = 0 };
+	enum { masterId = 0 };
 	// -------------------------------------------------------------------------------------------
 	// Thread setup
-	struct EntryPoint;
-	void   destroyThread(uint32 id);
-	void   allocThread(uint32 id, Solver& s);
-	int    joinThreads();
+	void destroyThread(uint32 id);
+	void allocThread(uint32 id, Solver& s);
+	int  joinThreads();
 	// -------------------------------------------------------------------------------------------
 	// Algorithm steps
-	void   setIntegrate(uint32 grace, uint8 filter);
-	void   setRestarts(uint32 maxR, const ScheduleStrategy& rs);
-	bool   beginSolve(SharedContext& ctx, const LitVec& assume);
-	bool   doSolve(SharedContext& ctx, const LitVec& assume);
-	void   doStart(SharedContext& ctx, const LitVec& assume);
-	int    doNext(int last);
-	void   doStop();
-	void   doDetach();
-	bool   doInterrupt();
-	void   solveParallel(uint32 id);
-	void   initQueue();
-	bool   requestWork(Solver& s, PathPtr& out);
-	void   terminate(Solver& s, bool complete);
-	bool   waitOnSync(Solver& s);
-	void   exception(uint32 id, PathPtr& path, ErrorCode e, const char* what);
-	void   reportProgress(const Event& ev) const;
-	void   reportProgress(const Solver& s, const char* msg) const;
+	void setIntegrate(uint32 grace, uint8 filter);
+	void setRestarts(uint32 maxR, const ScheduleStrategy& rs);
+	bool beginSolve(SharedContext& ctx, const LitVec& assume);
+	bool doSolve(SharedContext& ctx, const LitVec& assume);
+	void doStart(SharedContext& ctx, const LitVec& assume);
+	int  doNext(int last);
+	void doStop();
+	void doDetach();
+	bool doInterrupt();
+	void solveParallel(uint32 id);
+	void initQueue();
+	bool requestWork(Solver& s, PathPtr& out);
+	void terminate(Solver& s, bool complete);
+	bool waitOnSync(Solver& s);
+	void exception(uint32 id, PathPtr& path, int err, const char* what);
+	void reportProgress(const Event& ev) const;
+	void reportProgress(const Solver& s, const char* msg) const;
 	// -------------------------------------------------------------------------------------------
 	typedef ParallelSolveOptions::Distribution Distribution;
 	struct SharedData;
 	// SHARED DATA
 	SharedData*       shared_;       // Shared control data
-	ParallelHandler** thread_;       // Thread-locl control data
+	ParallelHandler** thread_;       // Thread-local control data
 	// READ ONLY
 	Distribution      distribution_; // distribution options
 	uint32            maxRestarts_;  // disable global restarts once reached
@@ -355,13 +353,12 @@ public:
 private:
 	typedef Detail::RawStack   RawStack;
 	typedef MPSCPtrQueue::Node QNode;
-	enum { BLOCK_CAP = 128 };
 	QNode* allocNode(uint32 tId, SharedLiterals* clause);
 	void   freeNode(uint32  tId, QNode* n) const;
 	struct ThreadData {
 		MPSCPtrQueue received; // queue holding received clauses
 		uint64       peers;    // set of peers from which this thread receives clauses
-		QNode        sentinal; // sentinal node for simplifying queue impl
+		QNode        sentinel; // sentinel node for simplifying queue impl
 		QNode*       free;     // local free list - only accessed by this thread
 	}**            thread_;    // one entry for each thread
 	RawStack       blocks_;    // allocated node blocks

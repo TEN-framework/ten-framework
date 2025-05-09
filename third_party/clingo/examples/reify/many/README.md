@@ -16,4 +16,3 @@ Finding 3 6-diverse stable models of `example.lp`:
 Finding 3 most diverse stable models of `example.lp`:
 
     $ clingo --output=reify example.lp | clingo -Wno-atom-undefined - encoding.lp -c m=3 -c option=2 --quiet=1,2,2
-

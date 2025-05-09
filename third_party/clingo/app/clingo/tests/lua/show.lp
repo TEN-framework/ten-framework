@@ -41,5 +41,5 @@ c.
 #show a : b.
 
 #program result.
-res(X) :- X = @getModels(). 
+res(X) :- X = @getModels().
 #show res/1.

@@ -134,4 +134,3 @@ square(7, 4).
 square(3, 5).
 square(4, 5).
 square(5, 5).
-

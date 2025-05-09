@@ -99,11 +99,11 @@ public:
 	virtual void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements, Id_t op, Id_t rhs);
 	virtual void endStep();
 
-	void addAtom(Atom_t id, const StringSpan& str);
 private:
-	std::ostream& printName(std::ostream& os, Lit_t lit) const;
+	std::ostream& printName(std::ostream& os, Lit_t lit);
 	void writeDirectives();
 	void visitTheories();
+	bool assignAtomName(Atom_t id, const std::string& name);
 	AspifTextOutput& push(uint32_t x);
 	AspifTextOutput& push(const AtomSpan& atoms);
 	AspifTextOutput& push(const LitSpan&  lits);
@@ -116,6 +116,9 @@ private:
 	TheoryData theory_;
 	Data*      data_;
 	int        step_;
+	bool       showAtoms_;
+	Atom_t     startAtom_;
+	Atom_t     maxAtom_;
 };
 
 //! Converts a given theory atom to a string.

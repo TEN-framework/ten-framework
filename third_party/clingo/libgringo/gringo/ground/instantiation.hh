@@ -27,7 +27,8 @@
 
 #include <gringo/output/output.hh>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ declaration of Queue
 
@@ -37,10 +38,10 @@ struct Queue {
     void enqueue(Instantiator &inst);
     void enqueue(Domain &dom);
 
-    using QueueVec  = std::vector<std::reference_wrapper<Instantiator>>;
+    using QueueVec = std::vector<std::reference_wrapper<Instantiator>>;
     using DomainVec = std::vector<std::reference_wrapper<Domain>>;
-    QueueVec  current;
-    std::array<QueueVec, 2>  queues;
+    QueueVec current;
+    std::array<QueueVec, 2> queues;
     DomainVec domains;
 };
 
@@ -68,9 +69,7 @@ struct SolutionCallback {
     virtual void report(Output::OutputBase &out, Logger &log) = 0;
     virtual void propagate(Queue &queue) = 0;
     virtual void printHead(std::ostream &out) const = 0;
-    virtual unsigned priority() const {
-        return 0;
-    }
+    virtual unsigned priority() const { return 0; }
 };
 
 // }}}
@@ -130,6 +129,7 @@ inline std::ostream &operator<<(std::ostream &out, Instantiator &x) {
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo
 
 #endif // GRINGO_GROUND_INSTANTIATION_HH

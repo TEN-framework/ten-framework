@@ -25,33 +25,27 @@
 #ifndef _GRINGO_TEST_AGGREGATE_HELPER_HH
 #define _GRINGO_TEST_AGGREGATE_HELPER_HH
 
-#include "tests/tests.hh"
 #include "gringo/input/aggregates.hh"
+#include "tests/tests.hh"
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 using namespace Gringo::Test;
 
 // {{{ definition of functions to create aggregates
 
-template <class... T>
-BoundVec boundvec(T&&... args) {
-    return init<2, BoundVec>(std::forward<T>(args)...);
+template <class... T> BoundVec boundvec(T &&...args) { return init<2, BoundVec>(std::forward<T>(args)...); }
+
+template <class... T> CondLitVec condlitvec(T &&...args) { return init<2, CondLitVec>(std::forward<T>(args)...); }
+
+template <class... T> BodyAggrElemVec bdelemvec(T &&...args) {
+    return init<2, BodyAggrElemVec>(std::forward<T>(args)...);
 }
 
-template <class... T>
-CondLitVec condlitvec(T&&... args) {
-    return init<2,CondLitVec>(std::forward<T>(args)...);
-}
-
-template <class... T>
-BodyAggrElemVec bdelemvec(T&&... args) {
-    return init<2,BodyAggrElemVec>(std::forward<T>(args)...);
-}
-
-template <class... T>
-HeadAggrElemVec hdelemvec(T&&... args) {
-    return init<3,HeadAggrElemVec>(std::forward<T>(args)...);
+template <class... T> HeadAggrElemVec hdelemvec(T &&...args) {
+    return init<3, HeadAggrElemVec>(std::forward<T>(args)...);
 }
 
 inline UBodyAggr bdaggr(NAF naf, AggregateFunction fun, BoundVec &&bounds, BodyAggrElemVec &&elems) {
@@ -86,8 +80,8 @@ inline UHeadAggr hdaggr(CondLitVec &&elems) {
 
 // }}}
 
-} } } // namespace Test Input Gringo
+} // namespace Test
+} // namespace Input
+} // namespace Gringo
 
 #endif // _GRINGO_TEST_AGGREGATE_HELPER_HH
-
-

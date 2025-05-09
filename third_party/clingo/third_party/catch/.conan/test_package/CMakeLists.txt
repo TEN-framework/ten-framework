@@ -1,12 +1,8 @@
-cmake_minimum_required(VERSION 3.2.0)
-project(test_package CXX)
+cmake_minimum_required(VERSION 3.16)
+project(PackageTest CXX)
 
-include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
-conan_basic_setup()
+find_package(Catch2 CONFIG REQUIRED)
 
-find_package(Catch2 REQUIRED CONFIG)
-
-add_executable(${PROJECT_NAME} test_package.cpp)
-
-target_link_libraries(${PROJECT_NAME} Catch2::Catch2WithMain)
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
+add_executable(test_package test_package.cpp)
+target_link_libraries(test_package Catch2::Catch2WithMain)
+target_compile_features(test_package PRIVATE cxx_std_14)

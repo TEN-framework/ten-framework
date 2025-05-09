@@ -25,18 +25,20 @@
 #ifndef GRINGO_INPUT_GROUNDTERMPARSER_HH
 #define GRINGO_INPUT_GROUNDTERMPARSER_HH
 
+#include <gringo/indexed.hh>
 #include <gringo/lexerstate.hh>
 #include <gringo/symbol.hh>
 #include <gringo/term.hh>
-#include <gringo/indexed.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ declaration of GroundTermParser
 
 class GroundTermParser : private LexerState<int> {
     using IndexedTerms = Indexed<SymVec, unsigned>;
-public:
+
+  public:
     GroundTermParser() = default;
     GroundTermParser(GroundTermParser const &other) = delete;
     GroundTermParser(GroundTermParser &&other) noexcept = default;
@@ -46,7 +48,10 @@ public:
 
     Symbol parse(std::string const &str, Logger &log);
     // NOTE: only to be used durning parsing (actually it would be better to hide this behind a private interface)
-    Logger &logger() { assert(log_); return *log_; }
+    Logger &logger() {
+        assert(log_);
+        return *log_;
+    }
     void parseError(std::string const &message, Logger &log);
     void lexerError(StringSpan token, Logger &log);
     int lex(void *pValue, Logger &log);
@@ -59,17 +64,18 @@ public:
     Symbol tuple(unsigned uid, bool forceTuple);
     void setValue(Symbol value);
 
-private:
+  private:
     int lex_impl(void *pValue, Logger &log);
 
-    Symbol       value_;
+    Symbol value_;
     IndexedTerms terms_;
     Logger *log_ = nullptr;
-    bool         undefined_{false};
+    bool undefined_{false};
 };
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_GROUNDTERMPARSER_HH

@@ -25,10 +25,11 @@
 #ifndef GRINGO_GROUND_STATEMENT_HH
 #define GRINGO_GROUND_STATEMENT_HH
 
-#include <gringo/ground/literal.hh>
 #include <gringo/ground/dependency.hh>
+#include <gringo/ground/literal.hh>
 
-namespace Gringo { namespace Ground {
+namespace Gringo {
+namespace Ground {
 
 // {{{ declaration of Statement
 
@@ -37,7 +38,7 @@ using UStm = std::unique_ptr<Statement>;
 using UStmVec = std::vector<UStm>;
 
 class Statement : public Printable {
-public:
+  public:
     using Dep = Dependency<UStm, HeadOccurrence>;
     virtual bool isNormal() const = 0;
     virtual void analyze(Dep::Node &node, Dep &dep) = 0;
@@ -48,6 +49,7 @@ public:
 
 // }}}
 
-} } // namespace Ground Gringo
+} // namespace Ground
+} // namespace Gringo
 
 #endif // GRINGO_GROUND_STATEMENT_HH

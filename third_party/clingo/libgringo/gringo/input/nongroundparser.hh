@@ -25,25 +25,26 @@
 #ifndef GRINGO_INPUT_NONGROUNDPARSER_HH
 #define GRINGO_INPUT_NONGROUNDPARSER_HH
 
+#include <gringo/backend.hh>
 #include <gringo/input/programbuilder.hh>
 #include <gringo/lexerstate.hh>
-#include <gringo/backend.hh>
-#include <memory>
 #include <iosfwd>
+#include <memory>
 #include <set>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ declaration of NonGroundParser
 
-using StringVec   = std::vector<std::string>;
-using ProgramVec  = std::vector<std::tuple<String, IdVec, std::string>>;
+using StringVec = std::vector<std::string>;
+using ProgramVec = std::vector<std::tuple<String, IdVec, std::string>>;
 
 enum class TheoryLexing { Disabled, Theory, Definition };
 enum class ParseResult { ASPIF, Gringo };
 
 class NonGroundParser : private LexerState<std::pair<String, std::pair<String, IdVec>>> {
-private:
+  private:
     enum Condition {
         yyccomment,
         yycblockcomment,
@@ -55,7 +56,8 @@ private:
         yycstart,
         yycaspif,
     };
-public:
+
+  public:
     NonGroundParser(INongroundProgramBuilder &pb, Backend &bck, bool &incmode);
     NonGroundParser(NonGroundParser const &other) = delete;
     NonGroundParser(NonGroundParser &&other) noexcept = default;
@@ -70,18 +72,20 @@ public:
     int lex(void *pValue, Location &loc);
     bool parseDefine(std::string const &define, Logger &log);
     ParseResult parse(Logger &log);
+    void parse_aspif(Logger &log);
     bool empty() { return LexerState::empty(); }
     void include(String file, Location const &loc, bool inbuilt, Logger &log);
     void theoryLexing(TheoryLexing mode);
-    void disable_aspif() {
-        condition(yycnormal);
-    }
+    void disable_aspif() { condition(yycnormal); }
     void reportComment(Location const &loc, String value, bool block);
     void storeComments();
     void flushComments();
     INongroundProgramBuilder &builder();
     // Note: only to be used during parsing
-    Logger &logger() { assert(log_); return *log_; }
+    Logger &logger() {
+        assert(log_);
+        return *log_;
+    }
     // {{{ aggregate helper functions
     BoundVecUid boundvec(Relation ra, TermUid ta, Relation rb, TermUid tb);
     unsigned aggregate(AggregateFunction fun, bool choice, unsigned elems, BoundVecUid bounds);
@@ -90,7 +94,7 @@ public:
     BdLitVecUid bodyaggregate(BdLitVecUid body, Location const &loc, NAF naf, unsigned bdaggr);
     // }}}
 
-private:
+  private:
     int lex_impl(void *pValue, Location &loc);
     void lexerError(Location const &loc, StringSpan token);
     bool push(std::string const &filename, bool include = false);
@@ -106,6 +110,7 @@ private:
     Condition condition() const;
     String filename() const;
 
+    void aspif_stms_(Location &loc);
     Symbol aspif_symbol_(Location &loc);
     std::vector<Potassco::Id_t> aspif_ids_(Location &loc);
     std::vector<Potassco::Atom_t> aspif_atoms_(Location &loc);
@@ -131,7 +136,7 @@ private:
     void aspif_edge_(Location &loc);
     void aspif_theory_(Location &loc);
     void aspif_comment_(Location &loc);
-
+    void aspif_asp_(Location &loc);
 
     std::set<std::string> filenames_;
     bool &incmode_;
@@ -139,8 +144,7 @@ private:
     String not_;
     INongroundProgramBuilder &pb_;
     Backend &bck_;
-    struct Aggr
-    {
+    struct Aggr {
         AggregateFunction fun;
         unsigned choice;
         unsigned elems;
@@ -148,15 +152,16 @@ private:
     };
     std::vector<std::tuple<Location, String, bool>> comments_;
     Indexed<Aggr> aggregates_;
-    int           injectSymbol_;
-    Condition     condition_ = yycstart;
-    String        filename_;
+    int injectSymbol_;
+    Condition condition_ = yycstart;
+    String filename_;
     Logger *log_ = nullptr;
     bool storeComments_ = false;
 };
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_NONGROUNDPARSER_HH

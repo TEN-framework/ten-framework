@@ -1,9 +1,28 @@
+///////////////////////////////////////////////////////////////////////////////
+//  Copyright Christopher Kormanyos 2018 - 2024.
+//  Distributed under the Boost Software License,
+//  Version 1.0. (See accompanying file LICENSE_1_0.txt
+//  or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+
+// STM32 EABI ARM(R) Cortex-M4(TM) startup code.
+// Expressed with C++ for STM32Fx by Chris.
+
+// C:\Users\User\Documents\Ks\uC_Software\Boards\real-time-cpp\ref_app\tools\Util\MinGW\msys\1.0\local\gcc-9.3.1-arm-none-eabi\bin\arm-none-eabi-g++ -std=c++14 -Wall -Wextra -pedantic -O2 -g -gdwarf-2 -fno-exceptions -ffunction-sections -fdata-sections -x c++ -fno-rtti -fno-use-cxa-atexit -fno-exceptions -fno-nonansi-builtins -fno-threadsafe-statics -fno-enforce-eh-specs -ftemplate-depth=32 -mcpu=cortex-m4 -mtune=cortex-m4 -mthumb -mfloat-abi=soft -mno-unaligned-access -mno-long-calls -I./src/mcal/stm32f446 -I./src -DAPP_BENCHMARK_TYPE=APP_BENCHMARK_TYPE_CRC -DAPP_BENCHMARK_STANDALONE_MAIN ./src/app/benchmark/app_benchmark_crc.cpp ./target/micros/stm32f446/make/single/crt.cpp -nostartfiles -Wl,--gc-sections -Wl,-Map,./bin/app_benchmark_crc.map -T ./target/micros/stm32f446/make/stm32f446.ld -o ./bin/app_benchmark_crc.elf
 
 namespace crt
 {
@@ -24,7 +43,8 @@ void __my_startup(void)
   // the base position of the interrupt vector table.
   // So we do nothing here.
 
-  // TBD: Chip init: Watchdog, port, and oscillator, if any needed.
+  // Note: Not needed:
+  // Chip init: Watchdog, port, and oscillator, if any needed.
 
   // Initialize statics from ROM to RAM.
   // Zero-clear default-initialized static RAM.
@@ -37,9 +57,7 @@ void __my_startup(void)
   asm volatile("ldr r3, =main");
   asm volatile("blx r3");
 
-  exit(EXIT_SUCCESS);
-
-  // TBD: Nothing on return from main.
+  // Do nothing on return from main.
 }
 
 extern "C" void _exit (int);
@@ -111,7 +129,6 @@ extern "C" void __svc_handler        () __attribute__((used, noinline));
 extern "C" void __debug_mon_handler  () __attribute__((used, noinline));
 extern "C" void __pend_sv_handler    () __attribute__((used, noinline));
 extern "C" void __sys_tick_handler   () __attribute__((used, noinline));
-extern "C" void __vector_timer4      ();
 
 extern "C" void __vector_unused_irq  () { for(;;) { ; } }
 extern "C" void __nmi_handler        () { for(;;) { ; } }
@@ -267,3 +284,7 @@ const volatile std::array<isr_type, number_of_interrupts> __isr_vector =
   nullptr                    // 0x01FC, dummy
 }};
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#endif

@@ -1,20 +1,26 @@
-from sys import stdout, exit
-from textwrap import dedent
 from copy import copy
+from sys import exit, stdout
+from textwrap import dedent
 
+from clingo import Function, Number, SymbolType, ast, clingo_main
 from clingo.application import Application
-from clingo import SymbolType, Number, Function, ast, clingo_main
+
 
 class TermTransformer(ast.Transformer):
     def __init__(self, parameter):
         self.parameter = parameter
 
     def __get_param(self, name, location):
-        n = name.replace('\'', '')
+        n = name.replace("'", "")
         primes = len(name) - len(n)
         param = ast.SymbolicTerm(location, self.parameter)
         if primes > 0:
-            param = ast.BinaryOperation(location, ast.BinaryOperator.Minus, param, ast.SymbolicTerm(location, Number(primes)))
+            param = ast.BinaryOperation(
+                location,
+                ast.BinaryOperator.Minus,
+                param,
+                ast.SymbolicTerm(location, Number(primes)),
+            )
         return n, param
 
     def visit_Function(self, term):
@@ -28,6 +34,7 @@ class TermTransformer(ast.Transformer):
         # but this case could occur in a valid AST
         raise RuntimeError("not implemented")
 
+
 class ProgramTransformer(ast.Transformer):
     def __init__(self, parameter):
         self.final = False
@@ -40,7 +47,9 @@ class ProgramTransformer(ast.Transformer):
             if x is ret:
                 ret = copy(x)
             loc = ret.location
-            fun = ast.Function(loc, "finally", [ast.SymbolicTerm(loc, self.parameter)], False)
+            fun = ast.Function(
+                loc, "finally", [ast.SymbolicTerm(loc, self.parameter)], False
+            )
             atm = ast.SymbolicAtom(fun)
             lit = ast.Literal(loc, ast.Sign.NoSign, atm)
             ret.body.append(lit)
@@ -62,6 +71,7 @@ class ProgramTransformer(ast.Transformer):
 
     def visit_ProjectSignature(self, sig):
         return sig.update(arity=sig.arity + 1)
+
 
 class TModeApp(Application):
     def __init__(self):
@@ -93,19 +103,38 @@ class TModeApp(Application):
 
     def register_options(self, options):
         group = "Incremental Options"
-        options.add(group, "imin", "Minimum number of solving steps [0]",
-                    self._parse_imin, argument="<n>")
-        options.add(group, "imax", "Maximum number of solving steps [infinity]",
-                    self._parse_imax, argument="<n>")
-        options.add(group, "istop", dedent("""\
+        options.add(
+            group,
+            "imin",
+            "Minimum number of solving steps [0]",
+            self._parse_imin,
+            argument="<n>",
+        )
+        options.add(
+            group,
+            "imax",
+            "Maximum number of solving steps [infinity]",
+            self._parse_imax,
+            argument="<n>",
+        )
+        options.add(
+            group,
+            "istop",
+            dedent(
+                """\
             Stop criterion [sat]
-                  <arg>: {sat|unsat|unknown}"""), self._parse_istop)
+                  <arg>: {sat|unsat|unknown}"""
+            ),
+            self._parse_istop,
+        )
 
     def print_model(self, model, printer):
         table = {}
         for sym in model.symbols(shown=True):
             if sym.type == SymbolType.Function and len(sym.arguments) > 0:
-                table.setdefault(sym.arguments[-1], []).append(Function(sym.name, sym.arguments[:-1]))
+                table.setdefault(sym.arguments[-1], []).append(
+                    Function(sym.name, sym.arguments[:-1])
+                )
         for step, symbols in sorted(table.items()):
             stdout.write(" State {}:".format(step))
             sig = None
@@ -118,22 +147,26 @@ class TModeApp(Application):
 
     def _main(self, ctl):
         step, ret = 0, None
-        while ((self._imax is None or step < self._imax) and
-               (step == 0 or step < self._imin or (
-                  (self._istop == "SAT"     and not ret.satisfiable) or
-                  (self._istop == "UNSAT"   and not ret.unsatisfiable) or
-                  (self._istop == "UNKNOWN" and not ret.unknown)))):
+        while (self._imax is None or step < self._imax) and (
+            step == 0
+            or step < self._imin
+            or (
+                (self._istop == "SAT" and not ret.satisfiable)
+                or (self._istop == "UNSAT" and not ret.unsatisfiable)
+                or (self._istop == "UNKNOWN" and not ret.unknown)
+            )
+        ):
             parts = []
             parts.append(("base", [Number(step)]))
             parts.append(("static", [Number(step)]))
             if step > 0:
-                ctl.release_external(Function("finally", [Number(step-1)]))
+                ctl.release_external(Function("finally", [Number(step - 1)]))
                 parts.append(("dynamic", [Number(step)]))
             else:
                 parts.append(("initial", [Number(0)]))
             ctl.ground(parts)
             ctl.assign_external(Function("finally", [Number(step)]), True)
-            ret, step = ctl.solve(), step+1
+            ret, step = ctl.solve(), step + 1
 
     def main(self, ctl, files):
         with ast.ProgramBuilder(ctl) as bld:
@@ -142,5 +175,6 @@ class TModeApp(Application):
         ctl.add("initial", ["t"], "initially(t).")
         ctl.add("static", ["t"], "#external finally(t).")
         self._main(ctl)
+
 
 exit(clingo_main(TModeApp()))

@@ -13,10 +13,8 @@ void ground_callback(Location, char const *name, SymbolSpan args, SymbolSpanCall
 
 int main(int argc, char const **argv) {
     try {
-        Logger logger = [](Clingo::WarningCode, char const *message) {
-            std::cerr << message << std::endl;
-        };
-        Control ctl{{argv+1, size_t(argc-1)}, logger, 20};
+        Logger logger = [](Clingo::WarningCode, char const *message) { std::cerr << message << std::endl; };
+        Control ctl{{argv + 1, size_t(argc - 1)}, logger, 20};
 
         // define a constant in string form
         std::ostringstream out;
@@ -26,7 +24,8 @@ int main(int argc, char const **argv) {
         // define a constant via the AST
         AST::with_builder(ctl, [](AST::ProgramBuilder &b) {
             Location loc{"<generated>", "<generated>", 1, 1, 1, 1};
-            b.add(AST::Node(AST::Type::Definition, loc, "e", AST::Node(AST::Type::SymbolicTerm, loc, Number(24)), false));
+            b.add(
+                AST::Node(AST::Type::Definition, loc, "e", AST::Node(AST::Type::SymbolicTerm, loc, Number(24)), false));
         });
 
         ctl.add("base", {}, "p(@c()). p(d). p(e).");
@@ -38,9 +37,7 @@ int main(int argc, char const **argv) {
             }
             std::cout << "\n";
         }
-    }
-    catch (std::exception const &e) {
+    } catch (std::exception const &e) {
         std::cerr << "example failed with: " << e.what() << std::endl;
     }
 }
-

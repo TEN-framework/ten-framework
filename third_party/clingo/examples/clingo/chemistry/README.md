@@ -11,7 +11,7 @@ Examples
       - base
       solutions:
       - a(1) a(2)
-    
+
     Exmaple 2:
       loading files:
       - chemistry.lp
@@ -19,7 +19,7 @@ Examples
       - acid(42)
       solutions:
       - b(42)
-    
+
     Exmaple 3:
       loading files:
       - chemistry.lp

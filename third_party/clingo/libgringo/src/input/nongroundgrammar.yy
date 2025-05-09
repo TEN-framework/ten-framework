@@ -48,7 +48,7 @@
     #include "potassco/basic_types.h"
 
     namespace Gringo { namespace Input { class NonGroundParser; } }
-    
+
     struct DefaultLocation : Gringo::Location {
         DefaultLocation() : Location("<undef>", 0, 0, "<undef>", 0, 0) { }
     };
@@ -59,7 +59,7 @@
 
 #include "gringo/input/nongroundparser.hh"
 #include "gringo/input/programbuilder.hh"
-#include <climits> 
+#include <climits>
 
 #define BUILDER (lexer->builder())
 #define LOGGER (lexer->logger())
@@ -211,75 +211,71 @@ void NonGroundGrammar::parser::error(DefaultLocation const &l, std::string const
 %token
     ADD         "+"
     AND         "&"
-    EQ          "="
+    ANY         "any"
     AT          "@"
-    BASE        "#base"
+    BINARY      "binary"
+    BLOCK       "#program"
     BNOT        "~"
+    BODY        "body"
     COLON       ":"
     COMMA       ","
     CONST       "#const"
     COUNT       "#count"
-    CUMULATIVE  "#cumulative"
+    DEFINED     "#defined"
+    DIRECTIVE   "directive"
     DOT         "."
     DOTS        ".."
+    EDGE        "#edge"
     END         0 "<EOF>"
+    EQ          "="
     EXTERNAL    "#external"
-    DEFINED     "#defined"
     FALSE       "#false"
-    FORGET      "#forget"
     GEQ         ">="
     GT          ">"
+    HEAD        "head"
+    HEURISTIC   "#heuristic"
     IF          ":-"
     INCLUDE     "#include"
     INFIMUM     "#inf"
     LBRACE      "{"
     LBRACK      "["
+    LEFT        "left"
     LEQ         "<="
     LPAREN      "("
     LT          "<"
-    MAX         "#max"
     MAXIMIZE    "#maximize"
-    MIN         "#min"
+    MAX         "#max"
     MINIMIZE    "#minimize"
+    MIN         "#min"
     MOD         "\\"
     MUL         "*"
     NEQ         "!="
+    PARSE_DEF   "<define>"
+    PARSE_LP    "<program>"
     POW         "**"
+    PROJECT     "#project"
     QUESTION    "?"
     RBRACE      "}"
     RBRACK      "]"
+    RIGHT       "right"
     RPAREN      ")"
     SEM         ";"
     SHOW        "#show"
-    EDGE        "#edge"
-    PROJECT     "#project"
-    HEURISTIC   "#heuristic"
     SHOWSIG     "#showsig"
     SLASH       "/"
     SUB         "-"
-    SUM         "#sum"
     SUMP        "#sum+"
+    SUM         "#sum"
     SUPREMUM    "#sup"
+    SYNC        "EOF"
+    THEORY      "#theory"
     TRUE        "#true"
-    BLOCK       "#program"
     UBNOT
     UMINUS
+    UNARY       "unary"
     VBAR        "|"
-    VOLATILE    "#volatile"
     WIF         ":~"
     XOR         "^"
-    PARSE_LP    "<program>"
-    PARSE_DEF   "<define>"
-    ANY         "any"
-    UNARY       "unary"
-    BINARY      "binary"
-    LEFT        "left"
-    RIGHT       "right"
-    HEAD        "head"
-    BODY        "body"
-    DIRECTIVE   "directive"
-    THEORY      "#theory"
-    SYNC        "EOF"
 
 
 %token <num>
@@ -783,12 +779,12 @@ statement
 
 // {{{2 blocks
 
-nidlist 
+nidlist
     : nidlist[list] COMMA identifier[id] { $$ = BUILDER.idvec($list, @id, String::fromRep($id)); }
     | identifier[id]                     { $$ = BUILDER.idvec(BUILDER.idvec(), @id, String::fromRep($id)); }
     ;
 
-idlist 
+idlist
     :               { $$ = BUILDER.idvec(); }
     | nidlist[list] { $$ = $list; }
     ;
@@ -855,7 +851,7 @@ theory_opterm_list
     |                           { $$ = BUILDER.theoryopterms(); }
     ;
 
-theory_atom_element 
+theory_atom_element
     : theory_opterm_nlist[list] disable_theory_lexing optcondition[cond] { $$ = { $list, $cond }; }
     |                           disable_theory_lexing COLON litvec[cond] { $$ = { BUILDER.theoryopterms(), $cond }; }
     ;

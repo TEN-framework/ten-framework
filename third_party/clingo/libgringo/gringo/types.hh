@@ -25,8 +25,8 @@
 #ifndef GRINGO_TYPES_HH
 #define GRINGO_TYPES_HH
 
-#include <potassco/basic_types.h>
 #include <limits>
+#include <potassco/basic_types.h>
 
 namespace Gringo {
 

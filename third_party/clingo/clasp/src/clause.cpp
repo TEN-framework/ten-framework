@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -65,7 +65,9 @@ SharedLiterals* SharedLiterals::newShareable(const Literal* lits, uint32 size, C
 SharedLiterals::SharedLiterals(const Literal* a_lits, uint32 size, ConstraintType t, uint32 refs)
 	: size_type_( (size << 2) + t ) {
 	refCount_ = std::max(uint32(1),refs);
-	std::memcpy(lits_, a_lits, size*sizeof(Literal));
+	if (a_lits) {
+		std::memcpy(lits_, a_lits, size*sizeof(Literal));
+	}
 }
 
 uint32 SharedLiterals::simplify(Solver& s) {
@@ -758,19 +760,19 @@ Constraint* SharedLitsClause::cloneAttach(Solver& other) {
 bool SharedLitsClause::updateWatch(Solver& s, uint32 pos) {
 	Literal  other = head_[1^pos];
 	for (const Literal* r = shared_->begin(), *end = shared_->end(); r != end; ++r) {
-		// at this point we know that head_[2] is false so we only need to check
+		// at this point we know that head_[2] is false, so we only need to check
 		// that we do not watch the other watched literal twice!
 		if (!s.isFalse(*r) && *r != other) {
 			head_[pos] = *r; // replace watch
 			// try to replace cache literal
 			switch( std::min(static_cast<uint32>(8), static_cast<uint32>(end-r)) ) {
-				case 8: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 7: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 6: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 5: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 4: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 3: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
-				case 2: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHRU
+				case 8: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 7: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 6: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 5: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 4: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 3: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
+				case 2: if (!s.isFalse(*++r) && *r != other) { head_[2] = *r; return true; } // FALLTHROUGH
 				default: return true;
 			}
 		}

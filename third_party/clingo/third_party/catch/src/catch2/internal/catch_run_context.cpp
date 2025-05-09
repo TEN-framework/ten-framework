@@ -8,8 +8,9 @@
 #include <catch2/internal/catch_run_context.hpp>
 
 #include <catch2/catch_user_config.hpp>
-#include <catch2/interfaces/catch_interfaces_generatortracker.hpp>
 #include <catch2/interfaces/catch_interfaces_config.hpp>
+#include <catch2/interfaces/catch_interfaces_generatortracker.hpp>
+#include <catch2/interfaces/catch_interfaces_reporter.hpp>
 #include <catch2/internal/catch_compiler_capabilities.hpp>
 #include <catch2/internal/catch_context.hpp>
 #include <catch2/internal/catch_enforce.hpp>
@@ -19,6 +20,7 @@
 #include <catch2/internal/catch_output_redirect.hpp>
 #include <catch2/internal/catch_assertion_handler.hpp>
 #include <catch2/internal/catch_test_failure_exception.hpp>
+#include <catch2/internal/catch_result_type.hpp>
 
 #include <cassert>
 #include <algorithm>
@@ -26,146 +28,152 @@
 namespace Catch {
 
     namespace Generators {
-        struct GeneratorTracker : TestCaseTracking::TrackerBase, IGeneratorTracker {
-            GeneratorBasePtr m_generator;
+        namespace {
+            struct GeneratorTracker final : TestCaseTracking::TrackerBase,
+                                      IGeneratorTracker {
+                GeneratorBasePtr m_generator;
 
-            GeneratorTracker( TestCaseTracking::NameAndLocation&& nameAndLocation, TrackerContext& ctx, ITracker* parent )
-            :   TrackerBase( CATCH_MOVE(nameAndLocation), ctx, parent )
-            {}
-            ~GeneratorTracker() override;
+                GeneratorTracker(
+                    TestCaseTracking::NameAndLocation&& nameAndLocation,
+                    TrackerContext& ctx,
+                    ITracker* parent ):
+                    TrackerBase( CATCH_MOVE( nameAndLocation ), ctx, parent ) {}
 
-            static GeneratorTracker* acquire( TrackerContext& ctx, TestCaseTracking::NameAndLocationRef const& nameAndLocation ) {
-                GeneratorTracker* tracker;
+                static GeneratorTracker*
+                acquire( TrackerContext& ctx,
+                         TestCaseTracking::NameAndLocationRef const&
+                             nameAndLocation ) {
+                    GeneratorTracker* tracker;
 
-                ITracker& currentTracker = ctx.currentTracker();
-                // Under specific circumstances, the generator we want
-                // to acquire is also the current tracker. If this is
-                // the case, we have to avoid looking through current
-                // tracker's children, and instead return the current
-                // tracker.
-                // A case where this check is important is e.g.
-                //     for (int i = 0; i < 5; ++i) {
-                //         int n = GENERATE(1, 2);
-                //     }
-                //
-                // without it, the code above creates 5 nested generators.
-                if ( currentTracker.nameAndLocation() == nameAndLocation ) {
-                    auto thisTracker =
-                        currentTracker.parent()->findChild( nameAndLocation );
-                    assert( thisTracker );
-                    assert( thisTracker->isGeneratorTracker() );
-                    tracker = static_cast<GeneratorTracker*>( thisTracker );
-                } else if ( ITracker* childTracker =
-                                currentTracker.findChild( nameAndLocation ) ) {
-                    assert( childTracker );
-                    assert( childTracker->isGeneratorTracker() );
-                    tracker = static_cast<GeneratorTracker*>( childTracker );
-                } else {
-                    return nullptr;
+                    ITracker& currentTracker = ctx.currentTracker();
+                    // Under specific circumstances, the generator we want
+                    // to acquire is also the current tracker. If this is
+                    // the case, we have to avoid looking through current
+                    // tracker's children, and instead return the current
+                    // tracker.
+                    // A case where this check is important is e.g.
+                    //     for (int i = 0; i < 5; ++i) {
+                    //         int n = GENERATE(1, 2);
+                    //     }
+                    //
+                    // without it, the code above creates 5 nested generators.
+                    if ( currentTracker.nameAndLocation() == nameAndLocation ) {
+                        auto thisTracker = currentTracker.parent()->findChild(
+                            nameAndLocation );
+                        assert( thisTracker );
+                        assert( thisTracker->isGeneratorTracker() );
+                        tracker = static_cast<GeneratorTracker*>( thisTracker );
+                    } else if ( ITracker* childTracker =
+                                    currentTracker.findChild(
+                                        nameAndLocation ) ) {
+                        assert( childTracker );
+                        assert( childTracker->isGeneratorTracker() );
+                        tracker =
+                            static_cast<GeneratorTracker*>( childTracker );
+                    } else {
+                        return nullptr;
+                    }
+
+                    if ( !tracker->isComplete() ) { tracker->open(); }
+
+                    return tracker;
                 }
 
-                if( !tracker->isComplete() ) {
-                    tracker->open();
+                // TrackerBase interface
+                bool isGeneratorTracker() const override { return true; }
+                auto hasGenerator() const -> bool override {
+                    return !!m_generator;
                 }
-
-                return tracker;
-            }
-
-            // TrackerBase interface
-            bool isGeneratorTracker() const override { return true; }
-            auto hasGenerator() const -> bool override {
-                return !!m_generator;
-            }
-            void close() override {
-                TrackerBase::close();
-                // If a generator has a child (it is followed by a section)
-                // and none of its children have started, then we must wait
-                // until later to start consuming its values.
-                // This catches cases where `GENERATE` is placed between two
-                // `SECTION`s.
-                // **The check for m_children.empty cannot be removed**.
-                // doing so would break `GENERATE` _not_ followed by `SECTION`s.
-                const bool should_wait_for_child = [&]() {
-                    // No children -> nobody to wait for
-                    if ( m_children.empty() ) {
-                        return false;
-                    }
-                    // If at least one child started executing, don't wait
-                    if ( std::find_if(
-                             m_children.begin(),
-                             m_children.end(),
-                             []( TestCaseTracking::ITrackerPtr const& tracker ) {
-                                 return tracker->hasStarted();
-                             } ) != m_children.end() ) {
-                        return false;
-                    }
-
-                    // No children have started. We need to check if they _can_
-                    // start, and thus we should wait for them, or they cannot
-                    // start (due to filters), and we shouldn't wait for them
-                    ITracker* parent = m_parent;
-                    // This is safe: there is always at least one section
-                    // tracker in a test case tracking tree
-                    while ( !parent->isSectionTracker() ) {
-                        parent = parent->parent();
-                    }
-                    assert( parent &&
-                            "Missing root (test case) level section" );
-
-                    auto const& parentSection =
-                        static_cast<SectionTracker const&>( *parent );
-                    auto const& filters = parentSection.getFilters();
-                    // No filters -> no restrictions on running sections
-                    if ( filters.empty() ) {
-                        return true;
-                    }
-
-                    for ( auto const& child : m_children ) {
-                        if ( child->isSectionTracker() &&
-                             std::find(
-                                 filters.begin(),
-                                 filters.end(),
-                                 static_cast<SectionTracker const&>( *child )
-                                     .trimmedName() ) != filters.end() ) {
-                            return true;
+                void close() override {
+                    TrackerBase::close();
+                    // If a generator has a child (it is followed by a section)
+                    // and none of its children have started, then we must wait
+                    // until later to start consuming its values.
+                    // This catches cases where `GENERATE` is placed between two
+                    // `SECTION`s.
+                    // **The check for m_children.empty cannot be removed**.
+                    // doing so would break `GENERATE` _not_ followed by
+                    // `SECTION`s.
+                    const bool should_wait_for_child = [&]() {
+                        // No children -> nobody to wait for
+                        if ( m_children.empty() ) { return false; }
+                        // If at least one child started executing, don't wait
+                        if ( std::find_if(
+                                 m_children.begin(),
+                                 m_children.end(),
+                                 []( TestCaseTracking::ITrackerPtr const&
+                                         tracker ) {
+                                     return tracker->hasStarted();
+                                 } ) != m_children.end() ) {
+                            return false;
                         }
+
+                        // No children have started. We need to check if they
+                        // _can_ start, and thus we should wait for them, or
+                        // they cannot start (due to filters), and we shouldn't
+                        // wait for them
+                        ITracker* parent = m_parent;
+                        // This is safe: there is always at least one section
+                        // tracker in a test case tracking tree
+                        while ( !parent->isSectionTracker() ) {
+                            parent = parent->parent();
+                        }
+                        assert( parent &&
+                                "Missing root (test case) level section" );
+
+                        auto const& parentSection =
+                            static_cast<SectionTracker const&>( *parent );
+                        auto const& filters = parentSection.getFilters();
+                        // No filters -> no restrictions on running sections
+                        if ( filters.empty() ) { return true; }
+
+                        for ( auto const& child : m_children ) {
+                            if ( child->isSectionTracker() &&
+                                 std::find( filters.begin(),
+                                            filters.end(),
+                                            static_cast<SectionTracker const&>(
+                                                *child )
+                                                .trimmedName() ) !=
+                                     filters.end() ) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }();
+
+                    // This check is a bit tricky, because m_generator->next()
+                    // has a side-effect, where it consumes generator's current
+                    // value, but we do not want to invoke the side-effect if
+                    // this generator is still waiting for any child to start.
+                    assert( m_generator && "Tracker without generator" );
+                    if ( should_wait_for_child ||
+                         ( m_runState == CompletedSuccessfully &&
+                           m_generator->countedNext() ) ) {
+                        m_children.clear();
+                        m_runState = Executing;
                     }
-                    return false;
-                }();
-
-                // This check is a bit tricky, because m_generator->next()
-                // has a side-effect, where it consumes generator's current
-                // value, but we do not want to invoke the side-effect if
-                // this generator is still waiting for any child to start.
-                assert( m_generator && "Tracker without generator" );
-                if ( should_wait_for_child ||
-                     ( m_runState == CompletedSuccessfully &&
-                       m_generator->countedNext() ) ) {
-                    m_children.clear();
-                    m_runState = Executing;
                 }
-            }
 
-            // IGeneratorTracker interface
-            auto getGenerator() const -> GeneratorBasePtr const& override {
-                return m_generator;
-            }
-            void setGenerator( GeneratorBasePtr&& generator ) override {
-                m_generator = CATCH_MOVE( generator );
-            }
-        };
-        GeneratorTracker::~GeneratorTracker() = default;
+                // IGeneratorTracker interface
+                auto getGenerator() const -> GeneratorBasePtr const& override {
+                    return m_generator;
+                }
+                void setGenerator( GeneratorBasePtr&& generator ) override {
+                    m_generator = CATCH_MOVE( generator );
+                }
+            };
+        } // namespace
     }
 
     RunContext::RunContext(IConfig const* _config, IEventListenerPtr&& reporter)
     :   m_runInfo(_config->name()),
-        m_context(getCurrentMutableContext()),
         m_config(_config),
         m_reporter(CATCH_MOVE(reporter)),
         m_lastAssertionInfo{ StringRef(), SourceLineInfo("",0), StringRef(), ResultDisposition::Normal },
+        m_outputRedirect( makeOutputRedirect( m_reporter->getPreferences().shouldRedirectStdOut ) ),
         m_includeSuccessfulResults( m_config->includeSuccessfulResults() || m_reporter->getPreferences().shouldReportAllAssertions )
     {
-        m_context.setResultCapture(this);
+        getCurrentMutableContext().setResultCapture( this );
         m_reporter->testRunStarting(m_runInfo);
     }
 
@@ -178,6 +186,7 @@ namespace Catch {
 
         auto const& testInfo = testCase.getTestCaseInfo();
         m_reporter->testCaseStarting(testInfo);
+        testCase.prepareTestCase();
         m_activeTestCase = &testCase;
 
 
@@ -228,15 +237,17 @@ namespace Catch {
             m_reporter->testCasePartialStarting(testInfo, testRuns);
 
             const auto beforeRunTotals = m_totals;
-            std::string oneRunCout, oneRunCerr;
-            runCurrentTest(oneRunCout, oneRunCerr);
+            runCurrentTest();
+            std::string oneRunCout = m_outputRedirect->getStdout();
+            std::string oneRunCerr = m_outputRedirect->getStderr();
+            m_outputRedirect->clearBuffers();
             redirectedCout += oneRunCout;
             redirectedCerr += oneRunCerr;
 
             const auto singleRunTotals = m_totals.delta(beforeRunTotals);
             auto statsForOneRun = TestCaseStats(testInfo, singleRunTotals, CATCH_MOVE(oneRunCout), CATCH_MOVE(oneRunCerr), aborting());
-
             m_reporter->testCasePartialEnded(statsForOneRun, testRuns);
+
             ++testRuns;
         } while (!m_testCaseTracker->isSuccessfullyCompleted() && !aborting());
 
@@ -247,6 +258,7 @@ namespace Catch {
             deltaTotals.testCases.failed++;
         }
         m_totals.testCases += deltaTotals.testCases;
+        testCase.tearDownTestCase();
         m_reporter->testCaseEnded(TestCaseStats(testInfo,
                                   deltaTotals,
                                   CATCH_MOVE(redirectedCout),
@@ -260,7 +272,7 @@ namespace Catch {
     }
 
 
-    void RunContext::assertionEnded(AssertionResult const & result) {
+    void RunContext::assertionEnded(AssertionResult&& result) {
         if (result.getResultType() == ResultWas::Ok) {
             m_totals.assertions.passed++;
             m_lastAssertionPassed = true;
@@ -280,21 +292,33 @@ namespace Catch {
             m_lastAssertionPassed = true;
         }
 
-        m_reporter->assertionEnded(AssertionStats(result, m_messages, m_totals));
+        {
+            auto _ = scopedDeactivate( *m_outputRedirect );
+            m_reporter->assertionEnded( AssertionStats( result, m_messages, m_totals ) );
+        }
 
-        if (result.getResultType() != ResultWas::Warning)
+        if ( result.getResultType() != ResultWas::Warning ) {
             m_messageScopes.clear();
+        }
 
-        // Reset working state
-        resetAssertionInfo();
-        m_lastResult = result;
+        // Reset working state. assertion info will be reset after
+        // populateReaction is run if it is needed
+        m_lastResult = CATCH_MOVE( result );
     }
     void RunContext::resetAssertionInfo() {
         m_lastAssertionInfo.macroName = StringRef();
         m_lastAssertionInfo.capturedExpression = "{Unknown expression after the reported line}"_sr;
+        m_lastAssertionInfo.resultDisposition = ResultDisposition::Normal;
     }
 
-    bool RunContext::sectionStarted(StringRef sectionName, SourceLineInfo const& sectionLineInfo, Counts & assertions) {
+    void RunContext::notifyAssertionStarted( AssertionInfo const& info ) {
+        auto _ = scopedDeactivate( *m_outputRedirect );
+        m_reporter->assertionStarting( info );
+    }
+
+    bool RunContext::sectionStarted( StringRef sectionName,
+                                     SourceLineInfo const& sectionLineInfo,
+                                     Counts& assertions ) {
         ITracker& sectionTracker =
             SectionTracker::acquire( m_trackerContext,
                                      TestCaseTracking::NameAndLocationRef(
@@ -307,7 +331,10 @@ namespace Catch {
         SectionInfo sectionInfo( sectionLineInfo, static_cast<std::string>(sectionName) );
         m_lastAssertionInfo.lineInfo = sectionInfo.lineInfo;
 
-        m_reporter->sectionStarting(sectionInfo);
+        {
+            auto _ = scopedDeactivate( *m_outputRedirect );
+            m_reporter->sectionStarting( sectionInfo );
+        }
 
         assertions = m_totals.assertions;
 
@@ -367,7 +394,15 @@ namespace Catch {
             m_activeSections.pop_back();
         }
 
-        m_reporter->sectionEnded(SectionStats(CATCH_MOVE(endInfo.sectionInfo), assertions, endInfo.durationInSeconds, missingAssertions));
+        {
+            auto _ = scopedDeactivate( *m_outputRedirect );
+            m_reporter->sectionEnded(
+                SectionStats( CATCH_MOVE( endInfo.sectionInfo ),
+                              assertions,
+                              endInfo.durationInSeconds,
+                              missingAssertions ) );
+        }
+
         m_messages.clear();
         m_messageScopes.clear();
     }
@@ -384,15 +419,19 @@ namespace Catch {
     }
 
     void RunContext::benchmarkPreparing( StringRef name ) {
-        m_reporter->benchmarkPreparing(name);
+        auto _ = scopedDeactivate( *m_outputRedirect );
+        m_reporter->benchmarkPreparing( name );
     }
     void RunContext::benchmarkStarting( BenchmarkInfo const& info ) {
+        auto _ = scopedDeactivate( *m_outputRedirect );
         m_reporter->benchmarkStarting( info );
     }
     void RunContext::benchmarkEnded( BenchmarkStats<> const& stats ) {
+        auto _ = scopedDeactivate( *m_outputRedirect );
         m_reporter->benchmarkEnded( stats );
     }
     void RunContext::benchmarkFailed( StringRef error ) {
+        auto _ = scopedDeactivate( *m_outputRedirect );
         m_reporter->benchmarkFailed( error );
     }
 
@@ -423,8 +462,13 @@ namespace Catch {
     }
 
     void RunContext::handleFatalErrorCondition( StringRef message ) {
+        // TODO: scoped deactivate here? Just give up and do best effort?
+        //       the deactivation can break things further, OTOH so can the
+        //       capture
+        auto _ = scopedDeactivate( *m_outputRedirect );
+
         // First notify reporter that bad things happened
-        m_reporter->fatalErrorEncountered(message);
+        m_reporter->fatalErrorEncountered( message );
 
         // Don't rebuild the result -- the stringification itself can cause more fatal errors
         // Instead, fake a result data.
@@ -432,8 +476,16 @@ namespace Catch {
         tempResult.message = static_cast<std::string>(message);
         AssertionResult result(m_lastAssertionInfo, CATCH_MOVE(tempResult));
 
-        assertionEnded(result);
+        assertionEnded(CATCH_MOVE(result) );
+        resetAssertionInfo();
 
+        // Best effort cleanup for sections that have not been destructed yet
+        // Since this is a fatal error, we have not had and won't have the opportunity to destruct them properly
+        while (!m_activeSections.empty()) {
+            auto nl = m_activeSections.back()->nameAndLocation();
+            SectionEndInfo endInfo{ SectionInfo(CATCH_MOVE(nl.location), CATCH_MOVE(nl.name)), {}, 0.0 };
+            sectionEndedEarly(CATCH_MOVE(endInfo));
+        }
         handleUnfinishedSections();
 
         // Recreate section for test case (as we will lose the one that was in scope)
@@ -443,7 +495,7 @@ namespace Catch {
         Counts assertions;
         assertions.failed = 1;
         SectionStats testCaseSectionStats(CATCH_MOVE(testCaseSection), assertions, 0, false);
-        m_reporter->sectionEnded(testCaseSectionStats);
+        m_reporter->sectionEnded( testCaseSectionStats );
 
         auto const& testInfo = m_activeTestCase->getTestCaseInfo();
 
@@ -474,7 +526,7 @@ namespace Catch {
         return m_totals.assertions.failed >= static_cast<std::size_t>(m_config->abortAfter());
     }
 
-    void RunContext::runCurrentTest(std::string & redirectedCout, std::string & redirectedCerr) {
+    void RunContext::runCurrentTest() {
         auto const& testCaseInfo = m_activeTestCase->getTestCaseInfo();
         SectionInfo testCaseSection(testCaseInfo.lineInfo, testCaseInfo.name);
         m_reporter->sectionStarting(testCaseSection);
@@ -485,18 +537,8 @@ namespace Catch {
 
         Timer timer;
         CATCH_TRY {
-            if (m_reporter->getPreferences().shouldRedirectStdOut) {
-#if !defined(CATCH_CONFIG_EXPERIMENTAL_REDIRECT)
-                RedirectedStreams redirectedStreams(redirectedCout, redirectedCerr);
-
-                timer.start();
-                invokeActiveTestCase();
-#else
-                OutputRedirect r(redirectedCout, redirectedCerr);
-                timer.start();
-                invokeActiveTestCase();
-#endif
-            } else {
+            {
+                auto _ = scopedActivate( *m_outputRedirect );
                 timer.start();
                 invokeActiveTestCase();
             }
@@ -541,11 +583,12 @@ namespace Catch {
     void RunContext::handleUnfinishedSections() {
         // If sections ended prematurely due to an exception we stored their
         // infos here so we can tear them down outside the unwind process.
-        for (auto it = m_unfinishedSections.rbegin(),
-             itEnd = m_unfinishedSections.rend();
-             it != itEnd;
-             ++it)
-            sectionEnded(CATCH_MOVE(*it));
+        for ( auto it = m_unfinishedSections.rbegin(),
+                   itEnd = m_unfinishedSections.rend();
+              it != itEnd;
+              ++it ) {
+            sectionEnded( CATCH_MOVE( *it ) );
+        }
         m_unfinishedSections.clear();
     }
 
@@ -554,8 +597,6 @@ namespace Catch {
         ITransientExpression const& expr,
         AssertionReaction& reaction
     ) {
-        m_reporter->assertionStarting( info );
-
         bool negated = isFalseTest( info.resultDisposition );
         bool result = expr.getResult() != negated;
 
@@ -571,6 +612,7 @@ namespace Catch {
             reportExpr(info, ResultWas::ExpressionFailed, &expr, negated );
             populateReaction( reaction );
         }
+        resetAssertionInfo();
     }
     void RunContext::reportExpr(
             AssertionInfo const &info,
@@ -584,31 +626,32 @@ namespace Catch {
         AssertionResult assertionResult{ info, CATCH_MOVE( data ) };
         assertionResult.m_resultData.lazyExpression.m_transientExpression = expr;
 
-        assertionEnded( assertionResult );
+        assertionEnded( CATCH_MOVE(assertionResult) );
     }
 
     void RunContext::handleMessage(
             AssertionInfo const& info,
             ResultWas::OfType resultType,
-            StringRef message,
+            std::string&& message,
             AssertionReaction& reaction
     ) {
-        m_reporter->assertionStarting( info );
-
         m_lastAssertionInfo = info;
 
         AssertionResultData data( resultType, LazyExpression( false ) );
-        data.message = static_cast<std::string>(message);
+        data.message = CATCH_MOVE( message );
         AssertionResult assertionResult{ m_lastAssertionInfo,
                                          CATCH_MOVE( data ) };
-        assertionEnded( assertionResult );
-        if ( !assertionResult.isOk() ) {
+
+        const auto isOk = assertionResult.isOk();
+        assertionEnded( CATCH_MOVE(assertionResult) );
+        if ( !isOk ) {
             populateReaction( reaction );
         } else if ( resultType == ResultWas::ExplicitSkip ) {
             // TODO: Need to handle this explicitly, as ExplicitSkip is
             // considered "OK"
             reaction.shouldSkip = true;
         }
+        resetAssertionInfo();
     }
     void RunContext::handleUnexpectedExceptionNotThrown(
             AssertionInfo const& info,
@@ -619,16 +662,17 @@ namespace Catch {
 
     void RunContext::handleUnexpectedInflightException(
             AssertionInfo const& info,
-            std::string const& message,
+            std::string&& message,
             AssertionReaction& reaction
     ) {
         m_lastAssertionInfo = info;
 
         AssertionResultData data( ResultWas::ThrewException, LazyExpression( false ) );
-        data.message = message;
+        data.message = CATCH_MOVE(message);
         AssertionResult assertionResult{ info, CATCH_MOVE(data) };
-        assertionEnded( assertionResult );
+        assertionEnded( CATCH_MOVE(assertionResult) );
         populateReaction( reaction );
+        resetAssertionInfo();
     }
 
     void RunContext::populateReaction( AssertionReaction& reaction ) {
@@ -645,7 +689,8 @@ namespace Catch {
         AssertionResultData data( ResultWas::ThrewException, LazyExpression( false ) );
         data.message = "Exception translation was disabled by CATCH_CONFIG_FAST_COMPILE"s;
         AssertionResult assertionResult{ info, CATCH_MOVE( data ) };
-        assertionEnded( assertionResult );
+        assertionEnded( CATCH_MOVE(assertionResult) );
+        resetAssertionInfo();
     }
     void RunContext::handleNonExpr(
             AssertionInfo const &info,
@@ -656,10 +701,11 @@ namespace Catch {
 
         AssertionResultData data( resultType, LazyExpression( false ) );
         AssertionResult assertionResult{ info, CATCH_MOVE( data ) };
-        assertionEnded( assertionResult );
 
-        if( !assertionResult.isOk() )
-            populateReaction( reaction );
+        const auto isOk = assertionResult.isOk();
+        assertionEnded( CATCH_MOVE(assertionResult) );
+        if ( !isOk ) { populateReaction( reaction ); }
+        resetAssertionInfo();
     }
 
 

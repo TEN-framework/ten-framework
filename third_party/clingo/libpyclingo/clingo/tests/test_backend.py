@@ -2,9 +2,9 @@
 Tests for the backend/observer.
 """
 
-from unittest import TestCase
 from typing import Sequence, Tuple
-from clingo.symbol import parse_term
+from unittest import TestCase
+
 from clingo import (
     Control,
     Function,
@@ -14,6 +14,7 @@ from clingo import (
     TheorySequenceType,
     TruthValue,
 )
+from clingo.symbol import parse_term
 
 
 class TestObserverBackend(Observer):
@@ -244,8 +245,12 @@ class TestBackend(TestCase):
             seq = backend.add_theory_term_sequence(
                 TheorySequenceType.Set, [num_one, num_two, str_x]
             )
-            lst = backend.add_theory_term_sequence(TheorySequenceType.List, [num_one, num_two])
-            tup = backend.add_theory_term_sequence(TheorySequenceType.Tuple, [num_one, num_two])
+            lst = backend.add_theory_term_sequence(
+                TheorySequenceType.List, [num_one, num_two]
+            )
+            tup = backend.add_theory_term_sequence(
+                TheorySequenceType.Tuple, [num_one, num_two]
+            )
             fseq = backend.add_theory_term_function("f", [seq])
 
             self.assertEqual(num_one, backend.add_theory_term_number(1))
@@ -257,7 +262,9 @@ class TestBackend(TestCase):
                 fun, backend.add_theory_term_symbol(parse_term("f(1,2,x)"))
             )
 
-            elem = backend.add_theory_element([num_one, num_two, seq, fun, lst, tup], [1, -2, 3])
+            elem = backend.add_theory_element(
+                [num_one, num_two, seq, fun, lst, tup], [1, -2, 3]
+            )
 
             # Tests with guards and elements
             backend.add_theory_atom(fun, [], 0)

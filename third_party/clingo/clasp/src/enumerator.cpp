@@ -144,15 +144,14 @@ bool EnumerationConstraint::simplify(Solver& s, bool reinit) {
 }
 
 bool EnumerationConstraint::commitModel(Enumerator& ctx, Solver& s) {
-	if (state() == value_true)          { return !next_.empty() && (s.satPrepro()->extendModel(s.model, next_), true); }
 	if (mini_ && !mini_->handleModel(s)){ return false; }
-	if (!ctx.tentative())               { doCommitModel(ctx, s); }
-	next_ = s.symmetric();
+	if (!ctx.tentative()) { doCommitModel(ctx, s); }
 	state_ |= value_true;
 	return true;
 }
 bool EnumerationConstraint::commitUnsat(Enumerator& ctx, Solver& s) {
 	next_.clear();
+	s.model.clear();
 	state_ |= value_false;
 	if (mini_) {
 		mini_->handleUnsat(s, !disjointPath(), next_);
@@ -228,39 +227,59 @@ bool Enumerator::commitModel(Solver& s) {
 	assert(s.numFreeVars() == 0 && !s.hasConflict() && s.queueSize() == 0);
 	if (constraintRef(s).commitModel(*this, s)) {
 		s.stats.addModel(s.decisionLevel());
+		if (model_.fin) {
+			model_.num  = 0;
+			model_.type = uint32(modelType());
+			model_.fin  = 0;
+		}
 		++model_.num;
+		setModel(s, false);
 		model_.sId    = s.id();
-		model_.values = &s.model;
+		model_.values = &values_;
 		model_.costs  = 0;
-		model_.up     = 0;
+		sym_.clear();
 		if (minimizer()) {
 			costs_.resize(minimizer()->numRules());
 			std::transform(minimizer()->adjust(), minimizer()->adjust()+costs_.size(), minimizer()->sum(), costs_.begin(), std::plus<wsum_t>());
 			model_.costs = &costs_;
 		}
+		if (model_.sym && !optimize()) {
+			sym_ = s.symmetric();
+		}
 		return true;
 	}
 	return false;
 }
-bool Enumerator::commitSymmetric(Solver& s){ return model_.sym && !optimize() && commitModel(s); }
-bool Enumerator::commitUnsat(Solver& s)    { return constraintRef(s).commitUnsat(*this, s); }
+bool Enumerator::commitSymmetric(Solver& s) {
+	if (!sym_.empty() && s.satPrepro()) {
+		s.satPrepro()->extendModel(values_, sym_);
+		s.stats.addModel(s.decisionLevel());
+		++model_.num;
+		return true;
+	}
+	return false;
+}
+bool Enumerator::commitUnsat(Solver& s) {
+	bool ok = constraintRef(s).commitUnsat(*this, s);
+	if (ok && !s.model.empty() && unsatType() == unsat_sync) {
+		setModel(s, true);
+	}
+	sym_.clear();
+	return ok;
+}
 bool Enumerator::commitClause(const LitVec& clause)  const {
 	return queue_ && queue_->pushRelaxed(SharedLiterals::newShareable(clause, Constraint_t::Other));
 }
 bool Enumerator::commitComplete() {
 	if (enumerated()) {
+		model_.fin  = 1;
 		if (tentative()) {
 			mini_->markOptimal();
 			model_.opt = 1;
-			model_.num = 0;
-			model_.type= uint32(modelType());
 			return false;
 		}
-		else if (model_.consequences() || (!model_.opt && optimize())) {
-			model_.opt = uint32(optimize());
-			model_.def = uint32(model_.consequences());
-			model_.num = 1;
-		}
+		model_.opt |= uint32(optimize());
+		model_.def |= uint32(model_.consequences());
 	}
 	return true;
 }
@@ -280,8 +299,10 @@ bool Enumerator::supportsSplitting(const SharedContext& ctx) const {
 int Enumerator::unsatType() const {
 	return !optimize() ? unsat_stop : unsat_cont;
 }
-Model& Enumerator::model() {
-	return model_;
+void Enumerator::setModel(Solver& s, bool up) {
+	model_.up = up;
+	values_.swap(s.model);
+	s.model.clear();
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 // EnumOptions

@@ -53,7 +53,6 @@ THE SOFTWARE.
 //   from: https://github.com/imahjoub/hash_sha256
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <random>
 #include <string>
@@ -65,10 +64,20 @@ THE SOFTWARE.
 
 namespace example013_ecdsa
 {
+  #if defined(WIDE_INTEGER_NAMESPACE)
+  using WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::fill_unsafe;
+  #else
+  using ::math::wide_integer::detail::fill_unsafe;
+  #endif
+
   class hash_sha256
   {
   public:
-    using result_type = std::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(32))>;
+    #if defined(WIDE_INTEGER_NAMESPACE)
+    using result_type = WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(32))>;
+    #else
+    using result_type = ::math::wide_integer::detail::array_detail::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(32))>;
+    #endif
 
     // LCOV_EXCL_START
     constexpr hash_sha256()                       = default;
@@ -80,14 +89,14 @@ namespace example013_ecdsa
     constexpr auto operator=(const hash_sha256&) ->     hash_sha256& = default;
     // LCOV_EXCL_STOP
 
-    WIDE_INTEGER_CONSTEXPR auto hash(const std::uint8_t* msg, const size_t length) -> result_type
+    constexpr auto hash(const std::uint8_t* msg, const size_t length) -> result_type
     {
       init();
       update(msg, length);
       return finalize();
     }
 
-    WIDE_INTEGER_CONSTEXPR void init()
+    constexpr void init()
     {
       my_datalen = static_cast<std::uint32_t>(UINT8_C(0));
       my_bitlen  = static_cast<std::uint64_t>(UINT8_C(0));
@@ -102,7 +111,7 @@ namespace example013_ecdsa
       transform_context[static_cast<std::size_t>(UINT8_C(7))] = static_cast<std::uint32_t>(UINT32_C(0x5BE0CD19));
     }
 
-    WIDE_INTEGER_CONSTEXPR void update(const std::uint8_t* msg, const size_t length)
+    constexpr void update(const std::uint8_t* msg, const size_t length)
     {
       for (auto i = static_cast<std::size_t>(UINT8_C(0)); i < length; ++i)
       {
@@ -122,7 +131,7 @@ namespace example013_ecdsa
       }
     }
 
-    WIDE_INTEGER_CONSTEXPR auto finalize() -> result_type
+    constexpr auto finalize() -> result_type
     {
       result_type hash_result { };
 
@@ -135,16 +144,16 @@ namespace example013_ecdsa
       // Pad whatever data is left in the buffer.
       if(my_datalen < static_cast<std::uint32_t>(UINT8_C(56U)))
       {
-        std::fill((my_data.begin() + hash_index), (my_data.begin() + static_cast<std::size_t>(UINT8_C(56))), static_cast<std::uint8_t>(UINT8_C(0)));
+        fill_unsafe((my_data.begin() + hash_index), (my_data.begin() + static_cast<std::size_t>(UINT8_C(56))), static_cast<std::uint8_t>(UINT8_C(0)));
       }
       else
       {
         // LCOV_EXCL_START
-        std::fill((my_data.begin() + hash_index), my_data.end(), static_cast<std::uint8_t>(UINT8_C(0)));
+        fill_unsafe((my_data.begin() + hash_index), my_data.end(), static_cast<std::uint8_t>(UINT8_C(0)));
 
         sha256_transform();
 
-        std::fill_n(my_data.begin(), static_cast<std::size_t>(UINT8_C(56)), static_cast<std::uint8_t>(UINT8_C(0)));
+        fill_unsafe(my_data.begin(), my_data.begin() + static_cast<std::size_t>(UINT8_C(56)), static_cast<std::uint8_t>(UINT8_C(0)));
         // LCOV_EXCL_STOP
       }
 
@@ -180,7 +189,11 @@ namespace example013_ecdsa
         );
 
       for(auto   output_index = static_cast<std::size_t>(UINT8_C(0));
-                 output_index < std::tuple_size<result_type>::value;
+                #if defined(WIDE_INTEGER_NAMESPACE)
+                 output_index < WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::tuple_size<result_type>::value;
+                #else
+                 output_index < ::math::wide_integer::detail::array_detail::tuple_size<result_type>::value;
+                #endif
                ++output_index)
       {
         const auto right_shift_amount =
@@ -208,18 +221,26 @@ namespace example013_ecdsa
     }
 
   private:
-    using transform_context_type = std::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(8))>;
+    #if defined(WIDE_INTEGER_NAMESPACE)
+    using transform_context_type = WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(8))>;
+    using data_array_type        = WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(64))>;
+    #else
+    using transform_context_type = ::math::wide_integer::detail::array_detail::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(8))>;
+    using data_array_type        = ::math::wide_integer::detail::array_detail::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(64))>;
+    #endif
 
-    std::uint32_t my_datalen { }; // NOLINT(readability-identifier-naming)
-    std::uint64_t my_bitlen  { }; // NOLINT(readability-identifier-naming)
-
-    std::array<std::uint8_t, static_cast<std::size_t>(UINT8_C(64))> my_data { }; // NOLINT(readability-identifier-naming)
-
+    std::uint32_t          my_datalen        { }; // NOLINT(readability-identifier-naming)
+    std::uint64_t          my_bitlen         { }; // NOLINT(readability-identifier-naming)
+    data_array_type        my_data           { }; // NOLINT(readability-identifier-naming)
     transform_context_type transform_context { }; // NOLINT(readability-identifier-naming)
 
-    WIDE_INTEGER_CONSTEXPR auto sha256_transform() -> void
+    constexpr auto sha256_transform() -> void
     {
-      std::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(64))> m { };
+      #if defined(WIDE_INTEGER_NAMESPACE)
+      WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(64))> m { };
+      #else
+      ::math::wide_integer::detail::array_detail::array<std::uint32_t, static_cast<std::size_t>(UINT8_C(64))> m { };
+      #endif
 
       for(auto   i = static_cast<std::size_t>(UINT8_C(0)), j = static_cast<std::size_t>(UINT8_C(0));
                  i < static_cast<std::size_t>(UINT8_C(16));
@@ -240,7 +261,11 @@ namespace example013_ecdsa
         m[i] = ssig1(m[i - static_cast<std::size_t>(UINT8_C(2))]) + m[i - static_cast<std::size_t>(UINT8_C(7))] + ssig0(m[i - static_cast<std::size_t>(UINT8_C(15))]) + m[i - static_cast<std::size_t>(UINT8_C(16))]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic,cppcoreguidelines-pro-bounds-constant-array-index)
       }
 
-      constexpr std::array<std::uint32_t, 64U> transform_constants =
+      #if defined(WIDE_INTEGER_NAMESPACE)
+      constexpr WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<std::uint32_t, 64U> transform_constants =
+      #else
+      constexpr ::math::wide_integer::detail::array_detail::array<std::uint32_t, 64U> transform_constants =
+      #endif
       {
         static_cast<std::uint32_t>(UINT32_C(0x428A2F98)), static_cast<std::uint32_t>(UINT32_C(0x71374491)), static_cast<std::uint32_t>(UINT32_C(0xB5C0FBCF)), static_cast<std::uint32_t>(UINT32_C(0xE9B5DBA5)),
         static_cast<std::uint32_t>(UINT32_C(0x3956C25B)), static_cast<std::uint32_t>(UINT32_C(0x59F111F1)), static_cast<std::uint32_t>(UINT32_C(0x923F82A4)), static_cast<std::uint32_t>(UINT32_C(0xAB1C5ED5)),
@@ -359,7 +384,7 @@ namespace example013_ecdsa
            const char* CoordGy,
            const char* SubGroupOrderN,
            const int   SubGroupCoFactorH>
-  struct elliptic_curve : public ecc_point<CurveBits, LimbType, CoordGx, CoordGy>
+  struct elliptic_curve : public ecc_point<CurveBits, LimbType, CoordGx, CoordGy> // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
   {
     using base_class_type = ecc_point<CurveBits, LimbType, CoordGx, CoordGy>; // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
@@ -388,25 +413,14 @@ namespace example013_ecdsa
     using duodectuple_sint_type = ::math::wide_integer::uintwide_t<static_cast<::math::wide_integer::size_t>(std::numeric_limits<uint_type>::digits * static_cast<int>(INT8_C(12))), limb_type, void, true>;
     #endif
 
-    #if (defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST == 1))
-    static WIDE_INTEGER_CONSTEXPR auto curve_p () noexcept -> double_sint_type { return double_sint_type(FieldCharacteristicP); } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static WIDE_INTEGER_CONSTEXPR auto curve_a () noexcept -> double_sint_type { return double_sint_type(CurveCoefficientA); }    // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static WIDE_INTEGER_CONSTEXPR auto curve_b () noexcept -> double_sint_type { return double_sint_type(CurveCoefficientB); }    // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+    static constexpr auto curve_p () noexcept -> double_sint_type { return double_sint_type(FieldCharacteristicP); } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+    static constexpr auto curve_a () noexcept -> double_sint_type { return double_sint_type(CurveCoefficientA); }    // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+    static constexpr auto curve_b () noexcept -> double_sint_type { return double_sint_type(CurveCoefficientB); }    // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
-    static WIDE_INTEGER_CONSTEXPR auto curve_gx() noexcept -> double_sint_type { return double_sint_type(CoordGx); }              // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static WIDE_INTEGER_CONSTEXPR auto curve_gy() noexcept -> double_sint_type { return double_sint_type(CoordGy); }              // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+    static constexpr auto curve_gx() noexcept -> double_sint_type { return double_sint_type(CoordGx); }              // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+    static constexpr auto curve_gy() noexcept -> double_sint_type { return double_sint_type(CoordGy); }              // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
-    static WIDE_INTEGER_CONSTEXPR auto curve_n () noexcept -> double_sint_type { return double_sint_type(SubGroupOrderN); }       // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    #else
-    static auto curve_p () noexcept -> const double_sint_type& { static const double_sint_type vp(FieldCharacteristicP); return vp;  } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static auto curve_a () noexcept -> const double_sint_type& { static const double_sint_type va(CurveCoefficientA);    return va;  } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static auto curve_b () noexcept -> const double_sint_type& { static const double_sint_type vb(CurveCoefficientB);    return vb;  } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-
-    static auto curve_gx() noexcept -> const double_sint_type& { static const double_sint_type vgx(CoordGx);             return vgx; } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    static auto curve_gy() noexcept -> const double_sint_type& { static const double_sint_type vgy(CoordGy);             return vgy; } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-
-    static auto curve_n () noexcept -> const double_sint_type& { static const double_sint_type vn(SubGroupOrderN);       return vn;  } // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
-    #endif
+    static constexpr auto curve_n () noexcept -> double_sint_type { return double_sint_type(SubGroupOrderN); }       // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
 
     static auto inverse_mod(const double_sint_type& k, const double_sint_type& p) -> double_sint_type // NOLINT(misc-no-recursion)
     {
@@ -591,7 +605,8 @@ namespace example013_ecdsa
     }
 
     template<typename UnknownWideUintType>
-    static auto get_pseudo_random_uint() -> UnknownWideUintType
+    static auto get_pseudo_random_uint(const UnknownWideUintType& a = (std::numeric_limits<UnknownWideUintType>::min)(),
+                                       const UnknownWideUintType& b = (std::numeric_limits<UnknownWideUintType>::max)()) -> UnknownWideUintType
     {
       using local_wide_unsigned_integer_type = UnknownWideUintType;
 
@@ -610,7 +625,7 @@ namespace example013_ecdsa
 
       local_random_engine_type generator(seed_value);
 
-      local_distribution_type dist;
+      local_distribution_type dist { a, b };
 
       const auto unsigned_pseudo_random_value = dist(generator);
 
@@ -622,13 +637,14 @@ namespace example013_ecdsa
       // This subroutine generate a random private-public key pair.
       // The input parameter p_uint_seed can, however, be used to
       // provide a fixed-input value for the private key.
-
-      // TBD: Be sure to limit to random.randrange(1, curve.n).
+      // Also be sure to limit to random.randrange(1, curve.n).
 
       const auto private_key =
         uint_type
         (
-          (p_uint_seed == nullptr) ? get_pseudo_random_uint<uint_type>() : *p_uint_seed
+          (p_uint_seed == nullptr)
+            ? get_pseudo_random_uint<uint_type>(uint_type { static_cast<unsigned>(UINT8_C(1)) }, curve_n())
+            : *p_uint_seed
         );
 
       const auto public_key  = scalar_mult(private_key, { curve_gx(), curve_gy() } );
@@ -637,8 +653,8 @@ namespace example013_ecdsa
       {
         private_key,
         {
-          uint_type(public_key.my_x),
-          uint_type(public_key.my_y)
+          uint_type { public_key.my_x },
+          uint_type { public_key.my_y }
         }
       };
     }
@@ -691,24 +707,26 @@ namespace example013_ecdsa
 
       while((r == 0) || (s == 0)) // NOLINT(altera-id-dependent-backward-branch)
       {
-        // TBD: Be sure to limit to random.randrange(1, curve.n).
-        const auto k =
-          double_sint_type
-          (
-            (p_uint_seed == nullptr) ? static_cast<double_sint_type>(get_pseudo_random_uint<uint_type>()) : static_cast<double_sint_type>(*p_uint_seed)
-          );
+        const uint_type
+          uk
+          {
+            (p_uint_seed == nullptr) ? std::move(get_pseudo_random_uint<uint_type>()) : *p_uint_seed
+          };
 
-        const auto pt = scalar_mult(k, { curve_gx(), curve_gy() } );
+        const double_sint_type k { uk };
+
+        const point_type pt { scalar_mult(k, { curve_gx(), curve_gy() } ) };
 
         r = divmod(pt.my_x, curve_n()).second;
 
-        const auto num =
-        (
-           (sexatuple_sint_type(z) + (sexatuple_sint_type(r) * pk))
-          * sexatuple_sint_type(inverse_mod(k, curve_n()))
-        );
+        const sexatuple_sint_type
+          num
+          {
+             (sexatuple_sint_type(z) + (sexatuple_sint_type(r) * pk))
+            * sexatuple_sint_type(inverse_mod(k, curve_n()))
+          };
 
-        s = double_sint_type(divmod(num, n).second);
+        s = double_sint_type { divmod(num, n).second };
       }
 
       return
@@ -724,14 +742,14 @@ namespace example013_ecdsa
                                        MsgIteratorType                  msg_last,
                                  const std::pair<uint_type, uint_type>& sig) -> bool
     {
-      const auto w = sexatuple_sint_type(inverse_mod(sig.second, curve_n()));
+      const sexatuple_sint_type w(inverse_mod(sig.second, curve_n()));
 
-      const auto n = sexatuple_sint_type(curve_n());
+      const sexatuple_sint_type n(curve_n());
 
       const auto z = hash_message(msg_first, msg_last);
 
-      const auto u1 = double_sint_type(divmod(sexatuple_sint_type(z)         * w, n).second);
-      const auto u2 = double_sint_type(divmod(sexatuple_sint_type(sig.first) * w, n).second);
+      const double_sint_type u1(divmod(sexatuple_sint_type(z)         * w, n).second);
+      const double_sint_type u2(divmod(sexatuple_sint_type(sig.first) * w, n).second);
 
       const auto pt =
         point_add
@@ -778,8 +796,6 @@ auto ::math::wide_integer::example013_ecdsa_sign_verify() -> bool
                                      example013_ecdsa::SubGroupOrderN,       // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
                                      example013_ecdsa::SubGroupCoFactorH>;
 
-  #if (defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST == 1))
-
   static_assert(elliptic_curve_type::curve_p() == elliptic_curve_type::double_sint_type(example013_ecdsa::FieldCharacteristicP), // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
                 "Error: Elliptic curve Field Characteristic p seems to be incorrect");
 
@@ -798,17 +814,12 @@ auto ::math::wide_integer::example013_ecdsa_sign_verify() -> bool
   static_assert(elliptic_curve_type::curve_n() == elliptic_curve_type::double_sint_type(example013_ecdsa::SubGroupOrderN), // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
                 "Error: Elliptic curve Sub-Group Order seems to be incorrect");
 
-  #else
-  static_cast<void>(elliptic_curve_type::curve_p ());
-  static_cast<void>(elliptic_curve_type::curve_a ());
-  static_cast<void>(elliptic_curve_type::curve_b ());
-  static_cast<void>(elliptic_curve_type::curve_gx());
-  static_cast<void>(elliptic_curve_type::curve_gy());
-  static_cast<void>(elliptic_curve_type::curve_n ());
-  #endif
-
   // Declare the message "Hello!" as an array of chars.
-  constexpr std::array<char, static_cast<std::size_t>(UINT8_C(6))> msg_as_array { 'H', 'e', 'l', 'l', 'o', '!' };
+  #if defined(WIDE_INTEGER_NAMESPACE)
+  constexpr WIDE_INTEGER_NAMESPACE::math::wide_integer::detail::array_detail::array<char, static_cast<std::size_t>(UINT8_C(6))> msg_as_array { 'H', 'e', 'l', 'l', 'o', '!' };
+  #else
+  constexpr ::math::wide_integer::detail::array_detail::array<char, static_cast<std::size_t>(UINT8_C(6))> msg_as_array { 'H', 'e', 'l', 'l', 'o', '!' };
+  #endif
 
   // Get the message to sign as a string and ensure that it is "Hello!".
   const auto msg_as_string = std::string(msg_as_array.cbegin(), msg_as_array.cend());

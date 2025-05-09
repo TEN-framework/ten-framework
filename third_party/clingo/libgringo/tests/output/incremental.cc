@@ -22,12 +22,13 @@
 
 // }}}
 
+#include "tests/output/solver_helper.hh"
 #include "tests/term_helper.hh"
 #include "tests/tests.hh"
-#include "tests/term_helper.hh"
-#include "tests/output/solver_helper.hh"
 
-namespace Gringo { namespace Output { namespace Test {
+namespace Gringo {
+namespace Output {
+namespace Test {
 
 using namespace Gringo::Test;
 
@@ -52,7 +53,7 @@ std::string iground(std::string in, int last = 3) {
     parser.parse(module.logger);
     prg.rewrite(defs, module.logger);
     prg.check(module.logger);
-    //std::cerr << prg;
+    // std::cerr << prg;
     auto ground = [&](std::set<Sig> const &sigs, Ground::Parameters const &params) {
         auto gPrg = prg.toGround(sigs, out.data, module.logger);
         gPrg.prepare(params, out, module.logger);
@@ -68,7 +69,7 @@ std::string iground(std::string in, int last = 3) {
             out.endStep({});
             out.reset(true);
         }
-        for (int i=1; i < last; ++i) {
+        for (int i = 1; i < last; ++i) {
             Ground::Parameters params;
             params.add("step", {NUM(i)});
             out.beginStep();
@@ -95,159 +96,146 @@ std::string iground(std::string in, int last = 3) {
 
 TEST_CASE("output-incremental", "[output]") {
     SECTION("assign") {
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "0\n"
-            "1 0 1 1 0 0\n"
-            "4 8 p(1,0,0) 0\n"
-            "0\n"
-            "1 0 1 2 0 0\n"
-            "4 8 p(2,0,0) 0\n"
-            "0\n"
-            "0\n" == iground(
-                "#program base."
-                "#program step(k)."
-                "p(k,N,Y) :- N = #sum { Y }, Y = #sum { }."
-                "#program last."));
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "0\n"
-            "1 0 1 1 0 0\n"
-            "4 8 p(1,2,1) 0\n"
-            "0\n"
-            "1 0 1 2 0 0\n"
-            "4 8 p(2,4,2) 0\n"
-            "0\n"
-            "0\n" == iground(
-                "#program base."
-                "#program step(k)."
-                "p(k,N,Y) :- N = #sum { 2*Y }, Y = #sum { k }."
-                "#program last."));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "0\n"
+                "1 0 1 1 0 0\n"
+                "4 8 p(1,0,0) 0\n"
+                "0\n"
+                "1 0 1 2 0 0\n"
+                "4 8 p(2,0,0) 0\n"
+                "0\n"
+                "0\n" == iground("#program base."
+                                 "#program step(k)."
+                                 "p(k,N,Y) :- N = #sum { Y }, Y = #sum { }."
+                                 "#program last."));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "0\n"
+                "1 0 1 1 0 0\n"
+                "4 8 p(1,2,1) 0\n"
+                "0\n"
+                "1 0 1 2 0 0\n"
+                "4 8 p(2,4,2) 0\n"
+                "0\n"
+                "0\n" == iground("#program base."
+                                 "#program step(k)."
+                                 "p(k,N,Y) :- N = #sum { 2*Y }, Y = #sum { k }."
+                                 "#program last."));
     }
     SECTION("projection") {
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "1 1 1 1 0 0\n"
-            "1 1 1 2 0 0\n"
-            "1 1 1 3 0 0\n"
-            "1 0 1 4 0 1 1\n"
-            "1 0 1 4 0 1 2\n"
-            "1 0 1 4 0 1 3\n"
-            "4 4 p(1) 1 1\n"
-            "4 4 p(2) 1 2\n"
-            "4 4 p(3) 1 3\n"
-            "0\n"
-            "1 0 1 5 0 1 4\n"
-            "1 1 1 6 0 1 5\n"
-            "4 4 q(1) 1 6\n"
-            "0\n"
-            "1 0 1 7 0 1 5\n"
-            "1 1 1 8 0 1 7\n"
-            "4 4 q(2) 1 8\n"
-            "0\n"
-            "1 0 1 9 0 1 7\n"
-            "0\n" == iground(
-                "#program base."
-                "{p(1..3)}."
-                "#program step(k)."
-                "{q(k)} :- p(_)."
-                "#program last."));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "1 1 1 1 0 0\n"
+                "1 1 1 2 0 0\n"
+                "1 1 1 3 0 0\n"
+                "1 0 1 4 0 1 1\n"
+                "1 0 1 4 0 1 2\n"
+                "1 0 1 4 0 1 3\n"
+                "4 4 p(1) 1 1\n"
+                "4 4 p(2) 1 2\n"
+                "4 4 p(3) 1 3\n"
+                "0\n"
+                "1 0 1 5 0 1 4\n"
+                "1 1 1 6 0 1 5\n"
+                "4 4 q(1) 1 6\n"
+                "0\n"
+                "1 0 1 7 0 1 5\n"
+                "1 1 1 8 0 1 7\n"
+                "4 4 q(2) 1 8\n"
+                "0\n"
+                "1 0 1 9 0 1 7\n"
+                "0\n" == iground("#program base."
+                                 "{p(1..3)}."
+                                 "#program step(k)."
+                                 "{q(k)} :- p(_)."
+                                 "#program last."));
     }
 
     SECTION("lp") {
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "4 4 base 1 -1\n"
-            "0\n"
-            "1 0 1 2 0 0\n"
-            "4 4 r(1) 0\n"
-            "4 4 q(1) 1 -1\n"
-            "4 4 p(1) 1 -1\n"
-            "0\n"
-            "1 0 1 3 0 0\n"
-            "4 4 r(2) 0\n"
-            "4 4 q(2) 1 -1\n"
-            "4 4 p(2) 1 -1\n"
-            "0\n"
-            "4 4 last 1 -1\n"
-            "0\n" == iground(
-                "#program base."
-                "#show base."
-                "#program step(k)."
-                "#show p(k)."
-                "#show q(k)."
-                "r(k)."
-                "#program last."
-                "#show last."));
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "1 0 1 1 0 0\n"
-            "4 4 base 0\n"
-            "0\n"
-            "1 0 1 2 0 0\n"
-            "4 7 step(1) 0\n"
-            "0\n"
-            "1 0 1 3 0 0\n"
-            "4 7 step(2) 0\n"
-            "0\n"
-            "1 0 1 4 0 0\n"
-            "4 4 last 0\n"
-            "0\n" == iground(
-                "#program base."
-                "base."
-                "#program step(k)."
-                "step(k)."
-                "#program last."
-                "last."));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "4 4 base 1 -1\n"
+                "0\n"
+                "1 0 1 2 0 0\n"
+                "4 4 r(1) 0\n"
+                "4 4 q(1) 1 -1\n"
+                "4 4 p(1) 1 -1\n"
+                "0\n"
+                "1 0 1 3 0 0\n"
+                "4 4 r(2) 0\n"
+                "4 4 q(2) 1 -1\n"
+                "4 4 p(2) 1 -1\n"
+                "0\n"
+                "4 4 last 1 -1\n"
+                "0\n" == iground("#program base."
+                                 "#show base."
+                                 "#program step(k)."
+                                 "#show p(k)."
+                                 "#show q(k)."
+                                 "r(k)."
+                                 "#program last."
+                                 "#show last."));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "1 0 1 1 0 0\n"
+                "4 4 base 0\n"
+                "0\n"
+                "1 0 1 2 0 0\n"
+                "4 7 step(1) 0\n"
+                "0\n"
+                "1 0 1 3 0 0\n"
+                "4 7 step(2) 0\n"
+                "0\n"
+                "1 0 1 4 0 0\n"
+                "4 4 last 0\n"
+                "0\n" == iground("#program base."
+                                 "base."
+                                 "#program step(k)."
+                                 "step(k)."
+                                 "#program last."
+                                 "last."));
     }
 
     SECTION("projectionBug") {
-        REQUIRE(
-            "asp 1 0 0 incremental\n"
-            "1 1 1 1 0 0\n"
-            "1 0 1 2 0 1 1\n"
-            "4 6 p(0,0) 1 1\n"
-            "0\n"
-            "1 0 1 3 0 1 2\n"
-            "1 1 1 4 0 1 3\n"
-            "1 0 1 5 0 1 4\n"
-            "4 6 p(1,1) 1 4\n"
-            "0\n"
-            "1 0 1 6 0 1 3\n"
-            "1 0 1 7 0 1 5\n"
-            "1 1 1 8 0 1 7\n"
-            "1 0 1 9 0 1 8\n"
-            "4 6 p(2,2) 1 8\n"
-            "0\n"
-            "1 0 1 10 0 1 6\n"
-            "1 0 1 11 0 1 7\n"
-            "1 0 1 12 0 1 9\n"
-            "1 1 1 13 0 0\n"
-            "1 0 1 10 0 1 13\n"
-            "1 1 1 14 0 1 10\n"
-            "1 1 1 15 0 1 11\n"
-            "1 1 1 16 0 1 12\n"
-            "4 6 p(1,0) 1 13\n"
-            "4 4 r(0) 1 14\n"
-            "4 4 r(1) 1 15\n"
-            "4 4 r(2) 1 16\n"
-            "0\n" == iground(
-                "#program base."
-                "{p(0,0)}."
-                "#program step(k)."
-                "{p(k,k)} :- p(_,k-1)."
-                "#program last."
-                "{p(1,0)}."
-                "{r(X)} :- p(_,X)."
-                ));
+        REQUIRE("asp 1 0 0 incremental\n"
+                "1 1 1 1 0 0\n"
+                "1 0 1 2 0 1 1\n"
+                "4 6 p(0,0) 1 1\n"
+                "0\n"
+                "1 0 1 3 0 1 2\n"
+                "1 1 1 4 0 1 3\n"
+                "1 0 1 5 0 1 4\n"
+                "4 6 p(1,1) 1 4\n"
+                "0\n"
+                "1 0 1 6 0 1 3\n"
+                "1 0 1 7 0 1 5\n"
+                "1 1 1 8 0 1 7\n"
+                "1 0 1 9 0 1 8\n"
+                "4 6 p(2,2) 1 8\n"
+                "0\n"
+                "1 0 1 10 0 1 6\n"
+                "1 0 1 11 0 1 7\n"
+                "1 0 1 12 0 1 9\n"
+                "1 1 1 13 0 0\n"
+                "1 0 1 10 0 1 13\n"
+                "1 1 1 14 0 1 10\n"
+                "1 1 1 15 0 1 11\n"
+                "1 1 1 16 0 1 12\n"
+                "4 6 p(1,0) 1 13\n"
+                "4 4 r(0) 1 14\n"
+                "4 4 r(1) 1 15\n"
+                "4 4 r(2) 1 16\n"
+                "0\n" == iground("#program base."
+                                 "{p(0,0)}."
+                                 "#program step(k)."
+                                 "{p(k,k)} :- p(_,k-1)."
+                                 "#program last."
+                                 "{p(1,0)}."
+                                 "{r(X)} :- p(_,X)."));
     }
 
     SECTION("mapping") {
         Mapping m;
-        m.add(1,0);
-        m.add(2,1);
-        m.add(4,2);
-        m.add(5,3);
+        m.add(1, 0);
+        m.add(2, 1);
+        m.add(4, 2);
+        m.add(5, 3);
 
         REQUIRE(InvalidId == m.get(0));
         REQUIRE(Id_t(0) == m.get(1));
@@ -259,4 +247,6 @@ TEST_CASE("output-incremental", "[output]") {
     }
 }
 
-} } } // namespace Test Output Gringo
+} // namespace Test
+} // namespace Output
+} // namespace Gringo

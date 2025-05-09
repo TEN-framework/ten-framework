@@ -23,59 +23,55 @@
 // }}}
 
 #ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
+#define _GNU_SOURCE
 #include "potassco/basic_types.h"
 #include "potassco/theory_data.h"
 #endif
 #include <cstdlib>
 #ifdef __USE_GNU
-#  include <libgen.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
-#include "gringo/input/nongroundparser.hh"
-#include "gringo/input/groundtermparser.hh"
-#include "gringo/lexerstate.hh"
-#include "gringo/symbol.hh"
-#include "gringo/logger.hh"
 #include "gringo/hash_set.hh"
+#include "gringo/input/groundtermparser.hh"
+#include "gringo/input/nongroundparser.hh"
+#include "gringo/lexerstate.hh"
+#include "gringo/logger.hh"
+#include "gringo/symbol.hh"
 #include "input/nongroundgrammar/grammar.hh"
-#include <cstddef>
-#include <climits>
-#include <memory>
-#include <fstream>
-#include <vector>
 #include <algorithm>
+#include <climits>
+#include <cstddef>
+#include <fstream>
+#include <memory>
+#include <vector>
 
-
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 namespace {
 
 struct Free {
-    void operator ()(char *ptr) const {
+    void operator()(char *ptr) const {
         free(ptr); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory)
     }
 };
 
-template <typename T>
-void report_included(T const &loc, char const *filename, Logger &log) {
+template <typename T> void report_included(T const &loc, char const *filename, Logger &log) {
     GRINGO_REPORT(log, Warnings::FileIncluded) << loc << ": warning: already included file:\n"
-        << "  " << filename << "\n";
+                                               << "  " << filename << "\n";
 }
 
-template <typename T>
-void report_not_found(T const &loc, char const *filename, Logger &log) {
+template <typename T> void report_not_found(T const &loc, char const *filename, Logger &log) {
     GRINGO_REPORT(log, Warnings::RuntimeError) << loc << ": error: file could not be opened:\n"
-        << "  " << filename << "\n";
+                                               << "  " << filename << "\n";
 }
 
 // NOTE: is there a better way?
 #ifdef __USE_GNU
 
-bool is_relative(std::string const &filename) {
-    return filename.compare(0, 1, "/", 1) != 0;
-}
+bool is_relative(std::string const &filename) { return filename.compare(0, 1, "/", 1) != 0; }
 
 bool check_relative(std::string const &filename, std::string path, std::pair<std::string, std::string> &ret) {
     struct stat sb; // NOLINT(cppcoreguidelines-pro-type-member-init)
@@ -100,15 +96,15 @@ bool check_relative(std::string const &filename, std::string path, std::pair<std
 std::string get_dir(std::string const &filename) {
     std::unique_ptr<char, Free> x(strdup(filename.c_str()));
     std::string path = dirname(x.get());
-    if (path == ".") { path.clear(); }
+    if (path == ".") {
+        path.clear();
+    }
     return path;
 }
 
 #else
 
-bool is_relative(std::string const &) {
-    return true;
-}
+bool is_relative(std::string const &) { return true; }
 
 bool check_relative(std::string const &filename, std::string path, std::pair<std::string, std::string> &ret) {
 #if defined _WIN32 || defined __WIN32__ || defined __EMX__ || defined __DJGPP__
@@ -116,7 +112,9 @@ bool check_relative(std::string const &filename, std::string path, std::pair<std
 #else
     char slash = '/';
 #endif
-    if (!path.empty()) { path.push_back(slash); }
+    if (!path.empty()) {
+        path.push_back(slash);
+    }
     path.append(filename);
     if (std::ifstream(path).good()) {
         ret = {path, path};
@@ -132,15 +130,12 @@ std::string get_dir(std::string const &filename) {
     const char *SLASH = "/";
 #endif
     size_t slash = filename.find_last_of(SLASH);
-    return slash != std::string::npos
-        ? filename.substr(0, slash)
-        : "";
+    return slash != std::string::npos ? filename.substr(0, slash) : "";
 }
 
 #endif
 
-template<typename Out>
-void split(char const *s, char delim, Out result) {
+template <typename Out> void split(char const *s, char delim, Out result) {
     std::istringstream ss;
     ss.str(s);
     std::string item;
@@ -150,9 +145,13 @@ void split(char const *s, char delim, Out result) {
 }
 
 std::string check_file(std::string const &filename) {
-    if (filename == "-") { return filename; }
+    if (filename == "-") {
+        return filename;
+    }
     std::pair<std::string, std::string> ret = {"", ""};
-    if (check_relative(filename, "", ret)) { return ret.first; }
+    if (check_relative(filename, "", ret)) {
+        return ret.first;
+    }
     return "";
 }
 
@@ -167,7 +166,7 @@ std::pair<std::string, std::string> check_file(std::string const &filename, std:
             return ret;
         }
     }
-#   include "input/clingopath.hh"
+#include "input/clingopath.hh"
     std::vector<std::string> e_paths;
     std::vector<std::string> const *paths = &g_paths;
     if (char *env_paths = getenv("CLINGOPATH")) {
@@ -182,26 +181,18 @@ std::pair<std::string, std::string> check_file(std::string const &filename, std:
     return ret;
 }
 
-void format_(std::ostringstream &out) {
-}
+void format_(std::ostringstream &out) {}
 
-template <class T>
-void format_(std::ostringstream &out, T const &x) {
-    out << x;
-}
+template <class T> void format_(std::ostringstream &out, T const &x) { out << x; }
 
-void format_(std::ostringstream &out, StringSpan const &x) {
-    out << std::string(begin(x), end(x));
-}
+void format_(std::ostringstream &out, StringSpan const &x) { out << std::string(begin(x), end(x)); }
 
-template <class T, class... Args>
-void format_(std::ostringstream &out, T const &x, Args const &... args) {
+template <class T, class... Args> void format_(std::ostringstream &out, T const &x, Args const &...args) {
     format_(out, x);
     format_(out, args...);
 }
 
-template <class... Args>
-std::string format(Args const &... args) {
+template <class... Args> std::string format(Args const &...args) {
     std::ostringstream out;
     format_(out, args...);
     return out.str();
@@ -212,12 +203,7 @@ std::string format(Args const &... args) {
 // {{{ defintion of NonGroundParser
 
 NonGroundParser::NonGroundParser(INongroundProgramBuilder &pb, Backend &bck, bool &incmode)
-: incmode_(incmode)
-, not_("not")
-, pb_(pb)
-, bck_{bck}
-, injectSymbol_(0)
-, filename_("") { }
+    : incmode_(incmode), not_("not"), pb_(pb), bck_{bck}, injectSymbol_(0), filename_("") {}
 
 void NonGroundParser::parseError(Location const &loc, std::string const &msg) {
     GRINGO_REPORT(*log_, Warnings::RuntimeError) << loc << ": error: " << msg << "\n";
@@ -225,14 +211,14 @@ void NonGroundParser::parseError(Location const &loc, std::string const &msg) {
 
 void NonGroundParser::lexerError(Location const &loc, StringSpan token) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    GRINGO_REPORT(*log_, Warnings::RuntimeError) << loc << ": error: lexer error, unexpected " << std::string(token.first, token.first + token.size) << "\n";
+    GRINGO_REPORT(*log_, Warnings::RuntimeError)
+        << loc << ": error: lexer error, unexpected " << std::string(token.first, token.first + token.size) << "\n";
 }
 
 void NonGroundParser::reportComment(Location const &loc, String value, bool block) {
     if (storeComments_) {
         comments_.emplace_back(loc, value, block);
-    }
-    else {
+    } else {
         pb_.comment(loc, value, block);
     }
 }
@@ -251,9 +237,8 @@ void NonGroundParser::storeComments() {
 }
 
 bool NonGroundParser::push(std::string const &filename, bool include) {
-    return (include && !empty()) ?
-        LexerState::push(filename.c_str(), {filename.c_str(), LexerState::data().second}) :
-        LexerState::push(filename.c_str(), {filename.c_str(), {"base", {}}});
+    return (include && !empty()) ? LexerState::push(filename.c_str(), {filename.c_str(), LexerState::data().second})
+                                 : LexerState::push(filename.c_str(), {filename.c_str(), {"base", {}}});
 }
 
 bool NonGroundParser::push(std::string const &filename, std::unique_ptr<std::istream> in) {
@@ -266,20 +251,18 @@ String NonGroundParser::filename() const { return LexerState::data().first; }
 
 void NonGroundParser::pushFile(std::string &&file, Logger &log) {
     auto checked = check_file(file);
-    if (!checked.empty() && !filenames_.insert(checked).second) {
+    if (!checked.empty() && !filenames_.emplace(checked).second) {
         report_included("<cmd>", file.c_str(), log);
-    }
-    else if (checked.empty() || !push(file)) {
+    } else if (checked.empty() || !push(file)) {
         report_not_found("<cmd>", file.c_str(), log);
     }
 }
 
 void NonGroundParser::pushStream(std::string &&file, std::unique_ptr<std::istream> in, Logger &log) {
-    auto res = filenames_.insert(std::move(file));
+    auto res = filenames_.emplace(std::move(file));
     if (!res.second) {
         report_included("<cmd>", res.first->c_str(), log);
-    }
-    else if (!push(*res.first, std::move(in))) {
+    } else if (!push(*res.first, std::move(in))) {
         report_not_found("<cmd>", res.first->c_str(), log);
     }
 }
@@ -311,8 +294,7 @@ int NonGroundParser::lex(void *pValue, Location &loc) {
         if (ret == NonGroundGrammar::parser::token::SYNC) {
             pop();
             init_();
-        }
-        else {
+        } else {
             return ret;
         }
     }
@@ -333,21 +315,17 @@ void NonGroundParser::include(String file, Location const &loc, bool inbuilt, Lo
         if (file == "incmode") {
             if (incmode_) {
                 report_included(loc, "<incmode>", log);
-            }
-            else {
+            } else {
                 incmode_ = true;
             }
-        }
-        else {
+        } else {
             report_not_found(loc, (std::string("<") + file.c_str() + ">").c_str(), log);
         }
-    }
-    else {
+    } else {
         auto paths = check_file(file.c_str(), loc.beginFilename.c_str());
-        if (!paths.first.empty() && !filenames_.insert(paths.first).second) {
+        if (!paths.first.empty() && !filenames_.emplace(paths.first).second) {
             report_included(loc, file.c_str(), log);
-        }
-        else if (paths.first.empty() || !push(paths.second, true)) {
+        } else if (paths.first.empty() || !push(paths.second, true)) {
             report_not_found(loc, file.c_str(), log);
         }
     }
@@ -363,9 +341,7 @@ bool NonGroundParser::parseDefine(std::string const &define, Logger &log) {
     return ret == 0;
 }
 
-void NonGroundParser::theoryLexing(TheoryLexing mode) {
-   theoryLexing_ = mode;
-}
+void NonGroundParser::theoryLexing(TheoryLexing mode) { theoryLexing_ = mode; }
 
 void NonGroundParser::condition(Condition cond) {
     assert(condition_ != yyctheory);
@@ -375,9 +351,15 @@ void NonGroundParser::condition(Condition cond) {
 NonGroundParser::Condition NonGroundParser::condition() const {
     if (condition_ == yycnormal) {
         switch (theoryLexing_) {
-            case TheoryLexing::Disabled:   { return  yycnormal; }
-            case TheoryLexing::Theory:     { return  yyctheory; }
-            case TheoryLexing::Definition: { return  yycdefinition; }
+            case TheoryLexing::Disabled: {
+                return yycnormal;
+            }
+            case TheoryLexing::Theory: {
+                return yyctheory;
+            }
+            case TheoryLexing::Definition: {
+                return yycdefinition;
+            }
         }
     }
     return condition_;
@@ -386,14 +368,14 @@ NonGroundParser::Condition NonGroundParser::condition() const {
 void NonGroundParser::start(Location &loc) {
     start();
     loc.beginFilename = filename();
-    loc.beginLine     = line();
-    loc.beginColumn   = column();
+    loc.beginLine = line();
+    loc.beginColumn = column();
 }
 
 Location &NonGroundParser::end(Location &loc) {
     loc.endFilename = filename();
-    loc.endLine     = line();
-    loc.endColumn   = column();
+    loc.endLine = line();
+    loc.endColumn = column();
     return loc;
 }
 
@@ -434,26 +416,36 @@ unsigned NonGroundParser::aggregate(TheoryAtomUid atom) {
 HdLitUid NonGroundParser::headaggregate(Location const &loc, unsigned hdaggr) {
     auto aggr = aggregates_.erase(hdaggr);
     switch (aggr.choice) {
-        case 1:  return builder().headaggr(loc, aggr.fun, aggr.bounds, CondLitVecUid(aggr.elems));
-        case 2:  return builder().headaggr(loc, static_cast<TheoryAtomUid>(aggr.elems));
-        default: return builder().headaggr(loc, aggr.fun, aggr.bounds, HdAggrElemVecUid(aggr.elems));
+        case 1:
+            return builder().headaggr(loc, aggr.fun, aggr.bounds, CondLitVecUid(aggr.elems));
+        case 2:
+            return builder().headaggr(loc, static_cast<TheoryAtomUid>(aggr.elems));
+        default:
+            return builder().headaggr(loc, aggr.fun, aggr.bounds, HdAggrElemVecUid(aggr.elems));
     }
 }
 
 BdLitVecUid NonGroundParser::bodyaggregate(BdLitVecUid body, Location const &loc, NAF naf, unsigned bdaggr) {
     auto aggr = aggregates_.erase(bdaggr);
     switch (aggr.choice) {
-        case 1:  return builder().bodyaggr(body, loc, naf, aggr.fun, aggr.bounds, CondLitVecUid(aggr.elems));
-        case 2:  return builder().bodyaggr(body, loc, naf, static_cast<TheoryAtomUid>(aggr.elems));
-        default: return builder().bodyaggr(body, loc, naf, aggr.fun, aggr.bounds, BdAggrElemVecUid(aggr.elems));
+        case 1:
+            return builder().bodyaggr(body, loc, naf, aggr.fun, aggr.bounds, CondLitVecUid(aggr.elems));
+        case 2:
+            return builder().bodyaggr(body, loc, naf, static_cast<TheoryAtomUid>(aggr.elems));
+        default:
+            return builder().bodyaggr(body, loc, naf, aggr.fun, aggr.bounds, BdAggrElemVecUid(aggr.elems));
     }
 }
 
 BoundVecUid NonGroundParser::boundvec(Relation ra, TermUid ta, Relation rb, TermUid tb) {
     auto bound(builder().boundvec());
     auto undef = TermUid(-1);
-    if (ta != undef) { builder().boundvec(bound, inv(ra), ta); }
-    if (tb != undef) { builder().boundvec(bound, rb, tb); }
+    if (ta != undef) {
+        builder().boundvec(bound, inv(ra), ta);
+    }
+    if (tb != undef) {
+        builder().boundvec(bound, rb, tb);
+    }
     return bound;
 }
 
@@ -531,32 +523,87 @@ std::vector<Potassco::WeightLit_t> NonGroundParser::aspif_wlits_(Location &loc) 
     return wlits;
 }
 
-void NonGroundParser::aspif_(Location &loc) {
-    aspif_preamble_(loc);
-    bck_.beginStep();
+void NonGroundParser::parse_aspif(Logger &log) {
+    if (!empty()) {
+        log_ = &log;
+        condition_ = yycaspif;
+        auto loc = Location(filename(), 1, 1, filename(), 1, 1);
+        aspif_asp_(loc);
+        aspif_preamble_(loc);
+        bck_.beginStep();
+        do {
+            aspif_stms_(loc);
+            pop();
+        } while (!empty());
+        bck_.endStep();
+        filenames_.clear();
+        disable_aspif();
+    }
+}
+
+void NonGroundParser::aspif_stms_(Location &loc) {
     for (;;) {
         auto stm_type = aspif_unsigned_(loc);
         switch (stm_type) {
-            case 0:  {
+            case 0: {
                 aspif_nl_(loc);
-                bck_.endStep();
                 start(loc);
-                condition(yycnormal);
                 return;
             }
-            case 1:  { aspif_rule_(loc); break; }
-            case 2:  { aspif_minimize_(loc); break; }
-            case 3:  { aspif_project_(loc); break; }
-            case 4:  { aspif_output_(loc); break; }
-            case 5:  { aspif_external_(loc); break; }
-            case 6:  { aspif_assumption_(loc); break; }
-            case 7:  { aspif_heuristic_(loc); break; }
-            case 8:  { aspif_edge_(loc); break; }
-            case 9:  { aspif_theory_(loc); break; }
-            case 10: { aspif_comment_(loc); break; }
-            default: { aspif_error_(loc, format("unsupported statement type: ", stm_type).c_str()); }
+            case 1: {
+                aspif_rule_(loc);
+                break;
+            }
+            case 2: {
+                aspif_minimize_(loc);
+                break;
+            }
+            case 3: {
+                aspif_project_(loc);
+                break;
+            }
+            case 4: {
+                aspif_output_(loc);
+                break;
+            }
+            case 5: {
+                aspif_external_(loc);
+                break;
+            }
+            case 6: {
+                aspif_assumption_(loc);
+                break;
+            }
+            case 7: {
+                aspif_heuristic_(loc);
+                break;
+            }
+            case 8: {
+                aspif_edge_(loc);
+                break;
+            }
+            case 9: {
+                aspif_theory_(loc);
+                break;
+            }
+            case 10: {
+                aspif_comment_(loc);
+                break;
+            }
+            default: {
+                aspif_error_(loc, format("unsupported statement type: ", stm_type).c_str());
+            }
         }
     }
+}
+
+void NonGroundParser::aspif_(Location &loc) {
+    aspif_preamble_(loc);
+    bck_.beginStep();
+    aspif_stms_(loc);
+    bck_.endStep();
+    condition(yycnormal);
+    return;
 }
 
 void NonGroundParser::aspif_rule_(Location &loc) {
@@ -567,7 +614,7 @@ void NonGroundParser::aspif_rule_(Location &loc) {
         case Potassco::Head_t::Disjunctive: {
             break;
         }
-        default:  {
+        default: {
             aspif_error_(loc, format("unsupported rule type: ", stm_type).c_str());
         }
     }
@@ -592,7 +639,7 @@ void NonGroundParser::aspif_rule_(Location &loc) {
             bck_.rule(stm_type, make_span(hd), lower, make_span(bd));
             break;
         }
-        default:  {
+        default: {
             aspif_error_(loc, format("unsupported body type: ", bd_type).c_str());
         }
     }
@@ -635,7 +682,9 @@ void NonGroundParser::aspif_external_(Location &loc) {
         case Potassco::Value_t::Free:
         case Potassco::Value_t::True:
         case Potassco::Value_t::False:
-        case Potassco::Value_t::Release: { break; }
+        case Potassco::Value_t::Release: {
+            break;
+        }
         default: {
             aspif_error_(loc, "truth value expected");
         }
@@ -660,7 +709,9 @@ void NonGroundParser::aspif_heuristic_(Location &loc) {
         case Potassco::Heuristic_t::Factor:
         case Potassco::Heuristic_t::Init:
         case Potassco::Heuristic_t::True:
-        case Potassco::Heuristic_t::False: { break; }
+        case Potassco::Heuristic_t::False: {
+            break;
+        }
         default: {
             aspif_error_(loc, "heuristic modifier expected");
         }
@@ -778,6 +829,7 @@ void NonGroundParser::aspif_comment_(Location &loc) {
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #include "input/nongroundlexer.hh"

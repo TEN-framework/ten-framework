@@ -27,21 +27,21 @@
 
 #include <forward_list>
 #include <gringo/bug.hh>
-#include <gringo/symbol.hh>
-#include <gringo/printable.hh>
+#include <gringo/clonable.hh>
+#include <gringo/comparable.hh>
 #include <gringo/hashable.hh>
 #include <gringo/locatable.hh>
-#include <gringo/comparable.hh>
-#include <gringo/clonable.hh>
-#include <gringo/utility.hh>
 #include <gringo/logger.hh>
+#include <gringo/printable.hh>
+#include <gringo/symbol.hh>
+#include <gringo/utility.hh>
 
 #include <memory>
 #include <unordered_set>
 #ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4503 ) // decorated name length exceeded
-#pragma warning( disable : 4521 ) // multiple copy constructors specified
+#pragma warning(push)
+#pragma warning(disable : 4503) // decorated name length exceeded
+#pragma warning(disable : 4521) // multiple copy constructors specified
 #endif
 namespace Gringo {
 
@@ -58,13 +58,13 @@ std::ostream &operator<<(std::ostream &out, UnOp op);
 
 // }}}
 
- // {{{ declaration of Defines
+// {{{ declaration of Defines
 
 class Term;
 using UTerm = std::unique_ptr<Term>;
 
 class Defines {
-public:
+  public:
     using DefMap = std::unordered_map<String, std::tuple<bool, Location, UTerm>>;
     Defines() = default;
     Defines(Defines const &other) = delete;
@@ -82,7 +82,7 @@ public:
     void apply(Symbol x, Symbol &retVal, UTerm &retTerm, bool replace);
     DefMap const &defs() const;
 
-private:
+  private:
     std::unordered_map<String, std::tuple<bool, Location, UTerm>> defs_;
 };
 
@@ -98,7 +98,7 @@ class GLinearTerm;
 using UGTerm = std::unique_ptr<GTerm>;
 using UGFunTerm = std::unique_ptr<GFunctionTerm>;
 class GTerm : public Clonable<GTerm>, public Printable, public Hashable, public Comparable<GTerm> {
-public:
+  public:
     using EvalResult = std::pair<bool, Symbol>;
 
     GTerm() = default;
@@ -119,7 +119,7 @@ public:
     virtual bool unify(GVarTerm &x) = 0;
 };
 using UGTermVec = std::vector<UGTerm>;
-using SGRef     = std::shared_ptr<GRef>;
+using SGRef = std::shared_ptr<GRef>;
 
 // }}}
 // {{{ declaration of Term
@@ -127,16 +127,16 @@ using SGRef     = std::shared_ptr<GRef>;
 class LinearTerm;
 class VarTerm;
 class ValTerm;
-using UTermVec        = std::vector<UTerm>;
-using UTermVecVec     = std::vector<UTermVec>;
-using VarTermVec      = std::vector<std::reference_wrapper<VarTerm>>;
-using VarTermBoundVec = std::vector<std::pair<VarTerm*,bool>>;
-using VarTermSet      = std::unordered_set<std::reference_wrapper<VarTerm>, value_hash<std::reference_wrapper<VarTerm>>, value_equal_to<std::reference_wrapper<VarTerm>>>;
+using UTermVec = std::vector<UTerm>;
+using UTermVecVec = std::vector<UTermVec>;
+using VarTermVec = std::vector<std::reference_wrapper<VarTerm>>;
+using VarTermBoundVec = std::vector<std::pair<VarTerm *, bool>>;
+using VarTermSet = std::unordered_set<std::reference_wrapper<VarTerm>, value_hash<std::reference_wrapper<VarTerm>>,
+                                      value_equal_to<std::reference_wrapper<VarTerm>>>;
 
 class AuxGen {
-public:
-    AuxGen()
-    : auxNum_(std::make_shared<unsigned>(0)) { }
+  public:
+    AuxGen() : auxNum_(std::make_shared<unsigned>(0)) {}
     AuxGen(AuxGen const &other) = default;
     AuxGen(AuxGen &&other) noexcept = default;
     AuxGen &operator=(AuxGen const &other) = default;
@@ -146,12 +146,12 @@ public:
     String uniqueName(char const *prefix);
     UTerm uniqueVar(Location const &loc, unsigned level, const char *prefix);
 
-private:
+  private:
     std::shared_ptr<unsigned> auxNum_;
 };
 
 class SimplifyState {
-public:
+  public:
     //! Somewhat complex result type of simplify.
     class SimplifyRet;
 
@@ -166,25 +166,17 @@ public:
     SimplifyState &operator=(SimplifyState &&other) noexcept = default;
     ~SimplifyState() noexcept = default;
 
-    static SimplifyState make_substate(SimplifyState &state) {
-        return {state.gen_, state.level_ + 1};
-    }
+    static SimplifyState make_substate(SimplifyState &state) { return {state.gen_, state.level_ + 1}; }
 
     String createName(char const *prefix);
     std::unique_ptr<LinearTerm> createDots(Location const &loc, UTerm &&left, UTerm &&right);
     SimplifyRet createScript(Location const &loc, String name, UTermVec &&args, bool arith);
 
-    DotsMap dots() {
-        return std::move(dots_);
-    }
-    ScriptMap scripts() {
-        return std::move(scripts_);
-    }
+    DotsMap dots() { return std::move(dots_); }
+    ScriptMap scripts() { return std::move(scripts_); }
 
-private:
-    SimplifyState(AuxGen &gen, int level)
-    : gen_{gen}
-    , level_{level} { }
+  private:
+    SimplifyState(AuxGen &gen, int level) : gen_{gen}, level_{level} {}
 
     DotsMap dots_;
     ScriptMap scripts_;
@@ -208,7 +200,7 @@ struct IE {
 using IEVec = std::vector<IE>;
 
 class IEBound {
-public:
+  public:
     enum Type { Lower, Upper };
 
     bool isSet(Type type) const;
@@ -220,12 +212,11 @@ public:
     bool isImproving(IEBound const &other) const;
     friend bool operator<(IEBound const &a, IEBound const &b);
 
-private:
+  private:
     int lower_{0};
     int upper_{0};
     bool hasLower_{false};
     bool hasUpper_{false};
-
 };
 
 struct VarTermCmp {
@@ -236,7 +227,7 @@ using IEBoundMap = std::map<VarTerm const *, IEBound, VarTermCmp>;
 class IESolver;
 
 class IEContext {
-public:
+  public:
     IEContext() = default;
     IEContext(IEContext const &other) = default;
     IEContext(IEContext &&other) noexcept = default;
@@ -249,16 +240,14 @@ public:
 };
 
 class IESolver {
-public:
-    IESolver(IEContext &ctx, IESolver *parent = nullptr)
-    : parent_{parent}
-    , ctx_{ctx} { }
+  public:
+    IESolver(IEContext &ctx, IESolver *parent = nullptr) : parent_{parent}, ctx_{ctx} {}
     void add(IE ie, bool ignoreIfFixed);
     void add(IEContext &context);
     bool isImproving(VarTerm const *var, IEBound const &bound) const;
     void compute();
 
-private:
+  private:
     using SubSolvers = std::forward_list<IESolver>;
 
     IESolver *parent_;
@@ -270,19 +259,19 @@ private:
 };
 
 class Term : public Printable, public Hashable, public Locatable, public Comparable<Term>, public Clonable<Term> {
-public:
+  public:
     //! Return value of Term::project (replace, projected, project).
     //! replace:   projected variables are stripped, null if untouched
     //! projected: term with variables renamed, projected if null
     //! project:   term with variables renamed, never null
-    using ProjectRet   = std::tuple<UTerm, UTerm, UTerm>;
-    using SVal         = std::shared_ptr<Symbol>;
-    using VarSet       = std::unordered_set<String>;
-    using RenameMap    = std::unordered_map<String, std::pair<String, SVal>>;
-    using ReferenceMap = std::unordered_map<Term*, SGRef, value_hash<Term*>, value_equal_to<Term*>>;
-    using SimplifyRet  = SimplifyState::SimplifyRet;
-    //! Type that stores for each rewritten arithmetic term (UnopTerm, BinopTerm, LuaTerm) the associated variable and the term itself.
-    //! The indices of the vector correspond to the level of the term.
+    using ProjectRet = std::tuple<UTerm, UTerm, UTerm>;
+    using SVal = std::shared_ptr<Symbol>;
+    using VarSet = std::unordered_set<String>;
+    using RenameMap = std::unordered_map<String, std::pair<String, SVal>>;
+    using ReferenceMap = std::unordered_map<Term *, SGRef, value_hash<Term *>, value_equal_to<Term *>>;
+    using SimplifyRet = SimplifyState::SimplifyRet;
+    //! Type that stores for each rewritten arithmetic term (UnopTerm, BinopTerm, LuaTerm) the associated variable and
+    //! the term itself. The indices of the vector correspond to the level of the term.
     using LevelMap = std::unordered_map<UTerm, UTerm, value_hash<UTerm>, value_equal_to<UTerm>>;
     using ArithmeticsMap = std::vector<std::unique_ptr<LevelMap>>;
     //! The invertibility of a term. This may either be
@@ -355,7 +344,8 @@ public:
     //       and implement the functions below using the visitor
     virtual void collect(VarTermBoundVec &vars, bool bound) const = 0;
     virtual void collect(VarTermSet &vars) const;
-    virtual void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const = 0;
+    virtual void collect(VarSet &vars, unsigned minLevel = 0,
+                         unsigned maxLevel = std::numeric_limits<unsigned>::max()) const = 0;
     virtual void collectIds(VarSet &vars) const = 0;
     //! Returns the nesting level of a term.
     //! That is the largest level of a nested variable or zero for ground terms.
@@ -388,8 +378,7 @@ public:
     static UTerm insert(ArithmeticsMap &arith, AuxGen &auxGen, UTerm &&term, bool eq = false);
 
     //! Set dst to src if src is non-zero.
-    template <class T, class U>
-    static void replace(std::unique_ptr<T> &dst, std::unique_ptr<U> &&src);
+    template <class T, class U> static void replace(std::unique_ptr<T> &dst, std::unique_ptr<U> &&src);
     template <class T, class U, class V>
     void replace(std::unique_ptr<T> &dst, std::unique_ptr<U> &&src, std::unique_ptr<V> &&alt);
 
@@ -403,15 +392,14 @@ public:
     template <class It, class Unpool, class Callback>
     static void unpool(It const &begin, It const &end, Unpool const &f, Callback const &g);
     //! Unpools each element of vec using f, and move the union of all pools back to f.
-    template <class Vec, class Unpool>
-    static void unpoolJoin(Vec &vec, Unpool const &f);
+    template <class Vec, class Unpool> static void unpoolJoin(Vec &vec, Unpool const &f);
 };
 
 UTermVec unpool(UTerm const &x);
 
 class LinearTerm;
 class SimplifyState::SimplifyRet {
-public:
+  public:
     enum Type { UNTOUCHED, CONSTANT, LINEAR, REPLACE, UNDEFINED };
 
     //! Reference to untouched term.
@@ -437,19 +425,15 @@ public:
     bool undefined() const;
     LinearTerm &lin() const;
     SimplifyRet &update(UTerm &x, bool arith);
-    Type type() const {
-        return type_;
-    }
+    Type type() const { return type_; }
     Symbol value() const {
         return val_; // NOLINT
     }
-    bool project() const {
-        return project_;
-    }
+    bool project() const { return project_; }
 
-private:
-    Type  type_;
-    bool  project_ = false;
+  private:
+    Type type_;
+    bool project_ = false;
     union { // NOLINT
         Symbol val_;
         Term *term_;
@@ -469,14 +453,13 @@ struct GRef {
     GRef &operator=(GTerm &x);
     bool occurs(GRef &x) const;
     bool match(Symbol const &x) const;
-    template <class T>
-    bool unify(T &x);
+    template <class T> bool unify(T &x);
 
-    Type        type;
-    UTerm       name;
+    Type type;
+    UTerm name;
     // Note: these two could be put into a union
-    Symbol       value;
-    GTerm      *term;
+    Symbol value;
+    GTerm *term;
 };
 using SGRef = std::shared_ptr<GRef>;
 
@@ -484,7 +467,7 @@ using SGRef = std::shared_ptr<GRef>;
 // {{{ declaration of GValTerm
 
 class GValTerm : public GTerm {
-public:
+  public:
     GValTerm(Symbol val);
     GValTerm(GValTerm const &other) = default;
     GValTerm(GValTerm &&other) noexcept = default;
@@ -508,7 +491,7 @@ public:
         return new GValTerm{val_}; // NOLINT
     }
 
-private:
+  private:
     Symbol val_;
 };
 
@@ -516,7 +499,7 @@ private:
 // {{{ declaration of GFunctionTerm
 
 class GFunctionTerm : public GTerm {
-public:
+  public:
     GFunctionTerm(String name, UGTermVec &&args);
     GFunctionTerm(GFunctionTerm const &x, bool sign);
     GFunctionTerm(GFunctionTerm const &other) = default;
@@ -545,7 +528,7 @@ public:
         return ret;
     }
 
-private:
+  private:
     bool sign_;
     String name_;
     UGTermVec args_;
@@ -555,8 +538,8 @@ private:
 // {{{ declaration of GLinearTerm
 
 class GLinearTerm : public GTerm {
-public:
-    GLinearTerm(const SGRef& ref, int m, int n);
+  public:
+    GLinearTerm(const SGRef &ref, int m, int n);
     GLinearTerm(GLinearTerm const &other) = default;
     GLinearTerm(GLinearTerm &&other) noexcept = default;
     GLinearTerm &operator=(GLinearTerm const &other) = default;
@@ -579,7 +562,7 @@ public:
         return new GLinearTerm{ref_, m_, n_}; // NOLINT
     }
 
-private:
+  private:
     SGRef ref_;
     int m_;
     int n_;
@@ -589,14 +572,13 @@ private:
 // {{{ declaration of GVarTerm
 
 class GVarTerm : public GTerm {
-public:
-    GVarTerm(const SGRef& ref);
+  public:
+    GVarTerm(const SGRef &ref);
     GVarTerm(GVarTerm const &other) = default;
     GVarTerm(GVarTerm &&other) noexcept = default;
     GVarTerm &operator=(GVarTerm const &other) = default;
     GVarTerm &operator=(GVarTerm &&other) noexcept = default;
     ~GVarTerm() noexcept override = default;
-
 
     bool operator==(GTerm const &other) const override;
     size_t hash() const override;
@@ -622,7 +604,7 @@ public:
 // {{{ declaration of PoolTerm
 
 class PoolTerm : public Term {
-public:
+  public:
     PoolTerm(UTermVec &&terms);
     PoolTerm(PoolTerm const &other) = delete;
     PoolTerm(PoolTerm &&other) noexcept = default;
@@ -637,7 +619,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -660,7 +643,7 @@ public:
     Symbol isEDB() const override;
     bool isAtom() const override;
 
-private:
+  private:
     UTermVec args_;
 };
 
@@ -668,7 +651,7 @@ private:
 // {{{ declaration of ValTerm
 
 class ValTerm : public Term {
-public:
+  public:
     ValTerm(Symbol value);
     ValTerm(ValTerm const &other) = delete;
     ValTerm(ValTerm &&other) noexcept = default;
@@ -683,7 +666,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -706,7 +690,7 @@ public:
     Symbol isEDB() const override;
     bool isAtom() const override;
 
-private:
+  private:
     Symbol value_;
 };
 
@@ -714,8 +698,8 @@ private:
 // {{{ declaration of VarTerm
 
 class VarTerm : public Term {
-public:
-    VarTerm(String name, const SVal& ref, unsigned level = 0, bool bindRef = false);
+  public:
+    VarTerm(String name, const SVal &ref, unsigned level = 0, bool bindRef = false);
     VarTerm(VarTerm const &other) = delete;
     VarTerm(VarTerm &&other) noexcept = default;
     VarTerm &operator=(VarTerm const &other) = delete;
@@ -729,7 +713,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -761,7 +746,7 @@ public:
 // {{{ declaration of LinearTerm
 
 class LinearTerm : public Term {
-public:
+  public:
     using UVarTerm = std::unique_ptr<VarTerm>;
     LinearTerm(UVarTerm &&var, int m, int n);
     LinearTerm(VarTerm const &var, int m, int n);
@@ -784,7 +769,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -806,7 +792,7 @@ public:
     double estimate(double size, VarSet const &bound) const override;
     Symbol isEDB() const override;
 
-private:
+  private:
     UVarTerm var_;
     int m_;
     int n_;
@@ -816,7 +802,7 @@ private:
 // {{{ declaration of UnOpTerm
 
 class UnOpTerm : public Term {
-public:
+  public:
     UnOpTerm(UnOp op, UTerm &&arg);
     UnOpTerm(UnOpTerm const &other) = delete;
     UnOpTerm(UnOpTerm &&other) noexcept = default;
@@ -831,7 +817,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -855,7 +842,7 @@ public:
     Symbol isEDB() const override;
     bool isAtom() const override;
 
-private:
+  private:
     UnOp op_;
     UTerm arg_;
 };
@@ -864,7 +851,7 @@ private:
 // {{{ declaration of BinOpTerm
 
 class BinOpTerm : public Term {
-public:
+  public:
     BinOpTerm(BinOp op, UTerm &&left, UTerm &&right);
     BinOpTerm(BinOpTerm const &other) = delete;
     BinOpTerm(BinOpTerm &&other) noexcept = default;
@@ -879,7 +866,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -901,7 +889,7 @@ public:
     double estimate(double size, VarSet const &bound) const override;
     Symbol isEDB() const override;
 
-private:
+  private:
     BinOp op_;
     UTerm left_;
     UTerm right_;
@@ -911,7 +899,7 @@ private:
 // {{{ declaration of DotsTerm
 
 class DotsTerm : public Term {
-public:
+  public:
     DotsTerm(UTerm &&left, UTerm &&right);
     DotsTerm(DotsTerm const &other) = delete;
     DotsTerm(DotsTerm &&other) noexcept = default;
@@ -926,7 +914,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -948,7 +937,7 @@ public:
     double estimate(double size, VarSet const &bound) const override;
     Symbol isEDB() const override;
 
-private:
+  private:
     UTerm left_;
     UTerm right_;
 };
@@ -957,7 +946,7 @@ private:
 // {{{ declaration of LuaTerm
 
 class LuaTerm : public Term {
-public:
+  public:
     LuaTerm(String name, UTermVec &&args);
     LuaTerm(LuaTerm const &other) = delete;
     LuaTerm(LuaTerm &&other) noexcept = default;
@@ -972,7 +961,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -994,7 +984,7 @@ public:
     double estimate(double size, VarSet const &bound) const override;
     Symbol isEDB() const override;
 
-private:
+  private:
     String name_;
     UTermVec args_;
 };
@@ -1003,7 +993,7 @@ private:
 // {{{ declaration of FunctionTerm
 
 class FunctionTerm : public Term {
-public:
+  public:
     FunctionTerm(String name, UTermVec &&args);
     FunctionTerm(FunctionTerm const &other) = delete;
     FunctionTerm(FunctionTerm &&other) noexcept = default;
@@ -1020,7 +1010,8 @@ public:
     ProjectRet project(bool rename, AuxGen &gen) override;
     bool hasVar() const override;
     void collect(VarTermBoundVec &vars, bool bound) const override;
-    void collect(VarSet &vars, unsigned minLevel = 0, unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
+    void collect(VarSet &vars, unsigned minLevel = 0,
+                 unsigned maxLevel = std::numeric_limits<unsigned>::max()) const override;
     Symbol eval(bool &undefined, Logger &log) const override;
     bool match(Symbol const &val) const override;
     Sig getSig() const override;
@@ -1044,7 +1035,7 @@ public:
     Symbol isEDB() const override;
     bool isAtom() const override;
 
-private:
+  private:
     String name_;
     UTermVec args_;
     mutable SymVec cache_;
@@ -1056,21 +1047,25 @@ private:
 
 // TODO: ugly
 
-template <class T, class U>
-void Term::replace(std::unique_ptr<T> &dst, std::unique_ptr<U> &&src) {
-    if (src) { dst = std::move(src); }
+template <class T, class U> void Term::replace(std::unique_ptr<T> &dst, std::unique_ptr<U> &&src) {
+    if (src) {
+        dst = std::move(src);
+    }
 }
 
-template <class A, class UnpoolA, class Callback>
-void Term::unpool(A const &a, UnpoolA const &fA, Callback const &g) {
-    for (auto &termA : fA(a)) { g(std::move(termA)); }
+template <class A, class UnpoolA, class Callback> void Term::unpool(A const &a, UnpoolA const &fA, Callback const &g) {
+    for (auto &termA : fA(a)) {
+        g(std::move(termA));
+    }
 }
 
 template <class A, class B, class UnpoolA, class UnpoolB, class Callback>
 void Term::unpool(A const &a, B const &b, UnpoolA const &fA, UnpoolB const &fB, Callback const &g) {
     auto poolB(fB(b));
     for (auto &termA : fA(a)) {
-        for (auto &termB : poolB) { g(get_clone(termA), get_clone(termB)); }
+        for (auto &termB : poolB) {
+            g(get_clone(termA), get_clone(termB));
+        }
     }
 }
 
@@ -1078,13 +1073,16 @@ template <class It, class TermUnpool, class Callback>
 void Term::unpool(It const &begin, It const &end, TermUnpool const &f, Callback const &g) {
     using R = decltype(f(*begin));
     std::vector<R> pools;
-    for (auto it = begin; it != end; ++it) { pools.emplace_back(f(*it)); }
+    for (auto it = begin; it != end; ++it) {
+        pools.emplace_back(f(*it));
+    }
     cross_product(pools);
-    for (auto &pooled : pools) { g(std::move(pooled)); }
+    for (auto &pooled : pools) {
+        g(std::move(pooled));
+    }
 }
 
-template <class Vec, class TermUnpool>
-void Term::unpoolJoin(Vec &vec, TermUnpool const &f) {
+template <class Vec, class TermUnpool> void Term::unpoolJoin(Vec &vec, TermUnpool const &f) {
     Vec join;
     for (auto &x : vec) {
         auto pool(f(x));
@@ -1102,7 +1100,7 @@ GRINGO_HASH(Gringo::VarTerm)
 GRINGO_HASH(Gringo::GTerm)
 
 #ifdef _MSC_VER
-#pragma warning( pop )
+#pragma warning(pop)
 #endif
 
 #endif // GRINGO_TERM_HH

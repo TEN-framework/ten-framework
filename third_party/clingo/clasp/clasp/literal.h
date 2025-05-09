@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-2024 Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -44,7 +44,7 @@ namespace Clasp {
 //! A variable is an integer in the range [0..varMax).
 typedef uint32 Var;
 
-//! varMax is not a valid variale, i.e. currently Clasp supports at most 2^30 variables.
+//! varMax is not a valid variable, i.e. currently Clasp supports at most 2^30 variables.
 const Var varMax = (Var(1) << 30);
 
 //! The variable 0 has a special meaning in the solver.

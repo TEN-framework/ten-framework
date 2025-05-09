@@ -16,7 +16,7 @@ complement(F,lit(F,1),lit(F,-1)) :- fluent(F).
 { _holds_initially(F) } :- complement(F,L,M), not _initially(L;M).
   _holds_initially(F)   :- _initially(L), complement(F,L,M).
 
-holds_oneof(N,B)  :- 
+holds_oneof(N,B)  :-
     _initially_oneof(N,_,B);
     not _holds_initially(F) : _initially_oneof(N,M,B), complement(F,L,M);
         _holds_initially(F) : _initially_oneof(N,L,B), complement(F,L,M).
@@ -25,4 +25,3 @@ holds_oneof(N,B)  :-
  % just bizarre!
  :- not _holds_initially(F), _initially_oneof(N,M,B), not holds_oneof(N,B), complement(F,L,M).
  :-     _holds_initially(F), _initially_oneof(N,L,B), not holds_oneof(N,B), complement(F,L,M).
-

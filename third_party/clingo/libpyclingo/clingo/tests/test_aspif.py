@@ -1,8 +1,9 @@
 """
 Tests for aspif parsing.
 """
-from unittest import TestCase
+
 from textwrap import dedent
+from unittest import TestCase
 
 from ..control import Control
 from .util import solve

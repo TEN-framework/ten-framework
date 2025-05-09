@@ -18,7 +18,7 @@ end
 
 function main(prg)
     prg:ground({{"base", {}}})
-    
+
     print_conf(prg.configuration, "")
 
     print ("The heuristics of the solvers in the 'many' portfolio:")

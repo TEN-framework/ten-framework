@@ -48,7 +48,7 @@ For more detail on command line selection see [the command line docs](command-li
 Tag names are not case sensitive and can contain any ASCII characters.
 This means that tags `[tag with spaces]` and `[I said "good day"]`
 are both allowed tags and can be filtered on. However, escapes are not
-supported however and `[\]]` is not a valid tag.
+supported and `[\]]` is not a valid tag.
 
 The same tag can be specified multiple times for a single test case,
 but only one of the instances of identical tags will be kept. Which one
@@ -231,7 +231,7 @@ TEMPLATE_TEST_CASE( "vectors can be sized and resized", "[vector][template]", in
 
 > [Introduced](https://github.com/catchorg/Catch2/issues/1468) in Catch2 2.6.0.
 
-_template-type1_ through _template-typen_ is list of template template
+_template-type1_ through _template-typen_ is list of template
 types which should be combined with each of _template-arg1_ through
  _template-argm_, resulting in _n * m_ test cases. Inside the test case,
 the resulting type is available under the name of `TestType`.

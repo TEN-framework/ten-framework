@@ -24,13 +24,13 @@
 
 #include "gringo/output/output.hh"
 #include "gringo/logger.hh"
-#include "gringo/output/aggregates.hh"
 #include "gringo/output/backends.hh"
 #include "reify/program.hh"
 #include <cstring>
 #include <stdexcept>
 
-namespace Gringo { namespace Output {
+namespace Gringo {
+namespace Output {
 
 // {{{1 internal functions and classes
 
@@ -39,9 +39,8 @@ namespace {
 // {{{2 definition of DelayedStatement
 
 class DelayedStatement : public Statement {
-public:
-    DelayedStatement(LiteralId lit)
-    : lit_(lit) { }
+  public:
+    DelayedStatement(LiteralId lit) : lit_(lit) {}
 
     void output(DomainData &data, UBackend &out) const override {
         static_cast<void>(data);
@@ -67,17 +66,15 @@ public:
         static_cast<void>(delayed);
     }
 
-private:
+  private:
     LiteralId lit_;
 };
 
 // {{{2 definition of TranslateStatement
 
-template <class T>
-class TranslateStatement : public Statement {
-public:
-    TranslateStatement(T const &lambda)
-    : lambda_(lambda) { }
+template <class T> class TranslateStatement : public Statement {
+  public:
+    TranslateStatement(T const &lambda) : lambda_(lambda) {}
 
     void output(DomainData &data, UBackend &out) const override {
         static_cast<void>(data);
@@ -99,22 +96,19 @@ public:
         static_cast<void>(delayed);
     }
 
-private:
+  private:
     T const &lambda_;
 };
 
-template <class T>
-void translateLambda(DomainData &data, AbstractOutput &out, T const &lambda) {
+template <class T> void translateLambda(DomainData &data, AbstractOutput &out, T const &lambda) {
     TranslateStatement<T>(lambda).passTo(data, out);
 }
 
 // {{{2 definition of EndGroundStatement
 
 class EndGroundStatement : public Statement {
-public:
-    EndGroundStatement(OutputPredicates const &outPreds, Logger &log)
-    : outPreds_(outPreds)
-    , log_(log) { }
+  public:
+    EndGroundStatement(OutputPredicates const &outPreds, Logger &log) : outPreds_(outPreds), log_(log) {}
 
     void output(DomainData &data, UBackend &out) const override {
         static_cast<void>(data);
@@ -125,8 +119,7 @@ public:
         for (auto const &x : outPreds_) {
             if (x.second.match("", 0)) {
                 out << prefix << "#show.\n";
-            }
-            else {
+            } else {
                 out << prefix << "#show " << x.second << ".\n";
             }
         }
@@ -142,44 +135,34 @@ public:
         static_cast<void>(delayed);
     }
 
-private:
+  private:
     OutputPredicates const &outPreds_;
     Logger &log_;
 };
 
 // {{{2 definition of BackendAdapter
 
-template <class T>
-class BackendAdapter : public Backend {
-public:
+template <class T> class BackendAdapter : public Backend {
+  public:
     template <class... U>
-    BackendAdapter(U&&... args)
-    : prg_(std::forward<U>(args)...) {
-    }
+    BackendAdapter(std::unique_ptr<std::ostream> out, U &&...args)
+        : out_{std::move(out)}, prg_(*out_, std::forward<U>(args)...) {}
 
-    void initProgram(bool incremental)  override {
-        prg_.initProgram(incremental);
-    }
+    template <class... U> BackendAdapter(U &&...args) : prg_(std::forward<U>(args)...) {}
 
-    void beginStep()  override {
-        prg_.beginStep();
-    }
+    void initProgram(bool incremental) override { prg_.initProgram(incremental); }
 
-    void rule(Head_t ht, const AtomSpan& head, const LitSpan& body)  override {
-        prg_.rule(ht, head, body);
-    }
+    void beginStep() override { prg_.beginStep(); }
 
-    void rule(Head_t ht, const AtomSpan& head, Weight_t bound, const WeightLitSpan& body)  override {
+    void rule(Head_t ht, const AtomSpan &head, const LitSpan &body) override { prg_.rule(ht, head, body); }
+
+    void rule(Head_t ht, const AtomSpan &head, Weight_t bound, const WeightLitSpan &body) override {
         prg_.rule(ht, head, bound, body);
     }
 
-    void minimize(Weight_t prio, const WeightLitSpan& lits)  override {
-        prg_.minimize(prio, lits);
-    }
+    void minimize(Weight_t prio, const WeightLitSpan &lits) override { prg_.minimize(prio, lits); }
 
-    void project(const AtomSpan& atoms) override {
-        prg_.project(atoms);
-    }
+    void project(const AtomSpan &atoms) override { prg_.project(atoms); }
 
     void output(Symbol sym, Potassco::Atom_t atom) override {
         std::ostringstream out;
@@ -187,87 +170,71 @@ public:
         if (atom != 0) {
             auto lit = numeric_cast<Potassco::Lit_t>(atom);
             prg_.output(Potassco::toSpan(out.str().c_str()), Potassco::LitSpan{&lit, 1});
-        }
-        else {
+        } else {
             prg_.output(Potassco::toSpan(out.str().c_str()), Potassco::LitSpan{nullptr, 0});
         }
     }
 
-    void output(Symbol sym, Potassco::LitSpan const& condition) override {
+    void output(Symbol sym, Potassco::LitSpan const &condition) override {
         std::ostringstream out;
         out << sym;
         prg_.output(Potassco::toSpan(out.str().c_str()), condition);
     }
 
-    void external(Atom_t a, Value_t v)  override {
-        prg_.external(a, v);
-    }
+    void external(Atom_t a, Value_t v) override { prg_.external(a, v); }
 
-    void assume(const LitSpan& lits)  override {
-        prg_.assume(lits);
-    }
+    void assume(const LitSpan &lits) override { prg_.assume(lits); }
 
-    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan& condition)  override {
+    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan &condition) override {
         prg_.heuristic(a, t, bias, prio, condition);
     }
 
-    void acycEdge(int s, int t, const LitSpan& condition)  override {
-        prg_.acycEdge(s, t, condition);
-    }
+    void acycEdge(int s, int t, const LitSpan &condition) override { prg_.acycEdge(s, t, condition); }
 
-    void theoryTerm(Id_t termId, int number)  override {
-        prg_.theoryTerm(termId, number);
-    }
+    void theoryTerm(Id_t termId, int number) override { prg_.theoryTerm(termId, number); }
 
-    void theoryTerm(Id_t termId, const StringSpan& name)  override {
-        prg_.theoryTerm(termId, name);
-    }
+    void theoryTerm(Id_t termId, const StringSpan &name) override { prg_.theoryTerm(termId, name); }
 
-    void theoryTerm(Id_t termId, int cId, const IdSpan& args)  override {
-        prg_.theoryTerm(termId, cId, args);
-    }
+    void theoryTerm(Id_t termId, int cId, const IdSpan &args) override { prg_.theoryTerm(termId, cId, args); }
 
-    void theoryElement(Id_t elementId, const IdSpan& terms, const LitSpan& cond)  override {
+    void theoryElement(Id_t elementId, const IdSpan &terms, const LitSpan &cond) override {
         prg_.theoryElement(elementId, terms, cond);
     }
 
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements)  override {
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements) override {
         prg_.theoryAtom(atomOrZero, termId, elements);
     }
 
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements, Id_t op, Id_t rhs)  override {
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements, Id_t op, Id_t rhs) override {
         prg_.theoryAtom(atomOrZero, termId, elements, op, rhs);
     }
 
-    void endStep() override {
-        prg_.endStep();
-    }
-private:
+    void endStep() override { prg_.endStep(); }
+
+  private:
+    std::unique_ptr<std::ostream> out_;
     T prg_;
 };
 
 // {{{2 definition of BackendTheoryOutput
 
 class BackendTheoryOutput : public TheoryOutput {
-public:
-    BackendTheoryOutput(DomainData &data, AbstractOutput &out)
-    : data_{data}
-    , out_{out} {
-    }
+  public:
+    BackendTheoryOutput(DomainData &data, AbstractOutput &out) : data_{data}, out_{out} {}
 
     void theoryTerm(Id_t termId, int number) override {
         backendLambda(data_, out_, [&](DomainData &, UBackend &out) { out->theoryTerm(termId, number); });
     }
 
-    void theoryTerm(Id_t termId, const StringSpan& name) override {
+    void theoryTerm(Id_t termId, const StringSpan &name) override {
         backendLambda(data_, out_, [&](DomainData &, UBackend &out) { out->theoryTerm(termId, name); });
     }
 
-    void theoryTerm(Id_t termId, int cId, const IdSpan& args) override {
+    void theoryTerm(Id_t termId, int cId, const IdSpan &args) override {
         backendLambda(data_, out_, [&](DomainData &, UBackend &out) { out->theoryTerm(termId, cId, args); });
     }
 
-    void theoryElement(Id_t elementId, IdSpan const & terms, LitVec const &cond) override {
+    void theoryElement(Id_t elementId, IdSpan const &terms, LitVec const &cond) override {
         backendLambda(data_, out_, [&](DomainData &, UBackend &out) {
             BackendLitVec bc;
             bc.reserve(cond.size());
@@ -278,15 +245,16 @@ public:
         });
     }
 
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements) override {
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements) override {
         backendLambda(data_, out_, [&](DomainData &, UBackend &out) { out->theoryAtom(atomOrZero, termId, elements); });
     }
 
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements, Id_t op, Id_t rhs) override {
-        backendLambda(data_, out_, [&](DomainData &, UBackend &out) { out->theoryAtom(atomOrZero, termId, elements, op, rhs); });
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements, Id_t op, Id_t rhs) override {
+        backendLambda(data_, out_,
+                      [&](DomainData &, UBackend &out) { out->theoryAtom(atomOrZero, termId, elements, op, rhs); });
     }
 
-private:
+  private:
     DomainData &data_;
     AbstractOutput &out_;
 };
@@ -294,7 +262,7 @@ private:
 // {{{2 definition of BackendTee
 
 class BackendTee : public Backend {
-public:
+  public:
     using Head_t = Potassco::Head_t;
     using Value_t = Potassco::Value_t;
     using Heuristic_t = Potassco::Heuristic_t;
@@ -303,9 +271,7 @@ public:
     using LitSpan = Potassco::LitSpan;
     using WeightLitSpan = Potassco::WeightLitSpan;
 
-    BackendTee(UBackend a, UBackend b)
-    : a_(std::move(a))
-    , b_(std::move(b)) { }
+    BackendTee(UBackend a, UBackend b) : a_(std::move(a)), b_(std::move(b)) {}
 
     void initProgram(bool incremental) override {
         a_->initProgram(incremental);
@@ -320,20 +286,20 @@ public:
         b_->endStep();
     }
 
-    void rule(Head_t ht, const AtomSpan& head, const LitSpan& body) override {
+    void rule(Head_t ht, const AtomSpan &head, const LitSpan &body) override {
         a_->rule(ht, head, body);
         b_->rule(ht, head, body);
     }
-    void rule(Head_t ht, const AtomSpan& head, Weight_t bound, const WeightLitSpan& body) override {
+    void rule(Head_t ht, const AtomSpan &head, Weight_t bound, const WeightLitSpan &body) override {
         a_->rule(ht, head, bound, body);
         b_->rule(ht, head, bound, body);
     }
-    void minimize(Weight_t prio, const WeightLitSpan& lits) override {
+    void minimize(Weight_t prio, const WeightLitSpan &lits) override {
         a_->minimize(prio, lits);
         b_->minimize(prio, lits);
     }
 
-    void project(const AtomSpan& atoms) override {
+    void project(const AtomSpan &atoms) override {
         a_->project(atoms);
         b_->project(atoms);
     }
@@ -341,7 +307,7 @@ public:
         a_->output(sym, atom);
         b_->output(sym, atom);
     }
-    void output(Symbol sym, Potassco::LitSpan const& condition) override {
+    void output(Symbol sym, Potassco::LitSpan const &condition) override {
         a_->output(sym, condition);
         b_->output(sym, condition);
     }
@@ -349,15 +315,15 @@ public:
         a_->external(a, v);
         b_->external(a, v);
     }
-    void assume(const LitSpan& lits) override {
+    void assume(const LitSpan &lits) override {
         a_->assume(lits);
         b_->assume(lits);
     }
-    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan& condition) override {
+    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan &condition) override {
         a_->heuristic(a, t, bias, prio, condition);
         b_->heuristic(a, t, bias, prio, condition);
     }
-    void acycEdge(int s, int t, const LitSpan& condition) override {
+    void acycEdge(int s, int t, const LitSpan &condition) override {
         a_->acycEdge(s, t, condition);
         b_->acycEdge(s, t, condition);
     }
@@ -366,28 +332,28 @@ public:
         a_->theoryTerm(termId, number);
         b_->theoryTerm(termId, number);
     }
-    void theoryTerm(Id_t termId, const StringSpan& name) override {
+    void theoryTerm(Id_t termId, const StringSpan &name) override {
         a_->theoryTerm(termId, name);
         b_->theoryTerm(termId, name);
     }
-    void theoryTerm(Id_t termId, int cId, const IdSpan& args) override {
+    void theoryTerm(Id_t termId, int cId, const IdSpan &args) override {
         a_->theoryTerm(termId, cId, args);
         b_->theoryTerm(termId, cId, args);
     }
-    void theoryElement(Id_t elementId, const IdSpan& terms, const LitSpan& cond) override {
+    void theoryElement(Id_t elementId, const IdSpan &terms, const LitSpan &cond) override {
         a_->theoryElement(elementId, terms, cond);
         b_->theoryElement(elementId, terms, cond);
     }
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements) override {
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements) override {
         a_->theoryAtom(atomOrZero, termId, elements);
         b_->theoryAtom(atomOrZero, termId, elements);
     }
-    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan& elements, Id_t op, Id_t rhs) override {
+    void theoryAtom(Id_t atomOrZero, Id_t termId, const IdSpan &elements, Id_t op, Id_t rhs) override {
         a_->theoryAtom(atomOrZero, termId, elements, op, rhs);
         b_->theoryAtom(atomOrZero, termId, elements, op, rhs);
     }
 
-private:
+  private:
     UBackend a_;
     UBackend b_;
 };
@@ -398,19 +364,14 @@ private:
 
 // {{{1 definition of TranslatorOutput
 
-TranslatorOutput::TranslatorOutput(UAbstractOutput out, bool preserveFacts)
-: trans_(std::move(out), preserveFacts) { }
+TranslatorOutput::TranslatorOutput(UAbstractOutput out, bool preserveFacts) : trans_(std::move(out), preserveFacts) {}
 
-void TranslatorOutput::output(DomainData &data, Statement &stm) {
-    stm.translate(data, trans_);
-}
+void TranslatorOutput::output(DomainData &data, Statement &stm) { stm.translate(data, trans_); }
 
 // {{{1 definition of TextOutput
 
 TextOutput::TextOutput(std::string prefix, std::ostream &stream, UAbstractOutput out)
-: prefix_(std::move(prefix))
-, stream_(stream)
-, out_(std::move(out)) { }
+    : prefix_(std::move(prefix)), stream_(stream), out_(std::move(out)) {}
 
 void TextOutput::TextOutput::output(DomainData &data, Statement &stm) {
     stm.print({data, stream_}, prefix_.c_str());
@@ -421,32 +382,21 @@ void TextOutput::TextOutput::output(DomainData &data, Statement &stm) {
 
 // {{{1 definition of BackendOutput
 
-BackendOutput::BackendOutput(UBackend out)
-: out_(std::move(out)) { }
+BackendOutput::BackendOutput(UBackend out) : out_(std::move(out)) {}
 
-void BackendOutput::output(DomainData &data, Statement &stm) {
-    stm.output(data, out_);
-}
+void BackendOutput::output(DomainData &data, Statement &stm) { stm.output(data, out_); }
 
 // {{{1 definition of OutputBase
 
-OutputBase::OutputBase(Potassco::TheoryData &data, OutputPredicates outPreds, std::ostream &out, OutputFormat format, OutputOptions opts)
-: outPreds(std::move(outPreds))
-, data(data)
-, out_(fromFormat(out, format, opts))
-{ }
+OutputBase::OutputBase(Potassco::TheoryData &data, OutputPredicates outPreds, std::ostream &out, OutputFormat format,
+                       OutputOptions opts)
+    : outPreds(std::move(outPreds)), data(data), out_(fromFormat(out, format, opts)) {}
 
 OutputBase::OutputBase(Potassco::TheoryData &data, OutputPredicates outPreds, UBackend out, OutputOptions opts)
-: outPreds(std::move(outPreds))
-, data(data)
-, out_(fromBackend(std::move(out), opts))
-{ }
+    : outPreds(std::move(outPreds)), data(data), out_(fromBackend(std::move(out), opts)) {}
 
 OutputBase::OutputBase(Potassco::TheoryData &data, OutputPredicates outPreds, UAbstractOutput out)
-: outPreds(std::move(outPreds))
-, data(data)
-, out_(std::move(out))
-{ }
+    : outPreds(std::move(outPreds)), data(data), out_(std::move(out)) {}
 
 UAbstractOutput OutputBase::fromFormat(std::ostream &out, OutputFormat format, OutputOptions opts) {
     if (format == OutputFormat::TEXT) {
@@ -518,17 +468,23 @@ void OutputBase::endGround(Logger &log) {
         auto const &pos = *it_pos;
         auto rule = [&](auto it, auto jt) {
             output(tempRule(false)
-                .addBody({NAF::POS, AtomType::Predicate, static_cast<Potassco::Id_t>(it - pos->begin()), pos->domainOffset()})
-                .addBody({NAF::POS, AtomType::Predicate, static_cast<Potassco::Id_t>(jt - neg->begin()), neg->domainOffset()}));
+                       .addBody({NAF::POS, AtomType::Predicate, static_cast<Potassco::Id_t>(it - pos->begin()),
+                                 pos->domainOffset()})
+                       .addBody({NAF::POS, AtomType::Predicate, static_cast<Potassco::Id_t>(jt - neg->begin()),
+                                 neg->domainOffset()}));
         };
         auto neg_begin = neg->begin() + neg->incOffset();
         for (auto it = neg_begin, ie = neg->end(); it != ie; ++it) {
             auto jt = pos->find(static_cast<Symbol>(*it).flipSign());
-            if (jt != pos->end() && jt->defined()) { rule(jt, it); }
+            if (jt != pos->end() && jt->defined()) {
+                rule(jt, it);
+            }
         }
         for (auto it = pos->begin() + pos->incOffset(), ie = pos->end(); it != ie; ++it) {
             auto jt = neg->find(static_cast<Symbol>(*it).flipSign());
-            if (jt != neg->end() && jt->defined() && jt < neg_begin) { rule(it, jt); }
+            if (jt != neg->end() && jt->defined() && jt < neg_begin) {
+                rule(it, jt);
+            }
         }
     }
     for (auto &lit : delayed_) {
@@ -573,18 +529,17 @@ void OutputBase::checkOutPreds(Logger &log) {
 SymVec OutputBase::atoms(unsigned atomset, IsTrueLookup lookup) const {
     SymVec atoms;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    translateLambda(const_cast<DomainData&>(data), *out_, [&](DomainData &data, Translator &trans) {
-        trans.atoms(data, atomset, lookup, atoms, outPreds);
-    });
+    translateLambda(const_cast<DomainData &>(data), *out_,
+                    [&](DomainData &data, Translator &trans) { trans.atoms(data, atomset, lookup, atoms, outPreds); });
     return atoms;
 }
 
 std::pair<PredicateDomain::ConstIterator, PredicateDomain const *> OutputBase::find(Symbol val) const {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    return const_cast<OutputBase*>(this)->find(val);
+    return const_cast<OutputBase *>(this)->find(val);
 }
 
-std::pair<PredicateDomain::Iterator, PredicateDomain*> OutputBase::find(Symbol val) {
+std::pair<PredicateDomain::Iterator, PredicateDomain *> OutputBase::find(Symbol val) {
     if (val.type() == SymbolType::Fun) {
         auto it = predDoms().find(val.sig());
         if (it != predDoms().end()) {
@@ -605,10 +560,11 @@ std::pair<Id_t, Id_t> OutputBase::simplify(AssignmentLookup assignment) {
         for (auto const &dom : data.predDoms()) {
             mappings.emplace_back();
             auto ret = dom->cleanup(assignment, mappings.back());
-            facts+= ret.first;
-            deleted+= ret.second;
+            facts += ret.first;
+            deleted += ret.second;
         }
-        translateLambda(data, *out_, [&](DomainData &data, Translator &trans) { trans.simplify(data, mappings, assignment); });
+        translateLambda(data, *out_,
+                        [&](DomainData &data, Translator &trans) { trans.simplify(data, mappings, assignment); });
     }
     return {facts, deleted};
 }
@@ -618,18 +574,18 @@ Backend *OutputBase::backend() {
     backendLambda(data, *out_, [&backend](DomainData &, UBackend &out) { backend = out.get(); });
     return backend;
 }
+void OutputBase::removeMinimize() {
+    translateLambda(data, *out_, [](DomainData &, Translator &x) { x.removeMinimize(); });
+}
 
-namespace {
-
-} // namespace
+namespace {} // namespace
 
 void OutputBase::registerObserver(UBackend prg, bool replace) {
     backendLambda(data, *out_, [&prg, replace](DomainData &, UBackend &out) {
         if (prg) {
             if (replace) {
                 out = std::move(prg);
-            }
-            else {
+            } else {
                 out = gringo_make_unique<BackendTee>(std::move(prg), std::move(out));
             }
         }
@@ -638,9 +594,7 @@ void OutputBase::registerObserver(UBackend prg, bool replace) {
 
 // }}}1
 
-void ASPIFOutBackend::initProgram(bool incremental) {
-    static_cast<void>(incremental);
-}
+void ASPIFOutBackend::initProgram(bool incremental) { static_cast<void>(incremental); }
 
 void ASPIFOutBackend::beginStep() {
     out_ = &beginOutput();
@@ -694,7 +648,7 @@ void ASPIFOutBackend::external(Atom_t a, Value_t v) {
     update_(a);
     bck_->external(a, v);
 }
-void ASPIFOutBackend::assume(const LitSpan& lits) {
+void ASPIFOutBackend::assume(const LitSpan &lits) {
     update_(lits);
     bck_->assume(lits);
 }
@@ -736,7 +690,7 @@ void ASPIFOutBackend::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &ele
 }
 
 void ASPIFOutBackend::endStep() {
-    // transfer stored theory atoms to the ouputs theory class
+    // transfer stored theory atoms to the outputs theory class
     theory_.accept(*this);
     for (auto it = sym_tab_.begin(), ie = sym_tab_.end(); it != ie; ++it) {
         auto const &sym = it.key();
@@ -783,12 +737,8 @@ void ASPIFOutBackend::endStep() {
     endOutput();
 }
 
-void ASPIFOutBackend::update_(Atom_t const &atom) {
-    out_->data.ensureAtom(atom);
-}
-void ASPIFOutBackend::update_(Lit_t const &lit) {
-    out_->data.ensureAtom(std::abs(lit));
-}
+void ASPIFOutBackend::update_(Atom_t const &atom) { out_->data.ensureAtom(atom); }
+void ASPIFOutBackend::update_(Lit_t const &lit) { out_->data.ensureAtom(std::abs(lit)); }
 void ASPIFOutBackend::update_(AtomSpan const &atoms) {
     for (auto const &atom : atoms) {
         update_(atom);
@@ -804,8 +754,7 @@ void ASPIFOutBackend::update_(WeightLitSpan const &wlits) {
         update_(wlit.lit);
     }
 }
-template <class T, class... Args>
-void ASPIFOutBackend::update_(T const &x, Args const &... args) {
+template <class T, class... Args> void ASPIFOutBackend::update_(T const &x, Args const &...args) {
     update_(x);
     update_(args...);
 }
@@ -831,8 +780,7 @@ void ASPIFOutBackend::visit(const Potassco::TheoryData &data, Id_t termId, const
                 }
                 if (t.isTuple()) {
                     terms_[termId] = theory.addTermTup(t.tuple(), make_span(terms));
-                }
-                else {
+                } else {
                     terms_[termId] = theory.addTermFun(terms_[t.function()], make_span(terms));
                 }
                 break;
@@ -849,7 +797,7 @@ void ASPIFOutBackend::visit(const Potassco::TheoryData &data, Id_t elemId, const
         for (auto const &x : e) {
             tuple.emplace_back(terms_[x]);
         }
-        // one could alse remap to named literals but would have to store the mapping
+        // one could also remap to named literals but would have to store the mapping
         elements_[elemId].first = theory.addElem(make_span(tuple), make_span(elements_[elemId].second));
     }
 }
@@ -863,9 +811,9 @@ void ASPIFOutBackend::visit(const Potassco::TheoryData &data, const Potassco::Th
     }
     if (a.rhs() == nullptr) {
         theory.addAtom([&a]() { return a.atom(); }, terms_[a.term()], make_span(elements));
-    }
-    else {
-        theory.addAtom([&a]() { return a.atom(); }, terms_[a.term()], make_span(elements), terms_[*a.guard()], terms_[*a.rhs()]);
+    } else {
+        theory.addAtom([&a]() { return a.atom(); }, terms_[a.term()], make_span(elements), terms_[*a.guard()],
+                       terms_[*a.rhs()]);
     }
 }
 
@@ -888,4 +836,27 @@ Atom_t ASPIFOutBackend::fact_id() {
     return fact_id_;
 }
 
-} } // namespace Output Gringo
+UBackend make_backend(std::unique_ptr<std::ostream> out, OutputFormat format, bool reify_sccs, bool reify_steps) {
+    UBackend backend;
+    switch (format) {
+        case OutputFormat::REIFY: {
+            backend = gringo_make_unique<BackendAdapter<Reify::Reifier>>(std::move(out), reify_sccs, reify_sccs);
+            break;
+        }
+        case OutputFormat::INTERMEDIATE: {
+            backend = gringo_make_unique<BackendAdapter<IntermediateFormatBackend>>(std::move(out));
+            break;
+        }
+        case OutputFormat::SMODELS: {
+            backend = gringo_make_unique<BackendAdapter<SmodelsFormatBackend>>(std::move(out));
+            break;
+        }
+        case OutputFormat::TEXT: {
+            throw std::runtime_error("must not be called");
+        }
+    }
+    return backend;
+}
+
+} // namespace Output
+} // namespace Gringo

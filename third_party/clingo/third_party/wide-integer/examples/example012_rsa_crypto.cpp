@@ -1,5 +1,5 @@
 ﻿///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2021 - 2022.                 //
+//  Copyright Christopher Kormanyos 2021 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -10,6 +10,8 @@
 
 #include <examples/example_uintwide_t.h>
 #include <math/wide_integer/uintwide_t.h>
+
+#include <util/utility/util_pseudorandom_time_point_seed.h>
 
 namespace local_rsa
 {
@@ -79,13 +81,13 @@ namespace local_rsa
           return b;
         }
 
-        local_integer_type tmp_x;
-        local_integer_type tmp_y;
+        local_integer_type tmp_x { };
+        local_integer_type tmp_y { };
 
         local_integer_type gcd_ext = extended_euclidean(b % a, a, &tmp_x, &tmp_y);
 
-        *x = tmp_y - ((b / a) * tmp_x);
-        *y = tmp_x;
+        *x = std::move(tmp_y - ((b / a) * tmp_x));
+        *y = std::move(tmp_x);
 
         return gcd_ext;
       }
@@ -107,7 +109,7 @@ namespace local_rsa
       }
 
     private:
-      const public_key_type& public_key; // NOLINT(readability-identifier-naming)
+      const public_key_type& public_key; // NOLINT(readability-identifier-naming,cppcoreguidelines-avoid-const-or-ref-data-members)
     };
 
     class decryptor
@@ -130,7 +132,7 @@ namespace local_rsa
       }
 
     private:
-      const private_key_type& private_key; // NOLINT(readability-identifier-naming)
+      const private_key_type& private_key; // NOLINT(readability-identifier-naming,cppcoreguidelines-avoid-const-or-ref-data-members)
     };
 
     rsa_base(const rsa_base& other) : my_p       (other.my_p),
@@ -206,7 +208,7 @@ namespace local_rsa
 
     template<typename RandomEngineType = std::minstd_rand>
     static auto is_prime(const my_uintwide_t& p,
-                         const RandomEngineType& generator = RandomEngineType(static_cast<typename RandomEngineType::result_type>(std::clock()))) -> bool
+                         const RandomEngineType& generator = RandomEngineType(util::util_pseudorandom_time_point_seed::value<typename RandomEngineType::result_type>())) -> bool
     {
       #if defined(WIDE_INTEGER_NAMESPACE)
       using local_distribution_type =
@@ -248,17 +250,20 @@ namespace local_rsa
 
     auto calculate_private_key() -> void
     {
-      my_uintwide_t a = phi_of_m;
-      my_uintwide_t b = my_r;
+      my_uintwide_t a { phi_of_m };
+      my_uintwide_t b { my_r };
 
       my_uintwide_t x { };
       my_uintwide_t s { };
 
       euclidean::extended_euclidean(a, b, &x, &s);
 
-      s = is_neg(s) ? make_positive(s, phi_of_m) : s;
+      if(is_neg(s))
+      {
+        s = std::move(make_positive(s, phi_of_m));
+      }
 
-      private_key = private_key_type { s, my_p, my_q };
+      private_key = std::move( private_key_type { std::move(s), my_p, my_q } );
     }
 
   private:
@@ -396,7 +401,7 @@ auto ::math::wide_integer::example012_rsa_crypto() -> bool
   {
     using local_random_engine_type = std::mt19937;
 
-    local_random_engine_type generator(static_cast<typename std::mt19937::result_type>(std::clock()));
+    local_random_engine_type generator(::util::util_pseudorandom_time_point_seed::value<typename std::mt19937::result_type>());
 
     const bool p_is_prime = rsa_type::is_prime(p, generator);
 

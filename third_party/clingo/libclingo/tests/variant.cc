@@ -1,8 +1,9 @@
 #include "tests.hh"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-namespace Clingo { namespace Test {
+namespace Clingo {
+namespace Test {
 
 using V = Variant<int, std::string>;
 using VU = Variant<int, std::string, std::unique_ptr<int>>;
@@ -15,28 +16,16 @@ struct R {
 
 struct D {
     D(std::string &r) : r(r) { r = "not called"; }
-    void visit(int &x) {
-        r = std::to_string(x);
-    }
-    void visit(std::string &x) {
-        r = x;
-    }
-    void visit(std::unique_ptr<int> &x) {
-        r = std::to_string(*x);
-    }
+    void visit(int &x) { r = std::to_string(x); }
+    void visit(std::string &x) { r = x; }
+    void visit(std::unique_ptr<int> &x) { r = std::to_string(*x); }
     std::string &r;
 };
 
 struct DA {
-    int visit(int const &x, int y) {
-        return y + 1 + x;
-    }
-    int visit(std::string const &, int y) {
-        return y + 2;
-    }
-    int visit(std::unique_ptr<int> const &, int y) {
-        return y + 3;
-    }
+    int visit(int const &x, int y) { return y + 1 + x; }
+    int visit(std::string const &, int y) { return y + 2; }
+    int visit(std::unique_ptr<int> const &, int y) { return y + 3; }
 };
 
 TEST_CASE("visitor", "[clingo]") {
@@ -85,4 +74,5 @@ TEST_CASE("visitor", "[clingo]") {
 #endif
 }
 
-} } // namespace Test Clingo
+} // namespace Test
+} // namespace Clingo

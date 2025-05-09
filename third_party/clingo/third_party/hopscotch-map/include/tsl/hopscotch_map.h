@@ -152,9 +152,6 @@ class hopscotch_map {
   explicit hopscotch_map(const Allocator& alloc)
       : hopscotch_map(ht::DEFAULT_INIT_BUCKETS_SIZE, alloc) {}
 
-  hopscotch_map(const hopscotch_map& other, const Allocator& alloc)
-      : m_ht(other.m_ht, alloc) {}
-
   template <class InputIt>
   hopscotch_map(InputIt first, InputIt last,
                 size_type bucket_count = ht::DEFAULT_INIT_BUCKETS_SIZE,

@@ -33,13 +33,13 @@ namespace Gringo {
 
 // {{{1 declaration of Backend
 
-using GetTheoryAtomCondition = std::function<std::vector<Potassco::Lit_t> (Potassco::Id_t)>;
+using GetTheoryAtomCondition = std::function<std::vector<Potassco::Lit_t>(Potassco::Id_t)>;
 using BackendAtomVec = std::vector<Potassco::Atom_t>;
 using BackendLitVec = std::vector<Potassco::Lit_t>;
 using BackendLitWeightVec = std::vector<Potassco::WeightLit_t>;
 
 class Backend {
-public:
+  public:
     using Head_t = Potassco::Head_t;
     using Weight_t = Potassco::Weight_t;
     using Value_t = Potassco::Value_t;
@@ -61,54 +61,54 @@ public:
     virtual void initProgram(bool incremental) = 0;
     virtual void beginStep() = 0;
 
-    virtual void rule(Head_t ht, AtomSpan const & head, LitSpan const & body) = 0;
-    virtual void rule(Head_t ht, AtomSpan const & head, Weight_t bound, WeightLitSpan const & body) = 0;
-    virtual void minimize(Weight_t prio, WeightLitSpan const & lits) = 0;
+    virtual void rule(Head_t ht, AtomSpan const &head, LitSpan const &body) = 0;
+    virtual void rule(Head_t ht, AtomSpan const &head, Weight_t bound, WeightLitSpan const &body) = 0;
+    virtual void minimize(Weight_t prio, WeightLitSpan const &lits) = 0;
 
-    virtual void project(AtomSpan const & atoms) = 0;
+    virtual void project(AtomSpan const &atoms) = 0;
     virtual void output(Symbol sym, Atom_t atom) = 0;
-    virtual void output(Symbol sym, LitSpan const& condition) = 0;
+    virtual void output(Symbol sym, LitSpan const &condition) = 0;
     virtual void external(Atom_t a, Value_t v) = 0;
-    virtual void assume(LitSpan const & lits) = 0;
-    virtual void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, LitSpan const & condition) = 0;
-    virtual void acycEdge(int s, int t, LitSpan const & condition) = 0;
+    virtual void assume(LitSpan const &lits) = 0;
+    virtual void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, LitSpan const &condition) = 0;
+    virtual void acycEdge(int s, int t, LitSpan const &condition) = 0;
 
     virtual void theoryTerm(Id_t termId, int number) = 0;
-    virtual void theoryTerm(Id_t termId, StringSpan const & name) = 0;
-    virtual void theoryTerm(Id_t termId, int cId, IdSpan const & args) = 0;
-    virtual void theoryElement(Id_t elementId, IdSpan const & terms, LitSpan const & cond) = 0;
-    virtual void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const & elements) = 0;
-    virtual void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const & elements, Id_t op, Id_t rhs) = 0;
+    virtual void theoryTerm(Id_t termId, StringSpan const &name) = 0;
+    virtual void theoryTerm(Id_t termId, int cId, IdSpan const &args) = 0;
+    virtual void theoryElement(Id_t elementId, IdSpan const &terms, LitSpan const &cond) = 0;
+    virtual void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements) = 0;
+    virtual void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements, Id_t op, Id_t rhs) = 0;
 
     virtual void endStep() = 0;
 };
 using UBackend = std::unique_ptr<Backend>;
 
 class NullBackend : public Backend {
-public:
-    void initProgram(bool incremental) override { }
-    void beginStep() override { }
+  public:
+    void initProgram(bool incremental) override {}
+    void beginStep() override {}
 
-    void rule(Head_t ht, AtomSpan const & head, LitSpan const & body) override { }
-    void rule(Head_t ht, AtomSpan const & head, Weight_t bound, WeightLitSpan const & body) override { }
-    void minimize(Weight_t prio, WeightLitSpan const & lits) override { }
+    void rule(Head_t ht, AtomSpan const &head, LitSpan const &body) override {}
+    void rule(Head_t ht, AtomSpan const &head, Weight_t bound, WeightLitSpan const &body) override {}
+    void minimize(Weight_t prio, WeightLitSpan const &lits) override {}
 
-    void project(AtomSpan const & atoms) override { }
-    void output(Symbol sym, Atom_t atom) override { }
-    void output(Symbol sym, LitSpan const& condition) override { }
-    void external(Atom_t a, Value_t v) override { }
-    void assume(LitSpan const & lits) override { }
-    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, LitSpan const & condition) override { }
-    void acycEdge(int s, int t, LitSpan const & condition) override { }
+    void project(AtomSpan const &atoms) override {}
+    void output(Symbol sym, Atom_t atom) override {}
+    void output(Symbol sym, LitSpan const &condition) override {}
+    void external(Atom_t a, Value_t v) override {}
+    void assume(LitSpan const &lits) override {}
+    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, LitSpan const &condition) override {}
+    void acycEdge(int s, int t, LitSpan const &condition) override {}
 
-    void theoryTerm(Id_t termId, int number) override { }
-    void theoryTerm(Id_t termId, StringSpan const & name) override { }
-    void theoryTerm(Id_t termId, int cId, IdSpan const & args) override { }
-    void theoryElement(Id_t elementId, IdSpan const & terms, LitSpan const & cond) override { }
-    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const & elements) override { }
-    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const & elements, Id_t op, Id_t rhs) override { }
+    void theoryTerm(Id_t termId, int number) override {}
+    void theoryTerm(Id_t termId, StringSpan const &name) override {}
+    void theoryTerm(Id_t termId, int cId, IdSpan const &args) override {}
+    void theoryElement(Id_t elementId, IdSpan const &terms, LitSpan const &cond) override {}
+    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements) override {}
+    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements, Id_t op, Id_t rhs) override {}
 
-    void endStep() override { }
+    void endStep() override {}
 };
 
 inline void outputRule(Backend &out, bool choice, Potassco::AtomSpan head, Potassco::LitSpan body) {
@@ -119,11 +119,13 @@ inline void outputRule(Backend &out, bool choice, BackendAtomVec const &head, Ba
     outputRule(out, choice, Potassco::toSpan(head), Potassco::toSpan(body));
 }
 
-inline void outputRule(Backend &out, bool choice, Potassco::AtomSpan head, Potassco::Weight_t lower, Potassco::WeightLitSpan body) {
+inline void outputRule(Backend &out, bool choice, Potassco::AtomSpan head, Potassco::Weight_t lower,
+                       Potassco::WeightLitSpan body) {
     out.rule(choice ? Potassco::Head_t::Choice : Potassco::Head_t::Disjunctive, head, lower, body);
 }
 
-inline void outputRule(Backend &out, bool choice, BackendAtomVec const &head, Potassco::Weight_t lower, BackendLitWeightVec const &body) {
+inline void outputRule(Backend &out, bool choice, BackendAtomVec const &head, Potassco::Weight_t lower,
+                       BackendLitWeightVec const &body) {
     outputRule(out, choice, Potassco::toSpan(head), lower, Potassco::toSpan(body));
 }
 

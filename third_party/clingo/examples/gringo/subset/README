@@ -3,4 +3,3 @@ subset minimal models.
 
 Example calls:
     clingo --heuristic=domain --enum-mode=domRec 0 example.lp
-

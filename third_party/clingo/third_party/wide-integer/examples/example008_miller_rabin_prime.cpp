@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2018 - 2022.                 //
+//  Copyright Christopher Kormanyos 2018 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -10,11 +10,11 @@
 // The Boost.Multiprecision code can be found here:
 // https://www.boost.org/doc/libs/1_73_0/libs/multiprecision/doc/html/boost_multiprecision/tut/primetest.html
 
-#include <chrono>
 #include <random>
 
 #include <examples/example_uintwide_t.h>
 #include <math/wide_integer/uintwide_t.h>
+#include <util/utility/util_pseudorandom_time_point_seed.h>
 
 #if defined(__clang__)
   #if defined __has_feature && __has_feature(thread_sanitizer)
@@ -43,31 +43,12 @@ namespace local_example008_miller_rabin_prime
   using random_engine1_type = std::linear_congruential_engine<std::uint32_t, UINT32_C(48271), UINT32_C(0), UINT32_C(2147483647)>;
   using random_engine2_type = std::mt19937;
 
-  template<typename IntegralTimePointType,
-           typename ClockType = std::chrono::high_resolution_clock>
-  auto time_point() -> IntegralTimePointType
-  {
-    using local_integral_time_point_type = IntegralTimePointType;
-    using local_clock_type               = ClockType;
-
-    const auto current_now =
-      static_cast<std::uintmax_t>
-      (
-        std::chrono::duration_cast<std::chrono::nanoseconds>
-        (
-          local_clock_type::now().time_since_epoch()
-        ).count()
-      );
-
-    return static_cast<local_integral_time_point_type>(current_now);
-  }
-
   auto example008_miller_rabin_prime_run() -> bool
   {
     // Use a pseudo-random seed for this test.
 
-    random_engine1_type generator1(time_point<typename random_engine1_type::result_type>());
-    random_engine2_type generator2(time_point<typename random_engine2_type::result_type>());
+    random_engine1_type generator1(util::util_pseudorandom_time_point_seed::value<typename random_engine1_type::result_type>());
+    random_engine2_type generator2(util::util_pseudorandom_time_point_seed::value<typename random_engine2_type::result_type>());
 
     distribution_type distribution1;
     distribution_type distribution2;
@@ -107,10 +88,10 @@ namespace local_example008_miller_rabin_prime
 
     const auto gd = gcd(p0, p1);
 
-    const auto result_is_ok = (   (p0 != 0U)
-                               && (p1 != 0U)
+    const auto result_is_ok = (   (p0 != static_cast<unsigned>(UINT8_C(0)))
+                               && (p1 != static_cast<unsigned>(UINT8_C(0)))
                                && (p0 != p1)
-                               && (gd == 1U));
+                               && (gd == static_cast<unsigned>(UINT8_C(1))));
 
     return result_is_ok;
   }
@@ -160,7 +141,7 @@ namespace local_example008_miller_rabin_prime
         #endif
       };
 
-    random_engine1_type generator(time_point<typename random_engine1_type::result_type>());
+    random_engine1_type generator(util::util_pseudorandom_time_point_seed::value<typename random_engine1_type::result_type>());
 
     distribution_type distribution;
 

@@ -22,12 +22,13 @@
 
 // }}}
 
-#include "tests/tests.hh"
 #include "gringo/symbol.hh"
+#include "tests/tests.hh"
 
 #include <climits>
 
-namespace Gringo { namespace Test {
+namespace Gringo {
+namespace Test {
 
 TEST_CASE("symbol_bug", "[base]") {
     SECTION("fun") {
@@ -38,25 +39,23 @@ TEST_CASE("symbol_bug", "[base]") {
 }
 
 TEST_CASE("symbol", "[base]") {
-    SymVec args = { Symbol::createNum(42), Symbol::createId("a") };
-    SymVec symbols = {
-        Symbol::createNum(INT_MIN),
-        Symbol::createNum(INT_MAX),
-        Symbol::createNum(0),
-        Symbol::createNum(42),
+    SymVec args = {Symbol::createNum(42), Symbol::createId("a")};
+    SymVec symbols = {Symbol::createNum(INT_MIN),
+                      Symbol::createNum(INT_MAX),
+                      Symbol::createNum(0),
+                      Symbol::createNum(42),
 
-        Symbol::createId("x"),
-        Symbol::createId("abc"),
+                      Symbol::createId("x"),
+                      Symbol::createId("abc"),
 
-        Symbol::createStr(""),
-        Symbol::createStr("xyz"),
+                      Symbol::createStr(""),
+                      Symbol::createStr("xyz"),
 
-        Symbol::createInf(),
-        Symbol::createSup(),
+                      Symbol::createInf(),
+                      Symbol::createSup(),
 
-        Symbol::createTuple(Potassco::toSpan(args)),
-        Symbol::createFun("f", Potassco::toSpan(args))
-    };
+                      Symbol::createTuple(Potassco::toSpan(args)),
+                      Symbol::createFun("f", Potassco::toSpan(args))};
 
     SECTION("types") {
         REQUIRE(SymbolType::Num == symbols[0].type());
@@ -79,7 +78,7 @@ TEST_CASE("symbol", "[base]") {
     SECTION("symbols") {
         REQUIRE(INT_MIN == symbols[0].num());
         REQUIRE(INT_MAX == symbols[1].num());
-        REQUIRE( 0 == symbols[2].num());
+        REQUIRE(0 == symbols[2].num());
         REQUIRE(42 == symbols[3].num());
 
         REQUIRE(String("x") == symbols[4].name());
@@ -99,28 +98,28 @@ TEST_CASE("symbol", "[base]") {
 
     SECTION("cmp_num") {
         REQUIRE(!(Symbol::createNum(0) < Symbol::createNum(0)));
-        REQUIRE( (Symbol::createNum(0) < Symbol::createNum(1)));
+        REQUIRE((Symbol::createNum(0) < Symbol::createNum(1)));
         REQUIRE(!(Symbol::createNum(1) < Symbol::createNum(0)));
 
         REQUIRE(!(Symbol::createNum(0) > Symbol::createNum(0)));
         REQUIRE(!(Symbol::createNum(0) > Symbol::createNum(1)));
-        REQUIRE( (Symbol::createNum(1) > Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(1) > Symbol::createNum(0)));
 
-        REQUIRE( (Symbol::createNum(0) <= Symbol::createNum(0)));
-        REQUIRE( (Symbol::createNum(0) <= Symbol::createNum(1)));
+        REQUIRE((Symbol::createNum(0) <= Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(0) <= Symbol::createNum(1)));
         REQUIRE(!(Symbol::createNum(1) <= Symbol::createNum(0)));
 
-        REQUIRE( (Symbol::createNum(0) >= Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(0) >= Symbol::createNum(0)));
         REQUIRE(!(Symbol::createNum(0) >= Symbol::createNum(1)));
-        REQUIRE( (Symbol::createNum(1) >= Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(1) >= Symbol::createNum(0)));
 
-        REQUIRE( (Symbol::createNum(0) == Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(0) == Symbol::createNum(0)));
         REQUIRE(!(Symbol::createNum(0) == Symbol::createNum(1)));
         REQUIRE(!(Symbol::createNum(1) == Symbol::createNum(0)));
 
         REQUIRE(!(Symbol::createNum(0) != Symbol::createNum(0)));
-        REQUIRE( (Symbol::createNum(0) != Symbol::createNum(1)));
-        REQUIRE( (Symbol::createNum(1) != Symbol::createNum(0)));
+        REQUIRE((Symbol::createNum(0) != Symbol::createNum(1)));
+        REQUIRE((Symbol::createNum(1) != Symbol::createNum(0)));
     }
 
     SECTION("cmp_type") {
@@ -133,35 +132,35 @@ TEST_CASE("symbol", "[base]") {
 
     SECTION("cmp_other") {
         REQUIRE(!(Symbol::createId("a") == Symbol::createId("a").flipSign()));
-        REQUIRE( (Symbol::createId("a") != Symbol::createId("a").flipSign()));
+        REQUIRE((Symbol::createId("a") != Symbol::createId("a").flipSign()));
 
         REQUIRE(!(Symbol::createId("a") < Symbol::createId("a")));
-        REQUIRE( (Symbol::createId("a") < Symbol::createId("a").flipSign()));
-        REQUIRE( (Symbol::createId("b") < Symbol::createId("a").flipSign()));
-        REQUIRE( (Symbol::createId("aaa") < Symbol::createId("aab")));
-        REQUIRE( (Symbol::createId("a") < Symbol::createId("aa")));
+        REQUIRE((Symbol::createId("a") < Symbol::createId("a").flipSign()));
+        REQUIRE((Symbol::createId("b") < Symbol::createId("a").flipSign()));
+        REQUIRE((Symbol::createId("aaa") < Symbol::createId("aab")));
+        REQUIRE((Symbol::createId("a") < Symbol::createId("aa")));
         REQUIRE(!(Symbol::createId("aa") < Symbol::createId("a")));
 
         REQUIRE(!(Symbol::createStr("a") < Symbol::createStr("a")));
-        REQUIRE( (Symbol::createStr("aaa") < Symbol::createStr("aab")));
-        REQUIRE( (Symbol::createStr("a") < Symbol::createStr("aa")));
+        REQUIRE((Symbol::createStr("aaa") < Symbol::createStr("aab")));
+        REQUIRE((Symbol::createStr("a") < Symbol::createStr("aa")));
         REQUIRE(!(Symbol::createStr("aa") < Symbol::createStr("a")));
 
-        Symbol a = Symbol::createTuple( Potassco::toSpan(SymVec{ Symbol::createNum(1), Symbol::createNum(1) }) );
-        Symbol b = Symbol::createTuple( Potassco::toSpan(SymVec{ Symbol::createNum(1) }) );
-        Symbol c = Symbol::createTuple( Potassco::toSpan(SymVec{ Symbol::createNum(1), Symbol::createNum(2) }) );
-        Symbol d = Symbol::createTuple( Potassco::toSpan(SymVec{ Symbol::createNum(2) }) );
+        Symbol a = Symbol::createTuple(Potassco::toSpan(SymVec{Symbol::createNum(1), Symbol::createNum(1)}));
+        Symbol b = Symbol::createTuple(Potassco::toSpan(SymVec{Symbol::createNum(1)}));
+        Symbol c = Symbol::createTuple(Potassco::toSpan(SymVec{Symbol::createNum(1), Symbol::createNum(2)}));
+        Symbol d = Symbol::createTuple(Potassco::toSpan(SymVec{Symbol::createNum(2)}));
         REQUIRE(((b < a) && !(a < b)));
         REQUIRE(((a < c) && !(c < a)));
         REQUIRE(((b < d) && !(d < b)));
         REQUIRE(((d < a) && !(a < d)));
 
-        Symbol fa = Symbol::createFun( "f", Potassco::toSpan(SymVec{ Symbol::createNum(1), Symbol::createNum(1) }) );
-        Symbol ga = Symbol::createFun( "g", Potassco::toSpan(SymVec{ Symbol::createNum(1), Symbol::createNum(1) }));
-        Symbol fb = Symbol::createFun( "f", Potassco::toSpan(SymVec{ Symbol::createNum(1) }) );
-        Symbol fc = Symbol::createFun( "f", Potassco::toSpan(SymVec{ Symbol::createNum(1), Symbol::createNum(2) }) );
-        Symbol fd = Symbol::createFun( "f", Potassco::toSpan(SymVec{ Symbol::createNum(2) }) );
-        Symbol gd = Symbol::createFun( "g", Potassco::toSpan(SymVec{ Symbol::createNum(2) }) );
+        Symbol fa = Symbol::createFun("f", Potassco::toSpan(SymVec{Symbol::createNum(1), Symbol::createNum(1)}));
+        Symbol ga = Symbol::createFun("g", Potassco::toSpan(SymVec{Symbol::createNum(1), Symbol::createNum(1)}));
+        Symbol fb = Symbol::createFun("f", Potassco::toSpan(SymVec{Symbol::createNum(1)}));
+        Symbol fc = Symbol::createFun("f", Potassco::toSpan(SymVec{Symbol::createNum(1), Symbol::createNum(2)}));
+        Symbol fd = Symbol::createFun("f", Potassco::toSpan(SymVec{Symbol::createNum(2)}));
+        Symbol gd = Symbol::createFun("g", Potassco::toSpan(SymVec{Symbol::createNum(2)}));
         REQUIRE(((fb < fa) && !(fa < fb)));
         REQUIRE(((fa < fc) && !(fc < fa)));
         REQUIRE(((fb < fd) && !(fd < fb)));
@@ -179,7 +178,6 @@ TEST_CASE("symbol", "[base]") {
             std::string str = oss.str();
             oss.str("");
             return str;
-
         };
         REQUIRE("0" == toString(symbols[2]));
         REQUIRE("42" == toString(symbols[3]));
@@ -202,15 +200,15 @@ TEST_CASE("symbol", "[base]") {
     }
 
     SECTION("sig") {
-        std::vector<char const *> names { "a", "b", "c", "d" };
-        for (uint32_t i = 1; i < 1073741824; i*=2) {
+        std::vector<char const *> names{"a", "b", "c", "d"};
+        for (uint32_t i = 1; i < 1073741824; i *= 2) {
             String name = names[i % names.size()];
-            Sig sig{ name.c_str(), i, false };
+            Sig sig{name.c_str(), i, false};
             REQUIRE(name == sig.name());
             REQUIRE(i == sig.arity());
         }
     }
 }
 
-} } // namespace Test Gringo
-
+} // namespace Test
+} // namespace Gringo

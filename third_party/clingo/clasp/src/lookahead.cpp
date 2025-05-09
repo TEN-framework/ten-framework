@@ -57,7 +57,8 @@ void ScoreLook::clearDeps() {
 		score[deps[i]].clear();
 	}
 	deps.clear();
-	best = 0;
+	best  = 0;
+	limit = UINT32_MAX;
 }
 bool ScoreLook::greater(Var lhs, Var rhs) const {
 	uint32 rhsMax, rhsMin;
@@ -185,11 +186,16 @@ bool Lookahead::propagateLevel(Solver& s) {
 			s.addUndoWatch(s.decisionLevel(), this);
 		}
 	}
+	const uint32 lookLimit = 100;
 	score.clearDeps();
 	score.addDeps = true;
+	uint32& limit = score.limit;
 	Literal p     = node(pos_)->lit;
 	bool   ok     = s.value(p.var()) != value_free || test(s, p);
 	for (LitNode* r = node(pos_); r->next != pos_ && ok; ) {
+		if      (!s.clearSplitRequest()) { limit = UINT32_MAX; }
+		else if (limit == UINT32_MAX)    { limit = lookLimit; }
+		else if (--limit == 0)           { s.sharedContext()->report("Stopping lookahead", &s); break; }
 		p = node(r->next)->lit;
 		if (s.value(p.var()) == value_free) {
 			if (test(s, p)) { r   = node(r->next); }
@@ -228,7 +234,7 @@ bool Lookahead::propagateFixpoint(Solver& s, PostPropagator* ctx) {
 			break;
 		}
 	}
-	if (dl == 0 && ok) {
+	if (ok && dl == 0 && score.limit > 0) {
 		// remember top-level size - no need to redo lookahead
 		// on level 0 unless we learn a new implication
 		assert(s.queueSize() == 0);
@@ -297,7 +303,7 @@ Literal Lookahead::heuristic(Solver& s) {
 	}
 	ScoreLook& sc = score;
 	Literal choice= Literal(sc.best, sc.score[sc.best].prefSign());
-	if (!sc.deps.empty() && sc.mode == ScoreLook::score_max_min) {
+	if (!sc.deps.empty() && sc.mode == ScoreLook::score_max_min && sc.limit > 0) {
 		// compute heuristic values for candidates skipped during last lookahead
 		uint32 min, max;
 		sc.score[sc.best].score(max, min);
@@ -314,11 +320,13 @@ Literal Lookahead::heuristic(Solver& s) {
 					uint32 neg = vs.score(negLit(v)) > 0 ? vs.score(negLit(v)) : max+1;
 					uint32 pos = vs.score(posLit(v)) > 0 ? vs.score(posLit(v)) : max+1;
 					if (!vs.tested(negLit(v))) {
-						ok  = ok && s.test(negLit(v), this);
+						ok  = s.test(negLit(v), this);
 						neg = vs.score(negLit(v));
+						--sc.limit;
 					}
-					if ((neg > min || (neg == min && pos > max)) && !vs.tested(posLit(v))) {
-						ok  = ok && s.test(posLit(v), this);
+					if (ok && (neg > min || (neg == min && pos > max)) && !vs.tested(posLit(v)) && sc.limit > 0) {
+						ok = s.test(posLit(v), this);
+						--sc.limit;
 					}
 				}
 				if (vs.testedBoth() && sc.greaterMaxMin(v, max, min)) {
@@ -326,7 +334,7 @@ Literal Lookahead::heuristic(Solver& s) {
 					choice = Literal(v, vs.prefSign());
 				}
 			}
-		} while (++i != sc.deps.size() && ok);
+		} while (++i != sc.deps.size() && ok && sc.limit > 0);
 		if (!ok) {
 			// One of the candidates failed. Since none of them failed
 			// during previous propagation, this indicates that

@@ -80,20 +80,20 @@ TEST_CASE( "Output from all sections is reported", "[failing][messages][.]" ) {
 
 TEST_CASE( "Standard output from all sections is reported", "[messages][.]" ) {
     SECTION( "one" ) {
-        std::cout << "Message from section one" << std::endl;
+        std::cout << "Message from section one\n";
     }
 
     SECTION( "two" ) {
-        std::cout << "Message from section two" << std::endl;
+        std::cout << "Message from section two\n";
     }
 }
 
 TEST_CASE( "Standard error is reported and redirected", "[messages][.][approvals]" ) {
     SECTION( "std::cerr" ) {
-        std::cerr << "Write to std::cerr" << std::endl;
+        std::cerr << "Write to std::cerr\n";
     }
     SECTION( "std::clog" ) {
-        std::clog << "Write to std::clog" << std::endl;
+        std::clog << "Write to std::clog\n";
     }
     SECTION( "Interleaved writes to cerr and clog" ) {
         std::cerr << "Inter";
@@ -101,7 +101,7 @@ TEST_CASE( "Standard error is reported and redirected", "[messages][.][approvals
         std::cerr << ' ';
         std::clog << "writes";
         std::cerr << " to error";
-        std::clog << " streams" << std::endl;
+        std::clog << " streams\n" << std::flush;
     }
 }
 
@@ -255,10 +255,24 @@ std::ostream& operator<<(std::ostream& out, helper_1436<T1, T2> const& helper) {
 #pragma clang diagnostic ignored "-Wunused-value"
 #endif
 
+namespace {
+    template <typename T>
+    struct custom_index_op {
+        constexpr custom_index_op( std::initializer_list<T> ) {}
+        constexpr T operator[]( size_t ) { return T{}; }
+#if defined( __cpp_multidimensional_subscript ) && \
+    __cpp_multidimensional_subscript >= 202110L
+        constexpr T operator[]( size_t, size_t, size_t ) const noexcept {
+            return T{};
+        }
+#endif
+    };
+}
+
 TEST_CASE("CAPTURE can deal with complex expressions involving commas", "[messages][capture]") {
-    CAPTURE(std::vector<int>{1, 2, 3}[0, 1, 2],
-            std::vector<int>{1, 2, 3}[(0, 1)],
-            std::vector<int>{1, 2, 3}[0]);
+    CAPTURE(custom_index_op<int>{1, 2, 3}[0, 1, 2],
+            custom_index_op<int>{1, 2, 3}[(0, 1)],
+            custom_index_op<int>{1, 2, 3}[0]);
     CAPTURE((helper_1436<int, int>{12, -12}),
             (helper_1436<int, int>(-12, 12)));
     CAPTURE( (1, 2), (2, 3) );
@@ -285,3 +299,14 @@ TEST_CASE("CAPTURE parses string and character constants", "[messages][capture]"
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+
+TEST_CASE( "INFO and UNSCOPED_INFO can stream multiple arguments",
+           "[messages][info][.failing]" ) {
+    INFO( "This info"
+          << " has multiple"
+          << " parts." );
+    UNSCOPED_INFO( "This unscoped info"
+                   << " has multiple"
+                   << " parts." );
+    FAIL( "Show infos!" );
+}

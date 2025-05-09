@@ -25,10 +25,11 @@
 #ifndef GRINGO_INPUT_STATEMENT_HH
 #define GRINGO_INPUT_STATEMENT_HH
 
-#include <gringo/terms.hh>
 #include <gringo/input/aggregate.hh>
+#include <gringo/terms.hh>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{ declaration of Statement
 
@@ -37,7 +38,7 @@ using UStm = std::unique_ptr<Statement>;
 using UStmVec = std::vector<UStm>;
 
 class Statement : public Printable, public Locatable, private IEContext {
-public:
+  public:
     Statement(UHeadAggr &&head, UBodyAggrVec &&body);
     Statement(Statement const &other) = delete;
     Statement(Statement &&other) noexcept = default;
@@ -60,14 +61,17 @@ public:
     void initTheory(TheoryDefs &def, Logger &log);
 
     void gatherIEs(IESolver &solver) const override;
-    void addIEBound(VarTerm const &var, IEBound const &bound) override;;
-private:
-    UHeadAggr     head_;
-    UBodyAggrVec  body_;
+    void addIEBound(VarTerm const &var, IEBound const &bound) override;
+    ;
+
+  private:
+    UHeadAggr head_;
+    UBodyAggrVec body_;
 };
 
 // }}}
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_STATEMENT_HH

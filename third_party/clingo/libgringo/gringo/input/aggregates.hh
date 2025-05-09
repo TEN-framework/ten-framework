@@ -29,15 +29,14 @@
 #include <gringo/terms.hh>
 #include <ostream>
 
-namespace Gringo { namespace Input {
+namespace Gringo {
+namespace Input {
 
 // {{{1 declaration of BodyAggrElem
 
 class BodyAggrElem : public IEContext {
-public:
-    BodyAggrElem(UTermVec tuple, ULitVec condition)
-    : tuple_{std::move(tuple)}
-    , condition_{std::move(condition)} { }
+  public:
+    BodyAggrElem(UTermVec tuple, ULitVec condition) : tuple_{std::move(tuple)}, condition_{std::move(condition)} {}
 
     bool hasPool() const;
     void unpool(BodyAggrElemVec &pool);
@@ -59,7 +58,7 @@ public:
     friend size_t get_value_hash(BodyAggrElem const &elem);
     friend BodyAggrElem get_clone(BodyAggrElem const &elem);
 
-private:
+  private:
     UTermVec tuple_;
     ULitVec condition_;
 };
@@ -67,8 +66,9 @@ private:
 // {{{1 declaration of TupleBodyAggregate
 
 class TupleBodyAggregate : public BodyAggregate {
-public:
-    TupleBodyAggregate(NAF naf, bool removedAssignment, bool translated, AggregateFunction fun, BoundVec &&bounds, BodyAggrElemVec &&elems); // NOTE: private
+  public:
+    TupleBodyAggregate(NAF naf, bool removedAssignment, bool translated, AggregateFunction fun, BoundVec &&bounds,
+                       BodyAggrElemVec &&elems); // NOTE: private
     TupleBodyAggregate(NAF naf, AggregateFunction fun, BoundVec &&bounds, BodyAggrElemVec &&elems);
 
     void addToSolver(IESolver &solver) override;
@@ -91,7 +91,7 @@ public:
     void replace(Defines &dx) override;
     CreateBody toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     NAF naf_;
     bool removedAssignment_ = false;
     bool translated_ = false;
@@ -103,7 +103,7 @@ private:
 // {{{1 declaration of LitBodyAggregate
 
 class LitBodyAggregate : public BodyAggregate {
-public:
+  public:
     LitBodyAggregate(NAF naf, AggregateFunction fun, BoundVec &&bounds, CondLitVec &&elems);
 
     bool rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -125,7 +125,7 @@ public:
     void replace(Defines &dx) override;
     CreateBody toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     NAF naf_;
     AggregateFunction fun_;
     BoundVec bounds_;
@@ -139,16 +139,13 @@ using ConjunctionElemVec = std::vector<ConjunctionElem>;
 using ConjunctionElemVecVec = std::vector<ConjunctionElemVec>;
 
 class ConjunctionElem : public IEContext {
-public:
+  public:
     using ULitVecVec = std::vector<ULitVec>;
-    ConjunctionElem(ULit head, ULitVec cond)
-    : cond_{std::move(cond)} {
+    ConjunctionElem(ULit head, ULitVec cond) : cond_{std::move(cond)} {
         head_.emplace_back();
         head_.back().emplace_back(std::move(head));
     }
-    ConjunctionElem(ULitVecVec head, ULitVec cond)
-    : head_{std::move(head)}
-    , cond_{std::move(cond)} { }
+    ConjunctionElem(ULitVecVec head, ULitVec cond) : head_{std::move(head)}, cond_{std::move(cond)} {}
 
     void print(std::ostream &out) const;
     bool hasPool() const;
@@ -171,7 +168,7 @@ public:
     friend size_t get_value_hash(ConjunctionElem const &elem);
     friend ConjunctionElem get_clone(ConjunctionElem const &elem);
 
-private:
+  private:
     ULitVecVec head_;
     ULitVec cond_;
 };
@@ -179,12 +176,9 @@ private:
 // {{{1 declaration of Conjunction
 
 class Conjunction : public BodyAggregate {
-public:
-    Conjunction(ULit head, ULitVec cond) {
-        elems_.emplace_back(std::move(head), std::move(cond));
-    }
-    Conjunction(ConjunctionElemVec elems)
-    : elems_{std::move(elems)} { }
+  public:
+    Conjunction(ULit head, ULitVec cond) { elems_.emplace_back(std::move(head), std::move(cond)); }
+    Conjunction(ConjunctionElemVec elems) : elems_{std::move(elems)} {}
 
     void addToSolver(IESolver &solver) override;
     bool rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -206,14 +200,14 @@ public:
     void replace(Defines &dx) override;
     CreateBody toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     ConjunctionElemVec elems_;
 };
 
 // {{{1 declaration of SimpleBodyLiteral
 
 class SimpleBodyLiteral : public BodyAggregate {
-public:
+  public:
     SimpleBodyLiteral(ULit &&lit);
 
     void addToSolver(IESolver &solver) override;
@@ -239,7 +233,7 @@ public:
     void replace(Defines &dx) override;
     CreateBody toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     ULit lit_;
 };
 
@@ -248,11 +242,9 @@ private:
 // {{{1 declaration of HeadAggrElem
 
 class HeadAggrElem : public IEContext {
-public:
+  public:
     HeadAggrElem(UTermVec tuple, ULit lit, ULitVec condition)
-    : tuple_{std::move(tuple)}
-    , lit_{std::move(lit)}
-    , condition_{std::move(condition)} { }
+        : tuple_{std::move(tuple)}, lit_{std::move(lit)}, condition_{std::move(condition)} {}
 
     bool hasPool() const;
     void unpool(HeadAggrElemVec &pool);
@@ -267,8 +259,7 @@ public:
     void replace(Defines &defs);
     bool isSimple() const;
     UTerm headRepr() const;
-    template <class T, class C>
-    std::unique_ptr<T> toGround(ToGroundArg &x, C &completeRef) const;
+    template <class T, class C> std::unique_ptr<T> toGround(ToGroundArg &x, C &completeRef) const;
 
     void gatherIEs(IESolver &solver) const override;
     void addIEBound(VarTerm const &var, IEBound const &bound) override;
@@ -278,10 +269,8 @@ public:
     friend size_t get_value_hash(HeadAggrElem const &elem);
     friend HeadAggrElem get_clone(HeadAggrElem const &elem);
 
-private:
-    template <class T>
-    void zeroLevel_(VarTermBoundVec &bound, T const &x);
-
+  private:
+    template <class T> void zeroLevel_(VarTermBoundVec &bound, T const &x);
 
     UTermVec tuple_;
     ULit lit_;
@@ -291,7 +280,7 @@ private:
 // {{{1 declaration of TupleHeadAggregate
 
 class TupleHeadAggregate : public HeadAggregate {
-public:
+  public:
     TupleHeadAggregate(AggregateFunction fun, bool translated, BoundVec &&bounds, HeadAggrElemVec &&elems);
     TupleHeadAggregate(AggregateFunction fun, BoundVec &&bounds, HeadAggrElemVec &&elems);
 
@@ -312,7 +301,7 @@ public:
     void replace(Defines &dx) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     AggregateFunction fun_;
     bool translated_;
     BoundVec bounds_;
@@ -322,7 +311,7 @@ private:
 // {{{1 declaration of LitHeadAggregate
 
 class LitHeadAggregate : public HeadAggregate {
-public:
+  public:
     LitHeadAggregate(AggregateFunction fun, BoundVec &&bounds, CondLitVec &&elems);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -341,7 +330,7 @@ public:
     void replace(Defines &dx) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     AggregateFunction fun_;
     BoundVec bounds_;
     CondLitVec elems_;
@@ -355,12 +344,10 @@ using DisjunctionElemVec = std::vector<DisjunctionElem>;
 class DisjunctionElem : public IEContext {
     using Head = std::pair<ULit, ULitVec>;
     using HeadVec = std::vector<Head>;
-public:
-    DisjunctionElem(HeadVec head, ULitVec cond)
-    : heads_{std::move(head)}
-    , cond_{std::move(cond)} {}
-    DisjunctionElem(CondLit lit)
-    : cond_{std::move(lit.second)} {
+
+  public:
+    DisjunctionElem(HeadVec head, ULitVec cond) : heads_{std::move(head)}, cond_{std::move(cond)} {}
+    DisjunctionElem(CondLit lit) : cond_{std::move(lit.second)} {
         heads_.emplace_back();
         heads_.back().first = std::move(lit.first);
     }
@@ -377,10 +364,8 @@ public:
     bool hasPool() const;
     void replace(Defines &x);
     bool isSimple() const;
-    template <class T>
-    void toGroundSimple(ToGroundArg &x, T &heads) const;
-    template <class T>
-    void toGround(Location const &loc, T &complete, ToGroundArg &x, Ground::UStmVec &stms) const;
+    template <class T> void toGroundSimple(ToGroundArg &x, T &heads) const;
+    template <class T> void toGround(Location const &loc, T &complete, ToGroundArg &x, Ground::UStmVec &stms) const;
 
     void gatherIEs(IESolver &solver) const override;
     void addIEBound(VarTerm const &var, IEBound const &bound) override;
@@ -390,7 +375,7 @@ public:
     friend size_t get_value_hash(DisjunctionElem const &elem);
     friend DisjunctionElem get_clone(DisjunctionElem const &elem);
 
-private:
+  private:
     HeadVec heads_;
     ULitVec cond_;
 };
@@ -398,8 +383,7 @@ private:
 // {{{1 declaration of Disjunction
 
 class Disjunction : public HeadAggregate {
-public:
-
+  public:
     Disjunction(CondLitVec elems);
     Disjunction(DisjunctionElemVec elems);
 
@@ -420,14 +404,14 @@ public:
     void replace(Defines &dx) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     DisjunctionElemVec elems_;
 };
 
 // {{{1 declaration of SimpleHeadLiteral
 
 class SimpleHeadLiteral : public HeadAggregate {
-public:
+  public:
     SimpleHeadLiteral(ULit &&lit);
 
     void addToSolver(IESolver &solver) override;
@@ -451,7 +435,7 @@ public:
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
     Symbol isEDB() const override;
 
-private:
+  private:
     ULit lit_;
 };
 
@@ -459,7 +443,7 @@ private:
 // {{{1 declaration of MinimizeHeadLiteral
 
 class MinimizeHeadLiteral : public HeadAggregate {
-public:
+  public:
     MinimizeHeadLiteral(UTerm &&weight, UTerm &&priority, UTermVec &&tuple);
     MinimizeHeadLiteral(UTermVec &&tuple);
 
@@ -480,7 +464,7 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     Term &weight() const;
     Term &priority() const;
 
@@ -491,7 +475,7 @@ private:
 // {{{1 declaration of EdgeHeadAtom
 
 class EdgeHeadAtom : public HeadAggregate {
-public:
+  public:
     EdgeHeadAtom(UTerm &&u, UTerm &&v);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -510,7 +494,7 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     UTerm u_;
     UTerm v_;
 };
@@ -518,7 +502,7 @@ private:
 // {{{1 declaration of ProjectHeadAtom
 
 class ProjectHeadAtom : public HeadAggregate {
-public:
+  public:
     ProjectHeadAtom(UTerm &&atom);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -537,14 +521,14 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     UTerm atom_;
 };
 
 // {{{1 declaration of ExternalHeadAtom
 
 class ExternalHeadAtom : public HeadAggregate {
-public:
+  public:
     ExternalHeadAtom(UTerm &&atom, UTerm &&type);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -564,7 +548,7 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     UTerm atom_;
     UTerm type_;
 };
@@ -572,7 +556,7 @@ private:
 // {{{1 declaration of HeuristicHeadAtom
 
 class HeuristicHeadAtom : public HeadAggregate {
-public:
+  public:
     HeuristicHeadAtom(UTerm &&atom, UTerm &&bias, UTerm &&priority, UTerm &&mod);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -591,7 +575,7 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     UTerm atom_;
     UTerm value_;
     UTerm priority_;
@@ -601,7 +585,7 @@ private:
 // {{{1 declaration of ShowHeadLiteral
 
 class ShowHeadLiteral : public HeadAggregate {
-public:
+  public:
     ShowHeadLiteral(UTerm &&term);
 
     UHeadAggr rewriteAggregates(UBodyAggrVec &aggr) override;
@@ -620,12 +604,13 @@ public:
     void replace(Defines &x) override;
     CreateHead toGround(ToGroundArg &x, Ground::UStmVec &stms) const override;
 
-private:
+  private:
     UTerm term_;
 };
 
 // }}}1
 
-} } // namespace Input Gringo
+} // namespace Input
+} // namespace Gringo
 
 #endif // GRINGO_INPUT_AGGREGATES_HH

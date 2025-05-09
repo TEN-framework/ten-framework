@@ -9,7 +9,7 @@ In some situations it may not be possible to meaningfully execute a test case,
 for example when the system under test is missing certain hardware capabilities.
 If the required conditions can only be determined at runtime, it often
 doesn't make sense to consider such a test case as either passed or failed,
-because it simply can not run at all.
+because it simply cannot run at all.
 
 To properly express such scenarios, Catch2 provides a way to explicitly
 _skip_ test cases, using the `SKIP` macro:
@@ -83,6 +83,12 @@ Note that if all test cases in a run are skipped, Catch2 returns a non-zero
 exit code, same as it does if no test cases have run. This behaviour can
 be overridden using the [--allow-running-no-tests](command-line.md#no-tests-override)
 flag.
+
+### `SKIP` inside generators
+
+You can also use the `SKIP` macro inside generator's constructor to handle
+cases where the generator is empty, but you do not want to fail the test
+case.
 
 
 ## Passing and failing test cases

@@ -26,4 +26,3 @@ def main(prg):
 #show a : a.
 #show b : b.
 #show c : c.
-

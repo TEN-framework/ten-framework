@@ -2,8 +2,9 @@
 Tests for theory and symbolic atoms.
 """
 
-from unittest import TestCase
 from typing import cast
+from unittest import TestCase
+
 from clingo import Control, Function, Number, TheoryTermType
 from clingo.symbolic_atoms import SymbolicAtom
 

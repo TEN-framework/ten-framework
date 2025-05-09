@@ -155,11 +155,10 @@ class Configuration:
     def __setattr__(self, name: str, val) -> None:
         key = self._get_subkey(name)
         if key is None:
-            super().__setattr__(name, val)
-        else:
-            _handle_error(
-                _lib.clingo_configuration_value_set(self._rep, key, str(val).encode())
-            )
+            raise AttributeError(f"get attribute: {name}")
+        _handle_error(
+            _lib.clingo_configuration_value_set(self._rep, key, str(val).encode())
+        )
 
     def description(self, name: str) -> str:
         """

@@ -68,6 +68,12 @@
     <Filter Include="Source Files\examples\build">
       <UniqueIdentifier>{24de4171-df89-40f3-87b7-3dfdee251467}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{81934cc8-18b6-4dc9-8558-f5adcec3bf99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util\utility">
+      <UniqueIdentifier>{5995e678-0e77-4d1b-b881-ef1ada7cb408}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="boost\multiprecision\uintwide_t_backend.hpp">
@@ -111,6 +117,9 @@
     </ClInclude>
     <ClInclude Include="test\test_arithmetic.hpp">
       <Filter>Source Files\test</Filter>
+    </ClInclude>
+    <ClInclude Include="util\utility\util_pseudorandom_time_point_seed.h">
+      <Filter>Source Files\util\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

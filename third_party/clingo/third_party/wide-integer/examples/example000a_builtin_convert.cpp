@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////
-//  Copyright Christopher Kormanyos 2021 - 2022.                 //
+//  Copyright Christopher Kormanyos 2021 - 2024.                 //
 //  Distributed under the Boost Software License,                //
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt          //
 //  or copy at http://www.boost.org/LICENSE_1_0.txt)             //
@@ -32,42 +32,36 @@ auto ::math::wide_integer::example000a_builtin_convert() -> bool
   #endif
 
   {
-    WIDE_INTEGER_CONSTEXPR int256_t n = -1234567.89; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    constexpr int256_t n = -1234567.89; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
-    WIDE_INTEGER_CONSTEXPR auto result_n_is_ok = (n == -1234567); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    constexpr auto result_n_is_ok = (n == -1234567); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_n_is_ok, "Error: example000a_builtin_convert not OK!");
-    #endif
 
     result_is_ok = (result_n_is_ok && result_is_ok);
   }
 
   {
-    WIDE_INTEGER_CONSTEXPR int256_t n = "-12345678900000000000000000000000";
+    constexpr int256_t n = "-12345678900000000000000000000000";
 
-    WIDE_INTEGER_CONSTEXPR auto f = static_cast<float>(n);
+    constexpr auto f = static_cast<float>(n);
 
-    WIDE_INTEGER_CONSTEXPR auto closeness      = local::fabs(1.0F - local::fabs(f / -1.23456789E31F)); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
-    WIDE_INTEGER_CONSTEXPR auto result_f_is_ok = (closeness < std::numeric_limits<float>::epsilon());
+    constexpr auto closeness      = local::fabs(1.0F - local::fabs(f / -1.23456789E31F)); // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+    constexpr auto result_f_is_ok = (closeness < std::numeric_limits<float>::epsilon());
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert(result_f_is_ok, "Error: example000a_builtin_convert not OK!");
-    #endif
 
     result_is_ok = (result_f_is_ok && result_is_ok);
   }
 
   {
-    WIDE_INTEGER_CONSTEXPR int256_t     n   = "-123456789000000000";
+    constexpr int256_t     n   = "-123456789000000000";
 
-    WIDE_INTEGER_CONSTEXPR auto n64 = static_cast<std::int64_t>(n);
+    constexpr auto n64 = static_cast<std::int64_t>(n);
 
-    WIDE_INTEGER_CONSTEXPR auto result_n_is_ok = (n64 == INT64_C(-123456789000000000));
+    constexpr auto result_n_is_ok = (n64 == INT64_C(-123456789000000000));
 
-    #if defined(WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST) && (WIDE_INTEGER_CONSTEXPR_IS_COMPILE_TIME_CONST != 0)
     static_assert((n64 == INT64_C(-123456789000000000)), "Error: example000a_builtin_convert not OK!");
-    #endif
 
     result_is_ok = (result_n_is_ok && result_is_ok);
   }

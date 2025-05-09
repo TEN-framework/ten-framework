@@ -12,4 +12,3 @@
 
 1 { p(k,X); q(k,X) } 1 :- X = 1..m, sleep(k), not p.
 :- not m+1 { p(k,1..m); q(k,1..m) }, sleep(k), not p.
-

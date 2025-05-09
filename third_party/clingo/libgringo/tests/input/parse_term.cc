@@ -22,13 +22,15 @@
 
 // }}}
 
-#include "tests/tests.hh"
 #include "tests/term_helper.hh"
+#include "tests/tests.hh"
 
 #include <climits>
 #include <sstream>
 
-namespace Gringo { namespace Input { namespace Test {
+namespace Gringo {
+namespace Input {
+namespace Test {
 
 using namespace Gringo::Test;
 
@@ -55,7 +57,7 @@ TEST_CASE("input-parse_term", "[input]") {
         REQUIRE(NUM(-2) == m.parseValue("~1"));
         REQUIRE(FUN("", {}) == m.parseValue("()"));
         REQUIRE(FUN("", {NUM(1)}) == m.parseValue("(1,)"));
-        REQUIRE(FUN("", {NUM(1),NUM(2)}) == m.parseValue("(1,2)"));
+        REQUIRE(FUN("", {NUM(1), NUM(2)}) == m.parseValue("(1,2)"));
         REQUIRE(NUM(2) == m.parseValue("|-2|"));
         REQUIRE(STR("hallo") == m.parseValue("\"hallo\""));
         REQUIRE(INF() == m.parseValue("#inf"));
@@ -65,8 +67,8 @@ TEST_CASE("input-parse_term", "[input]") {
         REQUIRE(NUM(342391) == m.parseValue("0o1234567"));
         REQUIRE(NUM(85) == m.parseValue("0b1010101"));
     }
-
 }
 
-} } } // namespace Test Input Gringo
-
+} // namespace Test
+} // namespace Input
+} // namespace Gringo

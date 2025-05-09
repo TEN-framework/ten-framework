@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2010-2017 Benjamin Kaufmann
+// Copyright (c) 2010-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -21,8 +21,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //
-#ifndef CLASP_MULIT_QUEUE_H_INCLUDED
-#define CLASP_MULIT_QUEUE_H_INCLUDED
+#ifndef CLASP_MULTI_QUEUE_H_INCLUDED
+#define CLASP_MULTI_QUEUE_H_INCLUDED
 
 #include <clasp/config.h>
 

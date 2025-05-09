@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2006-2017 Benjamin Kaufmann
+// Copyright (c) 2006-present Benjamin Kaufmann
 //
 // This file is part of Clasp. See http://www.cs.uni-potsdam.de/clasp/
 //
@@ -25,7 +25,12 @@
 #include <clasp/clause.h>
 #include <clasp/statistics.h>
 #include <clasp/weight_constraint.h>
+#if CLASP_HAS_THREADS
+#include <clasp/mt/parallel_solve.h>
+#endif
 #include "catch.hpp"
+
+
 namespace Clasp { namespace Test {
 using namespace Clasp::mt;
 struct TestingConstraint : public Constraint {
@@ -150,6 +155,7 @@ static void testDefaults(SharedContext& ctx) {
 	ctx.setFrozen(0, true);
 	REQUIRE(ctx.stats().vars.frozen == 0);
 }
+
 TEST_CASE("Solver types", "[core]") {
 	SECTION("test reason store") {
 		if (sizeof(void*) == sizeof(uint32)) {
@@ -1773,6 +1779,22 @@ TEST_CASE("once", "[.once]") {
 			REQUIRE((r1.idx == r2.idx && r1.len == r2.len));
 		}
 	}
+	SECTION("testScheduleOverflow") {
+		ScheduleStrategy g = ScheduleStrategy::geom(100, 0.0);
+		REQUIRE(g.grow == 1.0);
+		REQUIRE(g.current() == 100);
+
+		g = ScheduleStrategy::geom(1, 2.0);
+		REQUIRE(g.current() == 1);
+		REQUIRE(g.next() == 2);
+		REQUIRE(g.next() == 4);
+		g.advanceTo(12);
+		REQUIRE(g.current() == 4096);
+		g.advanceTo(63);
+		REQUIRE(g.current() == (uint64(1) << 63));
+		g.advanceTo(64);
+		REQUIRE(g.current() == UINT64_MAX);
+	}
 }
 
 #if CLASP_HAS_THREADS
@@ -1994,6 +2016,103 @@ TEST_CASE("Solver mt", "[core][mt]") {
 
 		integrateGp(s2, sGp);
 		REQUIRE(s2.isTrue(~a));
+	}
+
+	SECTION("testPeerComputation") {
+		const uint32 maxT = 64;
+		struct {
+			uint32 operator()(uint64 t) const {
+				for (uint32 i = 0;; t ^= right_most_bit(t), ++i) { if (!t) { return i; } }
+			}
+		} nbits;
+		SECTION("set") {
+			for (uint32 nt = 1; nt <= maxT; ++nt) {
+				uint64 set = Distributor::initSet(nt);
+				for (uint32 id = 0; id < nt; ++id) {
+					CAPTURE(nt, id);
+					REQUIRE(Distributor::inSet(set, id));
+					REQUIRE(nbits(Distributor::mask(id)) == 1);
+				}
+			}
+		}
+		typedef ParallelSolveOptions::Integration::Topology Topology;
+		SECTION("all") {
+			Topology topo = Topology::topo_all;
+			for (uint32 nt = 1; nt <= maxT; ++nt) {
+				uint64 all = Distributor::initSet(nt);
+				for (uint32 id = 0; id < nt; ++id) {
+					CAPTURE(nt, id);
+					uint64 expected = all ^ (uint64(1) << id);
+					REQUIRE(ParallelSolveOptions::initPeerMask(id, topo, nt) == expected);
+				}
+			}
+		}
+		SECTION("ring") {
+			Topology topo = Topology::topo_ring;
+			for (uint32 nt = 1; nt <= maxT; ++nt) {
+				for (uint32 id = 0; id < nt; ++id) {
+					CAPTURE(nt, id);
+					uint32 prev = (id > 0 ? id : nt) - 1;
+					uint32 next = (id + 1) % nt;
+					uint64 expected = (uint64(1) << prev) | (uint64(1) << next);
+					CHECK(ParallelSolveOptions::initPeerMask(id, topo, nt) == expected);
+				}
+			}
+		}
+		SECTION("cube and cubex") {
+			Topology tCube  = Topology::topo_cube;
+			Topology tCubeX = Topology::topo_cubex;
+			uint64 nodes[8] = {
+				/* 0: */ Distributor::mask(1) | Distributor::mask(2) | Distributor::mask(4),
+				/* 1: */ Distributor::mask(0) | Distributor::mask(3) | Distributor::mask(5),
+				/* 2: */ Distributor::mask(0) | Distributor::mask(3) | Distributor::mask(6),
+				/* 3: */ Distributor::mask(1) | Distributor::mask(2) | Distributor::mask(7),
+				/* 4: */ Distributor::mask(0) | Distributor::mask(5) | Distributor::mask(6),
+				/* 5: */ Distributor::mask(1) | Distributor::mask(4) | Distributor::mask(7),
+				/* 6: */ Distributor::mask(2) | Distributor::mask(4) | Distributor::mask(7),
+				/* 7: */ Distributor::mask(3) | Distributor::mask(5) | Distributor::mask(6),
+			};
+			for (uint32 nt = 2, dim = 0; nt <= maxT; ++nt) {
+				uint64 all = Distributor::initSet(nt);
+				bool powerOfTwo = (nt & (nt - 1)) == 0;
+				if (powerOfTwo) { ++dim; }
+				for (uint32 id = 0; id < nt; ++id) {
+					CAPTURE(nt, id, dim);
+					uint64 cube = ParallelSolveOptions::initPeerMask(id, tCube, nt);
+					uint64 cubeX = ParallelSolveOptions::initPeerMask(id, tCubeX, nt);
+					CHECK_FALSE(Distributor::inSet(cube, id));
+					CHECK_FALSE(Distributor::inSet(cubeX, id));
+					uint32 cubeBits = nbits(cube);
+					uint32 cubeXBits = nbits(cubeX);
+					CAPTURE(cubeBits, cubeXBits);
+					if (powerOfTwo) {
+						CHECK(cube == cubeX);
+						CHECK(cubeBits == dim);
+						if (dim == 3) {
+							CHECK(cube == nodes[id]);
+						}
+					}
+					else {
+						if (cubeBits != dim) {
+							uint64 cubePow = ParallelSolveOptions::initPeerMask(id, tCube, 1 << (dim+1));
+							cubePow &= all;
+							CHECK(cubePow == cube);
+						}
+						CHECK(cube < Distributor::mask(nt));
+						CHECK(cubeX < Distributor::mask(nt));
+						CHECK(cubeBits <= cubeXBits);
+					}
+					for (uint32 o = 0; o < nt; ++o) {
+						if (Distributor::inSet(cubeX, o)) {
+							uint64 peerMask = ParallelSolveOptions::initPeerMask(o, tCubeX, nt);
+							CHECK(Distributor::inSet(peerMask, id));
+							peerMask = ParallelSolveOptions::initPeerMask(o, tCube, nt);
+							CHECK(Distributor::inSet(cube, o) == Distributor::inSet(peerMask, id));
+						}
+					}
+				}
+			}
+		}
 	}
 }
 #endif

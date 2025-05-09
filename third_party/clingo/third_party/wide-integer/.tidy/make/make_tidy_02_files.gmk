@@ -1,12 +1,11 @@
 ﻿# ------------------------------------------------------------------------------
-#  Copyright Christopher Kormanyos 2022.
+#  Copyright Christopher Kormanyos 2022 - 2024.
 #  Distributed under the Boost Software License,
 #  Version 1.0. (See accompanying file LICENSE_1_0.txt
 #  or copy at http://www.boost.org/LICENSE_1_0.txt)
 # ------------------------------------------------------------------------------
 
-FILES_PRJ  =   $(PATH_SRC)/test/test_uintwide_t_boost_backend              \
-               $(PATH_SRC)/test/test_uintwide_t_edge_cases                 \
+FILES_PRJ  =   $(PATH_SRC)/test/test_uintwide_t_edge_cases                 \
                $(PATH_SRC)/test/test_uintwide_t_examples                   \
                $(PATH_SRC)/test/test_uintwide_t_float_convert              \
                $(PATH_SRC)/test/test_uintwide_t_int_convert                \

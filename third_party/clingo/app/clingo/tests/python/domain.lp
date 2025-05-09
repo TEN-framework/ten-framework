@@ -1,5 +1,5 @@
 p(1).
-{ p(3) }. 
+{ p(3) }.
 #external p(1..3).
 
 q(X) :- p(X).
@@ -25,4 +25,4 @@ def main(prg):
     print (out)
     sys.stdout.flush()
 
-#end. 
+#end.

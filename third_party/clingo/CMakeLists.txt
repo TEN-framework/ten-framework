@@ -1,12 +1,9 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 
 file(READ "libclingo/clingo.h" clingoh)
 string(REGEX MATCH "#define CLINGO_VERSION \"([^\"]*)\"" clingov ${clingoh})
 
 project(CLINGO VERSION "${CMAKE_MATCH_1}" LANGUAGES C CXX)
-if (POLICY CMP0063)
-    cmake_policy(SET CMP0063 NEW)
-endif()
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "No build type selected - using 'Release'")
     set(CMAKE_BUILD_TYPE "Release")
@@ -105,6 +102,8 @@ set(LUACLINGO_INSTALL_DIR "" CACHE STRING
 set(LUACLINGO_SUFFIX CACHE STRING
 "Advanced variable to manually configure the suffix of the Lua module.")
 
+option(CLINGO_PROFILE "profile clingo" OFF)
+
 mark_as_advanced(CLINGO_BUILD_WEB)
 mark_as_advanced(CLINGO_BUILD_STATIC)
 mark_as_advanced(CLINGO_BUILD_SHARED)
@@ -115,6 +114,7 @@ mark_as_advanced(PYCLINGO_SUFFIX)
 mark_as_advanced(PYCLINGO_DYNAMIC_LOOKUP)
 mark_as_advanced(LUACLINGO_INSTALL_DIR)
 mark_as_advanced(LUACLINGO_SUFFIX)
+mark_as_advanced(CLINGO_PROFILE)
 
 # workaround to set custom ar and ranlib
 if (CLINGO_CMAKE_AR)
@@ -186,6 +186,11 @@ if(NOT CLINGO_BUILD_WITH_PYTHON STREQUAL "pip" AND (CMAKE_VERSION VERSION_GREATE
     endif()
     find_package(Python ${CLINGO_PYTHON_VERSION} COMPONENTS ${_args})
 else()
+    # NOTE: This is set to old behavior for now; switching to scikit-build-core
+    # should simply the config below.
+    if (POLICY CMP0148)
+        cmake_policy(SET CMP0148 OLD)
+    endif()
     if (CLINGO_BUILD_WITH_PYTHON STREQUAL "pip")
         find_package(PythonExtensions REQUIRED)
     else()
@@ -240,8 +245,12 @@ if (Python_Development_FOUND)
     find_package(Threads REQUIRED)
 endif()
 
+if (CLINGO_PROFILE)
+    find_package(Gperftools REQUIRED)
+endif()
 
-if (POLICY CMP0063 AND (CLINGO_BUILD_SHARED OR Python_Development_FOUND OR LUA_FOUND))
+
+if (CLINGO_BUILD_SHARED OR Python_Development_FOUND OR LUA_FOUND)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_C_VISIBILITY_PRESET hidden)
 endif()
@@ -317,4 +326,3 @@ if (NOT CLINGO_BUILD_STATIC AND (CLINGO_BUILD_SHARED OR Python_Development_FOUND
         set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endforeach()
 endif()
-

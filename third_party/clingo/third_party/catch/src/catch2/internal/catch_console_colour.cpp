@@ -85,7 +85,7 @@ namespace Catch {
     namespace {
         //! A do-nothing implementation of colour, used as fallback for unknown
         //! platforms, and when the user asks to deactivate all colours.
-        class NoColourImpl : public ColourImpl {
+        class NoColourImpl final : public ColourImpl {
         public:
             NoColourImpl( IStream* stream ): ColourImpl( stream ) {}
 
@@ -103,7 +103,7 @@ namespace Catch {
 namespace Catch {
 namespace {
 
-    class Win32ColourImpl : public ColourImpl {
+    class Win32ColourImpl final : public ColourImpl {
     public:
         Win32ColourImpl(IStream* stream):
             ColourImpl(stream) {
@@ -161,7 +161,7 @@ namespace {
 #endif // Windows/ ANSI/ None
 
 
-#if defined( CATCH_PLATFORM_LINUX ) || defined( CATCH_PLATFORM_MAC )
+#if defined( CATCH_PLATFORM_LINUX ) || defined( CATCH_PLATFORM_MAC ) || defined( __GLIBC__ )
 #    define CATCH_INTERNAL_HAS_ISATTY
 #    include <unistd.h>
 #endif
@@ -169,7 +169,7 @@ namespace {
 namespace Catch {
 namespace {
 
-    class ANSIColourImpl : public ColourImpl {
+    class ANSIColourImpl final : public ColourImpl {
     public:
         ANSIColourImpl( IStream* stream ): ColourImpl( stream ) {}
 
@@ -230,21 +230,21 @@ namespace {
 
 namespace Catch {
 
-    Detail::unique_ptr<ColourImpl> makeColourImpl( ColourMode implSelection,
+    Detail::unique_ptr<ColourImpl> makeColourImpl( ColourMode colourSelection,
                                                    IStream* stream ) {
 #if defined( CATCH_CONFIG_COLOUR_WIN32 )
-        if ( implSelection == ColourMode::Win32 ) {
+        if ( colourSelection == ColourMode::Win32 ) {
             return Detail::make_unique<Win32ColourImpl>( stream );
         }
 #endif
-        if ( implSelection == ColourMode::ANSI ) {
+        if ( colourSelection == ColourMode::ANSI ) {
             return Detail::make_unique<ANSIColourImpl>( stream );
         }
-        if ( implSelection == ColourMode::None ) {
+        if ( colourSelection == ColourMode::None ) {
             return Detail::make_unique<NoColourImpl>( stream );
         }
 
-        if ( implSelection == ColourMode::PlatformDefault) {
+        if ( colourSelection == ColourMode::PlatformDefault) {
 #if defined( CATCH_CONFIG_COLOUR_WIN32 )
             if ( Win32ColourImpl::useImplementationForStream( *stream ) ) {
                 return Detail::make_unique<Win32ColourImpl>( stream );
@@ -256,7 +256,7 @@ namespace Catch {
             return Detail::make_unique<NoColourImpl>( stream );
         }
 
-        CATCH_ERROR( "Could not create colour impl for selection " << static_cast<int>(implSelection) );
+        CATCH_ERROR( "Could not create colour impl for selection " << static_cast<int>(colourSelection) );
     }
 
     bool isColourImplAvailable( ColourMode colourSelection ) {

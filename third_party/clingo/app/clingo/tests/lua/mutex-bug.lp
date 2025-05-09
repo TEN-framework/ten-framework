@@ -1,4 +1,4 @@
-#script (lua) 
+#script (lua)
 function main(prg)
     prg:ground({{"base", {}}, {"plan_graph_base", {}}})
 
@@ -121,4 +121,3 @@ init(at_ferry(a)).
 init(empty_ferry).
 goal(at(c1, b)).
 goal(at(c2, b)).
-
