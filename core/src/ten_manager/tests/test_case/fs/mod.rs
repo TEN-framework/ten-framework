@@ -18,6 +18,47 @@ mod tests {
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
+    // Helper function to ensure content is synced to disk.
+    fn sync_to_disk(file: &std::fs::File) -> Result<()> {
+        // Platform-specific sync implementation.
+        #[cfg(unix)]
+        unsafe {
+            use std::os::unix::io::AsRawFd;
+
+            // Call fsync to ensure data is written to disk.
+            if libc::fsync(file.as_raw_fd()) != 0 {
+                return Err(anyhow::anyhow!("fsync failed"));
+            }
+        }
+
+        #[cfg(windows)]
+        unsafe {
+            // Windows equivalent of fsync is FlushFileBuffers.
+            use std::os::windows::io::AsRawHandle;
+
+            if winapi::um::fileapi::FlushFileBuffers(file.as_raw_handle() as _)
+                == 0
+            {
+                return Err(anyhow::anyhow!(
+                    "FlushFileBuffers failed with error code: {}",
+                    std::io::Error::last_os_error()
+                ));
+            }
+        }
+
+        // Cross-platform flush (less reliable but always available).
+        #[cfg(not(any(unix, windows)))]
+        {
+            // Use standard flush and sync_all for other platforms.
+            file.sync_all()?;
+        }
+
+        // Give the filesystem a moment to update metadata.
+        std::thread::sleep(Duration::from_millis(50));
+
+        Ok(())
+    }
+
     // Use standard #[test] with manual runtime creation.
     #[test]
     fn test_file_watcher_basic() -> Result<()> {
@@ -28,6 +69,7 @@ mod tests {
             let test_content = "Hello, World!";
             temp_file.write_all(test_content.as_bytes())?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
 
             // Create options with shorter timeout for testing.
             let options = LogFileWatchOptions {
@@ -49,6 +91,8 @@ mod tests {
             let more_content = "More content!";
             temp_file.write_all(more_content.as_bytes())?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
+            println!("Added more content and synced to disk");
 
             // Get the second chunk.
             let chunk = stream.next().await;
@@ -88,6 +132,7 @@ mod tests {
                     .open(&path_str)?;
                 file.write_all("Initial content".as_bytes())?;
                 file.flush()?;
+                sync_to_disk(&file)?;
             }
 
             // Create options with shorter timeout for testing
@@ -119,6 +164,8 @@ mod tests {
                     .open(&path_str)?;
                 file.write_all("Rotated content".as_bytes())?;
                 file.flush()?;
+                sync_to_disk(&file)?;
+                println!("Created rotated file and synced to disk");
             }
 
             // Get the content after rotation
@@ -142,6 +189,7 @@ mod tests {
             let mut temp_file = NamedTempFile::new()?;
             temp_file.write_all("Test content".as_bytes())?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
 
             // Create options with very short timeout for testing.
             let options = LogFileWatchOptions {
@@ -199,6 +247,8 @@ mod tests {
 
             temp_file.write_all(graph_resources_with_thread.as_bytes())?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
+            println!("Wrote graph resources and synced to disk");
 
             // Get the graph resources line
             let chunk =
@@ -218,6 +268,8 @@ mod tests {
             temp_file.write_all(extension_logs.as_bytes())?;
             temp_file.write_all(b"\n")?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
+            println!("Wrote extension log and synced to disk");
 
             // Get first log with extension metadata
             let chunk = stream
@@ -379,6 +431,8 @@ mod tests {
 
             temp_file.write_all(complete_log.as_bytes())?;
             temp_file.flush()?;
+            sync_to_disk(temp_file.as_file())?;
+            println!("Wrote complete log and synced to disk");
 
             // We need to iterate through all log lines to find the specific
             // ones we're looking for
