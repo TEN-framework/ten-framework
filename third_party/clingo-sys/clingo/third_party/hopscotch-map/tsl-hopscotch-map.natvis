@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <!-- Written in VC 2017 15.7 but is expected to be compatible with VC 2015 -->
+
+    <!-- Visualization that shows the index in the name column and the key-value pair in the value column -->
+    <Type Name="tsl::hopscotch_map&lt;*&gt;" Priority="Medium">
+        <AlternativeType Name="tsl::bhopscotch_map&lt;*&gt;"/>
+        <AlternativeType Name="tsl::bhopscotch_set&lt;*&gt;"/>
+        <AlternativeType Name="tsl::hopscotch_set&lt;*&gt;"/>
+        <DisplayString>{{ size={m_ht.m_nb_elements} }}</DisplayString>
+        <Expand>
+            <Item Name="[bucket_count]" IncludeView="detailed">m_ht.m_buckets_data._Mypair._Myval2._Mylast - m_ht.m_buckets_data._Mypair._Myval2._Myfirst</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_buckets_data._Mypair._Myval2._Myfirst != m_ht.m_buckets_data._Mypair._Myval2._Mylast" IncludeView="detailed">
+                ((float)m_ht.m_nb_elements) / ((float)(m_ht.m_buckets_data._Mypair._Myval2._Mylast - m_ht.m_buckets_data._Mypair._Myval2._Myfirst))
+            </Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_buckets_data._Mypair._Myval2._Myfirst == m_ht.m_buckets_data._Mypair._Myval2._Mylast" IncludeView="detailed">
+                0
+            </Item>
+            <Item Name="[max_load_factor]" IncludeView="detailed">m_ht.m_max_load_factor</Item>
+            <CustomListItems>
+                <Variable Name="bucket" InitialValue="m_ht.m_buckets"/>
+                <Loop>
+                    <!-- Bucket is either pointing to a static empty bucket (then m_nb_elements == 0) or to a value in m_ht.m_buckets_data.
+                         Break early if m_nb_elements == 0 to avoid using the static empty bucket. -->
+                    <Break Condition="m_ht.m_nb_elements == 0 || bucket == m_ht.m_buckets_data._Mypair._Myval2._Mylast"/>
+                    <Item Condition="(bucket-&gt;m_neighborhood_infos &amp; 1) != 0">*bucket</Item>
+                    <Exec>++bucket</Exec>
+                </Loop>
+            </CustomListItems>
+            <Synthetic Name="overflown elements">
+                <Expand>
+                    <ExpandedItem>m_ht.m_overflow_elements</ExpandedItem>
+                </Expand>
+            </Synthetic>
+        </Expand>
+    </Type>
+
+    <!-- Visualization that shows the key in the name column and the key-value pair in the value column -->
+    <Type Name="tsl::hopscotch_map&lt;*&gt;" ExcludeView="ShowElementsByIndex" Priority="MediumHigh">
+        <AlternativeType Name="tsl::bhopscotch_map&lt;*&gt;"/>
+        <DisplayString>{{ size={m_ht.m_nb_elements} }}</DisplayString>
+        <Expand>
+            <Item Name="[bucket_count]" IncludeView="detailed">m_ht.m_buckets_data._Mypair._Myval2._Mylast - m_ht.m_buckets_data._Mypair._Myval2._Myfirst</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_buckets_data._Mypair._Myval2._Myfirst != m_ht.m_buckets_data._Mypair._Myval2._Mylast" IncludeView="detailed">
+                ((float)m_ht.m_nb_elements) / ((float)(m_ht.m_buckets_data._Mypair._Myval2._Mylast - m_ht.m_buckets_data._Mypair._Myval2._Myfirst))
+            </Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_buckets_data._Mypair._Myval2._Myfirst == m_ht.m_buckets_data._Mypair._Myval2._Mylast" IncludeView="detailed">
+                0
+            </Item>
+            <Item Name="[max_load_factor]" IncludeView="detailed">m_ht.m_max_load_factor</Item>
+            <CustomListItems>
+                <Variable Name="bucket" InitialValue="m_ht.m_buckets"/>
+                <Loop>
+                    <!-- Bucket is either pointing to a static empty bucket (then m_nb_elements == 0) or to a value in m_ht.m_buckets_data.
+                         Break early if m_nb_elements == 0 to avoid using the static empty bucket. -->
+                    <Break Condition="m_ht.m_nb_elements == 0 || bucket == m_ht.m_buckets_data._Mypair._Myval2._Mylast"/>
+                    <Item Name="[{reinterpret_cast&lt;std::pair&lt;$T1,$T2&gt;*&gt;(&amp;bucket->m_value)->first}]" Condition="(bucket-&gt;m_neighborhood_infos &amp; 1) != 0">
+                        *bucket
+                    </Item>
+                    <Exec>++bucket</Exec>
+                </Loop>
+            </CustomListItems>
+            <Synthetic Name="overflown elements">
+                <Expand>
+                    <ExpandedItem>m_ht.m_overflow_elements</ExpandedItem>
+                </Expand>
+            </Synthetic>
+        </Expand>
+    </Type>
+
+    <Type Name="tsl::detail_hopscotch_hash::hopscotch_hash&lt;*&gt;::hopscotch_iterator&lt;*&gt;">
+        <DisplayString Condition="m_buckets_iterator._Ptr != m_buckets_end_iterator._Ptr">{m_buckets_iterator}</DisplayString>
+        <DisplayString Condition="m_buckets_iterator._Ptr == m_buckets_end_iterator._Ptr">{m_overflow_iterator}</DisplayString>
+        <Expand>
+            <ExpandedItem Condition="m_buckets_iterator._Ptr != m_buckets_end_iterator._Ptr">m_buckets_iterator</ExpandedItem>
+            <ExpandedItem Condition="m_buckets_iterator._Ptr == m_buckets_end_iterator._Ptr">m_overflow_iterator</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="tsl::detail_hopscotch_hash::hopscotch_bucket&lt;*&gt;">
+        <DisplayString Condition="(m_neighborhood_infos &amp; 1) == 0">empty</DisplayString>
+        <DisplayString Condition="(m_neighborhood_infos &amp; 1) != 0">{*reinterpret_cast&lt;$T1*&gt;(&amp;m_value)}</DisplayString>
+        <Expand>
+            <ExpandedItem Condition="(m_neighborhood_infos &amp; 1) != 0">*reinterpret_cast&lt;$T1*&gt;(&amp;m_value)</ExpandedItem>
+        </Expand>
+    </Type>
+</AutoVisualizer>

@@ -653,8 +653,6 @@ dependencies = [
 [[package]]
 name = "clingo-sys"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "299c6e4c9ca4b0e5e119d8a17e928cc4a00eafa2ec5d8416cb3e344f4382eab3"
 dependencies = [
  "cmake",
  "libc",

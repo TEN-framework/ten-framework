@@ -1,0 +1,36 @@
+language: c++
+matrix:
+  include:
+    - os: linux
+      dist: focal
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - re2c
+            - bison
+            - python3-dev
+            - liblua5.3-dev
+            - zsh
+    - os: osx
+      osx_image: xcode12.2
+
+script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update;
+      brew uninstall --ignore-dependencies python@2;
+      brew install lua bison re2c;
+      export PATH="/usr/local/opt/bison/bin:$PATH";
+    fi
+  - python3 -m pip install --user cffi
+  - mkdir build &&
+    cd build &&
+    cmake
+      -DCMAKE_VERBOSE_MAKEFILE=On
+      -DCLINGO_BUILD_TESTS=On
+      -DCLASP_BUILD_TESTS=On
+      -DLIB_POTASSCO_BUILD_TESTS=On
+      -DCLINGO_BUILD_EXAMPLES=On
+      .. &&
+    make -j3 &&
+    make test CTEST_OUTPUT_ON_FAILURE=True

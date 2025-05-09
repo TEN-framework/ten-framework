@@ -1,0 +1,7 @@
+Given a set of models, represented in terms of their true atoms, calculate
+the prime implicants of the Boolean function expressed by the models. Cf.:
+
+https://en.wikipedia.org/wiki/Implicant
+
+Example call:
+    clingo --warn=no-global-variable encoding.lp instance.lp 0
