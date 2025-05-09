@@ -11,7 +11,19 @@
 
 #include "common.h"
 
-ten_go_error_t ten_go_extension_tester_create(
-    ten_go_handle_t go_extension_tester, uintptr_t *bridge_addr);
+typedef struct ten_go_extension_tester_t ten_go_extension_tester_t;
 
-void ten_go_extension_tester_finalize(uintptr_t bridge_addr);
+ten_go_error_t ten_go_extension_tester_create(
+    ten_go_handle_t go_extension_tester,
+    ten_go_extension_tester_t **bridge_addr);
+
+void ten_go_extension_tester_finalize(
+    ten_go_extension_tester_t *extension_tester);
+
+ten_go_error_t ten_go_extension_tester_set_test_mode_single(
+    ten_go_extension_tester_t *extension_tester, const void *addon_name,
+    int addon_name_len, const void *property_json_str,
+    int property_json_str_len);
+
+ten_go_error_t ten_go_extension_tester_run(
+    ten_go_extension_tester_t *extension_tester);

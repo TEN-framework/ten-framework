@@ -12,12 +12,24 @@ import "C"
 import "runtime"
 
 type (
-	TesterResultHandler func(TenEnvTester, CmdResult)
+	TesterResultHandler func(TenEnvTester, CmdResult, error)
+	TesterErrorHandler  func(TenEnvTester, error)
 )
 
 type TenEnvTester interface {
-	SendCmd(cmd Cmd, handler TesterResultHandler) error
 	OnStartDone() error
+	OnStopDone() error
+	OnDeinitDone() error
+
+	SendCmd(cmd Cmd, handler TesterResultHandler) error
+	SendCmdEx(cmd Cmd, handler TesterResultHandler) error
+	SendData(data Data, handler TesterErrorHandler) error
+	SendAudioFrame(audioFrame AudioFrame, handler TesterErrorHandler) error
+	SendVideoFrame(videoFrame VideoFrame, handler TesterErrorHandler) error
+
+	ReturnResult(result CmdResult, handler TesterErrorHandler) error
+
+	StopTest() error
 }
 
 var (
@@ -26,6 +38,27 @@ var (
 
 type tenEnvTester struct {
 	baseTenObject[C.uintptr_t]
+}
+
+func (p *tenEnvTester) OnStartDone() error {
+	return withCGOLimiter(func() error {
+		cStatus := C.ten_go_ten_env_tester_on_start_done(p.cPtr)
+		return withCGoError(&cStatus)
+	})
+}
+
+func (p *tenEnvTester) OnStopDone() error {
+	return withCGOLimiter(func() error {
+		cStatus := C.ten_go_ten_env_tester_on_stop_done(p.cPtr)
+		return withCGoError(&cStatus)
+	})
+}
+
+func (p *tenEnvTester) OnDeinitDone() error {
+	return withCGOLimiter(func() error {
+		cStatus := C.ten_go_ten_env_tester_on_deinit_done(p.cPtr)
+		return withCGoError(&cStatus)
+	})
 }
 
 func (p *tenEnvTester) SendCmd(cmd Cmd, handler TesterResultHandler) error {
@@ -41,6 +74,77 @@ func (p *tenEnvTester) SendCmd(cmd Cmd, handler TesterResultHandler) error {
 	})
 }
 
+func (p *tenEnvTester) SendCmdEx(cmd Cmd, handler TesterResultHandler) error {
+	if cmd == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"cmd is required.",
+		)
+	}
+
+	return withCGOLimiter(func() error {
+		return p.sendCmdEx(cmd, handler)
+	})
+}
+
+func (p *tenEnvTester) SendData(data Data, handler TesterErrorHandler) error {
+	if data == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"data is required.",
+		)
+	}
+
+	return withCGOLimiter(func() error {
+		return p.sendData(data, handler)
+	})
+}
+
+func (p *tenEnvTester) SendAudioFrame(audioFrame AudioFrame, handler TesterErrorHandler) error {
+	if audioFrame == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"audioFrame is required.",
+		)
+	}
+
+	return withCGOLimiter(func() error {
+		return p.sendAudioFrame(audioFrame, handler)
+	})
+}
+
+func (p *tenEnvTester) SendVideoFrame(videoFrame VideoFrame, handler TesterErrorHandler) error {
+	if videoFrame == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"videoFrame is required.",
+		)
+	}
+
+	return withCGOLimiter(func() error {
+		return p.sendVideoFrame(videoFrame, handler)
+	})
+}
+
+func (p *tenEnvTester) ReturnResult(result CmdResult, handler TesterErrorHandler) error {
+	if result == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"result is required.",
+		)
+	}
+
+	return withCGOLimiter(func() error {
+		return p.returnResult(result, handler)
+	})
+}
+
+func (p *tenEnvTester) StopTest() error {
+	return withCGOLimiter(func() error {
+		return p.stopTest()
+	})
+}
+
 func (p *tenEnvTester) sendCmd(cmd Cmd, handler TesterResultHandler) error {
 	defer cmd.keepAlive()
 
@@ -53,15 +157,107 @@ func (p *tenEnvTester) sendCmd(cmd Cmd, handler TesterResultHandler) error {
 		p.cPtr,
 		cmd.getCPtr(),
 		cHandle(cb),
+		C.bool(false),
 	)
 
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) OnStartDone() error {
-	C.ten_go_ten_env_tester_on_start_done(p.cPtr)
+func (p *tenEnvTester) sendCmdEx(cmd Cmd, handler TesterResultHandler) error {
+	defer cmd.keepAlive()
 
-	return nil
+	cb := goHandleNil
+	if handler != nil {
+		cb = newGoHandle(handler)
+	}
+
+	cStatus := C.ten_go_ten_env_tester_send_cmd(
+		p.cPtr,
+		cmd.getCPtr(),
+		cHandle(cb),
+		C.bool(true),
+	)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) sendData(data Data, handler TesterErrorHandler) error {
+	defer data.keepAlive()
+
+	cb := goHandleNil
+	if handler != nil {
+		cb = newGoHandle(handler)
+	}
+
+	cStatus := C.ten_go_ten_env_tester_send_data(
+		p.cPtr,
+		data.getCPtr(),
+		cHandle(cb),
+	)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) sendAudioFrame(audioFrame AudioFrame, handler TesterErrorHandler) error {
+	defer audioFrame.keepAlive()
+
+	cb := goHandleNil
+	if handler != nil {
+		cb = newGoHandle(handler)
+	}
+
+	cStatus := C.ten_go_ten_env_tester_send_audio_frame(
+		p.cPtr,
+		audioFrame.getCPtr(),
+		cHandle(cb),
+	)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) sendVideoFrame(videoFrame VideoFrame, handler TesterErrorHandler) error {
+	defer videoFrame.keepAlive()
+
+	cb := goHandleNil
+	if handler != nil {
+		cb = newGoHandle(handler)
+	}
+
+	cStatus := C.ten_go_ten_env_tester_send_video_frame(
+		p.cPtr,
+		videoFrame.getCPtr(),
+		cHandle(cb),
+	)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) returnResult(result CmdResult, handler TesterErrorHandler) error {
+	if result == nil {
+		return newTenError(
+			ErrorCodeInvalidArgument,
+			"result is required.",
+		)
+	}
+
+	cb := goHandleNil
+	if handler != nil {
+		cb = newGoHandle(handler)
+	}
+
+	cStatus := C.ten_go_ten_env_tester_return_result(
+		p.cPtr,
+		result.getCPtr(),
+		cHandle(cb),
+	)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) stopTest() error {
+	cStatus := C.ten_go_ten_env_tester_stop_test(p.cPtr)
+
+	return withCGoError(&cStatus)
 }
 
 //export tenGoCreateTenEnvTester

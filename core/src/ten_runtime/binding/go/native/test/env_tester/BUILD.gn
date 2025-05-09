@@ -6,8 +6,6 @@
 #
 import("//build/ten_runtime/glob.gni")
 
-ten_runtime_glob("test") {
-  deps = [ "env_tester" ]
-
+ten_runtime_glob("env_tester") {
   file_list = all_native_files
 }
