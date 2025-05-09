@@ -28,11 +28,11 @@ void ten_extension_context_on_addon_create_extension_group_done(
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Should not happen.");
 
   TEN_UNUSED ten_extension_group_t *extension_group = instance;
-  TEN_ASSERT(extension_group &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: The extension thread has not been created yet,
-                 // so it is thread safe.
-                 ten_extension_group_check_integrity(extension_group, false),
+  TEN_ASSERT(extension_group, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: The extension thread has not been created yet, so it is
+  // thread safe.
+  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
              "Should not happen.");
 
   ten_env_t *extension_group_ten = extension_group->ten_env;
