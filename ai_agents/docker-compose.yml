@@ -14,7 +14,7 @@ services:
       - ./:/app
       - ${LOG_PATH}:${LOG_PATH}
       - ../.vscode/:/app/.vscode
-      - ../tools/pylint/.pylintrc:/app/.pylintrc
+      - ../tools/pylint/.pylintrc:/tools/pylint/.pylintrc
     working_dir: /app
     env_file:
       - .env
