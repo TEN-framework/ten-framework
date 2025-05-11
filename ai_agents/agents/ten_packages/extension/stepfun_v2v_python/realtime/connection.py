@@ -76,8 +76,7 @@ class RealtimeApiConnection:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
             headers = {
-                "Authorization": "Bearer "
-                + self.api_key,
+                "Authorization": "Bearer " + self.api_key,
             }
 
         self.ten_env.log_info(f"Connecting to {self.url}, headers: {headers}")
