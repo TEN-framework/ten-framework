@@ -13,6 +13,8 @@ services:
     volumes:
       - ./:/app
       - ${LOG_PATH}:${LOG_PATH}
+      - ../.vscode/:/app/.vscode
+      - ../tools/pylint/.pylintrc:/app/.pylintrc
     working_dir: /app
     env_file:
       - .env

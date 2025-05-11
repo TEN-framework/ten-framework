@@ -175,7 +175,13 @@ export const v2vModuleRegistry: Record<string, ModuleRegistry.V2VModule> = {
         type: ModuleRegistry.ModuleType.V2V,
         label: "GLM Realtime",
         options: { inputModalities: [ModuleRegistry.Modalities.Audio] }
-    }
+    },
+    stepfun_v2v_python: {
+        name: "stepfun_v2v_python",
+        type: ModuleRegistry.ModuleType.V2V,
+        label: "Stepfun Realtime",
+        options: { inputModalities: [ModuleRegistry.Modalities.Audio] }
+    },
 }
 
 export const toolModuleRegistry: Record<string, ModuleRegistry.ToolModule> = {
@@ -235,4 +241,5 @@ export const compatibleTools: Record<string, string[]> = {
     openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python", "mcp_client_python"],
     gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
     glm_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    stepfun_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python", "mcp_client_python"],
 }
