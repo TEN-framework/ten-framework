@@ -1,0 +1,74 @@
+body {
+    background-color: #CCC;
+    color: black;
+    margin: 0;
+    overflow-y: scroll;
+}
+
+div.contents {
+    margin-bottom: 10px;
+    padding: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 960px;
+    height: 100%;
+    background-color: white;
+}
+
+div#top {
+    margin-bottom: 10px;
+    padding: 4px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: auto;
+    width: 976px;
+    background-color: white;
+}
+
+div.header {
+    margin-bottom: 10px;
+    padding: 4px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 976px;
+    background-color: white;
+}
+#projectlogo {
+	vertical-align: top;
+}
+
+#MSearchBox {
+    display: inherit;
+    position: relative;
+    top: -15px;
+    float: right;
+}
+
+#titlearea {
+    background-color: white;
+}
+
+hr.footer {
+    display: none;
+}
+
+address.footer {
+    margin-bottom: 10px;
+    padding: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 960px;
+    background-color: #AAA;
+}
+
+div.tabs ul.tablist li {
+    float: none;
+}
+
+div.tabs ul.tablist li:last-child {
+    width: 90%;
+}
+
+a + h2.groupheader {
+    display:none;
+}

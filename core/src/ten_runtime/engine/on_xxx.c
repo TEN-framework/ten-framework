@@ -102,11 +102,11 @@ void ten_engine_on_addon_create_extension_group_done(void *self_, void *arg) {
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_extension_group_t *extension_group = ctx->extension_group;
-  TEN_ASSERT(extension_group &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: The extension thread has not been created
-                 // yet, so it is thread safe
-                 ten_extension_group_check_integrity(extension_group, false),
+  TEN_ASSERT(extension_group, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: The extension thread has not been created yet, so it is
+  // thread safe.
+  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
              "Should not happen.");
 
   ten_extension_context_on_addon_create_extension_group_done(
