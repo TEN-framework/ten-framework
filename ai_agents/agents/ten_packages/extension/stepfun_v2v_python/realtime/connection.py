@@ -79,7 +79,8 @@ class RealtimeApiConnection:
             # auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
             headers = {
                 # "OpenAI-Beta": "realtime=v1",
-                "Authorization": "Bearer " + self.api_key,
+                "Authorization": "Bearer "
+                + self.api_key,
             }
 
         self.ten_env.log_info(f"Connecting to {self.url}, headers: {headers}")

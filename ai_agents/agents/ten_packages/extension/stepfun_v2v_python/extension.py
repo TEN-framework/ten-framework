@@ -543,7 +543,9 @@ class StepFunRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"Memory expired: {message}")
         item_id = message.get("item_id")
         if item_id:
-            self.loop.create_task(self.conn.send_request(ItemDelete(item_id=item_id)))
+            self.loop.create_task(
+                self.conn.send_request(ItemDelete(item_id=item_id))
+            )
 
     def _on_memory_appended(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory appended: {message}")

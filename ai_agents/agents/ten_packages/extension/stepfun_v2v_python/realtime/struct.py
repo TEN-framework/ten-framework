@@ -99,8 +99,8 @@ class Session:
         None  # Instructions or guidance for the session
     )
     expires_at: Optional[int] = (
-        None  # Expiration time of the session in seconds since the epoch (UNIX timestamp)
-    )  # Expiration time of the session in seconds since the epoch (UNIX timestamp)
+        None  # Expiration time of the session in seconds since the epoch (UNIX timestamp)  # Expiration time of the session in seconds since the epoch (UNIX timestamp)
+    )
     voice: Voices = (
         Voices.Alloy
     )  # Voice configuration for audio responses, defaulting to "Alloy"
