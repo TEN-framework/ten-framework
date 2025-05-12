@@ -9,7 +9,7 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+  "workspaceMount": "source=${localWorkspaceFolder}/ai_agents,target=/app,type=bind",
   "workspaceFolder": "/app",
   "forwardPorts": [
     3000,
