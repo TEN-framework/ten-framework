@@ -36,4 +36,4 @@ export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/te
 # Print the current directory.
 echo "Current directory: $(pwd)"
 
-go test ./tests/... -v
+go test ./tests/... -v "$@"
