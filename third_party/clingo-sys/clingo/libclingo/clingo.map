@@ -1,0 +1,4 @@
+{
+    global: clingo_*; gringo_*; g_clingo_*;
+    local: *;
+};

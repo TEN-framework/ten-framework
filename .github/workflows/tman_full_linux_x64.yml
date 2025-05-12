@@ -78,15 +78,6 @@ jobs:
           cd core/src/ten_manager/designer_frontend
           bun install
 
-      - name: Get specific version CMake
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "^3"
-
-      - name: Dump version info
-        run: |
-          cmake --version
-
       - name: Build (tman)
         run: |
           export PATH=$(pwd)/core/ten_gn:$PATH

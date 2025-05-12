@@ -1,0 +1,6 @@
+This example shows a simple propagator, which actually does not propagate
+anything.  Instead it prints a dot whenever an atom becomes true during search
+and deletes a dot when the corresponding atom is free again.
+
+Example call:
+  clingo dot.lp test.lp -V0

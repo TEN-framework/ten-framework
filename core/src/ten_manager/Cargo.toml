@@ -70,6 +70,8 @@ zip = { version = "2.2", default-features = false, features = [
   "time",
 ] }
 crossbeam-channel = "0.5.15"
+libc = "0.2.172"
+winapi = { version = "0.3.9", features = ["fileapi"] }
 
 [target."cfg(unix)".dependencies]
 mimalloc = "0.1"
@@ -82,3 +84,6 @@ features = ["static-linking"]
 tempfile = "3.5"
 urlencoding = "2.1"
 tokio-tungstenite = { version = "0.21", features = ["connect"] }
+
+[patch.crates-io]
+clingo-sys = { path = "../../../third_party/clingo-sys" }
