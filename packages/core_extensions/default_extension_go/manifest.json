@@ -18,5 +18,8 @@
       "**"
     ]
   },
-  "api": {}
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
 }
