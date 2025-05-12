@@ -59,7 +59,7 @@ ten_value_t *ten_msg_dest_info_to_value(
         &dest_kv_list,
         ten_value_kv_create(TEN_STR_EXTENSION_GROUP,
                             ten_value_create_string(ten_string_get_raw_str(
-                                &extension_info->loc.extension_group_name))),
+                                &extension_info->extension_group_name))),
         (ten_ptr_listnode_destroy_func_t)ten_value_kv_destroy);
 
     ten_list_push_ptr_back(

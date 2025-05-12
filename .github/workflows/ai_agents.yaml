@@ -12,7 +12,7 @@ on:
       - "third_party/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/agents.yaml"
+      - "!.github/workflows/ai_agents.yaml"
       - ".vscode/**"
       - "**.md"
       - "ai_agents/docs/**"
