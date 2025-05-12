@@ -294,7 +294,7 @@ ten_value_t *ten_extension_info_node_to_value(ten_extension_info_t *self,
                          (ten_ptr_listnode_destroy_func_t)ten_value_kv_destroy);
 
   ten_value_t *extension_group_name_value = ten_value_create_string(
-      ten_string_get_raw_str(&self->loc.extension_group_name));
+      ten_string_get_raw_str(&self->extension_group_name));
   TEN_ASSERT(extension_group_name_value, "Should not happen.");
   ten_list_push_ptr_back(
       &kv_list,
@@ -420,7 +420,7 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
                          (ten_ptr_listnode_destroy_func_t)ten_value_kv_destroy);
 
   ten_value_t *extension_group_value = ten_value_create_string(
-      ten_string_get_raw_str(&self->loc.extension_group_name));
+      ten_string_get_raw_str(&self->extension_group_name));
   TEN_ASSERT(extension_group_value, "Should not happen.");
   ten_list_push_ptr_back(
       &kv_list,
