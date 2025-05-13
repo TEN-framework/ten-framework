@@ -1,5 +1,5 @@
 """
-Test standalone_test_go.
+Test standalone_test_1_go.
 """
 
 import platform
@@ -17,7 +17,7 @@ def is_mac_arm64() -> bool:
     )
 
 
-def test_standalone_test_go():
+def test_standalone_test_1_go():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 

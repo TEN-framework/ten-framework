@@ -199,7 +199,7 @@ func tenGoExtensionTesterOnDeinit(
 	extTesterID C.uintptr_t,
 	tenEnvTesterID C.uintptr_t,
 ) {
-	extTesterObj, ok := loadImmutableHandle(goHandle(extTesterID)).(*extTester)
+	extTesterObj, ok := loadAndDeleteImmutableHandle(goHandle(extTesterID)).(*extTester)
 	if !ok {
 		panic(
 			fmt.Sprintf(

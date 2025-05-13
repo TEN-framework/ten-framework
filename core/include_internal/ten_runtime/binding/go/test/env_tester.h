@@ -23,6 +23,8 @@ extern void tenGoTesterOnError(ten_go_handle_t ten_env_tester_bridge,
                                ten_go_handle_t error_handler,
                                ten_go_error_t cgo_error);
 
+extern void tenGoDestroyTenEnvTester(ten_go_handle_t ten_env_tester_bridge);
+
 typedef struct ten_go_ten_env_tester_t {
   ten_signature_t signature;
 

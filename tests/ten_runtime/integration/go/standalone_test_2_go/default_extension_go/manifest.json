@@ -1,0 +1,25 @@
+{
+  "type": "extension",
+  "name": "default_extension_go",
+  "version": "0.10.5",
+  "tags": [
+    "go",
+    "template"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.10.5"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

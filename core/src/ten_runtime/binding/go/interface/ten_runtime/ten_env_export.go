@@ -120,6 +120,22 @@ func tenGoOnError(
 	cb.(ErrorHandler)(tenEnvObj, err)
 }
 
+//export tenGoDestroyTenEnvTester
+func tenGoDestroyTenEnvTester(tenEnvTesterObjID C.uintptr_t) {
+	r, ok := handle(tenEnvTesterObjID).free().(*tenEnvTester)
+
+	if !ok {
+		panic(
+			fmt.Sprintf(
+				"Failed to get ten env tester from handle map, id: %d.",
+				uintptr(tenEnvTesterObjID),
+			),
+		)
+	} else {
+		r.close()
+	}
+}
+
 //export tenGoTesterOnCmdResult
 func tenGoTesterOnCmdResult(
 	tenEnvTesterObjID C.uintptr_t,

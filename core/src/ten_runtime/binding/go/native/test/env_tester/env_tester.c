@@ -54,8 +54,8 @@ static void ten_go_ten_env_tester_destroy_c_part(void *ten_env_tester_bridge_) {
   ten_env_tester_bridge->c_ten_env_tester = NULL;
   ten_go_bridge_destroy_c_part(&ten_env_tester_bridge->bridge);
 
-  // Remove the Go ten_env object from the global map.
-  tenGoDestroyTenEnv(ten_env_tester_bridge->bridge.go_instance);
+  // Remove the Go ten_env_tester object from the global map.
+  tenGoDestroyTenEnvTester(ten_env_tester_bridge->bridge.go_instance);
 }
 
 static void ten_go_ten_env_tester_detach_c_part(void *ten_env_tester_bridge_) {

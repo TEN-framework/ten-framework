@@ -9,6 +9,8 @@ type BasicExtensionTester struct {
 }
 
 func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
+	tenEnvTester.OnStartDone()
+
 	tenEnvTester.LogInfo("OnStart")
 
 	cmdTest, _ := ten.NewCmd("test")
@@ -24,8 +26,6 @@ func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 		tenEnvTester.StopTest()
 	})
-
-	tenEnvTester.OnStartDone()
 }
 
 func (tester *BasicExtensionTester) OnStop(tenEnvTester ten.TenEnvTester) {
