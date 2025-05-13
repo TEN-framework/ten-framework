@@ -59,7 +59,7 @@ bool ten_extension_info_to_json(ten_extension_info_t *self, ten_json_t *info) {
 
   ten_json_object_set_string(
       info, TEN_STR_EXTENSION_GROUP,
-      ten_string_get_raw_str(&self->loc.extension_group_name));
+      ten_string_get_raw_str(&self->extension_group_name));
 
   ten_json_object_set_string(info, TEN_STR_GRAPH,
                              ten_string_get_raw_str(&self->loc.graph_id));
@@ -108,7 +108,7 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
 
   ten_json_object_set_string(
       json, TEN_STR_EXTENSION_GROUP,
-      ten_string_get_raw_str(&self->loc.extension_group_name));
+      ten_string_get_raw_str(&self->extension_group_name));
 
   ten_json_object_set_string(json, TEN_STR_EXTENSION,
                              ten_string_get_raw_str(&self->loc.extension_name));

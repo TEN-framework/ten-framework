@@ -352,8 +352,7 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
     ten_extension_info_t *extension_info = ten_extension_info_from_smart_ptr(
         ten_smart_ptr_listnode_get(iter_extension.node));
 
-    ten_string_t *extension_group_name =
-        &extension_info->loc.extension_group_name;
+    ten_string_t *extension_group_name = &extension_info->extension_group_name;
     ten_string_t *app_uri = &extension_info->loc.app_uri;
 
     bool group_found = false;
@@ -367,7 +366,7 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
 
       if (ten_string_is_equal(
               extension_group_name,
-              &extension_group_info->loc.extension_group_name) &&
+              &extension_group_info->extension_group_instance_name) &&
           ten_string_is_equal(app_uri, &extension_group_info->loc.app_uri)) {
         group_found = true;
         break;
@@ -387,10 +386,13 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
     ten_string_set_formatted(&extension_group_info->extension_group_addon_name,
                              TEN_STR_DEFAULT_EXTENSION_GROUP);
 
-    ten_loc_set(
-        &extension_group_info->loc,
-        ten_string_get_raw_str(&extension_info->loc.app_uri), "",
-        ten_string_get_raw_str(&extension_info->loc.extension_group_name), "");
+    ten_string_set_formatted(
+        &extension_group_info->extension_group_instance_name, "%s",
+        ten_string_get_raw_str(&extension_info->extension_group_name));
+
+    ten_loc_set(&extension_group_info->loc,
+                ten_string_get_raw_str(&extension_info->loc.app_uri), NULL,
+                NULL, NULL);
 
     ten_shared_ptr_t *shared_group = ten_shared_ptr_create(
         extension_group_info, ten_extension_group_info_destroy);
@@ -510,7 +512,7 @@ ten_cmd_start_graph_get_extension_addon_and_instance_name_pairs_of_specified_ext
 
     if (ten_string_is_equal_c_str(&extension_info->loc.app_uri, app_uri) &&
         ten_string_is_equal_c_str(&extension_info->loc.graph_id, graph_id) &&
-        ten_string_is_equal_c_str(&extension_info->loc.extension_group_name,
+        ten_string_is_equal_c_str(&extension_info->extension_group_name,
                                   extension_group_name)) {
       ten_extension_addon_and_instance_name_pair_t *extension_name_info =
           ten_extension_addon_and_instance_name_pair_create(

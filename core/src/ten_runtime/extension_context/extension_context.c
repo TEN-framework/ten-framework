@@ -293,7 +293,7 @@ ten_extension_context_get_extension_group_info_by_name(
     if (ten_string_is_equal_c_str(&extension_group_info->loc.app_uri,
                                   app_uri) &&
         ten_string_is_equal_c_str(
-            &extension_group_info->loc.extension_group_name,
+            &extension_group_info->extension_group_instance_name,
             extension_group_name)) {
       result = extension_group_info;
       break;
@@ -518,7 +518,7 @@ bool ten_extension_context_start_extension_group(ten_extension_context_t *self,
           ten_string_get_raw_str(
               &extension_group_info->extension_group_addon_name),
           ten_string_get_raw_str(
-              &extension_group_info->loc.extension_group_name),
+              &extension_group_info->extension_group_instance_name),
           (ten_env_addon_create_instance_done_cb_t)
               ten_extension_context_create_extension_group_done,
           NULL);
@@ -561,5 +561,5 @@ const char *ten_extension_context_get_extension_group_name(
     return NULL;
   }
 
-  return ten_string_get_raw_str(&extension_info->loc.extension_group_name);
+  return ten_string_get_raw_str(&extension_info->extension_group_name);
 }

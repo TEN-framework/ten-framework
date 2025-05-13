@@ -24,6 +24,8 @@ typedef struct ten_extension_group_info_t {
   ten_signature_t signature;
 
   ten_string_t extension_group_addon_name;
+  ten_string_t extension_group_instance_name;
+
   ten_loc_t loc;
 
   // The definition of properties in the graph related to the current extension

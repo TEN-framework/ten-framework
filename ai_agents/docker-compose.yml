@@ -13,13 +13,15 @@ services:
     volumes:
       - ./:/app
       - ${LOG_PATH}:${LOG_PATH}
+      - ../.vscode/:/app/.vscode
+      - ../tools/pylint/.pylintrc:/tools/pylint/.pylintrc
     working_dir: /app
     env_file:
       - .env
     networks:
       - ten_agent_network
   ten_agent_playground:
-    image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-217-g0ead975
+    image: ghcr.io/ten-framework/ten_agent_playground:0.10.5-8-g6f247bc1
     container_name: ten_agent_playground
     restart: always
     ports:

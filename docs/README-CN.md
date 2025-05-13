@@ -310,6 +310,7 @@ export GOPROXY=https://goproxy.cn,direct
 
 # pip 代理设置, 此设置需要先安装 pip
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 #### 步骤 ⓶ - 在虚拟机中构建代理
