@@ -337,7 +337,7 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 
 #### 🅰️ 🐳 Deploying with Docker
 
-Once you have customized your agent (either by using the playground or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
+Once you have customized your agent (either by using the TMAN Manager, Playground, or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
 
 Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/deploy_agent_service) for detailed information about deployment.
 
