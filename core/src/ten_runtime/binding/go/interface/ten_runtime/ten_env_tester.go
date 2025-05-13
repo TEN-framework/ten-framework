@@ -9,7 +9,11 @@ package ten
 
 // #include "ten_env_tester.h"
 import "C"
-import "runtime"
+import (
+	"runtime"
+	"strings"
+	"unsafe"
+)
 
 type (
 	TesterResultHandler func(TenEnvTester, CmdResult, error)
@@ -30,6 +34,13 @@ type TenEnvTester interface {
 	ReturnResult(result CmdResult, handler TesterErrorHandler) error
 
 	StopTest() error
+
+	LogVerbose(msg string) error
+	LogDebug(msg string) error
+	LogInfo(msg string) error
+	LogWarn(msg string) error
+	LogError(msg string) error
+	LogFatal(msg string) error
 }
 
 var (
@@ -256,6 +267,65 @@ func (p *tenEnvTester) returnResult(result CmdResult, handler TesterErrorHandler
 
 func (p *tenEnvTester) stopTest() error {
 	cStatus := C.ten_go_ten_env_tester_stop_test(p.cPtr)
+
+	return withCGoError(&cStatus)
+}
+
+func (p *tenEnvTester) LogVerbose(msg string) error {
+	return p.logInternal(LogLevelVerbose, msg, 2)
+}
+
+func (p *tenEnvTester) LogDebug(msg string) error {
+	return p.logInternal(LogLevelDebug, msg, 2)
+}
+
+func (p *tenEnvTester) LogInfo(msg string) error {
+	return p.logInternal(LogLevelInfo, msg, 2)
+}
+
+func (p *tenEnvTester) LogWarn(msg string) error {
+	return p.logInternal(LogLevelWarn, msg, 2)
+}
+
+func (p *tenEnvTester) LogError(msg string) error {
+	return p.logInternal(LogLevelError, msg, 2)
+}
+
+func (p *tenEnvTester) LogFatal(msg string) error {
+	return p.logInternal(LogLevelFatal, msg, 2)
+}
+
+func (p *tenEnvTester) logInternal(level LogLevel, msg string, skip int) error {
+	// Get caller info.
+	pc, fileName, lineNo, ok := runtime.Caller(skip)
+	funcName := "unknown"
+	if ok {
+		fn := runtime.FuncForPC(pc)
+		if fn != nil {
+			funcName = fn.Name()
+
+			parts := strings.Split(funcName, ".")
+			if len(parts) > 0 {
+				// The last part is the method name.
+				funcName = parts[len(parts)-1]
+			}
+		}
+	} else {
+		fileName = "unknown"
+		lineNo = 0
+	}
+
+	cStatus := C.ten_go_ten_env_tester_log(
+		p.cPtr,
+		C.int(level),
+		unsafe.Pointer(unsafe.StringData(funcName)),
+		C.int(len(funcName)),
+		unsafe.Pointer(unsafe.StringData(fileName)),
+		C.int(len(fileName)),
+		C.int(lineNo),
+		unsafe.Pointer(unsafe.StringData(msg)),
+		C.int(len(msg)),
+	)
 
 	return withCGoError(&cStatus)
 }

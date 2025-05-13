@@ -25,8 +25,6 @@ app_base_dir=$(realpath .ten/app)
 ten_runtime_lib_path=$(realpath $app_base_dir/ten_packages/system/ten_runtime/lib)
 ten_runtime_go_lib_path=$(realpath $app_base_dir/ten_packages/system/ten_runtime_go/lib)
 
-export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
-
 # Jump to the extension directory.
 cd ".ten/app/ten_packages/extension/$extension_name"
 
@@ -36,6 +34,9 @@ export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/te
 echo "Current directory: $(pwd)"
 
 go test -c ./tests/... -o ./.ten/app/bin/test.out -v "$@"
+
+export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
+export DYLD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
 
 # Run the test case.
 ./.ten/app/bin/test.out

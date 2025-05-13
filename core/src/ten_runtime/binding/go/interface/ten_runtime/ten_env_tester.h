@@ -43,3 +43,8 @@ ten_go_error_t ten_go_ten_env_tester_return_result(
     ten_go_handle_t handler_id);
 
 ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr);
+
+ten_go_error_t ten_go_ten_env_tester_log(uintptr_t bridge_addr, int level,
+                                         const void *func_name, int func_name_len,
+                                         const void *file_name, int file_name_len,
+                                         int line_no, const void *msg, int msg_len);
