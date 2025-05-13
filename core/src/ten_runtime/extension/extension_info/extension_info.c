@@ -34,6 +34,7 @@ static ten_extension_info_t *ten_extension_info_create(void) {
   ten_sanitizer_thread_check_init_with_current_thread(&self->thread_check);
 
   TEN_STRING_INIT(self->extension_addon_name);
+  TEN_STRING_INIT(self->extension_group_name);
 
   ten_loc_init_empty(&self->loc);
 
@@ -46,30 +47,9 @@ static ten_extension_info_t *ten_extension_info_create(void) {
   return self;
 }
 
-bool ten_extension_info_is_desired_extension_group(
-    ten_extension_info_t *self, const char *app_uri,
-    const char *extension_group_name) {
-  TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: The graph-related information of the extension remains
-  // unchanged during the lifecycle of engine/graph, allowing safe
-  // cross-thread access.
-  TEN_ASSERT(ten_extension_info_check_integrity(self, false),
-             "Invalid use of extension_info %p.", self);
-
-  TEN_ASSERT(app_uri && extension_group_name, "Should not happen.");
-
-  if (ten_string_is_equal_c_str(&self->loc.app_uri, app_uri) &&
-      ten_string_is_equal_c_str(&self->loc.extension_group_name,
-                                extension_group_name)) {
-    return true;
-  }
-  return false;
-}
-
 static bool ten_extension_info_is_specified_extension(
     ten_extension_info_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_group_name, const char *extension_name) {
+    const char *extension_name) {
   TEN_ASSERT(
       self && ten_extension_info_check_integrity(self, true) && extension_name,
       "Should not happen.");
@@ -79,12 +59,6 @@ static bool ten_extension_info_is_specified_extension(
   }
 
   if (graph_id && !ten_string_is_equal_c_str(&self->loc.graph_id, graph_id)) {
-    return false;
-  }
-
-  if (extension_group_name &&
-      !ten_string_is_equal_c_str(&self->loc.extension_group_name,
-                                 extension_group_name)) {
     return false;
   }
 
@@ -110,6 +84,7 @@ static void ten_extension_info_destroy(ten_extension_info_t *self) {
   ten_all_msg_type_dest_info_deinit(&self->msg_dest_info);
 
   ten_string_deinit(&self->extension_addon_name);
+  ten_string_deinit(&self->extension_group_name);
 
   ten_loc_deinit(&self->loc);
 
@@ -152,10 +127,10 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   ten_extension_info_t *extension_info = NULL;
 
   // Find the corresponding extension_info according to the instance name of
-  // extension_group and extension.
-  ten_listnode_t *extension_info_node = ten_list_find_shared_ptr_custom_4(
-      extensions_info, app_uri, graph_id, extension_group_name,
-      extension_instance_name, ten_extension_info_is_specified_extension);
+  // extension.
+  ten_listnode_t *extension_info_node = ten_list_find_shared_ptr_custom_3(
+      extensions_info, app_uri, graph_id, extension_instance_name,
+      ten_extension_info_is_specified_extension);
 
   if (extension_info_node) {
     extension_info = ten_shared_ptr_get_data(
@@ -190,14 +165,11 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
       if (extension_info_node) {
         if (err) {
           ten_error_set(err, TEN_ERROR_CODE_INVALID_GRAPH,
-                        "The extension_info is duplicated, extension_group: "
-                        "%s, extension : %s.",
-                        extension_group_name, extension_instance_name);
+                        "The extension_info is duplicated, extension : %s",
+                        extension_instance_name);
         } else {
-          TEN_ASSERT(0,
-                     "The extension_info is duplicated, extension_group: %s, "
-                     "extension: %s.",
-                     extension_group_name, extension_instance_name);
+          TEN_ASSERT(0, "The extension_info is duplicated, extension: %s",
+                     extension_instance_name);
         }
 
         return NULL;
@@ -209,14 +181,11 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
     if (should_exist) {
       if (err) {
         ten_error_set(err, TEN_ERROR_CODE_INVALID_GRAPH,
-                      "The extension_info is not found, extension_group: %s, "
-                      "extension: %s.",
-                      extension_group_name, extension_instance_name);
+                      "The extension_info is not found, extension: %s.",
+                      extension_instance_name);
       } else {
-        TEN_ASSERT(0,
-                   "The extension_info is not found, extension_group: %s, "
-                   "extension: %s.",
-                   extension_group_name, extension_instance_name);
+        TEN_ASSERT(0, "The extension_info is not found, extension: %s.",
+                   extension_instance_name);
       }
 
       return NULL;
@@ -224,10 +193,13 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   }
 
   ten_extension_info_t *self = ten_extension_info_create();
-  ten_loc_set(&self->loc, app_uri, graph_id, extension_group_name,
-              extension_instance_name);
+
   ten_string_set_formatted(&self->extension_addon_name, "%s",
                            extension_addon_name);
+  ten_string_set_formatted(&self->extension_group_name, "%s",
+                           extension_group_name);
+
+  ten_loc_set(&self->loc, app_uri, graph_id, NULL, extension_instance_name);
 
   ten_shared_ptr_t *shared_self =
       ten_shared_ptr_create(self, ten_extension_info_destroy);
@@ -276,7 +248,7 @@ static ten_shared_ptr_t *ten_extension_info_clone_except_dest(
   ten_shared_ptr_t *new_dest = get_extension_info_in_extensions_info(
       extensions_info, ten_string_get_raw_str(&self->loc.app_uri),
       ten_string_get_raw_str(&self->loc.graph_id),
-      ten_string_get_raw_str(&self->loc.extension_group_name),
+      ten_string_get_raw_str(&self->extension_group_name),
       ten_string_get_raw_str(&self->extension_addon_name),
       ten_string_get_raw_str(&self->loc.extension_name),
       /* should_exist = */ false, err);
@@ -320,7 +292,7 @@ static ten_shared_ptr_t *ten_extension_info_clone_dest(
   ten_shared_ptr_t *exist_dest = get_extension_info_in_extensions_info(
       extensions_info, ten_string_get_raw_str(&self->loc.app_uri),
       ten_string_get_raw_str(&self->loc.graph_id),
-      ten_string_get_raw_str(&self->loc.extension_group_name),
+      ten_string_get_raw_str(&self->extension_group_name),
       ten_string_get_raw_str(&self->extension_addon_name),
       ten_string_get_raw_str(&self->loc.extension_name),
       /* should_exist = */ true, err);

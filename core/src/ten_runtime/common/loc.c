@@ -188,8 +188,6 @@ bool ten_loc_is_equal(ten_loc_t *self, ten_loc_t *other) {
 
   return ten_string_is_equal(&self->app_uri, &other->app_uri) &&
          ten_string_is_equal(&self->graph_id, &other->graph_id) &&
-         ten_string_is_equal(&self->extension_group_name,
-                             &other->extension_group_name) &&
          ten_string_is_equal(&self->extension_name, &other->extension_name);
 }
 
@@ -202,8 +200,6 @@ bool ten_loc_is_equal_with_value(ten_loc_t *self, const char *app_uri,
 
   return ten_string_is_equal_c_str(&self->app_uri, app_uri) &&
          ten_string_is_equal_c_str(&self->graph_id, graph_id) &&
-         ten_string_is_equal_c_str(&self->extension_group_name,
-                                   extension_group_name) &&
          ten_string_is_equal_c_str(&self->extension_name, extension_name);
 }
 

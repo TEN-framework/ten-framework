@@ -27,6 +27,7 @@ typedef struct ten_extension_info_t {
   ten_sanitizer_thread_check_t thread_check;
 
   ten_string_t extension_addon_name;
+  ten_string_t extension_group_name;
   ten_loc_t loc;
 
   // The extension_info of the destination extension for each type of message.
@@ -47,10 +48,6 @@ TEN_RUNTIME_PRIVATE_API bool ten_extension_info_check_integrity(
 
 TEN_RUNTIME_PRIVATE_API void ten_extension_info_translate_localhost_to_app_uri(
     ten_extension_info_t *self, const char *app_uri);
-
-TEN_RUNTIME_PRIVATE_API bool ten_extension_info_is_desired_extension_group(
-    ten_extension_info_t *self, const char *app_uri,
-    const char *extension_group_instance_name);
 
 TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *get_extension_info_in_extensions_info(
     ten_list_t *extensions_info, const char *app_uri, const char *graph_id,
