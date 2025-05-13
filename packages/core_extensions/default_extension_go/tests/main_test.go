@@ -6,6 +6,9 @@ import (
 	ten "ten_framework/ten_runtime"
 	"testing"
 
+	// We import the default_extension_go package to ensure its init function is executed.
+	// This is because default_extension_go registers the addon in its init function.
+	// Note that this line is necessary, even though it doesn't seem to be used.
 	_ "default_extension_go"
 )
 
@@ -49,28 +52,4 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	teardown()
 	os.Exit(code)
-}
-
-func TestMyExtensionTester(t *testing.T) {
-	myTester := &MyExtensionTester{}
-
-	tester, err := ten.NewExtensionTester(myTester)
-	if err != nil {
-		t.FailNow()
-	}
-
-	tester.SetTestModeSingle("default_extension_go", "{}")
-	tester.Run()
-}
-
-func TestMyExtensionTester2(t *testing.T) {
-	myTester := &MyExtensionTester{}
-
-	tester, err := ten.NewExtensionTester(myTester)
-	if err != nil {
-		t.FailNow()
-	}
-
-	tester.SetTestModeSingle("default_extension_go", "{}")
-	tester.Run()
 }

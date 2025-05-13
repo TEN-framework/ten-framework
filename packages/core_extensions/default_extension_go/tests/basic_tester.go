@@ -4,11 +4,11 @@ import (
 	ten "ten_framework/ten_runtime"
 )
 
-type MyExtensionTester struct {
+type BasicExtensionTester struct {
 	ten.DefaultExtensionTester
 }
 
-func (tester *MyExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
+func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStartDone()
 
 	tenEnvTester.LogInfo("OnStart")
@@ -28,7 +28,7 @@ func (tester *MyExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	})
 }
 
-func (tester *MyExtensionTester) OnStop(tenEnvTester ten.TenEnvTester) {
+func (tester *BasicExtensionTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStop")
 
 	tenEnvTester.OnStopDone()

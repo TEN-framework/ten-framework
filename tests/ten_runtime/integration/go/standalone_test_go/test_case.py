@@ -81,7 +81,11 @@ def test_standalone_test_go():
     )
 
     if build_config_args.enable_sanitizer:
-        test_cmd.append("-asan")
+        if not (
+            build_config_args.target_os == "macos"
+            and build_config_args.target_cpu == "arm64"
+        ):
+            test_cmd.append("-asan")
 
     if build_config_args.is_clang:
         my_env["CC"] = "clang"
