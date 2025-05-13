@@ -36,6 +36,7 @@ ten_extension_group_info_t *ten_extension_group_info_create(void) {
   ten_signature_set(&self->signature, TEN_EXTENSION_GROUP_INFO_SIGNATURE);
 
   TEN_STRING_INIT(self->extension_group_addon_name);
+  TEN_STRING_INIT(self->extension_group_instance_name);
 
   ten_loc_init_empty(&self->loc);
   self->property = ten_value_create_object_with_move(NULL);
@@ -51,6 +52,7 @@ void ten_extension_group_info_destroy(ten_extension_group_info_t *self) {
   ten_signature_set(&self->signature, 0);
 
   ten_string_deinit(&self->extension_group_addon_name);
+  ten_string_deinit(&self->extension_group_instance_name);
 
   ten_loc_deinit(&self->loc);
 
@@ -83,7 +85,7 @@ static bool ten_extension_group_info_is_specified_extension_group(
   }
 
   if (extension_group_name &&
-      !ten_string_is_equal_c_str(&self->loc.extension_group_name,
+      !ten_string_is_equal_c_str(&self->extension_group_instance_name,
                                  extension_group_name)) {
     return false;
   }
@@ -168,8 +170,10 @@ ten_shared_ptr_t *get_extension_group_info_in_extension_groups_info(
 
   ten_extension_group_info_t *self = ten_extension_group_info_create();
 
-  ten_loc_set(&self->loc, app_uri, graph_id, extension_group_instance_name,
-              NULL);
+  ten_string_set_formatted(&self->extension_group_instance_name, "%s",
+                           extension_group_instance_name);
+
+  ten_loc_set(&self->loc, app_uri, graph_id, NULL, NULL);
 
   // Add the extension group addon name if we know it now.
   if (strlen(extension_group_addon_name)) {
@@ -207,7 +211,7 @@ ten_shared_ptr_t *ten_extension_group_info_clone(
           extension_groups_info, ten_string_get_raw_str(&self->loc.app_uri),
           ten_string_get_raw_str(&self->loc.graph_id),
           ten_string_get_raw_str(&self->extension_group_addon_name),
-          ten_string_get_raw_str(&self->loc.extension_group_name),
+          ten_string_get_raw_str(&self->extension_group_instance_name),
           &new_extension_group_info_created, NULL);
 
   return new_dest;

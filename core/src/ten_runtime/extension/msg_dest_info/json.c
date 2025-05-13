@@ -54,7 +54,7 @@ bool ten_msg_dest_info_to_json(ten_msg_dest_info_t *self,
 
     ten_json_object_set_string(
         &dest_json, TEN_STR_EXTENSION_GROUP,
-        ten_string_get_raw_str(&extension_info->loc.extension_group_name));
+        ten_string_get_raw_str(&extension_info->extension_group_name));
 
     ten_json_object_set_string(
         &dest_json, TEN_STR_EXTENSION,

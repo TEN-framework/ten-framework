@@ -9,8 +9,8 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/ten_framework,type=bind",
-  "workspaceFolder": "/ten_framework",
+  "workspaceMount": "source=${localWorkspaceFolder}/ai_agents,target=/app,type=bind",
+  "workspaceFolder": "/app",
   "forwardPorts": [
     3000,
     8080,
