@@ -2,11 +2,19 @@
 Test standalone_test_go.
 """
 
+import platform
 import subprocess
 import os
 import sys
 from sys import stdout
 from .utils import build_config, fs_utils
+
+
+def is_mac_arm64() -> bool:
+    return (
+        platform.system().lower() == "darwin"
+        and platform.machine().lower() == "arm64"
+    )
 
 
 def test_standalone_test_go():
@@ -80,12 +88,8 @@ def test_standalone_test_go():
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
-    if build_config_args.enable_sanitizer:
-        if not (
-            build_config_args.target_os == "macos"
-            and build_config_args.target_cpu == "arm64"
-        ):
-            test_cmd.append("-asan")
+    if build_config_args.enable_sanitizer and not is_mac_arm64():
+        test_cmd.append("-asan")
 
     if build_config_args.is_clang:
         my_env["CC"] = "clang"
