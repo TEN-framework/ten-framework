@@ -52,71 +52,63 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
     label: "Chinese",
     value: "zh-CN",
   },
-  // {
-  //   label: "Korean",
-  //   value: "ko-KR",
-  // },
-  // {
-  //   label: "Japanese",
-  //   value: "ja-JP",
-  // },
+  {
+    label: "Korean",
+    value: "ko-KR",
+  },
+  {
+    label: "Japanese",
+    value: "ja-JP",
+  },
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
-  // {
-  //   label: "Voice Agent with Llama4",
-  //   value: "va_llama4",
-  // },
-  // {
-  //   label: "Voice Agent with Qwen3 Reasoning",
-  //   value: "qwen3",
-  // },
-  // {
-  //   label: "Voice Agent with DeepSeek R1 Reasoning",
-  //   value: "deepseek_r1",
-  // },
-  // {
-  //   label: "Voice Agent Gemini 2.0 Realtime",
-  //   value: "va_gemini_v2v",
-  // },
-  // {
-  //   label: "Voice Agent with Dify",
-  //   value: "va_dify_azure",
-  // },
-  // {
-  //   label: "Voice Agent / STT + LLM + TTS",
-  //   value: "va_openai_azure",
-  // },
+  {
+    label: "Voice Agent with Llama4",
+    value: "va_llama4",
+  },
+  {
+    label: "Voice Agent with Qwen3 Reasoning",
+    value: "qwen3",
+  },
+  {
+    label: "Voice Agent with DeepSeek R1 Reasoning",
+    value: "deepseek_r1",
+  },
+  {
+    label: "Voice Agent Gemini 2.0 Realtime",
+    value: "va_gemini_v2v",
+  },
+  {
+    label: "Voice Agent with Dify",
+    value: "va_dify_azure",
+  },
+  {
+    label: "Voice Agent / STT + LLM + TTS",
+    value: "va_openai_azure",
+  },
   // {
   //   label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
   //   value: "va_qwen_rag"
   // },
-  // {
-  //   label: "Voice Agent OpenAI Realtime",
-  //   value: "va_openai_v2v",
-  // },
-  // {
-  //   label: "Voice Agent OpenAI Realtime + Custom STT/TTS",
-  //   value: "va_openai_v2v_fish",
-  // },
-  // {
-  //   label: "Voice Agent Coze Bot + Azure TTS",
-  //   value: "va_coze_azure",
-  // },
-  // {
-  //   label: "Voice Story Teller with Image Generator",
-  //   value: "story_teller_stt_integrated",
-  // },
-  // {
-  //   label: "Voice Agent / STT + Nova Multimodal + TTS",
-  //   value: "va_nova_multimodal_aws",
-  // },
   {
-    label: "With TEN Turn Detector",
-    value: "with_ten_turn_detector",
+    label: "Voice Agent OpenAI Realtime",
+    value: "va_openai_v2v",
   },
   {
-    label: "Without TEN Turn Detector",
-    value: "without_ten_turn_detector",
+    label: "Voice Agent OpenAI Realtime + Custom STT/TTS",
+    value: "va_openai_v2v_fish",
+  },
+  {
+    label: "Voice Agent Coze Bot + Azure TTS",
+    value: "va_coze_azure",
+  },
+  {
+    label: "Voice Story Teller with Image Generator",
+    value: "story_teller_stt_integrated",
+  },
+  {
+    label: "Voice Agent / STT + Nova Multimodal + TTS",
+    value: "va_nova_multimodal_aws",
   },
 ]
 

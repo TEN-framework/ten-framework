@@ -288,35 +288,8 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    }else if (graphName === "with_ten_turn_detector") {
-        return {
-            "agora_rtc": {
-                "agora_asr_language": language,
-            },
-            "llm": {
-                "model": "gpt-4o",
-                "prompt": prompt,
-                "greeting": combined_greeting,
-            },
-            "tts": {
-                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
-            }
-        }
-    } else if (graphName === "without_ten_turn_detector") {
-        return {
-            "agora_rtc": {
-                "agora_asr_language": language,
-            },
-            "llm": {
-                "model": "gpt-4o",
-                "prompt": prompt,
-                "greeting": combined_greeting,
-            },
-            "tts": {
-                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
-            }
-        }
     }
+
 
     return {}
 }
