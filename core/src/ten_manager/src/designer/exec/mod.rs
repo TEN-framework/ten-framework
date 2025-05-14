@@ -277,7 +277,7 @@ pub async fn exec_endpoint(
             // Attempt to parse the JSON text from client.
             let inbound = serde_json::from_str::<InboundMsg>(&text_owned)
                 .with_context(|| {
-                    format!("Failed to parse {} into JSON", text_owned)
+                    format!("Failed to parse {text_owned} into JSON")
                 })?;
 
             match inbound {

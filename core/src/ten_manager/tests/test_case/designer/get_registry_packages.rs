@@ -21,7 +21,7 @@ mod tests {
                 web::get().to(get_packages_endpoint)
             })
             .await;
-        println!("Server started at: {}", server_addr);
+        println!("Server started at: {server_addr}");
 
         // Create query parameters
         let pkg_type = PkgType::Extension;
@@ -37,10 +37,9 @@ mod tests {
         // Construct the full URL using the server address with query
         // parameters.
         let url = format!(
-            "http://{}/api/designer/v1/packages?pkg_type={}&name={}&version_req={}",
-            server_addr, pkg_type, name, version_req
+            "http://{server_addr}/api/designer/v1/packages?pkg_type={pkg_type}&name={name}&version_req={version_req}"
         );
-        println!("Sending request to URL: {}", url);
+        println!("Sending request to URL: {url}");
 
         // Send the GET request with query parameters.
         let response =
@@ -48,6 +47,6 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().await.expect("Failed to read response");
-        println!("Response body: {}", body);
+        println!("Response body: {body}");
     }
 }

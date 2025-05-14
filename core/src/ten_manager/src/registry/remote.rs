@@ -140,8 +140,7 @@ async fn get_package_upload_info(
 
                 if is_verbose(tman_config.clone()).await {
                     out.normal_line(&format!(
-                        "Payload of publishing: {}",
-                        payload
+                        "Payload of publishing: {payload}"
                     ));
                 }
 
@@ -156,13 +155,12 @@ async fn get_package_upload_info(
                     if let Some(admin_token) =
                         &tman_config.read().await.admin_token
                     {
-                        let basic_token = format!("Basic {}", admin_token);
+                        let basic_token = format!("Basic {admin_token}");
                         headers.insert(
                             ADMIN_TOKEN,
                             basic_token.parse().map_err(|e| {
                                 out.error_line(&format!(
-                                    "Failed to parse authorization token: {}",
-                                    e
+                                    "Failed to parse authorization token: {e}"
                                 ));
                                 e
                             })?,
@@ -182,13 +180,12 @@ async fn get_package_upload_info(
                 }
 
                 if let Some(user_token) = &tman_config.read().await.user_token {
-                    let basic_token = format!("Basic {}", user_token);
+                    let basic_token = format!("Basic {user_token}");
                     headers.insert(
                         AUTHORIZATION,
                         basic_token.parse().map_err(|e| {
                             out.error_line(&format!(
-                                "Failed to parse authorization token: {}",
-                                e
+                                "Failed to parse authorization token: {e}"
                             ));
                             e
                         })?,
@@ -272,8 +269,7 @@ async fn upload_package_to_remote(
                 CONTENT_TYPE,
                 "application/gzip".parse().map_err(|e| {
                     out.error_line(&format!(
-                        "Failed to parse content type: {}",
-                        e
+                        "Failed to parse content type: {e}"
                     ));
                     e
                 })?,
@@ -319,7 +315,7 @@ async fn ack_of_uploading(
             let url = match reqwest::Url::parse(&base_url) {
                 Ok(url) => url,
                 Err(e) => {
-                    out.error_line(&format!("Failed to parse URL: {}", e));
+                    out.error_line(&format!("Failed to parse URL: {e}"));
                     return Err(e.into());
                 }
             };
@@ -487,7 +483,7 @@ pub async fn get_package(
                 if temp_file_len > 0 {
                     headers.insert(
                         reqwest::header::RANGE,
-                        format!("bytes={}-", temp_file_len).parse().unwrap(),
+                        format!("bytes={temp_file_len}-").parse().unwrap(),
                     );
                 }
 
@@ -500,7 +496,7 @@ pub async fn get_package(
                     .send()
                     .await
                     .with_context(|| {
-                        format!("Failed to send GET request to {}", url)
+                        format!("Failed to send GET request to {url}")
                     })?;
 
                 if !response.status().is_success()
@@ -722,15 +718,14 @@ pub async fn get_package_list(
                             "{}{}{}{}",
                             pkg_type.as_ref().map_or(
                                 "".to_string(),
-                                |pt| format!("type={} ", pt)
+                                |pt| format!("type={pt} ")
                             ),
                             name.as_ref().map_or("".to_string(), |n| format!(
-                                "name={} ",
-                                n
+                                "name={n} "
                             )),
                             version_req.as_ref().map_or(
                                 "".to_string(),
-                                |vr| format!("version={} ", vr)
+                                |vr| format!("version={vr} ")
                             ),
                             tags.as_ref().map_or("".to_string(), |t| {
                                 if t.is_empty() {
@@ -873,11 +868,11 @@ pub async fn delete_package(
                 let base_url = if base_url.ends_with('/') {
                     base_url
                 } else {
-                    format!("{}/", base_url)
+                    format!("{base_url}/")
                 };
 
                 let url = reqwest::Url::parse(&base_url).inspect_err(|&e| {
-                    out.error_line(&format!("Failed to parse base URL: {}", e));
+                    out.error_line(&format!("Failed to parse base URL: {e}"));
                 })?;
 
                 let url = url
@@ -890,8 +885,7 @@ pub async fn delete_package(
                     ))
                     .inspect_err(|&e| {
                         out.error_line(&format!(
-                            "Failed to join URL path: {}",
-                            e
+                            "Failed to join URL path: {e}"
                         ));
                     })?;
 
@@ -899,13 +893,12 @@ pub async fn delete_package(
 
                 if let Some(admin_token) = &tman_config.read().await.admin_token
                 {
-                    let basic_token = format!("Basic {}", admin_token);
+                    let basic_token = format!("Basic {admin_token}");
                     headers.insert(
                         ADMIN_TOKEN,
                         basic_token.parse().map_err(|e| {
                             out.error_line(&format!(
-                                "Failed to parse authorization token: {}",
-                                e
+                                "Failed to parse authorization token: {e}"
                             ));
                             e
                         })?,

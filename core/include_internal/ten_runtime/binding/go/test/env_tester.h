@@ -11,7 +11,19 @@
 #include <stdbool.h>
 
 #include "include_internal/ten_runtime/test/env_tester.h"
+#include "include_internal/ten_runtime/test/env_tester_proxy.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
+
+extern void tenGoTesterOnCmdResult(ten_go_handle_t ten_env_tester_bridge,
+                                   ten_go_handle_t cmd_result_bridge,
+                                   ten_go_handle_t result_handler,
+                                   bool is_completed, ten_go_error_t cgo_error);
+
+extern void tenGoTesterOnError(ten_go_handle_t ten_env_tester_bridge,
+                               ten_go_handle_t error_handler,
+                               ten_go_error_t cgo_error);
+
+extern void tenGoDestroyTenEnvTester(ten_go_handle_t ten_env_tester_bridge);
 
 typedef struct ten_go_ten_env_tester_t {
   ten_signature_t signature;
@@ -19,6 +31,7 @@ typedef struct ten_go_ten_env_tester_t {
   ten_go_bridge_t bridge;
 
   ten_env_tester_t *c_ten_env_tester;
+  ten_env_tester_proxy_t *c_ten_env_tester_proxy;
 } ten_go_ten_env_tester_t;
 
 TEN_RUNTIME_PRIVATE_API bool ten_go_ten_env_tester_check_integrity(

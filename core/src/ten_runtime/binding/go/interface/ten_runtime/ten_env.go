@@ -52,9 +52,6 @@ type TenEnv interface {
 	LogWarn(msg string) error
 	LogError(msg string) error
 	LogFatal(msg string) error
-
-	// Private functions.
-	logInternal(level LogLevel, msg string, skip int) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't

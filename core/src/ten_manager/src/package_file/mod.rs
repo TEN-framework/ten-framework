@@ -123,10 +123,10 @@ pub async fn create_package_tar_gz_file(
     let mut overrides = OverrideBuilder::new(folder_to_tar_gz);
 
     // Add exclude pattern for DOT_TEN_DIR.
-    overrides.add(&format!("!/{}/", DOT_TEN_DIR))?;
+    overrides.add(&format!("!/{DOT_TEN_DIR}/"))?;
 
     // Add exclude pattern for TEN_PACKAGES_DIR.
-    overrides.add(&format!("!/{}/", TEN_PACKAGES_DIR))?;
+    overrides.add(&format!("!/{TEN_PACKAGES_DIR}/"))?;
 
     let overrides = overrides.build()?;
     ignore_builder.overrides(overrides);
@@ -142,14 +142,14 @@ pub async fn create_package_tar_gz_file(
                     files_to_include.push(path.to_path_buf());
                 }
             }
-            Err(err) => println!("Error: {:?}", err),
+            Err(err) => println!("Error: {err:?}"),
         }
     }
 
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Files to be packed:");
         for file in &files_to_include {
-            out.normal_line(&format!("> {:?}", file));
+            out.normal_line(&format!("> {file:?}"));
         }
     }
 

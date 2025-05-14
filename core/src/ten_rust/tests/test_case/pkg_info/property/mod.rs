@@ -113,7 +113,7 @@ mod tests {
         property.dump_property_to_file(&file_path).unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
-        eprintln!("{}", saved_content);
+        eprintln!("{saved_content}");
         assert_eq!(saved_content.find(localhost()), None);
     }
 
@@ -167,7 +167,7 @@ mod tests {
         property.dump_property_to_file(&file_path).unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
-        eprintln!("{}", saved_content);
+        eprintln!("{saved_content}");
         assert!(saved_content.contains("msg_conversion"));
     }
 }

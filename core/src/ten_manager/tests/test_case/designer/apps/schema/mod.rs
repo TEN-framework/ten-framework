@@ -89,7 +89,7 @@ mod tests {
         let api_response: ApiResponse<GetAppSchemaResponseData> =
             serde_json::from_str(body_str).unwrap();
 
-        println!("api_response: {:?}", api_response);
+        println!("api_response: {api_response:?}");
 
         assert_eq!(api_response.status, Status::Ok);
         // If the app has property schema, it will be included in the response.

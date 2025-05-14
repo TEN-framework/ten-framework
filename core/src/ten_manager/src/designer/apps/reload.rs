@@ -39,8 +39,7 @@ pub async fn reload_app_endpoint(
             let error_response = ErrorResponse {
                 status: Status::Fail,
                 message: format!(
-                    "App with base_dir '{}' is not loaded",
-                    base_dir
+                    "App with base_dir '{base_dir}' is not loaded"
                 ),
                 error: None,
             };

@@ -293,7 +293,7 @@ fn extract_tags(map: &Map<String, Value>) -> Result<Option<Vec<String>>> {
 impl fmt::Display for Manifest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match serde_json::to_string_pretty(&self.all_fields) {
-            Ok(json_str) => write!(f, "{}", json_str),
+            Ok(json_str) => write!(f, "{json_str}"),
             Err(_) => write!(f, "Failed to serialize manifest"),
         }
     }

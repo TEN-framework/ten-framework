@@ -28,9 +28,8 @@ fn check_update_from_cmdline(out: Arc<Box<dyn TmanOutput>>) -> Result<()> {
     match rt.block_on(check_update()) {
         Ok((true, latest)) => {
             out.normal_line(&format!(
-                "New version found: {}. Please go to {} to download the \
-                 update.",
-                latest, GITHUB_RELEASE_PAGE
+                "New version found: {latest}. Please go to {GITHUB_RELEASE_PAGE} to download the \
+                 update."
             ));
         }
         Ok((false, _)) => {
@@ -56,7 +55,7 @@ fn main() {
     };
 
     if parsed_cmd.show_version {
-        out.normal_line(&format!("TEN Framework version: {}", VERSION));
+        out.normal_line(&format!("TEN Framework version: {VERSION}"));
 
         // Call the update check function
         match check_update_from_cmdline(out.clone()) {

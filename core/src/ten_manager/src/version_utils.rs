@@ -61,7 +61,7 @@ pub fn parse_pkg_name_version_req(
 /// latest_version).
 pub async fn check_update() -> Result<(bool, String), String> {
     let client = create_http_client_with_proxies()
-        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
 
     let response = client
         .get(GITHUB_RELEASE_URL)
@@ -74,7 +74,7 @@ pub async fn check_update() -> Result<(bool, String), String> {
                 "Check for updates timed out. Please try again later."
                     .to_string()
             } else {
-                format!("Failed to check for updates: {}", e)
+                format!("Failed to check for updates: {e}")
             }
         })?;
 
@@ -88,7 +88,7 @@ pub async fn check_update() -> Result<(bool, String), String> {
     let json: Value = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse update information: {}", e))?;
+        .map_err(|e| format!("Failed to parse update information: {e}"))?;
     let latest_version =
         json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
 

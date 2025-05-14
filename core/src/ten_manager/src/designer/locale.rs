@@ -37,7 +37,7 @@ impl Display for Locale {
             Locale::ZhTw => "zh-TW",
             Locale::JaJp => "ja-JP",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -50,7 +50,7 @@ impl FromStr for Locale {
             "zh-CN" => Ok(Locale::ZhCn),
             "zh-TW" => Ok(Locale::ZhTw),
             "ja-JP" => Ok(Locale::JaJp),
-            _ => Err(format!("Invalid locale: {}", s)),
+            _ => Err(format!("Invalid locale: {s}")),
         }
     }
 }

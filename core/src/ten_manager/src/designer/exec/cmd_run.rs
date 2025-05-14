@@ -66,7 +66,7 @@ impl WsRunCmd {
             Ok(c) => c,
             Err(e) => {
                 let err_msg = OutboundMsg::Error {
-                    msg: format!("Failed to spawn command: {}", e),
+                    msg: format!("Failed to spawn command: {e}"),
                 };
 
                 ctx.text(serde_json::to_string(&err_msg).unwrap());

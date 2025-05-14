@@ -861,6 +861,22 @@
       }
     },
     {
+      "name": "standalone test (go) (lldb, launch)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go/.ten/app/bin/test.out",
+      "args": [
+        "-test.v"
+      ],
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go",
+      "env": {
+        "LD_LIBRARY_PATH": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go/.ten/app/ten_packages/system/ten_runtime/lib:${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go/.ten/app/ten_packages/system/ten_runtime_go/lib",
+      },
+      "initCommands": [
+        "process handle SIGURG --stop false --pass true"
+      ]
+    },
+    {
       "name": "binding test (golang)",
       "type": "go",
       "request": "launch",

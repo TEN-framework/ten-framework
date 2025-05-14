@@ -113,8 +113,7 @@ pub async fn get_graph_nodes_endpoint(
                 let error_response = ErrorResponse::from_error(
                     &err,
                     format!(
-                        "Error fetching runtime extensions for graph '{}'",
-                        graph_id
+                        "Error fetching runtime extensions for graph '{graph_id}'"
                     )
                     .as_str(),
                 );

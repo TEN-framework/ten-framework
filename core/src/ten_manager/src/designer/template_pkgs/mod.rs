@@ -103,9 +103,8 @@ pub async fn get_template_endpoint(
             // Handle case where no packages were found.
             if templates.is_empty() {
                 let error_message = format!(
-                    "Unsupported template combination: pkg_type={}, \
-                     language={}",
-                    pkg_type, language_clone
+                    "Unsupported template combination: pkg_type={pkg_type}, \
+                     language={language_clone}"
                 );
 
                 let error = anyhow!(error_message);
@@ -127,8 +126,7 @@ pub async fn get_template_endpoint(
         }
         Err(err) => {
             let error_message = format!(
-                "Failed to fetch templates: pkg_type={}, language={}, error={}",
-                pkg_type, language_clone, err
+                "Failed to fetch templates: pkg_type={pkg_type}, language={language_clone}, error={err}"
             );
 
             let error = anyhow!(error_message);

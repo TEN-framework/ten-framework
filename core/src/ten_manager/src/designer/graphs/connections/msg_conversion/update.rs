@@ -224,7 +224,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to validate connection schema: {}", e),
+            message: format!("Failed to validate connection schema: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));
@@ -233,7 +233,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     if let Err(e) = update_graph_info(graph_info, &request_payload) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to update graph info: {}", e),
+            message: format!("Failed to update graph info: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));
@@ -246,7 +246,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to update property.json file: {}", e),
+            message: format!("Failed to update property.json file: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));

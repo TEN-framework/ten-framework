@@ -473,8 +473,7 @@ pub async fn execute_cmd(
         let local_path = Path::new(&local_path_str);
         let local_path = local_path.canonicalize().with_context(|| {
             format!(
-                "Failed to find the specified local path {}",
-                local_path_str
+                "Failed to find the specified local path {local_path_str}"
             )
         })?;
 
@@ -645,7 +644,7 @@ pub async fn execute_cmd(
     if let Some(ref usable_model) = usable_model {
         for result in usable_model {
             if is_verbose(tman_config.clone()).await {
-                out.normal_line(&format!(" {:?}", result));
+                out.normal_line(&format!(" {result:?}"));
             }
         }
     }

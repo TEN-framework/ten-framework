@@ -22,7 +22,7 @@ fn validate_extension_property_internal(
     {
         if let Some(property_schema) = &schema_store.property {
             if let Err(e) = property_schema.validate_json(prop) {
-                return Err(format!("Property validation failed: {}", e));
+                return Err(format!("Property validation failed: {e}"));
             }
         }
     }

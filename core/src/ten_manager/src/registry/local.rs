@@ -49,7 +49,7 @@ pub async fn upload_package(
     path_url = if path_url.ends_with('/') {
         path_url.to_string()
     } else {
-        format!("{}/", path_url)
+        format!("{path_url}/")
     };
 
     // Construct the directory path.
@@ -78,7 +78,7 @@ pub async fn upload_package(
     let extension = Path::new(package_file_path)
         .extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| format!(".{}", ext))
+        .map(|ext| format!(".{ext}"))
         .unwrap_or_default();
 
     let new_file_name = format!("{}_{}{}", file_stem, pkg_info.hash, extension);
@@ -125,7 +125,7 @@ fn calc_file_hash(path: &Path) -> Result<String> {
     }
 
     let hash = hasher.finalize();
-    Ok(format!("{:x}", hash))
+    Ok(format!("{hash:x}"))
 }
 
 /// Check if a file exists and is a regular file.
@@ -392,7 +392,7 @@ fn search_versions(
                         // Look for the matching manifest file:
                         // {file_stem}_manifest.json
                         let manifest_file_name =
-                            format!("{}_manifest.json", file_stem);
+                            format!("{file_stem}_manifest.json");
                         let manifest_path =
                             path.with_file_name(&manifest_file_name);
 
@@ -486,7 +486,7 @@ pub async fn get_package_list(
     path_url = if path_url.ends_with('/') {
         path_url.to_string()
     } else {
-        format!("{}/", path_url)
+        format!("{path_url}/")
     };
 
     let version_req_ref = version_req.as_ref();
@@ -540,13 +540,12 @@ pub async fn delete_package(
     path_url = if path_url.ends_with('/') {
         path_url.to_string()
     } else {
-        format!("{}/", path_url)
+        format!("{path_url}/")
     };
 
     // Construct the directory path.
     let dir_path = PathBuf::from(format!(
-        "{}{}/{}/{}/",
-        path_url, pkg_type, name, version
+        "{path_url}{pkg_type}/{name}/{version}/"
     ));
 
     if dir_path.exists() {
@@ -570,7 +569,7 @@ pub async fn delete_package(
                     .file_stem()
                     .and_then(|stem| stem.to_str())
                 {
-                    if file_stem.ends_with(&format!("_{}", hash)) {
+                    if file_stem.ends_with(&format!("_{hash}")) {
                         // Delete the file.
                         fs::remove_file(&file_path).with_context(|| {
                             format!(

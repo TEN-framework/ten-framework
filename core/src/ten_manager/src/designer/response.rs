@@ -73,7 +73,7 @@ impl ErrorResponse {
     pub fn from_error(err: &Error, message_header: &str) -> Self {
         let mut this = ErrorResponse {
             status: Status::Fail,
-            message: format!("{} {}", message_header, err),
+            message: format!("{message_header} {err}"),
             error: None,
         };
 

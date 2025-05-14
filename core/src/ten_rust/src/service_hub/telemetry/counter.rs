@@ -47,7 +47,7 @@ pub fn create_metric_counter(
         Ok(counter) => {
             if let Err(e) = system.registry.register(Box::new(counter.clone()))
             {
-                eprintln!("Error registering counter: {:?}", e);
+                eprintln!("Error registering counter: {e:?}");
                 return Err(anyhow::anyhow!("Error registering counter"));
             }
             Ok(MetricHandle::Counter(counter))
@@ -68,7 +68,7 @@ pub fn create_metric_counter_with_labels(
             if let Err(e) =
                 system.registry.register(Box::new(counter_vec.clone()))
             {
-                eprintln!("Error registering counter vec: {:?}", e);
+                eprintln!("Error registering counter vec: {e:?}");
                 return Err(anyhow::anyhow!("Error registering counter"));
             }
             Ok(MetricHandle::CounterVec(counter_vec))

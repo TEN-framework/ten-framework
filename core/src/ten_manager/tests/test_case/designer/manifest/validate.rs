@@ -382,7 +382,7 @@ async fn test_validate_manifest_missing_required_fields() {
     // Should mention the missing required field.
     assert!(error_message.contains("name"));
 
-    println!("error_message: {}", error_message);
+    println!("error_message: {error_message}");
 }
 
 #[actix_rt::test]
@@ -443,7 +443,7 @@ async fn test_validate_manifest_invalid_type() {
     // Should mention the invalid type field.
     assert!(error_message.contains("type"));
 
-    println!("error_message: {}", error_message);
+    println!("error_message: {error_message}");
 }
 
 #[actix_rt::test]
@@ -504,7 +504,7 @@ async fn test_validate_manifest_invalid_version_format() {
     // Should mention the invalid version field.
     assert!(error_message.contains("version"));
 
-    println!("error_message: {}", error_message);
+    println!("error_message: {error_message}");
 }
 
 #[actix_rt::test]
@@ -575,5 +575,5 @@ async fn test_validate_manifest_invalid_json_syntax() {
             || error_message.contains("parse")
     );
 
-    println!("error_message: {}", error_message);
+    println!("error_message: {error_message}");
 }

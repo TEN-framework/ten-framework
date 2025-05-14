@@ -94,13 +94,13 @@ pub async fn execute_cmd(
         PathBuf::from(&command_data.app_dir).join(PROPERTY_JSON_FILENAME);
     let property_str =
         read_file_to_string(&property_file_path).with_context(|| {
-            format!("Failed to read file: {:?}", property_file_path)
+            format!("Failed to read file: {property_file_path:?}")
         })?;
 
     // Parse `property.json`.
     let mut property_json: Value = serde_json::from_str(&property_str)
         .with_context(|| {
-            format!("Failed to parse {} into JSON", PROPERTY_JSON_FILENAME)
+            format!("Failed to parse {PROPERTY_JSON_FILENAME} into JSON")
         })?;
 
     // Find the specified predefined_graph.

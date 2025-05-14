@@ -6,5 +6,6 @@
 //
 pub mod builtin_server;
 pub mod designer_state;
+pub mod fs;
 pub mod mock;
 pub mod tman_config;

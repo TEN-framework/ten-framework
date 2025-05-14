@@ -145,7 +145,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
 
     let (parsed_name, parsed_version_req) =
         parse_pkg_name_version_req(&template).with_context(|| {
-            format!("Failed to parse template '{}'", template)
+            format!("Failed to parse template '{template}'")
         })?;
 
     cmd.template_name = parsed_name;

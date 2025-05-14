@@ -186,10 +186,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -375,13 +375,13 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        eprintln!("resp: {:?}", resp);
+        eprintln!("resp: {resp:?}");
 
         // assert!(resp.status().is_success());
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        eprintln!("body_str: {}", body_str);
+        eprintln!("body_str: {body_str}");
 
         let response: ApiResponse<AddGraphConnectionResponsePayload> =
             serde_json::from_str(body_str).unwrap();
@@ -571,13 +571,13 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        eprintln!("resp: {:?}", resp);
+        eprintln!("resp: {resp:?}");
 
         assert!(resp.status().is_success());
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        eprintln!("body_str: {}", body_str);
+        eprintln!("body_str: {body_str}");
 
         let response: ApiResponse<AddGraphConnectionResponsePayload> =
             serde_json::from_str(body_str).unwrap();
@@ -767,13 +767,13 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        eprintln!("resp: {:?}", resp);
+        eprintln!("resp: {resp:?}");
 
         // assert!(resp.status().is_success());
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        eprintln!("body_str: {}", body_str);
+        eprintln!("body_str: {body_str}");
 
         let response: ApiResponse<AddGraphConnectionResponsePayload> =
             serde_json::from_str(body_str).unwrap();
@@ -965,13 +965,13 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        eprintln!("resp: {:?}", resp);
+        eprintln!("resp: {resp:?}");
 
         assert!(!resp.status().is_success());
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        eprintln!("body_str: {}", body_str);
+        eprintln!("body_str: {body_str}");
 
         assert_eq!(
             body_str,

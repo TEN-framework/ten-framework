@@ -129,8 +129,7 @@ fn print_dependency_chain(
     out: Arc<Box<dyn TmanOutput>>,
 ) {
     out.normal_line(&format!(
-        "Dependency chain leading to [{}]{}@{}:",
-        pkg_type, pkg_name, version
+        "Dependency chain leading to [{pkg_type}]{pkg_name}@{version}:"
     ));
     for (i, pkg) in chain.iter().enumerate() {
         out.normal_line(&format!(

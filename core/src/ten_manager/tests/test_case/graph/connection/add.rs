@@ -315,7 +315,7 @@ mod tests {
             &pkgs_cache,
             None,
         );
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
         assert!(result.is_ok());
 
         // Verify that we have one connection with one message flow that has two
@@ -632,7 +632,7 @@ mod tests {
             &pkgs_cache,
             None,
         );
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

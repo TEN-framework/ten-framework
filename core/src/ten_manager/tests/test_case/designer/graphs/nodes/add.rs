@@ -90,7 +90,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
@@ -158,14 +158,14 @@ mod tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
 
-        println!("Response: {:?}", resp);
+        println!("Response: {resp:?}");
 
         // Should fail with a 400 Bad Request.
         assert_eq!(resp.status(), 400);
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
@@ -238,11 +238,11 @@ mod tests {
         let resp = test::call_service(&app, req).await;
 
         let status = resp.status();
-        println!("Response status: {}", status);
+        println!("Response status: {status}");
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         // Should succeed with a 200 OK.
         assert_eq!(status, 200);
@@ -316,11 +316,11 @@ mod tests {
         let resp = test::call_service(&app, req).await;
 
         let status = resp.status();
-        println!("Response status: {}", status);
+        println!("Response status: {status}");
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         // Should succeed with a 200 OK.
         assert_eq!(status, 200);

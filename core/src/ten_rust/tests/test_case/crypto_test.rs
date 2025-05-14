@@ -16,7 +16,7 @@ fn test_aes_ctr_crypto() {
 
     let mut cipher = crypto::new_cipher(
         "AES-CTR",
-        &format!("{{\"key\": \"{}\", \"nonce\": \"{}\"}}", key_str, nonce_str),
+        &format!("{{\"key\": \"{key_str}\", \"nonce\": \"{nonce_str}\"}}"),
     )
     .unwrap();
 
@@ -25,14 +25,14 @@ fn test_aes_ctr_crypto() {
     // Recreate the cipher to decrypt.
     let mut cipher = crypto::new_cipher(
         "AES-CTR",
-        &format!("{{\"key\": \"{}\", \"nonce\": \"{}\"}}", key_str, nonce_str),
+        &format!("{{\"key\": \"{key_str}\", \"nonce\": \"{nonce_str}\"}}"),
     )
     .unwrap();
 
     cipher.encrypt(&mut data_vec);
 
     let data_str = String::from_utf8(data_vec).unwrap();
-    println!("data: {:?}", data_str);
+    println!("data: {data_str:?}");
 
     assert_eq!(data_str, origin_str);
 }
@@ -57,7 +57,7 @@ fn test_aes_ctr_decrypt() {
 
     let mut cipher = crypto::new_cipher(
         "AES-CTR",
-        &format!("{{\"key\": \"{}\", \"nonce\": \"{}\"}}", key_str, nonce_str),
+        &format!("{{\"key\": \"{key_str}\", \"nonce\": \"{nonce_str}\"}}"),
     )
     .unwrap();
 
@@ -65,10 +65,10 @@ fn test_aes_ctr_decrypt() {
 
     // Convert decrypted bytes to string.
     let data_str = String::from_utf8(data_vec).unwrap_or_else(|e| {
-        println!("Decrypted data is not a valid UTF-8 string: {}", e);
+        println!("Decrypted data is not a valid UTF-8 string: {e}");
         String::new()
     });
-    println!("Decrypted data: {}", data_str);
+    println!("Decrypted data: {data_str}");
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn test_aes_ctr_invalid_key() {
     let nonce_str = "0123456789012345";
     let cipher = crypto::new_cipher(
         "AES-CTR",
-        &format!("{{\"key\": \"{}\", \"nonce\": \"{}\"}}", key_str, nonce_str),
+        &format!("{{\"key\": \"{key_str}\", \"nonce\": \"{nonce_str}\"}}"),
     );
 
     assert!(cipher.is_err());
@@ -89,7 +89,7 @@ fn test_aes_ctr_invalid_nonce() {
     let nonce_str = "00";
     let cipher = crypto::new_cipher(
         "AES-CTR",
-        &format!("{{\"key\": \"{}\", \"nonce\": \"{}\"}}", key_str, nonce_str),
+        &format!("{{\"key\": \"{key_str}\", \"nonce\": \"{nonce_str}\"}}"),
     );
 
     assert!(cipher.is_err());

@@ -120,6 +120,90 @@ func tenGoOnError(
 	cb.(ErrorHandler)(tenEnvObj, err)
 }
 
+//export tenGoDestroyTenEnvTester
+func tenGoDestroyTenEnvTester(tenEnvTesterObjID C.uintptr_t) {
+	r, ok := handle(tenEnvTesterObjID).free().(*tenEnvTester)
+
+	if !ok {
+		panic(
+			fmt.Sprintf(
+				"Failed to get ten env tester from handle map, id: %d.",
+				uintptr(tenEnvTesterObjID),
+			),
+		)
+	} else {
+		r.close()
+	}
+}
+
+//export tenGoTesterOnCmdResult
+func tenGoTesterOnCmdResult(
+	tenEnvTesterObjID C.uintptr_t,
+	cmdResultBridge C.uintptr_t,
+	resultHandler C.uintptr_t,
+	isCompleted C.bool,
+	cgoError C.ten_go_error_t,
+) {
+	tenEnvTesterObj, ok := handle(tenEnvTesterObjID).get().(TenEnvTester)
+	if !ok {
+		panic(
+			fmt.Sprintf(
+				"Failed to get ten env tester from handle map, id: %d.",
+				uintptr(tenEnvTesterObjID),
+			),
+		)
+	}
+
+	var cr *cmdResult = nil
+	if cmdResultBridge == 0 {
+		cr = nil
+	} else {
+		cr = newCmdResult(cmdResultBridge)
+	}
+
+	var cb any = nil
+	if isCompleted {
+		cb = loadAndDeleteGoHandle(goHandle(resultHandler))
+	} else {
+		cb = loadGoHandle(goHandle(resultHandler))
+	}
+
+	if cb == nil || cb == goHandleNil {
+		// Should not happen.
+		panic("The result handler is not found from handle map.")
+	}
+
+	err := withCGoError(&cgoError)
+
+	cb.(TesterResultHandler)(tenEnvTesterObj, cr, err)
+}
+
+//export tenGoTesterOnError
+func tenGoTesterOnError(
+	tenEnvTesterObjID C.uintptr_t,
+	errorHandler C.uintptr_t,
+	cgoError C.ten_go_error_t,
+) {
+	tenEnvTesterObj, ok := handle(tenEnvTesterObjID).get().(TenEnvTester)
+	if !ok {
+		panic(
+			fmt.Sprintf(
+				"Failed to get ten env tester from handle map, id: %d.",
+				uintptr(tenEnvTesterObjID),
+			),
+		)
+	}
+
+	cb := loadAndDeleteGoHandle(goHandle(errorHandler))
+	if cb == nil || cb == goHandleNil {
+		panic("The error handler is not found from handle map.")
+	}
+
+	err := withCGoError(&cgoError)
+
+	cb.(TesterErrorHandler)(tenEnvTesterObj, err)
+}
+
 //export tenGoSetPropertyCallback
 func tenGoSetPropertyCallback(
 	tenEnvObjID C.uintptr_t,

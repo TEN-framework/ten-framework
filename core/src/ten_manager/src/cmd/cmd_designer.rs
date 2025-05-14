@@ -88,13 +88,13 @@ pub async fn execute_cmd(
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Executing designer command");
-        out.normal_line(&format!("{:?}", command_data));
-        out.normal_line(&format!("{:?}", tman_config));
+        out.normal_line(&format!("{command_data:?}"));
+        out.normal_line(&format!("{tman_config:?}"));
     }
 
     let base_dir = match &command_data.base_dir {
         Some(base_dir) => {
-            out.normal_line(&format!("Base directory: {}", base_dir));
+            out.normal_line(&format!("Base directory: {base_dir}"));
             base_dir.clone()
         }
         None => {

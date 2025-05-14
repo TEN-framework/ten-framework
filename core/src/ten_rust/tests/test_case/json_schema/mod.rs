@@ -356,7 +356,7 @@ mod tests {
         "#;
 
         let result = ten_validate_manifest_json_string(manifest);
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
         assert!(result.is_ok());
     }
 
