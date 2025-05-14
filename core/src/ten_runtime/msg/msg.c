@@ -115,7 +115,7 @@ static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *uri,
 
   ten_list_clear(&self->dest_loc);
   ten_list_push_ptr_back(&self->dest_loc,
-                         ten_loc_create(uri, graph_id, "", extension_name),
+                         ten_loc_create(uri, graph_id, extension_name),
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 
   return true;
@@ -127,7 +127,7 @@ void ten_raw_msg_add_dest(ten_msg_t *self, const char *uri,
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
 
   ten_list_push_ptr_back(&self->dest_loc,
-                         ten_loc_create(uri, graph_id, "", extension_name),
+                         ten_loc_create(uri, graph_id, extension_name),
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 }
 
@@ -227,21 +227,17 @@ const char *ten_msg_get_first_dest_uri(ten_shared_ptr_t *self) {
 
 static void ten_raw_msg_set_src(ten_msg_t *self, const char *uri,
                                 const char *graph_id,
-                                const char *extension_group_name,
                                 const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
-  ten_loc_set(&self->src_loc, uri, graph_id, extension_group_name,
-              extension_name);
+  ten_loc_set(&self->src_loc, uri, graph_id, extension_name);
 }
 
 void ten_msg_set_src(ten_shared_ptr_t *self, const char *uri,
-                     const char *graph_id, const char *extension_group_name,
-                     const char *extension_name) {
+                     const char *graph_id, const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-  ten_raw_msg_set_src(ten_msg_get_raw_msg(self), uri, graph_id,
-                      extension_group_name, extension_name);
+  ten_raw_msg_set_src(ten_msg_get_raw_msg(self), uri, graph_id, extension_name);
 }
 
 void ten_msg_set_src_to_app(ten_shared_ptr_t *self, ten_app_t *app) {
@@ -250,7 +246,7 @@ void ten_msg_set_src_to_app(ten_shared_ptr_t *self, ten_app_t *app) {
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
-  ten_msg_set_src(self, ten_app_get_uri(app), NULL, NULL, NULL);
+  ten_msg_set_src(self, ten_app_get_uri(app), NULL, NULL);
 }
 
 void ten_msg_set_src_to_engine(ten_shared_ptr_t *self, ten_engine_t *engine) {
@@ -260,7 +256,7 @@ void ten_msg_set_src_to_engine(ten_shared_ptr_t *self, ten_engine_t *engine) {
   TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
 
   ten_msg_set_src(self, ten_app_get_uri(engine->app),
-                  ten_engine_get_id(engine, true), NULL, NULL);
+                  ten_engine_get_id(engine, true), NULL);
 }
 
 void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
@@ -291,26 +287,7 @@ void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
 
   ten_msg_set_src(self, ten_app_get_uri(engine->app),
                   ten_engine_get_id(engine, false),
-                  ten_extension_group_get_name(extension_group, true),
                   ten_extension_get_name(extension, true));
-}
-
-void ten_msg_set_src_to_extension_group(
-    ten_shared_ptr_t *self, ten_extension_group_t *extension_group) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(extension_group, "Should not happen.");
-  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, true),
-             "Should not happen.");
-
-  ten_engine_t *engine =
-      extension_group->extension_thread->extension_context->engine;
-  TEN_ASSERT(engine, "Should not happen.");
-  TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
-
-  ten_msg_set_src(self, ten_app_get_uri(engine->app),
-                  ten_engine_get_id(engine, false),
-                  ten_extension_group_get_name(extension_group, true), NULL);
 }
 
 bool ten_msg_src_uri_is_empty(ten_shared_ptr_t *self) {

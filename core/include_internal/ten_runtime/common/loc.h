@@ -39,7 +39,6 @@ typedef struct ten_loc_t {
 
   ten_string_t app_uri;
   ten_string_t graph_id;
-  ten_string_t extension_group_name;
   ten_string_t extension_name;
 } ten_loc_t;
 
@@ -49,7 +48,6 @@ TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_loc_create_empty(void);
 
 TEN_RUNTIME_API ten_loc_t *ten_loc_create(const char *app_uri,
                                           const char *graph_id,
-                                          const char *extension_group_name,
                                           const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_loc_create_from_value(
@@ -65,7 +63,6 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_init_empty(ten_loc_t *self);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_init(ten_loc_t *self, const char *app_uri,
                                           const char *graph_id,
-                                          const char *extension_group_name,
                                           const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_init_from_loc(ten_loc_t *self,
@@ -78,7 +75,6 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_deinit(ten_loc_t *self);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_set(ten_loc_t *self, const char *app_uri,
                                          const char *graph_id,
-                                         const char *extension_group_name,
                                          const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_set_from_loc(ten_loc_t *self,
@@ -96,7 +92,7 @@ TEN_RUNTIME_PRIVATE_API bool ten_loc_is_equal(ten_loc_t *self,
 
 TEN_RUNTIME_PRIVATE_API bool ten_loc_is_equal_with_value(
     ten_loc_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_group_name, const char *extension_name);
+    const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_to_string(ten_loc_t *self,
                                                ten_string_t *result);
