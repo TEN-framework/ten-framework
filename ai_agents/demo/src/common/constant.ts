@@ -111,16 +111,16 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   //   value: "va_nova_multimodal_aws",
   // },
   {
-    label: "With TEN Turn Detection",
-    value: "with_ten_turn_detection",
+    label: "With TEN Turn Detector",
+    value: "with_ten_turn_detector",
   },
   {
-    label: "Without TEN Turn Detection and TEN VAD",
-    value: "without_ten_turn_detection_and_ten_vad",
+    label: "Without TEN Turn Detector",
+    value: "without_ten_turn_detector",
   },
   {
-    label: "With TEN Turn Detection and TEN VAD",
-    value: "with_ten_turn_detection_and_ten_vad",
+    label: "TEN Turn Detector and TEN VAD",
+    value: "ten_turn_detector_and_ten_vad",
   },
 ]
 
