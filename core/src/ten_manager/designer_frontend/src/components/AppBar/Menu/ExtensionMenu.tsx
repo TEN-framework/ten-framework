@@ -40,10 +40,10 @@ export const ExtensionMenu = (props: {
   const { disableMenuClick, idx, triggerListRef } = props;
 
   const { t } = useTranslation();
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
 
   const onOpenExtensionStore = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: EXTENSION_STORE_WIDGET_ID,
       widget_id: EXTENSION_STORE_WIDGET_ID,
@@ -64,7 +64,7 @@ export const ExtensionMenu = (props: {
   };
 
   const openAbout = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
       widget_id: DOC_REF_WIDGET_ID + "-" + EDocLinkKey.Extension,

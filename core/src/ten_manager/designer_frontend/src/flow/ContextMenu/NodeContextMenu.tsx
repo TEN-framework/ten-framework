@@ -73,7 +73,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   const { t } = useTranslation();
   const { appendDialog, removeDialog } = useDialogStore();
   const { setNodesAndEdges } = useFlowStore();
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
 
   const { graphs } = useGraphs();
 
@@ -83,7 +83,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
 
   const launchEditor = (data: IEditorWidgetData) => {
     const widgetId = `${data.url}-${Date.now()}`;
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_EDITOR_ID,
       widget_id: widgetId,
@@ -176,7 +176,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       disabled: !baseDir || !graphId,
       onClick: () => {
         if (!baseDir || !graphId) return;
-        appendWidgetIfNotExists({
+        appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
           widget_id: GRAPH_ACTIONS_WIDGET_ID + `-update-` + node.data.name,
@@ -213,7 +213,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       disabled: !baseDir || !graphId,
       onClick: () => {
         if (!baseDir || !graphId) return;
-        appendWidgetIfNotExists({
+        appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
           widget_id:
@@ -245,7 +245,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       disabled: !baseDir || !graphId,
       onClick: () => {
         if (!baseDir || !graphId) return;
-        appendWidgetIfNotExists({
+        appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
           widget_id:
@@ -299,7 +299,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       disabled: !baseDir || !graphId,
       onClick: () => {
         const type = EGraphActions.REPLACE_NODE;
-        appendWidgetIfNotExists({
+        appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
           widget_id:

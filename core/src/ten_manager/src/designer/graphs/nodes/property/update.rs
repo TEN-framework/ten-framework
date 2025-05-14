@@ -104,7 +104,7 @@ pub async fn update_graph_node_property_endpoint(
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to validate extension property: {}", e),
+            message: format!("Failed to validate extension property: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));
@@ -114,7 +114,7 @@ pub async fn update_graph_node_property_endpoint(
     {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to update node property in graph: {}", e),
+            message: format!("Failed to update node property in graph: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));
@@ -132,7 +132,7 @@ pub async fn update_graph_node_property_endpoint(
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to update property.json file: {}", e),
+            message: format!("Failed to update property.json file: {e}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));

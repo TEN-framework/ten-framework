@@ -122,7 +122,7 @@ mod tests {
         let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-        println!("Response body: {}", pretty_json);
+        println!("Response body: {pretty_json}");
     }
 
     #[actix_web::test]
@@ -279,6 +279,6 @@ mod tests {
         let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-        println!("Response body: {}", pretty_json);
+        println!("Response body: {pretty_json}");
     }
 }

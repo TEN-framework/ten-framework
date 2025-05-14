@@ -12,52 +12,14 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use ten_manager::fs::log_file_watcher::{
-        watch_log_file, LogFileWatchOptions,
-    };
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
-    // Helper function to ensure content is synced to disk.
-    fn sync_to_disk(file: &std::fs::File) -> Result<()> {
-        // Platform-specific sync implementation.
-        #[cfg(unix)]
-        unsafe {
-            use std::os::unix::io::AsRawFd;
+    use ten_manager::fs::log_file_watcher::{
+        watch_log_file, LogFileWatchOptions,
+    };
 
-            // Call fsync to ensure data is written to disk.
-            if libc::fsync(file.as_raw_fd()) != 0 {
-                return Err(anyhow::anyhow!("fsync failed"));
-            }
-        }
-
-        #[cfg(windows)]
-        unsafe {
-            // Windows equivalent of fsync is FlushFileBuffers.
-            use std::os::windows::io::AsRawHandle;
-
-            if winapi::um::fileapi::FlushFileBuffers(file.as_raw_handle() as _)
-                == 0
-            {
-                return Err(anyhow::anyhow!(
-                    "FlushFileBuffers failed with error code: {}",
-                    std::io::Error::last_os_error()
-                ));
-            }
-        }
-
-        // Cross-platform flush (less reliable but always available).
-        #[cfg(not(any(unix, windows)))]
-        {
-            // Use standard flush and sync_all for other platforms.
-            file.sync_all()?;
-        }
-
-        // Give the filesystem a moment to update metadata.
-        std::thread::sleep(Duration::from_millis(50));
-
-        Ok(())
-    }
+    use crate::test_case::common::fs::sync_to_disk;
 
     // Use standard #[test] with manual runtime creation.
     #[test]
@@ -84,7 +46,7 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk 1: {:?}", chunk);
+            println!("chunk 1: {chunk:?}");
             assert_eq!(chunk.line, test_content);
 
             // Write more content to the file.
@@ -96,11 +58,11 @@ mod tests {
 
             // Get the second chunk.
             let chunk = stream.next().await;
-            println!("chunk 2: {:?}", chunk);
+            println!("chunk 2: {chunk:?}");
             match chunk {
                 Some(chunk) => match chunk {
                     Ok(chunk) => assert_eq!(chunk.line, more_content),
-                    Err(e) => panic!("Should receive more data: {}", e),
+                    Err(e) => panic!("Should receive more data: {e}"),
                 },
                 None => {
                     panic!("Should receive more data");
@@ -147,7 +109,7 @@ mod tests {
 
             // Get the first chunk
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk 1: {:?}", chunk);
+            println!("chunk 1: {chunk:?}");
             assert_eq!(chunk.line, "Initial content");
 
             // Simulate log rotation - delete and recreate file
@@ -171,7 +133,7 @@ mod tests {
             // Get the content after rotation
             let chunk =
                 stream.next().await.expect("Should receive rotated data")?;
-            println!("chunk 2: {:?}", chunk);
+            println!("chunk 2: {chunk:?}");
             assert_eq!(chunk.line, "Rotated content");
 
             // Stop watching
@@ -204,12 +166,12 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk 1: {:?}", chunk);
+            println!("chunk 1: {chunk:?}");
             assert_eq!(chunk.line, "Test content");
 
             // Wait for the timeout to occur (no new content being written).
             let next_result = stream.next().await;
-            println!("next_result: {:?}", next_result);
+            println!("next_result: {next_result:?}");
             assert!(next_result.is_none(), "Stream should end after timeout");
 
             Ok(())
@@ -253,7 +215,7 @@ mod tests {
             // Get the graph resources line
             let chunk =
                 stream.next().await.expect("Should receive graph resources")?;
-            println!("chunk 1: {:?}", chunk);
+            println!("chunk 1: {chunk:?}");
             assert!(chunk.line.contains("[graph resources]"));
 
             // Now write logs that contain extension metadata in format
@@ -276,13 +238,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk 2: {:?}", chunk);
+            println!("chunk 2: {chunk:?}");
             assert!(chunk.line.contains("on_start()"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata 2: {:?}", metadata);
+            println!("metadata 2: {metadata:?}");
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Get second log with extension metadata
@@ -290,13 +252,13 @@ mod tests {
                 .next()
                 .await
                 .expect("Should receive log with extension")?;
-            println!("chunk 3: {:?}", chunk);
+            println!("chunk 3: {chunk:?}");
             assert!(chunk.line.contains("on_start() done"));
 
             // The metadata should include the extension name
             assert!(chunk.metadata.is_some(), "Should have metadata");
             let metadata = chunk.metadata.unwrap();
-            println!("metadata 3: {:?}", metadata);
+            println!("metadata 3: {metadata:?}");
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Stop watching
@@ -447,7 +409,7 @@ mod tests {
             // Process all log lines
             while let Some(result) = stream.next().await {
                 let chunk = result?;
-                println!("chunk: {:?}", chunk);
+                println!("chunk: {chunk:?}");
 
                 // Check if this is one of our target lines
                 if chunk.line.contains(target_start_line)
@@ -458,7 +420,7 @@ mod tests {
                     // Verify that the metadata includes the extension name
                     assert!(chunk.metadata.is_some(), "Should have metadata");
                     let metadata = chunk.metadata.unwrap();
-                    println!("metadata: {:?}", metadata);
+                    println!("metadata: {metadata:?}");
                     assert_eq!(
                         metadata.extension,
                         Some("test_extension".to_string())

@@ -46,7 +46,7 @@ fn gen_hash_hex(
     let mut hasher = Sha256::new();
 
     // Hash type.
-    let type_string = format!("{}", pkg_type);
+    let type_string = format!("{pkg_type}");
     hasher.update(type_string);
 
     // Hash name.
@@ -64,10 +64,10 @@ fn gen_hash_hex(
                 name,
                 version_req,
             } => {
-                format!("{}:{}@{}", pkg_type, name, version_req)
+                format!("{pkg_type}:{name}@{version_req}")
             }
             ManifestDependency::LocalDependency { path, base_dir } => {
-                format!("local:{}@{}", path, base_dir)
+                format!("local:{path}@{base_dir}")
             }
         };
         hasher.update(dep_string);
@@ -75,12 +75,12 @@ fn gen_hash_hex(
 
     // Hash supports.
     for support in supports {
-        let support_string = format!("{}", support);
+        let support_string = format!("{support}");
         hasher.update(support_string);
     }
 
     let hash_result = hasher.finalize();
-    let hash_hex = format!("{:x}", hash_result);
+    let hash_hex = format!("{hash_result:x}");
 
     hash_hex
 }

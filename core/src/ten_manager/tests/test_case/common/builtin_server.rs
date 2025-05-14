@@ -22,7 +22,7 @@ pub async fn start_test_server<F>(
 where
     F: Fn() -> actix_web::Route + Clone + Send + 'static,
 {
-    println!("Starting test server for endpoint: {}", endpoint_path);
+    println!("Starting test server for endpoint: {endpoint_path}");
 
     // Create channel for server address.
     let (addr_tx, addr_rx) = oneshot::channel();
@@ -59,7 +59,7 @@ where
 
             // Get the actual server address.
             let server_addr = server.addrs()[0];
-            println!("Server bound to address: {}", server_addr);
+            println!("Server bound to address: {server_addr}");
             let _ = addr_tx.send(server_addr);
 
             // Run the server - this will block until the server is stopped or

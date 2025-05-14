@@ -16,19 +16,19 @@ pub struct TmanOutputChannel {
 
 impl TmanOutput for TmanOutputChannel {
     fn normal_line(&self, text: &str) {
-        let _ = self.sender.send(format!("normal_line:{}", text));
+        let _ = self.sender.send(format!("normal_line:{text}"));
     }
 
     fn normal_partial(&self, text: &str) {
-        let _ = self.sender.send(format!("normal_partial:{}", text));
+        let _ = self.sender.send(format!("normal_partial:{text}"));
     }
 
     fn error_line(&self, text: &str) {
-        let _ = self.sender.send(format!("error_line:{}", text));
+        let _ = self.sender.send(format!("error_line:{text}"));
     }
 
     fn error_partial(&self, text: &str) {
-        let _ = self.sender.send(format!("error_partial:{}", text));
+        let _ = self.sender.send(format!("error_partial:{text}"));
     }
 
     fn is_interactive(&self) -> bool {

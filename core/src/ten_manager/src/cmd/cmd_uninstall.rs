@@ -91,7 +91,7 @@ async fn remove_installed_paths(
 
     // Read the installed_paths.json file.
     let file = fs::File::open(&installed_paths_path).with_context(|| {
-        format!("Failed to open file: {:?}", installed_paths_path)
+        format!("Failed to open file: {installed_paths_path:?}")
     })?;
 
     let installed_paths = InstalledPaths {
@@ -113,10 +113,10 @@ async fn remove_installed_paths(
     // Process each path.
     for path_str in installed_paths.paths {
         let path = if path_str
-            .starts_with(&format!("{}/", INSTALL_PATHS_APP_PREFIX))
+            .starts_with(&format!("{INSTALL_PATHS_APP_PREFIX}/"))
         {
             let relative_path = path_str
-                .trim_start_matches(&format!("{}/", INSTALL_PATHS_APP_PREFIX));
+                .trim_start_matches(&format!("{INSTALL_PATHS_APP_PREFIX}/"));
             cwd.join(relative_path)
         } else {
             addon_path.join(path_str)
@@ -133,7 +133,7 @@ async fn remove_installed_paths(
                 }
             }
             Err(e) => {
-                out.error_line(&format!("Error canonicalizing path: {}", e));
+                out.error_line(&format!("Error canonicalizing path: {e}"));
             }
         }
     }
@@ -149,8 +149,8 @@ pub async fn execute_cmd(
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Executing uninstall command");
-        out.normal_line(&format!("{:?}", command_data));
-        out.normal_line(&format!("{:?}", tman_config));
+        out.normal_line(&format!("{command_data:?}"));
+        out.normal_line(&format!("{tman_config:?}"));
     }
 
     let started = Instant::now();

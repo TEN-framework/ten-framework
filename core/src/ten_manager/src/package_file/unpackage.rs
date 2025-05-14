@@ -32,7 +32,7 @@ fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
         let _ = output_dir;
 
         symlink(target, link).with_context(|| {
-            format!("Failed to create symlink {:?} -> {:?}", link, target)
+            format!("Failed to create symlink {link:?} -> {target:?}")
         })?;
     }
 
@@ -195,8 +195,7 @@ fn extract_and_process_tar_gz_normal_part(
                 .link_name()
                 .with_context(|| {
                     format!(
-                        "Symlink entry {:?} does not have a target",
-                        entry_path
+                        "Symlink entry {entry_path:?} does not have a target"
                     )
                 })?
                 .ok_or_else(|| {
@@ -212,8 +211,7 @@ fn extract_and_process_tar_gz_normal_part(
             if let Some(p) = out_path.parent() {
                 fs::create_dir_all(p).with_context(|| {
                     format!(
-                        "Failed to create parent directory for {:?}",
-                        out_path
+                        "Failed to create parent directory for {out_path:?}"
                     )
                 })?;
             }
@@ -221,9 +219,8 @@ fn extract_and_process_tar_gz_normal_part(
             if out_path.exists() {
                 fs::remove_file(&out_path).with_context(|| {
                     format!(
-                        "Failed to remove existing file at {:?} before \
-                         creating symlink",
-                        out_path
+                        "Failed to remove existing file at {out_path:?} before \
+                         creating symlink"
                     )
                 })?;
             }

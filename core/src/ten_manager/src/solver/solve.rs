@@ -50,7 +50,7 @@ async fn get_model(
 
     for symbol in atoms {
         if is_verbose(tman_config.clone()).await {
-            out.normal_line(&format!(" {}", symbol));
+            out.normal_line(&format!(" {symbol}"));
         }
 
         result.push(symbol.to_string());
@@ -316,7 +316,7 @@ async fn solve(
                 }
                 break;
             }
-            Err(e) => panic!("Error: {}", e),
+            Err(e) => panic!("Error: {e}"),
         }
     }
 
@@ -502,13 +502,12 @@ fn create_input_str_for_pkg_info_dependencies(
                                 name,
                                 version_req,
                             } => format!(
-                                "[{}]{} ({})",
-                                pkg_type, name, version_req
+                                "[{pkg_type}]{name} ({version_req})"
                             ),
                             ManifestDependency::LocalDependency {
                                 path,
                                 ..
-                            } => format!("local:{}", path),
+                            } => format!("local:{path}"),
                         }
                     ));
                 }
@@ -520,10 +519,10 @@ fn create_input_str_for_pkg_info_dependencies(
                             pkg_type,
                             name,
                             version_req,
-                        } => format!("{}:{} @ {}", pkg_type, name, version_req),
+                        } => format!("{pkg_type}:{name} @ {version_req}"),
                         ManifestDependency::LocalDependency {
                             path, ..
-                        } => format!("local:{}", path),
+                        } => format!("local:{path}"),
                     }
                 ));
             }
@@ -609,8 +608,7 @@ async fn create_input_str(
     let mut input_str = String::new();
 
     input_str.push_str(&format!(
-        "root_declared(\"{}\", \"{}\").\n",
-        pkg_type, pkg_name,
+        "root_declared(\"{pkg_type}\", \"{pkg_name}\").\n",
     ));
 
     create_input_str_for_all_possible_pkgs_info(
@@ -639,7 +637,7 @@ async fn create_input_str(
     }
 
     if is_verbose(tman_config.clone()).await {
-        out.normal_line(&format!("Input: \n{}", input_str));
+        out.normal_line(&format!("Input: \n{input_str}"));
     }
 
     Ok(input_str)

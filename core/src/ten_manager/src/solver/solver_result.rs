@@ -186,8 +186,7 @@ pub async fn install_solver_results_in_app_folder(
                         + 1;
                     bar.set_position(current.try_into().unwrap_or(0));
                     bar.set_message(format!(
-                        "Completed {}/{}: {}",
-                        current, total_pkgs, pkg_name
+                        "Completed {current}/{total_pkgs}: {pkg_name}"
                     ));
                 }
 

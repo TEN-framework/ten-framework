@@ -67,11 +67,11 @@ export default function StatusBar(props: { className?: string }) {
 const StatusApps = () => {
   const { t } = useTranslation();
   const { data, error, isLoading } = useApps();
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
 
   const openAppsManagerPopup = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APPS_MANAGER_WIDGET_ID,
       widget_id: APPS_MANAGER_WIDGET_ID,
@@ -129,7 +129,7 @@ const StatusApps = () => {
 const StatusWorkspace = () => {
   const { t } = useTranslation();
   const { currentWorkspace } = useAppStore();
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
 
   const [baseDirAbbrMemo, baseDirMemo] = React.useMemo(() => {
     if (!currentWorkspace?.app?.base_dir) {
@@ -147,7 +147,7 @@ const StatusWorkspace = () => {
   }, [currentWorkspace.graph?.name]);
 
   const onOpenExistingGraph = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GRAPH_SELECT_WIDGET_ID,
       widget_id: GRAPH_SELECT_WIDGET_ID,

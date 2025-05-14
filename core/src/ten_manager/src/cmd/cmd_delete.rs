@@ -77,7 +77,7 @@ pub async fn execute_cmd(
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Executing delete command");
-        out.normal_line(&format!("{:?}", command_data));
+        out.normal_line(&format!("{command_data:?}"));
     }
 
     let started = Instant::now();

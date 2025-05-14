@@ -43,8 +43,7 @@ pub async fn get_file_content_endpoint(
         }
         Err(err) => {
             state.out.error_line(&format!(
-                "Error reading file at path {}: {}",
-                file_path, err
+                "Error reading file at path {file_path}: {err}"
             ));
 
             let response =

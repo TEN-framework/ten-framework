@@ -96,7 +96,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<FetchCommand> {
         .ok_or_else(|| anyhow!("Missing PACKAGE_NAME"))?;
     let (pkg_name, version_req) = parse_pkg_name_version_req(pkg_with_version)
         .with_context(|| {
-            format!("Failed to parse package name '{}'", pkg_with_version)
+            format!("Failed to parse package name '{pkg_with_version}'")
         })?;
 
     let support = ManifestSupport {

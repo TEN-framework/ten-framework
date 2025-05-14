@@ -29,9 +29,9 @@ impl Graph {
             // Check for duplicate message names within this connection.
             if let Some(errs) = self.check_connection_message_names(connection)
             {
-                errors.push(format!("- connection[{}]:", conn_idx));
+                errors.push(format!("- connection[{conn_idx}]:"));
                 for err in errs {
-                    errors.push(format!("  {}", err));
+                    errors.push(format!("  {err}"));
                 }
             }
         }
@@ -104,7 +104,7 @@ impl Graph {
                     "- Merge the following cmd into one section:".to_string(),
                 );
                 for err in errs {
-                    errors.push(format!("  {}", err));
+                    errors.push(format!("  {err}"));
                 }
             }
         }
@@ -117,7 +117,7 @@ impl Graph {
                     "- Merge the following data into one section:".to_string(),
                 );
                 for err in errs {
-                    errors.push(format!("  {}", err));
+                    errors.push(format!("  {err}"));
                 }
             }
         }
@@ -131,7 +131,7 @@ impl Graph {
                         .to_string(),
                 );
                 for err in errs {
-                    errors.push(format!("  {}", err));
+                    errors.push(format!("  {err}"));
                 }
             }
         }
@@ -145,7 +145,7 @@ impl Graph {
                         .to_string(),
                 );
                 for err in errs {
-                    errors.push(format!("  {}", err));
+                    errors.push(format!("  {err}"));
                 }
             }
         }
