@@ -73,12 +73,8 @@ interface FlowCanvasProps {
 
 const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
   ({ nodes, edges, onNodesChange, onEdgesChange, onConnect, className }) => {
-    const {
-      appendWidget,
-      appendWidget,
-      removeBackstageWidget,
-      removeLogViewerHistory,
-    } = useWidgetStore();
+    const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+      useWidgetStore();
     const { currentWorkspace } = useAppStore();
 
     const [contextMenu, setContextMenu] = useState<{
