@@ -154,6 +154,8 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
           type: ELogViewerScriptType.RUN_SCRIPT,
           base_dir: baseDir,
           name: selectedScript,
+          stdout_is_log: false,
+          stderr_is_log: false,
         },
       },
       popup: {
