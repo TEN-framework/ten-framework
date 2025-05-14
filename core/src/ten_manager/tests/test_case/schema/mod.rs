@@ -18,8 +18,7 @@ mod tests {
         let result = validate_tman_config(&config_json);
         assert!(
             result.is_ok(),
-            "Empty config should be valid now: {:?}",
-            result
+            "Empty config should be valid now: {result:?}"
         );
     }
 
@@ -37,8 +36,7 @@ mod tests {
         let result = validate_tman_config(&config_json);
         assert!(
             result.is_ok(),
-            "Should validate a minimal config: {:?}",
-            result
+            "Should validate a minimal config: {result:?}"
         );
     }
 
@@ -60,7 +58,7 @@ mod tests {
         });
 
         let result = validate_tman_config(&config_json);
-        assert!(result.is_ok(), "Should validate a full config: {:?}", result);
+        assert!(result.is_ok(), "Should validate a full config: {result:?}");
     }
 
     // Test case for invalid field type.
@@ -84,8 +82,7 @@ mod tests {
         let result = validate_designer_config(&designer_json);
         assert!(
             result.is_ok(),
-            "Empty designer config should be valid now: {:?}",
-            result
+            "Empty designer config should be valid now: {result:?}"
         );
     }
 
@@ -99,8 +96,7 @@ mod tests {
         let result = validate_designer_config(&designer_json);
         assert!(
             result.is_ok(),
-            "Should validate a valid designer config: {:?}",
-            result
+            "Should validate a valid designer config: {result:?}"
         );
     }
 

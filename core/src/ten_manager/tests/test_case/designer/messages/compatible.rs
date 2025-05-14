@@ -130,7 +130,7 @@ async fn test_get_compatible_messages_success() {
     let is_success = resp.status().is_success();
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    println!("Response body: {}", body_str);
+    println!("Response body: {body_str}");
 
     assert!(is_success, "Response status is not success");
 
@@ -359,7 +359,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
     let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
         serde_json::from_str(body_str).unwrap();
 
-    println!("compatibles: {:?}", compatibles);
+    println!("compatibles: {compatibles:?}");
 
     // Should have 1 compatible messages.
     assert_eq!(compatibles.data.len(), 1);
@@ -485,7 +485,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
     let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
         serde_json::from_str(body_str).unwrap();
 
-    println!("compatibles: {:?}", compatibles);
+    println!("compatibles: {compatibles:?}");
 
     // Should have 1 compatible messages.
     assert_eq!(compatibles.data.len(), 1);
@@ -611,7 +611,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
     let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
         serde_json::from_str(body_str).unwrap();
 
-    println!("compatibles: {:?}", compatibles);
+    println!("compatibles: {compatibles:?}");
 
     // Should have 1 compatible messages.
     assert_eq!(compatibles.data.len(), 1);
@@ -737,7 +737,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
     let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
         serde_json::from_str(body_str).unwrap();
 
-    println!("compatibles: {:?}", compatibles);
+    println!("compatibles: {compatibles:?}");
 
     // Should have 1 compatible messages.
     assert_eq!(compatibles.data.len(), 0);

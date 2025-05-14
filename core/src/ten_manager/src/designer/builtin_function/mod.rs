@@ -195,7 +195,7 @@ pub async fn builtin_function_endpoint(
     let default_parser: BuiltinFunctionParser = Box::new(move |text: &str| {
         // Attempt to parse the JSON text from client.
         let inbound = serde_json::from_str::<InboundMsg>(text)
-            .with_context(|| format!("Failed to parse {} into JSON", text))?;
+            .with_context(|| format!("Failed to parse {text} into JSON"))?;
 
         match inbound {
             InboundMsg::InstallAll { base_dir } => {

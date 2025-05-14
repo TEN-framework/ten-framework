@@ -23,7 +23,7 @@ pub fn create_metric_histogram(
             if let Err(e) =
                 system.registry.register(Box::new(histogram.clone()))
             {
-                eprintln!("Error registering histogram: {:?}", e);
+                eprintln!("Error registering histogram: {e:?}");
                 return Err(anyhow::anyhow!("Error registering histogram"));
             }
             Ok(MetricHandle::Histogram(histogram))
@@ -44,7 +44,7 @@ pub fn create_metric_histogram_with_labels(
             if let Err(e) =
                 system.registry.register(Box::new(histogram_vec.clone()))
             {
-                eprintln!("Error registering histogram vec: {:?}", e);
+                eprintln!("Error registering histogram vec: {e:?}");
                 return Err(anyhow::anyhow!("Error registering histogram"));
             }
             Ok(MetricHandle::HistogramVec(histogram_vec))

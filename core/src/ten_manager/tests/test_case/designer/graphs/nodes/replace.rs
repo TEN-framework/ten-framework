@@ -89,7 +89,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
@@ -161,7 +161,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
@@ -297,8 +297,8 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response status: {}", status);
-        println!("Response body: {}", body_str);
+        println!("Response status: {status}");
+        println!("Response body: {body_str}");
 
         // Read the updated property.json file to verify it hasn't changed.
         let updated_property_content =
@@ -456,8 +456,8 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response status: {}", status);
-        println!("Response body: {}", body_str);
+        println!("Response status: {status}");
+        println!("Response body: {body_str}");
 
         // The response should indicate failure.
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
@@ -571,7 +571,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         let response: ApiResponse<ReplaceGraphNodeResponsePayload> =
             serde_json::from_str(body_str).unwrap();

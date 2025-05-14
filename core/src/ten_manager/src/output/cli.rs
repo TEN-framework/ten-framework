@@ -11,16 +11,16 @@ pub struct TmanOutputCli;
 
 impl TmanOutput for TmanOutputCli {
     fn normal_line(&self, text: &str) {
-        println!("{}", text);
+        println!("{text}");
     }
     fn normal_partial(&self, text: &str) {
-        print!("{}", text);
+        print!("{text}");
     }
     fn error_line(&self, text: &str) {
-        eprintln!("{}", text);
+        eprintln!("{text}");
     }
     fn error_partial(&self, text: &str) {
-        eprint!("{}", text);
+        eprint!("{text}");
     }
     fn is_interactive(&self) -> bool {
         true

@@ -21,7 +21,7 @@ pub fn create_metric_gauge(
     match prometheus::Gauge::with_opts(gauge_opts) {
         Ok(gauge) => {
             if let Err(e) = system.registry.register(Box::new(gauge.clone())) {
-                eprintln!("Error registering gauge: {:?}", e);
+                eprintln!("Error registering gauge: {e:?}");
                 return Err(anyhow::anyhow!("Error registering gauge"));
             }
             Ok(MetricHandle::Gauge(gauge))
@@ -42,7 +42,7 @@ pub fn create_metric_gauge_with_labels(
             if let Err(e) =
                 system.registry.register(Box::new(gauge_vec.clone()))
             {
-                eprintln!("Error registering gauge vec: {:?}", e);
+                eprintln!("Error registering gauge vec: {e:?}");
                 return Err(anyhow::anyhow!("Error registering gauge"));
             }
             Ok(MetricHandle::GaugeVec(gauge_vec))

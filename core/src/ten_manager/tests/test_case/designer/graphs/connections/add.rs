@@ -165,10 +165,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -360,10 +360,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -968,7 +968,7 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("{}", body_str);
+        println!("{body_str}");
 
         let response: ApiResponse<AddGraphConnectionResponsePayload> =
             serde_json::from_str(body_str).unwrap();

@@ -168,7 +168,7 @@ impl Handler<FileContent> for WsLogWatcher {
             }
             Err(e) => {
                 // Log the serialization error.
-                eprintln!("Error serializing LogLineInfo to JSON: {}", e);
+                eprintln!("Error serializing LogLineInfo to JSON: {e}");
 
                 // Fallback to just the line content if serialization fails.
                 ctx.text(msg.0.line);

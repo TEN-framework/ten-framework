@@ -29,7 +29,7 @@ pub extern "C" fn ten_cipher_create(
     let params_cstr = unsafe { CStr::from_ptr(params) };
 
     let algorithm_str = algorithm_cstr.to_str().unwrap_or_else(|err| {
-        eprintln!("Error: {}", err);
+        eprintln!("Error: {err}");
         ""
     });
     if algorithm_str.is_empty() {
@@ -37,7 +37,7 @@ pub extern "C" fn ten_cipher_create(
     }
 
     let params_str = params_cstr.to_str().unwrap_or_else(|err| {
-        eprintln!("Error: {}", err);
+        eprintln!("Error: {err}");
         ""
     });
     if params_str.is_empty() {

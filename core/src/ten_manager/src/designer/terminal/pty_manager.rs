@@ -103,7 +103,7 @@ impl PtyManager {
                 // Send te data to the websocket if necessary.
                 if !data.is_empty() {
                     if let Err(e) = tx.send(PtyMessage::Buffer(data)) {
-                        println!("Failed to send pty message: {}", e);
+                        println!("Failed to send pty message: {e}");
                         break;
                     }
                 }
@@ -114,7 +114,7 @@ impl PtyManager {
     }
 
     pub fn write_to_pty(&mut self, data: &str) -> Result<(), ()> {
-        write!(self.writer, "{}", data).map_err(|_| ())
+        write!(self.writer, "{data}").map_err(|_| ())
     }
 
     pub fn resize_pty(&self, cols: u16, rows: u16) -> Result<(), ()> {

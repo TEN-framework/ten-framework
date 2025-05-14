@@ -60,7 +60,7 @@ pub async fn get_packages_endpoint(
             Err(e) => {
                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                     status: Status::Fail,
-                    message: format!("Invalid version requirement: {}", e),
+                    message: format!("Invalid version requirement: {e}"),
                     error: None,
                 }));
             }
@@ -93,7 +93,7 @@ pub async fn get_packages_endpoint(
         }
         Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to get packages: {}", e),
+            message: format!("Failed to get packages: {e}"),
             error: None,
         })),
     }

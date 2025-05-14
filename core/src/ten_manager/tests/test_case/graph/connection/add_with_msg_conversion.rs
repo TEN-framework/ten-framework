@@ -388,7 +388,7 @@ mod tests {
             &pkgs_cache,
             Some(msg_conversion),
         );
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_ok());
     }
@@ -514,7 +514,7 @@ mod tests {
             Some(msg_conversion),
         );
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_ok());
         assert!(graph.connections.is_some());
@@ -612,7 +612,7 @@ mod tests {
             &pkgs_cache,
             Some(msg_conversion),
         );
-        eprintln!("result: {:?}", result);
+        eprintln!("result: {result:?}");
 
         assert!(result.is_ok());
 
@@ -785,7 +785,7 @@ mod tests {
             Some(msg_conversion),
         );
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         // Should fail validation due to empty rules.
         assert!(result.is_err());
@@ -870,7 +870,7 @@ mod tests {
             Some(msg_conversion),
         );
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_ok());
     }
@@ -954,7 +954,7 @@ mod tests {
             Some(msg_conversion),
         );
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_err());
     }
@@ -1028,7 +1028,7 @@ mod tests {
             Some(msg_conversion),
         );
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_err());
     }

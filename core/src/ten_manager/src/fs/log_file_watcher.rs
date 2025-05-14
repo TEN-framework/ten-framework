@@ -234,14 +234,14 @@ async fn watch_log_file_task(
                     Err(_) => continue,
                 };
 
-                eprintln!("File check: curr_len = {}, last_pos = {}", curr_len, last_pos);
+                eprintln!("File check: curr_len = {curr_len}, last_pos = {last_pos}");
 
                 if curr_len > last_pos {
                     eprintln!("New content detected: {} bytes", curr_len - last_pos);
 
                     // Read the new part.
                     if let Err(e) = file.seek(SeekFrom::Start(last_pos)) {
-                        eprintln!("Error seeking to position: {}", e);
+                        eprintln!("Error seeking to position: {e}");
                         let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                         break;
                     }
@@ -251,7 +251,7 @@ async fn watch_log_file_task(
                     match reader.read_line(&mut line) {
                         Ok(n) if n > 0 => {
                             last_pos += n as u64;
-                            eprintln!("Read {} bytes, new position = {}", n, last_pos);
+                            eprintln!("Read {n} bytes, new position = {last_pos}");
 
                             // Process the new line.
                             let metadata = process_log_line(&line, &mut graph_resources_log);
@@ -272,7 +272,7 @@ async fn watch_log_file_task(
                                     .send(Err(anyhow!("Invalid UTF-8 data in file")))
                                     .await;
                             } else {
-                                eprintln!("Error reading from file: {}", e);
+                                eprintln!("Error reading from file: {e}");
                                 let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                             }
                             break;
