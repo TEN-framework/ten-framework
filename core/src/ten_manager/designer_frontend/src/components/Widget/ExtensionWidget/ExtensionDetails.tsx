@@ -130,11 +130,8 @@ export const ExtensionDetails = (props: {
   }, [addons, name]);
 
   const { t } = useTranslation();
-  const {
-    appendWidgetIfNotExists,
-    removeBackstageWidget,
-    removeLogViewerHistory,
-  } = useWidgetStore();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
   const { currentWorkspace } = useAppStore();
 
   const osArchMemo = React.useMemo(() => {
@@ -180,7 +177,7 @@ export const ExtensionDetails = (props: {
       return;
     }
     const widgetId = "ext-install-" + selectedVersionItemMemo.hash;
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
       widget_id: widgetId,
