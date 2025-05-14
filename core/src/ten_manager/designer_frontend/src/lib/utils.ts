@@ -16,22 +16,42 @@ export function formatNumberWithCommas(number: number) {
 }
 
 /**
- * Compare two version strings
- * @param a such as "1.0.0"
- * @param b such as "1.0.1"
+ * Compare two version strings including pre-release versions
+ * @param a such as "1.0.0" or "1.0.0-beta1"
+ * @param b such as "1.0.1" or "1.0.0-rc2"
  * @returns 1 if a > b, -1 if a < b, 0 if a == b
  */
-export function compareVersions(a: string, b: string) {
-  const aParts = a.split(".");
-  const bParts = b.split(".");
-  for (let i = 0; i < aParts.length; i++) {
-    const aPart = aParts[i];
-    const bPart = bParts[i];
-    if (aPart > bPart) {
-      return 1;
-    } else if (aPart < bPart) {
-      return -1;
-    }
+export function compareVersions(a: string, b: string): number {
+  const [aVersion, aPrerelease = ""] = a.split("-");
+  const [bVersion, bPrerelease = ""] = b.split("-");
+
+  const aParts = aVersion.split(".").map(Number);
+  const bParts = bVersion.split(".").map(Number);
+
+  // Compare version numbers
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aPart = aParts[i] || 0;
+    const bPart = bParts[i] || 0;
+    if (aPart > bPart) return 1;
+    if (aPart < bPart) return -1;
   }
-  return 0;
+
+  // If versions are equal, compare pre-release
+  if (!aPrerelease && !bPrerelease) return 0;
+  if (!aPrerelease) return 1; // release > pre-release
+  if (!bPrerelease) return -1; // pre-release < release
+
+  const preReleaseOrder = { alpha: 1, beta: 2, rc: 3 };
+  const aType = aPrerelease.match(/^(alpha|beta|rc)/)?.[1] || "";
+  const bType = bPrerelease.match(/^(alpha|beta|rc)/)?.[1] || "";
+  const aNum = parseInt(aPrerelease.match(/\d+$/)?.[0] || "0");
+  const bNum = parseInt(bPrerelease.match(/\d+$/)?.[0] || "0");
+
+  if (aType !== bType) {
+    return (
+      (preReleaseOrder[aType as keyof typeof preReleaseOrder] || 0) -
+      (preReleaseOrder[bType as keyof typeof preReleaseOrder] || 0)
+    );
+  }
+  return aNum - bNum;
 }
