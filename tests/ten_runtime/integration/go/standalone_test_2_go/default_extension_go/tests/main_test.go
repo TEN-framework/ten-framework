@@ -1,3 +1,10 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+
 package tests
 
 import (
@@ -6,8 +13,9 @@ import (
 	ten "ten_framework/ten_runtime"
 	"testing"
 
-	// We import the default_extension_go package to ensure its init function is executed.
-	// This is because default_extension_go registers the addon in its init function.
+	// We import the default_extension_go package to ensure its init function is
+	// executed. This is because default_extension_go registers the addon in its
+	// init function.
 	// Note that this line is necessary, even though it doesn't seem to be used.
 	_ "default_extension_go"
 )

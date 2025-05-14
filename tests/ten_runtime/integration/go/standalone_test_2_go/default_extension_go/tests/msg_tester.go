@@ -1,15 +1,22 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+
 package tests
 
 import (
 	ten "ten_framework/ten_runtime"
 )
 
-// CmdTester
-
+// CmdTester is a tester for the Cmd extension.
 type CmdTester struct {
 	ten.DefaultExtensionTester
 }
 
+// OnStart is called when the test starts.
 func (tester *CmdTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
 
@@ -19,6 +26,7 @@ func (tester *CmdTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStartDone()
 }
 
+// OnCmd is called when a cmd is received.
 func (tester *CmdTester) OnCmd(
 	tenEnv ten.TenEnvTester,
 	cmd ten.Cmd,
@@ -33,12 +41,12 @@ func (tester *CmdTester) OnCmd(
 	}
 }
 
-// DataTester
-
+// DataTester is a tester for the Data extension.
 type DataTester struct {
 	ten.DefaultExtensionTester
 }
 
+// OnStart is called when the test starts.
 func (tester *DataTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
 
@@ -49,6 +57,7 @@ func (tester *DataTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStartDone()
 }
 
+// OnData is called when a data is received.
 func (tester *DataTester) OnData(
 	tenEnv ten.TenEnvTester,
 	data ten.Data,
@@ -65,12 +74,12 @@ func (tester *DataTester) OnData(
 	}
 }
 
-// VideoFrameTester
-
+// VideoFrameTester is a tester for the VideoFrame extension.
 type VideoFrameTester struct {
 	ten.DefaultExtensionTester
 }
 
+// OnStart is called when the test starts.
 func (tester *VideoFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
 
@@ -80,6 +89,7 @@ func (tester *VideoFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStartDone()
 }
 
+// OnVideoFrame is called when a video frame is received.
 func (tester *VideoFrameTester) OnVideoFrame(
 	tenEnv ten.TenEnvTester,
 	videoFrame ten.VideoFrame,
@@ -94,12 +104,12 @@ func (tester *VideoFrameTester) OnVideoFrame(
 	}
 }
 
-// AudioFrameTester
-
+// AudioFrameTester is a tester for the AudioFrame extension.
 type AudioFrameTester struct {
 	ten.DefaultExtensionTester
 }
 
+// OnStart is called when the test starts.
 func (tester *AudioFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
 
@@ -109,6 +119,7 @@ func (tester *AudioFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStartDone()
 }
 
+// OnAudioFrame is called when an audio frame is received.
 func (tester *AudioFrameTester) OnAudioFrame(
 	tenEnv ten.TenEnvTester,
 	audioFrame ten.AudioFrame,
