@@ -47,8 +47,8 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
         const msg = JSON.parse(event.data);
 
         if (
-          msg.type === EWSMessageType.STANDARD_OUTPUT ||
-          msg.type === EWSMessageType.STANDARD_ERROR
+          msg.type === EWSMessageType.STANDARD_OUTPUT_LOG ||
+          msg.type === EWSMessageType.STANDARD_ERROR_LOG
         ) {
           const line = msg.data;
           appendLogsById(id, [line]);

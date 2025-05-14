@@ -32,6 +32,8 @@ export interface IExtensionAddon
 export enum EWSMessageType {
   STANDARD_OUTPUT = "stdout",
   STANDARD_ERROR = "stderr",
+  STANDARD_OUTPUT_LOG = "stdout_log",
+  STANDARD_ERROR_LOG = "stderr_log",
   EXIT = "exit",
   NORMAL_LINE = "normal_line",
 }
