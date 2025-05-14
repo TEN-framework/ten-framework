@@ -32,7 +32,6 @@ typedef struct ten_go_ten_env_tester_t {
 
   ten_env_tester_t *c_ten_env_tester;
   ten_env_tester_proxy_t *c_ten_env_tester_proxy;
-
 } ten_go_ten_env_tester_t;
 
 TEN_RUNTIME_PRIVATE_API bool ten_go_ten_env_tester_check_integrity(
