@@ -118,10 +118,6 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Without TEN Turn Detector",
     value: "without_ten_turn_detector",
   },
-  {
-    label: "TEN Turn Detector and TEN VAD",
-    value: "ten_turn_detector_and_ten_vad",
-  },
 ]
 
 export const isRagGraph = (graphName: string) => {
