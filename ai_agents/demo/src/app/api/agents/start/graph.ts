@@ -288,7 +288,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    }else if (graphName === "with_ten_turn_detection") {
+    }else if (graphName === "with_ten_turn_detector") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -302,7 +302,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName === "without_ten_turn_detection_and_ten_vad") {
+    } else if (graphName === "without_ten_turn_detector") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -316,7 +316,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName === "with_ten_turn_detection_and_ten_vad") {
+    } else if (graphName === "ten_turn_detector_and_ten_vad") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
