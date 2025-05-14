@@ -374,8 +374,10 @@ bool ten_extension_info_check_integrity(ten_extension_info_t *self,
 
 void ten_extension_info_translate_localhost_to_app_uri(
     ten_extension_info_t *self, const char *uri) {
-  TEN_ASSERT(self && ten_extension_info_check_integrity(self, true) && uri,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_info_check_integrity(self, false),
              "Should not happen.");
+  TEN_ASSERT(uri, "Should not happen.");
 
   if (ten_string_is_equal_c_str(&self->loc.app_uri, TEN_STR_LOCALHOST) ||
       ten_string_is_empty(&self->loc.app_uri)) {
