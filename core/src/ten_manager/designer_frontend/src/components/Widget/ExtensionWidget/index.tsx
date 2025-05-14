@@ -50,7 +50,7 @@ export const ExtensionStoreWidget = (props: {
   const { t } = useTranslation();
   const { data, error, isLoading } = useListTenCloudStorePackages();
   const { data: envData, error: envError, isLoading: isLoadingEnv } = useEnv();
-  const { extSearch, extFilter, appendWidgetIfNotExists } = useWidgetStore();
+  const { extSearch, extFilter, appendWidget } = useWidgetStore();
   const { addons, setAddons, setDefaultOsArch, currentWorkspace } =
     useAppStore();
 
@@ -233,7 +233,7 @@ export const ExtensionStoreWidget = (props: {
   ]);
 
   const onOpenExistingGraph = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GRAPH_SELECT_WIDGET_ID,
       widget_id: GRAPH_SELECT_WIDGET_ID,

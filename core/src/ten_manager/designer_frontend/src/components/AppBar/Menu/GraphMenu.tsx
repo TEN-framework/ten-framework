@@ -51,11 +51,11 @@ export function GraphMenu(props: {
   const { onAutoLayout, disableMenuClick, idx, triggerListRef } = props;
 
   const { t } = useTranslation();
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
   const { currentWorkspace } = useAppStore();
 
   const onOpenExistingGraph = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GRAPH_SELECT_WIDGET_ID,
       widget_id: GRAPH_SELECT_WIDGET_ID,
@@ -76,7 +76,7 @@ export function GraphMenu(props: {
 
   const onGraphAct = (type: EGraphActions) => () => {
     if (!currentWorkspace?.graph || !currentWorkspace?.app) return;
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_GRAPH_ID,
       widget_id:
@@ -101,7 +101,7 @@ export function GraphMenu(props: {
   };
 
   const openAbout = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
       widget_id: DOC_REF_WIDGET_ID + "-" + EDocLinkKey.Graph,

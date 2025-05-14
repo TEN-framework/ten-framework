@@ -123,11 +123,8 @@ export const ExtensionBaseItem = React.forwardRef<
   const { item, className, isInstalled, _type, readOnly, ...rest } = props;
 
   const { t } = useTranslation();
-  const {
-    appendWidgetIfNotExists,
-    removeBackstageWidget,
-    removeLogViewerHistory,
-  } = useWidgetStore();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
   const { currentWorkspace } = useAppStore();
   const { mutate } = useListTenCloudStorePackages();
 
@@ -140,7 +137,7 @@ export const ExtensionBaseItem = React.forwardRef<
         return;
       }
       const widgetId = "ext-install-" + item.hash;
-      appendWidgetIfNotExists({
+      appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_LOG_VIEWER_ID,
         widget_id: widgetId,
@@ -266,10 +263,10 @@ export const ExtensionStoreItem = (props: {
     readOnly,
   } = props;
 
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
 
   const handleClick = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_EXTENSION_ID,
       widget_id: EXTENSION_WIDGET_ID + "-" + item.name,

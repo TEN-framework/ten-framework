@@ -60,7 +60,7 @@ export function AppMenu(props: {
 
   const { t } = useTranslation();
 
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
   const { updateCurrentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
@@ -68,7 +68,7 @@ export function AppMenu(props: {
   const { mutate } = useApps();
 
   const openAppFolderPopup = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APP_FOLDER_WIDGET_ID,
       widget_id: APP_FOLDER_WIDGET_ID,
@@ -88,7 +88,7 @@ export function AppMenu(props: {
   };
 
   const openAppsManagerPopup = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APPS_MANAGER_WIDGET_ID,
       widget_id: APPS_MANAGER_WIDGET_ID,
@@ -104,7 +104,7 @@ export function AppMenu(props: {
   };
 
   const openAppCreatePopup = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APP_CREATE_WIDGET_ID,
       widget_id: APP_CREATE_WIDGET_ID,
@@ -120,7 +120,7 @@ export function AppMenu(props: {
   };
 
   const openAbout = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
       widget_id: DOC_REF_WIDGET_ID + "-" + EDocLinkKey.App,
