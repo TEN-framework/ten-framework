@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
+import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { VariableSizeList as VirtualList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useWidgetStore, appendLogsById } from "@/store/widget";
 import { ILogViewerWidget, ILogViewerWidgetOptions } from "@/types/widgets";
-import { EWSMessageType } from "@/types/apps";
+import { EWSMessageType, LogSchema, LegacyLogSchema } from "@/types/apps";
 
 export function LogViewerBackstageWidget(props: ILogViewerWidget) {
   const {
@@ -44,24 +45,31 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
 
     wsRef.current.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data);
+        const msg: z.infer<typeof LogSchema> | z.infer<typeof LegacyLogSchema> =
+          JSON.parse(event.data);
+        const isLegacy = typeof msg.data === "string";
 
         if (
           msg.type === EWSMessageType.STANDARD_OUTPUT_LOG ||
-          msg.type === EWSMessageType.STANDARD_ERROR_LOG
+          msg.type === EWSMessageType.STANDARD_ERROR_LOG ||
+          msg.type === EWSMessageType.NORMAL_LINE
         ) {
-          const line = msg.data;
-          appendLogsById(id, [line]);
-        } else if (msg.type === EWSMessageType.NORMAL_LINE) {
-          const line = msg.data;
-          appendLogsById(id, [line]);
+          if (isLegacy) {
+            const line = (msg as z.infer<typeof LegacyLogSchema>).data;
+            appendLogsById(id, [line]);
+          } else {
+            const line = (msg as z.infer<typeof LogSchema>).data.line;
+            appendLogsById(id, [line]);
+          }
         } else if (msg.type === EWSMessageType.EXIT) {
           const code = msg.code;
           const errMsg = msg?.error_message;
-          appendLogsById(id, [
-            errMsg,
-            `Process exited with code ${code}. Closing...`,
-          ]);
+          const lines = [];
+          if (errMsg) {
+            lines.push(errMsg);
+          }
+          lines.push(`Process exited with code ${code}. Closing...`);
+          appendLogsById(id, lines);
 
           wsRef.current?.close();
         } else if (msg.status === "fail") {
@@ -69,6 +77,7 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
         } else {
           appendLogsById(id, [`Unknown message: ${JSON.stringify(msg)}`]);
         }
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         // If it's not JSON, output it directly as text.

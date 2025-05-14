@@ -84,3 +84,25 @@ export const AppCreateReqSchema = z.object({
   app_name: z.string().min(1),
   template_name: z.string().min(1),
 });
+
+export const LogLineMetadataSchema = z.object({
+  extension: z.string().optional(),
+});
+
+export const LogLineInfoSchema = z.object({
+  line: z.string(),
+  metadata: LogLineMetadataSchema.optional(),
+});
+
+export const LogSchema = z.object({
+  type: z.nativeEnum(EWSMessageType),
+  data: LogLineInfoSchema,
+  code: z.number().optional(),
+  error_message: z.string().optional(),
+  status: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export const LegacyLogSchema = LogSchema.extend({
+  data: z.string(),
+});
