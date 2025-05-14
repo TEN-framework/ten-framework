@@ -33,7 +33,8 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
         	]
 		}`
 
-		// Switch 
+		// Switch to a new goroutine to test if those codes can be executed in
+		// other threads.
 		go func() {
 			graphJSONBytes := []byte(graphJSON)
 			startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)

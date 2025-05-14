@@ -235,11 +235,14 @@ TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
     start_graph_with_msg_conversion__predefined_graph_extension,
     test_predefined_graph);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_1, test_normal_extension_1);
+    start_graph_with_msg_conversion__normal_extension_1,
+    test_normal_extension_1);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_2, test_normal_extension_2);
+    start_graph_with_msg_conversion__normal_extension_2,
+    test_normal_extension_2);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_3, test_normal_extension_3);
+    start_graph_with_msg_conversion__normal_extension_3,
+    test_normal_extension_3);
 
 }  // namespace
 
