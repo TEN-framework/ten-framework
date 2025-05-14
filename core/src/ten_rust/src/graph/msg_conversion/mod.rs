@@ -22,8 +22,7 @@ impl FromStr for MsgConversionType {
         match s {
             "per_property" => Ok(MsgConversionType::PerProperty),
             _ => Err(anyhow::Error::msg(format!(
-                "Unsupported message conversion type: {}.",
-                s
+                "Unsupported message conversion type: {s}."
             ))),
         }
     }
@@ -46,8 +45,7 @@ impl FromStr for MsgConversionMode {
             "fixed_value" => Ok(MsgConversionMode::FixedValue),
             "from_original" => Ok(MsgConversionMode::FromOriginal),
             _ => Err(anyhow::Error::msg(format!(
-                "Unsupported message conversion mode: {}.",
-                s
+                "Unsupported message conversion mode: {s}."
             ))),
         }
     }

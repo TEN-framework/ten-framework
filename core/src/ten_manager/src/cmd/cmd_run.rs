@@ -68,7 +68,7 @@ pub async fn execute_cmd(
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
-        out.normal_line(&format!("Executing run command: {:?}", cmd));
+        out.normal_line(&format!("Executing run command: {cmd:?}"));
     }
 
     // Read `manifest.json` in the current working directory.

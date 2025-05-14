@@ -66,7 +66,7 @@ mod tests {
 
         // Verify the response.
         if resp_status != &StatusCode::OK {
-            println!("{}", body_str);
+            println!("{body_str}");
 
             panic!("Failed to load app");
         }

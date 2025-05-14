@@ -114,7 +114,7 @@ mod tests {
         let json: ApiResponse<Vec<GetGraphsResponseData>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-        println!("Response body: {}", pretty_json);
+        println!("Response body: {pretty_json}");
     }
 
     #[actix_web::test]
@@ -152,6 +152,6 @@ mod tests {
 
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
     }
 }

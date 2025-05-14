@@ -122,16 +122,15 @@ mod deprecated {
                 }
                 Err(e) if attempt < max_retries => {
                     println!(
-                        "Attempt {}/{} failed: {}. Retrying...",
-                        attempt, max_retries, e
+                        "Attempt {attempt}/{max_retries} failed: {e}. \
+                         Retrying...",
                     );
                     thread::sleep(retry_delay);
                 }
                 Err(e) => {
                     panic!(
                         "Unable to move temporary bindings to final \
-                         destination after {} attempts: {}",
-                        max_retries, e
+                         destination after {max_retries} attempts: {e}",
                     );
                 }
             }
@@ -225,16 +224,15 @@ mod deprecated {
                 }
                 Err(e) if attempt < max_retries => {
                     println!(
-                        "Attempt {}/{} failed: {}. Retrying...",
-                        attempt, max_retries, e
+                        "Attempt {attempt}/{max_retries} failed: {e}. \
+                         Retrying...",
                     );
                     thread::sleep(retry_delay);
                 }
                 Err(e) => {
                     panic!(
                         "Unable to move temporary bindings to final \
-                         destination after {} attempts: {}",
-                        max_retries, e
+                         destination after {max_retries} attempts: {e}",
                     );
                 }
             }
@@ -306,6 +304,6 @@ fn main() {
         }
     };
 
-    println!("cargo:rustc-link-search={}", utils_search_path);
+    println!("cargo:rustc-link-search={utils_search_path}");
     println!("cargo:rustc-link-lib=ten_utils_static");
 }

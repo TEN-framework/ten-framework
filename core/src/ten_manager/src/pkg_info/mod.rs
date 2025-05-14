@@ -35,7 +35,7 @@ pub async fn tman_get_all_installed_pkgs_info_of_app(
     let all_pkgs = pkg_info_struct.to_vec();
 
     if is_verbose(tman_config.clone()).await {
-        out.normal_line(&format!("{:?}", all_pkgs));
+        out.normal_line(&format!("{all_pkgs:?}"));
     }
     Ok(all_pkgs)
 }

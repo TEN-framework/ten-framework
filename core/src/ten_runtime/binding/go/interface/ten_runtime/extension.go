@@ -86,7 +86,7 @@ func (p *DefaultExtension) OnAudioFrame(
 ) {
 }
 
-// The GO Extension object created by the GO binding (refer to WrapExtension),
+// The GO Extension object created by the GO binding (refer to wrapExtension),
 // which is bound to the C Extension. The first field of `extension` is the
 // user-defined extension instance (i.e., Extension).
 //
@@ -96,8 +96,8 @@ type extension struct {
 	baseTenObject[C.uintptr_t]
 }
 
-// WrapExtension wraps the user-defined extension instance as an Extension.
-func WrapExtension(
+// wrapExtension wraps the user-defined extension instance as an Extension.
+func wrapExtension(
 	ext Extension,
 	name string,
 ) Extension {

@@ -70,7 +70,7 @@ pub async fn execute_cmd(
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Executing package command");
-        out.normal_line(&format!("{:?}", command_data));
+        out.normal_line(&format!("{command_data:?}"));
     }
 
     let cwd = crate::fs::get_cwd()?;
@@ -85,7 +85,7 @@ pub async fn execute_cmd(
         let name = &pkg_info.manifest.type_and_name.name;
         let version = &pkg_info.manifest.version;
 
-        println!("{} {} {} {}", pkg_type, name, version, hash);
+        println!("{pkg_type} {name} {version} {hash}");
 
         return Ok(());
     }

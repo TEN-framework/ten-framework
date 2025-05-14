@@ -97,8 +97,7 @@ pub async fn get_help_text_endpoint(
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!(
-                "Help text not found for key {} and locale {}",
-                key, locale
+                "Help text not found for key {key} and locale {locale}"
             ),
             error: None,
         };

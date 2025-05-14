@@ -60,7 +60,7 @@ fn install_local_dependency_pkg_info(
         .join(src_path)
         .canonicalize()
         .with_context(|| {
-        format!("Failed to canonicalize path: {} + {}", src_base_dir, src_path)
+        format!("Failed to canonicalize path: {src_base_dir} + {src_path}")
     })?;
 
     let src_dir_path_metadata = fs::metadata(&src_dir_path)
@@ -69,8 +69,7 @@ fn install_local_dependency_pkg_info(
 
     if Path::new(dest_dir_path).exists() {
         out.normal_line(&format!(
-            "Destination directory '{}' already exists. Skipping copy/link.",
-            dest_dir_path
+            "Destination directory '{dest_dir_path}' already exists. Skipping copy/link."
         ));
     } else {
         // Create all parent folders for `dest_dir`.
@@ -78,8 +77,7 @@ fn install_local_dependency_pkg_info(
         if let Some(parent) = dest_path.parent() {
             fs::create_dir_all(parent).with_context(|| {
                 format!(
-                    "Failed to create parent directories for '{}'",
-                    dest_dir_path
+                    "Failed to create parent directories for '{dest_dir_path}'"
                 )
             })?;
         }
@@ -258,8 +256,7 @@ fn update_package_manifest(
                             Ok(info) => info,
                             Err(_) => {
                                 panic!(
-                                    "Failed to get package info from path: {}",
-                                    path
+                                    "Failed to get package info from path: {path}"
                                 );
                             }
                         };
@@ -433,8 +430,7 @@ pub async fn filter_compatible_pkgs_to_candidates(
     for existed_pkg in all_pkgs.to_owned().iter_mut() {
         if is_verbose(tman_config.clone()).await {
             out.normal_line(&format!(
-                "Check support score for {:?}",
-                existed_pkg
+                "Check support score for {existed_pkg:?}"
             ));
         }
 
@@ -481,10 +477,10 @@ fn get_supports_str(pkg: &PkgInfo) -> String {
         .iter()
         .filter_map(|s| match (s.os.as_ref(), s.arch.as_ref()) {
             (Some(os), Some(arch)) => {
-                Some(format!("{:?}, {:?}", os, arch).to_lowercase())
+                Some(format!("{os:?}, {arch:?}").to_lowercase())
             }
-            (Some(os), None) => Some(format!("{:?}", os).to_lowercase()),
-            (None, Some(arch)) => Some(format!("{:?}", arch).to_lowercase()),
+            (Some(os), None) => Some(format!("{os:?}").to_lowercase()),
+            (None, Some(arch)) => Some(format!("{arch:?}").to_lowercase()),
             (None, None) => None,
         })
         .collect();

@@ -140,7 +140,7 @@ impl Graph {
                     &flow.dest,
                     ignore_missing_apps,
                 ) {
-                    errors.push(format!("- cmd[{}]:  {}", flow_idx, e));
+                    errors.push(format!("- cmd[{flow_idx}]:  {e}"));
                 }
             }
         }
@@ -166,7 +166,7 @@ impl Graph {
                     &flow.dest,
                     ignore_missing_apps,
                 ) {
-                    errors.push(format!("- data[{}]:  {}", flow_idx, e));
+                    errors.push(format!("- data[{flow_idx}]:  {e}"));
                 }
             }
         }
@@ -192,7 +192,7 @@ impl Graph {
                     &flow.dest,
                     ignore_missing_apps,
                 ) {
-                    errors.push(format!("- video_frame[{}]:  {}", flow_idx, e));
+                    errors.push(format!("- video_frame[{flow_idx}]:  {e}"));
                 }
             }
         }
@@ -218,7 +218,7 @@ impl Graph {
                     &flow.dest,
                     ignore_missing_apps,
                 ) {
-                    errors.push(format!("- audio_frame[{}]:  {}", flow_idx, e));
+                    errors.push(format!("- audio_frame[{flow_idx}]:  {e}"));
                 }
             }
         }
@@ -261,7 +261,7 @@ impl Graph {
                 connection,
                 ignore_missing_apps,
             ) {
-                errors.push(format!("- connections[{}]: \n  {}", conn_idx, e));
+                errors.push(format!("- connections[{conn_idx}]: \n  {e}"));
             }
         }
 

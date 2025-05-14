@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+# Jump to the extension root directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+# Check if the ./ten/app directory exists.
+if [ ! -d ".ten/app" ]; then
+  echo "The ./ten/app directory does not exist. Please install it first."
+  exit 1
+fi
+
+# Get the extension name according to pwd.
+extension_name=$(basename "$(pwd)")
+
+# Check if the ./ten/app/ten_packages/extension/$extension_name directory exists.
+if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
+  echo "The ./ten/app/ten_packages/extension/$extension_name directory does not exist. Please install with standalone mode."
+  exit 1
+fi
+
+# Get the .ten/app/ten_packages/system absolute path.
+app_base_dir=$(realpath .ten/app)
+ten_runtime_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime/lib)
+ten_runtime_go_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime_go/lib)
+
+# Jump to the extension directory.
+cd ".ten/app/ten_packages/extension/$extension_name"
+
+export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+
+# Print the current directory.
+echo "Current directory: $(pwd)"
+
+go test -c ./tests/... -o ./.ten/app/bin/"${extension_name}"_test "$@"
+
+export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
+export DYLD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
+
+# Run the test case.
+./.ten/app/bin/"${extension_name}"_test -test.v

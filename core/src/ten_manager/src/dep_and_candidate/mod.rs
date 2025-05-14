@@ -122,8 +122,7 @@ fn process_local_dependency_to_get_candidate(
             .canonicalize()
             .with_context(|| {
                 format!(
-                    "Failed to canonicalize path: {} + {}",
-                    base_dir_str, path_str
+                    "Failed to canonicalize path: {base_dir_str} + {path_str}"
                 )
             })?;
 

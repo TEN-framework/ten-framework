@@ -36,7 +36,7 @@ impl fmt::Display for ManifestSupport {
             None => "".to_string(),
         };
 
-        write!(f, "{}, {}", os_str, arch_str)
+        write!(f, "{os_str}, {arch_str}")
     }
 }
 
@@ -51,7 +51,7 @@ impl fmt::Display for SupportsDisplay<'_> {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                write!(f, "({})", support)?;
+                write!(f, "({support})")?;
             }
             Ok(())
         }

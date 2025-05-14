@@ -19,6 +19,7 @@ use ten_manager::designer::log_watcher::log_watcher_endpoint;
 use ten_manager::log::LogLineInfo;
 
 use crate::test_case::common::builtin_server::start_test_server;
+use crate::test_case::common::fs::sync_to_disk;
 
 #[actix_rt::test]
 async fn test_ws_log_watcher_endpoint() {
@@ -38,10 +39,10 @@ async fn test_ws_log_watcher_endpoint() {
         web::get().to(log_watcher_endpoint)
     })
     .await;
-    println!("Server started at: {}", server_addr);
+    println!("Server started at: {server_addr}");
 
     // Connect WebSocket client to the server with the app_base_dir parameter.
-    let ws_url = format!("ws://{}/ws/log-watcher", server_addr);
+    let ws_url = format!("ws://{server_addr}/ws/log-watcher");
     let (ws_stream, _) = connect_async(ws_url).await.unwrap();
     println!("WebSocket connection established");
 
@@ -54,7 +55,7 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {}", text);
+            println!("Received: {text}");
             if text.contains("Ready to receive app_base_dir") {
                 ready_received = true;
                 break;
@@ -77,7 +78,7 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {}", text);
+            println!("Received: {text}");
             if text.contains("Started watching log file") {
                 received_start_msg = true;
                 break;
@@ -98,7 +99,7 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received text: {}", text);
+            println!("Received text: {text}");
 
             // Try to parse the JSON response.
             if let Ok(log_line_info) = serde_json::from_str::<LogLineInfo>(text)
@@ -128,7 +129,7 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {}", text);
+            println!("Received: {text}");
             if text.contains("Stopped watching log file") {
                 received_stop = true;
                 break;
@@ -166,4 +167,5 @@ fn append_to_log_file(path: &Path, content: &str) {
     let mut file = std::fs::OpenOptions::new().append(true).open(path).unwrap();
     file.write_all(content.as_bytes()).unwrap();
     file.flush().unwrap();
+    sync_to_disk(&file).unwrap();
 }
