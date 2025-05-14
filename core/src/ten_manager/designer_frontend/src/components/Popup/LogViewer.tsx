@@ -34,8 +34,7 @@ export const LogViewerPopupTitle = (props: {
 export const LogViewerPopupContent = (props: { widget: ILogViewerWidget }) => {
   const { widget } = props;
 
-  const { backstageWidgets, appendBackstageWidgetIfNotExists } =
-    useWidgetStore();
+  const { backstageWidgets, appendBackstageWidget } = useWidgetStore();
 
   React.useEffect(() => {
     const targetBackstageWidget = backstageWidgets.find(
@@ -47,7 +46,7 @@ export const LogViewerPopupContent = (props: { widget: ILogViewerWidget }) => {
       widget.metadata.scriptType &&
       widget.metadata.script
     ) {
-      appendBackstageWidgetIfNotExists({
+      appendBackstageWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_LOG_VIEWER_ID,
         widget_id: widget.widget_id,

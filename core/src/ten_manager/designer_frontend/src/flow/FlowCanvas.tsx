@@ -73,12 +73,8 @@ interface FlowCanvasProps {
 
 const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
   ({ nodes, edges, onNodesChange, onEdgesChange, onConnect, className }) => {
-    const {
-      appendWidget,
-      appendWidgetIfNotExists,
-      removeBackstageWidget,
-      removeLogViewerHistory,
-    } = useWidgetStore();
+    const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+      useWidgetStore();
     const { currentWorkspace } = useAppStore();
 
     const [contextMenu, setContextMenu] = useState<{
@@ -122,7 +118,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
     ) => {
       const id = `${source}-${target ?? ""}`;
       const filters = metadata?.filters;
-      appendWidgetIfNotExists({
+      appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_CUSTOM_CONNECTION_ID,
         widget_id: id,
@@ -137,7 +133,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
 
     const launchLogViewer = () => {
       const widgetId = `logViewer-${Date.now()}`;
-      appendWidgetIfNotExists({
+      appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_LOG_VIEWER_ID,
         widget_id: widgetId,
@@ -164,9 +160,8 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       });
     };
 
-
     const onOpenExistingGraph = () => {
-      appendWidgetIfNotExists({
+      appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GRAPH_SELECT_WIDGET_ID,
         widget_id: GRAPH_SELECT_WIDGET_ID,
@@ -187,7 +182,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
 
     const onGraphAct = (type: EGraphActions) => {
       if (!currentWorkspace?.graph || !currentWorkspace?.app) return;
-      appendWidgetIfNotExists({
+      appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_GRAPH_ID,
         widget_id:
@@ -357,9 +352,9 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           onNodeContextMenu={clickNodeContextMenu}
           onEdgeContextMenu={clickEdgeContextMenu}
           onPaneContextMenu={clickPaneContextMenu}
-        // onEdgeClick={(e, edge) => {
-        //   console.log("clicked", e, edge);
-        // }}
+          // onEdgeClick={(e, edge) => {
+          //   console.log("clicked", e, edge);
+          // }}
         >
           <Controls />
           <MiniMap zoomable pannable />

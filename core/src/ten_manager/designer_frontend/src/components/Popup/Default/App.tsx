@@ -126,7 +126,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
 
   const {
     removeWidget,
-    appendWidgetIfNotExists,
+    appendWidget,
     removeBackstageWidget,
     removeLogViewerHistory,
   } = useWidgetStore();
@@ -138,7 +138,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const handleRun = () => {
     removeWidget(widget.widget_id);
 
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
       widget_id: "app-start-" + Date.now(),
@@ -154,6 +154,8 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
           type: ELogViewerScriptType.RUN_SCRIPT,
           base_dir: baseDir,
           name: selectedScript,
+          stdout_is_log: true,
+          stderr_is_log: true,
         },
       },
       popup: {
