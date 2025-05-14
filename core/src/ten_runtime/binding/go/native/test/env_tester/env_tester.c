@@ -7,8 +7,6 @@
 #include "include_internal/ten_runtime/binding/go/test/env_tester.h"
 
 #include "include_internal/ten_runtime/binding/go/internal/common.h"
-#include "include_internal/ten_runtime/binding/go/msg/msg.h"
-#include "include_internal/ten_runtime/binding/go/ten_env/ten_env_internal.h"
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/ten_env_tester.h"

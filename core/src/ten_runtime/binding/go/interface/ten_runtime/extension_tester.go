@@ -76,20 +76,24 @@ type extTester struct {
 	baseTenObject[*C.ten_go_extension_tester_t]
 }
 
+// ExtensionTester is the interface for the extension tester.
 type ExtensionTester interface {
-	SetTestModeSingle(addonName string, propertyJsonStr string) error
+	SetTestModeSingle(addonName string, propertyJSONStr string) error
 	Run() error
 }
 
 var _ ExtensionTester = new(extTester)
 
-func (p *extTester) SetTestModeSingle(addonName string, propertyJsonStr string) error {
+func (p *extTester) SetTestModeSingle(
+	addonName string,
+	propertyJSONStr string,
+) error {
 	cStatus := C.ten_go_extension_tester_set_test_mode_single(
 		p.cPtr,
 		unsafe.Pointer(unsafe.StringData(addonName)),
 		C.int(len(addonName)),
-		unsafe.Pointer(unsafe.StringData(propertyJsonStr)),
-		C.int(len(propertyJsonStr)),
+		unsafe.Pointer(unsafe.StringData(propertyJSONStr)),
+		C.int(len(propertyJSONStr)),
 	)
 
 	return withCGoError(&cStatus)
@@ -129,7 +133,9 @@ func NewExtensionTester(
 		return nil, err
 	}
 
-	extTesterInstance.cPtr = (*C.ten_go_extension_tester_t)(unsafe.Pointer(bridge))
+	extTesterInstance.cPtr = (*C.ten_go_extension_tester_t)(
+		unsafe.Pointer(bridge),
+	)
 
 	runtime.SetFinalizer(extTesterInstance, func(p *extTester) {
 		C.ten_go_extension_tester_finalize(p.cPtr)

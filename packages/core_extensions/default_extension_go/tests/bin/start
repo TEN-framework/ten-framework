@@ -7,8 +7,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 # Check if the ./ten/app directory exists.
 if [ ! -d ".ten/app" ]; then
-    echo "The ./ten/app directory does not exist. Please install it first."
-    exit 1
+  echo "The ./ten/app directory does not exist. Please install it first."
+  exit 1
 fi
 
 # Get the extension name according to pwd.
@@ -16,14 +16,14 @@ extension_name=$(basename "$(pwd)")
 
 # Check if the ./ten/app/ten_packages/extension/$extension_name directory exists.
 if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
-    echo "The ./ten/app/ten_packages/extension/$extension_name directory does not exist. Please install with standalone mode."
-    exit 1
+  echo "The ./ten/app/ten_packages/extension/$extension_name directory does not exist. Please install with standalone mode."
+  exit 1
 fi
 
 # Get the .ten/app/ten_packages/system absolute path.
 app_base_dir=$(realpath .ten/app)
-ten_runtime_lib_path=$(realpath $app_base_dir/ten_packages/system/ten_runtime/lib)
-ten_runtime_go_lib_path=$(realpath $app_base_dir/ten_packages/system/ten_runtime_go/lib)
+ten_runtime_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime/lib)
+ten_runtime_go_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime_go/lib)
 
 # Jump to the extension directory.
 cd ".ten/app/ten_packages/extension/$extension_name"

@@ -16,10 +16,14 @@ import (
 )
 
 type (
+	// TesterResultHandler is the handler for the result of the command.
 	TesterResultHandler func(TenEnvTester, CmdResult, error)
-	TesterErrorHandler  func(TenEnvTester, error)
+
+	// TesterErrorHandler is the handler for the error of the command.
+	TesterErrorHandler func(TenEnvTester, error)
 )
 
+// TenEnvTester is the interface for the ten env tester.
 type TenEnvTester interface {
 	OnStartDone() error
 	OnStopDone() error
@@ -111,7 +115,10 @@ func (p *tenEnvTester) SendData(data Data, handler TesterErrorHandler) error {
 	})
 }
 
-func (p *tenEnvTester) SendAudioFrame(audioFrame AudioFrame, handler TesterErrorHandler) error {
+func (p *tenEnvTester) SendAudioFrame(
+	audioFrame AudioFrame,
+	handler TesterErrorHandler,
+) error {
 	if audioFrame == nil {
 		return newTenError(
 			ErrorCodeInvalidArgument,
@@ -124,7 +131,10 @@ func (p *tenEnvTester) SendAudioFrame(audioFrame AudioFrame, handler TesterError
 	})
 }
 
-func (p *tenEnvTester) SendVideoFrame(videoFrame VideoFrame, handler TesterErrorHandler) error {
+func (p *tenEnvTester) SendVideoFrame(
+	videoFrame VideoFrame,
+	handler TesterErrorHandler,
+) error {
 	if videoFrame == nil {
 		return newTenError(
 			ErrorCodeInvalidArgument,
@@ -137,7 +147,10 @@ func (p *tenEnvTester) SendVideoFrame(videoFrame VideoFrame, handler TesterError
 	})
 }
 
-func (p *tenEnvTester) ReturnResult(result CmdResult, handler TesterErrorHandler) error {
+func (p *tenEnvTester) ReturnResult(
+	result CmdResult,
+	handler TesterErrorHandler,
+) error {
 	if result == nil {
 		return newTenError(
 			ErrorCodeInvalidArgument,
@@ -209,7 +222,10 @@ func (p *tenEnvTester) sendData(data Data, handler TesterErrorHandler) error {
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) sendAudioFrame(audioFrame AudioFrame, handler TesterErrorHandler) error {
+func (p *tenEnvTester) sendAudioFrame(
+	audioFrame AudioFrame,
+	handler TesterErrorHandler,
+) error {
 	defer audioFrame.keepAlive()
 
 	cb := goHandleNil
@@ -226,7 +242,10 @@ func (p *tenEnvTester) sendAudioFrame(audioFrame AudioFrame, handler TesterError
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) sendVideoFrame(videoFrame VideoFrame, handler TesterErrorHandler) error {
+func (p *tenEnvTester) sendVideoFrame(
+	videoFrame VideoFrame,
+	handler TesterErrorHandler,
+) error {
 	defer videoFrame.keepAlive()
 
 	cb := goHandleNil
@@ -243,7 +262,10 @@ func (p *tenEnvTester) sendVideoFrame(videoFrame VideoFrame, handler TesterError
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) returnResult(result CmdResult, handler TesterErrorHandler) error {
+func (p *tenEnvTester) returnResult(
+	result CmdResult,
+	handler TesterErrorHandler,
+) error {
 	if result == nil {
 		return newTenError(
 			ErrorCodeInvalidArgument,

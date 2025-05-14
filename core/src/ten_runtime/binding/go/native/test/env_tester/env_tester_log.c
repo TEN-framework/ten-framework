@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/go/internal/common.h"
-#include "include_internal/ten_runtime/binding/go/msg/msg.h"
 #include "include_internal/ten_runtime/binding/go/test/env_tester.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/test/env_tester.h"
