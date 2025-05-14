@@ -5,7 +5,6 @@ Test standalone_test_1_go.
 import platform
 import subprocess
 import os
-import sys
 from sys import stdout
 from .utils import build_config, fs_utils
 

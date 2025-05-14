@@ -5,9 +5,8 @@ Test standalone_test_2_go.
 import platform
 import subprocess
 import os
-import sys
 from sys import stdout
-from .utils import build_config, fs_utils
+from .utils import build_config
 
 
 def is_mac_arm64() -> bool:
