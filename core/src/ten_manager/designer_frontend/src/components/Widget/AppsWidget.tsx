@@ -111,17 +111,14 @@ export const AppsManagerWidget = (props: { className?: string }) => {
 
   const { t } = useTranslation();
   const { data: loadedApps, isLoading, error, mutate } = useApps();
-  const {
-    appendWidgetIfNotExists,
-    removeBackstageWidget,
-    removeLogViewerHistory,
-  } = useWidgetStore();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
   const openAppFolderPopup = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APP_FOLDER_WIDGET_ID,
       widget_id: APP_FOLDER_WIDGET_ID,
@@ -238,7 +235,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
 
   const handleAppInstallAll = (baseDir: string) => {
     const widgetId = "app-install-" + Date.now();
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
       widget_id: widgetId,
@@ -276,7 +273,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   };
 
   const handleRunApp = (baseDir: string, scripts: string[]) => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: APP_RUN_WIDGET_ID,
       widget_id: APP_RUN_WIDGET_ID + "-" + baseDir,

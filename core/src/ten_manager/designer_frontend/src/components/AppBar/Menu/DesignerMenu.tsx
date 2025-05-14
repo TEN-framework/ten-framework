@@ -40,10 +40,10 @@ export function DesignerMenu(props: {
 
   const { t } = useTranslation();
 
-  const { appendWidgetIfNotExists } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
 
   const openAbout = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_ABOUT_ID,
       widget_id: ABOUT_WIDGET_ID,
@@ -59,7 +59,7 @@ export function DesignerMenu(props: {
   };
 
   const openPreferences = () => {
-    appendWidgetIfNotExists({
+    appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: PREFERENCES_WIDGET_ID,
       widget_id: PREFERENCES_WIDGET_ID,
