@@ -12,52 +12,14 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use ten_manager::fs::log_file_watcher::{
-        watch_log_file, LogFileWatchOptions,
-    };
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
-    // Helper function to ensure content is synced to disk.
-    fn sync_to_disk(file: &std::fs::File) -> Result<()> {
-        // Platform-specific sync implementation.
-        #[cfg(unix)]
-        unsafe {
-            use std::os::unix::io::AsRawFd;
+    use ten_manager::fs::log_file_watcher::{
+        watch_log_file, LogFileWatchOptions,
+    };
 
-            // Call fsync to ensure data is written to disk.
-            if libc::fsync(file.as_raw_fd()) != 0 {
-                return Err(anyhow::anyhow!("fsync failed"));
-            }
-        }
-
-        #[cfg(windows)]
-        unsafe {
-            // Windows equivalent of fsync is FlushFileBuffers.
-            use std::os::windows::io::AsRawHandle;
-
-            if winapi::um::fileapi::FlushFileBuffers(file.as_raw_handle() as _)
-                == 0
-            {
-                return Err(anyhow::anyhow!(
-                    "FlushFileBuffers failed with error code: {}",
-                    std::io::Error::last_os_error()
-                ));
-            }
-        }
-
-        // Cross-platform flush (less reliable but always available).
-        #[cfg(not(any(unix, windows)))]
-        {
-            // Use standard flush and sync_all for other platforms.
-            file.sync_all()?;
-        }
-
-        // Give the filesystem a moment to update metadata.
-        std::thread::sleep(Duration::from_millis(50));
-
-        Ok(())
-    }
+    use crate::test_case::common::fs::sync_to_disk;
 
     // Use standard #[test] with manual runtime creation.
     #[test]
@@ -84,7 +46,7 @@ mod tests {
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
-            println!("chunk 1: {:?}", chunk);
+            println!("chunk 1: {chunk:?}");
             assert_eq!(chunk.line, test_content);
 
             // Write more content to the file.

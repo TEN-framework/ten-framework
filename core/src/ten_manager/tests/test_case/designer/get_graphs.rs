@@ -113,7 +113,7 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
         serde_json::from_str(body_str).unwrap();
 
     let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-    println!("Response body: {}", pretty_json);
+    println!("Response body: {pretty_json}");
 
     assert!(json.data.is_empty());
 }
@@ -221,7 +221,7 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
         serde_json::from_str(body_str).unwrap();
 
     let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-    println!("Response body: {}", pretty_json);
+    println!("Response body: {pretty_json}");
 
     let connections = &json.data;
     assert_eq!(connections.len(), 1);
