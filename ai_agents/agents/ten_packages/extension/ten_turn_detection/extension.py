@@ -24,7 +24,9 @@ class TENTurnDetectorExtension(AsyncExtension):
         self.turn_detector = None
         self.eval_force_chat_task: asyncio.Task = None
 
-        self.next_turn_id = 1  # start from 1, leave <=0 as reserved or special scenario
+        self.next_turn_id = (
+            1  # start from 1, leave <=0 as reserved or special scenario
+        )
         self.new_turn_started: bool = False
         self.cached_text: str = ""
 

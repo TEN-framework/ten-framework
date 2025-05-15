@@ -3,8 +3,10 @@ import time
 
 PUNCTUATION_PATTERN = re.compile(r"[,，.。!！?？:：;；、]")
 
+
 def remove_punctuation(text: str) -> str:
     return PUNCTUATION_PATTERN.sub("", text)
+
 
 class TimeHelper:
     """

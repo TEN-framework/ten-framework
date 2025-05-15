@@ -47,7 +47,6 @@ class TENVADPythonExtension(AsyncExtension):
         self.prefix_window_size: int = 0
         self.silence_window_size: int = 0
 
-
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         config_json = await ten_env.get_property_to_json("")
         self.config = TENVADConfig.model_validate_json(config_json)
@@ -63,11 +62,12 @@ class TENVADPythonExtension(AsyncExtension):
         self.prefix_window_size = (
             self.config.prefix_padding_ms // self.config.hop_size_ms
         )
-        self.window_size = max(self.silence_window_size, self.prefix_window_size)
+        self.window_size = max(
+            self.silence_window_size, self.prefix_window_size
+        )
         ten_env.log_info(
             f"window_size: {self.window_size}, prefix_window_size: {self.prefix_window_size}, silence_window_size: {self.silence_window_size}"
         )
-
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         self.vad = TenVad(self.hop_size)
@@ -111,7 +111,6 @@ class TENVADPythonExtension(AsyncExtension):
                     ten_env.send_cmd(Cmd.create("start_of_sentence"))
                 )
 
-
         elif self.state == VADState.SPEAKING:
             # Check if we should transition to IDLE
             silence_probes = self.probe_window[-self.silence_window_size :]
@@ -129,7 +128,9 @@ class TENVADPythonExtension(AsyncExtension):
                     ten_env.send_cmd(Cmd.create("end_of_sentence"))
                 )
 
-    async def _send_audio_frame(self, ten_env: AsyncTenEnv, audio_data: bytes) -> None:
+    async def _send_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_data: bytes
+    ) -> None:
         """Helper function to create and send an audio frame with given data."""
 
         # Dump output audio if needed
@@ -152,7 +153,9 @@ class TENVADPythonExtension(AsyncExtension):
         if not self.config.dump:
             return
 
-        dump_file = os.path.join(self.config.dump_path, f"{self.name}_{suffix}.pcm")
+        dump_file = os.path.join(
+            self.config.dump_path, f"{self.name}_{suffix}.pcm"
+        )
         with open(dump_file, "ab") as f:
             f.write(buf)
 
@@ -171,10 +174,14 @@ class TENVADPythonExtension(AsyncExtension):
             return
 
         audio_buf = self.audio_buffer[: self.hop_size * BYTES_PER_SAMPLE]
-        self.audio_buffer = self.audio_buffer[self.hop_size * BYTES_PER_SAMPLE :]
+        self.audio_buffer = self.audio_buffer[
+            self.hop_size * BYTES_PER_SAMPLE :
+        ]
 
         # vad process
-        probe, _flag = self.vad.process(np.frombuffer(audio_buf, dtype=np.int16))
+        probe, _flag = self.vad.process(
+            np.frombuffer(audio_buf, dtype=np.int16)
+        )
         # ten_env.log_debug(f"vad probe: {probe}")
 
         # Update probe window

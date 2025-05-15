@@ -58,7 +58,9 @@ class TurnDetector:
             base_url=self.config.base_url,
             http_client=self.http_client,  # Use our managed client
         )
-        ten_env.log_info("openai client session initialized with managed http client")
+        ten_env.log_info(
+            "openai client session initialized with managed http client"
+        )
 
         # running vars
         self.chat_task: asyncio.Task = None
@@ -86,9 +88,13 @@ class TurnDetector:
             self.pre_chat_hook(messages)
 
         # create cancellable task
-        task = asyncio.create_task(self._openai_chat_completion(messages=messages))
+        task = asyncio.create_task(
+            self._openai_chat_completion(messages=messages)
+        )
         self.chat_task = task
-        self.ten_env.log_debug(f"eval task {task.get_name()} messages: {messages}")
+        self.ten_env.log_debug(
+            f"eval task {task.get_name()} messages: {messages}"
+        )
 
         decision = TurnDetectorDecision.Unfinished  # default to listen
         try:
@@ -100,7 +106,9 @@ class TurnDetector:
             if self.post_chat_hook:
                 self.post_chat_hook(content)
 
-            messages.append({"role": "assistant", "content": content})  # print only
+            messages.append(
+                {"role": "assistant", "content": content}
+            )  # print only
             self.ten_env.log_debug(
                 f"eval task {task.get_name()}, assistant content: {content}, memory: {messages}"
             )
