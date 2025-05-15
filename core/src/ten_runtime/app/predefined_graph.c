@@ -35,13 +35,16 @@
 #include "ten_utils/container/list_node.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
+#include "ten_utils/lib/file.h"
 #include "ten_utils/lib/json.h"
+#include "ten_utils/lib/path.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value_get.h"
+#include "ten_utils/value/value_object.h"
 
 ten_predefined_graph_info_t *ten_predefined_graph_info_create(void) {
   ten_predefined_graph_info_t *self =
@@ -423,6 +426,94 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
         ten_value_is_bool(predefined_graph_info_singleton_value)) {
       predefined_graph_info->singleton =
           ten_value_get_bool(predefined_graph_info_singleton_value, &err);
+    }
+
+    // Check if source_uri is specified.
+    ten_value_t *predefined_graph_info_source_uri_value =
+        ten_value_object_peek(predefined_graph_info_value, "source_uri");
+    if (predefined_graph_info_source_uri_value &&
+        ten_value_is_string(predefined_graph_info_source_uri_value)) {
+      const char *source_uri =
+          ten_value_peek_raw_str(predefined_graph_info_source_uri_value, &err);
+
+      if (source_uri) {
+        // Determine if this is a relative or absolute path.
+        const char *graph_file_path = source_uri;
+        char *resolved_path = NULL;
+
+        // If it's a relative path and we have the app base directory, resolve
+        // it relative to the app's base directory.
+        ten_string_t path_str;
+        ten_string_init_formatted(&path_str, "%s", source_uri);
+
+        if (!ten_path_is_absolute(&path_str) &&
+            ten_string_get_raw_str(&self->base_dir) != NULL) {
+          ten_string_t *full_path = ten_string_create_formatted(
+              "%s/%s", ten_string_get_raw_str(&self->base_dir), source_uri);
+
+          resolved_path = strdup(ten_string_get_raw_str(full_path));
+          ten_string_destroy(full_path);
+          graph_file_path = resolved_path;
+        }
+
+        ten_string_deinit(&path_str);
+
+        // Read the graph file.
+        char *graph_json_content = ten_file_read(graph_file_path);
+        if (graph_json_content) {
+          // Parse the graph JSON content.
+          ten_json_t *graph_json =
+              ten_json_from_string(graph_json_content, &err);
+
+          if (graph_json) {
+            // Check for nodes field.
+            ten_json_t nodes_json = TEN_JSON_INIT_VAL(graph_json->ctx, false);
+            if (ten_json_object_peek(graph_json, TEN_STR_NODES, &nodes_json)) {
+              // Extract the nodes from the external file
+              ten_value_t *nodes_value = ten_value_from_json(&nodes_json);
+              if (nodes_value && ten_value_is_array(nodes_value)) {
+                // Replace nodes in the predefined_graph_info_value
+                ten_value_object_move(predefined_graph_info_value,
+                                      TEN_STR_NODES, nodes_value);
+              } else if (nodes_value) {
+                ten_value_destroy(nodes_value);
+              }
+            }
+
+            // Check for connections field.
+            ten_json_t connections_json =
+                TEN_JSON_INIT_VAL(graph_json->ctx, false);
+            if (ten_json_object_peek(graph_json, TEN_STR_CONNECTIONS,
+                                     &connections_json)) {
+              // Extract the connections from the external file.
+              ten_value_t *connections_value =
+                  ten_value_from_json(&connections_json);
+              if (connections_value && ten_value_is_array(connections_value)) {
+                // Replace connections in the predefined_graph_info_value.
+                ten_value_object_move(predefined_graph_info_value,
+                                      TEN_STR_CONNECTIONS, connections_value);
+              } else if (connections_value) {
+                ten_value_destroy(connections_value);
+              }
+            }
+
+            ten_json_destroy(graph_json);
+          } else {
+            TEN_LOGE("[%s] Failed to parse graph JSON from file %s: %s",
+                     ten_app_get_uri(self), graph_file_path,
+                     ten_error_message(&err));
+          }
+
+          TEN_FREE(graph_json_content);
+        } else {
+          TEN_LOGE("[%s] Failed to read graph file at %s",
+                   ten_app_get_uri(self), graph_file_path);
+        }
+
+        if (resolved_path) {
+          TEN_FREE(resolved_path);
+        }
+      }
     }
 
     // Parse 'nodes'.

@@ -199,7 +199,7 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   ten_string_set_formatted(&self->extension_group_name, "%s",
                            extension_group_name);
 
-  ten_loc_set(&self->loc, app_uri, graph_id, NULL, extension_instance_name);
+  ten_loc_set(&self->loc, app_uri, graph_id, extension_instance_name);
 
   ten_shared_ptr_t *shared_self =
       ten_shared_ptr_create(self, ten_extension_info_destroy);
