@@ -69,13 +69,13 @@ class TENVADPythonExtension(AsyncExtension):
             f"window_size: {self.window_size}, prefix_window_size: {self.prefix_window_size}, silence_window_size: {self.silence_window_size}"
         )
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+    async def on_start(self, _ten_env: AsyncTenEnv) -> None:
         self.vad = TenVad(self.hop_size)
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+    async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
         self.vad = None
 
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+    async def on_deinit(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -102,7 +102,7 @@ class TENVADPythonExtension(AsyncExtension):
             )
             if all_above_threshold:
                 self.state = VADState.SPEAKING
-                ten_env.log_info(f"State transition: IDLE -> SPEAKING")
+                ten_env.log_info("State transition: IDLE -> SPEAKING")
                 ten_env.log_debug(f"(probes: {prefix_probes})")
 
                 # send start_of_sentence cmd
@@ -119,7 +119,7 @@ class TENVADPythonExtension(AsyncExtension):
             )
             if all_below_threshold:
                 self.state = VADState.IDLE
-                ten_env.log_info(f"State transition: SPEAKING -> IDLE")
+                ten_env.log_info("State transition: SPEAKING -> IDLE")
                 ten_env.log_debug(f"(probes: {silence_probes})")
 
                 # send end_of_sentence cmd

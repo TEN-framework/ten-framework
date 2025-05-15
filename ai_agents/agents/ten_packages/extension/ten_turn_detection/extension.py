@@ -39,7 +39,7 @@ class TENTurnDetectorExtension(AsyncExtension):
         self.config = TENTurnDetectorConfig.model_validate_json(config_json)
         ten_env.log_info(f"config: {self.config.to_json()}")
 
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+    async def on_deinit(self, _ten_env: AsyncTenEnv) -> None:
         self.turn_detector = None
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
@@ -49,7 +49,7 @@ class TENTurnDetectorExtension(AsyncExtension):
             ten_env=ten_env,
         )
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+    async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
         if self.turn_detector:
             await self.turn_detector.stop()
             self.turn_detector = None
@@ -77,7 +77,7 @@ class TENTurnDetectorExtension(AsyncExtension):
         is_final = False
         try:
             is_final = data.get_property_bool("is_final")
-        except Exception as e:
+        except Exception as _e:
             pass
 
         ten_env.log_debug(f"on_data text: {input_text} is_final: {is_final}")
@@ -91,7 +91,7 @@ class TENTurnDetectorExtension(AsyncExtension):
                 self.new_turn_started = True
                 await self._flush(ten_env=ten_env)
             else:
-                ten_env.log_debug(f"turn not started, skip")
+                ten_env.log_debug("turn not started, skip")
                 return
 
         # send out non-final text
@@ -134,7 +134,7 @@ class TENTurnDetectorExtension(AsyncExtension):
         self.new_turn_started = False
 
         if decision == TurnDetectorDecision.Wait:
-            ten_env.log_debug(f"end_of_turn by wait, no new turn to send")
+            ten_env.log_debug("end_of_turn by wait, no new turn to send")
             return
 
         ten_env.log_debug(f"end_of_turn, send new turn {text}")
@@ -172,7 +172,7 @@ class TENTurnDetectorExtension(AsyncExtension):
 
         await asyncio.sleep(self.config.force_threshold_ms / 1000)
 
-        ten_env.log_info(f"force chat to process new turn")
+        ten_env.log_info("force chat to process new turn")
         await self._process_new_turn(
             ten_env=ten_env, decision=TurnDetectorDecision.Finished
         )
