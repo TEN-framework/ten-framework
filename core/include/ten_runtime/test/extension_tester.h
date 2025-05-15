@@ -63,6 +63,10 @@ TEN_RUNTIME_API void ten_extension_tester_destroy(ten_extension_tester_t *self);
 // Testing a single extension, all messages input by the tester will be directed
 // to this extension, and all outputs from the extension will be sent back to
 // the tester.
+//
+// Note: This function must be called before the run() of extension_tester,
+// so the internal implementation of this function does not need to perform a
+// thread check.
 TEN_RUNTIME_API void ten_extension_tester_set_test_mode_single(
     ten_extension_tester_t *self, const char *addon_name,
     const char *property_json_str);
@@ -70,9 +74,18 @@ TEN_RUNTIME_API void ten_extension_tester_set_test_mode_single(
 // Testing a complete graph which must contain exactly one proxy extension. All
 // messages input by the tester will be directed to this proxy extension, and
 // all outputs from the proxy extension will be sent back to the tester.
+//
+// Note: This function must be called before the run() of extension_tester,
+// so the internal implementation of this function does not need to perform a
+// thread check.
 TEN_RUNTIME_API void ten_extension_tester_set_test_mode_graph(
     ten_extension_tester_t *self, const char *graph_json);
 
+// Initialize the test app property from a json string.
+//
+// Note: This function must be called before the run() of extension_tester,
+// so the internal implementation of this function does not need to perform a
+// thread check.
 TEN_RUNTIME_API void ten_extension_tester_init_test_app_property_from_json(
     ten_extension_tester_t *self, const char *property_json_str);
 

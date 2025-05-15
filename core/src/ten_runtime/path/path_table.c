@@ -349,7 +349,8 @@ static ten_listnode_t *ten_path_table_find_in_path(ten_path_table_t *self,
                                                    ten_shared_ptr_t *cmd) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_path_table_check_integrity(self, true), "Invalid argument.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Invalid argument.");
 
   // Find the corresponding IN path according to the "command ID".
   ten_listnode_t *path_node =

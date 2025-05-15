@@ -1,4 +1,3 @@
-
 //
 // Copyright © 2025 Agora
 // This file is part of TEN Framework, an open source project.
@@ -20,6 +19,8 @@
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/internal/migration.h"
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension/extension_info/extension_info.h"
+#include "include_internal/ten_runtime/extension_group/extension_group_info/extension_group_info.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
@@ -56,12 +57,34 @@ static bool ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
   return true;
 }
 
+void ten_app_fill_start_graph_cmd_node_app_uri(ten_app_t *self,
+                                               ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
+
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
+
+  TEN_ASSERT(ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
+  ten_list_t *extensions_info = ten_cmd_start_graph_get_extensions_info(cmd);
+  ten_list_t *extension_groups_info =
+      ten_cmd_start_graph_get_extension_groups_info(cmd);
+
+  ten_extensions_info_fill_app_uri(extensions_info,
+                                   ten_string_get_raw_str(&self->uri));
+  ten_extension_groups_info_fill_app_uri(extension_groups_info,
+                                         ten_string_get_raw_str(&self->uri));
+}
+
 bool ten_app_handle_start_graph_cmd(ten_app_t *self,
                                     ten_connection_t *connection,
                                     ten_shared_ptr_t *cmd, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Invalid argument.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Invalid argument.");
   TEN_ASSERT(ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Invalid argument.");
   TEN_ASSERT(ten_msg_get_dest_cnt(cmd) == 1, "Invalid argument.");
@@ -75,6 +98,9 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
           self, cmd, err)) {
     return false;
   }
+
+  // Fill the app uri of the nodes in the start_graph cmd.
+  ten_app_fill_start_graph_cmd_node_app_uri(self, cmd);
 
   ten_string_t *dest_graph_id = &ten_msg_get_first_dest_loc(cmd)->graph_id;
 
