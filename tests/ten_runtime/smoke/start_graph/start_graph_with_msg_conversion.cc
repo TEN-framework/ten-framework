@@ -17,9 +17,9 @@ class test_normal_extension_1 : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     ten_env.send_cmd(ten::cmd_t::create("A"),
-                     [this](ten::ten_env_t &ten_env,
-                            std::unique_ptr<ten::cmd_result_t> cmd_result,
-                            ten::error_t *err) { ten_env.on_start_done(); });
+                     [](ten::ten_env_t &ten_env,
+                        std::unique_ptr<ten::cmd_result_t> cmd_result,
+                        ten::error_t *err) { ten_env.on_start_done(); });
   }
 };
 
