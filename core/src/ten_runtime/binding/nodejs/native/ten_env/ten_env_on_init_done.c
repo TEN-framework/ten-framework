@@ -4,9 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/addon/addon_host.h"
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env_proxy/ten_env_proxy.h"
+#include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
@@ -28,6 +31,18 @@ static void ten_env_proxy_notify_on_init_done(ten_env_t *ten_env,
   TEN_ASSERT(rc, "Should not happen.");
 
   ten_error_deinit(&err);
+}
+
+static void ten_app_addon_host_on_init_done(void *from, void *args) {
+  ten_app_t *app = (ten_app_t *)from;
+  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+
+  ten_addon_host_t *addon_host = (ten_addon_host_t *)args;
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
+
+  bool rc = ten_env_on_init_done(addon_host->ten_env, NULL);
+  TEN_ASSERT(rc, "Should not happen.");
 }
 
 napi_value ten_nodejs_ten_env_on_init_done(napi_env env,
@@ -55,12 +70,29 @@ napi_value ten_nodejs_ten_env_on_init_done(napi_env env,
   TEN_ERROR_INIT(err);
   bool rc = false;
 
-  if (ten_env_bridge->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON) {
-    rc = ten_env_on_init_done(ten_env_bridge->c_ten_env, &err);
-  } else {
+  if (ten_env_bridge->c_ten_env_proxy) {
     rc = ten_env_proxy_notify_async(ten_env_bridge->c_ten_env_proxy,
                                     ten_env_proxy_notify_on_init_done, NULL,
                                     &err);
+  } else {
+    TEN_ASSERT(ten_env_bridge->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
+               "Should not happen.");
+
+    ten_env_t *ten_env = ten_env_bridge->c_ten_env;
+
+    // Switch to the addon_host thread to call ten_env_on_init_done.
+    ten_addon_host_t *addon_host = ten_env_get_attached_addon(ten_env);
+    TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, false),
+               "Should not happen.");
+
+    ten_app_t *app = addon_host->attached_app;
+    TEN_ASSERT(app && ten_app_check_integrity(app, false),
+               "Should not happen.");
+
+    int post_task_rc = ten_runloop_post_task_tail(
+        ten_app_get_attached_runloop(app), ten_app_addon_host_on_init_done, app,
+        addon_host);
+    rc = post_task_rc == 0;
   }
 
   if (!rc) {

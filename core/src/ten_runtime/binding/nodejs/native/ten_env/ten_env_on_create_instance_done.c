@@ -4,9 +4,43 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/addon/addon_host.h"
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/extension/extension.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
+#include "ten_runtime/app/app.h"
+#include "ten_utils/macro/memory.h"
+
+typedef struct ten_nodejs_ten_env_on_create_instance_done_ctx_t {
+  ten_addon_host_t *addon_host;
+  void *instance;
+  void *context;
+} ten_nodejs_ten_env_on_create_instance_done_ctx_t;
+
+static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
+  ten_app_t *app = (ten_app_t *)from;
+  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+
+  ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
+      (ten_nodejs_ten_env_on_create_instance_done_ctx_t *)args;
+  TEN_ASSERT(ctx, "Should not happen.");
+
+  ten_addon_host_t *addon_host = ctx->addon_host;
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool rc = ten_env_on_create_instance_done(addon_host->ten_env, ctx->instance,
+                                            ctx->context, &err);
+  TEN_ASSERT(rc, "Should not happen.");
+
+  ten_error_deinit(&err);
+
+  TEN_FREE(ctx);
+}
 
 napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
                                                       napi_callback_info info) {
@@ -46,12 +80,32 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  TEN_ASSERT(ten_env_bridge->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
+  ten_env_t *c_ten_env = ten_env_bridge->c_ten_env;
+  TEN_ASSERT(c_ten_env && ten_env_check_integrity(c_ten_env, false),
              "Should not happen.");
 
-  bool rc = ten_env_on_create_instance_done(
-      ten_env_bridge->c_ten_env, extension_bridge->c_extension, context, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+  TEN_ASSERT(c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
+             "Should not happen.");
+
+  ten_addon_host_t *addon_host = ten_env_get_attached_addon(c_ten_env);
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, false),
+             "Should not happen.");
+
+  ten_app_t *app = addon_host->attached_app;
+  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
+
+  ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
+      TEN_MALLOC(sizeof(ten_nodejs_ten_env_on_create_instance_done_ctx_t));
+  TEN_ASSERT(ctx, "Failed to allocate memory.");
+
+  ctx->addon_host = addon_host;
+  ctx->instance = extension_bridge->c_extension;
+  ctx->context = context;
+
+  int post_task_rc = ten_runloop_post_task_tail(
+      ten_app_get_attached_runloop(app),
+      ten_app_addon_host_on_create_instance_done, app, ctx);
+  TEN_ASSERT(post_task_rc == 0, "Failed to post task.");
 
   ten_error_deinit(&err);
 
