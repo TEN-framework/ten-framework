@@ -99,9 +99,7 @@ void ten_addon_on_init_done(ten_env_t *self) {
 
 bool ten_addon_on_deinit_done(ten_env_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
 
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
@@ -125,9 +123,7 @@ static void ten_extension_addon_on_create_instance_done(ten_env_t *self,
                                                         void *instance,
                                                         void *context) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
 
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
@@ -191,9 +187,7 @@ static void ten_extension_group_addon_on_create_instance_done(ten_env_t *self,
                                                               void *instance,
                                                               void *context) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
 
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
@@ -246,10 +240,7 @@ static void ten_protocol_addon_on_create_instance_done(ten_env_t *self,
                                                        void *instance,
                                                        void *context) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in the app thread.
-  // TODO(xilin): change false to true.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
@@ -333,9 +324,7 @@ static void ten_addon_loader_addon_on_create_instance_done(ten_env_t *self,
                                                            void *instance,
                                                            void *context) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
@@ -417,9 +406,7 @@ void ten_addon_on_create_instance_done(ten_env_t *self, void *instance,
 
 void ten_addon_on_destroy_instance_done(ten_env_t *self, void *context) {
   TEN_ASSERT(self, "Invalid argument.");
-  // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(ten_env_check_integrity(self, false), "Invalid use of ten_env %p.",
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
 
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");

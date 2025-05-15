@@ -170,10 +170,8 @@ void ten_env_destroy(ten_env_t *self) {
 }
 
 void ten_env_close(ten_env_t *self) {
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_APP:
