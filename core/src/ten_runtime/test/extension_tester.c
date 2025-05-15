@@ -30,8 +30,6 @@
 #include "ten_runtime/ten_env/internal/metadata.h"
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
 #include "ten_runtime/ten_env_proxy/ten_env_proxy.h"
-#include "ten_utils/container/list.h"
-#include "ten_utils/container/list_str.h"
 #include "ten_utils/io/runloop.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/event.h"
@@ -281,7 +279,7 @@ static void test_app_ten_env_send_start_graph_cmd(ten_env_t *ten_env,
   // `cmd_result` of the `start_graph` command can ultimately be returned to
   // this `app` and processed by the `out path`, enabling the invocation of the
   // result handler specified below.
-  ten_msg_set_src(cmd, ten_app_get_uri(app), NULL, NULL, NULL);
+  ten_msg_set_src(cmd, ten_app_get_uri(app), NULL, NULL);
 
   bool rc =
       ten_msg_clear_and_set_dest(cmd, ten_app_get_uri(app), NULL, NULL, NULL);
