@@ -393,7 +393,7 @@ ten_extension_info_t *ten_extension_info_from_smart_ptr(
 
 static void ten_extension_info_fill_app_uri(ten_extension_info_t *self,
                                             const char *app_uri) {
-  TEN_ASSERT(self && ten_extension_info_check_integrity(self, true),
+  TEN_ASSERT(self && ten_extension_info_check_integrity(self, false),
              "Invalid argument.");
   TEN_ASSERT(app_uri, "Should not happen.");
   TEN_ASSERT(!ten_loc_is_empty(&self->loc), "Should not happen.");
@@ -425,7 +425,7 @@ void ten_extensions_info_fill_app_uri(ten_list_t *extensions_info,
     ten_extension_info_t *extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
     TEN_ASSERT(extension_info &&
-                   ten_extension_info_check_integrity(extension_info, true),
+                   ten_extension_info_check_integrity(extension_info, false),
                "Invalid argument.");
 
     ten_extension_info_fill_app_uri(extension_info, app_uri);
