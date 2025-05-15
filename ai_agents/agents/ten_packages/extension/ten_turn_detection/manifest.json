@@ -1,0 +1,24 @@
+{
+  "type": "extension",
+  "name": "ten_turn_detection",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8.22"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
