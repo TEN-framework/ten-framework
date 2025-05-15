@@ -75,19 +75,16 @@ class test_predefined_graph : public ten::extension_t {
         "type": "extension",
         "name": "normal_extension_1",
         "addon": "start_graph_with_msg_conversion__normal_extension_1",
-        "app": "msgpack://127.0.0.1:8001/",
         "extension_group": "start_graph_with_msg_conversion__normal_extension_group_1"
       }, {
         "type": "extension",
         "name": "normal_extension_2",
         "addon": "start_graph_with_msg_conversion__normal_extension_2",
-        "app": "msgpack://127.0.0.1:8001/",
         "extension_group": "start_graph_with_msg_conversion__normal_extension_group_2"
       }, {
         "type": "extension",
         "name": "normal_extension_3",
         "addon": "start_graph_with_msg_conversion__normal_extension_3",
-        "app": "msgpack://127.0.0.1:8001/",
         "extension_group": "start_graph_with_msg_conversion__normal_extension_group_3"
       }],
       "connections": [

@@ -383,7 +383,8 @@ static void ten_connection_handle_command_from_external_client(
   TEN_ASSERT(ten_connection_check_integrity(self, true),
              "Invalid use of connection %p.", self);
 
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Invalid argument.");
 
   // The command is coming from the outside of the TEN world, generate a
   // command ID for it.
