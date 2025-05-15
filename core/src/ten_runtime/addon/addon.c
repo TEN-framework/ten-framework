@@ -160,7 +160,7 @@ static void ten_addon_register_internal(ten_addon_store_t *addon_store,
   TEN_ASSERT(addon_store, "Should not happen.");
   TEN_ASSERT(ten_addon_store_check_integrity(addon_store, true),
              "Should not happen.");
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
   TEN_ASSERT(name, "Should not happen.");
 

@@ -941,7 +941,8 @@ void ten_extension_set_addon(ten_extension_t *self,
              "Invalid use of extension %p.", self);
 
   TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host), "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
 
   // Since the extension requires the corresponding addon to release
   // its resources, therefore, hold on to a reference count of the corresponding

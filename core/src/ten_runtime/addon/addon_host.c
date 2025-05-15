@@ -13,16 +13,23 @@
 #include "include_internal/ten_runtime/addon/extension/extension.h"
 #include "include_internal/ten_runtime/addon/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/addon/protocol/protocol.h"
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/common/base_dir.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
+#include "ten_runtime/app/app.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
-bool ten_addon_host_check_integrity(ten_addon_host_t *self) {
+bool ten_addon_host_check_integrity(ten_addon_host_t *self, bool check_thread) {
   TEN_ASSERT(self, "Should not happen.");
   if (ten_signature_get(&self->signature) != TEN_ADDON_HOST_SIGNATURE) {
+    return false;
+  }
+
+  if (check_thread &&
+      !ten_sanitizer_thread_check_do_check(&self->thread_check)) {
     return false;
   }
 
@@ -52,6 +59,7 @@ void ten_addon_host_init(ten_addon_host_t *self) {
   TEN_ASSERT(self, "Should not happen.");
 
   ten_signature_set(&self->signature, TEN_ADDON_HOST_SIGNATURE);
+  ten_sanitizer_thread_check_init_with_current_thread(&self->thread_check);
 
   TEN_STRING_INIT(self->name);
   TEN_STRING_INIT(self->base_dir);
@@ -72,6 +80,7 @@ void ten_addon_host_destroy(ten_addon_host_t *self) {
   TEN_ASSERT(self, "Should not happen.");
 
   ten_signature_set(&self->signature, 0);
+  ten_sanitizer_thread_check_deinit(&self->thread_check);
 
   ten_string_deinit(&self->name);
   ten_string_deinit(&self->base_dir);
@@ -94,26 +103,15 @@ void ten_addon_host_destroy(ten_addon_host_t *self) {
   TEN_FREE(self);
 }
 
-bool ten_addon_host_destroy_instance(ten_addon_host_t *self, ten_env_t *ten_env,
-                                     void *instance) {
-  TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, false),
-             "Should not happen.");
-  TEN_ASSERT(self && instance, "Should not happen.");
-  TEN_ASSERT(self->addon->on_destroy_instance, "Should not happen.");
-
-  self->addon->on_destroy_instance(self->addon, self->ten_env, instance, NULL);
-
-  return true;
-}
-
 const char *ten_addon_host_get_name(ten_addon_host_t *self) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
+             "Invalid argument.");
   return ten_string_get_raw_str(&self->name);
 }
 
 void ten_addon_host_find_and_set_base_dir(ten_addon_host_t *self,
                                           const char *start_path) {
-  TEN_ASSERT(start_path && self && ten_addon_host_check_integrity(self),
+  TEN_ASSERT(start_path && self && ten_addon_host_check_integrity(self, true),
              "Should not happen.");
 
   ten_string_t *base_dir =
@@ -131,7 +129,8 @@ void ten_addon_host_find_and_set_base_dir(ten_addon_host_t *self,
 }
 
 const char *ten_addon_host_get_base_dir(ten_addon_host_t *self) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
+             "Invalid argument.");
   return ten_string_get_raw_str(&self->base_dir);
 }
 
@@ -195,7 +194,7 @@ void ten_addon_host_create_instance_async(ten_addon_host_t *self,
                                           const char *name,
                                           ten_addon_context_t *addon_context) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(name, "Should not happen.");
   TEN_ASSERT(addon_context, "Should not happen.");
 
@@ -209,6 +208,30 @@ void ten_addon_host_create_instance_async(ten_addon_host_t *self,
                "create() function.",
                name);
   }
+}
+
+typedef struct ten_app_addon_host_destroy_instance_ctx_t {
+  ten_addon_host_t *addon_host;
+  void *instance;
+  ten_addon_context_t *addon_context;
+} ten_app_addon_host_destroy_instance_ctx_t;
+
+static void ten_app_addon_host_destroy_instance(void *from, void *args) {
+  ten_app_t *app = (ten_app_t *)from;
+  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+
+  ten_app_addon_host_destroy_instance_ctx_t *ctx =
+      (ten_app_addon_host_destroy_instance_ctx_t *)args;
+  TEN_ASSERT(ctx, "Should not happen.");
+
+  ten_addon_host_t *addon_host = ctx->addon_host;
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
+
+  addon_host->addon->on_destroy_instance(addon_host->addon, addon_host->ten_env,
+                                         ctx->instance, ctx->addon_context);
+
+  TEN_FREE(ctx);
 }
 
 /**
@@ -231,19 +254,38 @@ bool ten_addon_host_destroy_instance_async(ten_addon_host_t *self,
                                            void *instance,
                                            ten_addon_context_t *addon_context) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(self), "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: this function could be called on any thread.
+  TEN_ASSERT(ten_addon_host_check_integrity(self, false), "Should not happen.");
   TEN_ASSERT(instance, "Should not happen.");
-  TEN_ASSERT(addon_context, "Should not happen.");
 
-  if (self->addon->on_destroy_instance) {
-    TEN_ASSERT(self->addon->on_destroy_instance, "Should not happen.");
-    self->addon->on_destroy_instance(self->addon, self->ten_env, instance,
-                                     addon_context);
-  } else {
+  ten_app_t *app = self->attached_app;
+  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
+
+  if (!self->addon->on_destroy_instance) {
     TEN_ASSERT(0,
                "Failed to destroy an instance from %s, because it does not "
                "define a destroy() function.",
                ten_string_get_raw_str(&self->name));
+    return false;
+  }
+
+  if (ten_app_thread_call_by_me(app)) {
+    self->addon->on_destroy_instance(self->addon, self->ten_env, instance,
+                                     addon_context);
+  } else {
+    ten_app_addon_host_destroy_instance_ctx_t *ctx =
+        TEN_MALLOC(sizeof(ten_app_addon_host_destroy_instance_ctx_t));
+    TEN_ASSERT(ctx, "Failed to allocate memory.");
+
+    ctx->addon_host = self;
+    ctx->instance = instance;
+    ctx->addon_context = addon_context;
+
+    int rc = ten_runloop_post_task_tail(ten_app_get_attached_runloop(app),
+                                        ten_app_addon_host_destroy_instance,
+                                        app, ctx);
+    TEN_ASSERT(rc == 0, "Failed to post task.");
   }
 
   return true;
@@ -287,7 +329,7 @@ ten_addon_host_t *ten_addon_host_create(TEN_ADDON_TYPE type) {
 
 void ten_addon_host_load_metadata(ten_addon_host_t *self, ten_env_t *ten_env,
                                   ten_addon_on_init_func_t on_init) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self),
+  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
              "Should not happen.");
   TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true) &&
                  ten_env_get_attached_addon(ten_env) == self,

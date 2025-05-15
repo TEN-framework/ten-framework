@@ -99,7 +99,7 @@ static ten_env_t *ten_create_with_attach_to(TEN_ENV_ATTACH_TO attach_to_type,
 
 ten_env_t *ten_env_create_for_addon(ten_addon_host_t *addon_host) {
   TEN_ASSERT(addon_host, "Invalid argument.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Invalid use of addon_host %p.", addon_host);
 
   return ten_create_with_attach_to(TEN_ENV_ATTACH_TO_ADDON, addon_host);

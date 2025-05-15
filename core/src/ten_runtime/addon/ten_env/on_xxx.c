@@ -38,7 +38,7 @@ void ten_addon_on_init_done(ten_env_t *self) {
              self);
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_error_t err;
@@ -107,7 +107,7 @@ bool ten_addon_on_deinit_done(ten_env_t *self) {
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_env_close(self);
@@ -133,7 +133,7 @@ static void ten_extension_addon_on_create_instance_done(ten_env_t *self,
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_addon_context_t *addon_context = (ten_addon_context_t *)context;
@@ -199,7 +199,7 @@ static void ten_extension_group_addon_on_create_instance_done(ten_env_t *self,
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_addon_context_t *addon_context = (ten_addon_context_t *)context;
@@ -254,7 +254,7 @@ static void ten_protocol_addon_on_create_instance_done(ten_env_t *self,
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
   TEN_ASSERT(addon_host->type == TEN_ADDON_TYPE_PROTOCOL, "Should not happen.");
 
@@ -340,7 +340,7 @@ static void ten_addon_loader_addon_on_create_instance_done(ten_env_t *self,
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
   TEN_ASSERT(addon_host->type == TEN_ADDON_TYPE_ADDON_LOADER,
              "Should not happen.");
@@ -392,7 +392,7 @@ void ten_addon_on_create_instance_done(ten_env_t *self, void *instance,
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   switch (addon_host->type) {
@@ -425,7 +425,7 @@ void ten_addon_on_destroy_instance_done(ten_env_t *self, void *context) {
   TEN_ASSERT(self->attach_to == TEN_ENV_ATTACH_TO_ADDON, "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(self);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_addon_context_t *addon_context = (ten_addon_context_t *)context;
