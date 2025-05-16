@@ -29,6 +29,7 @@ PyObject *ten_py_ten_env_on_create_instance_done(PyObject *self,
         "Invalid argument count when ten_env.on_create_instance_done.");
   }
 
+  // TODO(xilin): Switch to the addon_host thread.
   bool rc = ten_env_on_create_instance_done(
       py_ten_env->c_ten_env, extension->c_extension, context, &err);
   TEN_ASSERT(rc, "Should not happen.");

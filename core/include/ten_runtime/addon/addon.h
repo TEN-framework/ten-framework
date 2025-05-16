@@ -49,11 +49,8 @@ typedef enum TEN_ADDON_TYPE {
   TEN_ADDON_TYPE_ADDON_LOADER,
 } TEN_ADDON_TYPE;
 
-typedef void (*ten_addon_on_init_func_t)(ten_addon_t *addon,
-                                         ten_env_t *ten_env);
-
-typedef void (*ten_addon_on_deinit_func_t)(ten_addon_t *addon,
-                                           ten_env_t *ten_env);
+typedef void (*ten_addon_on_configure_func_t)(ten_addon_t *addon,
+                                              ten_env_t *ten_env);
 
 typedef void (*ten_addon_on_create_instance_func_t)(ten_addon_t *addon,
                                                     ten_env_t *ten_env,
@@ -68,7 +65,7 @@ typedef void (*ten_addon_on_destroy_instance_func_t)(ten_addon_t *addon,
 typedef void (*ten_addon_on_destroy_func_t)(ten_addon_t *addon);
 
 TEN_RUNTIME_API ten_addon_t *ten_addon_create(
-    ten_addon_on_init_func_t on_init, ten_addon_on_deinit_func_t on_deinit,
+    ten_addon_on_configure_func_t on_configure,
     ten_addon_on_create_instance_func_t on_create_instance,
     ten_addon_on_destroy_instance_func_t on_destroy_instance,
     ten_addon_on_destroy_func_t on_destroy);

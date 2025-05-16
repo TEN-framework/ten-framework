@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/addon/protocol/protocol.h"
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/common/base_dir.h"
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_utils/lib/string.h"
@@ -40,11 +41,13 @@ static void ten_addon_host_deinit(ten_addon_host_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(self->addon, "Should not happen.");
 
-  if (self->addon->on_deinit) {
-    self->addon->on_deinit(self->addon, self->ten_env);
-  } else {
-    ten_env_on_deinit_done(self->ten_env, NULL);
+  ten_env_close(self->ten_env);
+
+  if (self->addon->on_destroy) {
+    self->addon->on_destroy(self->addon);
   }
+
+  ten_addon_host_destroy(self);
 }
 
 static void ten_addon_on_end_of_life(TEN_UNUSED ten_ref_t *ref,
@@ -327,8 +330,7 @@ ten_addon_host_t *ten_addon_host_create(TEN_ADDON_TYPE type) {
   return self;
 }
 
-void ten_addon_host_load_metadata(ten_addon_host_t *self, ten_env_t *ten_env,
-                                  ten_addon_on_init_func_t on_init) {
+void ten_addon_host_load_metadata(ten_addon_host_t *self, ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
              "Should not happen.");
   TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true) &&
@@ -340,9 +342,62 @@ void ten_addon_host_load_metadata(ten_addon_host_t *self, ten_env_t *ten_env,
   self->property_info =
       ten_metadata_info_create(TEN_METADATA_ATTACH_TO_PROPERTY, ten_env);
 
-  if (on_init) {
-    on_init(self->addon, ten_env);
-  } else {
-    ten_env_on_init_done(ten_env, NULL);
+  if (self->addon->on_configure) {
+    self->addon->on_configure(self->addon, ten_env);
+  }
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool rc = ten_handle_manifest_info_when_on_configure_done(
+      &self->manifest_info, NULL, &self->manifest, &err);
+  if (!rc) {
+    TEN_LOGW("Failed to load addon manifest data, FATAL ERROR");
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    exit(EXIT_FAILURE);
+  }
+
+  rc = ten_handle_property_info_when_on_configure_done(
+      &self->property_info, NULL, &self->property, &err);
+  if (!rc) {
+    TEN_LOGW("Failed to load addon property data, FATAL ERROR");
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    exit(EXIT_FAILURE);
+  }
+
+  ten_value_t *manifest_name_value =
+      ten_value_object_peek(&self->manifest, TEN_STR_NAME);
+
+  const char *manifest_name = NULL;
+  if (manifest_name_value) {
+    manifest_name = ten_value_peek_raw_str(manifest_name_value, &err);
+  }
+
+  ten_error_deinit(&err);
+
+  if (manifest_name) {
+    TEN_ASSERT(manifest_name, "Should not happen.");
+
+    if (ten_string_len(&self->name) &&
+        !ten_string_is_equal_c_str(&self->name, manifest_name)) {
+      TEN_LOGW(
+          "The registered addon name (%s) is not equal to the name (%s) in "
+          "the manifest",
+          ten_string_get_raw_str(&self->name), manifest_name);
+
+      // Get 'name' from manifest, and check the consistency between the name
+      // specified in the argument, and the name specified in the manifest.
+      //
+      // The name in the manifest could be checked by the TEN store to ensure
+      // the uniqueness of the name.
+      TEN_ASSERT(0, "Should not happen.");
+    }
+
+    // If an addon defines an addon name in its manifest file, TEN runtime
+    // would use that name instead of the name specified in the codes to
+    // register it to the addon store.
+    if (strlen(manifest_name)) {
+      ten_string_set_from_c_str(&self->name, manifest_name);
+    }
   }
 }

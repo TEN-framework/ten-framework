@@ -70,10 +70,6 @@ bool ten_env_on_init_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
     ten_app_on_init_done(self);
     break;
 
-  case TEN_ENV_ATTACH_TO_ADDON:
-    ten_addon_on_init_done(self);
-    break;
-
   case TEN_ENV_ATTACH_TO_ADDON_LOADER:
     ten_addon_loader_on_init_done(self);
     break;
@@ -92,9 +88,6 @@ bool ten_env_on_deinit_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
              self);
 
   switch (self->attach_to) {
-  case TEN_ENV_ATTACH_TO_ADDON:
-    return ten_addon_on_deinit_done(self);
-
   case TEN_ENV_ATTACH_TO_EXTENSION_GROUP:
     return ten_extension_group_on_deinit_done(self);
 

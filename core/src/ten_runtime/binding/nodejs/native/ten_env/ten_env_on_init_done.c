@@ -29,18 +29,6 @@ static void ten_env_proxy_notify_on_init_done(ten_env_t *ten_env,
   ten_error_deinit(&err);
 }
 
-static void ten_app_addon_host_on_init_done(void *from, void *args) {
-  ten_app_t *app = (ten_app_t *)from;
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
-
-  ten_addon_host_t *addon_host = (ten_addon_host_t *)args;
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
-             "Should not happen.");
-
-  bool rc = ten_env_on_init_done(addon_host->ten_env, NULL);
-  TEN_ASSERT(rc, "Should not happen.");
-}
-
 napi_value ten_nodejs_ten_env_on_init_done(napi_env env,
                                            napi_callback_info info) {
   TEN_ASSERT(env, "Should not happen.");
@@ -71,24 +59,7 @@ napi_value ten_nodejs_ten_env_on_init_done(napi_env env,
                                     ten_env_proxy_notify_on_init_done, NULL,
                                     &err);
   } else {
-    TEN_ASSERT(ten_env_bridge->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
-               "Should not happen.");
-
-    ten_env_t *ten_env = ten_env_bridge->c_ten_env;
-
-    // Switch to the addon_host thread to call ten_env_on_init_done.
-    ten_addon_host_t *addon_host = ten_env_get_attached_addon(ten_env);
-    TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, false),
-               "Should not happen.");
-
-    ten_app_t *app = addon_host->attached_app;
-    TEN_ASSERT(app && ten_app_check_integrity(app, false),
-               "Should not happen.");
-
-    int post_task_rc = ten_runloop_post_task_tail(
-        ten_app_get_attached_runloop(app), ten_app_addon_host_on_init_done, app,
-        addon_host);
-    rc = post_task_rc == 0;
+    TEN_ASSERT(0, "c_ten_env_proxy is NULL.");
   }
 
   if (!rc) {
