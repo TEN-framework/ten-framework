@@ -210,7 +210,8 @@ void ten_extension_group_set_addon(ten_extension_group_t *self,
              "Should not happen.");
 
   TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host), "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
 
   // Since the extension requires the corresponding addon to release
   // its resources, therefore, hold on to a reference count of the corresponding

@@ -519,7 +519,7 @@ void ten_addon_loader_destroy_all_singleton_instances(
 
     ten_addon_host_t *addon_host = addon_loader->addon_host;
     TEN_ASSERT(addon_host, "Should not happen.");
-    TEN_ASSERT(ten_addon_host_check_integrity(addon_host),
+    TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
                "Should not happen.");
 
     ten_addon_loader_deinit(addon_loader, ten_addon_loader_deinit_done, ctx);

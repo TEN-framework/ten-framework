@@ -255,22 +255,6 @@ static void ten_builtin_extension_group_on_destroy_extensions(
   }
 }
 
-void ten_builtin_extension_group_addon_on_init(TEN_UNUSED ten_addon_t *addon,
-                                               ten_env_t *ten_env) {
-  bool result = ten_env_init_manifest_from_json(ten_env,
-                                                // clang-format off
-                            "{\
-                              \"type\": \"extension_group\",\
-                              \"name\": \"default_extension_group\",\
-                              \"version\": \"1.0.0\"\
-                             }",
-                                                // clang-format on
-                                                NULL);
-  TEN_ASSERT(result, "Should not happen.");
-
-  ten_env_on_init_done(ten_env, NULL);
-}
-
 void ten_builtin_extension_group_addon_create_instance(ten_addon_t *addon,
                                                        ten_env_t *ten_env,
                                                        const char *name,
@@ -301,7 +285,6 @@ void ten_builtin_extension_group_addon_destroy_instance(
 static ten_addon_t builtin_extension_group_addon = {
     NULL,
     TEN_ADDON_SIGNATURE,
-    ten_builtin_extension_group_addon_on_init,
     NULL,
     ten_builtin_extension_group_addon_create_instance,
     ten_builtin_extension_group_addon_destroy_instance,

@@ -22,6 +22,7 @@ typedef struct ten_addon_store_t ten_addon_store_t;
 
 typedef struct ten_addon_host_t {
   ten_signature_t signature;
+  ten_sanitizer_thread_check_t thread_check;
 
   ten_string_t name;  // The name of the addon.
   ten_string_t base_dir;
@@ -64,9 +65,6 @@ TEN_RUNTIME_PRIVATE_API void ten_addon_host_create_instance_async(
     ten_addon_host_t *self, const char *name,
     ten_addon_context_t *addon_context);
 
-TEN_RUNTIME_PRIVATE_API bool ten_addon_host_destroy_instance(
-    ten_addon_host_t *self, ten_env_t *ten_env, void *instance);
-
 /**
  * @brief The base directory of the loaded addon. This function can be
  * called before any TEN app starts. Note that the returned string must be
@@ -75,7 +73,8 @@ TEN_RUNTIME_PRIVATE_API bool ten_addon_host_destroy_instance(
 TEN_RUNTIME_PRIVATE_API const char *ten_addon_host_get_base_dir(
     ten_addon_host_t *self);
 
-TEN_RUNTIME_API bool ten_addon_host_check_integrity(ten_addon_host_t *self);
+TEN_RUNTIME_API bool ten_addon_host_check_integrity(ten_addon_host_t *self,
+                                                    bool check_thread);
 
 TEN_RUNTIME_PRIVATE_API const char *ten_addon_host_get_name(
     ten_addon_host_t *self);
@@ -92,5 +91,4 @@ TEN_RUNTIME_PRIVATE_API ten_addon_host_t *ten_addon_host_create(
     TEN_ADDON_TYPE type);
 
 TEN_RUNTIME_PRIVATE_API void ten_addon_host_load_metadata(
-    ten_addon_host_t *self, ten_env_t *ten_env,
-    ten_addon_on_init_func_t on_init);
+    ten_addon_host_t *self, ten_env_t *ten_env);

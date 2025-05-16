@@ -4,21 +4,20 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/addon/addon_host.h"
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env_proxy/ten_env_proxy.h"
+#include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
 
 static void ten_env_proxy_notify_on_deinit_done(ten_env_t *ten_env,
                                                 void *user_data) {
-  TEN_ASSERT(
-      ten_env &&
-          ten_env_check_integrity(
-              ten_env,
-              ten_env->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Should not happen.");
+  TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true),
+             "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -62,15 +61,14 @@ napi_value ten_nodejs_ten_env_on_deinit_done(napi_env env,
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
-
   bool rc = false;
 
-  if (ten_env_bridge->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON) {
-    rc = ten_env_on_deinit_done(ten_env_bridge->c_ten_env, &err);
-  } else {
+  if (ten_env_bridge->c_ten_env_proxy) {
     rc = ten_env_proxy_notify_async(ten_env_bridge->c_ten_env_proxy,
                                     ten_env_proxy_notify_on_deinit_done,
                                     ten_env_bridge->c_ten_env_proxy, &err);
+  } else {
+    TEN_ASSERT(0, "c_ten_env_proxy is NULL.");
   }
 
   // Reset the c_ten_env_proxy and c_ten_env to NULL.

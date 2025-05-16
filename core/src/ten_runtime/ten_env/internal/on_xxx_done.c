@@ -29,10 +29,8 @@
 
 bool ten_env_on_configure_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_EXTENSION:
@@ -57,10 +55,8 @@ bool ten_env_on_configure_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
 
 bool ten_env_on_init_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_EXTENSION:
@@ -72,10 +68,6 @@ bool ten_env_on_init_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
 
   case TEN_ENV_ATTACH_TO_APP:
     ten_app_on_init_done(self);
-    break;
-
-  case TEN_ENV_ATTACH_TO_ADDON:
-    ten_addon_on_init_done(self);
     break;
 
   case TEN_ENV_ATTACH_TO_ADDON_LOADER:
@@ -92,15 +84,10 @@ bool ten_env_on_init_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
 
 bool ten_env_on_deinit_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
-  case TEN_ENV_ATTACH_TO_ADDON:
-    return ten_addon_on_deinit_done(self);
-
   case TEN_ENV_ATTACH_TO_EXTENSION_GROUP:
     return ten_extension_group_on_deinit_done(self);
 
@@ -162,10 +149,8 @@ bool ten_env_on_create_instance_done(ten_env_t *self, void *instance,
                                      void *context,
                                      TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_ADDON:
@@ -183,10 +168,8 @@ bool ten_env_on_create_instance_done(ten_env_t *self, void *instance,
 bool ten_env_on_destroy_instance_done(ten_env_t *self, void *context,
                                       TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_ADDON:

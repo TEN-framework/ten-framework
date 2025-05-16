@@ -84,18 +84,10 @@ class DefaultExtension extends Extension {
 
 @RegisterAddonAsExtension("default_extension_nodejs")
 class DefaultExtensionAddon extends Addon {
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtensionAddon onInit");
-  }
-
   async onCreateInstance(
     _tenEnv: TenEnv,
     instanceName: string
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
-  }
-
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtensionAddon onDeinit");
   }
 }

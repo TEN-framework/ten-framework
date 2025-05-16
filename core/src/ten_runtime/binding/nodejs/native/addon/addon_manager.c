@@ -65,22 +65,17 @@ static void ten_nodejs_addon_create_and_attach_callbacks(
   ASSERT_IF_NAPI_FAIL(status == napi_ok && js_addon != NULL,
                       "Failed to get JS addon instance.");
 
-  napi_value js_on_init_proxy =
-      ten_nodejs_get_property(env, js_addon, "onInitProxy");
-  CREATE_JS_CB_TSFN(addon_bridge->js_on_init, env, "[TSFN] addon::onInit",
-                    js_on_init_proxy, ten_nodejs_invoke_addon_js_on_init);
-
-  napi_value js_on_deinit_proxy =
-      ten_nodejs_get_property(env, js_addon, "onDeinitProxy");
-  CREATE_JS_CB_TSFN(addon_bridge->js_on_deinit, env, "[TSFN] addon::onDeinit",
-                    js_on_deinit_proxy, ten_nodejs_invoke_addon_js_on_deinit);
-
   napi_value js_on_create_instance_proxy =
       ten_nodejs_get_property(env, js_addon, "onCreateInstanceProxy");
   CREATE_JS_CB_TSFN(addon_bridge->js_on_create_instance, env,
                     "[TSFN] addon::onCreateInstance",
                     js_on_create_instance_proxy,
                     ten_nodejs_invoke_addon_js_on_create_instance);
+
+  napi_value js_on_destroy =
+      ten_nodejs_get_property(env, js_addon, "onDestroy");
+  CREATE_JS_CB_TSFN(addon_bridge->js_on_destroy, env, "[TSFN] addon::onDestroy",
+                    js_on_destroy, ten_nodejs_invoke_addon_js_on_destroy);
 }
 
 static bool ten_nodejs_addon_manager_check_integrity(

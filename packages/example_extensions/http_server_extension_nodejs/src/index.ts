@@ -155,18 +155,10 @@ class HttpServerExtension extends Extension {
 
 @RegisterAddonAsExtension("http_server_extension_nodejs")
 class HttpServerExtensionAddon extends Addon {
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultAddon onInit");
-  }
-
   async onCreateInstance(
     _tenEnv: TenEnv,
     instanceName: string,
   ): Promise<Extension> {
     return new HttpServerExtension(instanceName);
-  }
-
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultAddon onDeinit");
   }
 }

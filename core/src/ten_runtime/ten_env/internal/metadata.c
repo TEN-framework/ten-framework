@@ -167,10 +167,8 @@ static ten_metadata_info_t *ten_env_get_property_info(ten_env_t *self) {
 bool ten_env_init_manifest_from_json(ten_env_t *self, const char *json_string,
                                      TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   ten_metadata_info_t *manifest_info = ten_env_get_manifest_info(self);
   TEN_ASSERT(manifest_info && ten_metadata_info_check_integrity(manifest_info),
@@ -183,10 +181,8 @@ bool ten_env_init_manifest_from_json(ten_env_t *self, const char *json_string,
 bool ten_env_init_property_from_json(ten_env_t *self, const char *json_string,
                                      ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   if (ten_env_is_closed(self)) {
     if (err) {
