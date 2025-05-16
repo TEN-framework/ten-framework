@@ -141,7 +141,10 @@
     },
     "logViewer": {
       "title": "ログビューア",
-      "appInstall": "アプリのインストール"
+      "appInstall": "アプリのインストール",
+      "filteredByAddon": "アドオンでログをフィルター",
+      "noAddons": "利用可能なアドオンがありません",
+      "noMatchedAddons": "一致するアドオンがありません"
     },
     "default": {
       "defaultLabelForAppRun": "アプリ実行のデフォルトラベル",

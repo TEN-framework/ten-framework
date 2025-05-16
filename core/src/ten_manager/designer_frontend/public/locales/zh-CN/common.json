@@ -141,7 +141,10 @@
     },
     "logViewer": {
       "title": "日志查看器",
-      "appInstall": "应用安装"
+      "appInstall": "应用安装",
+      "filteredByAddon": "按插件筛选日志",
+      "noAddons": "无可用插件",
+      "noMatchedAddons": "无匹配插件"
     },
     "default": {
       "defaultLabelForAppRun": "默认应用运行标签",

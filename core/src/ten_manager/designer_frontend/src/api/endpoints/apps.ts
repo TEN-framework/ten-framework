@@ -105,10 +105,18 @@ export const ENDPOINT_TEMPLATES = {
       method: ENDPOINT_METHOD.POST,
       requestSchema: TemplatePkgsReqSchema,
       responseSchema: genResSchema<{
-        template_name: string[];
+        templates: Array<{
+          pkg_name: string;
+          pkg_version: string;
+        }>;
       }>(
         z.object({
-          template_name: z.array(z.string()),
+          templates: z.array(
+            z.object({
+              pkg_name: z.string(),
+              pkg_version: z.string(),
+            })
+          ),
         })
       ),
     },

@@ -141,7 +141,10 @@
     },
     "logViewer": {
       "title": "Log Viewer",
-      "appInstall": "App Install"
+      "appInstall": "App Install",
+      "filteredByAddon": "Filter logs by Addon",
+      "noAddons": "No Avaliable Addons",
+      "noMatchedAddons": "No matched addons"
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",

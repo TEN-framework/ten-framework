@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Separator } from "@/components/ui/Separator";
-import { cn } from "@/lib/utils";
+import { cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import {
   EWidgetCategory,
@@ -29,7 +29,6 @@ import {
 } from "@/types/widgets";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
-
 import type { IListTenCloudStorePackage } from "@/types/extension";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { postReloadApps } from "@/api/services/apps";
@@ -136,7 +135,10 @@ export const ExtensionDetails = (props: {
 
   const osArchMemo = React.useMemo(() => {
     const result = new Map<string, IListTenCloudStorePackage[]>();
-    for (const version of versions) {
+    const sortedVersions = [...versions].sort((a, b) =>
+      compareVersions(b.version, a.version)
+    );
+    for (const version of sortedVersions) {
       for (const support of version?.supports || []) {
         if (!result.has(`${support.os}/${support.arch}`)) {
           result.set(`${support.os}/${support.arch}`, []);

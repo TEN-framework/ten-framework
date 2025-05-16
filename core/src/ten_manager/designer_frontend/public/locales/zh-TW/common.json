@@ -141,7 +141,10 @@
     },
     "logViewer": {
       "title": "日誌檢視器",
-      "appInstall": "應用安裝"
+      "appInstall": "應用安裝",
+      "filteredByAddon": "依附加元件篩選日誌",
+      "noAddons": "無可用附加元件",
+      "noMatchedAddons": "無符合的附加元件"
     },
     "default": {
       "defaultLabelForAppRun": "預設應用程式運行標籤",

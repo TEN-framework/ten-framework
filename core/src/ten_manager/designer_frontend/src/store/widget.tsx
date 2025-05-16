@@ -6,6 +6,7 @@
 //
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { z } from "zod";
 
 import {
   EWidgetCategory,
@@ -14,7 +15,7 @@ import {
   type IWidget,
 } from "@/types/widgets";
 import { getZodDefaults } from "@/utils";
-import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
+import { PREFERENCES_SCHEMA_LOG, LogLineInfoSchema } from "@/types/apps";
 import { dispatchBringToFront } from "@/utils/events";
 
 export const useWidgetStore = create<{
@@ -51,13 +52,13 @@ export const useWidgetStore = create<{
   // log viewer ---
   logViewerHistory: {
     [id: string]: {
-      history: string[];
+      history: z.infer<typeof LogLineInfoSchema>[];
       maxLength: number;
     };
   };
   appendLogViewerHistory: (
     id: string,
-    history: string[],
+    history: z.infer<typeof LogLineInfoSchema>[],
     options?: { override?: boolean; maxLength?: number }
   ) => void;
   removeLogViewerHistory: (id: string) => void;
@@ -181,7 +182,7 @@ export const useWidgetStore = create<{
     logViewerHistory: {},
     appendLogViewerHistory: (
       id: string,
-      history: string[],
+      history: z.infer<typeof LogLineInfoSchema>[],
       options?: { override?: boolean; maxLength?: number }
     ) =>
       set((state) => ({
@@ -238,14 +239,17 @@ export const useWidgetStore = create<{
 
 const logBuffer: {
   [id: string]: {
-    history: string[];
+    history: z.infer<typeof LogLineInfoSchema>[];
   };
 } = {};
 let timer: null | NodeJS.Timeout = null;
 
 // debounced function to append logs
 // to the logViewerHistory in the store
-export const appendLogsById = (id: string, logs: string[]) => {
+export const appendLogsById = (
+  id: string,
+  logs: z.infer<typeof LogLineInfoSchema>[]
+) => {
   if (!logBuffer[id]) {
     logBuffer[id] = { history: logs };
   } else {
