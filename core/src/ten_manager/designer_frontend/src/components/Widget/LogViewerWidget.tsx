@@ -127,7 +127,9 @@ export function LogViewerFrontStageWidget(props: {
 
   const [searchInput, setSearchInput] = React.useState("");
   const defferedSearchInput = React.useDeferredValue(searchInput);
-  const [addonInput, setAddonInput] = React.useState("");
+  const [addonInput, setAddonInput] = React.useState(
+    options?.filters?.extensions?.[0] || ""
+  );
 
   const { logViewerHistory, widgets } = useWidgetStore();
   const { nodes } = useFlowStore();
@@ -159,28 +161,30 @@ export function LogViewerFrontStageWidget(props: {
           <Button variant="outline" className="hidden">
             {t("action.search")}
           </Button>
-          <Combobox
-            className="w-1/3"
-            options={nodes.map((node) => ({
-              label: node.data.name,
-              value: node.data.name,
-            }))}
-            placeholder={t("popup.logViewer.filteredByAddon")}
-            selected={addonInput}
-            onChange={(i) => {
-              if (i.value === addonInput) {
-                setAddonInput("");
-                return;
-              }
-              console.log("onChange", i.value);
-              setAddonInput(i.value);
-            }}
-            commandLabels={{
-              placeholder: t("popup.logViewer.filteredByAddon"),
-              noItems: t("popup.logViewer.noAddons"),
-              noMatchedItems: t("popup.logViewer.noMatchedAddons"),
-            }}
-          />
+          {!options?.filters?.extensions && (
+            <Combobox
+              className="w-1/3"
+              options={nodes.map((node) => ({
+                label: node.data.name,
+                value: node.data.name,
+              }))}
+              placeholder={t("popup.logViewer.filteredByAddon")}
+              selected={addonInput}
+              onChange={(i) => {
+                if (i.value === addonInput) {
+                  setAddonInput("");
+                  return;
+                }
+                console.log("onChange", i.value);
+                setAddonInput(i.value);
+              }}
+              commandLabels={{
+                placeholder: t("popup.logViewer.filteredByAddon"),
+                noItems: t("popup.logViewer.noAddons"),
+                noMatchedItems: t("popup.logViewer.noMatchedAddons"),
+              }}
+            />
+          )}
         </div>
       )}
       <div className="h-full w-full p-2">
