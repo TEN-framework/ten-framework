@@ -111,9 +111,10 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
 
   ten_binding_handle_set_me_in_target_lang((ten_binding_handle_t *)c_ten_env,
                                            NULL);
-  // Release the JS ten_env object.
-  status = napi_delete_reference(env, ten_env_bridge->bridge.js_instance_ref);
-  TEN_ASSERT(status == napi_ok, "Failed to release JS ten_env: %d", status);
+  // Release the reference to the JS ten_env object.
+  uint32_t js_ten_env_ref_count = 0;
+  status = napi_reference_unref(env, ten_env_bridge->bridge.js_instance_ref,
+                                &js_ten_env_ref_count);
 
   return js_undefined(env);
 }

@@ -130,6 +130,12 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
                  ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
+  // Increase the reference count of the JS ten_env object to prevent it from
+  // being garbage collected.
+  uint32_t js_ten_env_ref_count = 0;
+  napi_reference_ref(env, ten_env_bridge->bridge.js_instance_ref,
+                     &js_ten_env_ref_count);
+
   napi_status status = napi_ok;
 
   {
