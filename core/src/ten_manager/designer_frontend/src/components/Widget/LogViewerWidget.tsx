@@ -12,10 +12,17 @@ import AutoSizer from "react-virtualized-auto-sizer";
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Combobox } from "@/components/ui/Combobox";
 import { cn } from "@/lib/utils";
-import { useWidgetStore, appendLogsById } from "@/store/widget";
+import { useFlowStore, useWidgetStore } from "@/store";
+import { appendLogsById } from "@/store/widget";
 import { ILogViewerWidget, ILogViewerWidgetOptions } from "@/types/widgets";
-import { EWSMessageType, LogSchema, LegacyLogSchema } from "@/types/apps";
+import {
+  EWSMessageType,
+  LogSchema,
+  LegacyLogSchema,
+  LogLineInfoSchema,
+} from "@/types/apps";
 
 export function LogViewerBackstageWidget(props: ILogViewerWidget) {
   const {
@@ -56,10 +63,10 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
         ) {
           if (isLegacy) {
             const line = (msg as z.infer<typeof LegacyLogSchema>).data;
-            appendLogsById(id, [line]);
+            appendLogsById(id, [{ line }]);
           } else {
-            const line = (msg as z.infer<typeof LogSchema>).data.line;
-            appendLogsById(id, [line]);
+            const data = (msg as z.infer<typeof LogSchema>).data;
+            appendLogsById(id, [data]);
           }
         } else if (msg.type === EWSMessageType.EXIT) {
           const code = msg.code;
@@ -69,19 +76,26 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
             lines.push(errMsg);
           }
           lines.push(`Process exited with code ${code}. Closing...`);
-          appendLogsById(id, lines);
+          appendLogsById(
+            id,
+            lines.map((line) => ({ line }))
+          );
 
           wsRef.current?.close();
         } else if (msg.status === "fail") {
-          appendLogsById(id, [`Error: ${msg.message || "Unknown error"}\n`]);
+          appendLogsById(id, [
+            { line: `Error: ${msg.message || "Unknown error"}` },
+          ]);
         } else {
-          appendLogsById(id, [`Unknown message: ${JSON.stringify(msg)}`]);
+          appendLogsById(id, [
+            { line: `Unknown message: ${JSON.stringify(msg)}` },
+          ]);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         // If it's not JSON, output it directly as text.
-        appendLogsById(id, [event.data]);
+        appendLogsById(id, [{ line: event.data }]);
       }
     };
 
@@ -113,14 +127,20 @@ export function LogViewerFrontStageWidget(props: {
 
   const [searchInput, setSearchInput] = React.useState("");
   const defferedSearchInput = React.useDeferredValue(searchInput);
+  const [addonInput, setAddonInput] = React.useState("");
 
   const { logViewerHistory, widgets } = useWidgetStore();
+  const { nodes } = useFlowStore();
 
   const { t } = useTranslation();
 
   const logsMemo = React.useMemo(() => {
-    return logViewerHistory[id]?.history || [];
-  }, [logViewerHistory, id]);
+    const allLogs = logViewerHistory[id]?.history || [];
+    if (!addonInput) return allLogs;
+    return (
+      allLogs.filter((log) => log.metadata?.extension === addonInput) || []
+    );
+  }, [logViewerHistory, id, addonInput]);
 
   const currentWidget = React.useMemo(() => {
     return widgets.find((w) => w.widget_id === id);
@@ -139,6 +159,28 @@ export function LogViewerFrontStageWidget(props: {
           <Button variant="outline" className="hidden">
             {t("action.search")}
           </Button>
+          <Combobox
+            className="w-1/3"
+            options={nodes.map((node) => ({
+              label: node.data.name,
+              value: node.data.name,
+            }))}
+            placeholder={t("popup.logViewer.filteredByAddon")}
+            selected={addonInput}
+            onChange={(i) => {
+              if (i.value === addonInput) {
+                setAddonInput("");
+                return;
+              }
+              console.log("onChange", i.value);
+              setAddonInput(i.value);
+            }}
+            commandLabels={{
+              placeholder: t("popup.logViewer.filteredByAddon"),
+              noItems: t("popup.logViewer.noAddons"),
+              noMatchedItems: t("popup.logViewer.noMatchedAddons"),
+            }}
+          />
         </div>
       )}
       <div className="h-full w-full p-2">
@@ -303,14 +345,17 @@ const VirtualListItem = (props: {
 };
 
 function LogViewerLogItemList(props: {
-  logs: string[];
+  logs: z.infer<typeof LogLineInfoSchema>[];
   search?: string;
   prefix?: string;
 }) {
   const { logs: rawLogs, search, prefix } = props;
 
   const logsMemo = React.useMemo(() => {
-    return rawLogs.map(string2LogItem);
+    return rawLogs.map((log) => {
+      const line = string2LogItem(log.line);
+      return line;
+    });
   }, [rawLogs]);
 
   const filteredLogs = React.useMemo(() => {
