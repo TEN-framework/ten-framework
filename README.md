@@ -1,8 +1,8 @@
 <div align="center"> <a name="readme-top"></a>
 
-![TEN Agent banner](https://github.com/user-attachments/assets/72c70d91-3db6-41d6-8ce0-8a2064564fb8)
+![TEN banner](https://github.com/user-attachments/assets/72c70d91-3db6-41d6-8ce0-8a2064564fb8)
 
-![]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )
+[![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
 ![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
@@ -135,7 +135,7 @@ Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for
 
 <br>
 
-## 🤖 TEN Agent
+## ✨ Features
 
 ![TEN Agent with Trulience](https://github.com/user-attachments/assets/2f1dfd55-14a3-47ea-ae25-40ad40ceadea)
 
@@ -212,6 +212,20 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)
 
 TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+<br>
+
+![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
+
+### 6️⃣ StoryTeller - TEN image generation
+
+[StoryTeller](https://github.com/TEN-framework/storyteller) is a tool to generate images from text with TEN framework.
 
 <div align="right">
 
