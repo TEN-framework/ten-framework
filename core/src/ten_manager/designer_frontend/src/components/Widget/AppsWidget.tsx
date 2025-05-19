@@ -499,7 +499,7 @@ export const AppTemplateWidget = (props: {
 }) => {
   const { className, onCreated } = props;
   const [templatePkgs, setTemplatePkgs] = React.useState<
-    Record<string, string[]>
+    Record<string, { pkg_name: string; pkg_version: string }[]>
   >({});
   const [showAppFolder, setShowAppFolder] = React.useState<boolean>(false);
   const [isCreating, setIsCreating] = React.useState<boolean>(false);
@@ -526,9 +526,10 @@ export const AppTemplateWidget = (props: {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsCreating(true);
+      const templateName = values.template_name.split("@").shift() as string;
       const res = await postCreateApp(
         values.base_dir,
-        values.template_name,
+        templateName,
         values.app_name
       );
       toast.success(t("popup.apps.createAppSuccess"), {
@@ -558,7 +559,7 @@ export const AppTemplateWidget = (props: {
           form.watch("pkg_type"),
           form.watch("language")
         );
-        setTemplatePkgs((prev) => ({ ...prev, [key]: pkgs.template_name }));
+        setTemplatePkgs((prev) => ({ ...prev, [key]: pkgs.templates }));
       }
     };
     fetchTemplatePkgs();
@@ -656,8 +657,11 @@ export const AppTemplateWidget = (props: {
                   {templatePkgs[
                     `${form.watch("pkg_type")}-${form.watch("language")}`
                   ]?.map((pkg) => (
-                    <SelectItem key={pkg} value={pkg}>
-                      {pkg}
+                    <SelectItem
+                      key={`${pkg.pkg_name}@${pkg.pkg_version}`}
+                      value={`${pkg.pkg_name}@${pkg.pkg_version}`}
+                    >
+                      {pkg.pkg_name}@{pkg.pkg_version}
                     </SelectItem>
                   ))}
                 </SelectContent>
