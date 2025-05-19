@@ -268,11 +268,8 @@ void *ten_env_get_attached_target(ten_env_t *self) {
 
 TEN_ENV_ATTACH_TO ten_env_get_attach_to(ten_env_t *self) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_env_check_integrity(self,
-                                     // TODO(xilin): Change it to true after
-                                     // the addon thread check is ready.
-                                     false),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Should not happen.");
+
   return self->attach_to;
 }
 
