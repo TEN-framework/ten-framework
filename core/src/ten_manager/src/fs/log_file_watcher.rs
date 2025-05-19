@@ -142,9 +142,10 @@ async fn watch_log_file_task(
     // Create a GraphResourcesLog instance that will be used throughout this
     // task's lifetime.
     let mut graph_resources_log = GraphResourcesLog {
-        graph_id: String::new(),
-        graph_name: String::new(),
+        app_base_dir: String::new(),
         app_uri: None,
+        graph_id: String::new(),
+        graph_name: None,
         extension_threads: std::collections::HashMap::new(),
     };
 

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/app/base_dir.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/internal/extension_interface.h"
@@ -501,6 +502,8 @@ static void ten_extension_thread_log_graph_resources(
              "Invalid use of extension_thread %p.", self);
 
   // Get the required information.
+  const char *app_base_dir =
+      ten_app_get_base_dir(self->extension_context->engine->app);
   const char *app_uri = ten_app_get_uri(self->extension_context->engine->app);
   const char *graph_id =
       ten_engine_get_id(self->extension_context->engine, false);
@@ -544,27 +547,34 @@ static void ten_extension_thread_log_graph_resources(
                               ten_string_get_raw_str(&thread_entry));
 
   // Log the complete JSON in a single call.
+  ten_string_t log_json;
+  ten_string_init(&log_json);
+
+  // Always add app_base_dir
+  ten_string_append_formatted(&log_json, "\"app_base_dir\": \"%s\"",
+                              app_base_dir);
+
+  // Conditionally add app_uri if it exists and is not empty
   if (app_uri != NULL && app_uri[0] != '\0') {
-    TEN_LOGM(
-        "[graph resources] {"
-        "\"app_uri\": \"%s\", "
-        "\"graph name\": \"%s\", "
-        "\"graph id\": \"%s\", "
-        "\"extension_threads\": {%s}"
-        "}",
-        app_uri, graph_name, graph_id,
-        ten_string_get_raw_str(&extension_threads_json));
-  } else {
-    TEN_LOGM(
-        "[graph resources] {"
-        "\"graph name\": \"%s\", "
-        "\"graph id\": \"%s\", "
-        "\"extension_threads\": {%s}"
-        "}",
-        graph_name, graph_id, ten_string_get_raw_str(&extension_threads_json));
+    ten_string_append_formatted(&log_json, ", \"app_uri\": \"%s\"", app_uri);
   }
 
+  // Conditionally add graph name if it exists and is not empty
+  if (graph_name != NULL && graph_name[0] != '\0') {
+    ten_string_append_formatted(&log_json, ", \"graph_name\": \"%s\"",
+                                graph_name);
+  }
+
+  // Always add graph id and extension_threads.
+  ten_string_append_formatted(
+      &log_json, ", \"graph_id\": \"%s\", \"extension_threads\": {%s}",
+      graph_id, ten_string_get_raw_str(&extension_threads_json));
+
+  // Log the complete JSON
+  TEN_LOGM("[graph resources] {%s}", ten_string_get_raw_str(&log_json));
+
   // Clean up.
+  ten_string_deinit(&log_json);
   ten_string_deinit(&thread_entry);
   ten_string_deinit(&extensions_array);
   ten_string_deinit(&extension_threads_json);
@@ -581,9 +591,10 @@ void ten_extension_thread_add_all_created_extensions(
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: We are in the extension thread, and throughout the entire
   // lifecycle of the extension, the extension_context where the extension
-  // resides remains unchanged. Even in the closing flow, the extension_context
-  // is closed later than the extension itself. Therefore, using a pointer to
-  // the extension_context within the extension thread is thread-safe.
+  // resides remains unchanged. Even in the closing flow, the
+  // extension_context is closed later than the extension itself. Therefore,
+  // using a pointer to the extension_context within the extension thread is
+  // thread-safe.
   TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
              "Should not happen.");
 
@@ -607,8 +618,8 @@ void ten_extension_thread_add_all_created_extensions(
   ten_engine_t *engine = extension_context->engine;
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: The runloop of the engine will not be changed during the
-  // whole lifetime of the extension thread, so it's thread safe to access it
-  // here.
+  // whole lifetime of the extension thread, so it's thread safe to access
+  // it here.
   TEN_ASSERT(engine, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
 

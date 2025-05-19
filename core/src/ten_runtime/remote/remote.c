@@ -187,7 +187,8 @@ void ten_remote_on_connection_closed(TEN_UNUSED ten_connection_t *connection,
 
 static ten_remote_t *ten_remote_create_empty(const char *uri,
                                              ten_connection_t *connection) {
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   ten_remote_t *self = (ten_remote_t *)TEN_MALLOC(sizeof(ten_remote_t));
@@ -272,7 +273,8 @@ static void ten_remote_attach_to_engine(ten_remote_t *self,
 ten_remote_t *ten_remote_create_for_engine(const char *uri,
                                            ten_engine_t *engine,
                                            ten_connection_t *connection) {
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
   TEN_ASSERT(engine, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Should not happen.");
