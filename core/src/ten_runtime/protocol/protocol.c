@@ -191,7 +191,8 @@ void ten_protocol_attach_to_connection(ten_protocol_t *self,
                                        ten_connection_t *connection) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_protocol_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   self->attach_to = TEN_PROTOCOL_ATTACH_TO_CONNECTION;

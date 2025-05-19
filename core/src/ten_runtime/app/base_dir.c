@@ -71,11 +71,12 @@ void ten_app_find_and_set_base_dir(ten_app_t *self) {
 }
 
 const char *ten_app_get_base_dir(ten_app_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: This function might be called from other threads, ex: the
   // extension thread. And the `base_dir` is only set when starting the app, so
   // it's thread safe to read after app starts.
-  TEN_ASSERT(self && ten_app_check_integrity(self, false), "Invalid argument.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Invalid argument.");
 
   return ten_string_get_raw_str(&self->base_dir);
 }

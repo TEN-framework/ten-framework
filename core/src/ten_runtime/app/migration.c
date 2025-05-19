@@ -31,7 +31,8 @@ void ten_app_clean_connection(ten_app_t *self, ten_connection_t *connection) {
 static void ten_app_clean_connection_task(void *connection_,
                                           TEN_UNUSED void *arg) {
   ten_connection_t *connection = (ten_connection_t *)connection_;
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   TEN_ASSERT(

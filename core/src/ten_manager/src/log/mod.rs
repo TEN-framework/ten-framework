@@ -15,14 +15,17 @@ pub struct ExtensionThreadInfo {
 }
 
 pub struct GraphResourcesLog {
-    pub graph_id: String,
-    pub graph_name: String,
+    pub app_base_dir: String,
     pub app_uri: Option<String>,
+    pub graph_id: String,
+    pub graph_name: Option<String>,
     pub extension_threads: HashMap<String, ExtensionThreadInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogLineMetadata {
+    pub graph_id: Option<String>,
+    pub graph_name: Option<String>,
     pub extension: Option<String>,
 }
 
@@ -103,6 +106,8 @@ pub fn extract_extension_from_log_line(
         if thread_info.extensions.contains(&extension_name.to_string()) {
             // Create and return LogLineMetadata.
             return Some(LogLineMetadata {
+                graph_id: Some(graph_resources_log.graph_id.clone()),
+                graph_name: graph_resources_log.graph_name.clone(),
                 extension: Some(extension_name.to_string()),
             });
         }
@@ -144,20 +149,20 @@ pub fn parse_graph_resources_log(
     let json_value: Value = serde_json::from_str(json_content)?;
 
     // Extract data from the JSON.
+    let app_base_dir = json_value["app_base_dir"]
+        .as_str()
+        .ok_or_else(|| anyhow!("Missing app_base_dir"))?;
     let app_uri = json_value.get("app_uri").and_then(|v| v.as_str());
-    let graph_id = json_value["graph id"]
+    let graph_id = json_value["graph_id"]
         .as_str()
-        .ok_or_else(|| anyhow!("Missing graph id"))?;
-    let graph_name = json_value["graph name"]
-        .as_str()
-        .ok_or_else(|| anyhow!("Missing graph name"))?;
+        .ok_or_else(|| anyhow!("Missing graph_id"))?;
+    let graph_name = json_value.get("graph_name").and_then(|v| v.as_str());
 
     // Update graph_resources_log with graph ID and name.
     graph_resources_log.graph_id = graph_id.to_string();
-    graph_resources_log.graph_name = graph_name.to_string();
-    if let Some(uri) = app_uri {
-        graph_resources_log.app_uri = Some(uri.to_string());
-    }
+    graph_resources_log.graph_name = graph_name.map(|s| s.to_string());
+    graph_resources_log.app_base_dir = app_base_dir.to_string();
+    graph_resources_log.app_uri = app_uri.map(|s| s.to_string());
 
     // Process extension_threads if present.
     if let Some(extension_threads) = json_value.get("extension_threads") {
