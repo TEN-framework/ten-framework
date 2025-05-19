@@ -151,15 +151,18 @@ static void ten_go_addon_destroy_instance_helper(ten_addon_t *addon,
     ten_extension_t *extension = (ten_extension_t *)instance;
     // TEN_NOLINTNEXTLINE(thread-check)
     // thread-check: this function is called on the addon_host thread.
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, false),
+    TEN_ASSERT(extension, "Invalid argument.");
+    TEN_ASSERT(ten_extension_check_integrity(extension, false),
                "Invalid argument.");
 
     // Because the extension increases the reference count of the
     // corresponding `addon_host` when it is created, the reference count must
     // be decreased when the extension is destroyed.
     ten_addon_host_t *addon_host = extension->addon_host;
-    TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+    TEN_ASSERT(addon_host, "Invalid argument.");
+    TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
                "Invalid argument.");
+
     ten_ref_dec_ref(&addon_host->ref);
     extension->addon_host = NULL;
 

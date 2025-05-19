@@ -4,8 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "include_internal/ten_runtime/addon/addon_host.h"
-#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/ten_env_proxy/ten_env_proxy.h"
@@ -16,8 +14,8 @@
 
 static void ten_env_proxy_notify_on_deinit_done(ten_env_t *ten_env,
                                                 void *user_data) {
-  TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -55,8 +53,8 @@ napi_value ten_nodejs_ten_env_on_deinit_done(napi_env env,
   napi_status status = napi_unwrap(env, args[0], (void **)&ten_env_bridge);
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && ten_env_bridge != NULL,
                                 "Failed to get rte bridge: %d", status);
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
   ten_error_t err;

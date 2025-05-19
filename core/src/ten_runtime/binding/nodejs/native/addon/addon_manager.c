@@ -55,9 +55,9 @@ static void addon_manager_register_single_addon_ctx_destroy(
 
 static void ten_nodejs_addon_create_and_attach_callbacks(
     napi_env env, ten_nodejs_addon_t *addon_bridge) {
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   napi_value js_addon = NULL;
   napi_status status = napi_get_reference_value(

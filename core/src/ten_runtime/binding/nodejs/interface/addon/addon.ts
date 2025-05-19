@@ -31,6 +31,14 @@ export abstract class Addon {
   private async onDestroy(): Promise<void> {
     // JS addon prepare to be destroyed, so notify the underlying C runtime this
     // fact.
+    //
+    // onDestroy() is called by the C runtime to the JS world, and then
+    // immediately calls back down to the C runtime's
+    // ten_nodejs_addon_on_end_of_life. It seems unnecessary to go through the
+    // JS world, but it is actually needed. This is because
+    // ten_nodejs_addon_on_end_of_life() internally calls NAPI's API, and
+    // calling the NAPI API requires being in the JS world, hence the need for
+    // this behavior of calling from the C runtime to the JS world first.
     ten_addon.ten_nodejs_addon_on_end_of_life(this);
   }
 

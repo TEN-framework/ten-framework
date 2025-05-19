@@ -14,8 +14,8 @@
 
 static void ten_env_proxy_notify_on_configure_done(ten_env_t *ten_env,
                                                    TEN_UNUSED void *user_data) {
-  TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);

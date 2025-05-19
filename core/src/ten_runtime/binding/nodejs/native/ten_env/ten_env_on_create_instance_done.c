@@ -61,8 +61,8 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
   napi_status status = napi_unwrap(env, args[0], (void **)&ten_env_bridge);
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && ten_env_bridge != NULL,
                                 "Failed to get rte bridge: %d", status);
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
   ten_nodejs_extension_t *extension_bridge = NULL;
@@ -83,18 +83,20 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
   TEN_ERROR_INIT(err);
 
   ten_env_t *c_ten_env = ten_env_bridge->c_ten_env;
-  TEN_ASSERT(c_ten_env && ten_env_check_integrity(c_ten_env, false),
-             "Should not happen.");
+  TEN_ASSERT(c_ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(c_ten_env, false), "Should not happen.");
 
   TEN_ASSERT(c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
              "Should not happen.");
 
   ten_addon_host_t *addon_host = ten_env_get_attached_addon(c_ten_env);
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, false),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, false),
              "Should not happen.");
 
   ten_app_t *app = addon_host->attached_app;
-  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
   ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_nodejs_ten_env_on_create_instance_done_ctx_t));

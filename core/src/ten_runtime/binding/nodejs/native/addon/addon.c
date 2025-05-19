@@ -96,9 +96,9 @@ static void ten_nodejs_addon_finalize(napi_env env, void *data,
   TEN_LOGI("TEN JS Addon is finalized");
 
   ten_nodejs_addon_t *addon_bridge = data;
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   napi_status status = napi_ok;
 
@@ -126,8 +126,8 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
       env, call_info->ten_env, &ten_env_bridge);
   TEN_ASSERT(js_ten_env, "Should not happen.");
 
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
   // Increase the reference count of the JS ten_env object to prevent it from
@@ -183,9 +183,9 @@ void ten_nodejs_invoke_addon_js_on_destroy(napi_env env, napi_value fn,
                                            TEN_UNUSED void *context,
                                            void *data) {
   ten_nodejs_addon_t *addon_bridge = data;
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   napi_status status = napi_ok;
 
@@ -285,9 +285,9 @@ static void proxy_on_destroy(ten_addon_t *addon) {
 
   ten_nodejs_addon_t *addon_bridge =
       ten_binding_handle_get_me_in_target_lang((ten_binding_handle_t *)addon);
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, false),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, false),
+             "Should not happen.");
 
   bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_destroy, addon_bridge);
   TEN_ASSERT(rc, "Failed to call addon on_destroy().");
@@ -375,9 +375,9 @@ static napi_value ten_nodejs_addon_on_end_of_life(napi_env env,
   napi_status status = napi_unwrap(env, args[0], (void **)&addon_bridge);
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && addon_bridge != NULL,
                                 "Failed to get addon bridge: %d", status);
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   // From now on, the JS on_xxx callback(s) are useless, so release them all.
   ten_nodejs_addon_release_js_on_xxx_tsfn(env, addon_bridge);
