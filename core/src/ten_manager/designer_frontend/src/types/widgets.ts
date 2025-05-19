@@ -179,6 +179,9 @@ export const LogViewerScriptSchemaMap = {
 export interface ILogViewerWidgetOptions {
   disableSearch?: boolean;
   title?: string | React.ReactNode;
+  filters?: {
+    extensions?: string[];
+  };
 }
 
 export interface ILogViewerWidgetData<T extends ELogViewerScriptType> {
