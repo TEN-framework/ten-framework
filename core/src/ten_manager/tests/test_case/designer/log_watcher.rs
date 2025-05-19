@@ -27,8 +27,9 @@ async fn test_ws_log_watcher_endpoint() {
     let temp_dir = tempdir().unwrap();
     let app_dir = temp_dir.path();
 
-    // Create a property.json file in the temp dir.
+    // Create a app.log file in the temp dir.
     let log_file_path = app_dir.join("app.log");
+    eprintln!("Log file path: {}", log_file_path.display());
     create_property_json(app_dir, &log_file_path);
 
     // Create an empty log file.
@@ -55,14 +56,18 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {text}");
+            println!("({}) Received: {text}", log_file_path.display());
             if text.contains("Ready to receive app_base_dir") {
                 ready_received = true;
                 break;
             }
         }
     }
-    assert!(ready_received, "Didn't receive ready message");
+    assert!(
+        ready_received,
+        "({}) Didn't receive ready message",
+        log_file_path.display()
+    );
 
     // Send the app_base_dir to the server.
     let app_base_dir_msg = json!({
@@ -70,7 +75,7 @@ async fn test_ws_log_watcher_endpoint() {
         "app_base_dir": app_dir.to_string_lossy().to_string()
     });
     write.send(Message::Text(app_base_dir_msg.to_string())).await.unwrap();
-    println!("Sent app_base_dir message");
+    println!("({}) Sent app_base_dir message", log_file_path.display());
 
     // Wait for the info message about starting the watcher.
     let mut received_start_msg = false;
@@ -78,18 +83,27 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {text}");
+            println!("({}) Received: {text}", log_file_path.display());
             if text.contains("Started watching log file") {
                 received_start_msg = true;
                 break;
             }
         }
     }
-    assert!(received_start_msg, "Didn't receive start message");
+    assert!(
+        received_start_msg,
+        "({}) Didn't receive start message",
+        log_file_path.display()
+    );
 
     // Now append to the log file.
     let test_content = "Test log message\n";
     append_to_log_file(&log_file_path, test_content);
+    eprintln!(
+        "({}) Appended to log file: {}",
+        log_file_path.display(),
+        test_content
+    );
 
     // Check if we receive the content - with timeout of 10 seconds.
     let mut received_content = false;
@@ -99,7 +113,7 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received text: {text}");
+            println!("({}) Received text: {text}", log_file_path.display());
 
             // Try to parse the JSON response.
             if let Ok(log_line_info) = serde_json::from_str::<LogLineInfo>(text)
@@ -114,12 +128,16 @@ async fn test_ws_log_watcher_endpoint() {
             }
         }
     }
-    assert!(received_content, "Didn't receive log content");
+    assert!(
+        received_content,
+        "({}) Didn't receive log content",
+        log_file_path.display()
+    );
 
     // Send stop message.
     let stop_msg = r#"{"type":"stop"}"#;
     write.send(Message::Text(stop_msg.to_string())).await.unwrap();
-    println!("Sent stop message");
+    println!("({}) Sent stop message", log_file_path.display());
 
     // Wait for connection to close or stop confirmation.
     let mut received_stop = false;
@@ -129,14 +147,18 @@ async fn test_ws_log_watcher_endpoint() {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
-            println!("Received: {text}");
+            println!("({}) Received: {text}", log_file_path.display());
             if text.contains("Stopped watching log file") {
                 received_stop = true;
                 break;
             }
         }
     }
-    assert!(received_stop, "Didn't receive stop confirmation");
+    assert!(
+        received_stop,
+        "({}) Didn't receive stop confirmation",
+        log_file_path.display()
+    );
 
     // Clean up.
     temp_dir.close().unwrap();
