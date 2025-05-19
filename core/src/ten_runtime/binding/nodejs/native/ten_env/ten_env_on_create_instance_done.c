@@ -20,14 +20,16 @@ typedef struct ten_nodejs_ten_env_on_create_instance_done_ctx_t {
 
 static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
   ten_app_t *app = (ten_app_t *)from;
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
       (ten_nodejs_ten_env_on_create_instance_done_ctx_t *)args;
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_addon_host_t *addon_host = ctx->addon_host;
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   ten_error_t err;

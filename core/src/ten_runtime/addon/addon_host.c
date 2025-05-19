@@ -107,8 +107,8 @@ void ten_addon_host_destroy(ten_addon_host_t *self) {
 }
 
 const char *ten_addon_host_get_name(ten_addon_host_t *self) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_addon_host_check_integrity(self, true), "Invalid argument.");
   return ten_string_get_raw_str(&self->name);
 }
 
@@ -132,8 +132,9 @@ void ten_addon_host_find_and_set_base_dir(ten_addon_host_t *self,
 }
 
 const char *ten_addon_host_get_base_dir(ten_addon_host_t *self) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_addon_host_check_integrity(self, true), "Invalid argument.");
+
   return ten_string_get_raw_str(&self->base_dir);
 }
 
@@ -219,16 +220,20 @@ typedef struct ten_app_addon_host_destroy_instance_ctx_t {
   ten_addon_context_t *addon_context;
 } ten_app_addon_host_destroy_instance_ctx_t;
 
+// The owner thread of the addon is the app thread, so this function is called
+// from the app thread.
 static void ten_app_addon_host_destroy_instance(void *from, void *args) {
   ten_app_t *app = (ten_app_t *)from;
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   ten_app_addon_host_destroy_instance_ctx_t *ctx =
       (ten_app_addon_host_destroy_instance_ctx_t *)args;
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_addon_host_t *addon_host = ctx->addon_host;
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   addon_host->addon->on_destroy_instance(addon_host->addon, addon_host->ten_env,
@@ -258,7 +263,9 @@ bool ten_addon_host_destroy_instance_async(ten_addon_host_t *self,
                                            ten_addon_context_t *addon_context) {
   TEN_ASSERT(self, "Should not happen.");
   // TEN_NOLINTNEXTLINE(thread-check)
-  // thread-check: this function could be called on any thread.
+  // thread-check: this function could be called on any thread. Therefore, we
+  // will check within this function if it is on the app thread and handle it
+  // appropriately.
   TEN_ASSERT(ten_addon_host_check_integrity(self, false), "Should not happen.");
   TEN_ASSERT(instance, "Should not happen.");
 
@@ -331,11 +338,11 @@ ten_addon_host_t *ten_addon_host_create(TEN_ADDON_TYPE type) {
 }
 
 void ten_addon_host_load_metadata(ten_addon_host_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_addon_host_check_integrity(self, true),
-             "Should not happen.");
-  TEN_ASSERT(ten_env && ten_env_check_integrity(ten_env, true) &&
-                 ten_env_get_attached_addon(ten_env) == self,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
+  TEN_ASSERT(ten_env_get_attached_addon(ten_env) == self, "Should not happen.");
 
   self->manifest_info =
       ten_metadata_info_create(TEN_METADATA_ATTACH_TO_MANIFEST, ten_env);

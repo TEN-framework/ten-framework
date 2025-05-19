@@ -42,9 +42,6 @@ bool ten_env_on_configure_done(ten_env_t *self, TEN_UNUSED ten_error_t *err) {
 
   case TEN_ENV_ATTACH_TO_EXTENSION_GROUP:
   case TEN_ENV_ATTACH_TO_ADDON:
-    TEN_ASSERT(0, "Handle these types.");
-    break;
-
   default:
     TEN_ASSERT(0, "Should not happen.");
     break;

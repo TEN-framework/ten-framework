@@ -267,7 +267,8 @@ static void proxy_on_destroy_instance(ten_addon_t *addon, ten_env_t *ten_env,
              "Should not happen.");
 
   ten_addon_host_t *addon_host = extension->addon_host;
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   // Because the extension increases the reference count of the corresponding

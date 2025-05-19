@@ -19,7 +19,6 @@
 #include "include_internal/ten_runtime/protocol/close.h"
 #include "include_internal/ten_runtime/remote/remote.h"
 #include "include_internal/ten_utils/log/log.h"
-#include "ten_runtime/addon/addon.h"
 #include "ten_utils/lib/mutex.h"
 #include "ten_utils/lib/ref.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -409,12 +408,9 @@ ten_string_t *ten_protocol_uri_to_transport_uri(ten_protocol_t *self,
 
   ten_addon_host_t *addon_host = self->addon_host;
   TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(
-                 addon_host,
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: read the read-only manifest
-                 // of an addon_host is thread safe.
-                 false),
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: read the read-only manifest of an addon_host is thread safe.
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, false),
              "Should not happen.");
 
   const char *transport_type = ten_value_object_peek_string(

@@ -104,8 +104,11 @@ static void ten_protocol_msgpack_on_configure(TEN_UNUSED ten_addon_t *addon,
                                                 NULL);
   TEN_ASSERT(result, "Should not happen.");
 
-  // This function is a synchronous function, so we don't need to call
-  // ten_env_on_configure_done.
+  // Note: The addon's on_configure function is only used in this place, so it
+  // is simply designed as a synchronous function for now, and thus there is no
+  // need to design and call ten_env_configure_done here. In the future, if it
+  // needs to be designed as an asynchronous function, we will need to redesign
+  // the structure and content of the addon's on_configure function.
 }
 
 static ten_addon_t msgpack_protocol_factory = {

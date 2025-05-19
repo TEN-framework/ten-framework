@@ -159,7 +159,8 @@ static void ten_addon_register_internal(ten_addon_store_t *addon_store,
   TEN_ASSERT(addon_store, "Should not happen.");
   TEN_ASSERT(ten_addon_store_check_integrity(addon_store, true),
              "Should not happen.");
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host, true),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
   TEN_ASSERT(name, "Should not happen.");
 
@@ -630,7 +631,8 @@ TEN_RUNTIME_API void ten_addon_unregister_all_and_cleanup_after_app_close(
              "Should not happen.");
 
   ten_app_t *app = ten_env_get_attached_app(ten_env);
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   ten_on_all_addons_unregistered_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_on_all_addons_unregistered_ctx_t));
