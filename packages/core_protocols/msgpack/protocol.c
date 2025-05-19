@@ -88,8 +88,8 @@ static void ten_protocol_msgpack_on_create_instance(
   ten_env_on_create_instance_done(ten_env, self, context, NULL);
 }
 
-static void ten_protocol_msgpack_on_init(TEN_UNUSED ten_addon_t *addon,
-                                         ten_env_t *ten_env) {
+static void ten_protocol_msgpack_on_configure(TEN_UNUSED ten_addon_t *addon,
+                                              ten_env_t *ten_env) {
   bool result = ten_env_init_manifest_from_json(ten_env,
                                                 // clang-format off
                         "{\
@@ -104,14 +104,17 @@ static void ten_protocol_msgpack_on_init(TEN_UNUSED ten_addon_t *addon,
                                                 NULL);
   TEN_ASSERT(result, "Should not happen.");
 
-  ten_env_on_init_done(ten_env, NULL);
+  // Note: The addon's on_configure function is only used in this place, so it
+  // is simply designed as a synchronous function for now, and thus there is no
+  // need to design and call ten_env_configure_done here. In the future, if it
+  // needs to be designed as an asynchronous function, we will need to redesign
+  // the structure and content of the addon's on_configure function.
 }
 
 static ten_addon_t msgpack_protocol_factory = {
     NULL,
     TEN_ADDON_SIGNATURE,
-    ten_protocol_msgpack_on_init,
-    NULL,
+    ten_protocol_msgpack_on_configure,
     ten_protocol_msgpack_on_create_instance,
     ten_protocol_msgpack_on_destroy_instance,
     NULL,

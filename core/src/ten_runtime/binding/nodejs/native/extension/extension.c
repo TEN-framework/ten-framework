@@ -158,8 +158,8 @@ static void ten_nodejs_invoke_extension_js_on_init(napi_env env, napi_value fn,
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = call_info->ten_env_bridge;
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
   napi_status status = napi_ok;

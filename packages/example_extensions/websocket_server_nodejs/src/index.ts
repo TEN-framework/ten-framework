@@ -81,18 +81,10 @@ class WebsocketServerExtension extends Extension {
 
 @RegisterAddonAsExtension("websocket_server_nodejs")
 class WebsocketServerExtensionAddon extends Addon {
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("WS server addon onInit");
-  }
-
   async onCreateInstance(
     _tenEnv: TenEnv,
     instanceName: string,
   ): Promise<Extension> {
     return new WebsocketServerExtension(instanceName);
-  }
-
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("WS server addon onDeinit");
   }
 }

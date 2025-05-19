@@ -50,8 +50,8 @@ static void ten_nodejs_ten_env_destroy(ten_nodejs_ten_env_t *self) {
 
 static void ten_nodejs_ten_env_finalize(napi_env env, void *data, void *hint) {
   ten_nodejs_ten_env_t *ten_env_bridge = data;
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
              "Should not happen.");
 
   TEN_LOGD("TEN JS rte object is finalized");

@@ -31,12 +31,8 @@ static void ten_go_ten_env_detach_proxy(ten_go_ten_env_t *ten_env_bridge,
 
 static void ten_env_proxy_notify_on_deinit_done(ten_env_t *ten_env,
                                                 void *user_data) {
-  TEN_ASSERT(
-      ten_env &&
-          ten_env_check_integrity(
-              ten_env,
-              ten_env->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Should not happen.");
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -71,25 +67,18 @@ void ten_go_ten_env_on_deinit_done(uintptr_t bridge_addr) {
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = true;
-
   if (self->c_ten_env_proxy) {
-    rc = ten_env_proxy_notify(self->c_ten_env_proxy,
-                              ten_env_proxy_notify_on_deinit_done, self, false,
-                              &err);
+    bool rc = ten_env_proxy_notify(self->c_ten_env_proxy,
+                                   ten_env_proxy_notify_on_deinit_done, self,
+                                   false, &err);
+    TEN_ASSERT(rc,
+               "ten_env_proxy_notify failed, "
+               "ten_env_proxy_notify_on_deinit_done failed");
   } else {
-    // TODO(Wei): This function is currently specifically designed for the addon
-    // because the addon currently does not have a main thread, so it's unable
-    // to use the ten_env_proxy mechanism to maintain thread safety. Once the
-    // main thread for the addon is determined in the future, these hacks made
-    // specifically for the addon can be completely removed, and comprehensive
-    // thread safety mechanism can be implemented.
-    TEN_ASSERT(self->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
-               "Should not happen.");
-
-    rc = ten_env_on_deinit_done(self->c_ten_env, &err);
+    TEN_ASSERT(
+        0,
+        "ten_env_proxy is not set, ten_env_proxy_notify_on_deinit_done failed");
   }
-  TEN_ASSERT(rc, "Should not happen.");
 
   ten_go_ten_env_detach_proxy(self, &err);
   ten_error_deinit(&err);
