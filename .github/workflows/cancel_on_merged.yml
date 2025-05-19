@@ -8,6 +8,7 @@ permissions:
   contents: read
   security-events: write
   pull-requests: write
+  actions: write
 
 jobs:
   cancel_workflows:
