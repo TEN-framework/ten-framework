@@ -8,7 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -26,8 +26,11 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateAppRequestPayload {
     pub base_dir: String,
-    pub template_name: String,
     pub app_name: String,
+    pub template_name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template_version: Option<Version>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,8 +42,12 @@ pub async fn create_app_endpoint(
     request_payload: web::Json<CreateAppRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let CreateAppRequestPayload { base_dir, app_name, template_name } =
-        request_payload.into_inner();
+    let CreateAppRequestPayload {
+        base_dir,
+        app_name,
+        template_name,
+        template_version,
+    } = request_payload.into_inner();
 
     // Validate base_dir exists.
     if !Path::new(&base_dir).exists() {
@@ -71,13 +78,18 @@ pub async fn create_app_endpoint(
     }
 
     // Create app using create_pkg_in_path.
+    let version_req = match template_version {
+        Some(version) => VersionReq::parse(&format!("={}", version)).unwrap(),
+        None => VersionReq::default(),
+    };
+
     match create_pkg_in_path(
         state.tman_config.clone(),
         Path::new(&base_dir),
         &PkgType::App,
         &app_name,
         &template_name,
-        &VersionReq::default(),
+        &version_req,
         None,
         &state.out,
     )

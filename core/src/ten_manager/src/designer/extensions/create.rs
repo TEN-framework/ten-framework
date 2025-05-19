@@ -8,7 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -26,8 +26,11 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateExtensionRequestPayload {
     pub base_dir: String,
-    pub template_name: String,
     pub extension_name: String,
+    pub template_name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template_version: Option<Version>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,6 +46,7 @@ pub async fn create_extension_endpoint(
         base_dir,
         extension_name,
         template_name,
+        template_version,
     } = request_payload.into_inner();
 
     // Validate base_dir exists.
@@ -73,6 +77,11 @@ pub async fn create_extension_endpoint(
         return Ok(HttpResponse::Conflict().json(error_response));
     }
 
+    let version_req = match template_version {
+        Some(version) => VersionReq::parse(&format!("={}", version)).unwrap(),
+        None => VersionReq::default(),
+    };
+
     // Create extension using create_pkg_in_path.
     match create_pkg_in_path(
         state.tman_config.clone(),
@@ -80,7 +89,7 @@ pub async fn create_extension_endpoint(
         &PkgType::Extension,
         &extension_name,
         &template_name,
-        &VersionReq::default(),
+        &version_req,
         None,
         &state.out,
     )

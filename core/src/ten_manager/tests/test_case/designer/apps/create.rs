@@ -52,6 +52,7 @@ mod tests {
             base_dir: temp_path,
             app_name: "test_app".to_string(),
             template_name: DEFAULT_APP_CPP.to_string(),
+            template_version: None,
         };
 
         let req = test::TestRequest::post()
@@ -99,6 +100,7 @@ mod tests {
             base_dir: "/non/existent/directory".to_string(),
             app_name: "test_app".to_string(),
             template_name: "default".to_string(),
+            template_version: None,
         };
 
         let req = test::TestRequest::post()
