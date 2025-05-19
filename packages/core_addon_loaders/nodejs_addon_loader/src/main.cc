@@ -242,7 +242,8 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
 
   static void proxy_notify(void *from, void *args) {
     auto *app = static_cast<ten_app_t *>(from);
-    TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+    TEN_ASSERT(app, "Should not happen.");
+    TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
     auto *proxy_notify_ctx = static_cast<proxy_notify_ctx_t *>(args);
     TEN_ASSERT(proxy_notify_ctx, "Should not happen.");

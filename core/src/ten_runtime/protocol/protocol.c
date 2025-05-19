@@ -19,7 +19,6 @@
 #include "include_internal/ten_runtime/protocol/close.h"
 #include "include_internal/ten_runtime/remote/remote.h"
 #include "include_internal/ten_utils/log/log.h"
-#include "ten_runtime/addon/addon.h"
 #include "ten_utils/lib/mutex.h"
 #include "ten_utils/lib/ref.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -58,8 +57,7 @@ static void ten_protocol_destroy(ten_protocol_t *self) {
   TEN_ASSERT(self->state == TEN_PROTOCOL_STATE_CLOSED,
              "Protocol should be closed first before been destroyed.");
 
-  self->addon_host->addon->on_destroy_instance(
-      self->addon_host->addon, self->addon_host->ten_env, self, NULL);
+  ten_addon_host_destroy_instance_async(self->addon_host, self, NULL);
 }
 
 static void ten_protocol_on_end_of_life(TEN_UNUSED ten_ref_t *ref,
@@ -389,7 +387,8 @@ void ten_protocol_set_addon(ten_protocol_t *self,
   TEN_ASSERT(ten_protocol_check_integrity(self, false), "Should not happen.");
 
   TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host), "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
 
   // Since the extension requires the corresponding addon to release
   // its resources, therefore, hold on to a reference count of the corresponding
@@ -409,7 +408,10 @@ ten_string_t *ten_protocol_uri_to_transport_uri(ten_protocol_t *self,
 
   ten_addon_host_t *addon_host = self->addon_host;
   TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host), "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: read the read-only manifest of an addon_host is thread safe.
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, false),
+             "Should not happen.");
 
   const char *transport_type = ten_value_object_peek_string(
       &addon_host->manifest, TEN_STR_TRANSPORT_TYPE);

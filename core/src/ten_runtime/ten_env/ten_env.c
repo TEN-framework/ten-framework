@@ -99,7 +99,7 @@ static ten_env_t *ten_create_with_attach_to(TEN_ENV_ATTACH_TO attach_to_type,
 
 ten_env_t *ten_env_create_for_addon(ten_addon_host_t *addon_host) {
   TEN_ASSERT(addon_host, "Invalid argument.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Invalid use of addon_host %p.", addon_host);
 
   return ten_create_with_attach_to(TEN_ENV_ATTACH_TO_ADDON, addon_host);
@@ -170,10 +170,8 @@ void ten_env_destroy(ten_env_t *self) {
 }
 
 void ten_env_close(ten_env_t *self) {
-  TEN_ASSERT(
-      ten_env_check_integrity(
-          self, self->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Invalid use of ten_env %p.", self);
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
+             self);
 
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_APP:
@@ -270,11 +268,8 @@ void *ten_env_get_attached_target(ten_env_t *self) {
 
 TEN_ENV_ATTACH_TO ten_env_get_attach_to(ten_env_t *self) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_env_check_integrity(self,
-                                     // TODO(xilin): Change it to true after
-                                     // the addon thread check is ready.
-                                     false),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(self, true), "Should not happen.");
+
   return self->attach_to;
 }
 

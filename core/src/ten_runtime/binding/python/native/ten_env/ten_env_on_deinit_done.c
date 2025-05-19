@@ -17,12 +17,8 @@
 
 static void ten_env_proxy_notify_on_deinit_done(ten_env_t *ten_env,
                                                 void *user_data) {
-  TEN_ASSERT(
-      ten_env &&
-          ten_env_check_integrity(
-              ten_env,
-              ten_env->attach_to != TEN_ENV_ATTACH_TO_ADDON ? true : false),
-      "Should not happen.");
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -99,25 +95,14 @@ PyObject *ten_py_ten_env_on_deinit_done(PyObject *self,
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = true;
-
   if (py_ten_env->c_ten_env_proxy) {
-    rc = ten_env_proxy_notify(py_ten_env->c_ten_env_proxy,
-                              ten_env_proxy_notify_on_deinit_done, py_ten_env,
-                              false, &err);
+    bool rc = ten_env_proxy_notify(py_ten_env->c_ten_env_proxy,
+                                   ten_env_proxy_notify_on_deinit_done,
+                                   py_ten_env, false, &err);
+    TEN_ASSERT(rc, "Failed to notify on deinit done.");
   } else {
-    // TODO(Wei): This function is currently specifically designed for the addon
-    // because the addon currently does not have a main thread, so it's unable
-    // to use the ten_env_proxy mechanism to maintain thread safety. Once the
-    // main thread for the addon is determined in the future, these hacks made
-    // specifically for the addon can be completely removed, and comprehensive
-    // thread safety mechanism can be implemented.
-    TEN_ASSERT(py_ten_env->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
-               "Should not happen.");
-
-    rc = ten_env_on_deinit_done(py_ten_env->c_ten_env, &err);
+    TEN_ASSERT(0, "c_ten_env_proxy is NULL.");
   }
-  TEN_ASSERT(rc, "Should not happen.");
 
   // This is already the very end, so releasing `ten_env_proxy` here is
   // appropriate. Additionally, since this function is called from Python so

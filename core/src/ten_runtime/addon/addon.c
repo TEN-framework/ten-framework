@@ -48,16 +48,15 @@ bool ten_addon_check_integrity(ten_addon_t *self) {
   return true;
 }
 
-void ten_addon_init(ten_addon_t *self, ten_addon_on_init_func_t on_init,
-                    ten_addon_on_deinit_func_t on_deinit,
+void ten_addon_init(ten_addon_t *self,
+                    ten_addon_on_configure_func_t on_configure,
                     ten_addon_on_create_instance_func_t on_create_instance,
                     ten_addon_on_destroy_instance_func_t on_destroy_instance,
                     ten_addon_on_destroy_func_t on_destroy) {
   ten_binding_handle_set_me_in_target_lang((ten_binding_handle_t *)self, NULL);
   ten_signature_set(&self->signature, TEN_ADDON_SIGNATURE);
 
-  self->on_init = on_init;
-  self->on_deinit = on_deinit;
+  self->on_configure = on_configure;
   self->on_create_instance = on_create_instance;
   self->on_destroy_instance = on_destroy_instance;
   self->on_destroy = on_destroy;
@@ -66,15 +65,15 @@ void ten_addon_init(ten_addon_t *self, ten_addon_on_init_func_t on_init,
 }
 
 ten_addon_t *ten_addon_create(
-    ten_addon_on_init_func_t on_init, ten_addon_on_deinit_func_t on_deinit,
+    ten_addon_on_configure_func_t on_configure,
     ten_addon_on_create_instance_func_t on_create_instance,
     ten_addon_on_destroy_instance_func_t on_destroy_instance,
     ten_addon_on_destroy_func_t on_destroy) {
   ten_addon_t *self = TEN_MALLOC(sizeof(ten_addon_t));
   TEN_ASSERT(self, "Failed to allocate memory.");
 
-  ten_addon_init(self, on_init, on_deinit, on_create_instance,
-                 on_destroy_instance, on_destroy);
+  ten_addon_init(self, on_configure, on_create_instance, on_destroy_instance,
+                 on_destroy);
 
   return self;
 }
@@ -160,7 +159,8 @@ static void ten_addon_register_internal(ten_addon_store_t *addon_store,
   TEN_ASSERT(addon_store, "Should not happen.");
   TEN_ASSERT(ten_addon_store_check_integrity(addon_store, true),
              "Should not happen.");
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
   TEN_ASSERT(name, "Should not happen.");
 
@@ -193,8 +193,7 @@ static void ten_addon_register_internal(ten_addon_store_t *addon_store,
   TEN_LOGV("Register addon: %s as %s", name,
            ten_addon_type_to_string(addon_host->type));
 
-  ten_addon_host_load_metadata(addon_host, addon_host->ten_env,
-                               addon_host->addon->on_init);
+  ten_addon_host_load_metadata(addon_host, addon_host->ten_env);
 }
 
 static void ten_app_create_addon_instance_failed_task(void *self_, void *arg) {
@@ -523,6 +522,11 @@ ten_addon_host_t *ten_addon_register(TEN_ADDON_TYPE addon_type,
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
+  if (app->state >= TEN_APP_STATE_CLOSING) {
+    TEN_LOGE("The app is closing, will not register the addon %s", addon_name);
+    return NULL;
+  }
+
   ten_addon_host_t *addon_host =
       ten_addon_store_find_by_type(app, addon_type, addon_name);
   if (addon_host) {
@@ -627,7 +631,8 @@ TEN_RUNTIME_API void ten_addon_unregister_all_and_cleanup_after_app_close(
              "Should not happen.");
 
   ten_app_t *app = ten_env_get_attached_app(ten_env);
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   ten_on_all_addons_unregistered_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_on_all_addons_unregistered_ctx_t));
