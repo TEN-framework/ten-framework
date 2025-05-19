@@ -34,7 +34,7 @@ impl Display for PtyMessage {
                 write!(f, "Buffer({:?})", from_utf8_lossy(data))
             }
             PtyMessage::Exit(code) => {
-                write!(f, "Exit({})", code)
+                write!(f, "Exit({code})")
             }
         }
     }
@@ -117,7 +117,7 @@ impl Actor for WsProcessor {
                         }
                     }
                     Err(e) => {
-                        println!("recv error: {}", e);
+                        println!("recv error: {e}");
                         break;
                     }
                 }
@@ -156,8 +156,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                                         .unwrap_or_else(|_| {
                                             println!(
                                                 "Failed to resize PTY to \
-                                                 cols: {}, rows: {}",
-                                                cols, rows
+                                                 cols: {cols}, rows: {rows}"
                                             )
                                         });
                                 }
@@ -175,8 +174,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                             .write_to_pty(&text)
                             .unwrap_or_else(|_| {
                                 println!(
-                                    "Failed to write to PTY with data: {}",
-                                    text
+                                    "Failed to write to PTY with data: {text}"
                                 )
                             });
                     }
@@ -188,8 +186,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                         .write_to_pty(&text)
                         .unwrap_or_else(|_| {
                             println!(
-                                "Failed to write to PTY with data: {}",
-                                text
+                                "Failed to write to PTY with data: {text}"
                             )
                         });
                 }

@@ -22,7 +22,7 @@ impl WsBuiltinFunction {
         ctx: &mut WebsocketContext<WsBuiltinFunction>,
     ) {
         let pkg_name_and_version = if let Some(pkg_version) = pkg_version {
-            format!("{}@{}", pkg_name, pkg_version)
+            format!("{pkg_name}@{pkg_version}")
         } else {
             pkg_name
         };

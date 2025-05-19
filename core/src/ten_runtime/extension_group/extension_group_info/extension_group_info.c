@@ -173,7 +173,7 @@ ten_shared_ptr_t *get_extension_group_info_in_extension_groups_info(
   ten_string_set_formatted(&self->extension_group_instance_name, "%s",
                            extension_group_instance_name);
 
-  ten_loc_set(&self->loc, app_uri, graph_id, NULL, NULL);
+  ten_loc_set(&self->loc, app_uri, graph_id, NULL);
 
   // Add the extension group addon name if we know it now.
   if (strlen(extension_group_addon_name)) {

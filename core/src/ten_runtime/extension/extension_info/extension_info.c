@@ -199,7 +199,7 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   ten_string_set_formatted(&self->extension_group_name, "%s",
                            extension_group_name);
 
-  ten_loc_set(&self->loc, app_uri, graph_id, NULL, extension_instance_name);
+  ten_loc_set(&self->loc, app_uri, graph_id, extension_instance_name);
 
   ten_shared_ptr_t *shared_self =
       ten_shared_ptr_create(self, ten_extension_info_destroy);
@@ -374,8 +374,10 @@ bool ten_extension_info_check_integrity(ten_extension_info_t *self,
 
 void ten_extension_info_translate_localhost_to_app_uri(
     ten_extension_info_t *self, const char *uri) {
-  TEN_ASSERT(self && ten_extension_info_check_integrity(self, true) && uri,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_info_check_integrity(self, false),
              "Should not happen.");
+  TEN_ASSERT(uri, "Should not happen.");
 
   if (ten_string_is_equal_c_str(&self->loc.app_uri, TEN_STR_LOCALHOST) ||
       ten_string_is_empty(&self->loc.app_uri)) {
@@ -391,7 +393,8 @@ ten_extension_info_t *ten_extension_info_from_smart_ptr(
 
 static void ten_extension_info_fill_app_uri(ten_extension_info_t *self,
                                             const char *app_uri) {
-  TEN_ASSERT(self && ten_extension_info_check_integrity(self, true),
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_info_check_integrity(self, false),
              "Invalid argument.");
   TEN_ASSERT(app_uri, "Should not happen.");
   TEN_ASSERT(!ten_loc_is_empty(&self->loc), "Should not happen.");
@@ -422,8 +425,8 @@ void ten_extensions_info_fill_app_uri(ten_list_t *extensions_info,
   ten_list_foreach (extensions_info, iter) {
     ten_extension_info_t *extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
-    TEN_ASSERT(extension_info &&
-                   ten_extension_info_check_integrity(extension_info, true),
+    TEN_ASSERT(extension_info, "Invalid argument.");
+    TEN_ASSERT(ten_extension_info_check_integrity(extension_info, false),
                "Invalid argument.");
 
     ten_extension_info_fill_app_uri(extension_info, app_uri);

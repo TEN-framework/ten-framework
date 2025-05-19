@@ -392,7 +392,7 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
 
     ten_loc_set(&extension_group_info->loc,
                 ten_string_get_raw_str(&extension_info->loc.app_uri), NULL,
-                NULL, NULL);
+                NULL);
 
     ten_shared_ptr_t *shared_group = ten_shared_ptr_create(
         extension_group_info, ten_extension_group_info_destroy);

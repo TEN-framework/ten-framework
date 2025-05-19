@@ -101,8 +101,7 @@ pub async fn get_doc_link_endpoint(
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!(
-                "Doc link not found for key {} and locale {}",
-                key, locale
+                "Doc link not found for key {key} and locale {locale}"
             ),
             error: None,
         };

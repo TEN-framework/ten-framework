@@ -234,8 +234,7 @@ pub fn update_graph_node_in_property_all_fields(
                 nodes_to_modify_property,
             ) {
                 eprintln!(
-                    "Warning: Failed to update property.json file: {}",
-                    e
+                    "Warning: Failed to update property.json file: {e}"
                 );
             }
         }

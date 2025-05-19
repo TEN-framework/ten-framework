@@ -83,7 +83,7 @@ fn test_graph_check_predefined_graph_success() {
     pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
     let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
-    eprintln!("result: {:?}", result);
+    eprintln!("result: {result:?}");
     assert!(result.is_ok());
 }
 
@@ -133,7 +133,7 @@ fn test_graph_check_single_app() {
     // for the app 'http://localhost:8001'.
     let result =
         graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
-    eprintln!("result: {:?}", result);
+    eprintln!("result: {result:?}");
     assert!(result.is_ok());
 }
 
@@ -157,6 +157,6 @@ fn test_graph_check_builtin_extension() {
 
     let result =
         graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
-    eprintln!("result: {:?}", result);
+    eprintln!("result: {result:?}");
     assert!(result.is_ok());
 }

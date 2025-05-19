@@ -23,7 +23,7 @@ mod tests {
             &None,
             &None,
         );
-        eprintln!("result: {:?}", result);
+        eprintln!("result: {result:?}");
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
         assert_eq!(graph.nodes[0].type_and_name.name, "test_extension");

@@ -248,10 +248,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -447,10 +447,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -652,10 +652,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(status.is_success());
 
@@ -903,10 +903,10 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(!status.is_success());
     }
@@ -1126,11 +1126,11 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
 
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert!(!status.is_success());
     }
@@ -1298,13 +1298,13 @@ mod tests {
 
         // Print the status and body for debugging.
         let status = update_resp.status();
-        println!("Response status: {:?}", status);
+        println!("Response status: {status:?}");
 
         assert!(!status.is_success());
 
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        println!("Response body: {}", body_str);
+        println!("Response body: {body_str}");
 
         assert_eq!(
             body_str,

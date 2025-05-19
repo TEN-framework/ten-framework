@@ -95,7 +95,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        eprintln!("body_str: {}", body_str);
+        eprintln!("body_str: {body_str}");
 
         let extensions: ApiResponse<Vec<GraphNodesSingleResponseData>> =
             serde_json::from_str(body_str).unwrap();
@@ -105,7 +105,7 @@ mod tests {
         let json: ApiResponse<Vec<GraphNodesSingleResponseData>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-        println!("Response body: {}", pretty_json);
+        println!("Response body: {pretty_json}");
 
         let expected_response_json_str = include_str!(
             "../../../../test_data/get_extension_info/response.json"

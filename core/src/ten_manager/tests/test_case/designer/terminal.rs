@@ -22,7 +22,7 @@ async fn test_ws_terminal_endpoint() {
         web::get().to(ws_terminal_endpoint)
     })
     .await;
-    println!("Server started at: {}", server_addr);
+    println!("Server started at: {server_addr}");
 
     // Connect WebSocket client to the server.
     // Use the current directory as the terminal path.
@@ -60,7 +60,7 @@ async fn test_ws_terminal_endpoint() {
                 message_count += 1;
             }
             _ => {
-                println!("Received other message type: {:?}", message);
+                println!("Received other message type: {message:?}");
             }
         }
     }
@@ -72,7 +72,7 @@ async fn test_ws_terminal_endpoint() {
     let command = "echo 'Hello from terminal test'\n";
 
     write.send(Message::Text(command.to_string())).await.unwrap();
-    println!("Sent command: {}", command);
+    println!("Sent command: {command}");
 
     // Wait a moment for the command to execute.
     sleep(Duration::from_millis(500)).await;
@@ -81,7 +81,7 @@ async fn test_ws_terminal_endpoint() {
     let resize_msg = r#"{"type":"resize","cols":100,"rows":30}"#;
 
     write.send(Message::Text(resize_msg.to_string())).await.unwrap();
-    println!("Sent resize message: {}", resize_msg);
+    println!("Sent resize message: {resize_msg}");
 
     // Wait a moment for the resize to take effect.
     sleep(Duration::from_millis(300)).await;
@@ -116,7 +116,7 @@ async fn test_ws_terminal_endpoint() {
 
                 // Check if this is an exit message.
                 if text.contains(r#""type":"exit"#) {
-                    println!("Found exit message: {}", text);
+                    println!("Found exit message: {text}");
                     got_exit_message = true;
 
                     // Verify the exit message format.
@@ -140,7 +140,7 @@ async fn test_ws_terminal_endpoint() {
                 break;
             }
             _ => {
-                println!("Received other message type: {:?}", message);
+                println!("Received other message type: {message:?}");
             }
         }
     }
@@ -158,8 +158,7 @@ async fn test_ws_terminal_endpoint() {
     let _ = write.send(Message::Close(None)).await;
 
     println!(
-        "Test completed successfully with {} initial messages and {} response \
-         messages",
-        message_count, response_count
+        "Test completed successfully with {message_count} initial messages and {response_count} response \
+         messages"
     );
 }

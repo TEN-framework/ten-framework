@@ -231,7 +231,7 @@ fn create_server_and_bind_to_addresses(
                     "Failed to bind to address {}: {:?}",
                     binding_addresses[0], e
                 );
-                eprintln!("{}", error_msg);
+                eprintln!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
             }
@@ -258,8 +258,8 @@ fn create_server_and_bind_to_addresses(
             }
             Err(e) => {
                 // Failed to bind to at least one address.
-                let error_msg = format!("Failed to bind to addresses: {:?}", e);
-                eprintln!("{}", error_msg);
+                let error_msg = format!("Failed to bind to addresses: {e:?}");
+                eprintln!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
             }
@@ -420,7 +420,7 @@ fn create_service_hub_server_thread(
 
         // Handle any errors from the actix system.
         if let Err(e) = result {
-            eprintln!("Fatal error in endpoint server thread: {:?}", e);
+            eprintln!("Fatal error in endpoint server thread: {e:?}");
             std::process::exit(-1);
         }
     });
@@ -476,15 +476,15 @@ pub unsafe extern "C" fn ten_service_hub_create(
     // Format the endpoints if hosts are available.
     let telemetry_endpoint = telemetry_host_str
         .as_ref()
-        .map(|host| format!("{}:{}", host, telemetry_port));
+        .map(|host| format!("{host}:{telemetry_port}"));
     let api_endpoint =
-        api_host_str.as_ref().map(|host| format!("{}:{}", host, api_port));
+        api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
 
     // If both endpoints are the same and not None, use a single server.
     if telemetry_endpoint.is_some() && api_endpoint.is_some() {
         if telemetry_endpoint == api_endpoint {
             let endpoint = telemetry_endpoint.as_ref().unwrap().clone();
-            eprintln!("Creating combined telemetry/API server at {}", endpoint);
+            eprintln!("Creating combined telemetry/API server at {endpoint}");
 
             // Create a server with both routes.
             let registry_clone = registry.clone();
@@ -496,7 +496,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
             ) {
                 Some(server) => server,
                 None => {
-                    eprintln!("Failed to bind server to {}", endpoint);
+                    eprintln!("Failed to bind server to {endpoint}");
                     return ptr::null_mut();
                 }
             };
@@ -550,7 +550,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
     if telemetry_endpoint.is_some() && api_endpoint.is_none() {
         // Telemetry only.
         let endpoint = telemetry_endpoint.as_ref().unwrap().clone();
-        eprintln!("Creating telemetry-only server at {}", endpoint);
+        eprintln!("Creating telemetry-only server at {endpoint}");
 
         // Create telemetry server with retry mechanism.
         let registry_clone = registry.clone();
@@ -562,7 +562,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
         ) {
             Some(server) => server,
             None => {
-                eprintln!("Failed to bind telemetry server to {}", endpoint);
+                eprintln!("Failed to bind telemetry server to {endpoint}");
                 return ptr::null_mut();
             }
         };
@@ -580,7 +580,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
     if api_endpoint.is_some() && telemetry_endpoint.is_none() {
         // API only.
         let endpoint = api_endpoint.as_ref().unwrap().clone();
-        eprintln!("Creating API-only server at {}", endpoint);
+        eprintln!("Creating API-only server at {endpoint}");
 
         // Create API server with retry mechanism.
         let registry_clone = registry.clone();
@@ -592,7 +592,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
         ) {
             Some(server) => server,
             None => {
-                eprintln!("Failed to bind API server to {}", endpoint);
+                eprintln!("Failed to bind API server to {endpoint}");
                 return ptr::null_mut();
             }
         };
@@ -645,7 +645,7 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
     if let Some(shutdown_tx) = service_hub.server_thread_shutdown_tx {
         eprintln!("Shutting down service hub...");
         if let Err(e) = shutdown_tx.send(()) {
-            eprintln!("Failed to send shutdown signal: {:?}", e);
+            eprintln!("Failed to send shutdown signal: {e:?}");
             // Don't panic, just continue with cleanup.
             eprintln!(
                 "Continuing with cleanup despite shutdown signal failure"
@@ -687,15 +687,13 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
                         )
                     }
                     Err(e) => eprintln!(
-                        "Error joining service hub server thread: {:?}",
-                        e
+                        "Error joining service hub server thread: {e:?}"
                     ),
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     eprintln!(
                         "WARNING: Service hub server thread did not shut down \
-                         within timeout ({}s)",
-                        SHUTDOWN_TIMEOUT_SECS
+                         within timeout ({SHUTDOWN_TIMEOUT_SECS}s)"
                     );
                     eprintln!(
                         "The thread may still be running, potentially leaking \

@@ -1,10 +1,11 @@
 <div align="center"> <a name="readme-top"></a>
 
-![TEN Agent banner](https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-banner.jpg)
+![TEN Agent banner](https://github.com/user-attachments/assets/72c70d91-3db6-41d6-8ce0-8a2064564fb8)
 
 ![]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )
+![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=%20%235d6b98)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-framework%20is%3Aclosed&label=issues%20closed&labelColor=gray&color=green)](https://github.com/TEN-framework/ten-framework/issues)
 ![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)
 ![](https://img.shields.io/badge/license-apache%202.0-blue?labelColor=gray&style=flat-square)
@@ -42,11 +43,11 @@
 - [👋 Welcome to TEN](#-welcome-to-ten)
 - [🎨 TMAN Designer](#-tman-designer)
 - [🤖 TEN Agent](#-ten-agent)
-  - [1️⃣ Real-time Avatar](#-realtime-avatar)
-  - [2️⃣ Real-time voice with MCP servers](#-real-time-voice-with-mcp-servers)
-  - [3️⃣ Real-time communication with hardware](#-real-time-communication-with-hardware)
-  - [4️⃣ Real-time vision and real-time screenshare detection](#-real-time-vision-and-real-time-screenshare-detection)
-  - [5️⃣ TEN with other LLM platforms](#-ten-with-other-llm-platforms)
+  - [1️⃣ Real-time Avatar](#1️⃣-real-time-avatar)
+  - [2️⃣ Real-time voice with MCP servers](#2️⃣-real-time-voice-with-mcp-servers)
+  - [3️⃣ Real-time communication with hardware](#3️⃣-real-time-communication-with-hardware)
+  - [4️⃣ Real-time vision and real-time screenshare detection](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
+  - [5️⃣ TEN with other LLM platforms](#5️⃣-ten-with-other-llm-platforms)
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️🅰️ Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱️ Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
@@ -66,7 +67,7 @@
 
 ## 👋 Welcome to TEN
 
-TEN stands for Transformative Extensions Network, is an open-source framework for real-time, multimodal conversational AI.
+TEN is a collection of open-source projects for building real-time, multimodal conversational voice agents, including [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN VAD](https://github.com/ten-framework/ten-vad), [TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection), TEN Agent, TMAN Designer, [TEN Portal](https://github.com/ten-framework/portal), and more.
 
 <br>
 
@@ -81,13 +82,15 @@ TEN stands for Transformative Extensions Network, is an open-source framework fo
 
 > \[!IMPORTANT]
 >
-> **Star Our Repository** ⭐️
+> **Star TEN Repositories** ⭐️
 >
-> Get instant notifications for new releases and updates. Your support helps us grow and improve TEN Framework!
+> Get instant notifications for new releases and updates. Your support helps us grow and improve TEN!
 
 <br>
 
-![TEN star us gif](https://ten-framework-assets.s3.us-east-1.amazonaws.com/star-us.gif)
+![TEN star us gif](https://github.com/user-attachments/assets/eeebe996-8c14-4bf7-82ae-f1a1f7e30705)
+
+<br>
 
 <details>
   <summary><kbd>Star History</kbd></summary>
@@ -106,7 +109,7 @@ TEN stands for Transformative Extensions Network, is an open-source framework fo
 
 ## 🎨 TMAN Designer
 
-![TMAN Designer](https://ten-framework-assets.s3.amazonaws.com/readme/tman-designer.gif)
+![TMAN Designer](https://github.com/user-attachments/assets/04fd75df-4de9-41b6-8aab-19014ecb46a4)
 
 ### TMAN Designer
 
@@ -134,7 +137,7 @@ Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for
 
 ## 🤖 TEN Agent
 
-![TEN Agent with Trulience](https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-trulience.gif)
+![TEN Agent with Trulience](https://github.com/user-attachments/assets/2f1dfd55-14a3-47ea-ae25-40ad40ceadea)
 
 ### 1️⃣ Real-time Avatar
 
@@ -150,6 +153,8 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 </div>
 
 <br>
+
+![TEN Agent with MCP servers](https://github.com/user-attachments/assets/934ba928-a4a3-4662-8624-cebefc88ce05)
 
 ### 2️⃣ Real-time voice with MCP servers
 
@@ -186,7 +191,7 @@ Check out the [integration guide](https://github.com/TEN-framework/ten-framework
 
 <br>
 
-![TEN Agent with Trulience](https://ten-framework-assets.s3.us-east-1.amazonaws.com/readme/gemini.gif)
+![Real-time vision](https://github.com/user-attachments/assets/7be06e38-994e-4f82-8ec6-183d08fe90f1)
 
 ### 4️⃣ Real-time vision and real-time screenshare detection
 
@@ -200,7 +205,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 <br>
 
-![TEN Agent with Trulience](https://ten-framework-assets.s3.us-east-1.amazonaws.com/readme/dify-rag.gif)
+![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
 
 ### 5️⃣ TEN with other LLM platforms
 
@@ -288,7 +293,7 @@ task run
 
 #### Step ⓷ - Customize your agent with TMAN Designer
 
-![Module Picker Example](https://ten-framework-assets.s3.us-east-1.amazonaws.com/readme/tman-designer.gif)
+![Customize your agent with TMAN Designer](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
 
  1. Open [localhost:49483](localhost:49483).
  2. Load the corresponding graph from the menu (e.g., Voice Assistant).
@@ -379,15 +384,18 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 <br> -->
 
-## 🌍 TEN Framework Ecosystem
+## 🌏 TEN Ecosystem
 
 | Project | Preview |
 | ------- | ------- |
-| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN is an open-source framework for real-time, multimodal conversational AI.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**TEN VAD**][ten-vad-link]<br>TEN VAD is a low-latency, lightweight and high-performance streaming voice activity detector (VAD).<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
+| [**️TEN Turn Detection**][ten-turn-detection-link]<br>TEN is for full-duplex dialogue communication.<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
 | [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a showcase of TEN Framewrok.<br><br> | ![][ten-agent-banner] |
 | **🎨 TMAN Designer** `beta`<br>TMAN Designer is low/no code option to make a voice agent with easy to use workflow UI.<br><br> | ![][tman-designer-banner] |
 | **📒 TEN Portal**<br>The official site of TEN framework, it has documentation and blog.<br><br>![][ten-docs-shield] | ![][ten-docs-banner] |
 
+<br>
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -437,12 +445,20 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
 
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-docs-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-
+[ten-framework-banner]: https://github.com/user-attachments/assets/72c70d91-3db6-41d6-8ce0-8a2064564fb8
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
-[ten-agent-link]: https://github.com/ten-framework/ten-agent
 
-[ten-framework-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-portal.jpeg
-[ten-agent-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-agent.jpeg
+[ten-vad-link]: https://github.com/ten-framework/ten-vad
+[ten-vad-shield]: https://img.shields.io/github/stars/ten-framework/ten-vad?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+[ten-vad-banner]: https://github.com/user-attachments/assets/c61d74e7-4356-4c74-98d8-af2cdd125642
+
+[ten-turn-detection-link]: https://github.com/ten-framework/ten-turn-detection
+[ten-turn-detection-shield]: https://img.shields.io/github/stars/ten-framework/ten-turn-detection?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+[ten-turn-detection-banner]: https://github.com/user-attachments/assets/14f868dd-56d3-4916-8485-94b1a211d37d
+
+[ten-agent-link]: https://github.com/ten-framework/ten-agent
+[ten-agent-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/readme/ten-agent.jpeg
 [tman-designer-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/tman-manager.jpeg
-[ten-docs-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/ten-doc.jpeg
+
+[ten-docs-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+[ten-docs-banner]: https://ten-framework-assets.s3.us-east-1.amazonaws.com/readme/ten-doc.jpeg

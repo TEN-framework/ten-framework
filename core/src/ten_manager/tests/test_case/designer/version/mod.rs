@@ -76,6 +76,6 @@ mod tests {
         let json: ApiResponse<GetVersionResponseData> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
-        println!("Response body: {}", pretty_json);
+        println!("Response body: {pretty_json}");
     }
 }

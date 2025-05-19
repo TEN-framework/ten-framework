@@ -201,7 +201,12 @@ pub async fn get_package_list(
         }
     };
 
-    Ok(results)
+    // Sort packages by version in descending order (newer versions first).
+    let mut sorted_results = results;
+    sorted_results
+        .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
+
+    Ok(sorted_results)
 }
 
 pub async fn delete_package(

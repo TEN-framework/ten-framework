@@ -34,9 +34,7 @@ mod tests {
 
         assert!(
             req.matches(&version),
-            "Version {:?} does not match requirement {}",
-            version,
-            req_str
+            "Version {version:?} does not match requirement {req_str}"
         );
     }
 
@@ -52,9 +50,7 @@ mod tests {
 
         assert!(
             req.matches(&version),
-            "Version {:?} does not match requirement {}",
-            version,
-            req_str
+            "Version {version:?} does not match requirement {req_str}"
         );
     }
 }

@@ -21,10 +21,10 @@ async fn test_ws_builtin_function_install() {
         web::get().to(builtin_function_endpoint)
     })
     .await;
-    println!("Server started at: {}", server_addr);
+    println!("Server started at: {server_addr}");
 
     // Connect WebSocket client.
-    let ws_url = format!("ws://{}/ws/builtin-function", server_addr);
+    let ws_url = format!("ws://{server_addr}/ws/builtin-function");
     let (ws_stream, _) = connect_async(ws_url).await.unwrap();
     println!("WebSocket connection established");
 
@@ -42,7 +42,7 @@ async fn test_ws_builtin_function_install() {
 
     // Send the message.
     write.send(Message::Text(json_msg.clone())).await.unwrap();
-    println!("Sent Install message: {}", json_msg);
+    println!("Sent Install message: {json_msg}");
 
     // Wait for all response messages until server disconnects.
     let mut message_count = 0;
@@ -63,7 +63,7 @@ async fn test_ws_builtin_function_install() {
                 break;
             }
             _ => {
-                println!("Received non-text message: {:?}", message);
+                println!("Received non-text message: {message:?}");
             }
         }
     }
@@ -85,7 +85,6 @@ async fn test_ws_builtin_function_install() {
     // We don't gracefully stop the server, just let the thread continue running
     // and it will be cleaned up when the process exits.
     println!(
-        "Test completed successfully with {} messages received",
-        message_count
+        "Test completed successfully with {message_count} messages received"
     );
 }

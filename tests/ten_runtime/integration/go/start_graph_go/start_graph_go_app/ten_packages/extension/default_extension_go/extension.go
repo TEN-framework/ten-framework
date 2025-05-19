@@ -33,27 +33,30 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
         	]
 		}`
 
-		graphJSONBytes := []byte(graphJSON)
-		startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)
-		startGraphCmd.SetDest("localhost", "", "")
+		// Switch to a new goroutine to test if those codes can be executed in
+		// other threads.
+		go func() {
+			graphJSONBytes := []byte(graphJSON)
+			startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)
+			startGraphCmd.SetDest("localhost", "", "")
+			tenEnv.SendCmd(
+				startGraphCmd,
+				func(tenEnv ten.TenEnv, cr ten.CmdResult, err error) {
+					if err != nil {
+						panic("Failed to start graph: " + err.Error())
+					}
 
-		tenEnv.SendCmd(
-			startGraphCmd,
-			func(tenEnv ten.TenEnv, cr ten.CmdResult, err error) {
-				if err != nil {
-					panic("Failed to start graph: " + err.Error())
-				}
+					statusCode, _ := cr.GetStatusCode()
+					if statusCode != ten.StatusCodeOk {
+						panic("Failed to start graph")
+					}
 
-				statusCode, _ := cr.GetStatusCode()
-				if statusCode != ten.StatusCodeOk {
-					panic("Failed to start graph")
-				}
-
-				cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
-				cmdResult.SetPropertyString("detail", "ok")
-				tenEnv.ReturnResult(cmdResult, nil)
-			},
-		)
+					cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
+					cmdResult.SetPropertyString("detail", "ok")
+					tenEnv.ReturnResult(cmdResult, nil)
+				},
+			)
+		}()
 	} else {
 		panic("unknown cmd name: " + name)
 	}

@@ -169,7 +169,7 @@ pub async fn delete_graph_node_endpoint(
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!("Failed to delete node: {}", err),
+            message: format!("Failed to delete node: {err}"),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));
@@ -209,8 +209,7 @@ pub async fn delete_graph_node_endpoint(
                 None,
             ) {
                 eprintln!(
-                    "Warning: Failed to update property.json file: {}",
-                    e
+                    "Warning: Failed to update property.json file: {e}"
                 );
             }
         }

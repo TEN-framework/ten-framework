@@ -85,9 +85,6 @@ TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_to_engine(ten_shared_ptr_t *self,
 TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_to_extension(
     ten_shared_ptr_t *self, ten_extension_t *extension);
 
-TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_to_extension_group(
-    ten_shared_ptr_t *self, ten_extension_group_t *extension_group);
-
 TEN_RUNTIME_PRIVATE_API void ten_msg_clear_and_set_dest_from_msg_src(
     ten_shared_ptr_t *self, ten_shared_ptr_t *cmd);
 
@@ -117,7 +114,6 @@ TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_raw_msg_get_first_dest_loc(
 TEN_RUNTIME_PRIVATE_API void ten_msg_set_src(ten_shared_ptr_t *self,
                                              const char *app_uri,
                                              const char *graph_id,
-                                             const char *extension_group_name,
                                              const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_uri(ten_shared_ptr_t *self,

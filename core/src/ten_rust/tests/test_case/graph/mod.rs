@@ -4,6 +4,8 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+mod source_uri;
+
 #[cfg(test)]
 mod tests {
     use std::{collections::HashMap, str::FromStr};
@@ -153,7 +155,7 @@ mod tests {
 
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(
@@ -172,7 +174,7 @@ mod tests {
 
         // 'localhost' is not allowed in graph definition.
         assert!(graph.is_err());
-        println!("Error: {:?}", graph);
+        println!("Error: {graph:?}");
 
         let msg = graph.err().unwrap().to_string();
         assert!(
@@ -190,7 +192,7 @@ mod tests {
 
         // 'localhost' is not allowed in graph definition.
         assert!(graph.is_err());
-        println!("Error: {:?}", graph);
+        println!("Error: {graph:?}");
 
         let msg = graph.err().unwrap().to_string();
         assert!(
@@ -213,7 +215,7 @@ mod tests {
 
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(
@@ -238,7 +240,7 @@ mod tests {
         // Either all nodes should have 'app' declared, or none should, but not
         // a mix of both.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(msg.contains(
@@ -263,7 +265,7 @@ mod tests {
 
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED));
@@ -285,7 +287,7 @@ mod tests {
 
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED));
@@ -307,7 +309,7 @@ mod tests {
 
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED));
@@ -329,7 +331,7 @@ mod tests {
 
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());
-        println!("Error: {:?}", property);
+        println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED));
@@ -347,7 +349,7 @@ mod tests {
         let result = graph.check_extension_uniqueness_in_connections();
 
         assert!(result.is_err());
-        println!("Error: {:?}", result);
+        println!("Error: {result:?}");
 
         let msg = result.err().unwrap().to_string();
         assert!(msg.contains(
@@ -365,7 +367,7 @@ mod tests {
         let graph = Graph::from_str(graph_str).unwrap();
         let result = graph.check_message_names();
         assert!(result.is_err());
-        println!("Error: {:?}", result);
+        println!("Error: {result:?}");
 
         let msg = result.err().unwrap().to_string();
         assert!(msg.contains("'hello' is defined in flow[0] and flow[1]"));
@@ -392,7 +394,7 @@ mod tests {
 
         // The 'app' can not be empty string.
         assert!(graph.is_err());
-        println!("Error: {:?}", graph);
+        println!("Error: {graph:?}");
 
         let msg = graph.err().unwrap().to_string();
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_EMPTY));

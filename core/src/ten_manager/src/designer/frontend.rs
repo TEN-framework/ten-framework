@@ -30,8 +30,7 @@ pub async fn get_frontend_asset(
 
     if is_verbose(state.tman_config.clone()).await {
         println!(
-            "[FRONTEND ASSET] Request from IP: {}, Path: '{}'",
-            client_ip, path
+            "[FRONTEND ASSET] Request from IP: {client_ip}, Path: '{path}'"
         );
     }
 
@@ -87,9 +86,8 @@ pub async fn get_frontend_asset(
             None => {
                 if is_verbose(state.tman_config.clone()).await {
                     println!(
-                        "[FRONTEND ASSET] Asset '{}' not found, falling back \
-                         to index.html (SPA mode)",
-                        path
+                        "[FRONTEND ASSET] Asset '{path}' not found, falling back \
+                         to index.html (SPA mode)"
                     );
                 }
 

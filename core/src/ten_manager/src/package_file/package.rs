@@ -34,7 +34,7 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
 
             if metadata.file_type().is_symlink() {
                 let target = path.read_link().with_context(|| {
-                    format!("Failed to read symlink target for {:?}", path)
+                    format!("Failed to read symlink target for {path:?}")
                 })?;
 
                 let mut header = Header::new_gnu();
@@ -43,7 +43,7 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
 
                 // Set the target path of a symbolic link.
                 header.set_link_name(&target).with_context(|| {
-                    format!("Failed to set link name for {:?}", path)
+                    format!("Failed to set link name for {path:?}")
                 })?;
 
                 #[cfg(unix)]
@@ -61,7 +61,7 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
                 tar_builder
                     .append_link(&mut header, &relative_path, &target)
                     .with_context(|| {
-                    format!("Failed to append symlink {:?}", path)
+                    format!("Failed to append symlink {path:?}")
                 })?;
             } else if path.is_file() {
                 tar_builder.append_path_with_name(path, &relative_path)?;
