@@ -16,8 +16,6 @@ import (
 
 // Addon is the interface for the addon.
 type Addon interface {
-	OnInit(tenEnv TenEnv)
-	OnDeinit(tenEnv TenEnv)
 	OnCreateInstance(tenEnv TenEnv, name string, context uintptr)
 }
 
@@ -27,18 +25,6 @@ type ExtensionConstructor func(name string) Extension
 // ExtensionAddon is the addon for the extension.
 type ExtensionAddon struct {
 	constructor ExtensionConstructor
-}
-
-// OnInit initializes the addon.
-func (p *ExtensionAddon) OnInit(
-	tenEnv TenEnv,
-) {
-	tenEnv.OnInitDone()
-}
-
-// OnDeinit deinitializes the addon.
-func (p *ExtensionAddon) OnDeinit(tenEnv TenEnv) {
-	tenEnv.OnDeinitDone()
 }
 
 // OnCreateInstance creates an instance of the extension.
@@ -75,59 +61,6 @@ func NewDefaultExtensionAddon(constructor ExtensionConstructor) Addon {
 	return &ExtensionAddon{
 		constructor: constructor,
 	}
-}
-
-//export tenGoAddonOnInit
-func tenGoAddonOnInit(
-	addonID C.uintptr_t,
-	tenEnvID C.uintptr_t,
-) {
-	addonObj, ok := loadImmutableHandle(goHandle(addonID)).(*addon)
-	if !ok {
-		panic(
-			fmt.Sprintf(
-				"Failed to get addon from handle map, id: %d.",
-				uintptr(addonID),
-			),
-		)
-	}
-
-	tenEnvObj, ok := handle(tenEnvID).get().(TenEnv)
-	if !ok {
-		panic(
-			fmt.Sprintf(
-				"Failed to get ten env from handle map, id: %d.",
-				uintptr(tenEnvID),
-			),
-		)
-	}
-
-	addonObj.OnInit(tenEnvObj)
-}
-
-//export tenGoAddonOnDeinit
-func tenGoAddonOnDeinit(addonID C.uintptr_t, tenEnvID C.uintptr_t) {
-	addonObj, ok := loadImmutableHandle(goHandle(addonID)).(*addon)
-	if !ok {
-		panic(
-			fmt.Sprintf(
-				"Failed to get addon from handle map, id: %d.",
-				uintptr(addonID),
-			),
-		)
-	}
-
-	tenEnvObj, ok := handle(tenEnvID).get().(TenEnv)
-	if !ok {
-		panic(
-			fmt.Sprintf(
-				"Failed to get ten env from handle map, id: %d.",
-				uintptr(tenEnvID),
-			),
-		)
-	}
-
-	addonObj.OnDeinit(tenEnvObj)
 }
 
 //export tenGoAddonCreateInstance

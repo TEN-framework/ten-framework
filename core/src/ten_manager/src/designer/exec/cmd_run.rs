@@ -99,9 +99,10 @@ impl WsRunCmd {
                 let reader = BufReader::new(&mut out);
                 // Create a graph resources log instance for log processing.
                 let mut graph_resources_log = GraphResourcesLog {
-                    graph_id: String::new(),
-                    graph_name: String::new(),
+                    app_base_dir: String::new(),
                     app_uri: None,
+                    graph_id: String::new(),
+                    graph_name: None,
                     extension_threads: std::collections::HashMap::new(),
                 };
 
@@ -149,9 +150,10 @@ impl WsRunCmd {
                 let reader = BufReader::new(&mut err);
                 // Create a graph resources log instance for log processing.
                 let mut graph_resources_log = GraphResourcesLog {
-                    graph_id: String::new(),
-                    graph_name: String::new(),
+                    app_base_dir: String::new(),
                     app_uri: None,
+                    graph_id: String::new(),
+                    graph_name: None,
                     extension_threads: std::collections::HashMap::new(),
                 };
 

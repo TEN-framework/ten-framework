@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 
+#include "include_internal/ten_runtime/binding/python/common/common.h"
 #include "include_internal/ten_runtime/binding/python/common/error.h"
 #include "include_internal/ten_runtime/binding/python/ten_env/ten_env.h"
 #include "object.h"
@@ -116,12 +117,18 @@ static PyObject *ten_py_ten_env_get_attach_to(ten_py_ten_env_t *self,
 void ten_py_ten_env_invalidate(ten_py_ten_env_t *py_ten_env) {
   TEN_ASSERT(py_ten_env, "Should not happen.");
 
+  // About to call the Python function, so it's necessary to ensure that the GIL
+  // has been acquired.
+  PyGILState_STATE prev_state = ten_py_gil_state_ensure_internal();
+
   if (py_ten_env->actual_py_ten_env) {
     Py_DECREF(py_ten_env->actual_py_ten_env);
     py_ten_env->actual_py_ten_env = NULL;
   }
 
   Py_DECREF(py_ten_env);
+
+  ten_py_gil_state_release_internal(prev_state);
 }
 
 static void ten_py_ten_env_destroy(PyObject *self) {

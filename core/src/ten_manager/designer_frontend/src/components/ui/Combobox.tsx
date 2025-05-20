@@ -42,6 +42,12 @@ interface ComboboxProps {
   onCreate?: (label: ComboboxOptions["label"]) => void;
   disabled?: boolean;
   isLoading?: boolean;
+  commandLabels?: {
+    placeholder?: string;
+    noItems?: string;
+    enterValueToCreate?: string;
+    noMatchedItems?: string;
+  };
 }
 
 function CommandAddItem({
@@ -84,6 +90,7 @@ export function Combobox({
   onChange,
   onCreate,
   isLoading,
+  commandLabels,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -159,7 +166,9 @@ export function Combobox({
           }}
         >
           <CommandInput
-            placeholder={t("components.combobox.placeholder")}
+            placeholder={
+              commandLabels?.placeholder || t("components.combobox.placeholder")
+            }
             value={query}
             onValueChange={(value: string) => setQuery(value)}
             onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -172,6 +181,14 @@ export function Combobox({
           />
           <CommandEmpty className="flex pl-1 py-1 w-full">
             {query && (
+              <div className="py-1.5 pl-8 space-y-1 text-sm">
+                <p>
+                  {commandLabels?.noMatchedItems ||
+                    t("components.combobox.noItems")}
+                </p>
+              </div>
+            )}
+            {query && onCreate && (
               <CommandAddItem query={query} onCreate={() => handleCreate()} />
             )}
           </CommandEmpty>
@@ -182,13 +199,20 @@ export function Combobox({
               {/* Even if written as a Child of CommandEmpty, it may not be displayed only the first time, so write it in CommandGroup. */}
               {options.length === 0 && !query && (
                 <div className="py-1.5 pl-8 space-y-1 text-sm">
-                  <p>{t("components.combobox.noItems")}</p>
-                  <p>{t("components.combobox.enterValueToCreate")}</p>
+                  <p>
+                    {commandLabels?.noItems || t("components.combobox.noItems")}
+                  </p>
+                  {onCreate && (
+                    <p>
+                      {commandLabels?.enterValueToCreate ||
+                        t("components.combobox.enterValueToCreate")}
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Create */}
-              {canCreate && (
+              {canCreate && onCreate && (
                 <CommandAddItem query={query} onCreate={() => handleCreate()} />
               )}
 

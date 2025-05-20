@@ -268,7 +268,8 @@ void ten_engine_del_orphan_connection(ten_engine_t *self,
                                       ten_connection_t *connection) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   TEN_LOGD("[%s] Remove a orphan connection %p", ten_engine_get_id(self, true),
@@ -284,7 +285,8 @@ void ten_engine_del_orphan_connection(ten_engine_t *self,
 
 static void ten_engine_on_orphan_connection_closed(
     ten_connection_t *connection, TEN_UNUSED void *on_closed_data) {
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   ten_engine_t *self = connection->attached_target.engine;
@@ -315,7 +317,8 @@ void ten_engine_add_orphan_connection(ten_engine_t *self,
                                       ten_connection_t *connection) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   TEN_LOGD("[%s] Add a orphan connection %p[%s] (total cnt %zu)",

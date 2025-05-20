@@ -142,9 +142,10 @@ async fn watch_log_file_task(
     // Create a GraphResourcesLog instance that will be used throughout this
     // task's lifetime.
     let mut graph_resources_log = GraphResourcesLog {
-        graph_id: String::new(),
-        graph_name: String::new(),
+        app_base_dir: String::new(),
         app_uri: None,
+        graph_id: String::new(),
+        graph_name: None,
         extension_threads: std::collections::HashMap::new(),
     };
 
@@ -152,6 +153,7 @@ async fn watch_log_file_task(
     let mut file = match File::open(&path) {
         Ok(f) => f,
         Err(e) => {
+            eprintln!("({}) Error opening file: {e}", path.display());
             let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
             return;
         }
@@ -159,6 +161,7 @@ async fn watch_log_file_task(
     let mut last_meta = match file.metadata() {
         Ok(m) => m,
         Err(e) => {
+            eprintln!("({}) Error getting metadata: {e}", path.display());
             let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
             return;
         }
@@ -166,6 +169,7 @@ async fn watch_log_file_task(
 
     // Read all existing content when the file is first opened and send it.
     if let Err(e) = file.seek(SeekFrom::Start(0)) {
+        eprintln!("({}) Error seeking to start: {e}", path.display());
         let _ = content_tx.send(Err(anyhow!(e))).await;
         return;
     }
@@ -191,6 +195,7 @@ async fn watch_log_file_task(
     let mut last_pos = match file.seek(SeekFrom::End(0)) {
         Ok(p) => p,
         Err(e) => {
+            eprintln!("({}) Error seeking to end: {e}", path.display());
             let _ = content_tx.send(Err(anyhow!(e))).await;
             return;
         }
@@ -202,7 +207,7 @@ async fn watch_log_file_task(
         // Wait for stop or the next check interval.
         tokio::select! {
             _ = &mut stop_rx => {
-                eprintln!("Stopping file watcher");
+                eprintln!("({}) Stopping file watcher", path.display());
                 break;
             },
             _ = tokio::time::sleep(options.check_interval) => {
@@ -218,12 +223,14 @@ async fn watch_log_file_task(
                                 last_pos = 0;
                             } else {
                                 // Cannot open the new file, wait for the next round.
+                                eprintln!("({}) Error opening new file", path.display());
                                 continue;
                             }
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
                         // Cannot get metadata, skip this round.
+                        eprintln!("({}) Error getting metadata: {e}", path.display());
                         continue;
                     }
                 }
@@ -231,17 +238,20 @@ async fn watch_log_file_task(
                 // If there is new content, read and send it.
                 let curr_len = match file.metadata() {
                     Ok(m) => m.len(),
-                    Err(_) => continue,
+                    Err(e) => {
+                        eprintln!("({}) Error getting metadata: {e}", path.display());
+                        continue;
+                    }
                 };
 
-                eprintln!("File check: curr_len = {curr_len}, last_pos = {last_pos}");
+                eprintln!("({}) File check: curr_len = {curr_len}, last_pos = {last_pos}", path.display());
 
                 if curr_len > last_pos {
-                    eprintln!("New content detected: {} bytes", curr_len - last_pos);
+                    eprintln!("({}) New content detected: {} bytes", path.display(), curr_len - last_pos);
 
                     // Read the new part.
                     if let Err(e) = file.seek(SeekFrom::Start(last_pos)) {
-                        eprintln!("Error seeking to position: {e}");
+                        eprintln!("({}) Error seeking to position: {e}", path.display());
                         let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                         break;
                     }
@@ -251,7 +261,7 @@ async fn watch_log_file_task(
                     match reader.read_line(&mut line) {
                         Ok(n) if n > 0 => {
                             last_pos += n as u64;
-                            eprintln!("Read {n} bytes, new position = {last_pos}");
+                            eprintln!("({}) Read {n} bytes, new position = {last_pos}", path.display());
 
                             // Process the new line.
                             let metadata = process_log_line(&line, &mut graph_resources_log);
@@ -267,12 +277,12 @@ async fn watch_log_file_task(
                         Err(e) => {
                             // Specific error for UTF-8 decoding failures.
                             if e.kind() == std::io::ErrorKind::InvalidData {
-                                eprintln!("Error: Invalid UTF-8 data in file");
+                                eprintln!("({}) Error: Invalid UTF-8 data in file: {e}", path.display());
                                 let _ = content_tx
                                     .send(Err(anyhow!("Invalid UTF-8 data in file")))
                                     .await;
                             } else {
-                                eprintln!("Error reading from file: {e}");
+                                eprintln!("({}) Error reading from file: {e}", path.display());
                                 let _ = content_tx.send(Err(anyhow::anyhow!(e))).await;
                             }
                             break;
@@ -281,7 +291,7 @@ async fn watch_log_file_task(
                 } else {
                     // Reached EOF, check if the timeout has been reached.
                     if Instant::now().duration_since(last_activity) > options.timeout {
-                        eprintln!("Timeout reached, breaking");
+                        eprintln!("({}) Timeout reached, breaking", path.display());
                         break;
                     }
                 }

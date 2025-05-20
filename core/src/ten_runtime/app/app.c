@@ -167,8 +167,8 @@ ten_app_t *ten_app_create(ten_app_on_configure_func_t on_configure,
 }
 
 void ten_app_destroy(ten_app_t *self) {
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   TEN_LOGD("[%s] Destroy app", ten_app_get_uri(self));
 
@@ -247,8 +247,8 @@ bool ten_app_run(ten_app_t *self, bool run_in_background,
 }
 
 bool ten_app_wait(ten_app_t *self, TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   TEN_LOGD("Wait app thread ends");
 
@@ -265,8 +265,8 @@ bool ten_app_wait(ten_app_t *self, TEN_UNUSED ten_error_t *err) {
 }
 
 bool ten_app_thread_call_by_me(ten_app_t *self) {
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   return ten_thread_equal(NULL, ten_sanitizer_thread_check_get_belonging_thread(
                                     &self->thread_check));

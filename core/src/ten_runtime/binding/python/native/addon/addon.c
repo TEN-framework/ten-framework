@@ -35,111 +35,11 @@ static bool ten_py_addon_check_integrity(ten_py_addon_t *self) {
   return true;
 }
 
-static PyObject *not_implemented_base_on_init(TEN_UNUSED PyObject *self,
-                                              TEN_UNUSED PyObject *args) {
-  return ten_py_raise_py_not_implemented_error_exception(
-      "The method 'on_init' must be implemented in the subclass of 'Addon'.");
-}
-
-static PyObject *not_implemented_base_on_deinit(TEN_UNUSED PyObject *self,
-                                                TEN_UNUSED PyObject *args) {
-  return ten_py_raise_py_not_implemented_error_exception(
-      "The method 'on_deinit' must be implemented in the subclass of 'Addon'.");
-}
-
 static PyObject *not_implemented_base_on_create_instance(
     TEN_UNUSED PyObject *self, TEN_UNUSED PyObject *args) {
   return ten_py_raise_py_not_implemented_error_exception(
       "The method 'on_create_instance' must be implemented in the subclass of "
       "'Addon'.");
-}
-
-static void proxy_on_init(ten_addon_t *addon, ten_env_t *ten_env) {
-  TEN_ASSERT(addon, "Invalid argument.");
-  TEN_ASSERT(ten_env, "Invalid argument.");
-  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Invalid argument.");
-
-  // About to call the Python function, so it's necessary to ensure that the GIL
-  // has been acquired.
-  PyGILState_STATE prev_state = ten_py_gil_state_ensure_internal();
-
-  ten_py_ten_env_t *py_ten_env = ten_py_ten_env_wrap(ten_env);
-  if (!py_ten_env) {
-    TEN_ASSERT(0, "Failed to wrap ten.");
-    goto done;
-  }
-
-  ten_py_addon_t *py_addon = addon->binding_handle.me_in_target_lang;
-  if (!py_addon) {
-    Py_DECREF(py_ten_env);
-
-    TEN_ASSERT(0, "Invalid addon in target language.");
-    goto done;
-  }
-  TEN_ASSERT(ten_py_addon_check_integrity(py_addon), "Should not happen.");
-
-  PyObject *py_res = PyObject_CallMethod((PyObject *)py_addon, "on_init", "O",
-                                         py_ten_env->actual_py_ten_env);
-  if (!py_res) {
-    ten_py_check_and_clear_py_error();
-
-    Py_DECREF(py_ten_env);
-
-    TEN_ASSERT(0, "Python method on_init failed.");
-    goto done;
-  }
-
-  Py_XDECREF(py_res);
-
-done:
-  ten_py_gil_state_release_internal(prev_state);
-}
-
-static void proxy_on_deinit(ten_addon_t *addon, ten_env_t *ten_env) {
-  TEN_ASSERT(addon, "Invalid argument.");
-  // TODO(Wei): In the context of Python standalone tests, the Python addon is
-  // registered into the TEN world within the extension tester thread (i.e., the
-  // Python thread) but is unregistered in the test app thread. It should be
-  // modified to also perform the Python addon registration within the test
-  // app's `on_configure_done`. This change will allow the underlying thread
-  // check to be set to `true`.
-  TEN_ASSERT(ten_env, "Invalid argument.");
-  TEN_ASSERT(ten_env_check_integrity(ten_env, false), "Invalid argument.");
-
-  // About to call the Python function, so it's necessary to ensure that the GIL
-  // has been acquired.
-  PyGILState_STATE prev_state = ten_py_gil_state_ensure_internal();
-
-  ten_py_ten_env_t *py_ten_env = ten_py_ten_env_wrap(ten_env);
-  if (!py_ten_env) {
-    TEN_ASSERT(0, "Failed to wrap ten.");
-    goto done;
-  }
-
-  ten_py_addon_t *py_addon = addon->binding_handle.me_in_target_lang;
-  if (!py_addon) {
-    Py_DECREF(py_ten_env);
-
-    TEN_ASSERT(0, "Invalid addon in target language.");
-    goto done;
-  }
-  TEN_ASSERT(ten_py_addon_check_integrity(py_addon), "Should not happen.");
-
-  PyObject *py_res = PyObject_CallMethod((PyObject *)py_addon, "on_deinit", "O",
-                                         py_ten_env->actual_py_ten_env);
-  if (!py_res) {
-    ten_py_check_and_clear_py_error();
-
-    Py_DECREF(py_ten_env);
-
-    TEN_ASSERT(0, "Python method on_deinit failed.");
-    goto done;
-  }
-
-  Py_XDECREF(py_res);
-
-done:
-  ten_py_gil_state_release_internal(prev_state);
 }
 
 static void proxy_on_create_instance_async(ten_addon_t *addon,
@@ -217,14 +117,16 @@ static void proxy_on_destroy_instance_async(ten_addon_t *addon,
 
     ten_extension_t *extension = py_extension->c_extension;
     TEN_ASSERT(extension, "Should not happen.");
-    TEN_ASSERT(ten_extension_check_integrity(extension, true),
+    // TEN_NOLINTNEXTLINE(thread-check)
+    // thread-check: this function is called on the addon_host thread.
+    TEN_ASSERT(ten_extension_check_integrity(extension, false),
                "Should not happen.");
 
     TEN_ASSERT(extension == instance, "Should not happen.");
 
     ten_addon_host_t *addon_host = extension->addon_host;
     TEN_ASSERT(addon_host, "Should not happen.");
-    TEN_ASSERT(ten_addon_host_check_integrity(addon_host),
+    TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
                "Should not happen.");
 
     // Because the extension increases the reference count of the
@@ -263,8 +165,7 @@ static PyObject *ten_py_addon_create(PyTypeObject *type,
   py_addon->type = TEN_ADDON_TYPE_EXTENSION;  // Now we only support extension.
   py_addon->c_addon_host = NULL;
 
-  ten_addon_init(&py_addon->c_addon, proxy_on_init, proxy_on_deinit,
-                 proxy_on_create_instance_async,
+  ten_addon_init(&py_addon->c_addon, NULL, proxy_on_create_instance_async,
                  proxy_on_destroy_instance_async, NULL);
 
   ten_binding_handle_set_me_in_target_lang(
@@ -286,10 +187,6 @@ static void ten_py_addon_destroy(PyObject *self) {
 
 PyTypeObject *ten_py_addon_py_type(void) {
   static PyMethodDef addon_methods[] = {
-      {"on_init", not_implemented_base_on_init, METH_VARARGS,
-       "Override to initialize."},
-      {"on_deinit", not_implemented_base_on_deinit, METH_VARARGS,
-       "Override to de-initialize."},
       {"on_create_instance", not_implemented_base_on_create_instance,
        METH_VARARGS, "Override to create your own instance."},
       {NULL, NULL, 0, NULL},

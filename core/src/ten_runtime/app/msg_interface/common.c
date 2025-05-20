@@ -615,8 +615,8 @@ static void ten_app_handle_in_msgs_async(ten_app_t *self) {
 }
 
 void ten_app_push_to_in_msgs_queue(ten_app_t *self, ten_shared_ptr_t *msg) {
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
   TEN_ASSERT(msg && ten_msg_is_cmd_and_result(msg), "Invalid argument.");
   TEN_ASSERT(!ten_cmd_base_cmd_id_is_empty(msg), "Invalid argument.");
   TEN_ASSERT(

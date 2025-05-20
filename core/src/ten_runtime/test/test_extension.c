@@ -384,7 +384,6 @@ static ten_addon_t ten_builtin_test_extension_addon = {
     NULL,
     TEN_ADDON_SIGNATURE,
     NULL,
-    NULL,
     test_extension_addon_create_instance,
     test_extension_addon_destroy_instance,
     NULL,

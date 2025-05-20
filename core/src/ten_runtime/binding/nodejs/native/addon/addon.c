@@ -77,9 +77,8 @@ bool ten_nodejs_addon_check_integrity(ten_nodejs_addon_t *self,
 }
 
 static void ten_nodejs_addon_detach_callbacks(ten_nodejs_addon_t *self) {
-  ten_nodejs_tsfn_dec_rc(self->js_on_init);
-  ten_nodejs_tsfn_dec_rc(self->js_on_deinit);
   ten_nodejs_tsfn_dec_rc(self->js_on_create_instance);
+  ten_nodejs_tsfn_dec_rc(self->js_on_destroy);
 }
 
 static void ten_nodejs_addon_destroy(ten_nodejs_addon_t *self) {
@@ -97,9 +96,9 @@ static void ten_nodejs_addon_finalize(napi_env env, void *data,
   TEN_LOGI("TEN JS Addon is finalized");
 
   ten_nodejs_addon_t *addon_bridge = data;
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   napi_status status = napi_ok;
 
@@ -112,9 +111,10 @@ static void ten_nodejs_addon_finalize(napi_env env, void *data,
   ten_nodejs_addon_destroy(addon_bridge);
 }
 
-void ten_nodejs_invoke_addon_js_on_init(napi_env env, napi_value fn,
-                                        TEN_UNUSED void *context, void *data) {
-  addon_on_xxx_callback_info_t *call_info = data;
+void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
+                                                   TEN_UNUSED void *context,
+                                                   void *data) {
+  addon_on_create_instance_callback_ctx_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
   TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
@@ -126,112 +126,15 @@ void ten_nodejs_invoke_addon_js_on_init(napi_env env, napi_value fn,
       env, call_info->ten_env, &ten_env_bridge);
   TEN_ASSERT(js_ten_env, "Should not happen.");
 
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+             "Should not happen.");
+
   // Increase the reference count of the JS ten_env object to prevent it from
   // being garbage collected.
   uint32_t js_ten_env_ref_count = 0;
   napi_reference_ref(env, ten_env_bridge->bridge.js_instance_ref,
                      &js_ten_env_ref_count);
-
-  napi_status status = napi_ok;
-
-  {
-    // Call on_init() of the TEN JS addon.
-
-    // Get the TEN JS addon.
-    napi_value js_addon = NULL;
-    status = napi_get_reference_value(
-        env, call_info->addon_bridge->bridge.js_instance_ref, &js_addon);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon != NULL,
-                            "Failed to get JS addon: %d", status);
-
-    // Call on_init().
-    napi_value result = NULL;
-    napi_value argv[] = {js_ten_env};
-    status = napi_call_function(env, js_addon, fn, 1, argv, &result);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok,
-                            "Failed to call JS addon on_init(): %d", status);
-  }
-
-  goto done;
-
-error:
-  TEN_LOGE("Failed to call JS addon on_init()");
-
-done:
-  TEN_FREE(call_info);
-}
-
-void ten_nodejs_invoke_addon_js_on_deinit(napi_env env, napi_value fn,
-                                          TEN_UNUSED void *context,
-                                          void *data) {
-  addon_on_xxx_callback_info_t *call_info = data;
-  TEN_ASSERT(call_info, "Should not happen.");
-
-  TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
-                                            call_info->addon_bridge, true),
-             "Should not happen.");
-
-  ten_nodejs_ten_env_t *ten_env_bridge =
-      ten_binding_handle_get_me_in_target_lang(
-          (ten_binding_handle_t *)call_info->ten_env);
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
-             "Should not happen.");
-
-  napi_status status = napi_ok;
-
-  {
-    // Call on_deinit() of the TEN JS addon.
-
-    // Get the TEN JS addon.
-    napi_value js_addon = NULL;
-    status = napi_get_reference_value(
-        env, call_info->addon_bridge->bridge.js_instance_ref, &js_addon);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon != NULL,
-                            "Failed to get JS addon: %d", status);
-
-    napi_value js_ten_env = NULL;
-    status = napi_get_reference_value(
-        env, ten_env_bridge->bridge.js_instance_ref, &js_ten_env);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_ten_env != NULL,
-                            "Failed to get JS ten_env: %d", status);
-
-    // Call on_deinit().
-    napi_value result = NULL;
-    napi_value argv[] = {js_ten_env};
-    status = napi_call_function(env, js_addon, fn, 1, argv, &result);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok,
-                            "Failed to call JS addon on_deinit(): %d", status);
-  }
-
-  goto done;
-
-error:
-  TEN_LOGE("Failed to call JS addon on_deinit()");
-
-  // Call on_deinit_done() here to release the addon.
-  ten_env_on_deinit_done(call_info->ten_env, NULL);
-
-done:
-  TEN_FREE(call_info);
-}
-
-void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
-                                                   TEN_UNUSED void *context,
-                                                   void *data) {
-  addon_on_create_instance_callback_ctx_t *call_info = data;
-  TEN_ASSERT(call_info, "Should not happen.");
-
-  TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
-                                            call_info->addon_bridge, true),
-             "Should not happen.");
-
-  ten_nodejs_ten_env_t *ten_env_bridge =
-      ten_binding_handle_get_me_in_target_lang(
-          (ten_binding_handle_t *)call_info->ten_env);
-  TEN_ASSERT(ten_env_bridge &&
-                 ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
-             "Should not happen.");
 
   napi_status status = napi_ok;
 
@@ -244,12 +147,6 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
         env, call_info->addon_bridge->bridge.js_instance_ref, &js_addon);
     GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon != NULL,
                             "Failed to get JS addon: %d", status);
-
-    napi_value js_ten_env = NULL;
-    status = napi_get_reference_value(
-        env, ten_env_bridge->bridge.js_instance_ref, &js_ten_env);
-    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_ten_env != NULL,
-                            "Failed to get JS ten_env: %d", status);
 
     napi_value js_instance_name = NULL;
     status = napi_create_string_utf8(
@@ -282,66 +179,39 @@ done:
   addon_on_create_instance_callback_ctx_destroy(call_info);
 }
 
-static void proxy_on_init(ten_addon_t *addon, ten_env_t *ten_env) {
-  TEN_LOGI("addon proxy_on_init");
-
-  ten_nodejs_addon_t *addon_bridge =
-      ten_binding_handle_get_me_in_target_lang((ten_binding_handle_t *)addon);
-  TEN_ASSERT(addon_bridge &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: this function is called from a standalone
-                 // addon registration thread, and only when all the addons are
-                 // registered, the RTE world can go on, so it's thread safe.
-                 ten_nodejs_addon_check_integrity(addon_bridge, false),
+void ten_nodejs_invoke_addon_js_on_destroy(napi_env env, napi_value fn,
+                                           TEN_UNUSED void *context,
+                                           void *data) {
+  ten_nodejs_addon_t *addon_bridge = data;
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
              "Should not happen.");
 
-  addon_on_xxx_callback_info_t *call_info =
-      TEN_MALLOC(sizeof(addon_on_xxx_callback_info_t));
-  TEN_ASSERT(call_info, "Failed to allocate memory.");
+  napi_status status = napi_ok;
 
-  call_info->addon_bridge = addon_bridge;
-  call_info->ten_env = ten_env;
+  {
+    // Call on_destroy() of the TEN JS addon.
 
-  bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_init, call_info);
-  if (!rc) {
-    TEN_LOGE("Failed to call addon on_init()");
-    TEN_FREE(call_info);
+    // Get the TEN JS addon.
+    napi_value js_addon = NULL;
+    status = napi_get_reference_value(env, addon_bridge->bridge.js_instance_ref,
+                                      &js_addon);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon != NULL,
+                            "Failed to get JS addon: %d", status);
 
-    // Failed to call JS on_init(), so that we need to call on_init_done() here
-    // to let RTE runtime proceed.
-    ten_env_on_init_done(ten_env, NULL);
+    napi_value result = NULL;
+    status = napi_call_function(env, js_addon, fn, 0, NULL, &result);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok,
+                            "Failed to call JS addon on_destroy(): %d", status);
   }
-}
 
-static void proxy_on_deinit(ten_addon_t *addon, ten_env_t *ten_env) {
-  TEN_LOGI("addon proxy_on_deinit");
+  goto done;
 
-  ten_nodejs_addon_t *addon_bridge =
-      ten_binding_handle_get_me_in_target_lang((ten_binding_handle_t *)addon);
-  TEN_ASSERT(addon_bridge &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: this function is called from a standalone
-                 // addon registration thread, and only when all the addons are
-                 // registered, the RTE world can go on, so it's thread safe.
-                 ten_nodejs_addon_check_integrity(addon_bridge, false),
-             "Should not happen.");
+error:
+  TEN_LOGE("Failed to call JS addon on_destroy()");
 
-  addon_on_xxx_callback_info_t *call_info =
-      TEN_MALLOC(sizeof(addon_on_xxx_callback_info_t));
-  TEN_ASSERT(call_info, "Failed to allocate memory.");
-
-  call_info->addon_bridge = addon_bridge;
-  call_info->ten_env = ten_env;
-
-  bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_deinit, call_info);
-  if (!rc) {
-    TEN_LOGE("Failed to call addon on_deinit()");
-    TEN_FREE(call_info);
-
-    // Failed to call JS on_deinit(), so that we need to call on_deinit_done()
-    // here to let RTE runtime proceed.
-    ten_env_on_deinit_done(ten_env, NULL);
-  }
+done:
+  return;
 }
 
 static void proxy_on_create_instance(ten_addon_t *addon, ten_env_t *ten_env,
@@ -391,11 +261,14 @@ static void proxy_on_destroy_instance(ten_addon_t *addon, ten_env_t *ten_env,
 
   ten_extension_t *extension = extension_bridge->c_extension;
   TEN_ASSERT(extension, "Should not happen.");
-  TEN_ASSERT(ten_extension_check_integrity(extension, true),
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: this function is called on the addon_host thread.
+  TEN_ASSERT(ten_extension_check_integrity(extension, false),
              "Should not happen.");
 
   ten_addon_host_t *addon_host = extension->addon_host;
-  TEN_ASSERT(addon_host && ten_addon_host_check_integrity(addon_host),
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
   // Because the extension increases the reference count of the corresponding
@@ -405,6 +278,19 @@ static void proxy_on_destroy_instance(ten_addon_t *addon, ten_env_t *ten_env,
   extension->addon_host = NULL;
 
   ten_env_on_destroy_instance_done(ten_env, context, NULL);
+}
+
+static void proxy_on_destroy(ten_addon_t *addon) {
+  TEN_LOGI("addon proxy_on_destroy");
+
+  ten_nodejs_addon_t *addon_bridge =
+      ten_binding_handle_get_me_in_target_lang((ten_binding_handle_t *)addon);
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, false),
+             "Should not happen.");
+
+  bool rc = ten_nodejs_tsfn_invoke(addon_bridge->js_on_destroy, addon_bridge);
+  TEN_ASSERT(rc, "Failed to call addon on_destroy().");
 }
 
 static napi_value ten_nodejs_addon_create(napi_env env,
@@ -446,8 +332,8 @@ static napi_value ten_nodejs_addon_create(napi_env env,
       "Failed to increase the reference count of JS addon: %d", status);
 
   // Create the underlying TEN C addon.
-  ten_addon_init(&addon_bridge->c_addon, proxy_on_init, proxy_on_deinit,
-                 proxy_on_create_instance, proxy_on_destroy_instance, NULL);
+  ten_addon_init(&addon_bridge->c_addon, NULL, proxy_on_create_instance,
+                 proxy_on_destroy_instance, proxy_on_destroy);
 
   ten_binding_handle_set_me_in_target_lang(
       (ten_binding_handle_t *)&addon_bridge->c_addon, addon_bridge);
@@ -467,9 +353,8 @@ static void ten_nodejs_addon_release_js_on_xxx_tsfn(
     napi_env env, ten_nodejs_addon_t *addon_bridge) {
   TEN_ASSERT(env && addon_bridge, "Should not happen.");
 
-  ten_nodejs_tsfn_release(addon_bridge->js_on_init);
-  ten_nodejs_tsfn_release(addon_bridge->js_on_deinit);
   ten_nodejs_tsfn_release(addon_bridge->js_on_create_instance);
+  ten_nodejs_tsfn_release(addon_bridge->js_on_destroy);
 }
 
 static napi_value ten_nodejs_addon_on_end_of_life(napi_env env,
@@ -490,9 +375,9 @@ static napi_value ten_nodejs_addon_on_end_of_life(napi_env env,
   napi_status status = napi_unwrap(env, args[0], (void **)&addon_bridge);
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && addon_bridge != NULL,
                                 "Failed to get addon bridge: %d", status);
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   // From now on, the JS on_xxx callback(s) are useless, so release them all.
   ten_nodejs_addon_release_js_on_xxx_tsfn(env, addon_bridge);
