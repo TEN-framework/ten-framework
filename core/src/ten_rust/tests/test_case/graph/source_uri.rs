@@ -58,7 +58,11 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
-            graph: Graph { nodes: Vec::new(), connections: None },
+            graph: Graph {
+                nodes: Vec::new(),
+                connections: None,
+                exposed_messages: None,
+            },
             source_uri: Some(source_uri),
             app_base_dir: None,
             belonging_pkg_type: None,

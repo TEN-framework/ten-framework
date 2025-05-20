@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::graph::{
     connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
+    GraphExposedMessage,
 };
 
 pub fn graphs_cache_find<F>(
@@ -50,6 +51,7 @@ pub fn get_pkg_predefined_graph_from_nodes_and_connections(
     auto_start: bool,
     nodes: &[GraphNode],
     connections: &[GraphConnection],
+    exposed_messages: &[GraphExposedMessage],
 ) -> Result<GraphInfo> {
     Ok(GraphInfo {
         name: Some(graph_name.to_string()),
@@ -57,6 +59,11 @@ pub fn get_pkg_predefined_graph_from_nodes_and_connections(
         graph: Graph {
             nodes: nodes.to_vec(),
             connections: Some(connections.to_vec()),
+            exposed_messages: if exposed_messages.is_empty() {
+                None
+            } else {
+                Some(exposed_messages.to_vec())
+            },
         },
         source_uri: None,
         app_base_dir: None,

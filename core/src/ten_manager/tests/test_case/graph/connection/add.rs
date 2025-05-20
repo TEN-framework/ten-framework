@@ -137,6 +137,7 @@ mod tests {
                 ),
             ],
             connections: None,
+            exposed_messages: None,
         };
 
         // Test adding a connection.
@@ -194,6 +195,7 @@ mod tests {
                 Some("app1"),
             )],
             connections: None,
+            exposed_messages: None,
         };
 
         // Test adding a connection with nonexistent source.
@@ -233,6 +235,7 @@ mod tests {
                 Some("app1"),
             )],
             connections: None,
+            exposed_messages: None,
         };
 
         // Test adding a connection with nonexistent destination.
@@ -284,6 +287,7 @@ mod tests {
                 ),
             ],
             connections: None,
+            exposed_messages: None,
         };
 
         // Add first connection.
@@ -368,6 +372,7 @@ mod tests {
                 ),
             ],
             connections: None,
+            exposed_messages: None,
         };
 
         // Add different message types.
@@ -467,6 +472,7 @@ mod tests {
                 ),
             ],
             connections: None,
+            exposed_messages: None,
         };
 
         // Add a connection.
@@ -553,6 +559,7 @@ mod tests {
                 ),
             ],
             connections: None,
+            exposed_messages: None,
         };
 
         // Test connecting ext1 to ext2 with compatible schema - should succeed.
