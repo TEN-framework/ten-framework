@@ -8,8 +8,8 @@
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-framework%20is%3Aclosed&label=issues%20closed&labelColor=gray&color=green)](https://github.com/TEN-framework/ten-framework/issues)
 [![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
-[![](https://img.shields.io/badge/license-apache%202.0-blue?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework?tab=License-1-ov-file)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome!-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten_framework?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten_framework/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten_framework?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten_framework/network/?WT.mc_id=academic-105485-koreyst)
@@ -48,6 +48,7 @@
   - [3️⃣ Real-time communication with hardware](#3️⃣-real-time-communication-with-hardware)
   - [4️⃣ Real-time vision and real-time screenshare detection](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
   - [5️⃣ TEN with other LLM platforms](#5️⃣-ten-with-other-llm-platforms)
+  - [6️⃣ StoryTeller - TEN image generation](#6️⃣-storyteller---ten-image-generation)
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️🅰️ Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱️ Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
@@ -222,11 +223,11 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 <br>
 
-![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
+![Image](https://github.com/user-attachments/assets/ea1025d4-b22b-4416-ab35-36cd910bc28c)
 
 ### 6️⃣ StoryTeller - TEN image generation
 
-[StoryTeller](https://github.com/TEN-framework/storyteller) is a tool to generate images from text with TEN framework.
+Experience the real-time image generation with StoryTeller, it is a ready-to-use extension, along with powerful tools like Weather Check and Web Search integrated perfectly into TEN.
 
 <div align="right">
 
