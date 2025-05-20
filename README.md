@@ -310,10 +310,10 @@ task run
 
 ![Customize your agent with TMAN Designer](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
 
- 1. Open [localhost:49483](localhost:49483).
+ 1. Open [localhost:49483](http://localhost:49483).
  2. Load the corresponding graph from the menu (e.g., Voice Assistant).
  3. Enter API keys and set preferences for each extension.
- 4. Open [localhost:3000](localhost:3000) to see the changes after selecting Voice Assistant.
+ 4. Open [localhost:3000](http://localhost:3000) to see the changes after selecting Voice Assistant.
 
 <div align="right">
 
