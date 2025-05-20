@@ -153,6 +153,7 @@ mod tests {
                 })
                 .collect(),
             connections: connections.clone(),
+            exposed_messages: vec![],
         };
 
         // Make the request.
@@ -228,6 +229,7 @@ mod tests {
             graph_id: nonexistent_graph_id,
             nodes: vec![],
             connections: vec![],
+            exposed_messages: vec![],
         };
 
         // Make the request.
@@ -350,6 +352,7 @@ mod tests {
                 })
                 .collect(),
             connections,
+            exposed_messages: vec![],
         };
 
         // Make the request.

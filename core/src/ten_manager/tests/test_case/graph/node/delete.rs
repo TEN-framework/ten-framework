@@ -107,6 +107,7 @@ mod tests {
                     Some("app1"),
                 ),
             ]),
+            exposed_messages: None,
         };
 
         // Test case 1: Delete a node that doesn't exist.
@@ -186,6 +187,7 @@ mod tests {
                 create_test_node("ext2", "addon2", Some("app1"), None),
             ],
             connections: Some(vec![]),
+            exposed_messages: None,
         };
 
         // Add a connection with multiple message types.

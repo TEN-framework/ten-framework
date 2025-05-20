@@ -201,9 +201,10 @@ mod tests {
             let graph_resources_with_thread =
                 "05-02 22:23:37.397 1713000(1713045) M \
                  ten_extension_thread_log_graph_resources@extension_thread.c:\
-                 556 [graph resources] {\"app_uri\": \
-                 \"msgpack://127.0.0.1:8001/\", \"graph name\": \"\", \"graph \
-                 id\": \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
+                 556 [graph resources] {\"app_base_dir\": \"xxx\", \
+                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_name\": \
+                 \"\", \"graph_id\": \
+                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
                  \"extension_threads\": {\"1713045\": {\"extensions\": \
                  [\"test_extension\"]}}}\n";
 
@@ -301,9 +302,9 @@ mod tests {
                  native addon loader successfully.
 05-02 22:23:37.329 1713000(1713002) M \
                  ten_extension_context_log_graph_resources@extension_context.\
-                 c:352 [graph resources] {\"app_uri\": \
-                 \"msgpack://127.0.0.1:8001/\", \"graph name\": \"\", \"graph \
-                 id\": \"38097178-1712-4562-b60d-8e6ab15ba0cf\" }
+                 c:352 [graph resources] {\"app_base_dir\": \"xxx\", \
+                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
+                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\" }
 05-02 22:23:37.329 1713000(1713045) W pthread_routine@thread.c:114 Failed to \
                  set thread name:
 05-02 22:23:37.329 1713000(1713045) D \
@@ -339,9 +340,9 @@ mod tests {
                  [] create_extensions() done
 05-02 22:23:37.397 1713000(1713045) M \
                  ten_extension_thread_log_graph_resources@extension_thread.c:\
-                 556 [graph resources] {\"app_uri\": \
-                 \"msgpack://127.0.0.1:8001/\", \"graph name\": \"\", \"graph \
-                 id\": \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
+                 556 [graph resources] {\"app_base_dir\": \"xxx\", \
+                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
+                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
                  \"extension_threads\": {\"1713045\": {\"extensions\": \
                  [\"test_extension\"]}}}
 05-02 22:23:37.406 1713000(1713002) D \

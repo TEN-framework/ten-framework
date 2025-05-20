@@ -12,7 +12,11 @@ mod tests {
     #[test]
     fn test_add_extension_node() {
         // Create an empty graph.
-        let mut graph = Graph { nodes: Vec::new(), connections: None };
+        let mut graph = Graph {
+            nodes: Vec::new(),
+            connections: None,
+            exposed_messages: None,
+        };
 
         // Test case 1: Add a valid node.
         let result = graph_add_extension_node(
