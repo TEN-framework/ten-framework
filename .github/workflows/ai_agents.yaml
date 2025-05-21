@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - "core/**"
       - "tests/**"
-      - "portal/**"
       - "tools/**"
       - "packages/**"
       - "build/**"
