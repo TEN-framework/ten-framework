@@ -249,7 +249,7 @@ const GraphSelectTable = (props: {
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-y-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

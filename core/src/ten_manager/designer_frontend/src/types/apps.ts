@@ -87,6 +87,8 @@ export const AppCreateReqSchema = z.object({
 });
 
 export const LogLineMetadataSchema = z.object({
+  graph_id: z.string().optional(),
+  graph_name: z.string().optional(),
   extension: z.string().optional(),
 });
 
