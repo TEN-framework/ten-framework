@@ -408,8 +408,6 @@ bool ten_app_dispatch_msg(ten_app_t *self, ten_shared_ptr_t *msg,
   TEN_ASSERT(dest_loc, "Should not happen.");
   TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
   TEN_ASSERT(ten_msg_get_dest_cnt(msg) == 1, "Should not happen.");
-  TEN_ASSERT(!ten_string_is_empty(&dest_loc->app_uri),
-             "App URI should not be empty.");
 
   if (!ten_string_is_equal_c_str(&dest_loc->app_uri, ten_app_get_uri(self))) {
     TEN_ASSERT(0, "Handle this condition, msg dest '%s', app '%s'",
