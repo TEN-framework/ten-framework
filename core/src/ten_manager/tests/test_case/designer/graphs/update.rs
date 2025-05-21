@@ -111,6 +111,7 @@ mod tests {
             extension_group: None,
             app: None,
             property: None,
+            source_uri: None,
         }];
 
         // Create a connection with message flow.
@@ -328,6 +329,7 @@ mod tests {
             extension_group: None,
             app: Some("http://example.com:8000".to_string()),
             property: None,
+            source_uri: None,
         }];
         let connections = vec![]; // Empty connections.
 

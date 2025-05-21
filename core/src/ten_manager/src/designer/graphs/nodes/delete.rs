@@ -193,6 +193,7 @@ pub async fn delete_graph_node_endpoint(
                     .map(String::from),
                 app: request_payload.app.as_deref().map(String::from),
                 property: None,
+                source_uri: None,
             };
 
             let nodes_to_remove = vec![node_to_remove];

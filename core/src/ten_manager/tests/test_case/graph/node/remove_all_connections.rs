@@ -90,6 +90,7 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: None,
+                source_uri: None,
             },
             GraphNode {
                 type_: GraphNodeType::Extension,
@@ -98,6 +99,7 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: None,
+                source_uri: None,
             },
         ];
 

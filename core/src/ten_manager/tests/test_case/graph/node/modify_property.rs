@@ -50,6 +50,7 @@ mod tests {
                     "setting2": 99,
                     "newSetting": "added-value"
                 })),
+                source_uri: None,
             },
             // Node2 with modified property
             GraphNode {
@@ -61,6 +62,7 @@ mod tests {
                 property: Some(serde_json::json!({
                     "config": "updated-config"
                 })),
+                source_uri: None,
             },
             // Non-existent node (should not affect anything)
             GraphNode {
@@ -70,8 +72,9 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: Some(serde_json::json!({
-                    "test": "value"
+                  "test": "value"
                 })),
+                source_uri: None,
             },
             // Node with mismatched app field (should not update)
             GraphNode {
@@ -83,6 +86,7 @@ mod tests {
                 property: Some(serde_json::json!({
                     "enabled": false
                 })),
+                source_uri: None,
             },
         ];
 

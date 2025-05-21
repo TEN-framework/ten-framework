@@ -26,6 +26,7 @@ mod tests {
             extension_group: extension_group.map(|s| s.to_string()),
             app: app.map(|s| s.to_string()),
             property: None,
+            source_uri: None,
         }
     }
 

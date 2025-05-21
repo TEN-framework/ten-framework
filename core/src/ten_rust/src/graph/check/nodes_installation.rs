@@ -46,6 +46,11 @@ impl Graph {
             // Convert GraphNodeType to PkgType.
             let pkg_type = match node.type_ {
                 GraphNodeType::Extension => PkgType::Extension,
+                GraphNodeType::Subgraph => {
+                    panic!(
+                        "Subgraph nodes should not be checked for installation"
+                    )
+                }
             };
 
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {

@@ -114,6 +114,7 @@ mod tests {
             extension_group: None,
             app: None,
             property: None,
+            source_uri: None,
         };
         let remove_nodes = vec![remove_node];
 

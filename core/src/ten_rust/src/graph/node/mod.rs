@@ -18,6 +18,9 @@ use crate::pkg_info::localhost;
 pub enum GraphNodeType {
     #[serde(rename = "extension")]
     Extension,
+
+    #[serde(rename = "subgraph")]
+    Subgraph,
 }
 
 /// Represents a node in a graph. This struct is completely equivalent to the
@@ -42,6 +45,11 @@ pub struct GraphNode {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property: Option<serde_json::Value>,
+
+    /// The URI to the source subgraph JSON file. This field is only present
+    /// for subgraph nodes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_uri: Option<String>,
 }
 
 impl GraphNode {
