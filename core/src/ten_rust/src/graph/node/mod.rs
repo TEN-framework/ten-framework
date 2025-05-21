@@ -12,14 +12,22 @@ use crate::constants::ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE;
 use crate::graph::AppUriDeclarationState;
 
 use crate::graph::is_app_default_loc_or_none;
-use crate::pkg_info::{localhost, pkg_type_and_name::PkgTypeAndName};
+use crate::pkg_info::localhost;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GraphNodeType {
+    #[serde(rename = "extension")]
+    Extension,
+}
 
 /// Represents a node in a graph. This struct is completely equivalent to the
 /// node element in the graph JSON.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphNode {
-    #[serde(flatten)]
-    pub type_and_name: PkgTypeAndName,
+    #[serde(rename = "type")]
+    pub type_: GraphNodeType,
+
+    pub name: String,
 
     pub addon: String,
 

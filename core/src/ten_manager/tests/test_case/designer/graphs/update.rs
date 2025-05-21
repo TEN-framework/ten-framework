@@ -25,12 +25,9 @@ mod tests {
     use ten_rust::{
         graph::{
             connection::{GraphConnection, GraphDestination, GraphMessageFlow},
-            node::GraphNode,
+            node::{GraphNode, GraphNodeType},
         },
-        pkg_info::{
-            constants::PROPERTY_JSON_FILENAME, pkg_type::PkgType,
-            pkg_type_and_name::PkgTypeAndName,
-        },
+        pkg_info::constants::PROPERTY_JSON_FILENAME,
     };
     use uuid::Uuid;
 
@@ -108,10 +105,8 @@ mod tests {
 
         // Create test nodes and connections.
         let nodes = [GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: "node1".to_string(),
-            },
+            type_: GraphNodeType::Extension,
+            name: "node1".to_string(),
             addon: "test_addon".to_string(),
             extension_group: None,
             app: None,
@@ -145,7 +140,7 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| GraphNodeForUpdate {
-                    name: node.type_and_name.name.clone(),
+                    name: node.name.clone(),
                     addon: node.addon.clone(),
                     extension_group: node.extension_group.clone(),
                     app: node.app.clone(),
@@ -327,10 +322,8 @@ mod tests {
 
         // Create test nodes but empty connections.
         let nodes = [GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: "new_node".to_string(),
-            },
+            type_: GraphNodeType::Extension,
+            name: "new_node".to_string(),
             addon: "test_addon".to_string(),
             extension_group: None,
             app: Some("http://example.com:8000".to_string()),
@@ -344,7 +337,7 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| GraphNodeForUpdate {
-                    name: node.type_and_name.name.clone(),
+                    name: node.name.clone(),
                     addon: node.addon.clone(),
                     extension_group: node.extension_group.clone(),
                     app: node.app.clone(),

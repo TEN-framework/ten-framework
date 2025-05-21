@@ -15,9 +15,7 @@ mod tests {
     use tempfile::TempDir;
 
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::GraphNode;
-    use ten_rust::pkg_info::pkg_type::PkgType;
-    use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
+    use ten_rust::graph::node::{GraphNode, GraphNodeType};
 
     #[test]
     fn test_update_graph_node_modifies_node_property() -> Result<()> {
@@ -42,10 +40,8 @@ mod tests {
         let nodes_to_modify = vec![
             // Node1 with modified property
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "node1".to_string(),
-                },
+                type_: GraphNodeType::Extension,
+                name: "node1".to_string(),
                 addon: "addon1".to_string(),
                 extension_group: None,
                 app: None,
@@ -57,10 +53,8 @@ mod tests {
             },
             // Node2 with modified property
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "node2".to_string(),
-                },
+                type_: GraphNodeType::Extension,
+                name: "node2".to_string(),
                 addon: "addon2".to_string(),
                 extension_group: Some("group1".to_string()),
                 app: None,
@@ -70,10 +64,8 @@ mod tests {
             },
             // Non-existent node (should not affect anything)
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "non-existent".to_string(),
-                },
+                type_: GraphNodeType::Extension,
+                name: "non-existent".to_string(),
                 addon: "addon4".to_string(),
                 extension_group: None,
                 app: None,
@@ -83,10 +75,8 @@ mod tests {
             },
             // Node with mismatched app field (should not update)
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "node3".to_string(),
-                },
+                type_: GraphNodeType::Extension,
+                name: "node3".to_string(),
                 addon: "addon3".to_string(),
                 extension_group: None,
                 app: Some("app2".to_string()), // Mismatched app
