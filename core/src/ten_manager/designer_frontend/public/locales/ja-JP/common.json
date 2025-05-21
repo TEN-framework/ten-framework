@@ -172,6 +172,8 @@
       "templateLanguageDescription": "アプリのテンプレート言語を選択してください。",
       "templateName": "テンプレート名",
       "templateNameDescription": "アプリのテンプレート名を選択してください。",
+      "templateVersion": "テンプレートバージョン",
+      "templateVersionDescription": "アプリのテンプレートバージョンを選択してください。",
       "appName": "アプリ名",
       "appNameDescription": "アプリの名前を入力してください。",
       "baseDirDescription": "アプリのベースディレクトリを選択してください。"

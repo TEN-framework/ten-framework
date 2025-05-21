@@ -172,6 +172,8 @@
       "templateLanguageDescription": "選擇應用程式的模板語言。",
       "templateName": "模板名稱",
       "templateNameDescription": "選擇應用程式的模板名稱。",
+      "templateVersion": "模板版本",
+      "templateVersionDescription": "選擇應用程式的模板版本。",
       "appName": "應用程式名稱",
       "appNameDescription": "輸入應用程式的名稱。",
       "baseDirDescription": "選擇應用程式的基礎目錄。"
