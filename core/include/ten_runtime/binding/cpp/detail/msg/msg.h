@@ -56,8 +56,8 @@ class msg_t {
     return ten_msg_get_name(c_msg);
   }
 
-  bool set_dest(const char *uri, const char *graph, const char *extension_name,
-                error_t *err = nullptr) const {
+  bool set_dest(const char *app_uri, const char *graph_id,
+                const char *extension_name, error_t *err = nullptr) const {
     TEN_ASSERT(c_msg, "Should not happen.");
 
     if (c_msg == nullptr) {
@@ -69,7 +69,7 @@ class msg_t {
     }
 
     return ten_msg_clear_and_set_dest(
-        c_msg, uri, graph, extension_name,
+        c_msg, app_uri, graph_id, extension_name,
         err != nullptr ? err->get_c_error() : nullptr);
   }
 
