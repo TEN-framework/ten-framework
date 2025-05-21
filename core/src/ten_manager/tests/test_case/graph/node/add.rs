@@ -16,6 +16,7 @@ mod tests {
             nodes: Vec::new(),
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test case 1: Add a valid node.

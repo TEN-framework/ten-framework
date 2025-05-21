@@ -73,6 +73,7 @@ mod tests {
                     extension: "ext_d".to_string(),
                 },
             ]),
+            exposed_properties: None,
         };
 
         // Serialize to JSON.

@@ -13,7 +13,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use ten_rust::_0_8_compatible::get_ten_field_string;
-use ten_rust::graph::GraphExposedMessage;
+use ten_rust::graph::{GraphExposedMessage, GraphExposedProperty};
 use uuid::Uuid;
 
 pub use connections::update_graph_connections_in_property_all_fields;
@@ -83,16 +83,18 @@ pub fn graphs_cache_remove_by_app_base_dir(
 }
 
 /// Replace the nodes and connections in a graph with new nodes, connections,
-/// and exposed messages.
+/// exposed messages, and exposed properties.
 ///
 /// If the connections vector is empty, it sets graph.connections to None.
 /// If the exposed_messages vector is empty, it sets graph.exposed_messages to
-/// None.
+/// None. If the exposed_properties vector is empty, it sets
+/// graph.exposed_properties to None.
 pub fn replace_graph_nodes_and_connections(
     graph: &mut Graph,
     nodes: &[GraphNode],
     connections: &[GraphConnection],
     exposed_messages: &[GraphExposedMessage],
+    exposed_properties: &[GraphExposedProperty],
 ) -> Result<()> {
     // Replace the nodes with a copy of the provided nodes.
     graph.nodes = nodes.to_vec();
@@ -114,20 +116,31 @@ pub fn replace_graph_nodes_and_connections(
         graph.exposed_messages = Some(exposed_messages.to_owned());
     }
 
+    // If the exposed_properties vector is empty, set graph.exposed_properties
+    // to None, otherwise set it to Some with a copy of the provided
+    // exposed_properties.
+    if exposed_properties.is_empty() {
+        graph.exposed_properties = None;
+    } else {
+        graph.exposed_properties = Some(exposed_properties.to_owned());
+    }
+
     Ok(())
 }
 
-/// Update a graph with nodes, connections, and exposed messages from the
-/// provided request payload.
+/// Update a graph with nodes, connections, exposed messages, and exposed
+/// properties from the provided request payload.
 ///
-/// This function takes a graph ID, nodes, connections, and exposed messages and
-/// updates the corresponding graph in the graphs cache if it exists.
+/// This function takes a graph ID, nodes, connections, exposed messages, and
+/// exposed properties and updates the corresponding graph in the graphs cache
+/// if it exists.
 pub fn update_graph_endpoint(
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     graph_id: &Uuid,
     nodes: &[GraphNode],
     connections: &[GraphConnection],
     exposed_messages: &[ten_rust::graph::GraphExposedMessage],
+    exposed_properties: &[ten_rust::graph::GraphExposedProperty],
 ) -> Result<()> {
     // Find the graph info by ID
     if let Some(graph_info) =
@@ -139,6 +152,7 @@ pub fn update_graph_endpoint(
             nodes,
             connections,
             exposed_messages,
+            exposed_properties,
         )
     } else {
         Err(anyhow!("Graph with ID {} not found", graph_id))
@@ -151,7 +165,8 @@ pub fn update_graph_all_fields(
     graph_name: &str,
     nodes: &[GraphNode],
     connections: &[GraphConnection],
-    exposed_messages: &[ten_rust::graph::GraphExposedMessage],
+    exposed_messages: &[GraphExposedMessage],
+    exposed_properties: &[GraphExposedProperty],
 ) -> Result<()> {
     // Get ten object if it exists.
     let ten_field_str = get_ten_field_string();
@@ -206,6 +221,18 @@ pub fn update_graph_all_fields(
                 serde_json::to_value(exposed_messages)?;
             graph_obj
                 .insert("exposed_messages".to_string(), exposed_messages_value);
+        }
+
+        // Update exposed_properties or remove if empty.
+        if exposed_properties.is_empty() {
+            graph_obj.remove("exposed_properties");
+        } else {
+            let exposed_properties_value =
+                serde_json::to_value(exposed_properties)?;
+            graph_obj.insert(
+                "exposed_properties".to_string(),
+                exposed_properties_value,
+            );
         }
 
         // We've found and updated the graph, no need to continue.
