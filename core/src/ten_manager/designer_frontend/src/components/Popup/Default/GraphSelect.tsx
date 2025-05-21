@@ -8,11 +8,14 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  SortingState,
+  getSortedRowModel,
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 
 import {
   Select,
@@ -26,19 +29,28 @@ import {
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Badge } from "@/components/ui/Badge";
 import {
-  Table,
+  // Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { useGraphs } from "@/api/services/graphs";
 import { useApps } from "@/api/services/apps";
 import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
+import { cn } from "@/lib/utils";
 
 import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import { IWidget } from "@/types/widgets";
@@ -158,12 +170,17 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
           />
         </>
       ) : (
-        <GraphSelectTable
-          items={graphs?.filter(
-            (graph) => graph.base_dir === selectedApp?.base_dir
-          )}
-          onSelect={handleSelectGraph}
-        />
+        <div className="h-full overflow-y-auto">
+          <div className="rounded-md border">
+            <GraphSelectTable
+              items={graphs?.filter(
+                (graph) => graph.base_dir === selectedApp?.base_dir
+              )}
+              onSelect={handleSelectGraph}
+              className="pointer-events-auto"
+            />
+          </div>
+        </div>
       )}
       <div className="flex mt-auto justify-end gap-2">
         <Button variant="default" onClick={handleOk}>
@@ -177,8 +194,10 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
 const GraphSelectTable = (props: {
   items?: IGraph[];
   onSelect?: (item: IGraph) => void;
+  className?: string;
 }) => {
-  const { items = [], onSelect } = props;
+  const { items = [], onSelect, className } = props;
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { t } = useTranslation();
   const { currentWorkspace } = useAppStore();
@@ -186,7 +205,18 @@ const GraphSelectTable = (props: {
   const columns: ColumnDef<IGraph>[] = [
     {
       accessorKey: "name",
-      header: t("dataTable.name"),
+      // header: t("dataTable.name"),
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("dataTable.name")}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row, getValue }) => {
         const value = getValue() as string;
         const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
@@ -245,60 +275,57 @@ const GraphSelectTable = (props: {
     data: items,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
   });
 
   return (
     <>
-      <div className="rounded-md border overflow-y-auto">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+      <table className={cn("w-full caption-bottom text-sm", className)}>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
               </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {t("dataTable.noResults")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                {t("dataTable.noResults")}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </table>
     </>
   );
 };

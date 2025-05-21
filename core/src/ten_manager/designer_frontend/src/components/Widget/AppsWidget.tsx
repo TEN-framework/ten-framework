@@ -21,7 +21,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import {
-  Table,
+  // Table,
   TableBody,
   TableCaption,
   TableCell,
@@ -302,7 +302,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
 
   return (
     <div className={cn("flex flex-col gap-2 w-full h-full", props.className)}>
-      <Table>
+      <table>
         <TableCaption className="select-none">
           {t("popup.apps.tableCaption")}
         </TableCaption>
@@ -367,7 +367,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
             </TableCell>
           </TableRow>
         </TableFooter>
-      </Table>
+      </table>
     </div>
   );
 };
