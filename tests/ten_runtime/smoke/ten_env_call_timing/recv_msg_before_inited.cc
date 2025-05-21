@@ -65,7 +65,7 @@ class test_extension_2 : public ten::extension_t {
   void close_app_if_all_msg_received(ten::ten_env_t &ten_env) const {
     if (msg_received_count_ == 4) {
       auto close_app_cmd = ten::cmd_close_app_t::create();
-      close_app_cmd->set_dest("localhost", nullptr, nullptr);
+      close_app_cmd->set_dest(nullptr, nullptr, nullptr);
       ten_env.send_cmd(std::move(close_app_cmd));
     }
   }
