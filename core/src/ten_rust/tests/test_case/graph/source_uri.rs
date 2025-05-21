@@ -62,6 +62,7 @@ mod tests {
                 nodes: Vec::new(),
                 connections: None,
                 exposed_messages: None,
+                exposed_properties: None,
             },
             source_uri: Some(source_uri),
             app_base_dir: None,

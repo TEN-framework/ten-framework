@@ -126,6 +126,7 @@ pub async fn update_graph_endpoint(
         &graph_nodes,
         &request_payload.connections,
         &request_payload.exposed_messages,
+        &[],
     ) {
         Ok(_) => (),
         Err(err) => {
@@ -148,6 +149,7 @@ pub async fn update_graph_endpoint(
         &graph_nodes,
         &request_payload.connections,
         &request_payload.exposed_messages,
+        &[],
     ) {
         Ok(_) => (),
         Err(err) => {
