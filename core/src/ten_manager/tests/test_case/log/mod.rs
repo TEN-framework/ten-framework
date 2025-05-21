@@ -15,14 +15,15 @@ mod tests {
         let log_message = "05-02 20:29:25.168 1565912(1565914) M \
                            ten_extension_context_log_graph_resources@\
                            extension_context.c:352 [graph resources] \
-                           {\"app_uri\": \"msgpack://127.0.0.1:8001/\", \
-                           \"graph name\": \"\", \"graph id\": \
+                           {\"app_base_dir\": \"xxx\", \"app_uri\": \
+                           \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
                            \"b99a15fb-1db6-4257-a13f-f3584e892e29\" }";
 
         let mut graph_resources_log = GraphResourcesLog {
-            graph_id: String::new(),
-            graph_name: String::new(),
+            app_base_dir: String::new(),
             app_uri: None,
+            graph_id: String::new(),
+            graph_name: None,
             extension_threads: HashMap::new(),
         };
 
@@ -34,7 +35,7 @@ mod tests {
             graph_resources_log.graph_id,
             "b99a15fb-1db6-4257-a13f-f3584e892e29"
         );
-        assert_eq!(graph_resources_log.graph_name, "");
+        assert_eq!(graph_resources_log.graph_name, None);
         assert_eq!(
             graph_resources_log.app_uri,
             Some("msgpack://127.0.0.1:8001/".to_string())
@@ -46,15 +47,16 @@ mod tests {
         let log_message =
             "05-02 20:29:25.233 1565912(1565927) M \
              ten_extension_thread_log_graph_resources@extension_thread.c:550 \
-             [graph resources] {\"app_uri\": \"msgpack://127.0.0.1:8001/\", \
-             \"graph name\": \"\", \"graph id\": \
+             [graph resources] {\"app_base_dir\": \"xxx\", \"app_uri\": \
+             \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
              \"b99a15fb-1db6-4257-a13f-f3584e892e29\", \"extension_threads\": \
              {\"1565927\": {\"extensions\": [\"test_extension\"]}}}";
 
         let mut graph_resources_log = GraphResourcesLog {
-            graph_id: String::new(),
-            graph_name: String::new(),
+            app_base_dir: String::new(),
             app_uri: None,
+            graph_id: String::new(),
+            graph_name: None,
             extension_threads: HashMap::new(),
         };
 
@@ -66,7 +68,7 @@ mod tests {
             graph_resources_log.graph_id,
             "b99a15fb-1db6-4257-a13f-f3584e892e29"
         );
-        assert_eq!(graph_resources_log.graph_name, "");
+        assert_eq!(graph_resources_log.graph_name, None);
         assert_eq!(
             graph_resources_log.app_uri,
             Some("msgpack://127.0.0.1:8001/".to_string())
@@ -87,9 +89,10 @@ mod tests {
                            extension_context.c:352 This is a debug log";
 
         let mut graph_resources_log = GraphResourcesLog {
-            graph_id: String::new(),
-            graph_name: String::new(),
+            app_base_dir: String::new(),
             app_uri: None,
+            graph_id: String::new(),
+            graph_name: None,
             extension_threads: HashMap::new(),
         };
 
@@ -100,7 +103,7 @@ mod tests {
         // The log should be ignored, so the graph_resources_log should remain
         // unchanged
         assert_eq!(graph_resources_log.graph_id, "");
-        assert_eq!(graph_resources_log.graph_name, "");
+        assert_eq!(graph_resources_log.graph_name, None);
         assert!(graph_resources_log.extension_threads.is_empty());
     }
 

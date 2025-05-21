@@ -180,8 +180,8 @@ bool ten_app_is_closing(ten_app_t *self) {
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: this function is used to be called in threads other than the
   // app thread, so the whole function is protected by a lock.
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   bool is_closing = false;
 
@@ -260,7 +260,8 @@ void ten_app_check_termination_when_engine_closed(ten_app_t *self,
 
 void ten_app_on_orphan_connection_closed(ten_connection_t *connection,
                                          TEN_UNUSED void *on_closed_data) {
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   ten_app_t *self = connection->attached_target.app;

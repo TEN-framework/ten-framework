@@ -56,8 +56,8 @@ void ten_global_del_app(ten_app_t *self) {
   // TEN_NOLINTNEXTLINE(thread-check):
   // thread-check: When this function is called, the app has already been
   // destroyed, and so has the app thread.
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   ten_mutex_lock(g_apps_mutex);
   ten_list_remove_ptr(&g_apps, self);

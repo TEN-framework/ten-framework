@@ -55,9 +55,9 @@ static void addon_manager_register_single_addon_ctx_destroy(
 
 static void ten_nodejs_addon_create_and_attach_callbacks(
     napi_env env, ten_nodejs_addon_t *addon_bridge) {
-  TEN_ASSERT(
-      addon_bridge && ten_nodejs_addon_check_integrity(addon_bridge, true),
-      "Should not happen.");
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(addon_bridge, true),
+             "Should not happen.");
 
   napi_value js_addon = NULL;
   napi_status status = napi_get_reference_value(
@@ -65,22 +65,17 @@ static void ten_nodejs_addon_create_and_attach_callbacks(
   ASSERT_IF_NAPI_FAIL(status == napi_ok && js_addon != NULL,
                       "Failed to get JS addon instance.");
 
-  napi_value js_on_init_proxy =
-      ten_nodejs_get_property(env, js_addon, "onInitProxy");
-  CREATE_JS_CB_TSFN(addon_bridge->js_on_init, env, "[TSFN] addon::onInit",
-                    js_on_init_proxy, ten_nodejs_invoke_addon_js_on_init);
-
-  napi_value js_on_deinit_proxy =
-      ten_nodejs_get_property(env, js_addon, "onDeinitProxy");
-  CREATE_JS_CB_TSFN(addon_bridge->js_on_deinit, env, "[TSFN] addon::onDeinit",
-                    js_on_deinit_proxy, ten_nodejs_invoke_addon_js_on_deinit);
-
   napi_value js_on_create_instance_proxy =
       ten_nodejs_get_property(env, js_addon, "onCreateInstanceProxy");
   CREATE_JS_CB_TSFN(addon_bridge->js_on_create_instance, env,
                     "[TSFN] addon::onCreateInstance",
                     js_on_create_instance_proxy,
                     ten_nodejs_invoke_addon_js_on_create_instance);
+
+  napi_value js_on_destroy =
+      ten_nodejs_get_property(env, js_addon, "onDestroy");
+  CREATE_JS_CB_TSFN(addon_bridge->js_on_destroy, env, "[TSFN] addon::onDestroy",
+                    js_on_destroy, ten_nodejs_invoke_addon_js_on_destroy);
 }
 
 static bool ten_nodejs_addon_manager_check_integrity(
@@ -338,7 +333,8 @@ static void ten_nodejs_addon_register_func(TEN_UNUSED TEN_ADDON_TYPE addon_type,
   TEN_ASSERT(register_ctx, "Should not happen.");
 
   ten_app_t *app = register_ctx->app;
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   // Call the static JS function AddonManager._register_single_addon from the
   // app thread other than the JS main thread.

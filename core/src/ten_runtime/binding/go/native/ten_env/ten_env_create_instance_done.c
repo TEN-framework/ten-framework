@@ -34,6 +34,7 @@ void ten_go_ten_env_on_create_instance_done(uintptr_t bridge_addr,
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
+  // TODO(xilin): Switch to the addon_host thread.
   bool rc = ten_env_on_create_instance_done(self->c_ten_env,
                                             c_extension_or_extension_group,
                                             (void *)context_addr, &err);

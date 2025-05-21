@@ -60,7 +60,8 @@ static void ten_protocol_on_inputs_based_on_migration_state(
              "Should not happen.");
 
   ten_connection_t *connection = self->attached_target.connection;
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   // The stream will be frozen before the migration, and this function is only
@@ -127,7 +128,8 @@ static void ten_stream_on_data(ten_stream_t *stream, void *data, int size) {
              "Should not happen.");
 
   ten_connection_t *connection = base_protocol->attached_target.connection;
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   if (size < 0) {
@@ -320,7 +322,8 @@ static void ten_app_thread_on_client_protocol_created(ten_env_t *ten_env,
 
   TEN_UNUSED ten_connection_t *connection = on_client_accepted(
       listening_base_protocol, new_communication_base_protocol);
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   ten_protocol_integrated_set_stream(protocol, stream);

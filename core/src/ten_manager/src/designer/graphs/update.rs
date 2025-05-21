@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use ten_rust::graph::connection::GraphConnection;
 use ten_rust::graph::node::GraphNode;
+use ten_rust::graph::{connection::GraphConnection, GraphExposedMessage};
 use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 use uuid::Uuid;
@@ -55,6 +55,9 @@ pub struct UpdateGraphRequestPayload {
     pub graph_id: Uuid,
     pub nodes: Vec<GraphNodeForUpdate>,
     pub connections: Vec<GraphConnection>,
+
+    #[serde(default)]
+    pub exposed_messages: Vec<GraphExposedMessage>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -122,6 +125,7 @@ pub async fn update_graph_endpoint(
         &mut graph_info.graph,
         &graph_nodes,
         &request_payload.connections,
+        &request_payload.exposed_messages,
     ) {
         Ok(_) => (),
         Err(err) => {
@@ -143,6 +147,7 @@ pub async fn update_graph_endpoint(
         graph_info.name.as_ref().unwrap(),
         &graph_nodes,
         &request_payload.connections,
+        &request_payload.exposed_messages,
     ) {
         Ok(_) => (),
         Err(err) => {

@@ -688,6 +688,39 @@
                 "items": {
                   "$ref": "#/$defs/graphConnection"
                 }
+              },
+              "exposed_messages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "name",
+                    "extension"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "cmd_in",
+                        "cmd_out",
+                        "data_in",
+                        "data_out",
+                        "audio_frame_in",
+                        "audio_frame_out",
+                        "video_frame_in",
+                        "video_frame_out"
+                      ]
+                    },
+                    "name": {
+                      "$ref": "#/$defs/alphanumericCharacters"
+                    },
+                    "extension": {
+                      "$ref": "#/$defs/alphanumericCharacters"
+                    }
+                  }
+                }
               }
             }
           }

@@ -107,6 +107,36 @@ impl AppUriDeclarationState {
     }
 }
 
+/// The type of exposed message interface.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum GraphExposedMessageType {
+    CmdIn,
+    CmdOut,
+    DataIn,
+    DataOut,
+    AudioFrameIn,
+    AudioFrameOut,
+    VideoFrameIn,
+    VideoFrameOut,
+}
+
+/// Represents a message interface that is exposed by the graph to the outside.
+/// This is mainly used by development tools to provide intelligent prompts.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphExposedMessage {
+    #[serde(rename = "type")]
+    pub msg_type: GraphExposedMessageType,
+
+    /// The name of the message.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub name: String,
+
+    /// The name of the extension.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub extension: String,
+}
+
 /// Represents a connection graph that defines how extensions connect to each
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -115,6 +145,9 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connections: Option<Vec<connection::GraphConnection>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exposed_messages: Option<Vec<GraphExposedMessage>>,
 }
 
 impl FromStr for Graph {

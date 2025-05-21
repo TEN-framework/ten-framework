@@ -91,7 +91,8 @@ void ten_app_add_orphan_connection(ten_app_t *self,
                                    ten_connection_t *connection) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   TEN_LOGD("[%s] Add a orphan connection %p (total cnt %zu)",
@@ -118,7 +119,8 @@ void ten_app_del_orphan_connection(ten_app_t *self,
   // And what we do here is just to check if the pointer points to a valid
   // connection instance, and we don't access the internal of the connection
   // instance here, so it is thread safe.
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, false),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, false),
              "Should not happen.");
 
   TEN_LOGD("[%s] Remove a orphan connection %p", ten_app_get_uri(self),
@@ -136,7 +138,8 @@ bool ten_app_has_orphan_connection(ten_app_t *self,
                                    ten_connection_t *connection) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "Should not happen.");
 
   ten_listnode_t *found =
@@ -148,39 +151,36 @@ bool ten_app_has_orphan_connection(ten_app_t *self,
 ten_runloop_t *ten_app_get_attached_runloop(ten_app_t *self) {
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: This function is intended to be called in different threads.
-  TEN_ASSERT(self && ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
   TEN_ASSERT(self->loop, "Should not happen.");
 
   return self->loop;
 }
 
 const char *ten_app_get_uri(ten_app_t *self) {
-  TEN_ASSERT(self &&
-                 // The app uri should be read-only after it has been set
-                 // initially, so it's safe to read it from any other threads.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  // The app uri should be read-only after it has been set initially, so it's
+  // safe to read it from any other threads.
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   return ten_string_get_raw_str(&self->uri);
 }
 
 ten_env_t *ten_app_get_ten_env(ten_app_t *self) {
-  TEN_ASSERT(self &&
-                 // The app uri should be read-only after it has been set
-                 // initially, so it's safe to read it from any other threads.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  // The app ten_env should be read-only after it has been set initially, so
+  // it's safe to read it from any other threads.
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   return self->ten_env;
 }
 
 ten_sanitizer_thread_check_t *ten_app_get_thread_check(ten_app_t *self) {
-  TEN_ASSERT(self &&
-                 // The app uri should be read-only after it has been set
-                 // initially, so it's safe to read it from any other threads.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  // The app thread_check should be read-only after it has been set initially,
+  // so it's safe to read it from any other threads.
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   return &self->thread_check;
 }
