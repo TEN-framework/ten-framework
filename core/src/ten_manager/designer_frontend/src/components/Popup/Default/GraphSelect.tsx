@@ -181,18 +181,16 @@ const GraphSelectTable = (props: {
   const { items = [], onSelect } = props;
 
   const { t } = useTranslation();
+  const { currentWorkspace } = useAppStore();
 
-  const columns: ColumnDef<
-    Partial<IGraph> & {
-      isCurrent?: boolean;
-    }
-  >[] = [
+  const columns: ColumnDef<IGraph>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("dataTable.name"),
       cell: ({ row, getValue }) => {
         const value = getValue() as string;
-        const isCurrent = row.getValue("isCurrent") as boolean;
+        const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
+
         return (
           <div className="flex items-center">
             <span className="text-sm">{value}</span>
@@ -207,7 +205,7 @@ const GraphSelectTable = (props: {
     },
     {
       accessorKey: "auto_start",
-      header: "Auto Start",
+      header: t("action.autoStart"),
       cell: ({ getValue }) => {
         const value = getValue() as boolean;
         return (
@@ -218,10 +216,10 @@ const GraphSelectTable = (props: {
       },
     },
     {
-      accessorKey: "action",
-      header: "Action",
+      header: t("dataTable.actions"),
       cell: ({ row }) => {
-        const isCurrent = row.getValue("isCurrent") as boolean;
+        const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
+
         return (
           <div className="flex items-center">
             <Button
@@ -243,7 +241,7 @@ const GraphSelectTable = (props: {
     },
   ];
 
-  const table = useReactTable<Partial<IGraph> & { isCurrent?: boolean }>({
+  const table = useReactTable<IGraph>({
     data: items,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -294,7 +292,7 @@ const GraphSelectTable = (props: {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {t("dataTable.noResults")}
                 </TableCell>
               </TableRow>
             )}
