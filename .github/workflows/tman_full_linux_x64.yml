@@ -6,11 +6,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - "tools/**"
-      - "portal/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/**"
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
 

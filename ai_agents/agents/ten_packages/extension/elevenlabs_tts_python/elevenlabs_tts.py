@@ -5,7 +5,6 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-
 from dataclasses import dataclass
 from typing import AsyncIterator
 from ten_ai_base.config import BaseConfig
@@ -40,6 +39,7 @@ class ElevenLabsTTS:
                 timeout=self.config.request_timeout_seconds,
             )
 
+        # pylint: disable=no-member
         return self.client.generate(
             text=text,
             model=self.config.model_id,
