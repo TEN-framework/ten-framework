@@ -486,11 +486,6 @@ void ten_extensions_info_fill_loc_info(ten_list_t *extensions_info,
       ten_list_foreach (&dest_info->dest, dest_iter) {
         ten_extension_info_t *dest_extension_info =
             ten_smart_ptr_get_data(ten_smart_ptr_listnode_get(dest_iter.node));
-        if (ten_string_is_empty(&dest_extension_info->loc.app_uri)) {
-          TEN_ASSERT(0, "extension_info->loc.app_uri should not be empty.");
-          return;
-        }
-
         if (ten_string_is_equal_c_str(&dest_extension_info->loc.app_uri,
                                       TEN_STR_LOCALHOST)) {
           TEN_ASSERT(0, "extension_info->loc.app_uri should not be localhost.");
