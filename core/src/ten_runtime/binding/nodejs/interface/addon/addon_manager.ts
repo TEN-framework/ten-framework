@@ -69,6 +69,8 @@ export class AddonManager {
   async loadAllAddons(): Promise<void> {
     const app_base_dir = AddonManager.findAppBaseDir();
 
+    console.log(`app_base_dir: ${app_base_dir}`);
+
     const manifest_path = path.join(app_base_dir, "manifest.json");
     if (!fs.existsSync(manifest_path)) {
       throw new Error("Cannot find manifest.json");

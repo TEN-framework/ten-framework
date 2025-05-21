@@ -7,30 +7,8 @@
 import("//build/ten_runtime/feature/test.gni")
 import("//build/ten_runtime/ten.gni")
 
-ten_package_test_prepare_app("send_data_nodejs_app") {
-  src_app = "default_app_nodejs"
-  src_app_language = "nodejs"
-  generated_app_src_root_dir_name = "send_data_nodejs_app"
-
-  replace_paths_after_install_app = [
-    "send_data_nodejs_app/manifest.json",
-    "send_data_nodejs_app/property.json",
-  ]
-
-  replace_paths_after_install_all = [ "send_data_nodejs_app/ten_packages/extension/default_extension_nodejs/src/index.ts" ]
-
-  if (ten_enable_ten_manager) {
-    deps = [
-      "//core/src/ten_manager",
-      "//packages/core_apps/default_app_nodejs:upload_default_app_nodejs_to_server",
-      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_nodejs_to_server",
-      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
-      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
-    ]
-  }
-}
-
-ten_package_test_prepare_auxiliary_resources("send_data_nodejs_test_files") {
+ten_package_test_prepare_auxiliary_resources(
+    "standalone_test_nodejs_test_files") {
   resources = [
     "__init__.py",
     "test_case.py",
@@ -54,9 +32,9 @@ ten_package_test_prepare_auxiliary_resources("send_data_nodejs_test_files") {
   }
 }
 
-group("send_data_nodejs") {
+group("standalone_test_nodejs") {
   deps = [
-    ":send_data_nodejs_app",
-    ":send_data_nodejs_test_files",
+    ":standalone_test_nodejs_test_files",
+    "//packages/core_extensions/default_extension_nodejs:upload_default_extension_nodejs_to_server",
   ]
 }

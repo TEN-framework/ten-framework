@@ -15,3 +15,5 @@ export * from "./msg/cmd_result.js";
 export * from "./msg/data.js";
 export * from "./msg/audio_frame.js";
 export * from "./msg/video_frame.js";
+export * from "./test/extension_tester.js";
+export * from "./test/env_tester.js";
