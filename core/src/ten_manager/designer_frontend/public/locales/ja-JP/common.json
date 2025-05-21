@@ -127,7 +127,10 @@
       "title": "アプリ/グラフを選択",
       "app": "アプリ",
       "graph": "グラフ",
+      "select": "選択",
+      "selected": "選択済み",
       "unspecified": "<未指定>",
+      "current": "現在",
       "updateSuccess": "アプリ/グラフの更新に成功しました"
     },
     "customNodeConn": {

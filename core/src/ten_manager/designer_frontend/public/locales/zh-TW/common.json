@@ -127,7 +127,10 @@
       "title": "選擇應用/圖譜",
       "app": "應用",
       "graph": "圖譜",
+      "select": "選擇",
+      "selected": "已選擇",
       "unspecified": "<未指定>",
+      "current": "目前",
       "updateSuccess": "應用/圖譜更新成功"
     },
     "customNodeConn": {

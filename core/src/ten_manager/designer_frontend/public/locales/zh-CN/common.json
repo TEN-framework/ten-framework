@@ -127,7 +127,10 @@
       "title": "选择应用/图谱",
       "app": "应用",
       "graph": "图谱",
+      "select": "选择",
+      "selected": "已选择",
       "unspecified": "<未指定>",
+      "current": "当前",
       "updateSuccess": "应用/图谱更新成功"
     },
     "customNodeConn": {
