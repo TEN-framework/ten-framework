@@ -137,6 +137,23 @@ pub struct GraphExposedMessage {
     pub extension: String,
 }
 
+/// Represents a property that is exposed by the graph to the outside.
+/// This is mainly used by development tools to provide intelligent prompts.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphExposedProperty {
+    /// The name of the extension.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub extension: String,
+
+    /// The name of the property.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub name: String,
+
+    /// The alias of the property when exposed outside the graph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub alias: String,
+}
+
 /// Represents a connection graph that defines how extensions connect to each
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -148,6 +165,9 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_messages: Option<Vec<GraphExposedMessage>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exposed_properties: Option<Vec<GraphExposedProperty>>,
 }
 
 impl FromStr for Graph {
@@ -256,6 +276,25 @@ impl Graph {
                     .map_err(|e| {
                         anyhow::anyhow!("connections[{}]: {}", idx, e)
                     })?;
+            }
+        }
+
+        // Validate exposed_properties if they exist
+        if let Some(exposed_properties) = &self.exposed_properties {
+            for (idx, property) in exposed_properties.iter().enumerate() {
+                // Verify that the extension exists in the graph
+                if !self
+                    .nodes
+                    .iter()
+                    .any(|node| node.type_and_name.name == property.extension)
+                {
+                    return Err(anyhow::anyhow!(
+                        "exposed_properties[{}]: extension '{}' does not \
+                         exist in the graph",
+                        idx,
+                        property.extension
+                    ));
+                }
             }
         }
 
