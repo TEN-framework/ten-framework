@@ -83,6 +83,7 @@ export const AppCreateReqSchema = z.object({
   base_dir: z.string().min(1),
   app_name: z.string().min(1),
   template_name: z.string().min(1),
+  template_version: z.string().optional(),
 });
 
 export const LogLineMetadataSchema = z.object({
