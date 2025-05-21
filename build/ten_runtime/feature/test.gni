@@ -116,6 +116,7 @@ template("ten_package_test_prepare_app") {
       replace_path_index = 0
 
       foreach(replace_path, invoker.replace_paths_after_install_app) {
+        replace_info = []
         replace_info =
             exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
                         [
@@ -227,6 +228,7 @@ template("ten_package_test_prepare_app") {
       replace_path_index = 0
 
       foreach(replace_path, invoker.replace_paths_after_install_all) {
+        replace_info = []
         replace_info =
             exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
                         [
