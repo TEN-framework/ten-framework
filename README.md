@@ -10,6 +10,7 @@
 [![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome!-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten_framework?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten_framework/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten_framework?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten_framework/network/?WT.mc_id=academic-105485-koreyst)
@@ -57,6 +58,7 @@
   - [🅱️ Deploying with other cloud services](#️-deploying-with-other-cloud-services)
 - [🏗️ TEN Agent Architecture](#️-ten-agent-architecture)
 - [🌍 TEN Framework Ecosystem](#-ten-framework-ecosystem)
+- [❓ Ask Questions](#-ask-questions)
 - [🥰 Contributing](#-contributing)
   - [Code Contributors](#code-contributors)
   - [Contribution Guidelines](#contribution-guidelines)
@@ -419,6 +421,18 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 </div>
 
 <br>
+
+## ❓ Ask Questions
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+
+Most questions can be answered by using DeepWiki, it is fast, intutive to use and supports multiple languages.
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
 
 ## 🥰 Contributing
 
