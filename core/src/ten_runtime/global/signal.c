@@ -121,7 +121,8 @@ static void ten_global_sigsegv_handler(TEN_UNUSED int signo, siginfo_t *info,
   // Wait for a short period to allow backtrace to be written.
   ten_sleep_ms(200);
 
-  _exit(EXIT_FAILURE);
+  // Using `abort()` instead of `_exit()` allows a core dump to be generated.
+  abort();
 }
 
 /**
