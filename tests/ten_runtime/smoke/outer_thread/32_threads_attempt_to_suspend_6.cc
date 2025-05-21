@@ -363,7 +363,7 @@ class test_extension_2 : public ten::extension_t {
       ten_env.return_result(std::move(cmd_result));
 
       auto timer_cmd = ten::cmd_timer_t::create();
-      timer_cmd->set_dest("localhost", nullptr, nullptr);
+      timer_cmd->set_dest(nullptr, nullptr, nullptr);
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
       timer_cmd->set_times(1);

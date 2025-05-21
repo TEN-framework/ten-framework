@@ -36,7 +36,7 @@ func (ext *defaultExtension) OnCmd(
 
 		closeAppCmd, _ := ten.NewCmd("ten:close_app")
 
-		err := closeAppCmd.SetDest("localhost", "", "")
+		err := closeAppCmd.SetDest("", "", "")
 		if err != nil {
 			tenEnv.LogError("Failed to SetDest:" + err.Error())
 			return

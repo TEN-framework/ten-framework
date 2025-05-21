@@ -24,7 +24,3 @@ TEN_RUNTIME_PRIVATE_API void ten_all_msg_type_dest_info_init(
 
 TEN_RUNTIME_PRIVATE_API void ten_all_msg_type_dest_info_deinit(
     ten_all_msg_type_dest_info_t *self);
-
-TEN_RUNTIME_PRIVATE_API void
-ten_all_msg_type_dest_info_translate_localhost_to_app_uri(
-    ten_all_msg_type_dest_info_t *self, const char *uri);
