@@ -651,6 +651,7 @@ pub async fn execute_cmd(
         &all_candidates,
         locked_pkgs.as_ref(),
         out.clone(),
+        command_data.max_latest_versions,
     )
     .await?;
 

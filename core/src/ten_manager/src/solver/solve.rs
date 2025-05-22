@@ -433,6 +433,7 @@ fn create_input_str_for_pkg_info_dependencies(
     pkg_info: &PkgInfo,
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
+    max_latest_versions: i32,
 ) -> Result<()> {
     // If this package has already been dumped, skip it.
     if dumped_pkgs_info.contains(&pkg_info.into()) {
@@ -485,7 +486,7 @@ fn create_input_str_for_pkg_info_dependencies(
                 });
 
                 for (idx, candidate) in candidates_vec.into_iter().enumerate() {
-                    if idx >= 3 {
+                    if idx >= max_latest_versions as usize {
                         break;
                     }
 
@@ -519,6 +520,7 @@ fn create_input_str_for_pkg_info_dependencies(
                             candidate,
                             dumped_pkgs_info,
                             all_candidates,
+                            max_latest_versions,
                         )?;
 
                         found_matched = true;
@@ -583,6 +585,7 @@ fn create_input_str_for_all_possible_pkgs_info(
     input_str: &mut String,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
+    max_latest_versions: i32,
 ) -> Result<()> {
     for candidates in all_candidates {
         let mut candidates_vec: Vec<&PkgInfo> = candidates.1.values().collect();
@@ -618,7 +621,7 @@ fn create_input_str_for_all_possible_pkgs_info(
         }
 
         for (idx, candidate) in candidates_vec.into_iter().enumerate() {
-            if idx >= 3 {
+            if idx >= max_latest_versions as usize {
                 break;
             }
 
@@ -631,6 +634,7 @@ fn create_input_str_for_all_possible_pkgs_info(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn create_input_str(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -639,6 +643,7 @@ async fn create_input_str(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    max_latest_versions: i32,
 ) -> Result<String> {
     let mut input_str = String::new();
 
@@ -650,6 +655,7 @@ async fn create_input_str(
         &mut input_str,
         all_candidates,
         locked_pkgs,
+        max_latest_versions,
     )?;
 
     create_input_str_for_dependency_relationship(
@@ -667,6 +673,7 @@ async fn create_input_str(
                 candidate.1,
                 &mut dumped_pkgs_info,
                 all_candidates,
+                max_latest_versions,
             )?;
         }
     }
@@ -678,6 +685,7 @@ async fn create_input_str(
     Ok(input_str)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn solve_all(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -686,6 +694,7 @@ pub async fn solve_all(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    max_latest_versions: i32,
 ) -> SolveResult {
     let input_str = create_input_str(
         tman_config.clone(),
@@ -695,6 +704,7 @@ pub async fn solve_all(
         all_candidates,
         locked_pkgs,
         out.clone(),
+        max_latest_versions,
     )
     .await?;
     solve(tman_config, &input_str, out).await
