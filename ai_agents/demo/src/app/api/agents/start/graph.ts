@@ -207,11 +207,19 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName === "va_gemini_v2v" || graphName === "va_gemini_v2v_native") {
+    } else if (graphName === "va_gemini_v2v") {
         return {
             "v2v": {
                 "prompt": prompt,
                 "language": voiceNameMap[language]["gemini"]["langCode"],
+                "voice": voiceNameMap[language]["gemini"][voiceType],
+                // "greeting": combined_greeting,
+            }
+        }
+    } else if (graphName === "va_gemini_v2v_native") {
+        return {
+            "v2v": {
+                "prompt": prompt,
                 "voice": voiceNameMap[language]["gemini"][voiceType],
                 // "greeting": combined_greeting,
             }

@@ -120,9 +120,9 @@ export const isRagGraph = (graphName: string) => {
   return graphName === "va_qwen_rag"
 }
 
-// export const isLanguageSupported = (graphName: string) => {
-//   return !["va_gemini_v2v"].includes(graphName)
-// }
+export const isLanguageSupported = (graphName: string) => {
+  return !["va_gemini_v2v_native"].includes(graphName)
+}
 
 // export const isVoiceGenderSupported = (graphName: string) => {
 //   return !["va_gemini_v2v"].includes(graphName)
