@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["jemalloc"]
+default = ["mimalloc"]
 mimalloc = ["dep:mimalloc"]
 jemalloc = ["dep:jemallocator", "dep:jemalloc-sys"]
 

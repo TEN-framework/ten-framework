@@ -73,12 +73,12 @@ async fn print_prefix(
     out: Arc<Box<dyn TmanOutput>>,
 ) {
     if is_verbose(tman_config.clone()).await {
-        out.normal_line("");
+        out.normal_partial("");
     }
 
     for _ in 0..depth {
         if is_verbose(tman_config.clone()).await {
-            out.normal_line("  ");
+            out.normal_partial("  ");
         }
     }
 }
@@ -149,9 +149,11 @@ async fn print_statistics(
     let statistics_type = stats.statistics_type(key).unwrap();
     match statistics_type {
         StatisticsType::Value => {
-            let _value = stats
+            let value = stats
                 .value_get(key)
                 .expect("Failed to retrieve statistics value.");
+
+            out.normal_line(&format!(" {value}"));
         }
 
         StatisticsType::Array => {
@@ -163,6 +165,7 @@ async fn print_statistics(
                     .array_at(key, i)
                     .expect("Failed to retrieve statistics array.");
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
+                out.normal_partial(&format!("{} zu:", i));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),
@@ -181,6 +184,7 @@ async fn print_statistics(
                 let name = stats.map_subkey_name(key, i).unwrap();
                 let subkey = stats.map_at(key, name).unwrap();
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
+                out.normal_partial(&format!("{}:", name));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),
@@ -193,7 +197,9 @@ async fn print_statistics(
             }
         }
 
-        StatisticsType::Empty => {}
+        StatisticsType::Empty => {
+            out.normal_line("StatisticsType::Empty");
+        }
     }
 }
 
@@ -211,10 +217,10 @@ async fn solve(
     // Create a control object.
     // i.e., clingo_control_new
     let mut ctl = control({
-        let args = vec![];
+        let mut args = vec![];
 
         if is_verbose(tman_config.clone()).await {
-            // args.push("--verbose".to_string());
+            args.push("--verbose".to_string());
         }
 
         args
@@ -248,7 +254,14 @@ async fn solve(
         conf.value_set(heuristic_key, "berkmin")
             .expect("Failed to set heuristic to berkmin.");
 
-        // print_configuration(tman_config, conf, root_key, 0);
+        // print_configuration(
+        //     tman_config.clone(),
+        //     conf,
+        //     root_key,
+        //     0,
+        //     out.clone(),
+        // )
+        // .await;
     }
 
     let main_program = include_str!("main.lp");
@@ -333,7 +346,8 @@ async fn solve(
     // recursively.
     // let stats = ctl.statistics().unwrap();
     // let stats_key = stats.root().unwrap();
-    // print_statistics(tman_config, stats, stats_key, 0);
+    // print_statistics(tman_config.clone(), stats, stats_key, 0, out.clone())
+    //     .await;
 
     Ok((usable_model, non_usable_models))
 }
@@ -501,9 +515,7 @@ fn create_input_str_for_pkg_info_dependencies(
                                 pkg_type,
                                 name,
                                 version_req,
-                            } => format!(
-                                "[{pkg_type}]{name} ({version_req})"
-                            ),
+                            } => format!("[{pkg_type}]{name} ({version_req})"),
                             ManifestDependency::LocalDependency {
                                 path,
                                 ..
