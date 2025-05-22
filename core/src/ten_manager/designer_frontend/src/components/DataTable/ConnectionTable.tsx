@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 
 import {
-  // Table,
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -392,7 +392,7 @@ export function DataTable<TData, TValue>({
   return (
     <>
       <div className={cn("", className)}>
-        <table>
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -439,7 +439,7 @@ export function DataTable<TData, TValue>({
               </TableRow>
             )}
           </TableBody>
-        </table>
+        </Table>
       </div>
     </>
   );

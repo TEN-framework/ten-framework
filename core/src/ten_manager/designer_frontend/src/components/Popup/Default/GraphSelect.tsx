@@ -29,7 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Badge } from "@/components/ui/Badge";
 import {
-  // Table,
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -276,7 +276,7 @@ const GraphSelectTable = (props: {
 
   return (
     <>
-      <table className={cn("w-full caption-bottom text-sm", className)}>
+      <Table className={cn("w-full caption-bottom text-sm", className)}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -317,7 +317,7 @@ const GraphSelectTable = (props: {
             </TableRow>
           )}
         </TableBody>
-      </table>
+      </Table>
     </>
   );
 };
