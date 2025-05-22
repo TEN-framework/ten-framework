@@ -35,6 +35,7 @@ pub mod http;
 mod install;
 pub mod log;
 mod manifest_lock;
+pub mod memory_stats;
 pub mod output;
 mod package_file;
 pub mod pkg_info;
