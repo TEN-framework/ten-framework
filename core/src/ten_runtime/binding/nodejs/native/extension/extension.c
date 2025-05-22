@@ -1081,12 +1081,6 @@ static napi_value ten_nodejs_extension_on_end_of_life(napi_env env,
   // From now on, the JS on_xxx callback(s) are useless, so release them all.
   ten_nodejs_extension_release_js_on_xxx_tsfn(extension_bridge);
 
-  // Decrease the reference count of the JS extension object.
-  uint32_t js_extension_ref_count = 0;
-  status = napi_reference_unref(env, extension_bridge->bridge.js_instance_ref,
-                                &js_extension_ref_count);
-  TEN_ASSERT(status == napi_ok, "Failed to decrease the reference count.");
-
 done:
   return js_undefined(env);
 }

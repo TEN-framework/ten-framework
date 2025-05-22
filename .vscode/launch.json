@@ -891,6 +891,21 @@
       }
     },
     {
+      "name": "standalone test (nodejs) (mocha, launch)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/nodejs/standalone_test_nodejs/default_extension_nodejs/tests/node_modules/mocha/bin/_mocha",
+      "stopOnEntry": true,
+      "args": [
+        "--package",
+        "package.json",
+      ],
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/nodejs/standalone_test_nodejs/default_extension_nodejs/tests",
+      "env": {
+        "NODE_PATH": "../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH",
+      }
+    },
+    {
       "name": "binding test (golang)",
       "type": "go",
       "request": "launch",

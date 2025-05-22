@@ -4,12 +4,29 @@
   "main": "./bin/start.js",
   "type": "module",
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "chai": "^5.2.0",
+    "mocha": "^11.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "ten-runtime-nodejs": "file:../.ten/app/ten_packages/system/ten_runtime_nodejs"
   },
+  "mocha": {
+    "spec": [
+      "**/*.spec.*"
+    ],
+    "loader": "ts-node/esm",
+    "extensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  },
   "scripts": {
-    "build": "tsc --listEmittedFiles"
+    "build": "tsc --listEmittedFiles",
+    "test": "mocha --expose-gc"
   }
 }

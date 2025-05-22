@@ -71,22 +71,6 @@ export class AddonManager {
 
     console.log(`app_base_dir: ${app_base_dir}`);
 
-    const manifest_path = path.join(app_base_dir, "manifest.json");
-    if (!fs.existsSync(manifest_path)) {
-      throw new Error("Cannot find manifest.json");
-    }
-
-    const manifest = JSON.parse(fs.readFileSync(manifest_path, "utf-8"));
-
-    const extension_names = [];
-
-    const dependencies = manifest.dependencies;
-    for (const dep of dependencies) {
-      if (dep.type === "extension") {
-        extension_names.push(dep.name);
-      }
-    }
-
     const extension_folder = path.join(app_base_dir, "ten_packages/extension");
     if (!fs.existsSync(extension_folder)) {
       return;

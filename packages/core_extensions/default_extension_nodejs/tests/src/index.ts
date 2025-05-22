@@ -5,12 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import {
-  AddonManager,
   ExtensionTester,
   TenEnvTester,
 } from "ten-runtime-nodejs";
 
-class MyExtensionTester extends ExtensionTester {
+export class MyExtensionTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
     console.log("MyExtensionTester onStart");
 
@@ -25,21 +24,3 @@ class MyExtensionTester extends ExtensionTester {
     console.log("MyExtensionTester onDeinit");
   }
 }
-
-async function main() {
-  const test_addon_name = "default_extension_nodejs";
-
-  await AddonManager.getInstance().loadSingleAddon(test_addon_name);
-
-  console.log("loadAllAddons done");
-
-  const extensionTester = new MyExtensionTester();
-  extensionTester.setTestModeSingle(test_addon_name, "{}");
-  await extensionTester.run();
-
-  AddonManager.getInstance().deinit();
-
-  console.log("deinit done");
-}
-
-main();
