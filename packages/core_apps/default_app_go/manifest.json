@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "default_app_go",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "tags": [
     "go",
     "template"
@@ -10,12 +10,12 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.6"
+      "version": "0.10.7"
     },
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.6"
+      "version": "0.10.7"
     }
   ],
   "scripts": {
