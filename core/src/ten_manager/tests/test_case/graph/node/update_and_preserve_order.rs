@@ -115,7 +115,7 @@ mod tests {
         let new_node = GraphNode {
             type_: GraphNodeType::Extension,
             name: "new-node".to_string(),
-            addon: "new-addon".to_string(),
+            addon: Some("new-addon".to_string()),
             extension_group: None,
             app: None,
             property: None,
@@ -127,7 +127,7 @@ mod tests {
         let remove_node = GraphNode {
             type_: GraphNodeType::Extension,
             name: "second-node".to_string(),
-            addon: "second-addon".to_string(),
+            addon: Some("second-addon".to_string()),
             extension_group: None,
             app: None,
             property: None,

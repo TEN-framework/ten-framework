@@ -42,7 +42,10 @@ pub fn get_compatible_msg_extension<'a>(
             pkgs_cache,
             app_base_dir,
             &target_extension_graph_node.app,
-            &target_extension_graph_node.addon,
+            target_extension_graph_node
+                .addon
+                .as_ref()
+                .expect("Extension node must have an addon"),
         );
 
         match target_extension_pkg_info {

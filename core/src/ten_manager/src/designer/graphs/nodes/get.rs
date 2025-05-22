@@ -62,7 +62,7 @@ impl TryFrom<GraphNode> for GraphNodesSingleResponseData {
         }
 
         Ok(GraphNodesSingleResponseData {
-            addon: node.addon,
+            addon: node.addon.expect("Extension node must have an addon"),
             name: node.name,
             extension_group: node.extension_group,
             app: node.app,
@@ -78,7 +78,7 @@ impl From<GraphNodesSingleResponseData> for GraphNode {
         GraphNode {
             type_: GraphNodeType::Extension,
             name: designer_extension.name,
-            addon: designer_extension.addon,
+            addon: Some(designer_extension.addon),
             extension_group: designer_extension.extension_group,
             app: designer_extension.app,
             property: designer_extension.property,
@@ -126,11 +126,17 @@ pub async fn get_graph_nodes_endpoint(
             &pkgs_cache,
             app_base_dir_of_graph,
             &extension_graph_node.app,
-            &extension_graph_node.addon,
+            extension_graph_node
+                .addon
+                .as_ref()
+                .expect("Extension node must have an addon"),
         );
         if let Some(pkg_info) = pkg_info {
             resp_extensions.push(GraphNodesSingleResponseData {
-                addon: extension_graph_node.addon.clone(),
+                addon: extension_graph_node
+                    .addon
+                    .clone()
+                    .expect("Extension node must have an addon"),
                 name: extension_graph_node.name.clone(),
                 extension_group: extension_graph_node.extension_group.clone(),
                 app: extension_graph_node.app.clone(),

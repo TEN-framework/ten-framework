@@ -186,7 +186,10 @@ pub async fn get_compatible_messages_endpoint(
                 &pkgs_cache,
                 app_base_dir_of_graph,
                 &extension_graph_node.app,
-                &extension_graph_node.addon,
+                extension_graph_node
+                    .addon
+                    .as_ref()
+                    .expect("Extension node must have an addon"),
             ) {
                 let compatible_list = match msg_ty {
                     MsgType::Cmd => {

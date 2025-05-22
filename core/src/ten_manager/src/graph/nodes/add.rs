@@ -52,7 +52,7 @@ pub fn graph_add_extension_node(
     let node = GraphNode {
         type_: GraphNodeType::Extension,
         name: pkg_name.to_string(),
-        addon: addon.to_string(),
+        addon: Some(addon.to_string()),
         extension_group: extension_group.clone(),
         app: app.clone(),
         property: property.clone(),
