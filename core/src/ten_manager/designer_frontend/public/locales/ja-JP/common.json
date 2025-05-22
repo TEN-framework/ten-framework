@@ -147,7 +147,8 @@
       "appInstall": "アプリのインストール",
       "filteredByAddon": "アドオンでログをフィルター",
       "noAddons": "利用可能なアドオンがありません",
-      "noMatchedAddons": "一致するアドオンがありません"
+      "noMatchedAddons": "一致するアドオンがありません",
+      "noLogs": "表示するログがありません"
     },
     "default": {
       "defaultLabelForAppRun": "アプリ実行のデフォルトラベル",

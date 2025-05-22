@@ -147,7 +147,8 @@
       "appInstall": "App Install",
       "filteredByAddon": "Filter logs by Addon",
       "noAddons": "No Avaliable Addons",
-      "noMatchedAddons": "No matched addons"
+      "noMatchedAddons": "No matched addons",
+      "noLogs": "No logs to display."
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",
