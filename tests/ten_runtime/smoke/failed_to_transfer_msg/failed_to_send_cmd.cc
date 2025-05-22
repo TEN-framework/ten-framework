@@ -74,7 +74,7 @@ class test_extension_1 : public ten::extension_t {
       EXPECT_EQ(rc, true);
 
       auto close_app_cmd = ten::cmd_close_app_t::create();
-      close_app_cmd->set_dest("localhost", nullptr, nullptr);
+      close_app_cmd->set_dest(nullptr, nullptr, nullptr);
       ten_env.send_cmd(std::move(close_app_cmd));
     }
   }

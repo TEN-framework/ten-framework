@@ -94,7 +94,7 @@ class ffmpeg_client_extension : public ten::extension_t {
 
   static void close_app(ten::ten_env_t &ten_env) {
     auto close_cmd = ten::cmd_close_app_t::create();
-    close_cmd->set_dest("localhost", "", "");
+    close_cmd->set_dest(nullptr, "", "");
     ten_env.send_cmd(std::move(close_cmd));
   }
 

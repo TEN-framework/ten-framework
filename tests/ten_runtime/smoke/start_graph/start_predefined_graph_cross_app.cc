@@ -43,7 +43,7 @@ class test_predefined_graph : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest("localhost", nullptr, nullptr);
+    start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
         std::move(start_graph_cmd),
@@ -73,7 +73,7 @@ class test_predefined_graph : public ten::extension_t {
                 // Shut down the graph; otherwise, the app won't be able to
                 // close because there is still a running engine/graph.
                 auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-                stop_graph_cmd->set_dest("localhost", nullptr, nullptr,
+                stop_graph_cmd->set_dest(nullptr, nullptr, nullptr,
                                          nullptr);
                 stop_graph_cmd->set_graph_id(graph_id.c_str());
 

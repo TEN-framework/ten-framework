@@ -352,24 +352,20 @@ static void ten_extension_tester_create_and_start_graph(
               \"type\": \"extension\",\
               \"name\": \"ten:test_extension\",\
               \"addon\": \"ten:test_extension\",\
-              \"extension_group\": \"test_extension_group_1\",\
-              \"app\": \"localhost\"\
+              \"extension_group\": \"test_extension_group_1\"\
            },{\
               \"type\": \"extension\",\
               \"name\": \"%s\",\
               \"addon\": \"%s\",\
               \"extension_group\": \"test_extension_group_2\",\
-              \"app\": \"localhost\",\
               \"property\": %s\
            }],\
            \"connections\": [{\
-             \"app\": \"localhost\",\
              \"extension_group\": \"test_extension_group_1\",\
              \"extension\": \"ten:test_extension\",\
              \"cmd\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_2\",\
                   \"extension\": \"%s\"\
                }]\
@@ -377,7 +373,6 @@ static void ten_extension_tester_create_and_start_graph(
              \"data\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_2\",\
                   \"extension\": \"%s\"\
                }]\
@@ -385,7 +380,6 @@ static void ten_extension_tester_create_and_start_graph(
              \"video_frame\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_2\",\
                   \"extension\": \"%s\"\
                }]\
@@ -393,19 +387,16 @@ static void ten_extension_tester_create_and_start_graph(
              \"audio_frame\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_2\",\
                   \"extension\": \"%s\"\
                }]\
              }]\
            },{\
-             \"app\": \"localhost\",\
              \"extension_group\": \"test_extension_group_2\",\
              \"extension\": \"%s\",\
              \"cmd\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_1\",\
                   \"extension\": \"ten:test_extension\"\
                }]\
@@ -413,7 +404,6 @@ static void ten_extension_tester_create_and_start_graph(
              \"data\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_1\",\
                   \"extension\": \"ten:test_extension\"\
                }]\
@@ -421,7 +411,6 @@ static void ten_extension_tester_create_and_start_graph(
              \"video_frame\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_1\",\
                   \"extension\": \"ten:test_extension\"\
                }]\
@@ -429,7 +418,6 @@ static void ten_extension_tester_create_and_start_graph(
              \"audio_frame\": [{\
                \"name\": \"*\",\
                \"dest\": [{\
-                  \"app\": \"localhost\",\
                   \"extension_group\": \"test_extension_group_1\",\
                   \"extension\": \"ten:test_extension\"\
                }]\

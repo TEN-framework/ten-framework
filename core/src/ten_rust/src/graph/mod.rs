@@ -10,19 +10,20 @@ pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
 
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
+use std::str::FromStr;
 
 use anyhow::Result;
-use connection::GraphConnection;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    base_dir_pkg_info::PkgsInfoInApp,
-    constants::{
-        ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS,
-    },
-    pkg_info::{localhost, pkg_type::PkgType},
+use crate::base_dir_pkg_info::PkgsInfoInApp;
+use crate::constants::{
+    ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS,
 };
+use crate::pkg_info::localhost;
+
+use self::connection::GraphConnection;
+use self::node::GraphNodeType;
 
 /// The state of the 'app' field declaration in all nodes in the graph.
 ///
@@ -286,7 +287,7 @@ impl Graph {
                 if !self
                     .nodes
                     .iter()
-                    .any(|node| node.type_and_name.name == property.extension)
+                    .any(|node| node.name == property.extension)
                 {
                     return Err(anyhow::anyhow!(
                         "exposed_properties[{}]: extension '{}' does not \
@@ -357,8 +358,8 @@ impl Graph {
         self.nodes
             .iter()
             .find(|node| {
-                node.type_and_name.pkg_type == PkgType::Extension
-                    && node.type_and_name.name.as_str() == extension
+                node.type_ == GraphNodeType::Extension
+                    && node.name.as_str() == extension
                     && node.get_app_uri() == app
             })
             .map(|node| &node.addon)

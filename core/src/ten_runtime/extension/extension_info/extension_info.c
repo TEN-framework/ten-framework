@@ -372,19 +372,6 @@ bool ten_extension_info_check_integrity(ten_extension_info_t *self,
   return true;
 }
 
-void ten_extension_info_translate_localhost_to_app_uri(
-    ten_extension_info_t *self, const char *uri) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_extension_info_check_integrity(self, false),
-             "Should not happen.");
-  TEN_ASSERT(uri, "Should not happen.");
-
-  if (ten_string_is_equal_c_str(&self->loc.app_uri, TEN_STR_LOCALHOST) ||
-      ten_string_is_empty(&self->loc.app_uri)) {
-    ten_string_init_from_c_str_with_size(&self->loc.app_uri, uri, strlen(uri));
-  }
-}
-
 ten_extension_info_t *ten_extension_info_from_smart_ptr(
     ten_smart_ptr_t *extension_info_smart_ptr) {
   TEN_ASSERT(extension_info_smart_ptr, "Invalid argument.");
@@ -448,8 +435,7 @@ static void ten_extension_info_fill_loc_info(ten_extension_info_t *self,
     ten_string_set_formatted(&self->loc.graph_id, "%s", graph_id);
   }
 
-  if (ten_string_is_empty(&self->loc.app_uri) ||
-      ten_string_is_equal_c_str(&self->loc.app_uri, TEN_STR_LOCALHOST)) {
+  if (ten_string_is_empty(&self->loc.app_uri)) {
     ten_string_set_formatted(&self->loc.app_uri, app_uri);
   }
 
@@ -466,8 +452,7 @@ static void ten_extension_info_fill_loc_info(ten_extension_info_t *self,
                                graph_id);
     }
 
-    if (ten_string_is_empty(&self->loc.app_uri) ||
-        ten_string_is_equal_c_str(&self->loc.app_uri, TEN_STR_LOCALHOST)) {
+    if (ten_string_is_empty(&self->loc.app_uri)) {
       ten_string_set_formatted(&self->loc.app_uri, app_uri);
     }
   }
@@ -501,19 +486,10 @@ void ten_extensions_info_fill_loc_info(ten_list_t *extensions_info,
       ten_list_foreach (&dest_info->dest, dest_iter) {
         ten_extension_info_t *dest_extension_info =
             ten_smart_ptr_get_data(ten_smart_ptr_listnode_get(dest_iter.node));
-        if (ten_string_is_empty(&dest_extension_info->loc.app_uri)) {
-          TEN_ASSERT(0, "extension_info->loc.app_uri should not be empty.");
-          return;
-        }
-
         if (ten_string_is_equal_c_str(&dest_extension_info->loc.app_uri,
                                       TEN_STR_LOCALHOST)) {
-          if (!ten_string_is_equal_c_str(&dest_extension_info->loc.app_uri,
-                                         app_uri)) {
-            TEN_ASSERT(0,
-                       "extension_info->loc.app_uri should not be localhost.");
-            return;
-          }
+          TEN_ASSERT(0, "extension_info->loc.app_uri should not be localhost.");
+          return;
         }
 
         if (ten_string_is_empty(&dest_extension_info->loc.graph_id)) {

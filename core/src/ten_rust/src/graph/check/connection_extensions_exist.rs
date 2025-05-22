@@ -6,10 +6,7 @@
 //
 use anyhow::Result;
 
-use crate::{
-    graph::{connection::GraphMessageFlow, Graph},
-    pkg_info::pkg_type::PkgType,
-};
+use crate::graph::{connection::GraphMessageFlow, node::GraphNodeType, Graph};
 
 impl Graph {
     fn check_destination_extensions_exist(
@@ -64,11 +61,11 @@ impl Graph {
         // Each extension is uniquely identified as "app_uri:extension_name"
         let mut all_extensions: Vec<String> = Vec::new();
         for node in &self.nodes {
-            if node.type_and_name.pkg_type == PkgType::Extension {
+            if node.type_ == GraphNodeType::Extension {
                 let unique_ext_name = format!(
                     "{}:{}",
                     node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    node.type_and_name.name
+                    node.name
                 );
                 all_extensions.push(unique_ext_name);
             }

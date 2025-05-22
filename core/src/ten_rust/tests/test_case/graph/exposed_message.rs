@@ -6,13 +6,10 @@
 //
 #[cfg(test)]
 mod tests {
-    use ten_rust::{
-        graph::{
-            connection::{GraphConnection, GraphDestination, GraphMessageFlow},
-            node::GraphNode,
-            Graph, GraphExposedMessage, GraphExposedMessageType,
-        },
-        pkg_info::{pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName},
+    use ten_rust::graph::{
+        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        node::{GraphNode, GraphNodeType},
+        Graph, GraphExposedMessage, GraphExposedMessageType,
     };
 
     #[test]
@@ -21,24 +18,22 @@ mod tests {
         let graph = Graph {
             nodes: vec![
                 GraphNode {
-                    type_and_name: PkgTypeAndName {
-                        pkg_type: PkgType::Extension,
-                        name: "ext_c".to_string(),
-                    },
+                    type_: GraphNodeType::Extension,
+                    name: "ext_c".to_string(),
                     addon: "extension_c".to_string(),
                     extension_group: Some("some_group".to_string()),
                     app: None,
                     property: None,
+                    source_uri: None,
                 },
                 GraphNode {
-                    type_and_name: PkgTypeAndName {
-                        pkg_type: PkgType::Extension,
-                        name: "ext_d".to_string(),
-                    },
+                    type_: GraphNodeType::Extension,
+                    name: "ext_d".to_string(),
                     addon: "extension_d".to_string(),
                     extension_group: Some("another_group".to_string()),
                     app: None,
                     property: None,
+                    source_uri: None,
                 },
             ],
             connections: Some(vec![GraphConnection {
@@ -84,8 +79,8 @@ mod tests {
 
         // Verify the deserialized graph.
         assert_eq!(deserialized_graph.nodes.len(), 2);
-        assert_eq!(deserialized_graph.nodes[0].type_and_name.name, "ext_c");
-        assert_eq!(deserialized_graph.nodes[1].type_and_name.name, "ext_d");
+        assert_eq!(deserialized_graph.nodes[0].name, "ext_c");
+        assert_eq!(deserialized_graph.nodes[1].name, "ext_d");
 
         let connections = deserialized_graph.connections.unwrap();
         assert_eq!(connections.len(), 1);
