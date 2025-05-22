@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { useAppSelector, useAppDispatch } from "@/common/hooks"
-import { isVoiceGenderSupported, VideoSourceType } from "@/common/constant"
+import { VideoSourceType } from "@/common/constant"
 import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
@@ -124,10 +124,7 @@ export default function RTCCard(props: { className?: string }) {
           <div className="w-full">
             <div className="flex w-full items-center justify-between p-2">
               <h2 className="mb-2 text-xl font-semibold">Audio & Video</h2>
-              {
-                isVoiceGenderSupported(selectedGraphId) ?
-                  <AgentVoicePresetSelect /> :
-                  null}
+              <AgentVoicePresetSelect />
             </div>
             <AgentView audioTrack={remoteuser?.audioTrack} />
           </div>

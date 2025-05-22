@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { LanguageSelect, GraphSelect } from "@/components/Chat/ChatCfgSelect"
 import PdfSelect from "@/components/Chat/PdfSelect"
-import { useAppDispatch, useAppSelector, isRagGraph, isLanguageSupported } from "@/common"
+import { useAppDispatch, useAppSelector, isRagGraph } from "@/common"
 import { setRtmConnected, addChatItem } from "@/store/reducers/global"
 import MessageList from "@/components/Chat/MessageList"
 import { Button } from "@/components/ui/button"
@@ -134,11 +134,7 @@ export default function ChatCard(props: { className?: string }) {
           {/* Action Bar */}
           <div className="flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
             <GraphSelect />
-            {
-              isLanguageSupported(graphName) ?
-                <LanguageSelect /> :
-                null
-            }
+              <LanguageSelect />
             {isRagGraph(graphName) && <PdfSelect />}
           </div>
           {/* Chat messages would go here */}

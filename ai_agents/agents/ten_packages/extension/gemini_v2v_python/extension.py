@@ -421,16 +421,22 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             self.video_buff = rgb2base64jpeg(
                 image_data, image_width, image_height
             )
-            media_chunks = [
-                {
-                    "data": self.video_buff,
-                    "mime_type": "image/jpeg",
-                }
-            ]
+            # media_chunks = [
+            #     {
+            #         "data": self.video_buff,
+            #         "mime_type": "image/jpeg",
+            #     }
+            # ]
+            msg = {
+                "data": self.video_buff,
+                "mime_type": "image/jpeg",
+            }
             try:
                 if self.connected:
                     # ten_env.log_info(f"send image")
-                    await self.session.send(media_chunks)
+                    await self.session.send_realtime_input(
+                        video=msg,
+                    )
             except Exception as e:
                 self.ten_env.log_error(f"Failed to send image {e}")
 
