@@ -472,9 +472,7 @@ pub async fn execute_cmd(
         let local_path_str = command_data.local_path.clone().unwrap();
         let local_path = Path::new(&local_path_str);
         let local_path = local_path.canonicalize().with_context(|| {
-            format!(
-                "Failed to find the specified local path {local_path_str}"
-            )
+            format!("Failed to find the specified local path {local_path_str}")
         })?;
 
         let local_manifest_dir = if local_path.is_dir() {

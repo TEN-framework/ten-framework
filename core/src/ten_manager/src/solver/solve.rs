@@ -470,13 +470,31 @@ fn create_input_str_for_pkg_info_dependencies(
             if let Some(candidates) = candidates {
                 let mut found_matched = false;
 
-                for candidate in candidates {
+                let mut candidates_vec: Vec<&PkgInfo> =
+                    candidates.values().collect();
+
+                // The sorting below places the larger versions at the front,
+                // thus having smaller indexes. This is correct because, in the
+                // Clingo solver, our optimization strategy is to minimize the
+                // overall weight, and we prefer larger version numbers.
+                // Therefore, larger version numbers have smaller weights, and
+                // the index here is equivalent to the concept of weight in the
+                // Clingo solver.
+                candidates_vec.sort_by(|a, b| {
+                    b.manifest.version.cmp(&a.manifest.version)
+                });
+
+                for (idx, candidate) in candidates_vec.into_iter().enumerate() {
+                    if idx >= 3 {
+                        break;
+                    }
+
                     // Get version requirement from dependency.
                     let version_matches = match dependency {
                         ManifestDependency::RegistryDependency {
                             version_req,
                             ..
-                        } => version_req.matches(&candidate.1.manifest.version),
+                        } => version_req.matches(&candidate.manifest.version),
                         ManifestDependency::LocalDependency { .. } => {
                             // For local dependencies, just return true to
                             // match all versions.
@@ -491,14 +509,14 @@ fn create_input_str_for_pkg_info_dependencies(
                             pkg_info.manifest.type_and_name.pkg_type,
                             pkg_info.manifest.type_and_name.name,
                             pkg_info.manifest.version,
-                            candidate.1.manifest.type_and_name.pkg_type,
-                            candidate.1.manifest.type_and_name.name,
-                            candidate.1.manifest.version,
+                            candidate.manifest.type_and_name.pkg_type,
+                            candidate.manifest.type_and_name.name,
+                            candidate.manifest.version,
                         ));
 
                         create_input_str_for_pkg_info_dependencies(
                             input_str,
-                            candidate.1,
+                            candidate,
                             dumped_pkgs_info,
                             all_candidates,
                         )?;
@@ -507,22 +525,23 @@ fn create_input_str_for_pkg_info_dependencies(
                     }
                 }
 
-                if !found_matched {
-                    return Err(anyhow!(
-                        "Failed to find candidates for {}",
-                        match dependency {
-                            ManifestDependency::RegistryDependency {
-                                pkg_type,
-                                name,
-                                version_req,
-                            } => format!("[{pkg_type}]{name} ({version_req})"),
-                            ManifestDependency::LocalDependency {
-                                path,
-                                ..
-                            } => format!("local:{path}"),
-                        }
-                    ));
-                }
+                // if !found_matched {
+                //     return Err(anyhow!(
+                //         "Failed to find candidates for {}",
+                //         match dependency {
+                //             ManifestDependency::RegistryDependency {
+                //                 pkg_type,
+                //                 name,
+                //                 version_req,
+                //             } => format!("[{pkg_type}]{name}
+                // ({version_req})"),
+                // ManifestDependency::LocalDependency {
+                //                 path,
+                //                 ..
+                //             } => format!("local:{path}"),
+                //         }
+                //     ));
+                // }
             } else {
                 return Err(anyhow!(
                     "Failed to find candidates for {}",
@@ -546,14 +565,14 @@ fn create_input_str_for_pkg_info_dependencies(
 
 fn create_input_str_for_pkg_info_without_dependencies(
     input_str: &mut String,
-    pkg_info: &PkgBasicInfo,
+    pkg_info: &PkgInfo,
     weight: &usize,
 ) -> Result<()> {
     input_str.push_str(&format!(
         "version_declared(\"{}\", \"{}\", \"{}\", {}).\n",
-        pkg_info.type_and_name.pkg_type,
-        pkg_info.type_and_name.name,
-        pkg_info.version,
+        pkg_info.manifest.type_and_name.pkg_type,
+        pkg_info.manifest.type_and_name.name,
+        pkg_info.manifest.version,
         weight
     ));
 
@@ -566,8 +585,7 @@ fn create_input_str_for_all_possible_pkgs_info(
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
 ) -> Result<()> {
     for candidates in all_candidates {
-        let mut candidates_vec: Vec<PkgBasicInfo> =
-            candidates.1.values().map(|pkg_info| pkg_info.into()).collect();
+        let mut candidates_vec: Vec<&PkgInfo> = candidates.1.values().collect();
 
         // The sorting below places the larger versions at the front, thus
         // having smaller indexes. This is correct because, in the Clingo
@@ -575,7 +593,8 @@ fn create_input_str_for_all_possible_pkgs_info(
         // and we prefer larger version numbers. Therefore, larger version
         // numbers have smaller weights, and the index here is equivalent to the
         // concept of weight in the Clingo solver.
-        candidates_vec.sort_by(|a, b| b.cmp(a));
+        candidates_vec
+            .sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
 
         // Check if the locked package exists in the candidates. If it does,
         // move it to the front of the candidates_vec so that it has a smaller
@@ -588,19 +607,23 @@ fn create_input_str_for_all_possible_pkgs_info(
             // dependency, do not prioritize any candidate packages.
             if !locked_pkg.is_local_dependency {
                 let idx = candidates_vec.iter().position(|pkg_info| {
-                    locked_pkg.manifest.version == pkg_info.version
+                    locked_pkg.manifest.version == pkg_info.manifest.version
                 });
 
                 if let Some(idx) = idx {
                     candidates_vec.remove(idx);
-                    candidates_vec.insert(0, locked_pkg.into());
+                    candidates_vec.insert(0, locked_pkg);
                 }
             }
         }
 
         for (idx, candidate) in candidates_vec.into_iter().enumerate() {
+            if idx >= 3 {
+                break;
+            }
+
             create_input_str_for_pkg_info_without_dependencies(
-                input_str, &candidate, &idx,
+                input_str, candidate, &idx,
             )?;
         }
     }
