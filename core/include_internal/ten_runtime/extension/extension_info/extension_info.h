@@ -46,9 +46,6 @@ TEN_RUNTIME_PRIVATE_API bool ten_extensions_info_clone(ten_list_t *from,
 TEN_RUNTIME_PRIVATE_API bool ten_extension_info_check_integrity(
     ten_extension_info_t *self, bool check_thread);
 
-TEN_RUNTIME_PRIVATE_API void ten_extension_info_translate_localhost_to_app_uri(
-    ten_extension_info_t *self, const char *app_uri);
-
 TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *get_extension_info_in_extensions_info(
     ten_list_t *extensions_info, const char *app_uri, const char *graph_id,
     const char *extension_group_name, const char *extension_addon_name,

@@ -98,16 +98,9 @@ bool ten_app_init_uri(ten_app_t *self, ten_value_t *value) {
     return false;
   }
 
-  ten_string_t default_url;
-  ten_string_init_formatted(&default_url, TEN_STR_LOCALHOST);
-
-  const char *url_str = ten_value_peek_raw_str(value, NULL)
-                            ? ten_value_peek_raw_str(value, NULL)
-                            : ten_string_get_raw_str(&default_url);
-
-  ten_string_set_from_c_str(&self->uri, url_str);
-
-  ten_string_deinit(&default_url);
+  if (ten_value_peek_raw_str(value, NULL)) {
+    ten_string_set_from_c_str(&self->uri, ten_value_peek_raw_str(value, NULL));
+  }
 
   return true;
 }

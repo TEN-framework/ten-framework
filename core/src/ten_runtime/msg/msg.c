@@ -105,29 +105,28 @@ void ten_msg_set_src_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
 
 // The semantics of the following function is to replace the destination
 // information to one which is specified through the parameters.
-static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *uri,
+static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *app_uri,
                                            const char *graph_id,
                                            const char *extension_name,
                                            TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
-  TEN_ASSERT((uri != NULL || extension_name != NULL), "Should not happen.");
 
   ten_list_clear(&self->dest_loc);
   ten_list_push_ptr_back(&self->dest_loc,
-                         ten_loc_create(uri, graph_id, extension_name),
+                         ten_loc_create(app_uri, graph_id, extension_name),
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 
   return true;
 }
 
-void ten_raw_msg_add_dest(ten_msg_t *self, const char *uri,
+void ten_raw_msg_add_dest(ten_msg_t *self, const char *app_uri,
                           const char *graph_id, const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
 
   ten_list_push_ptr_back(&self->dest_loc,
-                         ten_loc_create(uri, graph_id, extension_name),
+                         ten_loc_create(app_uri, graph_id, extension_name),
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 }
 
@@ -332,13 +331,13 @@ void ten_msg_set_src_engine_if_unspecified(ten_shared_ptr_t *self,
   }
 }
 
-bool ten_msg_clear_and_set_dest(ten_shared_ptr_t *self, const char *uri,
+bool ten_msg_clear_and_set_dest(ten_shared_ptr_t *self, const char *app_uri,
                                 const char *graph_id,
                                 const char *extension_name, ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
 
-  return ten_raw_msg_clear_and_set_dest(ten_msg_get_raw_msg(self), uri,
+  return ten_raw_msg_clear_and_set_dest(ten_msg_get_raw_msg(self), app_uri,
                                         graph_id, extension_name, err);
 }
 
@@ -984,11 +983,9 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
 
     if (ten_string_is_equal_c_str(&dest_loc->app_uri, app_uri)) {
       is_local_app = true;
-    } else if (ten_string_is_equal_c_str(&dest_loc->app_uri,
-                                         TEN_STR_LOCALHOST)) {
-      // When an extension uses 'localhost' to indicate the destination is the
-      // local app, we need to replace 'localhost' with the actual URI of the
-      // app.
+    } else if (ten_string_is_empty(&dest_loc->app_uri)) {
+      // When an extension uses empty string to indicate the destination is the
+      // local app, we need to replace it with the actual URI of the app.
       ten_string_set_from_c_str(&dest_loc->app_uri, app_uri);
       is_local_app = true;
     }
@@ -1015,20 +1012,6 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
             msg, engine, &engine->app->predefined_graph_infos);
         break;
       }
-    }
-  }
-
-  // Special handling for start_graph commands:
-  // In a start_graph command, extension URIs might be specified as 'localhost',
-  // indicating they should be located in the local app.
-  // We need to replace these 'localhost' references with the actual app URI.
-  if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD_START_GRAPH) {
-    ten_list_t *extensions_info = ten_cmd_start_graph_get_extensions_info(msg);
-    ten_list_foreach (extensions_info, iter) {
-      ten_extension_info_t *extension_info =
-          ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
-      ten_extension_info_translate_localhost_to_app_uri(extension_info,
-                                                        app_uri);
     }
   }
 }

@@ -65,7 +65,7 @@ class business_extension : public ten::extension_t {
     auto cmd_to_plugin_1 = ten::cmd_t::create("plugin_1_cmd");
 
     // Explicitly specify to interact with plugin_1.
-    cmd_to_plugin_1->set_dest("localhost", "default", "plugin_extension_1");
+    cmd_to_plugin_1->set_dest(nullptr, "default", "plugin_extension_1");
 
     // This is the method to pass unique_ptr through the lambda capture list in
     // C++11. If you can use C++14 or even C++17, the syntax can be simpler, but
@@ -96,7 +96,7 @@ class business_extension : public ten::extension_t {
     auto cmd_to_plugin_2 = ten::cmd_t::create("plugin_2_cmd");
 
     // Explicitly specify to interact with plugin_2.
-    cmd_to_plugin_2->set_dest("localhost", "default", "plugin_extension_2");
+    cmd_to_plugin_2->set_dest(nullptr, "default", "plugin_extension_2");
 
     // This is the method to pass unique_ptr through the lambda capture list in
     // C++11. If you can use C++14 or even C++17, the syntax can be simpler, but

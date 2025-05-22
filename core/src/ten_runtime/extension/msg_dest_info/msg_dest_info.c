@@ -96,21 +96,6 @@ ten_shared_ptr_t *ten_msg_dest_info_clone(ten_shared_ptr_t *self,
   return ten_shared_ptr_create(new_self, ten_msg_dest_info_destroy);
 }
 
-void ten_msg_dest_info_translate_localhost_to_app_uri(ten_msg_dest_info_t *self,
-                                                      const char *uri) {
-  TEN_ASSERT(self && uri, "Should not happen.");
-
-  ten_list_foreach (&self->dest, iter) {
-    ten_shared_ptr_t *shared_dest =
-        ten_weak_ptr_lock(ten_smart_ptr_listnode_get(iter.node));
-
-    ten_extension_info_t *extension_info = ten_shared_ptr_get_data(shared_dest);
-    ten_extension_info_translate_localhost_to_app_uri(extension_info, uri);
-
-    ten_shared_ptr_destroy(shared_dest);
-  }
-}
-
 bool ten_msg_dest_info_qualified(ten_msg_dest_info_t *self,
                                  const char *msg_name) {
   TEN_ASSERT(self && ten_msg_dest_info_check_integrity(self) && msg_name,

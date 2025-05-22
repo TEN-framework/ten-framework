@@ -79,8 +79,7 @@ pub async fn replace_graph_node_endpoint(
 
     // Find the graph node in the graph.
     let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
-        node.type_and_name.name == request_payload.name
-            && node.app == request_payload.app
+        node.name == request_payload.name && node.app == request_payload.app
     });
 
     if graph_node.is_none() {

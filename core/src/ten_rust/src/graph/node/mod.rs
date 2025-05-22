@@ -12,14 +12,25 @@ use crate::constants::ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE;
 use crate::graph::AppUriDeclarationState;
 
 use crate::graph::is_app_default_loc_or_none;
-use crate::pkg_info::{localhost, pkg_type_and_name::PkgTypeAndName};
+use crate::pkg_info::localhost;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GraphNodeType {
+    #[serde(rename = "extension")]
+    Extension,
+
+    #[serde(rename = "subgraph")]
+    Subgraph,
+}
 
 /// Represents a node in a graph. This struct is completely equivalent to the
 /// node element in the graph JSON.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphNode {
-    #[serde(flatten)]
-    pub type_and_name: PkgTypeAndName,
+    #[serde(rename = "type")]
+    pub type_: GraphNodeType,
+
+    pub name: String,
 
     pub addon: String,
 
@@ -34,6 +45,11 @@ pub struct GraphNode {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property: Option<serde_json::Value>,
+
+    /// The URI to the source subgraph JSON file. This field is only present
+    /// for subgraph nodes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_uri: Option<String>,
 }
 
 impl GraphNode {

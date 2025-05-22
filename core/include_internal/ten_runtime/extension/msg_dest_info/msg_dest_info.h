@@ -35,8 +35,5 @@ TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *ten_msg_dest_info_clone(
 TEN_RUNTIME_PRIVATE_API void ten_msg_dest_info_destroy(
     ten_msg_dest_info_t *self);
 
-TEN_RUNTIME_PRIVATE_API void ten_msg_dest_info_translate_localhost_to_app_uri(
-    ten_msg_dest_info_t *self, const char *uri);
-
 TEN_RUNTIME_PRIVATE_API bool ten_msg_dest_info_qualified(
     ten_msg_dest_info_t *self, const char *msg_name);

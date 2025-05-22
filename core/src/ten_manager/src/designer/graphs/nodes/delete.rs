@@ -11,9 +11,9 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use ten_rust::{
-    graph::{node::GraphNode, Graph},
-    pkg_info::{pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName},
+use ten_rust::graph::{
+    node::{GraphNode, GraphNodeType},
+    Graph,
 };
 
 use crate::{
@@ -50,8 +50,8 @@ pub fn graph_delete_extension_node(
     // Find and remove the matching node.
     let original_nodes_len = graph.nodes.len();
     graph.nodes.retain(|node| {
-        !(node.type_and_name.pkg_type == PkgType::Extension
-            && node.type_and_name.name == pkg_name
+        !(node.type_ == GraphNodeType::Extension
+            && node.name == pkg_name
             && node.addon == addon
             && node.app == app
             && node.extension_group == extension_group)
@@ -184,10 +184,8 @@ pub async fn delete_graph_node_endpoint(
         if let Some(property) = &mut pkg_info.property {
             // Create the GraphNode we want to remove
             let node_to_remove = GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: request_payload.name.to_string(),
-                },
+                type_: GraphNodeType::Extension,
+                name: request_payload.name.to_string(),
                 addon: request_payload.addon.to_string(),
                 extension_group: request_payload
                     .extension_group
@@ -195,6 +193,7 @@ pub async fn delete_graph_node_endpoint(
                     .map(String::from),
                 app: request_payload.app.as_deref().map(String::from),
                 property: None,
+                source_uri: None,
             };
 
             let nodes_to_remove = vec![node_to_remove];
@@ -208,9 +207,7 @@ pub async fn delete_graph_node_endpoint(
                 Some(&nodes_to_remove),
                 None,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }

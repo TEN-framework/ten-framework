@@ -72,7 +72,7 @@ class HttpServerExtension extends Extension {
         const ten = jsonData["ten"];
         if ("type" in ten && ten["type"] == "close_app") {
           const closeAppCmd = Cmd.Create("ten:close_app");
-          closeAppCmd.setDest("localhost");
+          closeAppCmd.setDest();
           this.tenEnv!.sendCmd(closeAppCmd);
 
           res.writeHead(200, { "Content-Type": "application/json" });
