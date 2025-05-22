@@ -486,7 +486,9 @@ fn create_input_str_for_pkg_info_dependencies(
                 });
 
                 for (idx, candidate) in candidates_vec.into_iter().enumerate() {
-                    if idx >= max_latest_versions as usize {
+                    if max_latest_versions >= 0
+                        && idx >= max_latest_versions as usize
+                    {
                         break;
                     }
 
@@ -527,23 +529,25 @@ fn create_input_str_for_pkg_info_dependencies(
                     }
                 }
 
-                // if !found_matched {
-                //     return Err(anyhow!(
-                //         "Failed to find candidates for {}",
-                //         match dependency {
-                //             ManifestDependency::RegistryDependency {
-                //                 pkg_type,
-                //                 name,
-                //                 version_req,
-                //             } => format!("[{pkg_type}]{name}
-                // ({version_req})"),
-                // ManifestDependency::LocalDependency {
-                //                 path,
-                //                 ..
-                //             } => format!("local:{path}"),
-                //         }
-                //     ));
-                // }
+                if max_latest_versions < 0 && !found_matched {
+                    return Err(anyhow!(
+                        "Failed to find candidates for {}",
+                        match dependency {
+                            ManifestDependency::RegistryDependency {
+                                pkg_type,
+                                name,
+                                version_req,
+                            } => format!(
+                                "[{pkg_type}]{name}
+                ({version_req})"
+                            ),
+                            ManifestDependency::LocalDependency {
+                                path,
+                                ..
+                            } => format!("local:{path}"),
+                        }
+                    ));
+                }
             } else {
                 return Err(anyhow!(
                     "Failed to find candidates for {}",
@@ -621,7 +625,7 @@ fn create_input_str_for_all_possible_pkgs_info(
         }
 
         for (idx, candidate) in candidates_vec.into_iter().enumerate() {
-            if idx >= max_latest_versions as usize {
+            if max_latest_versions >= 0 && idx >= max_latest_versions as usize {
                 break;
             }
 
