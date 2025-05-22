@@ -20,7 +20,7 @@ mod tests {
                 GraphNode {
                     type_: GraphNodeType::Extension,
                     name: "ext_c".to_string(),
-                    addon: "extension_c".to_string(),
+                    addon: Some("extension_c".to_string()),
                     extension_group: Some("some_group".to_string()),
                     app: None,
                     property: None,
@@ -29,7 +29,7 @@ mod tests {
                 GraphNode {
                     type_: GraphNodeType::Extension,
                     name: "ext_d".to_string(),
-                    addon: "extension_d".to_string(),
+                    addon: Some("extension_d".to_string()),
                     extension_group: Some("another_group".to_string()),
                     app: None,
                     property: None,

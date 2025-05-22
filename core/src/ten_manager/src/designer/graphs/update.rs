@@ -38,7 +38,7 @@ impl GraphNodeForUpdate {
         GraphNode {
             type_: GraphNodeType::Extension,
             name: self.name.clone(),
-            addon: self.addon.clone(),
+            addon: Some(self.addon.clone()),
             extension_group: self.extension_group.clone(),
             app: self.app.clone(),
             property: self.property.clone(),

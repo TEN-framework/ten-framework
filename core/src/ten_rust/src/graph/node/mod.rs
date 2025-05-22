@@ -32,7 +32,8 @@ pub struct GraphNode {
 
     pub name: String,
 
-    pub addon: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub addon: Option<String>,
 
     /// The extension group this node belongs to. This field is only present
     /// for extension nodes. Extension group nodes themselves do not contain
@@ -66,6 +67,24 @@ impl GraphNode {
         &mut self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
+        // Validate addon field based on node type
+        match self.type_ {
+            GraphNodeType::Extension => {
+                if self.addon.is_none() {
+                    return Err(anyhow::anyhow!(
+                        "Extension node must have an addon"
+                    ));
+                }
+            }
+            GraphNodeType::Subgraph => {
+                if self.addon.is_some() {
+                    return Err(anyhow::anyhow!(
+                        "Subgraph node must not have an addon"
+                    ));
+                }
+            }
+        }
+
         // Check if app URI is provided and validate it.
         if let Some(app) = &self.app {
             // Disallow 'localhost' as an app URI in graph definitions.

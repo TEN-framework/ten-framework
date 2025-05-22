@@ -86,7 +86,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "node1".to_string(),
-                addon: "addon1".to_string(),
+                addon: Some("addon1".to_string()),
                 extension_group: None,
                 app: None,
                 property: None,
@@ -95,7 +95,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "node2".to_string(),
-                addon: "addon2".to_string(),
+                addon: Some("addon2".to_string()),
                 extension_group: None,
                 app: None,
                 property: None,

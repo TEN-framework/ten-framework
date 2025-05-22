@@ -588,6 +588,6 @@ mod tests {
             .find(|node| node.name == node_name && node.app == app_uri)
             .unwrap();
 
-        assert_eq!(updated_node.addon, new_addon);
+        assert_eq!(updated_node.addon, Some(new_addon));
     }
 }

@@ -73,7 +73,10 @@ mod tests {
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes.len(), 1);
         assert_eq!(graph_info.graph.nodes[0].type_, GraphNodeType::Extension);
-        assert_eq!(graph_info.graph.nodes[0].addon, "test_addon");
+        assert_eq!(
+            graph_info.graph.nodes[0].addon,
+            Some("test_addon".to_string())
+        );
         assert!(graph_info.graph.connections.is_some());
         let connections = graph_info.graph.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 1);
