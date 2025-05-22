@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
 import { cn } from "@/lib/utils";
-import { useFlowStore, useWidgetStore } from "@/store";
+import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { appendLogsById } from "@/store/widget";
 import { ILogViewerWidget, ILogViewerWidgetOptions } from "@/types/widgets";
 import {
@@ -133,16 +133,44 @@ export function LogViewerFrontStageWidget(props: {
 
   const { logViewerHistory, widgets } = useWidgetStore();
   const { nodes } = useFlowStore();
+  const { currentWorkspace } = useAppStore();
 
   const { t } = useTranslation();
 
   const logsMemo = React.useMemo(() => {
+    if (options?.filters?.extensions?.length) {
+      // Filter logs by selected extension
+      const allLogs = options.filters.extensions.reduce(
+        (acc, ext) => {
+          // Get all logs from logViewerHistory
+          const allLogs = Object.values(logViewerHistory).flatMap(
+            (viewer) => viewer.history || []
+          );
+          return [
+            ...acc,
+            ...allLogs.filter((log) => log.metadata?.extension === ext),
+          ];
+        },
+        [] as (typeof logViewerHistory)[typeof id]["history"]
+      );
+      return allLogs.filter(
+        (log) =>
+          log.metadata?.extension === addonInput &&
+          currentWorkspace.graph?.name === log.metadata?.graph_name
+      );
+    }
     const allLogs = logViewerHistory[id]?.history || [];
     if (!addonInput) return allLogs;
     return (
       allLogs.filter((log) => log.metadata?.extension === addonInput) || []
     );
-  }, [logViewerHistory, id, addonInput]);
+  }, [
+    logViewerHistory,
+    id,
+    addonInput,
+    currentWorkspace.graph?.name,
+    options?.filters?.extensions,
+  ]);
 
   const currentWidget = React.useMemo(() => {
     return widgets.find((w) => w.widget_id === id);
@@ -355,6 +383,8 @@ function LogViewerLogItemList(props: {
 }) {
   const { logs: rawLogs, search, prefix } = props;
 
+  const { t } = useTranslation();
+
   const logsMemo = React.useMemo(() => {
     return rawLogs.map((log) => {
       const line = string2LogItem(log.line);
@@ -386,6 +416,16 @@ function LogViewerLogItemList(props: {
       listRef.current?.scrollToItem(filteredLogs.length - 1, "end");
     }, 0);
   }, [filteredLogs, prefix]);
+
+  if (!filteredLogs.length) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <span className="text-gray-500 dark:text-gray-400">
+          {t("popup.logViewer.noLogs")}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <>
