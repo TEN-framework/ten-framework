@@ -338,8 +338,7 @@ mod tests {
         {
             // Check if the node is gone.
             let node_exists = graph_info.graph.nodes.iter().any(|node| {
-                node.type_and_name.name == "test_delete_node"
-                    && node.addon == "test_addon"
+                node.name == "test_delete_node" && node.addon == "test_addon"
             });
             assert!(!node_exists, "Node should have been deleted");
         } else {

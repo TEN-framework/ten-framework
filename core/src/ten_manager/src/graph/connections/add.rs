@@ -130,9 +130,10 @@ fn check_nodes_exist(
     dest_extension: &str,
 ) -> Result<()> {
     // Validate that source node exists.
-    let src_node_exists = graph.nodes.iter().any(|node| {
-        node.type_and_name.name == src_extension && node.app == *src_app
-    });
+    let src_node_exists = graph
+        .nodes
+        .iter()
+        .any(|node| node.name == src_extension && node.app == *src_app);
 
     if !src_node_exists {
         return Err(anyhow::anyhow!(
@@ -144,9 +145,10 @@ fn check_nodes_exist(
     }
 
     // Validate that destination node exists.
-    let dest_node_exists = graph.nodes.iter().any(|node| {
-        node.type_and_name.name == dest_extension && node.app == *dest_app
-    });
+    let dest_node_exists = graph
+        .nodes
+        .iter()
+        .any(|node| node.name == dest_extension && node.app == *dest_app);
 
     if !dest_node_exists {
         return Err(anyhow::anyhow!(
