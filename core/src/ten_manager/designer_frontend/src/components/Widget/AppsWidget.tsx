@@ -702,7 +702,7 @@ export const AppTemplateWidget = (props: {
                       )
                       .map((pkg) => (
                         <SelectItem
-                          key={pkg.pkg_version}
+                          key={pkg.pkg_version + pkg.pkg_name}
                           value={pkg.pkg_version}
                         >
                           {pkg.pkg_version}
