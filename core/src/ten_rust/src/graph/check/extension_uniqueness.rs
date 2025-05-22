@@ -40,7 +40,7 @@ impl Graph {
                         "Duplicated extension was found in nodes[{}], addon: \
                          {}, name: {}.",
                         node_idx,
-                        node.addon,
+                        node.addon.as_ref().map_or("None", String::as_str),
                         node.name
                     ));
                 }

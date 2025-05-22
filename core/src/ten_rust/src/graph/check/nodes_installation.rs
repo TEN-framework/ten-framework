@@ -55,8 +55,12 @@ impl Graph {
 
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 // Search for the package using the helper method.
-                let found = pkgs_info_in_app
-                    .find_pkg_by_type_and_name(pkg_type, &node.addon);
+                let found = pkgs_info_in_app.find_pkg_by_type_and_name(
+                    pkg_type,
+                    node.addon
+                        .as_ref()
+                        .expect("Extension node must have an addon"),
+                );
 
                 // If the node is not found, add it to the missing packages
                 // list.
@@ -67,7 +71,9 @@ impl Graph {
                             .map(|s| s.to_string())
                             .unwrap_or("".to_string()),
                         pkg_type,
-                        node.addon.clone(),
+                        node.addon
+                            .clone()
+                            .expect("Extension node must have an addon"),
                     ));
                 }
             } else if !ignore_missing_apps {
@@ -77,7 +83,9 @@ impl Graph {
                         .map(|s| s.to_string())
                         .unwrap_or("".to_string()),
                     pkg_type,
-                    node.addon.clone(),
+                    node.addon
+                        .clone()
+                        .expect("Extension node must have an addon"),
                 ));
             }
         }

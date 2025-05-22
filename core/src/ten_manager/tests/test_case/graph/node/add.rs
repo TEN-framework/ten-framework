@@ -32,7 +32,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
         assert_eq!(graph.nodes[0].name, "test_extension");
-        assert_eq!(graph.nodes[0].addon, "test_addon");
+        assert_eq!(graph.nodes[0].addon, Some("test_addon".to_string()));
         assert_eq!(
             graph.nodes[0].app,
             Some("http://test-app-uri.com".to_string())

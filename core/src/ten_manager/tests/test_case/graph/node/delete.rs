@@ -22,7 +22,7 @@ mod tests {
         GraphNode {
             type_: GraphNodeType::Extension,
             name: name.to_string(),
-            addon: addon.to_string(),
+            addon: Some(addon.to_string()),
             extension_group: extension_group.map(|s| s.to_string()),
             app: app.map(|s| s.to_string()),
             property: None,

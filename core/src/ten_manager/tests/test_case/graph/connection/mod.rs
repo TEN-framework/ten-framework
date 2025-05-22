@@ -18,7 +18,7 @@ pub fn create_test_node(
     GraphNode {
         type_: GraphNodeType::Extension,
         name: name.to_string(),
-        addon: addon.to_string(),
+        addon: Some(addon.to_string()),
         extension_group: None,
         app: app.map(|s| s.to_string()),
         property: None,
