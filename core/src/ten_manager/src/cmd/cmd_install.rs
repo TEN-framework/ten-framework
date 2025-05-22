@@ -156,7 +156,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .help("Maximum number of latest versions to consider")
                 .value_name("NUMBER")
                 .value_parser(clap::value_parser!(i32))
-                .default_value("3")
+                .default_value(crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL_STR)
                 .required(false),
         )
 }
