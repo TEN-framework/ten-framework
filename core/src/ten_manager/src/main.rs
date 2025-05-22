@@ -58,7 +58,7 @@ fn main() {
     if parsed_cmd.show_version {
         out.normal_line(&format!("TEN Framework version: {VERSION}"));
 
-        print_memory_stats("at version check");
+        // print_memory_stats("at version check");
 
         // Call the update check function
         match check_update_from_cmdline(out.clone()) {
@@ -93,7 +93,7 @@ fn main() {
         out.clone(),
     ));
 
-    print_memory_stats("at program end");
+    // print_memory_stats("at program end");
 
     if let Err(e) = result {
         out.error_line(&format!("{}  Error: {:?}", Emoji("🔴", ":-("), e));
