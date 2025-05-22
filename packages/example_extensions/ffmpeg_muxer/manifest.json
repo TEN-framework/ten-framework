@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_muxer",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "tags": [
     "cpp"
   ],

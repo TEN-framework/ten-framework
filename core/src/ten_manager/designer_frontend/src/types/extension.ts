@@ -44,6 +44,7 @@ export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
       })
     )
     .optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export enum EPackageSource {

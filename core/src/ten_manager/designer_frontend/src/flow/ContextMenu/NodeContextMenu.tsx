@@ -56,7 +56,7 @@ interface NodeContextMenuProps {
   graphId?: string | null;
   onClose: () => void;
   onLaunchTerminal: (data: ITerminalWidgetData) => void;
-  onLaunchLogViewer?: () => void;
+  onLaunchLogViewer?: (node: TCustomNode) => void;
 }
 
 const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
@@ -286,7 +286,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       icon: <LogsIcon />,
       onClick: () => {
         onClose();
-        onLaunchLogViewer?.();
+        onLaunchLogViewer?.(node);
       },
     },
     {

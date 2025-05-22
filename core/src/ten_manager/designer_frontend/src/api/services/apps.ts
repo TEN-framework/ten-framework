@@ -15,7 +15,11 @@ import {
 } from "@/api/services/utils";
 import { ENDPOINT_APPS, ENDPOINT_TEMPLATES } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { ETemplateLanguage, ETemplateType } from "@/types/apps";
+import {
+  ETemplateLanguage,
+  ETemplateType,
+  AppCreateReqSchema,
+} from "@/types/apps";
 
 export const getApps = async () => {
   const template = ENDPOINT_APPS.apps[ENDPOINT_METHOD.GET];
@@ -136,13 +140,11 @@ export const retrieveTemplatePkgs = async (
 };
 
 export const postCreateApp = async (
-  baseDir: string,
-  templateName: string,
-  appName: string
+  payload: z.infer<typeof AppCreateReqSchema>
 ) => {
   const template = ENDPOINT_APPS.createApp[ENDPOINT_METHOD.POST];
   const req = makeAPIRequest(template, {
-    body: { base_dir: baseDir, template_name: templateName, app_name: appName },
+    body: payload,
   });
   const res = await req;
   return template.responseSchema.parse(res).data;
