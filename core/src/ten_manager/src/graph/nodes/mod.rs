@@ -197,7 +197,10 @@ fn remove_nodes_from_array(
                 // Match the addon.
                 let addon_match = match item_obj.get("addon") {
                     Some(Value::String(item_addon)) => {
-                        item_addon == &remove_node.addon
+                        match &remove_node.addon {
+                            Some(addon) => item_addon == addon,
+                            None => false,
+                        }
                     }
                     _ => false,
                 };
@@ -292,7 +295,10 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             if type_match && name_match && app_match {
                 node_obj.insert(
                     "addon".to_string(),
-                    Value::String(modify_node.addon.clone()),
+                    match &modify_node.addon {
+                        Some(addon) => Value::String(addon.clone()),
+                        None => Value::Null,
+                    },
                 );
 
                 if let Some(property) = &modify_node.property {

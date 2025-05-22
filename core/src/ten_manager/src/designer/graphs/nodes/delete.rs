@@ -52,7 +52,7 @@ pub fn graph_delete_extension_node(
     graph.nodes.retain(|node| {
         !(node.type_ == GraphNodeType::Extension
             && node.name == pkg_name
-            && node.addon == addon
+            && node.addon == Some(addon.clone())
             && node.app == app
             && node.extension_group == extension_group)
     });
@@ -186,7 +186,7 @@ pub async fn delete_graph_node_endpoint(
             let node_to_remove = GraphNode {
                 type_: GraphNodeType::Extension,
                 name: request_payload.name.to_string(),
-                addon: request_payload.addon.to_string(),
+                addon: Some(request_payload.addon.to_string()),
                 extension_group: request_payload
                     .extension_group
                     .as_deref()

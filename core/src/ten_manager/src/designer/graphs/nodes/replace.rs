@@ -99,7 +99,7 @@ pub async fn replace_graph_node_endpoint(
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
     let extension_group = graph_node.extension_group.clone();
-    graph_node.addon = request_payload.addon.clone();
+    graph_node.addon = Some(request_payload.addon.clone());
     graph_node.property = request_payload.property.clone();
 
     // Update property.json file with the updated graph node.

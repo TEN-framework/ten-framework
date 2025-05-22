@@ -107,7 +107,7 @@ mod tests {
         let nodes = [GraphNode {
             type_: GraphNodeType::Extension,
             name: "node1".to_string(),
-            addon: "test_addon".to_string(),
+            addon: Some("test_addon".to_string()),
             extension_group: None,
             app: None,
             property: None,
@@ -142,7 +142,10 @@ mod tests {
                 .iter()
                 .map(|node| GraphNodeForUpdate {
                     name: node.name.clone(),
-                    addon: node.addon.clone(),
+                    addon: node
+                        .addon
+                        .clone()
+                        .expect("Extension node must have an addon"),
                     extension_group: node.extension_group.clone(),
                     app: node.app.clone(),
                     property: node.property.clone(),
@@ -325,7 +328,7 @@ mod tests {
         let nodes = [GraphNode {
             type_: GraphNodeType::Extension,
             name: "new_node".to_string(),
-            addon: "test_addon".to_string(),
+            addon: Some("test_addon".to_string()),
             extension_group: None,
             app: Some("http://example.com:8000".to_string()),
             property: None,
@@ -340,7 +343,10 @@ mod tests {
                 .iter()
                 .map(|node| GraphNodeForUpdate {
                     name: node.name.clone(),
-                    addon: node.addon.clone(),
+                    addon: node
+                        .addon
+                        .clone()
+                        .expect("Extension node must have an addon"),
                     extension_group: node.extension_group.clone(),
                     app: node.app.clone(),
                     property: node.property.clone(),

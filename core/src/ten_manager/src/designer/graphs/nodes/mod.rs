@@ -188,7 +188,7 @@ pub fn update_graph_node_in_property_all_fields(
         let new_node = GraphNode {
             type_: GraphNodeType::Extension,
             name: node_name.to_string(),
-            addon: addon_name.to_string(),
+            addon: Some(addon_name.to_string()),
             extension_group: extension_group_name.clone(),
             app: app_uri.clone(),
             property: property.clone(),

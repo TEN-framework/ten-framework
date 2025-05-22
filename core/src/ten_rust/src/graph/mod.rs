@@ -362,7 +362,7 @@ impl Graph {
                     && node.name.as_str() == extension
                     && node.get_app_uri() == app
             })
-            .map(|node| &node.addon)
+            .and_then(|node| node.addon.as_ref())
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Extension '{}' is not found in nodes, should not happen.",

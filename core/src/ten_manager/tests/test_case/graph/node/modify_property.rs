@@ -42,7 +42,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "node1".to_string(),
-                addon: "addon1".to_string(),
+                addon: Some("addon1".to_string()),
                 extension_group: None,
                 app: None,
                 property: Some(serde_json::json!({
@@ -56,7 +56,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "node2".to_string(),
-                addon: "addon2".to_string(),
+                addon: Some("addon2".to_string()),
                 extension_group: Some("group1".to_string()),
                 app: None,
                 property: Some(serde_json::json!({
@@ -68,7 +68,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "non-existent".to_string(),
-                addon: "addon4".to_string(),
+                addon: Some("addon4".to_string()),
                 extension_group: None,
                 app: None,
                 property: Some(serde_json::json!({
@@ -80,7 +80,7 @@ mod tests {
             GraphNode {
                 type_: GraphNodeType::Extension,
                 name: "node3".to_string(),
-                addon: "addon3".to_string(),
+                addon: Some("addon3".to_string()),
                 extension_group: None,
                 app: Some("app2".to_string()), // Mismatched app
                 property: Some(serde_json::json!({
