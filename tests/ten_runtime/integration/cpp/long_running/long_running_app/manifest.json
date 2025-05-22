@@ -1,12 +1,12 @@
 {
   "type": "app",
   "name": "default_app_cpp",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.6"
+      "version": "0.10.7"
     },
     {
       "path": "./ten_packages/extension/extension_1"
