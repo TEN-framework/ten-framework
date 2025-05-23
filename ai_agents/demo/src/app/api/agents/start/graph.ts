@@ -19,6 +19,11 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "ash",
             female: "shimmer"
+        },
+        gemini: {
+            male: "Charon",
+            female: "Aoede",
+            langCode: "cmn-CN",
         }
     },
     "en-US": {
@@ -39,6 +44,11 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "ash",
             female: "shimmer"
+        },
+        gemini: {
+            male: "Charon",
+            female: "Aoede",
+            langCode: "en-US",
         }
     },
     "ja-JP": {
@@ -49,6 +59,11 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "ash",
             female: "shimmer"
+        },
+        gemini: {
+            male: "Charon",
+            female: "Aoede",
+            langCode: "ja-JP",
         }
     },
     "ko-KR": {
@@ -59,6 +74,11 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "ash",
             female: "shimmer"
+        },
+        gemini: {
+            male: "Charon",
+            female: "Aoede",
+            langCode: "ko-KR",
         }
     },
 };
@@ -191,6 +211,16 @@ export const getGraphProperties = (
         return {
             "v2v": {
                 "prompt": prompt,
+                "language": voiceNameMap[language]["gemini"]["langCode"],
+                "voice": voiceNameMap[language]["gemini"][voiceType],
+                // "greeting": combined_greeting,
+            }
+        }
+    } else if (graphName === "va_gemini_v2v_native") {
+        return {
+            "v2v": {
+                "prompt": prompt,
+                "voice": voiceNameMap[language]["gemini"][voiceType],
                 // "greeting": combined_greeting,
             }
         }

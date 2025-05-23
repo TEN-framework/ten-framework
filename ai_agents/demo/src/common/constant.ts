@@ -75,8 +75,12 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "deepseek_r1",
   },
   {
-    label: "Voice Agent Gemini 2.0 Realtime",
+    label: "Voice Agent Gemini 2.0 Realtime - Live API",
     value: "va_gemini_v2v",
+  },
+  {
+    label: "Voice Agent Gemini 2.0 Realtime - Native Audio Output",
+    value: "va_gemini_v2v_native",
   },
   {
     label: "Voice Agent with Dify",
@@ -117,12 +121,12 @@ export const isRagGraph = (graphName: string) => {
 }
 
 export const isLanguageSupported = (graphName: string) => {
-  return !["va_gemini_v2v"].includes(graphName)
+  return !["va_gemini_v2v_native"].includes(graphName)
 }
 
-export const isVoiceGenderSupported = (graphName: string) => {
-  return !["va_gemini_v2v"].includes(graphName)
-}
+// export const isVoiceGenderSupported = (graphName: string) => {
+//   return !["va_gemini_v2v"].includes(graphName)
+// }
 
 
 export enum VideoSourceType {
