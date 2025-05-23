@@ -445,7 +445,7 @@ const ExtensionEleTags = (props: {
   return (
     <ul className={cn("flex flex-col gap-1", className)}>
       {tagsMemo.rows.map((row, rowIndex) => (
-        <div
+        <li
           key={rowIndex}
           className={cn("flex gap-1 items-center justify-start", {
             ["justify-between"]: row.length === maxItemsPerRow,
@@ -454,7 +454,7 @@ const ExtensionEleTags = (props: {
           {row.map((tag) => (
             <ExtensionEleBadge key={tag}>{tag}</ExtensionEleBadge>
           ))}
-        </div>
+        </li>
       ))}
     </ul>
   );
