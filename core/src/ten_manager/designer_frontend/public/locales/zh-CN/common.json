@@ -270,7 +270,8 @@
     "versionHistory": "版本历史",
     "selectVersion": "选择版本",
     "versionLatest": "最新",
-    "localAddonTip": "(本地)"
+    "localAddonTip": "(本地)",
+    "tags": "标签"
   },
   "statusBar": {
     "appsLoadedWithCount": "已加载 {{count}} 个应用",
