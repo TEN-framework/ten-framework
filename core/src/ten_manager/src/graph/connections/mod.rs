@@ -163,14 +163,14 @@ fn update_message_conversions(
         // Find matching connection to modify.
         for modify_conn in modify_connections {
             // Connection matched? Check if app and extension match.
-            let app_match = match (&conn_app, &modify_conn.app) {
+            let app_match = match (&conn_app, &modify_conn.loc.app) {
                 (None, None) => true,
                 (Some(app1), Some(app2)) => app1 == app2,
                 _ => false,
             };
 
             let extension_match =
-                match (Some(conn_extension), &modify_conn.extension) {
+                match (Some(conn_extension), &modify_conn.loc.extension) {
                     (Some(conn_ext), Some(modify_ext)) => {
                         conn_ext == modify_ext
                     }
@@ -232,14 +232,14 @@ fn remove_specified_connections(
             // Check each connection to remove for a match.
             for (idx, remove_conn) in remove_connections.iter().enumerate() {
                 // Check if app and extension match.
-                let app_match = match (&conn_app, &remove_conn.app) {
+                let app_match = match (&conn_app, &remove_conn.loc.app) {
                     (None, None) => true,
                     (Some(app1), Some(app2)) => app1 == app2,
                     _ => false,
                 };
 
                 let extension_match =
-                    match (&conn_extension, &remove_conn.extension) {
+                    match (&conn_extension, &remove_conn.loc.extension) {
                         (Some(conn_ext), Some(remove_ext)) => {
                             conn_ext == remove_ext
                         }
@@ -326,7 +326,7 @@ fn remove_specified_connections(
                                                 // Check if destination matches.
                                                 let app_match = match (
                                                     dest_app,
-                                                    &remove_dest.app,
+                                                    &remove_dest.loc.app,
                                                 ) {
                                                     (None, None) => true,
                                                     (
@@ -338,7 +338,7 @@ fn remove_specified_connections(
 
                                                 let extension_match = match (
                                                     dest_ext,
-                                                    &remove_dest.extension,
+                                                    &remove_dest.loc.extension,
                                                 ) {
                                                     (
                                                         Some(dest_ext_str),
@@ -616,13 +616,13 @@ fn update_destinations(
         // Find matching destination in the modify flow.
         for modify_dest in &modify_flow.dest {
             // Check if app and extension match.
-            let app_match = match (dest_app, &modify_dest.app) {
+            let app_match = match (dest_app, &modify_dest.loc.app) {
                 (None, None) => true,
                 (Some(app1), Some(app2)) => app1 == app2,
                 _ => false,
             };
 
-            let extension_match = match (Some(dest_ext), &modify_dest.extension)
+            let extension_match = match (Some(dest_ext), &modify_dest.loc.extension)
             {
                 (Some(dest_ext_str), Some(modify_ext)) => {
                     dest_ext_str == modify_ext

@@ -66,7 +66,8 @@ pub fn graph_delete_extension_node(
     if let Some(connections) = &mut graph.connections {
         // 1. Remove entire connections with matching app and extension.
         connections.retain(|conn| {
-            !((conn.extension.as_ref() == Some(&pkg_name)) && conn.app == app)
+            !((conn.loc.extension.as_ref() == Some(&pkg_name))
+                && conn.loc.app == app)
         });
 
         // 2. Remove destinations from message flows in all connections.
@@ -75,8 +76,8 @@ pub fn graph_delete_extension_node(
             if let Some(cmd_flows) = &mut connection.cmd {
                 for flow in cmd_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.extension.as_ref() == Some(&pkg_name))
-                            && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty cmd flows.
@@ -87,8 +88,8 @@ pub fn graph_delete_extension_node(
             if let Some(data_flows) = &mut connection.data {
                 for flow in data_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.extension.as_ref() == Some(&pkg_name))
-                            && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty data flows.
@@ -99,8 +100,8 @@ pub fn graph_delete_extension_node(
             if let Some(audio_flows) = &mut connection.audio_frame {
                 for flow in audio_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.extension.as_ref() == Some(&pkg_name))
-                            && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty audio_frame flows.
@@ -111,8 +112,8 @@ pub fn graph_delete_extension_node(
             if let Some(video_flows) = &mut connection.video_frame {
                 for flow in video_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.extension.as_ref() == Some(&pkg_name))
-                            && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty video_frame flows.

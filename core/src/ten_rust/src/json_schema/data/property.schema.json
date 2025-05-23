@@ -187,14 +187,14 @@
     "dataDest": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "extension"
-      ],
       "properties": {
         "app": {
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
         "msg_conversion": {
@@ -267,14 +267,14 @@
     "graphConnection": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "extension"
-      ],
       "properties": {
         "app": {
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
         "cmd": {

@@ -14,7 +14,9 @@ use uuid::Uuid;
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         graph_info::GraphInfo,
         msg_conversion::MsgAndResultConversion,
     },
@@ -66,8 +68,8 @@ fn update_graph_info(
     if let Some(connections) = &mut graph_info.graph.connections {
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
-            if connection.app == request_payload.src_app
-                && connection.extension.as_deref()
+            if connection.loc.app == request_payload.src_app
+                && connection.loc.extension.as_deref()
                     == Some(&request_payload.src_extension)
             {
                 // Find the correct message flow vector based on msg_type.
@@ -85,8 +87,8 @@ fn update_graph_info(
                         if msg_flow.name == request_payload.msg_name {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
-                                if dest.app == request_payload.dest_app
-                                    && dest.extension.as_ref().is_some_and(
+                                if dest.loc.app == request_payload.dest_app
+                                    && dest.loc.extension.as_ref().is_some_and(
                                         |ext| {
                                             ext == &request_payload
                                                 .dest_extension
@@ -126,9 +128,11 @@ fn update_property_all_fields(
             // Create a GraphConnection with the message conversion to
             // update.
             let mut connection = GraphConnection {
-                app: request_payload.src_app.clone(),
-                extension: Some(request_payload.src_extension.clone()),
-                subgraph: None,
+                loc: GraphLoc {
+                    app: request_payload.src_app.clone(),
+                    extension: Some(request_payload.src_extension.clone()),
+                    subgraph: None,
+                },
                 cmd: None,
                 data: None,
                 audio_frame: None,
@@ -137,9 +141,11 @@ fn update_property_all_fields(
 
             // Create the destination.
             let destination = GraphDestination {
-                app: request_payload.dest_app.clone(),
-                extension: Some(request_payload.dest_extension.clone()),
-                subgraph: None,
+                loc: GraphLoc {
+                    app: request_payload.dest_app.clone(),
+                    extension: Some(request_payload.dest_extension.clone()),
+                    subgraph: None,
+                },
                 msg_conversion: request_payload.msg_conversion.clone(),
             };
 

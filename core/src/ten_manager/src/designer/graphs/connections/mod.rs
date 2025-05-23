@@ -11,7 +11,9 @@ pub mod msg_conversion;
 
 use serde::{Deserialize, Serialize};
 
-use ten_rust::graph::connection::{GraphDestination, GraphMessageFlow};
+use ten_rust::graph::connection::{
+    GraphDestination, GraphLoc, GraphMessageFlow,
+};
 use ten_rust::graph::msg_conversion::MsgAndResultConversion;
 
 impl From<DesignerMessageFlow> for GraphMessageFlow {
@@ -30,9 +32,11 @@ impl From<DesignerMessageFlow> for GraphMessageFlow {
 impl From<DesignerDestination> for GraphDestination {
     fn from(designer_destination: DesignerDestination) -> Self {
         GraphDestination {
-            app: designer_destination.app,
-            extension: Some(designer_destination.extension),
-            subgraph: None,
+            loc: GraphLoc {
+                app: designer_destination.app,
+                extension: Some(designer_destination.extension),
+                subgraph: None,
+            },
             msg_conversion: designer_destination.msg_conversion,
         }
     }
@@ -67,8 +71,8 @@ pub struct DesignerDestination {
 impl From<GraphDestination> for DesignerDestination {
     fn from(destination: GraphDestination) -> Self {
         DesignerDestination {
-            app: destination.app,
-            extension: destination.extension.unwrap_or_default(),
+            app: destination.loc.app,
+            extension: destination.loc.extension.unwrap_or_default(),
             msg_conversion: destination.msg_conversion,
         }
     }
