@@ -36,7 +36,7 @@ import {
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
-import { HighlightText } from "@/components/Hightlight";
+import { HighlightText } from "@/components/Highlight";
 
 import type { TooltipContentProps } from "@radix-ui/react-tooltip";
 import { postReloadApps } from "@/api/services/apps";

@@ -16,7 +16,12 @@ export const HighlightText = (props: {
     return <span className={className}>{children}</span>;
   }
 
-  const parts = String(children).split(new RegExp(`(${highlight})`, "gi"));
+  const escapeRegExp = (str: string) =>
+    str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedHighlight = escapeRegExp(highlight);
+  const parts = String(children).split(
+    new RegExp(`(${escapedHighlight})`, "gi")
+  );
 
   return (
     <span className={className}>

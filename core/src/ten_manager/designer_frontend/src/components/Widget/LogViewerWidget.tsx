@@ -13,7 +13,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
-import { HighlightText } from "@/components/Hightlight";
+import { HighlightText } from "@/components/Highlight";
 import { cn } from "@/lib/utils";
 import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { appendLogsById } from "@/store/widget";
