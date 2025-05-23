@@ -876,6 +876,19 @@ static void ten_nodejs_extension_tester_async_run_execute(napi_env env,
   async_run_data->async_action_status = 0;
 }
 
+static void ten_nodejs_extension_tester_release_js_on_xxx_tsfn(
+    ten_nodejs_extension_tester_t *extension_tester_bridge) {
+  TEN_ASSERT(extension_tester_bridge, "Should not happen.");
+
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_start);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_stop);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_deinit);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_cmd);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_data);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_audio_frame);
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_video_frame);
+}
+
 static void ten_nodejs_extension_tester_async_run_complete(napi_env env,
                                                            napi_status status,
                                                            void *data) {
@@ -891,6 +904,10 @@ static void ten_nodejs_extension_tester_async_run_complete(napi_env env,
   } else {
     napi_reject_deferred(env, async_run_data->deferred, js_undefined(env));
   }
+
+  // From now on, the JS on_xxx callback(s) are useless, so release them all.
+  ten_nodejs_extension_tester_release_js_on_xxx_tsfn(
+      async_run_data->extension_tester_bridge);
 
   napi_delete_async_work(env, async_run_data->work);
   TEN_FREE(async_run_data);
@@ -931,6 +948,8 @@ static napi_value ten_nodejs_extension_tester_run(napi_env env,
 
   // Create and attach callbacks which will be invoked during the runtime of the
   // TEN extension tester.
+  // NOTE: The callbacks will be released when the extension tester run() is
+  // done.
   ten_nodejs_extension_tester_create_and_attach_callbacks(
       env, extension_tester_bridge);
 
@@ -1010,19 +1029,6 @@ static napi_value ten_nodejs_extension_tester_set_test_mode_single(
   return js_undefined(env);
 }
 
-static void ten_nodejs_extension_tester_release_js_on_xxx_tsfn(
-    ten_nodejs_extension_tester_t *extension_tester_bridge) {
-  TEN_ASSERT(extension_tester_bridge, "Should not happen.");
-
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_start);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_stop);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_deinit);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_cmd);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_data);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_audio_frame);
-  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_video_frame);
-}
-
 static napi_value ten_nodejs_extension_tester_on_end_of_life(
     napi_env env, napi_callback_info info) {
   TEN_ASSERT(env, "Should not happen.");
@@ -1050,9 +1056,6 @@ static napi_value ten_nodejs_extension_tester_on_end_of_life(
       extension_tester_bridge && ten_nodejs_extension_tester_check_integrity(
                                      extension_tester_bridge, true),
       "Should not happen.");
-
-  // From now on, the JS on_xxx callback(s) are useless, so release them all.
-  ten_nodejs_extension_tester_release_js_on_xxx_tsfn(extension_tester_bridge);
 
   // Decrease the reference count of the JS extension tester object.
   uint32_t js_extension_tester_ref_count = 0;

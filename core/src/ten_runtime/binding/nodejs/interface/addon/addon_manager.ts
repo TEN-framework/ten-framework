@@ -13,7 +13,7 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 type Ctor<T> = {
-  new (): T;
+  new(): T;
   prototype: T;
 };
 
@@ -40,6 +40,20 @@ export class AddonManager {
           );
           if (manifestJson.type === "app") {
             return currentDir;
+          }
+          if (manifestJson.type === "extension") {
+            // If the extension is installed in standalone building mode,
+            // the app base dir is the .ten/app directory.
+            const standaloneBuildingAppDir = path.join(currentDir, ".ten/app");
+            const standaloneBuildingAppManifestPath = path.join(
+              standaloneBuildingAppDir,
+              "manifest.json"
+            );
+
+            if (fs.existsSync(standaloneBuildingAppDir) &&
+              fs.existsSync(standaloneBuildingAppManifestPath)) {
+              return standaloneBuildingAppDir;
+            }
           }
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
@@ -79,7 +93,7 @@ export class AddonManager {
     const dirs = fs.opendirSync(extension_folder);
     const loadPromises = [];
 
-    for (;;) {
+    for (; ;) {
       const entry = dirs.readSync();
       if (!entry) {
         break;
@@ -91,7 +105,7 @@ export class AddonManager {
 
       const packageJsonFile = `${extension_folder}/${entry.name}/package.json`;
 
-      if (entry.isDirectory() && fs.existsSync(packageJsonFile)) {
+      if (fs.existsSync(packageJsonFile)) {
         // Log the extension name.
         console.log(`_load_all_addons Loading extension ${entry.name}`);
         loadPromises.push(

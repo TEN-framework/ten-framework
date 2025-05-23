@@ -19,6 +19,8 @@ group("nodejs") {
     "send_data_nodejs",
     "send_video_frame_nodejs",
     "standalone_test_nodejs",
+    "standalone_test_nodejs_2",
+    "standalone_test_nodejs_3",
     "websocket_server_nodejs",
   ]
 

@@ -5,9 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { AddonManager, App, TenEnv } from "ten-runtime-nodejs";
+import { GreetingTester } from "./greeting.js";
+import { AudioFrameTester, CmdTester, DataTester, VideoFrameTester } from "./basic_msg.js";
 
 let fakeApp: FakeApp;
 let fakeAppRunPromise: Promise<void>;
+const test_addon_name = "default_extension_nodejs";
 
 class FakeApp extends App {
     private initPromise: Promise<void>;
@@ -32,7 +35,8 @@ class FakeApp extends App {
     }
 }
 
-before(async () => {
+async function main() {
+    // SETUP
     await AddonManager.getInstance().loadAllAddons();
 
     fakeApp = new FakeApp();
@@ -40,11 +44,41 @@ before(async () => {
 
     // wait for the app to be initialized
     await fakeApp.waitForInit();
-});
+    // END OF SETUP
 
-after(async () => {
+    // TEST BODY
+
+    const greetingMsg = "Hello, world!";
+    const greetingTester = new GreetingTester(greetingMsg);
+    greetingTester.setTestModeSingle(test_addon_name, `{"greetingMsg": "${greetingMsg}"}`);
+    await greetingTester.run();
+
+    const cmdTester = new CmdTester();
+    cmdTester.setTestModeSingle(test_addon_name, "{}");
+    await cmdTester.run();
+
+    const dataTester = new DataTester();
+    dataTester.setTestModeSingle(test_addon_name, "{}");
+    await dataTester.run();
+
+    const videoFrameTester = new VideoFrameTester();
+    videoFrameTester.setTestModeSingle(test_addon_name, "{}");
+    await videoFrameTester.run();
+
+    const audioFrameTester = new AudioFrameTester();
+    audioFrameTester.setTestModeSingle(test_addon_name, "{}");
+    await audioFrameTester.run();
+
+    console.log("All tests passed");
+
+    // END OF TEST BODY
+
+    // TEARDOWN
     fakeApp.close();
     await fakeAppRunPromise;
 
     (global as unknown as { gc: () => void }).gc();
-});
+    // END OF TEARDOWN
+}
+
+main();

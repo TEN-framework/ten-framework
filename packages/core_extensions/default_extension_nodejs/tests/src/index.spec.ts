@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { MyExtensionTester } from "./index.js";
-import { AddonManager, App, TenEnv } from "ten-runtime-nodejs";
 
 const test_addon_name = "default_extension_nodejs";
 

@@ -81,25 +81,17 @@ export class ExtensionTester {
 
     private async onCmdProxy(tenEnvTester: TenEnvTester, cmd: Cmd): Promise<void> {
         await this.onCmd(tenEnvTester, cmd);
-
-        ten_addon.ten_nodejs_ten_env_tester_on_cmd_done(tenEnvTester);
     }
 
     private async onDataProxy(tenEnvTester: TenEnvTester, data: Data): Promise<void> {
         await this.onData(tenEnvTester, data);
-
-        ten_addon.ten_nodejs_ten_env_tester_on_data_done(tenEnvTester);
     }
 
     private async onAudioFrameProxy(tenEnvTester: TenEnvTester, audioFrame: AudioFrame): Promise<void> {
         await this.onAudioFrame(tenEnvTester, audioFrame);
-
-        ten_addon.ten_nodejs_ten_env_tester_on_audio_frame_done(tenEnvTester);
     }
 
     private async onVideoFrameProxy(tenEnvTester: TenEnvTester, videoFrame: VideoFrame): Promise<void> {
         await this.onVideoFrame(tenEnvTester, videoFrame);
-
-        ten_addon.ten_nodejs_ten_env_tester_on_video_frame_done(tenEnvTester);
     }
 }
