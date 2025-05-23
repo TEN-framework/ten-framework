@@ -49,6 +49,7 @@ mod tests {
         GraphConnection {
             app: app.map(|s| s.to_string()),
             extension: extension.to_string(),
+            subgraph: None,
             cmd: Some(vec![message_flow]),
             data: None,
             audio_frame: None,
@@ -192,6 +193,7 @@ mod tests {
         let connection = GraphConnection {
             app: Some("app1".to_string()),
             extension: "ext1".to_string(),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "cmd1".to_string(),
                 dest: vec![GraphDestination {

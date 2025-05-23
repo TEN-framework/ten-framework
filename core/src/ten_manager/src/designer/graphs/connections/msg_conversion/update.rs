@@ -123,6 +123,7 @@ fn update_property_all_fields(
             let mut connection = GraphConnection {
                 app: request_payload.src_app.clone(),
                 extension: request_payload.src_extension.clone(),
+                subgraph: None,
                 cmd: None,
                 data: None,
                 audio_frame: None,

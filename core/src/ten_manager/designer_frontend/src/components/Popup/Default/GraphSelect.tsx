@@ -7,7 +7,15 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { CheckIcon } from "lucide-react";
+import {
+  SortingState,
+  getSortedRowModel,
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 
 import {
   Select,
@@ -18,12 +26,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Badge } from "@/components/ui/Badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { useGraphs } from "@/api/services/graphs";
 import { useApps } from "@/api/services/apps";
 import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
+import { cn } from "@/lib/utils";
 
 import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import { IWidget } from "@/types/widgets";
@@ -52,18 +71,14 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
   const [selectedApp, setSelectedApp] = React.useState<IApp | null>(
     currentWorkspace?.app ?? loadedApps?.app_info?.[0] ?? null
   );
-  const [tmpSelectedGraph, setTmpSelectedGraph] = React.useState<IGraph | null>(
-    currentWorkspace.graph ?? null
-  );
 
   const { graphs = [], error, isLoading } = useGraphs();
 
-  const handleSelectApp = (app?: IApp | null) => {
-    setSelectedApp(app ?? null);
-    setTmpSelectedGraph(null);
+  const handleOk = () => {
+    removeWidget(widget.widget_id);
   };
 
-  const handleSelectGraph = (graph: IGraph) => async () => {
+  const handleSelectGraph = async (graph: IGraph) => {
     updateCurrentWorkspace({
       app: selectedApp,
       graph,
@@ -73,46 +88,21 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
         await resetNodesAndEdgesByGraph(graph);
 
       setNodesAndEdges(layoutedNodes, layoutedEdges);
+
+      toast.success(t("popup.selectGraph.updateSuccess"), {
+        description: (
+          <>
+            <p>{`${t("popup.selectGraph.app")}: ${selectedApp?.base_dir}`}</p>
+            <p>{`${t("popup.selectGraph.graph")}: ${graph.name}`}</p>
+          </>
+        ),
+      });
     } catch (err: unknown) {
       console.error(err);
       toast.error("Failed to load graph.");
     } finally {
-      removeWidget(widget.widget_id);
+      // removeWidget(widget.widget_id);
     }
-  };
-
-  const handleCancel = () => {
-    removeWidget(widget.widget_id);
-    handleSelectApp(currentWorkspace.app);
-    setTmpSelectedGraph(currentWorkspace.graph);
-  };
-
-  const handleSave = async () => {
-    if (!tmpSelectedGraph) {
-      updateCurrentWorkspace({
-        app: selectedApp,
-        graph: null,
-      });
-      setNodesAndEdges([], []);
-      toast.success(t("popup.selectGraph.updateSuccess"), {
-        description: (
-          <>
-            <p>{`${t("popup.selectGraph.app")}: ${selectedApp?.base_dir}`}</p>
-          </>
-        ),
-      });
-    } else {
-      await handleSelectGraph(tmpSelectedGraph)();
-      toast.success(t("popup.selectGraph.updateSuccess"), {
-        description: (
-          <>
-            <p>{`${t("popup.selectGraph.app")}: ${selectedApp?.base_dir}`}</p>
-            <p>{`${t("popup.selectGraph.graph")}: ${tmpSelectedGraph.name}`}</p>
-          </>
-        ),
-      });
-    }
-    removeWidget(widget.widget_id);
   };
 
   React.useEffect(() => {
@@ -172,60 +162,162 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
           />
         </>
       ) : (
-        <ul className="flex flex-col gap-1 h-fit overflow-y-auto">
-          <Button
-            asChild
-            key={"null"}
-            className="justify-start cursor-pointer"
-            variant="ghost"
-            onClick={() => setTmpSelectedGraph(null)}
-          >
-            <li className="w-full">
-              {tmpSelectedGraph === null ? (
-                <CheckIcon className="size-4" />
-              ) : (
-                <div className="size-4" />
+        <div className="h-full overflow-y-auto">
+          <div className="rounded-md border">
+            <GraphSelectTable
+              items={graphs?.filter(
+                (graph) => graph.base_dir === selectedApp?.base_dir
               )}
-              <span className="text-sm">
-                {t("popup.selectGraph.unspecified")}
-              </span>
-            </li>
-          </Button>
-          {graphs
-            ?.filter((graph) => graph.base_dir === selectedApp?.base_dir)
-            ?.map((graph) => (
-              <Button
-                asChild
-                key={graph.name}
-                className="justify-start cursor-pointer"
-                variant="ghost"
-                onClick={() => setTmpSelectedGraph(graph)}
-              >
-                <li className="w-full">
-                  {tmpSelectedGraph?.uuid === graph.uuid ? (
-                    <CheckIcon className="size-4" />
-                  ) : (
-                    <div className="size-4" />
-                  )}
-                  <span className="text-sm">{graph.name}</span>
-                  {graph.auto_start ? (
-                    <span className="text-xs">({t("action.autoStart")})</span>
-                  ) : null}
-                  {selectedApp?.base_dir === currentWorkspace.app?.base_dir &&
-                  graph.name === currentWorkspace.graph?.name ? (
-                    <span className="text-xs">({t("action.current")})</span>
-                  ) : null}
-                </li>
-              </Button>
-            ))}
-        </ul>
+              onSelect={handleSelectGraph}
+              className="pointer-events-auto"
+            />
+          </div>
+        </div>
       )}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={handleCancel}>
-          {t("action.cancel")}
+      <div className="flex mt-auto justify-end gap-2">
+        <Button variant="default" onClick={handleOk}>
+          {t("action.ok")}
         </Button>
-        <Button onClick={handleSave}>{t("action.save")}</Button>
       </div>
     </div>
+  );
+};
+
+const GraphSelectTable = (props: {
+  items?: IGraph[];
+  onSelect?: (item: IGraph) => void;
+  className?: string;
+}) => {
+  const { items = [], onSelect, className } = props;
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  const { t } = useTranslation();
+  const { currentWorkspace } = useAppStore();
+
+  const columns: ColumnDef<IGraph>[] = [
+    {
+      accessorKey: "name",
+      // header: t("dataTable.name"),
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("dataTable.name")}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row, getValue }) => {
+        const value = getValue() as string;
+        const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
+
+        return (
+          <div className="flex items-center">
+            <span className="text-sm">{value}</span>
+            {isCurrent && (
+              <Badge className="ml-2" variant="outline">
+                {t("action.current")}
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "auto_start",
+      header: t("action.autoStart"),
+      cell: ({ getValue }) => {
+        const value = getValue() as boolean;
+        return (
+          <div className="flex items-center">
+            <Checkbox disabled checked={value} />
+          </div>
+        );
+      },
+    },
+    {
+      header: t("dataTable.actions"),
+      cell: ({ row }) => {
+        const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
+
+        return (
+          <div className="flex items-center">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isCurrent}
+              onClick={() => {
+                const graph = row.original as IGraph;
+                onSelect?.(graph);
+              }}
+            >
+              {isCurrent
+                ? t("popup.selectGraph.selected")
+                : t("popup.selectGraph.select")}
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable<IGraph>({
+    data: items,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
+  });
+
+  return (
+    <>
+      <Table className={cn("w-full caption-bottom text-sm", className)}>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                {t("dataTable.noResults")}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </>
   );
 };

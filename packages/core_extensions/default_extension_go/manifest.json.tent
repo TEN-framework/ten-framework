@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "{{package_name}}",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "tags": [
     "go",
     "template"
@@ -10,7 +10,7 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.6"
+      "version": "0.10.7"
     }
   ],
   "package": {

@@ -300,10 +300,33 @@ const PopupTabs = (props: {
 export function GlobalPopups() {
   const { widgets } = useWidgetStore();
 
-  const currentWindowSizeMemo = React.useMemo(() => {
-    const currentWindowSize = getCurrentWindowSize();
-    return currentWindowSize;
+  const [currentWindowSize, setCurrentWindowSize] = React.useState(
+    getCurrentWindowSize()
+  );
+
+  React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setCurrentWindowSize(getCurrentWindowSize());
+      }, 250); // 250ms debounce delay
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
+
+  const currentWindowSizeMemo = React.useMemo(() => {
+    return {
+      width: currentWindowSize?.width,
+      height: currentWindowSize?.height,
+    };
+  }, [currentWindowSize]);
 
   const groupedWidgets = React.useMemo(() => {
     return groupWidgetsById(widgets);

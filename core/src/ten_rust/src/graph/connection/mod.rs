@@ -28,6 +28,9 @@ pub struct GraphConnection {
     pub extension: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd: Option<Vec<GraphMessageFlow>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Vec<GraphMessageFlow>>,
