@@ -16,11 +16,26 @@ impl Graph {
         msg_type: &str,
     ) -> Result<()> {
         for (flow_idx, flow) in flows.iter().enumerate() {
-            for dest in &flow.dest {
+            for (dest_idx, dest) in flow.dest.iter().enumerate() {
+                // Get extension name, log error if missing
+                let extension_name = match &dest.extension {
+                    Some(name) => name,
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "Missing extension name in \
+                             connection[{}].{}[{}].dest[{}]",
+                            conn_idx,
+                            msg_type,
+                            flow_idx,
+                            dest_idx
+                        ));
+                    }
+                };
+
                 let dest_extension = format!(
                     "{}:{}",
                     dest.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    dest.extension
+                    extension_name
                 );
 
                 if !all_extensions.contains(&dest_extension) {
@@ -30,7 +45,7 @@ impl Graph {
                         conn_idx,
                         msg_type,
                         flow_idx,
-                        dest.extension
+                        extension_name
                     ));
                 }
             }
@@ -74,18 +89,23 @@ impl Graph {
         // Validate each connection in the graph.
         for (conn_idx, connection) in connections.iter().enumerate() {
             // First, verify the source extension exists.
-            let src_extension = format!(
-                "{}:{}",
-                connection.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                connection.extension
-            );
-            if !all_extensions.contains(&src_extension) {
-                return Err(anyhow::anyhow!(
-                    "The extension declared in connections[{}] is not defined \
-                     in nodes, extension: {}.",
-                    conn_idx,
-                    connection.extension
-                ));
+            if let Some(extension_name) = &connection.extension {
+                let src_extension = format!(
+                    "{}:{}",
+                    connection
+                        .get_app_uri()
+                        .as_ref()
+                        .map_or("", |s| s.as_str()),
+                    extension_name
+                );
+                if !all_extensions.contains(&src_extension) {
+                    return Err(anyhow::anyhow!(
+                        "The extension declared in connections[{}] is not \
+                         defined in nodes, extension: {}.",
+                        conn_idx,
+                        extension_name
+                    ));
+                }
             }
 
             // Check all command message flows if present.

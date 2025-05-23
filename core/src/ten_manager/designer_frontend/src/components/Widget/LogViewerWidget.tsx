@@ -13,6 +13,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
+import { HighlightText } from "@/components/Highlight";
 import { cn } from "@/lib/utils";
 import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { appendLogsById } from "@/store/widget";
@@ -317,22 +318,7 @@ const LogViewerLogItem = React.forwardRef<
           <span className="text-gray-500 dark:text-gray-400">] </span>
         </>
       )}
-      {search ? (
-        <span className="whitespace-pre-wrap">
-          {message.split(search).map((part, i, arr) => (
-            <React.Fragment key={i}>
-              {part}
-              {i < arr.length - 1 && (
-                <span className="bg-yellow-200 dark:bg-yellow-800">
-                  {search}
-                </span>
-              )}
-            </React.Fragment>
-          ))}
-        </span>
-      ) : (
-        <span className="whitespace-pre-wrap">{message}</span>
-      )}
+      <HighlightText highlight={search}>{message}</HighlightText>
     </div>
   );
 });

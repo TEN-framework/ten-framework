@@ -270,7 +270,8 @@
     "versionHistory": "バージョン履歴",
     "selectVersion": "バージョンを選択",
     "versionLatest": "最新",
-    "localAddonTip": "(ローカル)"
+    "localAddonTip": "(ローカル)",
+    "tags": "タグ"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",

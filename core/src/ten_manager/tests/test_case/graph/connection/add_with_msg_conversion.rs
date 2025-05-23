@@ -56,13 +56,14 @@ mod tests {
         // Create a connection with message conversion
         let connection = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
+            extension: Some("extension_1".to_string()),
             subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "cmd_with_conversion".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_2".to_string(),
+                    extension: Some("extension_2".to_string()),
+                    subgraph: None,
                     msg_conversion: Some(MsgAndResultConversion {
                         msg: Some(MsgConversion {
                             conversion_type: MsgConversionType::PerProperty,
@@ -223,7 +224,7 @@ mod tests {
 
         let connection = &connections[0];
         assert_eq!(connection.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(connection.extension, "ext1");
+        assert_eq!(connection.extension, Some("ext1".to_string()));
 
         let cmd_flows = connection.cmd.as_ref().unwrap();
         assert_eq!(cmd_flows.len(), 1);
@@ -234,7 +235,7 @@ mod tests {
 
         let dest = &flow.dest[0];
         assert_eq!(dest.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(dest.extension, "ext2");
+        assert_eq!(dest.extension, Some("ext2".to_string()));
 
         // Verify the msg_conversion was properly set
         assert!(dest.msg_conversion.is_some());
