@@ -55,6 +55,10 @@ export class ExtensionTester {
         return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(this, addonName, propertyJsonStr);
     }
 
+    private async onInitProxy(tenEnvTester: TenEnvTester): Promise<void> {
+        ten_addon.ten_nodejs_ten_env_tester_on_init_done(tenEnvTester);
+    }
+
     private async onStartProxy(tenEnvTester: TenEnvTester): Promise<void> {
         await this.onStart(tenEnvTester);
 

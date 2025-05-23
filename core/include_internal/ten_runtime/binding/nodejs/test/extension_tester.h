@@ -27,6 +27,7 @@ typedef struct ten_nodejs_extension_tester_t {
   // @{
   // The following functions represent the JavaScript functions corresponding to
   // the app interface API.
+  ten_nodejs_tsfn_t *js_on_init;
   ten_nodejs_tsfn_t *js_on_start;
   ten_nodejs_tsfn_t *js_on_stop;
   ten_nodejs_tsfn_t *js_on_deinit;

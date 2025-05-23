@@ -61,6 +61,7 @@ static void ten_nodejs_extension_tester_detach_callbacks(
   TEN_ASSERT(self && ten_nodejs_extension_tester_check_integrity(self, true),
              "Should not happen.");
 
+  ten_nodejs_tsfn_dec_rc(self->js_on_init);
   ten_nodejs_tsfn_dec_rc(self->js_on_start);
   ten_nodejs_tsfn_dec_rc(self->js_on_stop);
   ten_nodejs_tsfn_dec_rc(self->js_on_deinit);
@@ -105,8 +106,8 @@ static void ten_nodejs_extension_tester_finalize(napi_env env, void *data,
   ten_nodejs_extension_tester_destroy(extension_tester_bridge);
 }
 
-static void proxy_on_start(ten_extension_tester_t *extension_tester,
-                           ten_env_tester_t *ten_env_tester) {
+static void proxy_on_init(ten_extension_tester_t *extension_tester,
+                          ten_env_tester_t *ten_env_tester) {
   TEN_ASSERT(extension_tester, "Invalid argument.");
   TEN_ASSERT(ten_extension_tester_check_integrity(extension_tester, true),
              "Invalid argument.");
@@ -138,6 +139,59 @@ static void proxy_on_start(ten_extension_tester_t *extension_tester,
   call_info->ten_env_tester = ten_env_tester;
   call_info->ten_env_tester_proxy =
       ten_env_tester_proxy_create(ten_env_tester, NULL);
+
+  bool rc =
+      ten_nodejs_tsfn_invoke(extension_tester_bridge->js_on_init, call_info);
+  if (!rc) {
+    TEN_LOGE("Failed to call extension tester on_init()");
+    TEN_FREE(call_info);
+
+    // Failed to call JS on_init(), so that we need to call on_init_done()
+    // here to let RTE runtime proceed.
+    ten_env_tester_on_init_done(ten_env_tester, NULL);
+  }
+}
+
+static void proxy_on_start(ten_extension_tester_t *extension_tester,
+                           ten_env_tester_t *ten_env_tester) {
+  TEN_ASSERT(extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(extension_tester, true),
+             "Invalid argument.");
+  TEN_ASSERT(ten_env_tester, "Invalid argument.");
+  TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
+             "Invalid argument.");
+
+  ten_nodejs_extension_tester_t *extension_tester_bridge =
+      ten_binding_handle_get_me_in_target_lang(
+          (ten_binding_handle_t *)extension_tester);
+  TEN_ASSERT(
+      extension_tester_bridge &&
+          ten_nodejs_extension_tester_check_integrity(
+              extension_tester_bridge,
+              // TEN_NOLINTNEXTLINE(thread-check)
+              // thread-check: The ownership of the extension_tester_bridge is
+              // the JS main thread, therefore, in order to maintain thread
+              // safety, we use semaphore below to prevent JS main thread and
+              // the TEN C extension tester thread access the extension tester
+              // bridge at the same time.
+              false),
+      "Should not happen.");
+
+  ten_nodejs_ten_env_tester_t *ten_env_tester_bridge =
+      ten_binding_handle_get_me_in_target_lang(
+          (ten_binding_handle_t *)ten_env_tester);
+  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
+                                          ten_env_tester_bridge,
+                                          // TEN_NOLINTNEXTLINE(thread-check)
+                                          false),
+             "Should not happen.");
+
+  ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
+      TEN_MALLOC(sizeof(ten_nodejs_extension_tester_on_xxx_call_info_t));
+  TEN_ASSERT(call_info, "Failed to allocate memory.");
+
+  call_info->extension_tester_bridge = extension_tester_bridge;
+  call_info->ten_env_tester_bridge = ten_env_tester_bridge;
 
   bool rc =
       ten_nodejs_tsfn_invoke(extension_tester_bridge->js_on_start, call_info);
@@ -411,10 +465,10 @@ static void proxy_on_video_frame(ten_extension_tester_t *extension_tester,
   }
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
-                                                           napi_value fn,
-                                                           void *context,
-                                                           void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_init(napi_env env,
+                                                          napi_value fn,
+                                                          void *context,
+                                                          void *data) {
   ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -445,6 +499,48 @@ static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
   napi_status status = napi_ok;
 
   {
+    // Call the JS on_init() function.
+
+    // Get the TEN JS extension tester object.
+    napi_value js_extension_tester = NULL;
+    status = napi_get_reference_value(
+        env, call_info->extension_tester_bridge->bridge.js_instance_ref,
+        &js_extension_tester);
+    TEN_ASSERT(status == napi_ok && js_extension_tester != NULL,
+               "Failed to get JS extension tester reference.");
+
+    napi_value result = NULL;
+    napi_value argv[] = {js_ten_env_tester};
+    status = napi_call_function(env, js_extension_tester, fn, 1, argv, &result);
+    TEN_ASSERT(status == napi_ok && result != NULL,
+               "Failed to call JS extension tester on_init()");
+  }
+
+  TEN_FREE(call_info);
+}
+
+static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
+                                                           napi_value fn,
+                                                           void *context,
+                                                           void *data) {
+  ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
+      (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
+  TEN_ASSERT(call_info, "Invalid argument.");
+
+  TEN_ASSERT(call_info->extension_tester_bridge &&
+                 ten_nodejs_extension_tester_check_integrity(
+                     call_info->extension_tester_bridge, true),
+             "Invalid argument.");
+
+  ten_nodejs_ten_env_tester_t *ten_env_tester_bridge =
+      call_info->ten_env_tester_bridge;
+  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
+                                          ten_env_tester_bridge, true),
+             "Invalid argument.");
+
+  napi_status status = napi_ok;
+
+  {
     // Call the JS on_start() function.
 
     // Get the TEN JS extension tester object.
@@ -454,6 +550,12 @@ static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
         &js_extension_tester);
     TEN_ASSERT(status == napi_ok && js_extension_tester != NULL,
                "Failed to get JS extension tester reference.");
+
+    napi_value js_ten_env_tester = NULL;
+    status = napi_get_reference_value(
+        env, ten_env_tester_bridge->bridge.js_instance_ref, &js_ten_env_tester);
+    TEN_ASSERT(status == napi_ok && js_ten_env_tester != NULL,
+               "Failed to get JS ten_env_tester reference.");
 
     napi_value result = NULL;
     napi_value argv[] = {js_ten_env_tester};
@@ -760,6 +862,12 @@ static void ten_nodejs_extension_tester_create_and_attach_callbacks(
   ASSERT_IF_NAPI_FAIL(status == napi_ok && js_extension_tester != NULL,
                       "Failed to get JS extension tester reference.");
 
+  napi_value js_on_init_proxy =
+      ten_nodejs_get_property(env, js_extension_tester, "onInitProxy");
+  CREATE_JS_CB_TSFN(extension_tester_bridge->js_on_init, env,
+                    "[TSFN] extension_tester::onInit", js_on_init_proxy,
+                    ten_nodejs_invoke_extension_tester_js_on_init);
+
   napi_value js_on_start_proxy =
       ten_nodejs_get_property(env, js_extension_tester, "onStartProxy");
   CREATE_JS_CB_TSFN(extension_tester_bridge->js_on_start, env,
@@ -842,8 +950,8 @@ static napi_value ten_nodejs_extension_tester_create(napi_env env,
 
   // Create the underlying TEN C extension tester.
   extension_tester_bridge->c_extension_tester = ten_extension_tester_create(
-      NULL, proxy_on_start, proxy_on_stop, proxy_on_deinit, proxy_on_cmd,
-      proxy_on_data, proxy_on_audio_frame, proxy_on_video_frame);
+      proxy_on_init, proxy_on_start, proxy_on_stop, proxy_on_deinit,
+      proxy_on_cmd, proxy_on_data, proxy_on_audio_frame, proxy_on_video_frame);
   ten_binding_handle_set_me_in_target_lang(
       (ten_binding_handle_t *)(extension_tester_bridge->c_extension_tester),
       extension_tester_bridge);
@@ -880,6 +988,7 @@ static void ten_nodejs_extension_tester_release_js_on_xxx_tsfn(
     ten_nodejs_extension_tester_t *extension_tester_bridge) {
   TEN_ASSERT(extension_tester_bridge, "Should not happen.");
 
+  ten_nodejs_tsfn_release(extension_tester_bridge->js_on_init);
   ten_nodejs_tsfn_release(extension_tester_bridge->js_on_start);
   ten_nodejs_tsfn_release(extension_tester_bridge->js_on_stop);
   ten_nodejs_tsfn_release(extension_tester_bridge->js_on_deinit);

@@ -36,6 +36,9 @@ TEN_RUNTIME_PRIVATE_API bool ten_nodejs_ten_env_tester_check_integrity(
     ten_nodejs_ten_env_tester_t *self, bool check_thread);
 
 TEN_RUNTIME_PRIVATE_API napi_value
+ten_nodejs_ten_env_tester_on_init_done(napi_env env, napi_callback_info info);
+
+TEN_RUNTIME_PRIVATE_API napi_value
 ten_nodejs_ten_env_tester_on_start_done(napi_env env, napi_callback_info info);
 
 TEN_RUNTIME_PRIVATE_API napi_value

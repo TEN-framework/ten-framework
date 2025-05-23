@@ -136,6 +136,7 @@ napi_value ten_nodejs_ten_env_tester_module_init(napi_env env,
 
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_tester_register_class);
 
+  EXPORT_FUNC(env, exports, ten_nodejs_ten_env_tester_on_init_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_tester_on_start_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_tester_on_stop_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_tester_on_deinit_done);
