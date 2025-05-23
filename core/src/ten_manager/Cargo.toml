@@ -94,3 +94,9 @@ tokio-tungstenite = { version = "0.21", features = ["connect"] }
 
 [patch.crates-io]
 clingo-sys = { path = "../../../third_party/clingo-sys" }
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+panic = "abort"

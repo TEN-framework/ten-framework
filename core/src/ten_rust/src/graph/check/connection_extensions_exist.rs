@@ -18,7 +18,7 @@ impl Graph {
         for (flow_idx, flow) in flows.iter().enumerate() {
             for (dest_idx, dest) in flow.dest.iter().enumerate() {
                 // Get extension name, log error if missing
-                let extension_name = match &dest.extension {
+                let extension_name = match &dest.loc.extension {
                     Some(name) => name,
                     None => {
                         return Err(anyhow::anyhow!(
@@ -89,7 +89,7 @@ impl Graph {
         // Validate each connection in the graph.
         for (conn_idx, connection) in connections.iter().enumerate() {
             // First, verify the source extension exists.
-            if let Some(extension_name) = &connection.extension {
+            if let Some(extension_name) = &connection.loc.extension {
                 let src_extension = format!(
                     "{}:{}",
                     connection

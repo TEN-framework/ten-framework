@@ -39,7 +39,7 @@ impl Graph {
         let mut errors: Vec<String> = Vec::new();
 
         for dest in dests {
-            let dest_addon = match &dest.extension {
+            let dest_addon = match &dest.loc.extension {
                 Some(extension) => self.get_addon_name_of_extension(
                     dest.get_app_uri(),
                     extension,
@@ -54,7 +54,7 @@ impl Graph {
             let extension_pkg_info = match get_pkg_info_for_extension_addon(
                 pkgs_cache,
                 graph_app_base_dir,
-                &dest.app,
+                &dest.loc.app,
                 dest_addon,
             ) {
                 Some(pkg_info) => pkg_info,
@@ -83,7 +83,7 @@ impl Graph {
             ) {
                 errors.push(format!(
                     "Schema incompatible to [extension: {}], {}",
-                    dest.extension.as_ref().unwrap_or(&String::new()),
+                    dest.loc.extension.as_ref().unwrap_or(&String::new()),
                     e
                 ));
             }
@@ -107,7 +107,7 @@ impl Graph {
         let mut errors: Vec<String> = Vec::new();
 
         let src_app_uri = connection.get_app_uri();
-        let extension = connection.extension.as_ref().ok_or_else(|| {
+        let extension = connection.loc.extension.as_ref().ok_or_else(|| {
             anyhow::anyhow!("Extension field is required but was None")
         })?;
         let src_addon =

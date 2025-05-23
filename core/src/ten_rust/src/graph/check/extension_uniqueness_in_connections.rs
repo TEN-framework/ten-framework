@@ -58,8 +58,8 @@ impl Graph {
             self.connections.as_ref().unwrap().iter().enumerate()
         {
             // Create a unique identifier for the extension including app URI.
-            if let Some(extension_name) = &connection.extension {
-                let app_str = connection.app.as_deref().unwrap_or("");
+            if let Some(extension_name) = &connection.loc.extension {
+                let app_str = connection.loc.app.as_deref().unwrap_or("");
                 let unique_key = format!("{}::{}", app_str, extension_name);
 
                 if let Some(idx) = extensions.get(&unique_key) {
