@@ -7,7 +7,9 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         node::{GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
     };
@@ -37,15 +39,19 @@ mod tests {
                 },
             ],
             connections: Some(vec![GraphConnection {
-                extension: Some("ext_c".to_string()),
-                app: None,
-                subgraph: None,
+                loc: GraphLoc {
+                    extension: Some("ext_c".to_string()),
+                    app: None,
+                    subgraph: None,
+                },
                 cmd: Some(vec![GraphMessageFlow {
                     name: "B".to_string(),
                     dest: vec![GraphDestination {
-                        extension: Some("ext_d".to_string()),
-                        subgraph: None,
-                        app: None,
+                        loc: GraphLoc {
+                            extension: Some("ext_d".to_string()),
+                            subgraph: None,
+                            app: None,
+                        },
                         msg_conversion: None,
                     }],
                 }]),
@@ -86,7 +92,7 @@ mod tests {
 
         let connections = deserialized_graph.connections.unwrap();
         assert_eq!(connections.len(), 1);
-        assert_eq!(connections[0].extension, Some("ext_c".to_string()));
+        assert_eq!(connections[0].loc.extension, Some("ext_c".to_string()));
 
         let exposed_messages = deserialized_graph.exposed_messages.unwrap();
         assert_eq!(exposed_messages.len(), 3);

@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 
 use ten_rust::{
     graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         msg_conversion::MsgAndResultConversion,
     },
     pkg_info::message::MsgType,
@@ -58,9 +60,11 @@ fn create_graph_connection(
 ) -> GraphConnection {
     // Create destination object
     let destination = GraphDestination {
-        app: request_payload.dest_app.clone(),
-        extension: Some(request_payload.dest_extension.clone()),
-        subgraph: None,
+        loc: GraphLoc {
+            app: request_payload.dest_app.clone(),
+            extension: Some(request_payload.dest_extension.clone()),
+            subgraph: None,
+        },
         msg_conversion: request_payload.msg_conversion.clone(),
     };
 
@@ -72,9 +76,11 @@ fn create_graph_connection(
 
     // Create connection
     let mut connection = GraphConnection {
-        app: request_payload.src_app.clone(),
-        extension: Some(request_payload.src_extension.clone()),
-        subgraph: None,
+        loc: GraphLoc {
+            app: request_payload.src_app.clone(),
+            extension: Some(request_payload.src_extension.clone()),
+            subgraph: None,
+        },
         cmd: None,
         data: None,
         audio_frame: None,
