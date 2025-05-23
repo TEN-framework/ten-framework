@@ -24,7 +24,9 @@ mod tests {
     };
     use ten_rust::{
         graph::{
-            connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+            connection::{
+                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+            },
             node::{GraphNode, GraphNodeType},
         },
         pkg_info::constants::PROPERTY_JSON_FILENAME,
@@ -116,9 +118,11 @@ mod tests {
 
         // Create a connection with message flow.
         let dest = GraphDestination {
-            app: None,
-            extension: Some("node2".to_string()),
-            subgraph: None,
+            loc: GraphLoc {
+                app: None,
+                extension: Some("node2".to_string()),
+                subgraph: None,
+            },
             msg_conversion: None,
         };
 
@@ -126,9 +130,11 @@ mod tests {
             GraphMessageFlow { name: "test_cmd".to_string(), dest: vec![dest] };
 
         let connection = GraphConnection {
-            app: None,
-            extension: Some("node1".to_string()),
-            subgraph: None,
+            loc: GraphLoc {
+                app: None,
+                extension: Some("node1".to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![message_flow]),
             data: None,
             audio_frame: None,

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::{
     graph::{
         connection::GraphConnection, connection::GraphDestination,
-        connection::GraphMessageFlow, Graph,
+        connection::GraphLoc, connection::GraphMessageFlow, Graph,
     },
     pkg_info::message::MsgType,
 };
@@ -66,7 +66,8 @@ fn graph_delete_connection(
 
     // Find the source node's connection in the connections list.
     let connection_idx = connections.iter().position(|conn| {
-        conn.app == src_app && (conn.extension.as_ref() == Some(&src_extension))
+        conn.loc.app == src_app
+            && (conn.loc.extension.as_ref() == Some(&src_extension))
     });
 
     if let Some(idx) = connection_idx {
@@ -86,8 +87,8 @@ fn graph_delete_connection(
             let flow_idx = flows.iter().position(|flow| {
                 flow.name == msg_name
                     && flow.dest.iter().any(|dest| {
-                        dest.app == dest_app
-                            && (dest.extension.as_ref()
+                        dest.loc.app == dest_app
+                            && (dest.loc.extension.as_ref()
                                 == Some(&dest_extension))
                     })
             });
@@ -99,8 +100,9 @@ fn graph_delete_connection(
 
                 // Find the destination to remove.
                 let dest_idx = flow.dest.iter().position(|dest| {
-                    dest.app == dest_app
-                        && (dest.extension.as_ref() == Some(&dest_extension))
+                    dest.loc.app == dest_app
+                        && (dest.loc.extension.as_ref()
+                            == Some(&dest_extension))
                 });
 
                 if let Some(dest_idx) = dest_idx {
@@ -195,9 +197,11 @@ pub async fn delete_graph_connection_endpoint(
             // Create a GraphConnection representing what we
             // want to remove.
             let mut connection_to_remove = GraphConnection {
-                app: request_payload.src_app.clone(),
-                extension: Some(request_payload.src_extension.clone()),
-                subgraph: None,
+                loc: GraphLoc {
+                    app: request_payload.src_app.clone(),
+                    extension: Some(request_payload.src_extension.clone()),
+                    subgraph: None,
+                },
                 cmd: None,
                 data: None,
                 audio_frame: None,
@@ -206,9 +210,11 @@ pub async fn delete_graph_connection_endpoint(
 
             // Create destination for the message flow.
             let dest_to_remove = GraphDestination {
-                app: request_payload.dest_app.clone(),
-                extension: Some(request_payload.dest_extension.clone()),
-                subgraph: None,
+                loc: GraphLoc {
+                    app: request_payload.dest_app.clone(),
+                    extension: Some(request_payload.dest_extension.clone()),
+                    subgraph: None,
+                },
                 msg_conversion: None,
             };
 
@@ -266,8 +272,12 @@ pub fn find_connection_with_extensions<'a>(
 ) -> Option<&'a GraphConnection> {
     // Find connection with matching src app and extension.
     connection_list.iter().find(|conn| {
-        conn.app == *src_app
-            && conn.extension.as_ref().is_some_and(|ext| ext == src_extension)
+        conn.loc.app == *src_app
+            && conn
+                .loc
+                .extension
+                .as_ref()
+                .is_some_and(|ext| ext == src_extension)
     })
 }
 
@@ -286,7 +296,11 @@ pub fn find_dest_with_extension(
 ) -> Option<usize> {
     // Find destination with matching extension and app.
     flow.dest.iter().position(|dest| {
-        dest.app == *dest_app
-            && dest.extension.as_ref().is_some_and(|ext| ext == dest_extension)
+        dest.loc.app == *dest_app
+            && dest
+                .loc
+                .extension
+                .as_ref()
+                .is_some_and(|ext| ext == dest_extension)
     })
 }

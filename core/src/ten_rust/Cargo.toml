@@ -48,3 +48,9 @@ bindgen = { version = "0.70", optional = true }
 default = ["service-hub"]
 service-hub = []
 deprecated = ["bindgen"]
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+panic = "abort"
