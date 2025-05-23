@@ -136,7 +136,8 @@ pub struct GraphExposedMessage {
 
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
 }
 
 /// Represents a property that is exposed by the graph to the outside.
@@ -145,7 +146,8 @@ pub struct GraphExposedMessage {
 pub struct GraphExposedProperty {
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
 
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
@@ -285,16 +287,18 @@ impl Graph {
         if let Some(exposed_properties) = &self.exposed_properties {
             for (idx, property) in exposed_properties.iter().enumerate() {
                 // Verify that the extension exists in the graph
-                if !self
-                    .nodes
-                    .iter()
-                    .any(|node| node.name == property.extension)
-                {
+                if !self.nodes.iter().any(|node| {
+                    if let Some(ext) = &property.extension {
+                        &node.name == ext
+                    } else {
+                        false
+                    }
+                }) {
                     return Err(anyhow::anyhow!(
                         "exposed_properties[{}]: extension '{}' does not \
                          exist in the graph",
                         idx,
-                        property.extension
+                        property.extension.as_ref().unwrap_or(&String::new())
                     ));
                 }
             }

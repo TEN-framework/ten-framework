@@ -80,6 +80,6 @@ mod tests {
         assert!(graph_info.graph.connections.is_some());
         let connections = graph_info.graph.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 1);
-        assert_eq!(connections[0].extension, "test_ext");
+        assert_eq!(connections[0].extension, Some("test_ext".to_string()));
     }
 }

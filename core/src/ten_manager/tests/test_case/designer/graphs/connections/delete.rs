@@ -290,7 +290,7 @@ mod tests {
                 .as_ref()
                 .is_some_and(|connections| {
                     connections.iter().any(|conn| {
-                        conn.extension == "extension_1"
+                        conn.extension == Some("extension_1".to_string())
                             && conn.app.as_ref().is_some_and(|app| {
                                 app == "http://example.com:8000"
                             })
