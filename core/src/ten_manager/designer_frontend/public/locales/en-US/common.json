@@ -270,7 +270,8 @@
     "versionHistory": "Version History",
     "selectVersion": "Select a version",
     "versionLatest": "Latest",
-    "localAddonTip": "(local)"
+    "localAddonTip": "(local)",
+    "tags": "Tags"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",
