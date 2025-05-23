@@ -49,13 +49,14 @@ mod tests {
         // Create a connection with modified message conversion.
         let connection_to_modify = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
+            extension: Some("extension_1".to_string()),
             subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "existing_cmd".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_2".to_string(),
+                    extension: Some("extension_2".to_string()),
+                    subgraph: None,
                     msg_conversion: Some(MsgAndResultConversion {
                         msg: Some(MsgConversion {
                             conversion_type: MsgConversionType::PerProperty,

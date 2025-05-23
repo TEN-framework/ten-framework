@@ -31,7 +31,8 @@ impl From<DesignerDestination> for GraphDestination {
     fn from(designer_destination: DesignerDestination) -> Self {
         GraphDestination {
             app: designer_destination.app,
-            extension: designer_destination.extension,
+            extension: Some(designer_destination.extension),
+            subgraph: None,
             msg_conversion: designer_destination.msg_conversion,
         }
     }
@@ -67,7 +68,7 @@ impl From<GraphDestination> for DesignerDestination {
     fn from(destination: GraphDestination) -> Self {
         DesignerDestination {
             app: destination.app,
-            extension: destination.extension,
+            extension: destination.extension.unwrap_or_default(),
             msg_conversion: destination.msg_conversion,
         }
     }

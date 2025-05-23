@@ -39,7 +39,8 @@ mod tests {
     ) -> GraphConnection {
         let dest = GraphDestination {
             app: dest_app.map(|s| s.to_string()),
-            extension: dest_extension.to_string(),
+            extension: Some(dest_extension.to_string()),
+            subgraph: None,
             msg_conversion: None,
         };
 
@@ -48,7 +49,7 @@ mod tests {
 
         GraphConnection {
             app: app.map(|s| s.to_string()),
-            extension: extension.to_string(),
+            extension: Some(extension.to_string()),
             subgraph: None,
             cmd: Some(vec![message_flow]),
             data: None,
@@ -142,7 +143,7 @@ mod tests {
         assert_eq!(connections.len(), 1);
 
         // The remaining connection should be for ext2.
-        assert_eq!(connections[0].extension, "ext2");
+        assert_eq!(connections[0].extension, Some("ext2".to_string()));
 
         // Test case 3: Delete ext3 - should remove node and connections to/from
         // it.
@@ -192,13 +193,14 @@ mod tests {
         // Add a connection with multiple message types.
         let connection = GraphConnection {
             app: Some("app1".to_string()),
-            extension: "ext1".to_string(),
+            extension: Some("ext1".to_string()),
             subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "cmd1".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    extension: Some("ext2".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),
@@ -206,7 +208,8 @@ mod tests {
                 name: "data1".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    extension: Some("ext2".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),
@@ -214,7 +217,8 @@ mod tests {
                 name: "audio1".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    extension: Some("ext2".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),
@@ -222,7 +226,8 @@ mod tests {
                 name: "video1".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    extension: Some("ext2".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),

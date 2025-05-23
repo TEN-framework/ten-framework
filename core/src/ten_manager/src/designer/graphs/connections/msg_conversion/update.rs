@@ -67,7 +67,8 @@ fn update_graph_info(
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
             if connection.app == request_payload.src_app
-                && connection.extension == request_payload.src_extension
+                && connection.extension.as_deref()
+                    == Some(&request_payload.src_extension)
             {
                 // Find the correct message flow vector based on msg_type.
                 let msg_flow_vec = match request_payload.msg_type {
@@ -85,8 +86,12 @@ fn update_graph_info(
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
                                 if dest.app == request_payload.dest_app
-                                    && dest.extension
-                                        == request_payload.dest_extension
+                                    && dest.extension.as_ref().is_some_and(
+                                        |ext| {
+                                            ext == &request_payload
+                                                .dest_extension
+                                        },
+                                    )
                                 {
                                     // Update the msg_conversion field.
                                     dest.msg_conversion =
@@ -122,7 +127,7 @@ fn update_property_all_fields(
             // update.
             let mut connection = GraphConnection {
                 app: request_payload.src_app.clone(),
-                extension: request_payload.src_extension.clone(),
+                extension: Some(request_payload.src_extension.clone()),
                 subgraph: None,
                 cmd: None,
                 data: None,
@@ -133,7 +138,8 @@ fn update_property_all_fields(
             // Create the destination.
             let destination = GraphDestination {
                 app: request_payload.dest_app.clone(),
-                extension: request_payload.dest_extension.clone(),
+                extension: Some(request_payload.dest_extension.clone()),
+                subgraph: None,
                 msg_conversion: request_payload.msg_conversion.clone(),
             };
 

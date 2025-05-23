@@ -65,7 +65,7 @@ impl From<GraphConnection> for GraphConnectionsSingleResponseData {
     fn from(conn: GraphConnection) -> Self {
         GraphConnectionsSingleResponseData {
             app: conn.app,
-            extension: conn.extension,
+            extension: conn.extension.unwrap_or_default(),
             subgraph: conn.subgraph,
 
             cmd: conn.cmd.map(get_designer_msg_flow_from_property),
@@ -87,7 +87,7 @@ impl From<GraphConnectionsSingleResponseData> for GraphConnection {
     fn from(designer_connection: GraphConnectionsSingleResponseData) -> Self {
         GraphConnection {
             app: designer_connection.app,
-            extension: designer_connection.extension,
+            extension: Some(designer_connection.extension),
             subgraph: designer_connection.subgraph,
 
             cmd: designer_connection

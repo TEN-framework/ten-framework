@@ -117,7 +117,8 @@ mod tests {
         // Create a connection with message flow.
         let dest = GraphDestination {
             app: None,
-            extension: "node2".to_string(),
+            extension: Some("node2".to_string()),
+            subgraph: None,
             msg_conversion: None,
         };
 
@@ -126,7 +127,7 @@ mod tests {
 
         let connection = GraphConnection {
             app: None,
-            extension: "node1".to_string(),
+            extension: Some("node1".to_string()),
             subgraph: None,
             cmd: Some(vec![message_flow]),
             data: None,

@@ -81,7 +81,9 @@ fn check_connection_exists(
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn.extension == src_extension && conn.app == *src_app {
+            if conn.extension.as_ref().is_some_and(|ext| ext == src_extension)
+                && conn.app == *src_app
+            {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
                     MsgType::Cmd => conn.cmd.as_ref(),
@@ -96,7 +98,8 @@ fn check_connection_exists(
                         if flow.name == msg_name {
                             // Check if destination already exists.
                             for dest in &flow.dest {
-                                if dest.extension == dest_extension
+                                if dest.extension.as_deref()
+                                    == Some(dest_extension)
                                     && dest.app == *dest_app
                                 {
                                     return Err(anyhow::anyhow!(
@@ -218,7 +221,8 @@ pub fn graph_add_connection(
     // Create destination object.
     let destination = GraphDestination {
         app: dest_app,
-        extension: dest_extension,
+        extension: Some(dest_extension),
+        subgraph: None,
         msg_conversion,
     };
 
@@ -239,14 +243,15 @@ pub fn graph_add_connection(
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
             connections.iter().enumerate().find(|(_, conn)| {
-                conn.extension == src_extension && conn.app == src_app
+                (conn.extension.as_ref() == Some(&src_extension))
+                    && conn.app == src_app
             }) {
             idx
         } else {
             // Create a new connection for the source node.
             connections.push(GraphConnection {
                 app: src_app.clone(),
-                extension: src_extension,
+                extension: Some(src_extension),
                 subgraph: None,
                 cmd: None,
                 data: None,
