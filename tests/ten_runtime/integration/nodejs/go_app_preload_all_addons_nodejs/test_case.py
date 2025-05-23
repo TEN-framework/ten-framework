@@ -18,10 +18,9 @@ def http_request():
             "ten": {
                 "name": "test",
                 "dest": {
-                    "extension_group": "default_extension_nodejs",
                     "extension": "default_extension_nodejs",
                     "graph": "default",
-                    "app": "localhost",
+                    "app": "",
                 },
             },
         },

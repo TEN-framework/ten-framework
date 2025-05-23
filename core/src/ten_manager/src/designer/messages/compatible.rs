@@ -81,7 +81,7 @@ impl From<CompatibleExtensionAndMsg<'_>>
         GetCompatibleMsgsSingleResponseData {
             app: compatible.extension.app.clone(),
             extension_group: compatible.extension.extension_group.clone(),
-            extension: compatible.extension.type_and_name.name.clone(),
+            extension: compatible.extension.name.clone(),
             msg_type: compatible.msg_type,
             msg_direction: compatible.msg_direction,
             msg_name: compatible.msg_name,
@@ -96,7 +96,7 @@ fn get_extension_graph_node<'a>(
     extension_name: &str,
 ) -> Result<&'a GraphNode> {
     for extension in extension_graph_nodes {
-        if extension.type_and_name.name == extension_name
+        if extension.name == extension_name
             && extension.extension_group.as_ref() == extension_group.as_ref()
             && extension.app == *app
         {
@@ -186,7 +186,10 @@ pub async fn get_compatible_messages_endpoint(
                 &pkgs_cache,
                 app_base_dir_of_graph,
                 &extension_graph_node.app,
-                &extension_graph_node.addon,
+                extension_graph_node
+                    .addon
+                    .as_ref()
+                    .expect("Extension node must have an addon"),
             ) {
                 let compatible_list = match msg_ty {
                     MsgType::Cmd => {

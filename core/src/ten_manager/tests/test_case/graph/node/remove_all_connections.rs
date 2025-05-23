@@ -15,10 +15,8 @@ mod tests {
 
     use ten_manager::fs::json::write_property_json_file;
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::GraphNode;
+    use ten_rust::graph::node::{GraphNode, GraphNodeType};
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
-    use ten_rust::pkg_info::pkg_type::PkgType;
-    use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 
     #[test]
     fn test_update_graph_node_removes_all_connections() -> Result<()> {
@@ -86,24 +84,22 @@ mod tests {
         // Create nodes to remove (both node1 and node2).
         let remove_nodes = vec![
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "node1".to_string(),
-                },
-                addon: "addon1".to_string(),
+                type_: GraphNodeType::Extension,
+                name: "node1".to_string(),
+                addon: Some("addon1".to_string()),
                 extension_group: None,
                 app: None,
                 property: None,
+                source_uri: None,
             },
             GraphNode {
-                type_and_name: PkgTypeAndName {
-                    pkg_type: PkgType::Extension,
-                    name: "node2".to_string(),
-                },
-                addon: "addon2".to_string(),
+                type_: GraphNodeType::Extension,
+                name: "node2".to_string(),
+                addon: Some("addon2".to_string()),
                 extension_group: None,
                 app: None,
                 property: None,
+                source_uri: None,
             },
         ];
 

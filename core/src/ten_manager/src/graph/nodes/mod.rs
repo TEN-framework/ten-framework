@@ -7,8 +7,6 @@
 pub mod add;
 pub mod validate;
 
-use std::str::FromStr;
-
 use anyhow::Result;
 use serde_json::Value;
 
@@ -181,15 +179,9 @@ fn remove_nodes_from_array(
                 // Match the type.
                 let type_match = match item_obj.get("type") {
                     Some(Value::String(item_type)) => {
-                        if let Ok(pkg_type) =
-                            ten_rust::pkg_info::pkg_type::PkgType::from_str(
-                                item_type,
-                            )
-                        {
-                            pkg_type == remove_node.type_and_name.pkg_type
-                        } else {
-                            false
-                        }
+                        // For GraphNodeType::Extension, the string is
+                        // "extension"
+                        item_type == "extension"
                     }
                     _ => false,
                 };
@@ -197,7 +189,7 @@ fn remove_nodes_from_array(
                 // Match the name.
                 let name_match = match item_obj.get("name") {
                     Some(Value::String(item_name)) => {
-                        item_name == &remove_node.type_and_name.name
+                        item_name == &remove_node.name
                     }
                     _ => false,
                 };
@@ -205,7 +197,10 @@ fn remove_nodes_from_array(
                 // Match the addon.
                 let addon_match = match item_obj.get("addon") {
                     Some(Value::String(item_addon)) => {
-                        item_addon == &remove_node.addon
+                        match &remove_node.addon {
+                            Some(addon) => item_addon == addon,
+                            None => false,
+                        }
                     }
                     _ => false,
                 };
@@ -270,15 +265,8 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             // Match the type.
             let type_match = match node_obj.get("type") {
                 Some(Value::String(node_type)) => {
-                    if let Ok(pkg_type) =
-                        ten_rust::pkg_info::pkg_type::PkgType::from_str(
-                            node_type,
-                        )
-                    {
-                        pkg_type == modify_node.type_and_name.pkg_type
-                    } else {
-                        false
-                    }
+                    // For GraphNodeType::Extension, the string is "extension"
+                    node_type == "extension"
                 }
                 _ => false,
             };
@@ -286,7 +274,7 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             // Match the name.
             let name_match = match node_obj.get("name") {
                 Some(Value::String(node_name)) => {
-                    node_name == &modify_node.type_and_name.name
+                    node_name == &modify_node.name
                 }
                 _ => false,
             };
@@ -307,7 +295,10 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             if type_match && name_match && app_match {
                 node_obj.insert(
                     "addon".to_string(),
-                    Value::String(modify_node.addon.clone()),
+                    match &modify_node.addon {
+                        Some(addon) => Value::String(addon.clone()),
+                        None => Value::Null,
+                    },
                 );
 
                 if let Some(property) = &modify_node.property {
@@ -340,7 +331,7 @@ fn update_connections_for_removed_nodes(
     // Create a list of node identifiers to remove.
     let nodes_names_to_remove: Vec<(String, Option<String>)> = remove_nodes
         .iter()
-        .map(|node| (node.type_and_name.name.clone(), node.app.clone()))
+        .map(|node| (node.name.clone(), node.app.clone()))
         .collect();
 
     if let Some(Value::Array(connections_array)) =

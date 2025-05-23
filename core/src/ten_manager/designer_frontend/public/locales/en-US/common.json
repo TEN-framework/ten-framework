@@ -124,10 +124,13 @@
       "confirmChangePosition": "Are you sure you want to change the position? All unsaved changes will be lost."
     },
     "selectGraph": {
-      "title": "Select a App/Graph",
+      "title": "Select App/Graph",
       "app": "App",
       "graph": "Graph",
+      "select": "Select",
+      "selected": "Selected",
       "unspecified": "<Unspecified>",
+      "current": "Current",
       "updateSuccess": "App/Graph updated successfully"
     },
     "customNodeConn": {
@@ -144,7 +147,8 @@
       "appInstall": "App Install",
       "filteredByAddon": "Filter logs by Addon",
       "noAddons": "No Avaliable Addons",
-      "noMatchedAddons": "No matched addons"
+      "noMatchedAddons": "No matched addons",
+      "noLogs": "No logs to display."
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",
@@ -169,6 +173,8 @@
       "templateLanguageDescription": "Select the language for the app.",
       "templateName": "Template Name",
       "templateNameDescription": "Select the template name for the app.",
+      "templateVersion": "Template Version",
+      "templateVersionDescription": "Select the template version for the app.",
       "appName": "App Name",
       "appNameDescription": "Enter the name for the app.",
       "baseDirDescription": "Select the base directory for the app."
@@ -264,7 +270,8 @@
     "versionHistory": "Version History",
     "selectVersion": "Select a version",
     "versionLatest": "Latest",
-    "localAddonTip": "(local)"
+    "localAddonTip": "(local)",
+    "tags": "Tags"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",

@@ -17,13 +17,11 @@ use serde::{Deserialize, Serialize};
 
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::node::GraphNode;
+use ten_rust::graph::node::{GraphNode, GraphNodeType};
 use ten_rust::pkg_info::manifest::api::ManifestApiMsg;
 use ten_rust::pkg_info::manifest::api::{
     ManifestApiCmdResult, ManifestApiPropertyAttributes,
 };
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 use ten_rust::pkg_info::value_type::ValueType;
 use uuid::Uuid;
 
@@ -188,14 +186,13 @@ pub fn update_graph_node_in_property_all_fields(
     {
         // Create the graph node.
         let new_node = GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: node_name.to_string(),
-            },
-            addon: addon_name.to_string(),
+            type_: GraphNodeType::Extension,
+            name: node_name.to_string(),
+            addon: Some(addon_name.to_string()),
             extension_group: extension_group_name.clone(),
             app: app_uri.clone(),
             property: property.clone(),
+            source_uri: None,
         };
 
         // Update property.json file with the graph node.
@@ -233,9 +230,7 @@ pub fn update_graph_node_in_property_all_fields(
                 nodes_to_remove,
                 nodes_to_modify_property,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }

@@ -79,8 +79,7 @@ pub async fn replace_graph_node_endpoint(
 
     // Find the graph node in the graph.
     let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
-        node.type_and_name.name == request_payload.name
-            && node.app == request_payload.app
+        node.name == request_payload.name && node.app == request_payload.app
     });
 
     if graph_node.is_none() {
@@ -100,7 +99,7 @@ pub async fn replace_graph_node_endpoint(
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
     let extension_group = graph_node.extension_group.clone();
-    graph_node.addon = request_payload.addon.clone();
+    graph_node.addon = Some(request_payload.addon.clone());
     graph_node.property = request_payload.property.clone();
 
     // Update property.json file with the updated graph node.

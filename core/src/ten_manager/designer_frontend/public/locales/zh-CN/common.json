@@ -127,7 +127,10 @@
       "title": "选择应用/图谱",
       "app": "应用",
       "graph": "图谱",
+      "select": "选择",
+      "selected": "已选择",
       "unspecified": "<未指定>",
+      "current": "当前",
       "updateSuccess": "应用/图谱更新成功"
     },
     "customNodeConn": {
@@ -144,7 +147,8 @@
       "appInstall": "应用安装",
       "filteredByAddon": "按插件筛选日志",
       "noAddons": "无可用插件",
-      "noMatchedAddons": "无匹配插件"
+      "noMatchedAddons": "无匹配插件",
+      "noLogs": "暂无日志"
     },
     "default": {
       "defaultLabelForAppRun": "默认应用运行标签",
@@ -169,6 +173,8 @@
       "templateLanguageDescription": "选择应用的模板语言。",
       "templateName": "模板名称",
       "templateNameDescription": "选择应用的模板名称。",
+      "templateVersion": "模板版本",
+      "templateVersionDescription": "选择应用的模板版本。",
       "appName": "应用名称",
       "appNameDescription": "输入应用的名称。",
       "baseDirDescription": "选择应用的基础目录。"
@@ -264,7 +270,8 @@
     "versionHistory": "版本历史",
     "selectVersion": "选择版本",
     "versionLatest": "最新",
-    "localAddonTip": "(本地)"
+    "localAddonTip": "(本地)",
+    "tags": "标签"
   },
   "statusBar": {
     "appsLoadedWithCount": "已加载 {{count}} 个应用",

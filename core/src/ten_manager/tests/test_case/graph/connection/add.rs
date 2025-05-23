@@ -51,12 +51,14 @@ mod tests {
         // Create connections to add.
         let connection1 = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
+            extension: Some("extension_1".to_string()),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd1".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_2".to_string(),
+                    extension: Some("extension_2".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),
@@ -67,12 +69,14 @@ mod tests {
 
         let connection2 = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
+            extension: Some("extension_1".to_string()),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd2".to_string(),
                 dest: vec![GraphDestination {
                     app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_3".to_string(),
+                    extension: Some("extension_3".to_string()),
+                    subgraph: None,
                     msg_conversion: None,
                 }],
             }]),
@@ -138,6 +142,7 @@ mod tests {
             ],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test adding a connection.
@@ -162,7 +167,7 @@ mod tests {
 
         let connection = &connections[0];
         assert_eq!(connection.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(connection.extension, "ext1");
+        assert_eq!(connection.extension, Some("ext1".to_string()));
 
         let cmd_flows = connection.cmd.as_ref().unwrap();
         assert_eq!(cmd_flows.len(), 1);
@@ -173,7 +178,7 @@ mod tests {
 
         let dest = &flow.dest[0];
         assert_eq!(dest.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(dest.extension, "ext2");
+        assert_eq!(dest.extension, Some("ext2".to_string()));
     }
 
     #[test]
@@ -196,6 +201,7 @@ mod tests {
             )],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test adding a connection with nonexistent source.
@@ -236,6 +242,7 @@ mod tests {
             )],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test adding a connection with nonexistent destination.
@@ -288,6 +295,7 @@ mod tests {
             ],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Add first connection.
@@ -336,14 +344,14 @@ mod tests {
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
-        assert_eq!(flow.dest[0].extension, "ext2");
+        assert_eq!(flow.dest[0].extension, Some("ext2".to_string()));
 
         let flow = &cmd_flows[1];
         assert_eq!(flow.name, "test_cmd_2");
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
-        assert_eq!(flow.dest[0].extension, "ext3");
+        assert_eq!(flow.dest[0].extension, Some("ext3".to_string()));
     }
 
     #[test]
@@ -373,6 +381,7 @@ mod tests {
             ],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Add different message types.
@@ -473,6 +482,7 @@ mod tests {
             ],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Add a connection.
@@ -560,6 +570,7 @@ mod tests {
             ],
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test connecting ext1 to ext2 with compatible schema - should succeed.

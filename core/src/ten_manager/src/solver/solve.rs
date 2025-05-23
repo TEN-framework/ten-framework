@@ -73,12 +73,12 @@ async fn print_prefix(
     out: Arc<Box<dyn TmanOutput>>,
 ) {
     if is_verbose(tman_config.clone()).await {
-        out.normal_line("");
+        out.normal_partial("");
     }
 
     for _ in 0..depth {
         if is_verbose(tman_config.clone()).await {
-            out.normal_line("  ");
+            out.normal_partial("  ");
         }
     }
 }
@@ -149,9 +149,11 @@ async fn print_statistics(
     let statistics_type = stats.statistics_type(key).unwrap();
     match statistics_type {
         StatisticsType::Value => {
-            let _value = stats
+            let value = stats
                 .value_get(key)
                 .expect("Failed to retrieve statistics value.");
+
+            out.normal_line(&format!(" {value}"));
         }
 
         StatisticsType::Array => {
@@ -163,6 +165,7 @@ async fn print_statistics(
                     .array_at(key, i)
                     .expect("Failed to retrieve statistics array.");
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
+                out.normal_partial(&format!("{} zu:", i));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),
@@ -181,6 +184,7 @@ async fn print_statistics(
                 let name = stats.map_subkey_name(key, i).unwrap();
                 let subkey = stats.map_at(key, name).unwrap();
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
+                out.normal_partial(&format!("{}:", name));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),
@@ -193,7 +197,9 @@ async fn print_statistics(
             }
         }
 
-        StatisticsType::Empty => {}
+        StatisticsType::Empty => {
+            out.normal_line("StatisticsType::Empty");
+        }
     }
 }
 
@@ -211,10 +217,10 @@ async fn solve(
     // Create a control object.
     // i.e., clingo_control_new
     let mut ctl = control({
-        let args = vec![];
+        let mut args = vec![];
 
         if is_verbose(tman_config.clone()).await {
-            // args.push("--verbose".to_string());
+            args.push("--verbose".to_string());
         }
 
         args
@@ -248,7 +254,14 @@ async fn solve(
         conf.value_set(heuristic_key, "berkmin")
             .expect("Failed to set heuristic to berkmin.");
 
-        // print_configuration(tman_config, conf, root_key, 0);
+        // print_configuration(
+        //     tman_config.clone(),
+        //     conf,
+        //     root_key,
+        //     0,
+        //     out.clone(),
+        // )
+        // .await;
     }
 
     let main_program = include_str!("main.lp");
@@ -333,7 +346,8 @@ async fn solve(
     // recursively.
     // let stats = ctl.statistics().unwrap();
     // let stats_key = stats.root().unwrap();
-    // print_statistics(tman_config, stats, stats_key, 0);
+    // print_statistics(tman_config.clone(), stats, stats_key, 0, out.clone())
+    //     .await;
 
     Ok((usable_model, non_usable_models))
 }
@@ -419,6 +433,7 @@ fn create_input_str_for_pkg_info_dependencies(
     pkg_info: &PkgInfo,
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
+    max_latest_versions: i32,
 ) -> Result<()> {
     // If this package has already been dumped, skip it.
     if dumped_pkgs_info.contains(&pkg_info.into()) {
@@ -456,13 +471,33 @@ fn create_input_str_for_pkg_info_dependencies(
             if let Some(candidates) = candidates {
                 let mut found_matched = false;
 
-                for candidate in candidates {
+                let mut candidates_vec: Vec<&PkgInfo> =
+                    candidates.values().collect();
+
+                // The sorting below places the larger versions at the front,
+                // thus having smaller indexes. This is correct because, in the
+                // Clingo solver, our optimization strategy is to minimize the
+                // overall weight, and we prefer larger version numbers.
+                // Therefore, larger version numbers have smaller weights, and
+                // the index here is equivalent to the concept of weight in the
+                // Clingo solver.
+                candidates_vec.sort_by(|a, b| {
+                    b.manifest.version.cmp(&a.manifest.version)
+                });
+
+                for (idx, candidate) in candidates_vec.into_iter().enumerate() {
+                    if max_latest_versions >= 0
+                        && idx >= max_latest_versions as usize
+                    {
+                        break;
+                    }
+
                     // Get version requirement from dependency.
                     let version_matches = match dependency {
                         ManifestDependency::RegistryDependency {
                             version_req,
                             ..
-                        } => version_req.matches(&candidate.1.manifest.version),
+                        } => version_req.matches(&candidate.manifest.version),
                         ManifestDependency::LocalDependency { .. } => {
                             // For local dependencies, just return true to
                             // match all versions.
@@ -477,23 +512,24 @@ fn create_input_str_for_pkg_info_dependencies(
                             pkg_info.manifest.type_and_name.pkg_type,
                             pkg_info.manifest.type_and_name.name,
                             pkg_info.manifest.version,
-                            candidate.1.manifest.type_and_name.pkg_type,
-                            candidate.1.manifest.type_and_name.name,
-                            candidate.1.manifest.version,
+                            candidate.manifest.type_and_name.pkg_type,
+                            candidate.manifest.type_and_name.name,
+                            candidate.manifest.version,
                         ));
 
                         create_input_str_for_pkg_info_dependencies(
                             input_str,
-                            candidate.1,
+                            candidate,
                             dumped_pkgs_info,
                             all_candidates,
+                            max_latest_versions,
                         )?;
 
                         found_matched = true;
                     }
                 }
 
-                if !found_matched {
+                if max_latest_versions < 0 && !found_matched {
                     return Err(anyhow!(
                         "Failed to find candidates for {}",
                         match dependency {
@@ -502,7 +538,8 @@ fn create_input_str_for_pkg_info_dependencies(
                                 name,
                                 version_req,
                             } => format!(
-                                "[{pkg_type}]{name} ({version_req})"
+                                "[{pkg_type}]{name}
+                ({version_req})"
                             ),
                             ManifestDependency::LocalDependency {
                                 path,
@@ -534,14 +571,14 @@ fn create_input_str_for_pkg_info_dependencies(
 
 fn create_input_str_for_pkg_info_without_dependencies(
     input_str: &mut String,
-    pkg_info: &PkgBasicInfo,
+    pkg_info: &PkgInfo,
     weight: &usize,
 ) -> Result<()> {
     input_str.push_str(&format!(
         "version_declared(\"{}\", \"{}\", \"{}\", {}).\n",
-        pkg_info.type_and_name.pkg_type,
-        pkg_info.type_and_name.name,
-        pkg_info.version,
+        pkg_info.manifest.type_and_name.pkg_type,
+        pkg_info.manifest.type_and_name.name,
+        pkg_info.manifest.version,
         weight
     ));
 
@@ -552,10 +589,10 @@ fn create_input_str_for_all_possible_pkgs_info(
     input_str: &mut String,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
+    max_latest_versions: i32,
 ) -> Result<()> {
     for candidates in all_candidates {
-        let mut candidates_vec: Vec<PkgBasicInfo> =
-            candidates.1.values().map(|pkg_info| pkg_info.into()).collect();
+        let mut candidates_vec: Vec<&PkgInfo> = candidates.1.values().collect();
 
         // The sorting below places the larger versions at the front, thus
         // having smaller indexes. This is correct because, in the Clingo
@@ -563,7 +600,8 @@ fn create_input_str_for_all_possible_pkgs_info(
         // and we prefer larger version numbers. Therefore, larger version
         // numbers have smaller weights, and the index here is equivalent to the
         // concept of weight in the Clingo solver.
-        candidates_vec.sort_by(|a, b| b.cmp(a));
+        candidates_vec
+            .sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
 
         // Check if the locked package exists in the candidates. If it does,
         // move it to the front of the candidates_vec so that it has a smaller
@@ -576,19 +614,23 @@ fn create_input_str_for_all_possible_pkgs_info(
             // dependency, do not prioritize any candidate packages.
             if !locked_pkg.is_local_dependency {
                 let idx = candidates_vec.iter().position(|pkg_info| {
-                    locked_pkg.manifest.version == pkg_info.version
+                    locked_pkg.manifest.version == pkg_info.manifest.version
                 });
 
                 if let Some(idx) = idx {
                     candidates_vec.remove(idx);
-                    candidates_vec.insert(0, locked_pkg.into());
+                    candidates_vec.insert(0, locked_pkg);
                 }
             }
         }
 
         for (idx, candidate) in candidates_vec.into_iter().enumerate() {
+            if max_latest_versions >= 0 && idx >= max_latest_versions as usize {
+                break;
+            }
+
             create_input_str_for_pkg_info_without_dependencies(
-                input_str, &candidate, &idx,
+                input_str, candidate, &idx,
             )?;
         }
     }
@@ -596,6 +638,7 @@ fn create_input_str_for_all_possible_pkgs_info(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn create_input_str(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -604,6 +647,7 @@ async fn create_input_str(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    max_latest_versions: i32,
 ) -> Result<String> {
     let mut input_str = String::new();
 
@@ -615,6 +659,7 @@ async fn create_input_str(
         &mut input_str,
         all_candidates,
         locked_pkgs,
+        max_latest_versions,
     )?;
 
     create_input_str_for_dependency_relationship(
@@ -632,6 +677,7 @@ async fn create_input_str(
                 candidate.1,
                 &mut dumped_pkgs_info,
                 all_candidates,
+                max_latest_versions,
             )?;
         }
     }
@@ -643,6 +689,7 @@ async fn create_input_str(
     Ok(input_str)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn solve_all(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -651,6 +698,7 @@ pub async fn solve_all(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    max_latest_versions: i32,
 ) -> SolveResult {
     let input_str = create_input_str(
         tman_config.clone(),
@@ -660,6 +708,7 @@ pub async fn solve_all(
         all_candidates,
         locked_pkgs,
         out.clone(),
+        max_latest_versions,
     )
     .await?;
     solve(tman_config, &input_str, out).await

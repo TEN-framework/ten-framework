@@ -7,7 +7,6 @@ on:
     types: [opened, synchronize, reopened]
     paths-ignore:
       - "tools/**"
-      - "portal/**"
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"

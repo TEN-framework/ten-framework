@@ -6,7 +6,7 @@
 //
 use anyhow::Result;
 
-use crate::{graph::Graph, pkg_info::pkg_type::PkgType};
+use crate::graph::{node::GraphNodeType, Graph};
 
 impl Graph {
     /// Validates that at least one extension node exists in the graph.
@@ -19,7 +19,7 @@ impl Graph {
         let extension_exists = self
             .nodes
             .iter()
-            .any(|node| node.type_and_name.pkg_type == PkgType::Extension);
+            .any(|node| node.type_ == GraphNodeType::Extension);
 
         if !extension_exists {
             return Err(anyhow::anyhow!(

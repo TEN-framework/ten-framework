@@ -265,7 +265,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info.graph.nodes.first().unwrap().type_and_name.name.clone()
+            graph_info.graph.nodes.first().unwrap().name.clone()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -424,7 +424,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info.graph.nodes.first().unwrap().type_and_name.name.clone()
+            graph_info.graph.nodes.first().unwrap().name.clone()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -543,7 +543,7 @@ mod tests {
 
             // Assuming there's at least one node in the graph.
             let node = graph_info.graph.nodes.first().unwrap();
-            (node.type_and_name.name.clone(), node.app.clone())
+            (node.name.clone(), node.app.clone())
         };
 
         // Store the node details we'll use for replacement.
@@ -585,11 +585,9 @@ mod tests {
             .graph
             .nodes
             .iter()
-            .find(|node| {
-                node.type_and_name.name == node_name && node.app == app_uri
-            })
+            .find(|node| node.name == node_name && node.app == app_uri)
             .unwrap();
 
-        assert_eq!(updated_node.addon, new_addon);
+        assert_eq!(updated_node.addon, Some(new_addon));
     }
 }

@@ -6,7 +6,7 @@
 //
 use anyhow::Result;
 
-use crate::{graph::Graph, pkg_info::pkg_type::PkgType};
+use crate::graph::{node::GraphNodeType, Graph};
 
 impl Graph {
     /// Validates that no extension nodes are duplicated within the graph.
@@ -25,13 +25,13 @@ impl Graph {
 
         // Iterate through all nodes in the graph to find extensions
         for (node_idx, node) in self.nodes.iter().enumerate() {
-            if node.type_and_name.pkg_type == PkgType::Extension {
+            if node.type_ == GraphNodeType::Extension {
                 // Create a unique identifier by combining app URI and extension
                 // name
                 let unique_ext_name = format!(
                     "{}:{}",
                     node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    node.type_and_name.name
+                    node.name
                 );
 
                 // Check if this extension already exists in our tracking list
@@ -40,8 +40,8 @@ impl Graph {
                         "Duplicated extension was found in nodes[{}], addon: \
                          {}, name: {}.",
                         node_idx,
-                        node.addon,
-                        node.type_and_name.name
+                        node.addon.as_ref().map_or("None", String::as_str),
+                        node.name
                     ));
                 }
 

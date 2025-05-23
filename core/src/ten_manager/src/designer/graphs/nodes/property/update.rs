@@ -50,8 +50,8 @@ fn update_node_property_in_graph(
 ) -> Result<()> {
     // Find the node in the graph.
     let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
-        node.type_and_name.name == request_payload.name
-            && node.addon == request_payload.addon
+        node.name == request_payload.name
+            && node.addon == Some(request_payload.addon.clone())
             && node.extension_group == request_payload.extension_group
             && node.app == request_payload.app
     });

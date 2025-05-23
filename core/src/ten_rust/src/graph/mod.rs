@@ -10,19 +10,21 @@ pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
 
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
+use std::str::FromStr;
 
 use anyhow::Result;
-use connection::GraphConnection;
+use node::GraphNode;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    base_dir_pkg_info::PkgsInfoInApp,
-    constants::{
-        ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS,
-    },
-    pkg_info::{localhost, pkg_type::PkgType},
+use crate::base_dir_pkg_info::PkgsInfoInApp;
+use crate::constants::{
+    ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS,
 };
+use crate::pkg_info::localhost;
+
+use self::connection::GraphConnection;
+use self::node::GraphNodeType;
 
 /// The state of the 'app' field declaration in all nodes in the graph.
 ///
@@ -134,20 +136,42 @@ pub struct GraphExposedMessage {
 
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
+}
+
+/// Represents a property that is exposed by the graph to the outside.
+/// This is mainly used by development tools to provide intelligent prompts.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphExposedProperty {
+    /// The name of the extension.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
+
+    /// The name of the property.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub name: String,
+
+    /// The alias of the property when exposed outside the graph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    pub alias: String,
 }
 
 /// Represents a connection graph that defines how extensions connect to each
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Graph {
-    pub nodes: Vec<node::GraphNode>,
+    pub nodes: Vec<GraphNode>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connections: Option<Vec<connection::GraphConnection>>,
+    pub connections: Option<Vec<GraphConnection>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_messages: Option<Vec<GraphExposedMessage>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exposed_properties: Option<Vec<GraphExposedProperty>>,
 }
 
 impl FromStr for Graph {
@@ -259,6 +283,27 @@ impl Graph {
             }
         }
 
+        // Validate exposed_properties if they exist
+        if let Some(exposed_properties) = &self.exposed_properties {
+            for (idx, property) in exposed_properties.iter().enumerate() {
+                // Verify that the extension exists in the graph
+                if !self.nodes.iter().any(|node| {
+                    if let Some(ext) = &property.extension {
+                        &node.name == ext
+                    } else {
+                        false
+                    }
+                }) {
+                    return Err(anyhow::anyhow!(
+                        "exposed_properties[{}]: extension '{}' does not \
+                         exist in the graph",
+                        idx,
+                        property.extension.as_ref().unwrap_or(&String::new())
+                    ));
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -318,11 +363,11 @@ impl Graph {
         self.nodes
             .iter()
             .find(|node| {
-                node.type_and_name.pkg_type == PkgType::Extension
-                    && node.type_and_name.name.as_str() == extension
+                node.type_ == GraphNodeType::Extension
+                    && node.name.as_str() == extension
                     && node.get_app_uri() == app
             })
-            .map(|node| &node.addon)
+            .and_then(|node| node.addon.as_ref())
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Extension '{}' is not found in nodes, should not happen.",

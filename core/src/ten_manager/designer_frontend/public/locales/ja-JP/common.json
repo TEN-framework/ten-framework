@@ -127,7 +127,10 @@
       "title": "アプリ/グラフを選択",
       "app": "アプリ",
       "graph": "グラフ",
+      "select": "選択",
+      "selected": "選択済み",
       "unspecified": "<未指定>",
+      "current": "現在",
       "updateSuccess": "アプリ/グラフの更新に成功しました"
     },
     "customNodeConn": {
@@ -144,7 +147,8 @@
       "appInstall": "アプリのインストール",
       "filteredByAddon": "アドオンでログをフィルター",
       "noAddons": "利用可能なアドオンがありません",
-      "noMatchedAddons": "一致するアドオンがありません"
+      "noMatchedAddons": "一致するアドオンがありません",
+      "noLogs": "表示するログがありません"
     },
     "default": {
       "defaultLabelForAppRun": "アプリ実行のデフォルトラベル",
@@ -169,6 +173,8 @@
       "templateLanguageDescription": "アプリのテンプレート言語を選択してください。",
       "templateName": "テンプレート名",
       "templateNameDescription": "アプリのテンプレート名を選択してください。",
+      "templateVersion": "テンプレートバージョン",
+      "templateVersionDescription": "アプリのテンプレートバージョンを選択してください。",
       "appName": "アプリ名",
       "appNameDescription": "アプリの名前を入力してください。",
       "baseDirDescription": "アプリのベースディレクトリを選択してください。"
@@ -264,7 +270,8 @@
     "versionHistory": "バージョン履歴",
     "selectVersion": "バージョンを選択",
     "versionLatest": "最新",
-    "localAddonTip": "(ローカル)"
+    "localAddonTip": "(ローカル)",
+    "tags": "タグ"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",

@@ -23,7 +23,7 @@ class test_predefined_graph : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest("localhost", nullptr, nullptr);
+    start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
     start_graph_cmd->set_graph_from_json(R"({
       "nodes": [{
         "type": "extension",

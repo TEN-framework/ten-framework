@@ -38,7 +38,7 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 		go func() {
 			graphJSONBytes := []byte(graphJSON)
 			startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)
-			startGraphCmd.SetDest("localhost", "", "")
+			startGraphCmd.SetDest("", "", "")
 			tenEnv.SendCmd(
 				startGraphCmd,
 				func(tenEnv ten.TenEnv, cr ten.CmdResult, err error) {

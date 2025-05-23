@@ -217,10 +217,10 @@ static void ten_app_create_protocol_with_uri_task(void *self_, void *arg) {
 }
 
 bool ten_addon_create_protocol_with_uri(
-    ten_env_t *ten_env, const char *uri, TEN_PROTOCOL_ROLE role,
+    ten_env_t *ten_env, const char *app_uri, TEN_PROTOCOL_ROLE role,
     ten_env_addon_on_create_protocol_async_cb_t cb, void *user_data,
     ten_error_t *err) {
-  TEN_ASSERT(uri && role > TEN_PROTOCOL_ROLE_INVALID, "Should not happen.");
+  TEN_ASSERT(app_uri && role > TEN_PROTOCOL_ROLE_INVALID, "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(err, "Invalid argument.");
@@ -253,7 +253,7 @@ bool ten_addon_create_protocol_with_uri(
              "Should not happen.");
 
   ten_addon_create_protocol_ctx_t *ctx =
-      ten_addon_create_protocol_ctx_create(uri, role, cb, user_data);
+      ten_addon_create_protocol_ctx_create(app_uri, role, cb, user_data);
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ten_addon_context_t *addon_context = ten_addon_context_create();

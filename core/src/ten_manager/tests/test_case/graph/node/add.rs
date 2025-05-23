@@ -16,6 +16,7 @@ mod tests {
             nodes: Vec::new(),
             connections: None,
             exposed_messages: None,
+            exposed_properties: None,
         };
 
         // Test case 1: Add a valid node.
@@ -30,8 +31,8 @@ mod tests {
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].type_and_name.name, "test_extension");
-        assert_eq!(graph.nodes[0].addon, "test_addon");
+        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].addon, Some("test_addon".to_string()));
         assert_eq!(
             graph.nodes[0].app,
             Some("http://test-app-uri.com".to_string())
@@ -48,7 +49,7 @@ mod tests {
         );
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 2);
-        assert_eq!(graph.nodes[1].type_and_name.name, "test_extension2");
+        assert_eq!(graph.nodes[1].name, "test_extension2");
         assert_eq!(
             graph.nodes[1].extension_group,
             Some("custom_group".to_string())

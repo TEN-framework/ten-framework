@@ -10,10 +10,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use ten_rust::{
-        graph::{graph_info::GraphInfo, Graph},
-        pkg_info::pkg_type::PkgType,
-    };
+    use ten_rust::graph::{graph_info::GraphInfo, node::GraphNodeType, Graph};
 
     #[test]
     fn test_graph_source_uri() {
@@ -62,6 +59,7 @@ mod tests {
                 nodes: Vec::new(),
                 connections: None,
                 exposed_messages: None,
+                exposed_properties: None,
             },
             source_uri: Some(source_uri),
             app_base_dir: None,
@@ -74,14 +72,14 @@ mod tests {
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes.len(), 1);
+        assert_eq!(graph_info.graph.nodes[0].type_, GraphNodeType::Extension);
         assert_eq!(
-            graph_info.graph.nodes[0].type_and_name.pkg_type,
-            PkgType::Extension
+            graph_info.graph.nodes[0].addon,
+            Some("test_addon".to_string())
         );
-        assert_eq!(graph_info.graph.nodes[0].addon, "test_addon");
         assert!(graph_info.graph.connections.is_some());
         let connections = graph_info.graph.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 1);
-        assert_eq!(connections[0].extension, "test_ext");
+        assert_eq!(connections[0].extension, Some("test_ext".to_string()));
     }
 }

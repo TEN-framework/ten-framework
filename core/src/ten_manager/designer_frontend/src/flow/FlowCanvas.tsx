@@ -20,6 +20,7 @@ import {
   type NodeChange,
   type EdgeChange,
 } from "@xyflow/react";
+import { useTranslation } from "react-i18next";
 
 import CustomNode from "@/flow/CustomNode";
 import CustomEdge from "@/flow/CustomEdge";
@@ -76,6 +77,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
     const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
       useWidgetStore();
     const { currentWorkspace } = useAppStore();
+    const { t } = useTranslation();
 
     const [contextMenu, setContextMenu] = useState<{
       visible: boolean;
@@ -131,7 +133,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       });
     };
 
-    const launchLogViewer = () => {
+    const launchLogViewer = (node: TCustomNode) => {
       const widgetId = `logViewer-${Date.now()}`;
       appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
@@ -141,11 +143,20 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
         category: EWidgetCategory.LogViewer,
         display_type: EWidgetDisplayType.Popup,
 
-        title: <LogViewerPopupTitle />,
+        title: (
+          <LogViewerPopupTitle
+            title={t("popup.logViewer.title") + ` - ${node.data.name}`}
+          />
+        ),
         metadata: {
           wsUrl: "",
           scriptType: ELogViewerScriptType.DEFAULT,
           script: {},
+          options: {
+            filters: {
+              extensions: [node.data.name],
+            },
+          },
         },
         popup: {
           width: 0.5,

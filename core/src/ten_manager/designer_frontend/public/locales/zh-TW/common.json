@@ -127,7 +127,10 @@
       "title": "選擇應用/圖譜",
       "app": "應用",
       "graph": "圖譜",
+      "select": "選擇",
+      "selected": "已選擇",
       "unspecified": "<未指定>",
+      "current": "目前",
       "updateSuccess": "應用/圖譜更新成功"
     },
     "customNodeConn": {
@@ -144,7 +147,8 @@
       "appInstall": "應用安裝",
       "filteredByAddon": "依附加元件篩選日誌",
       "noAddons": "無可用附加元件",
-      "noMatchedAddons": "無符合的附加元件"
+      "noMatchedAddons": "無符合的附加元件",
+      "noLogs": "無日誌顯示"
     },
     "default": {
       "defaultLabelForAppRun": "預設應用程式運行標籤",
@@ -169,6 +173,8 @@
       "templateLanguageDescription": "選擇應用程式的模板語言。",
       "templateName": "模板名稱",
       "templateNameDescription": "選擇應用程式的模板名稱。",
+      "templateVersion": "模板版本",
+      "templateVersionDescription": "選擇應用程式的模板版本。",
       "appName": "應用程式名稱",
       "appNameDescription": "輸入應用程式的名稱。",
       "baseDirDescription": "選擇應用程式的基礎目錄。"
@@ -264,7 +270,8 @@
     "versionHistory": "版本歷史",
     "selectVersion": "選擇版本",
     "versionLatest": "最新",
-    "localAddonTip": "(本地)"
+    "localAddonTip": "(本地)",
+    "tags": "標籤"
   },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",

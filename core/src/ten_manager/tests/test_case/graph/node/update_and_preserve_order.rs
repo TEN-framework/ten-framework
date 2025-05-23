@@ -15,10 +15,8 @@ mod tests {
 
     use ten_manager::fs::json::write_property_json_file;
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::GraphNode;
+    use ten_rust::graph::node::{GraphNode, GraphNodeType};
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
-    use ten_rust::pkg_info::pkg_type::PkgType;
-    use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 
     #[test]
     fn test_update_graph_node_preserves_field_order() -> Result<()> {
@@ -115,27 +113,25 @@ mod tests {
 
         // Create a new node to add.
         let new_node = GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: "new-node".to_string(),
-            },
-            addon: "new-addon".to_string(),
+            type_: GraphNodeType::Extension,
+            name: "new-node".to_string(),
+            addon: Some("new-addon".to_string()),
             extension_group: None,
             app: None,
             property: None,
+            source_uri: None,
         };
         let new_nodes = vec![new_node];
 
         // Create a node to remove (the second one).
         let remove_node = GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: "second-node".to_string(),
-            },
-            addon: "second-addon".to_string(),
+            type_: GraphNodeType::Extension,
+            name: "second-node".to_string(),
+            addon: Some("second-addon".to_string()),
             extension_group: None,
             app: None,
             property: None,
+            source_uri: None,
         };
         let remove_nodes = vec![remove_node];
 

@@ -214,7 +214,8 @@
         "type": {
           "type": "string",
           "enum": [
-            "extension"
+            "extension",
+            "subgraph"
           ]
         },
         "name": {
@@ -717,6 +718,29 @@
                       "$ref": "#/$defs/alphanumericCharacters"
                     },
                     "extension": {
+                      "$ref": "#/$defs/alphanumericCharacters"
+                    }
+                  }
+                }
+              },
+              "exposed_properties": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "extension",
+                    "name",
+                    "alias"
+                  ],
+                  "properties": {
+                    "extension": {
+                      "$ref": "#/$defs/alphanumericCharacters"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/alphanumericCharacters"
+                    },
+                    "alias": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     }
                   }

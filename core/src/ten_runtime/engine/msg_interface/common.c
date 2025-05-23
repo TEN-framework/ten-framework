@@ -109,8 +109,6 @@ static void ten_engine_handle_in_msgs_sync(ten_engine_t *self) {
     ten_shared_ptr_t *msg = ten_smart_ptr_listnode_get(iter.node);
     TEN_ASSERT(msg, "Should not happen.");
     TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
-    TEN_ASSERT(!ten_msg_src_is_empty(msg),
-               "The message source should have been set.");
 
     if (ten_msg_is_cmd_and_result(msg)) {
       const char *src_uri = ten_msg_get_src_app_uri(msg);

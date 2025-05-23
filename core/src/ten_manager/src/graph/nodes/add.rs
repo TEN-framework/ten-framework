@@ -6,9 +6,9 @@
 //
 use anyhow::Result;
 
-use ten_rust::{
-    graph::{node::GraphNode, Graph},
-    pkg_info::{pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName},
+use ten_rust::graph::{
+    node::{GraphNode, GraphNodeType},
+    Graph,
 };
 
 /// Checks if a node exists in the graph.
@@ -21,7 +21,7 @@ fn check_node_exist(
     let src_node_exists = graph
         .nodes
         .iter()
-        .any(|node| node.type_and_name.name == extension && node.app == *app);
+        .any(|node| node.name == extension && node.app == *app);
 
     if src_node_exists {
         return Err(anyhow::anyhow!(
@@ -50,14 +50,13 @@ pub fn graph_add_extension_node(
 
     // Create new GraphNode.
     let node = GraphNode {
-        type_and_name: PkgTypeAndName {
-            pkg_type: PkgType::Extension,
-            name: pkg_name.to_string(),
-        },
-        addon: addon.to_string(),
+        type_: GraphNodeType::Extension,
+        name: pkg_name.to_string(),
+        addon: Some(addon.to_string()),
         extension_group: extension_group.clone(),
         app: app.clone(),
         property: property.clone(),
+        source_uri: None,
     };
 
     // Add the node to the graph.

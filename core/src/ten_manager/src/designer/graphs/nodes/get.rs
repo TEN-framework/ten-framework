@@ -12,9 +12,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::pkg_info::get_pkg_info_for_extension_addon;
 use uuid::Uuid;
 
-use ten_rust::graph::node::GraphNode;
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
+use ten_rust::graph::node::{GraphNode, GraphNodeType};
 
 use crate::designer::common::{
     get_designer_api_msg_from_pkg, get_designer_property_hashmap_from_pkg,
@@ -56,16 +54,16 @@ impl TryFrom<GraphNode> for GraphNodesSingleResponseData {
     type Error = anyhow::Error;
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
-        if node.type_and_name.pkg_type != PkgType::Extension {
+        if node.type_ != GraphNodeType::Extension {
             return Err(anyhow!(
                 "Graph node '{}' is not of type 'extension'",
-                node.type_and_name.name
+                node.name
             ));
         }
 
         Ok(GraphNodesSingleResponseData {
-            addon: node.addon,
-            name: node.type_and_name.name,
+            addon: node.addon.expect("Extension node must have an addon"),
+            name: node.name,
             extension_group: node.extension_group,
             app: node.app,
             api: None,
@@ -78,14 +76,13 @@ impl TryFrom<GraphNode> for GraphNodesSingleResponseData {
 impl From<GraphNodesSingleResponseData> for GraphNode {
     fn from(designer_extension: GraphNodesSingleResponseData) -> Self {
         GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: designer_extension.name,
-            },
-            addon: designer_extension.addon,
+            type_: GraphNodeType::Extension,
+            name: designer_extension.name,
+            addon: Some(designer_extension.addon),
             extension_group: designer_extension.extension_group,
             app: designer_extension.app,
             property: designer_extension.property,
+            source_uri: None,
         }
     }
 }
@@ -113,7 +110,8 @@ pub async fn get_graph_nodes_endpoint(
                 let error_response = ErrorResponse::from_error(
                     &err,
                     format!(
-                        "Error fetching runtime extensions for graph '{graph_id}'"
+                        "Error fetching runtime extensions for graph \
+                         '{graph_id}'"
                     )
                     .as_str(),
                 );
@@ -128,12 +126,18 @@ pub async fn get_graph_nodes_endpoint(
             &pkgs_cache,
             app_base_dir_of_graph,
             &extension_graph_node.app,
-            &extension_graph_node.addon,
+            extension_graph_node
+                .addon
+                .as_ref()
+                .expect("Extension node must have an addon"),
         );
         if let Some(pkg_info) = pkg_info {
             resp_extensions.push(GraphNodesSingleResponseData {
-                addon: extension_graph_node.addon.clone(),
-                name: extension_graph_node.type_and_name.name.clone(),
+                addon: extension_graph_node
+                    .addon
+                    .clone()
+                    .expect("Extension node must have an addon"),
+                name: extension_graph_node.name.clone(),
                 extension_group: extension_graph_node.extension_group.clone(),
                 app: extension_graph_node.app.clone(),
                 api: pkg_info.manifest.api.as_ref().map(|api| DesignerApi {

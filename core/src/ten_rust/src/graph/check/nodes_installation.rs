@@ -10,7 +10,7 @@ use anyhow::Result;
 
 use crate::{
     base_dir_pkg_info::PkgsInfoInApp,
-    graph::Graph,
+    graph::{node::GraphNodeType, Graph},
     pkg_info::{find_pkgs_cache_entry_by_app_uri, pkg_type::PkgType},
 };
 
@@ -43,11 +43,23 @@ impl Graph {
                 }
             };
 
+            // Convert GraphNodeType to PkgType.
+            let pkg_type = match node.type_ {
+                GraphNodeType::Extension => PkgType::Extension,
+                GraphNodeType::Subgraph => {
+                    panic!(
+                        "Subgraph nodes should not be checked for installation"
+                    )
+                }
+            };
+
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 // Search for the package using the helper method.
                 let found = pkgs_info_in_app.find_pkg_by_type_and_name(
-                    node.type_and_name.pkg_type,
-                    &node.addon,
+                    pkg_type,
+                    node.addon
+                        .as_ref()
+                        .expect("Extension node must have an addon"),
                 );
 
                 // If the node is not found, add it to the missing packages
@@ -58,8 +70,10 @@ impl Graph {
                             .as_ref()
                             .map(|s| s.to_string())
                             .unwrap_or("".to_string()),
-                        node.type_and_name.pkg_type,
-                        node.addon.clone(),
+                        pkg_type,
+                        node.addon
+                            .clone()
+                            .expect("Extension node must have an addon"),
                     ));
                 }
             } else if !ignore_missing_apps {
@@ -68,8 +82,10 @@ impl Graph {
                         .as_ref()
                         .map(|s| s.to_string())
                         .unwrap_or("".to_string()),
-                    node.type_and_name.pkg_type,
-                    node.addon.clone(),
+                    pkg_type,
+                    node.addon
+                        .clone()
+                        .expect("Extension node must have an addon"),
                 ));
             }
         }

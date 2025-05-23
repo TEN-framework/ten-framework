@@ -140,7 +140,7 @@ static void ten_app_continue_run_after_load_all_extensions_if_specified(
     goto error;
   }
 
-  if (!ten_string_is_equal_c_str(&self->uri, TEN_STR_LOCALHOST) &&
+  if (!ten_string_is_empty(&self->uri) &&
       !ten_string_starts_with(&self->uri, TEN_STR_CLIENT)) {
     // Create the app listening endpoint protocol if specifying one.
     bool rc = ten_addon_create_protocol_with_uri(
@@ -252,10 +252,6 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
 
   ten_metadata_init_schema_store(&self->manifest, &self->schema_store);
   ten_app_adjust_and_validate_property_on_configure_done(self);
-
-  if (ten_string_is_empty(&self->uri)) {
-    ten_string_set_from_c_str(&self->uri, TEN_STR_LOCALHOST);
-  }
 
   ten_addon_manager_t *manager = ten_addon_manager_get_instance();
   TEN_ASSERT(manager, "Should not happen.");

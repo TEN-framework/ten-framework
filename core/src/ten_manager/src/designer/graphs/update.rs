@@ -8,10 +8,8 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use ten_rust::graph::node::GraphNode;
+use ten_rust::graph::node::{GraphNode, GraphNodeType};
 use ten_rust::graph::{connection::GraphConnection, GraphExposedMessage};
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 use uuid::Uuid;
 
 use crate::{
@@ -38,14 +36,13 @@ pub struct GraphNodeForUpdate {
 impl GraphNodeForUpdate {
     fn to_graph_node(&self) -> GraphNode {
         GraphNode {
-            type_and_name: PkgTypeAndName {
-                pkg_type: PkgType::Extension,
-                name: self.name.clone(),
-            },
-            addon: self.addon.clone(),
+            type_: GraphNodeType::Extension,
+            name: self.name.clone(),
+            addon: Some(self.addon.clone()),
             extension_group: self.extension_group.clone(),
             app: self.app.clone(),
             property: self.property.clone(),
+            source_uri: None,
         }
     }
 }
@@ -126,6 +123,7 @@ pub async fn update_graph_endpoint(
         &graph_nodes,
         &request_payload.connections,
         &request_payload.exposed_messages,
+        &[],
     ) {
         Ok(_) => (),
         Err(err) => {
@@ -148,6 +146,7 @@ pub async fn update_graph_endpoint(
         &graph_nodes,
         &request_payload.connections,
         &request_payload.exposed_messages,
+        &[],
     ) {
         Ok(_) => (),
         Err(err) => {
