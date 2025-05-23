@@ -52,6 +52,7 @@ mod tests {
         let connection1 = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
             extension: "extension_1".to_string(),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd1".to_string(),
                 dest: vec![GraphDestination {
@@ -68,6 +69,7 @@ mod tests {
         let connection2 = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
             extension: "extension_1".to_string(),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd2".to_string(),
                 dest: vec![GraphDestination {

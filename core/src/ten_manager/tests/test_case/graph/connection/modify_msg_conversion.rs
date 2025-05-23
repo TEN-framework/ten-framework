@@ -50,6 +50,7 @@ mod tests {
         let connection_to_modify = GraphConnection {
             app: Some("http://example.com:8000".to_string()),
             extension: "extension_1".to_string(),
+            subgraph: None,
             cmd: Some(vec![GraphMessageFlow {
                 name: "existing_cmd".to_string(),
                 dest: vec![GraphDestination {

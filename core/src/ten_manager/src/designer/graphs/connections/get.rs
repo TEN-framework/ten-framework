@@ -30,6 +30,9 @@ pub struct GraphConnectionsSingleResponseData {
     pub extension: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd: Option<Vec<DesignerMessageFlow>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,6 +66,7 @@ impl From<GraphConnection> for GraphConnectionsSingleResponseData {
         GraphConnectionsSingleResponseData {
             app: conn.app,
             extension: conn.extension,
+            subgraph: conn.subgraph,
 
             cmd: conn.cmd.map(get_designer_msg_flow_from_property),
 
@@ -84,6 +88,7 @@ impl From<GraphConnectionsSingleResponseData> for GraphConnection {
         GraphConnection {
             app: designer_connection.app,
             extension: designer_connection.extension,
+            subgraph: designer_connection.subgraph,
 
             cmd: designer_connection
                 .cmd

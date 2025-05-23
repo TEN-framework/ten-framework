@@ -247,6 +247,7 @@ pub fn graph_add_connection(
             connections.push(GraphConnection {
                 app: src_app.clone(),
                 extension: src_extension,
+                subgraph: None,
                 cmd: None,
                 data: None,
                 audio_frame: None,
