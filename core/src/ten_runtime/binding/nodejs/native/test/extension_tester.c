@@ -859,8 +859,8 @@ done:
   return js_undefined(env);
 }
 
-static void ten_nodejs_extension_tester_async_run_execute(
-    napi_env env, TEN_UNUSED void *data) {
+static void ten_nodejs_extension_tester_async_run_execute(napi_env env,
+                                                          void *data) {
   TEN_ASSERT(env, "Should not happen.");
 
   ten_nodejs_extension_tester_async_run_data_t *async_run_data =
@@ -871,18 +871,22 @@ static void ten_nodejs_extension_tester_async_run_execute(
   ten_extension_tester_run(
       async_run_data->extension_tester_bridge->c_extension_tester);
 
+  TEN_LOGI("ten_extension_tester_run run done");
+
   async_run_data->async_action_status = 0;
 }
 
-static void ten_nodejs_extension_tester_async_run_complete(
-    napi_env env, napi_status status, TEN_UNUSED void *data) {
+static void ten_nodejs_extension_tester_async_run_complete(napi_env env,
+                                                           napi_status status,
+                                                           void *data) {
   TEN_ASSERT(env, "Should not happen.");
 
   ten_nodejs_extension_tester_async_run_data_t *async_run_data =
       (ten_nodejs_extension_tester_async_run_data_t *)data;
   TEN_ASSERT(async_run_data, "Should not happen.");
 
-  if (async_run_data->async_action_status == 0) {
+  int async_action_status = async_run_data->async_action_status;
+  if (async_action_status == 0) {
     napi_resolve_deferred(env, async_run_data->deferred, js_undefined(env));
   } else {
     napi_reject_deferred(env, async_run_data->deferred, js_undefined(env));
@@ -1059,7 +1063,8 @@ static napi_value ten_nodejs_extension_tester_on_end_of_life(
              status);
 
   // Log the reference count of the JS extension tester object.
-  TEN_LOGD("JS extension tester reference count: %d", js_extension_tester_ref_count);
+  TEN_LOGD("JS extension tester reference count: %d",
+           js_extension_tester_ref_count);
 
 done:
   return js_undefined(env);

@@ -13,7 +13,13 @@ export class MyExtensionTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
     console.log("MyExtensionTester onStart");
 
-    tenEnvTester.stopTest();
+    new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 1000);
+    }).then(() => {
+      tenEnvTester.stopTest();
+    });
   }
 
   async onStop(tenEnvTester: TenEnvTester) {

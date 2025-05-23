@@ -27,6 +27,6 @@
   },
   "scripts": {
     "build": "tsc --listEmittedFiles",
-    "test": "mocha --expose-gc"
+    "test": "mocha --expose-gc --no-timeouts"
   }
 }

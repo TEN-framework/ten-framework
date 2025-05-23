@@ -12,19 +12,20 @@
 #include "ten_runtime/app/app.h"
 #include "ten_utils/macro/memory.h"
 
-typedef struct ten_nodejs_ten_env_on_create_instance_done_ctx_t {
+typedef struct ten_nodejs_ten_env_on_destroy_instance_done_ctx_t {
   ten_addon_host_t *addon_host;
-  void *instance;
+  ten_extension_t *extension;
   void *context;
-} ten_nodejs_ten_env_on_create_instance_done_ctx_t;
+} ten_nodejs_ten_env_on_destroy_instance_done_ctx_t;
 
-static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
+static void ten_app_addon_host_on_destroy_instance_done(void *from,
+                                                        void *args) {
   ten_app_t *app = (ten_app_t *)from;
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
-  ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
-      (ten_nodejs_ten_env_on_create_instance_done_ctx_t *)args;
+  ten_nodejs_ten_env_on_destroy_instance_done_ctx_t *ctx =
+      (ten_nodejs_ten_env_on_destroy_instance_done_ctx_t *)args;
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_addon_host_t *addon_host = ctx->addon_host;
@@ -32,11 +33,20 @@ static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
   TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
              "Should not happen.");
 
+  ten_extension_t *extension = ctx->extension;
+  TEN_ASSERT(extension, "Should not happen.");
+
+  // Because the extension increases the reference count of the corresponding
+  // `addon_host` when it is created, the reference count must be decreased
+  // when the extension is destroyed.
+  ten_ref_dec_ref(&addon_host->ref);
+  extension->addon_host = NULL;
+
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_env_on_create_instance_done(addon_host->ten_env, ctx->instance,
-                                            ctx->context, &err);
+  bool rc =
+      ten_env_on_destroy_instance_done(addon_host->ten_env, ctx->context, &err);
   TEN_ASSERT(rc, "Should not happen.");
 
   ten_error_deinit(&err);
@@ -44,8 +54,8 @@ static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
   TEN_FREE(ctx);
 }
 
-napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
-                                                      napi_callback_info info) {
+napi_value ten_nodejs_ten_env_on_destroy_instance_done(
+    napi_env env, napi_callback_info info) {
   TEN_ASSERT(env, "Should not happen.");
 
   const size_t argc = 3;
@@ -94,27 +104,34 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
   TEN_ASSERT(ten_addon_host_check_integrity(addon_host, false),
              "Should not happen.");
 
+  // Decrease the reference count of the JS extension object.
+  uint32_t js_extension_ref_count = 0;
+  status = napi_reference_unref(env, extension_bridge->bridge.js_instance_ref,
+                                &js_extension_ref_count);
+  TEN_ASSERT(status == napi_ok, "Failed to decrease the reference count.");
+
+  // From now on, the JS on_xxx callback(s) are useless, so release them all.
+  ten_nodejs_extension_release_js_on_xxx_tsfn(extension_bridge);
+
   ten_app_t *app = addon_host->attached_app;
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
-  ten_nodejs_ten_env_on_create_instance_done_ctx_t *ctx =
-      TEN_MALLOC(sizeof(ten_nodejs_ten_env_on_create_instance_done_ctx_t));
+  ten_nodejs_ten_env_on_destroy_instance_done_ctx_t *ctx =
+      TEN_MALLOC(sizeof(ten_nodejs_ten_env_on_destroy_instance_done_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->addon_host = addon_host;
-  ctx->instance = extension_bridge->c_extension;
+  ctx->extension = extension_bridge->c_extension;
   ctx->context = context;
 
   int post_task_rc = ten_runloop_post_task_tail(
       ten_app_get_attached_runloop(app),
-      ten_app_addon_host_on_create_instance_done, app, ctx);
+      ten_app_addon_host_on_destroy_instance_done, app, ctx);
   TEN_ASSERT(post_task_rc == 0, "Failed to post task.");
 
   ten_error_deinit(&err);
 
-  ten_binding_handle_set_me_in_target_lang((ten_binding_handle_t *)c_ten_env,
-                                           NULL);
   // Release the reference to the JS ten_env object.
   uint32_t js_ten_env_ref_count = 0;
   status = napi_reference_unref(env, ten_env_bridge->bridge.js_instance_ref,
