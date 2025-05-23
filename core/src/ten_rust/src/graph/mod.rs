@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use anyhow::Result;
+use node::GraphNode;
 use serde::{Deserialize, Serialize};
 
 use crate::base_dir_pkg_info::PkgsInfoInApp;
@@ -159,10 +160,10 @@ pub struct GraphExposedProperty {
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Graph {
-    pub nodes: Vec<node::GraphNode>,
+    pub nodes: Vec<GraphNode>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connections: Option<Vec<connection::GraphConnection>>,
+    pub connections: Option<Vec<GraphConnection>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_messages: Option<Vec<GraphExposedMessage>>,

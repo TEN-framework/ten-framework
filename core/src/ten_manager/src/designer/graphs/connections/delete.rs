@@ -194,6 +194,7 @@ pub async fn delete_graph_connection_endpoint(
             let mut connection = GraphConnection {
                 app: request_payload.src_app.clone(),
                 extension: request_payload.src_extension.clone(),
+                subgraph: None,
                 cmd: None,
                 data: None,
                 audio_frame: None,
@@ -241,9 +242,7 @@ pub async fn delete_graph_connection_endpoint(
                 Some(&connections_to_remove),
                 None,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }

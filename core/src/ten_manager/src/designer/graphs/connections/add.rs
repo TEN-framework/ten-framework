@@ -73,6 +73,7 @@ fn create_graph_connection(
     let mut connection = GraphConnection {
         app: request_payload.src_app.clone(),
         extension: request_payload.src_extension.clone(),
+        subgraph: None,
         cmd: None,
         data: None,
         audio_frame: None,
@@ -160,9 +161,7 @@ pub async fn add_graph_connection_endpoint(
                 None,
                 None,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }
