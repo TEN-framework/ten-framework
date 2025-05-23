@@ -139,6 +139,21 @@ export const ExtensionStoreWidget = (props: {
       packagesMetadata.uninstalledPackageNames.filter((item) => {
         return item.toLowerCase().includes(deferredSearch.toLowerCase());
       });
+    // tags matched
+    const tagsMatchedInstalledPackages = packagesMetadata.installedPackages
+      .filter((item) => {
+        return item.tags?.some((tag) =>
+          tag.toLowerCase().includes(deferredSearch.toLowerCase())
+        );
+      })
+      .map((item) => item.name);
+    const tagsMatchedUninstalledPackages = packagesMetadata.uninstalledPackages
+      .filter((item) => {
+        return item.tags?.some((tag) =>
+          tag.toLowerCase().includes(deferredSearch.toLowerCase())
+        );
+      })
+      .map((item) => item.name);
     // sort
     const sortedNameMatchedLocalOnlyAddons = nameMatchedLocalOnlyAddons.sort(
       (a, b) => {
@@ -151,8 +166,15 @@ export const ExtensionStoreWidget = (props: {
         return 0;
       }
     );
-    const sortedNameMatchedInstalledPackageNames =
-      nameMatchedInstalledPackages.sort((a, b) => {
+    const sortedNameMatchedInstalledPackageNames = [
+      ...nameMatchedInstalledPackages,
+      ...tagsMatchedInstalledPackages,
+    ]
+      .reduce(
+        (acc, curr) => (acc.includes(curr) ? acc : [...acc, curr]),
+        [] as string[]
+      )
+      .sort((a, b) => {
         if (extFilter.sort === "name") {
           return a.localeCompare(b);
         }
@@ -180,8 +202,15 @@ export const ExtensionStoreWidget = (props: {
         },
         []
       );
-    const sortedNameMatchedUninstalledPackageNames =
-      nameMatchedUninstalledPackages.sort((a, b) => {
+    const sortedNameMatchedUninstalledPackageNames = [
+      ...nameMatchedUninstalledPackages,
+      ...tagsMatchedUninstalledPackages,
+    ]
+      .reduce(
+        (acc, curr) => (acc.includes(curr) ? acc : [...acc, curr]),
+        [] as string[]
+      )
+      .sort((a, b) => {
         if (extFilter.sort === "name") {
           return a.localeCompare(b);
         }
