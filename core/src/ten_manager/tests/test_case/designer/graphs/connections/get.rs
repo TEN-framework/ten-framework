@@ -103,6 +103,7 @@ mod tests {
         let expected_connections = vec![GraphConnectionsSingleResponseData {
             app: None,
             extension: "extension_1".to_string(),
+            subgraph: None,
             cmd: Some(vec![DesignerMessageFlow {
                 name: "hello_world".to_string(),
                 dest: vec![DesignerDestination {
@@ -239,6 +240,7 @@ mod tests {
         let expected_connections = vec![GraphConnectionsSingleResponseData {
             app: None,
             extension: "extension_1".to_string(),
+            subgraph: None,
             cmd: Some(vec![DesignerMessageFlow {
                 name: "hello_world".to_string(),
                 dest: vec![DesignerDestination {

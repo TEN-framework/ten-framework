@@ -127,6 +127,7 @@ mod tests {
         let connection = GraphConnection {
             app: None,
             extension: "node1".to_string(),
+            subgraph: None,
             cmd: Some(vec![message_flow]),
             data: None,
             audio_frame: None,

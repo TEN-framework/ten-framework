@@ -39,6 +39,7 @@ mod tests {
             connections: Some(vec![GraphConnection {
                 extension: "ext_c".to_string(),
                 app: None,
+                subgraph: None,
                 cmd: Some(vec![GraphMessageFlow {
                     name: "B".to_string(),
                     dest: vec![GraphDestination {
