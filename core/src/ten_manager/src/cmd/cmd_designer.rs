@@ -13,11 +13,11 @@ use clap::{value_parser, Arg, ArgMatches, Command};
 use console::Emoji;
 
 use crate::{
-    config::{is_verbose, TmanConfig},
     constants::DESIGNER_BACKEND_DEFAULT_PORT,
     designer::storage::in_memory::TmanStorageInMemory,
     designer::{configure_routes, frontend::get_frontend_asset, DesignerState},
     fs::{check_is_app_folder, get_cwd},
+    home::config::{is_verbose, TmanConfig},
     output::{cli::TmanOutputCli, TmanOutput},
     pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };

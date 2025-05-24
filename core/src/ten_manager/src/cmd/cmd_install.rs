@@ -34,7 +34,6 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::{is_verbose, TmanConfig},
     constants::{
         APP_DIR_IN_DOT_TEN_DIR, DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         DOT_TEN_DIR,
@@ -42,6 +41,7 @@ use crate::{
     dep_and_candidate::get_all_candidates_from_deps,
     designer::storage::in_memory::TmanStorageInMemory,
     fs::{check_is_addon_folder, find_nearest_app_dir},
+    home::config::{is_verbose, TmanConfig},
     install::{
         compare_solver_results_with_installed_pkgs,
         filter_compatible_pkgs_to_candidates,

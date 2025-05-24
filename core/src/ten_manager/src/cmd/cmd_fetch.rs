@@ -20,8 +20,8 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::TmanConfig,
     designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig,
     output::TmanOutput,
     package_file::unpackage::extract_and_process_tpkg_file,
     registry::{get_package, get_package_list},

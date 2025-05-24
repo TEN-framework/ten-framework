@@ -14,11 +14,11 @@ mod tests {
     use actix_web::{test, web, App};
 
     use ten_manager::{
-        config::TmanConfig,
         designer::{
             env::get_env_endpoint, storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
 

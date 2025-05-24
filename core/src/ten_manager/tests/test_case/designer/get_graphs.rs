@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     designer::{
         graphs::{
             connections::get::{

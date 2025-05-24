@@ -17,7 +17,7 @@ mod tests {
 
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        config::TmanConfig,
+        home::config::TmanConfig,
         designer::{
             dir_list::list_dir_endpoint,
             response::{ApiResponse, Status},

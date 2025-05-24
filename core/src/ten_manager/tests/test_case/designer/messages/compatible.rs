@@ -11,7 +11,7 @@ use actix_web::{test, web, App};
 use serde_json::json;
 
 use ten_manager::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     constants::TEST_DIR,
     designer::{
         messages::compatible::{

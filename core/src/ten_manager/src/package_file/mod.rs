@@ -21,8 +21,8 @@ use ten_rust::pkg_info::{
     constants::TEN_PACKAGES_DIR, manifest::parse_manifest_in_folder,
 };
 
-use super::{config::TmanConfig, constants::TEN_PACKAGE_FILE_EXTENSION};
-use crate::config::is_verbose;
+use super::{constants::TEN_PACKAGE_FILE_EXTENSION, home::config::TmanConfig};
+use crate::home::config::is_verbose;
 use crate::output::TmanOutput;
 use crate::{constants::DOT_TEN_DIR, fs::pathbuf_to_string_lossy};
 use package::tar_gz_files_to_file;

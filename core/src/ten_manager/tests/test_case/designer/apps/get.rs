@@ -12,7 +12,7 @@ mod tests {
     use actix_web::{test, web, App};
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
-    use ten_manager::config::TmanConfig;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::apps::get::{
         get_apps_endpoint, AppInfo, GetAppsResponseData,

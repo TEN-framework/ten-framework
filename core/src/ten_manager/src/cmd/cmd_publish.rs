@@ -14,11 +14,11 @@ use indicatif::HumanDuration;
 
 use ten_rust::pkg_info::get_pkg_info_from_path;
 
-use crate::config::is_verbose;
-use crate::config::TmanConfig;
 use crate::constants::DOT_TEN_DIR;
 use crate::constants::PACKAGE_DIR_IN_DOT_TEN_DIR;
 use crate::designer::storage::in_memory::TmanStorageInMemory;
+use crate::home::config::is_verbose;
+use crate::home::config::TmanConfig;
 use crate::output::TmanOutput;
 use crate::package_file::create_package_tar_gz_file;
 use crate::package_file::get_tpkg_file_name;

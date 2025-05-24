@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use super::config::TmanConfig;
+use super::home::config::TmanConfig;
 use crate::{
     designer::storage::in_memory::TmanStorageInMemory, output::TmanOutput,
 };

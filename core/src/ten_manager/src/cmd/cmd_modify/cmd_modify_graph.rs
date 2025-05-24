@@ -15,8 +15,9 @@ use ten_rust::{
 };
 
 use crate::{
-    cmd::cmd_modify::jq_util::jq_run, config::TmanConfig,
-    designer::storage::in_memory::TmanStorageInMemory, output::TmanOutput,
+    cmd::cmd_modify::jq_util::jq_run,
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput,
 };
 
 #[derive(Debug)]

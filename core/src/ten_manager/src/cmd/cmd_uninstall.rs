@@ -19,13 +19,13 @@ use serde_json::from_reader;
 use ten_rust::pkg_info::constants::TEN_PACKAGES_DIR;
 
 use crate::{
-    config::{is_verbose, TmanConfig},
     constants::{
         DOT_TEN_DIR, INSTALLED_PATHS_JSON_FILENAME, INSTALL_PATHS_APP_PREFIX,
         PACKAGE_INFO_DIR_IN_DOT_TEN_DIR,
     },
     designer::storage::in_memory::TmanStorageInMemory,
     fs::check_is_app_folder,
+    home::config::{is_verbose, TmanConfig},
     install::installed_paths::InstalledPaths,
     output::TmanOutput,
 };

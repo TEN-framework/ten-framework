@@ -14,7 +14,7 @@ use actix_web::{
 };
 
 use ten_manager::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     designer::{
         builtin_function::builtin_function_endpoint,
         storage::in_memory::TmanStorageInMemory, DesignerState,

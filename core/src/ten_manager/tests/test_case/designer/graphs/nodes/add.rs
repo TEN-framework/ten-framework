@@ -11,7 +11,7 @@ mod tests {
     use actix_web::{test, web, App};
     use serde_json::Value;
     use ten_manager::{
-        config::TmanConfig,
+        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::add::{

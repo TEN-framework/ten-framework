@@ -15,7 +15,7 @@ use ten_manager::designer::{
     storage::in_memory::TmanStorageInMemory,
 };
 use ten_manager::{
-    config::TmanConfig, designer::DesignerState, output::cli::TmanOutputCli,
+    home::config::TmanConfig, designer::DesignerState, output::cli::TmanOutputCli,
 };
 
 use crate::test_case::common::builtin_server::start_test_server;

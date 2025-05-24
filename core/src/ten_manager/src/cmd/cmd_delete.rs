@@ -16,10 +16,10 @@ use semver::Version;
 
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-use crate::config::is_verbose;
 use crate::designer::storage::in_memory::TmanStorageInMemory;
+use crate::home::config::is_verbose;
 use crate::output::TmanOutput;
-use crate::{config::TmanConfig, registry::delete_package};
+use crate::{home::config::TmanConfig, registry::delete_package};
 
 #[derive(Debug)]
 pub struct DeleteCommand {
