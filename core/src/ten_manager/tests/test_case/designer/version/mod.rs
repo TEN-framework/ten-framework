@@ -12,7 +12,7 @@ mod tests {
     use actix_web::{http::StatusCode, test, web, App};
     use serde::{Deserialize, Serialize};
 
-    use ten_manager::config::metadata::TmanStorageInMemory;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
         config::TmanConfig,
         designer::{

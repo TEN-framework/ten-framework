@@ -11,7 +11,6 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
 
-    use ten_manager::config::metadata::TmanStorageInMemory;
     use ten_manager::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::extensions::property::{
@@ -19,6 +18,7 @@ mod tests {
         GetExtensionPropertyResponseData,
     };
     use ten_manager::designer::response::{ApiResponse, Status};
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
     use ten_manager::output::cli::TmanOutputCli;
 

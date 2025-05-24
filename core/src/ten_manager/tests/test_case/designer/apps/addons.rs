@@ -11,7 +11,6 @@ mod tests {
 
     use actix_web::{test, web, App};
 
-    use ten_manager::config::metadata::TmanStorageInMemory;
     use ten_manager::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::apps::addons::{
@@ -19,6 +18,7 @@ mod tests {
         GetAppAddonsSingleResponseData,
     };
     use ten_manager::designer::response::ApiResponse;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
     use ten_manager::output::cli::TmanOutputCli;
 

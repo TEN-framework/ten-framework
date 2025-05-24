@@ -14,8 +14,11 @@ use actix_web::{
 };
 
 use ten_manager::{
-    config::{TmanConfig},
-    designer::{builtin_function::builtin_function_endpoint, DesignerState},
+    config::TmanConfig,
+    designer::{
+        builtin_function::builtin_function_endpoint,
+        storage::in_memory::TmanStorageInMemory, DesignerState,
+    },
     output::cli::TmanOutputCli,
 };
 

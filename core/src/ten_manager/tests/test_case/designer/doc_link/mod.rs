@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web};
 
 use ten_manager::{
-    config::{TmanConfig},
+    config::TmanConfig,
     designer::{
         doc_link::{
             get_doc_link_endpoint, DocLinkKey, GetDocLinkRequestPayload,
@@ -17,6 +17,7 @@ use ten_manager::{
         },
         locale::Locale,
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     output::cli::TmanOutputCli,

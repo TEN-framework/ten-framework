@@ -10,7 +10,6 @@ mod tests {
     use std::sync::Arc;
 
     use actix_web::{test, web, App};
-    use ten_manager::config::metadata::TmanStorageInMemory;
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
     use ten_manager::config::TmanConfig;
@@ -19,6 +18,7 @@ mod tests {
         get_apps_endpoint, AppInfo, GetAppsResponseData,
     };
     use ten_manager::designer::response::{ApiResponse, Status};
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
     use ten_manager::output::cli::TmanOutputCli;
 

@@ -10,10 +10,11 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         designer::{
             apps::get::{get_apps_endpoint, GetAppsResponseData},
             response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         output::cli::TmanOutputCli,

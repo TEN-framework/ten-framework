@@ -10,7 +10,7 @@ mod tests {
     use std::sync::Arc;
 
     use actix_web::{test, web, App};
-    use ten_manager::config::metadata::TmanStorageInMemory;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
     use ten_manager::config::TmanConfig;

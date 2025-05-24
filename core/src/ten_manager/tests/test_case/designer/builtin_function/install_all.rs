@@ -10,9 +10,9 @@ use actix_web::{test, web, App};
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
-use ten_manager::{
-    config::metadata::TmanStorageInMemory,
-    designer::builtin_function::{builtin_function_endpoint, msg::InboundMsg},
+use ten_manager::designer::{
+    builtin_function::{builtin_function_endpoint, msg::InboundMsg},
+    storage::in_memory::TmanStorageInMemory,
 };
 use ten_manager::{
     config::TmanConfig, designer::DesignerState, output::cli::TmanOutputCli,

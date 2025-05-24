@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             apps::schema::{
@@ -18,6 +18,7 @@ mod tests {
                 GetAppSchemaResponseData,
             },
             response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         output::cli::TmanOutputCli,

@@ -11,7 +11,7 @@ use actix_web::{test, web, App};
 use serde_json::json;
 
 use ten_manager::{
-    config::{TmanConfig},
+    config::TmanConfig,
     constants::TEST_DIR,
     designer::{
         messages::compatible::{
@@ -19,6 +19,7 @@ use ten_manager::{
             GetCompatibleMsgsSingleResponseData,
         },
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     output::cli::TmanOutputCli,

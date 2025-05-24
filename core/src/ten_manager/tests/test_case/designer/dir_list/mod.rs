@@ -15,7 +15,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use tempfile::tempdir;
 
-    use ten_manager::config::metadata::TmanStorageInMemory;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
         config::TmanConfig,
         designer::{

@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 use actix_web::{test, web, App};
 use serde_json::{self, json};
 
-use ten_manager::config::metadata::TmanStorageInMemory;
+use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 use ten_manager::{
     config::TmanConfig,
     designer::{
