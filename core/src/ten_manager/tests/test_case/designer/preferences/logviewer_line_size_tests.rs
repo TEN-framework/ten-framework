@@ -146,11 +146,9 @@ async fn test_update_logviewer_line_size_invalid_value() {
         ))
         .await;
 
-    // Create invalid payload (assuming schema validation requires minimum
-    // value).
-    let payload = UpdateLogviewerLineSizeRequestPayload {
-        logviewer_line_size: 0, // Invalid according to schema
-    };
+    // Create invalid payload.
+    let payload =
+        UpdateLogviewerLineSizeRequestPayload { logviewer_line_size: 0 };
 
     // Create test request.
     let req = test::TestRequest::put()

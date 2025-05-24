@@ -44,6 +44,12 @@ pub async fn update_logviewer_line_size_endpoint(
     request_payload: web::Json<UpdateLogviewerLineSizeRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
+    if request_payload.logviewer_line_size == 0 {
+        return Err(actix_web::error::ErrorBadRequest(
+            "logviewer_line_size must be greater than 0",
+        ));
+    }
+
     let mut tman_config = state.tman_config.write().await;
 
     // Update logviewer_line_size field.
