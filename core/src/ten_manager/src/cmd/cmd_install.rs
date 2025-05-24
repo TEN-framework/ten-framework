@@ -34,13 +34,14 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::{is_verbose, metadata::TmanMetadata, TmanConfig},
     constants::{
         APP_DIR_IN_DOT_TEN_DIR, DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         DOT_TEN_DIR,
     },
     dep_and_candidate::get_all_candidates_from_deps,
+    designer::storage::in_memory::TmanStorageInMemory,
     fs::{check_is_addon_folder, find_nearest_app_dir},
+    home::config::{is_verbose, TmanConfig},
     install::{
         compare_solver_results_with_installed_pkgs,
         filter_compatible_pkgs_to_candidates,
@@ -382,7 +383,7 @@ async fn determine_app_dir_to_work_with(
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    _tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: InstallCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {

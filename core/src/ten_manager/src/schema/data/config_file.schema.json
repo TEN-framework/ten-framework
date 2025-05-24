@@ -34,7 +34,25 @@
       "default": true
     },
     "designer": {
-      "$ref": "designer.schema.json"
+      "type": "object",
+      "properties": {
+        "logviewer_line_size": {
+          "type": "integer",
+          "minimum": 100,
+          "default": 1000
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "en-US",
+            "zh-CN",
+            "zh-TW",
+            "ja-JP"
+          ],
+          "default": "en-US"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

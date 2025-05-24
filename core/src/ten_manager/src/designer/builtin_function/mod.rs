@@ -19,9 +19,10 @@ use anyhow::Result;
 use msg::InboundMsg;
 use msg::OutboundMsg;
 
-use crate::config::metadata::TmanMetadata;
-use crate::config::TmanConfig;
 use crate::designer::DesignerState;
+use crate::home::config::TmanConfig;
+
+use super::storage::in_memory::TmanStorageInMemory;
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -53,16 +54,16 @@ type BuiltinFunctionParser =
 pub struct WsBuiltinFunction {
     builtin_function_parser: BuiltinFunctionParser,
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
 }
 
 impl WsBuiltinFunction {
     fn new(
         builtin_function_parser: BuiltinFunctionParser,
         tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-        tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+        tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     ) -> Self {
-        Self { builtin_function_parser, tman_config, tman_metadata }
+        Self { builtin_function_parser, tman_config, tman_storage_in_memory }
     }
 }
 
@@ -190,7 +191,7 @@ pub async fn builtin_function_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<HttpResponse, Error> {
     let tman_config = state.tman_config.clone();
-    let tman_metadata = state.tman_metadata.clone();
+    let tman_metadata = state.storage_in_memory.clone();
 
     let default_parser: BuiltinFunctionParser = Box::new(move |text: &str| {
         // Attempt to parse the JSON text from client.

@@ -26,11 +26,11 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
-use super::{config::TmanConfig, registry::get_package};
+use super::{home::config::TmanConfig, registry::get_package};
 use crate::{
     cmd::cmd_install::{InstallCommand, LocalInstallMode},
-    config::is_verbose,
     fs::copy_folder_recursively,
+    home::config::is_verbose,
     manifest_lock::{
         parse_manifest_lock_in_folder, write_pkg_lockfile, ManifestLock,
     },
@@ -69,7 +69,8 @@ fn install_local_dependency_pkg_info(
 
     if Path::new(dest_dir_path).exists() {
         out.normal_line(&format!(
-            "Destination directory '{dest_dir_path}' already exists. Skipping copy/link."
+            "Destination directory '{dest_dir_path}' already exists. Skipping \
+             copy/link."
         ));
     } else {
         // Create all parent folders for `dest_dir`.
@@ -256,7 +257,8 @@ fn update_package_manifest(
                             Ok(info) => info,
                             Err(_) => {
                                 panic!(
-                                    "Failed to get package info from path: {path}"
+                                    "Failed to get package info from path: \
+                                     {path}"
                                 );
                             }
                         };
