@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths-ignore:
       - "core/**"
+      - "tests/**"
       - "tools/**"
       - "packages/**"
       - "build/**"

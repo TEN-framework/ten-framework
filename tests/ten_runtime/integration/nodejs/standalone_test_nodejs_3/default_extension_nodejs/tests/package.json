@@ -1,0 +1,27 @@
+{
+  "name": "ten-default-app",
+  "version": "1.0.0",
+  "main": "./bin/start.js",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../.ten/app/ten_packages/system/ten_runtime_nodejs"
+  },
+  "mocha": {
+    "spec": [
+      "**/*.spec.*"
+    ],
+    "loader": "ts-node/esm",
+    "extensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles",
+    "test": "node --expose-gc build/index.js"
+  }
+}

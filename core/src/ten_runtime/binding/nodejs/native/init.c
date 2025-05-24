@@ -15,6 +15,8 @@
 #include "include_internal/ten_runtime/binding/nodejs/msg/msg.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/video_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
+#include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
+#include "include_internal/ten_runtime/binding/nodejs/test/extension_tester.h"
 
 static napi_value ten_runtime_nodejs_init(napi_env env, napi_value exports) {
   ten_nodejs_addon_module_init(env, exports);
@@ -28,6 +30,8 @@ static napi_value ten_runtime_nodejs_init(napi_env env, napi_value exports) {
   ten_nodejs_cmd_result_module_init(env, exports);
   ten_nodejs_video_frame_module_init(env, exports);
   ten_nodejs_audio_frame_module_init(env, exports);
+  ten_nodejs_ten_env_tester_module_init(env, exports);
+  ten_nodejs_extension_tester_module_init(env, exports);
 
   return exports;
 }

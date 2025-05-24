@@ -877,6 +877,42 @@
       ]
     },
     {
+      "name": "standalone test (nodejs) (lldb, launch)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "node",
+      "args": [
+        "--expose-gc",
+        "build/index.js"
+      ],
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/nodejs/standalone_test_nodejs/default_extension_nodejs/tests",
+      "env": {
+        "NODE_PATH": "../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH",
+      }
+    },
+    {
+      "name": "standalone test (nodejs) (mocha, launch)",
+      "type": "node",
+      "request": "launch",
+      "program": "node_modules/mocha/bin/_mocha",
+      "stopOnEntry": true,
+      "args": [
+        "--no-timeouts",
+        "--package",
+        "package.json",
+      ],
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/nodejs/standalone_test_nodejs/default_extension_nodejs/tests",
+      "env": {
+        "NODE_PATH": "../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH",
+      },
+      "runtimeArgs": [
+        "--expose-gc",
+        "--loader",
+        "ts-node/esm",
+        "--no-warnings",
+      ]
+    },
+    {
       "name": "binding test (golang)",
       "type": "go",
       "request": "launch",

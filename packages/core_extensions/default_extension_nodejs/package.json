@@ -10,6 +10,7 @@
     "ten-runtime-nodejs": "file:../../../ten_packages/system/ten_runtime_nodejs"
   },
   "scripts": {
-    "build": "tsc --listEmittedFiles"
+    "build": "tsc --listEmittedFiles",
+    "standalone-install": "npm install .ten/app/ten_packages/system/ten_runtime_nodejs"
   }
 }

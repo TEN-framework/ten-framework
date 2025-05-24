@@ -23,7 +23,7 @@ ten_package_test_prepare_app("send_data_nodejs_app") {
     deps = [
       "//core/src/ten_manager",
       "//packages/core_apps/default_app_nodejs:upload_default_app_nodejs_to_server",
-      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_ts_to_server",
+      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_nodejs_to_server",
       "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
       "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
     ]

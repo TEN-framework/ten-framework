@@ -27,6 +27,18 @@ export abstract class Addon {
     );
   }
 
+  private async onDestroyInstanceProxy(
+    tenEnv: TenEnv,
+    instance: Extension,
+    context: unknown,
+  ): Promise<void> {
+    ten_addon.ten_nodejs_ten_env_on_destroy_instance_done(
+      tenEnv,
+      instance,
+      context,
+    );
+  }
+
   // This method will be called when the C addon is destroyed.
   private async onDestroy(): Promise<void> {
     // JS addon prepare to be destroyed, so notify the underlying C runtime this

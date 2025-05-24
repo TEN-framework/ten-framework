@@ -34,6 +34,7 @@ typedef struct ten_nodejs_addon_t {
   // The following functions represent the JavaScript functions corresponding to
   // the addon interface API.
   ten_nodejs_tsfn_t *js_on_create_instance;
+  ten_nodejs_tsfn_t *js_on_destroy_instance;
   ten_nodejs_tsfn_t *js_on_destroy;
   // @}
 } ten_nodejs_addon_t;
@@ -42,6 +43,9 @@ TEN_RUNTIME_PRIVATE_API bool ten_nodejs_addon_check_integrity(
     ten_nodejs_addon_t *self, bool check_thread);
 
 TEN_RUNTIME_PRIVATE_API void ten_nodejs_invoke_addon_js_on_create_instance(
+    napi_env env, napi_value fn, void *context, void *data);
+
+TEN_RUNTIME_PRIVATE_API void ten_nodejs_invoke_addon_js_on_destroy_instance(
     napi_env env, napi_value fn, void *context, void *data);
 
 TEN_RUNTIME_PRIVATE_API void ten_nodejs_invoke_addon_js_on_destroy(

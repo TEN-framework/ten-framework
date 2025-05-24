@@ -47,3 +47,6 @@ TEN_RUNTIME_PRIVATE_API bool ten_nodejs_extension_check_integrity(
 
 TEN_RUNTIME_PRIVATE_API napi_value
 ten_nodejs_extension_module_init(napi_env env, napi_value exports);
+
+TEN_RUNTIME_PRIVATE_API void ten_nodejs_extension_release_js_on_xxx_tsfn(
+    ten_nodejs_extension_t *self);

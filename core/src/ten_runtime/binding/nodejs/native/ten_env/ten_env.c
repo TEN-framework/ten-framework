@@ -202,6 +202,7 @@ napi_value ten_nodejs_ten_env_module_init(napi_env env, napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_on_stop_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_on_deinit_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_on_create_instance_done);
+  EXPORT_FUNC(env, exports, ten_nodejs_ten_env_on_destroy_instance_done);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_send_cmd);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_send_data);
   EXPORT_FUNC(env, exports, ten_nodejs_ten_env_send_video_frame);

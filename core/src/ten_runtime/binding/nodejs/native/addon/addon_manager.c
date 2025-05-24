@@ -72,6 +72,13 @@ static void ten_nodejs_addon_create_and_attach_callbacks(
                     js_on_create_instance_proxy,
                     ten_nodejs_invoke_addon_js_on_create_instance);
 
+  napi_value js_on_destroy_instance_proxy =
+      ten_nodejs_get_property(env, js_addon, "onDestroyInstanceProxy");
+  CREATE_JS_CB_TSFN(addon_bridge->js_on_destroy_instance, env,
+                    "[TSFN] addon::onDestroyInstance",
+                    js_on_destroy_instance_proxy,
+                    ten_nodejs_invoke_addon_js_on_destroy_instance);
+
   napi_value js_on_destroy =
       ten_nodejs_get_property(env, js_addon, "onDestroy");
   CREATE_JS_CB_TSFN(addon_bridge->js_on_destroy, env, "[TSFN] addon::onDestroy",

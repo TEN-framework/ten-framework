@@ -44,10 +44,6 @@ export abstract class Extension {
     await this.onDeinit(tenEnv);
 
     ten_addon.ten_nodejs_ten_env_on_deinit_done(tenEnv);
-
-    // JS extension prepare to be destroyed, so notify the underlying C runtime this
-    // fact.
-    ten_addon.ten_nodejs_extension_on_end_of_life(this);
   }
 
   private async onCmdProxy(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
