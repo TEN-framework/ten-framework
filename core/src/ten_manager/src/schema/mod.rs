@@ -47,23 +47,3 @@ pub fn validate_tman_config(config_json: &serde_json::Value) -> Result<()> {
 
     Ok(())
 }
-
-/// Validates a JSON value against the Designer schema.
-pub fn validate_designer_config(config_json: &serde_json::Value) -> Result<()> {
-    let schema_json: serde_json::Value = json5::from_str(DESIGNER_SCHEMA)?;
-    let validator = Validator::new(&schema_json)?;
-
-    if let Err(error) = validator.validate(config_json) {
-        return Err(anyhow::anyhow!(
-            "Designer config validation failed: {}",
-            error
-        ));
-    }
-
-    Ok(())
-}
-
-/// Returns the Designer schema for use in frontend validation.
-pub fn get_designer_schema() -> &'static str {
-    DESIGNER_SCHEMA
-}

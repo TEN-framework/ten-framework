@@ -97,13 +97,16 @@ pub fn configure_routes(
             // Messages endpoints.
             .service(web::resource("/messages/compatible").route(web::post().to(messages::compatible::get_compatible_messages_endpoint)))
             // Preferences endpoints.
-            .service(web::resource("/preferences/schema").route(web::get().to(preferences::get_schema::get_preferences_schema_endpoint)))
             .service(
-                web::resource("/preferences")
-                    .route(web::get().to(preferences::get::get_preferences_endpoint))
-                    .route(web::put().to(preferences::update::update_preferences_endpoint))
+                web::resource("/preferences/logviewer_line_size")
+                    .route(web::get().to(preferences::logviewer_line_size::get_logviewer_line_size_endpoint))
+                    .route(web::put().to(preferences::logviewer_line_size::update_logviewer_line_size_endpoint))
             )
-            .service(web::resource("/preferences/field").route(web::patch().to(preferences::update_field::update_preferences_field_endpoint)))
+            .service(
+                web::resource("/preferences/locale")
+                    .route(web::get().to(preferences::locale::get_locale_endpoint))
+                    .route(web::put().to(preferences::locale::update_locale_endpoint))
+            )
             // Storage (in-memory) endpoints.
             .service(web::resource("/storage/in-memory/set").route(web::post().to(storage::in_memory::set::set_in_memory_storage_endpoint)))
             .service(web::resource("/storage/in-memory/get").route(web::post().to(storage::in_memory::get::get_in_memory_storage_endpoint)))
