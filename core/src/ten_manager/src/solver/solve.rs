@@ -21,7 +21,7 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
-use crate::config::{is_verbose, TmanConfig};
+use crate::home::config::{is_verbose, TmanConfig};
 use crate::output::TmanOutput;
 #[derive(Debug)]
 pub struct DependencyRelationship {

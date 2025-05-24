@@ -10,7 +10,6 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        config::TmanConfig,
         designer::{
             property::validate::{
                 validate_property_endpoint, ValidatePropertyRequestPayload,
@@ -18,6 +17,7 @@ mod tests {
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
 

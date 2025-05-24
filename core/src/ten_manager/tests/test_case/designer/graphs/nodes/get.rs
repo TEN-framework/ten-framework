@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::TmanConfig,
+        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::get::{

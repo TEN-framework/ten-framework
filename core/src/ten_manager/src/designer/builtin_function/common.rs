@@ -11,11 +11,11 @@ use actix::{fut, AsyncContext};
 use actix_web_actors::ws::WebsocketContext;
 
 use crate::cmd::cmd_install::InstallCommand;
-use crate::config::TmanConfig;
 use crate::designer::builtin_function::{
     BuiltinFunctionOutput, WsBuiltinFunction,
 };
 use crate::designer::storage::in_memory::TmanStorageInMemory;
+use crate::home::config::TmanConfig;
 use crate::output::channel::TmanOutputChannel;
 use crate::output::TmanOutput;
 

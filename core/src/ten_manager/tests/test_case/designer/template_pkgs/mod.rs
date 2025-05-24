@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::TmanConfig,
     designer::{
         response::{ApiResponse, Status},
         storage::in_memory::TmanStorageInMemory,
@@ -19,6 +18,7 @@ use ten_manager::{
         },
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 use ten_rust::pkg_info::pkg_type::PkgType;

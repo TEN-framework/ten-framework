@@ -12,7 +12,6 @@ use serde_json;
 
 use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 use ten_manager::{
-    config::TmanConfig,
     designer::{
         preferences::logviewer_line_size::{
             get_logviewer_line_size_endpoint,
@@ -21,6 +20,7 @@ use ten_manager::{
         },
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 

@@ -19,8 +19,8 @@ use tempfile::NamedTempFile;
 
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
-use super::config::TmanConfig;
 use super::constants::DEFAULT;
+use super::home::config::TmanConfig;
 use crate::output::TmanOutput;
 
 pub async fn upload_package(

@@ -10,7 +10,6 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::replace::{
@@ -22,6 +21,7 @@ mod tests {
             DesignerState,
         },
         graph::graphs_cache_find_by_name,
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
     use ten_rust::pkg_info::constants::{

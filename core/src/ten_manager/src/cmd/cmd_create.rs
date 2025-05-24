@@ -19,8 +19,9 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::TmanConfig, create::create_pkg_in_path,
-    designer::storage::in_memory::TmanStorageInMemory, output::TmanOutput,
+    create::create_pkg_in_path,
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput,
     version_utils::parse_pkg_name_version_req,
 };
 

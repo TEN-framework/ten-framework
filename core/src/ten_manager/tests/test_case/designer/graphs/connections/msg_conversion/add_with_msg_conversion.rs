@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::TmanConfig,
+        home::config::TmanConfig,
         designer::{
             graphs::connections::add::{
                 add_graph_connection_endpoint,

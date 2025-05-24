@@ -17,7 +17,7 @@ use ten_rust::{
 use tokio::io::AsyncBufReadExt;
 
 use crate::{
-    config::{is_verbose, TmanConfig},
+    home::config::{is_verbose, TmanConfig},
     constants::SCRIPTS,
     designer::storage::in_memory::TmanStorageInMemory,
     output::TmanOutput,

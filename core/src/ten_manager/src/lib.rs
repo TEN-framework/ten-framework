@@ -24,13 +24,13 @@
 
 pub mod cmd;
 pub mod cmd_line;
-pub mod config;
 pub mod constants;
 mod create;
 mod dep_and_candidate;
 pub mod designer;
 pub mod fs;
 pub mod graph;
+pub mod home;
 pub mod http;
 mod install;
 pub mod log;

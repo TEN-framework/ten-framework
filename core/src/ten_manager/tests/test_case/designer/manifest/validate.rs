@@ -9,7 +9,7 @@ use std::sync::Arc;
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     designer::{
         manifest::validate::{
             validate_manifest_endpoint, ValidateManifestRequestPayload,

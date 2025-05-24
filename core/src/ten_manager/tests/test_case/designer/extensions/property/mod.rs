@@ -11,7 +11,6 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
 
-    use ten_manager::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::extensions::property::{
         get_extension_property_endpoint, GetExtensionPropertyRequestPayload,
@@ -20,6 +19,7 @@ mod tests {
     use ten_manager::designer::response::{ApiResponse, Status};
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
 
     use crate::test_case::common::mock::{

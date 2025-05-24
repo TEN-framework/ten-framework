@@ -7,8 +7,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use ten_manager::{
-    config::{read_config, TmanConfig},
     designer::{storage::in_memory::TmanStorageInMemory, DesignerState},
+    home::config::{read_config, TmanConfig},
     output::cli::TmanOutputCli,
 };
 

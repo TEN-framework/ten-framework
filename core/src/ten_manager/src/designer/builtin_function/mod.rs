@@ -19,8 +19,8 @@ use anyhow::Result;
 use msg::InboundMsg;
 use msg::OutboundMsg;
 
-use crate::config::TmanConfig;
 use crate::designer::DesignerState;
+use crate::home::config::TmanConfig;
 
 use super::storage::in_memory::TmanStorageInMemory;
 

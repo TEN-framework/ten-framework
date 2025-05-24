@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web};
 
 use ten_manager::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     designer::{
         doc_link::{
             get_doc_link_endpoint, DocLinkKey, GetDocLinkRequestPayload,

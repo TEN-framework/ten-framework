@@ -14,8 +14,8 @@ use ten_rust::{
 };
 
 use crate::{
-    config::TmanConfig, designer::storage::in_memory::TmanStorageInMemory,
-    output::TmanOutput,
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput,
 };
 
 #[derive(Debug)]

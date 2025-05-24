@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        config::TmanConfig,
+        home::config::TmanConfig,
         designer::{
             apps::reload::{reload_app_endpoint, ReloadPkgsRequestPayload},
             response::{ApiResponse, Status},
