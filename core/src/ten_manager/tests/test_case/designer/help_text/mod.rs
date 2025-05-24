@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web};
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
+    config::TmanConfig,
     designer::{
         help_text::{
             get_help_text_endpoint, GetHelpTextRequestPayload,
@@ -17,6 +17,7 @@ use ten_manager::{
         },
         locale::Locale,
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     output::cli::TmanOutputCli,
@@ -33,8 +34,8 @@ async fn test_get_help_text_success() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -81,8 +82,8 @@ async fn test_get_help_text_chinese() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -131,8 +132,8 @@ async fn test_get_help_text_language_fallback() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -179,8 +180,8 @@ async fn test_get_help_text_not_found() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),

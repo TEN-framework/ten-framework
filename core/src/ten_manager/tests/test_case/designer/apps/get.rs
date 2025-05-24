@@ -10,7 +10,6 @@ mod tests {
     use std::sync::Arc;
 
     use actix_web::{test, web, App};
-    use ten_manager::config::metadata::TmanMetadata;
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
     use ten_manager::config::TmanConfig;
@@ -19,6 +18,7 @@ mod tests {
         get_apps_endpoint, AppInfo, GetAppsResponseData,
     };
     use ten_manager::designer::response::{ApiResponse, Status};
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
     use ten_manager::output::cli::TmanOutputCli;
 
@@ -28,8 +28,8 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -77,8 +77,8 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),

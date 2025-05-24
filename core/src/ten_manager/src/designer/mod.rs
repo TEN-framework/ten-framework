@@ -21,11 +21,11 @@ pub mod locale;
 pub mod log_watcher;
 pub mod manifest;
 pub mod messages;
-pub mod metadata;
 pub mod preferences;
 pub mod property;
 pub mod registry;
 pub mod response;
+pub mod storage;
 pub mod template_pkgs;
 pub mod terminal;
 pub mod version;
@@ -33,18 +33,19 @@ pub mod version;
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::web;
+use storage::in_memory::TmanStorageInMemory;
 use uuid::Uuid;
 
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo,
 };
 
-use crate::config::{metadata::TmanMetadata, TmanConfig};
+use crate::config::TmanConfig;
 use crate::output::TmanOutput;
 
 pub struct DesignerState {
     pub tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    pub tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    pub storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     pub out: Arc<Box<dyn TmanOutput>>,
     pub pkgs_cache: tokio::sync::RwLock<HashMap<String, PkgsInfoInApp>>,
     pub graphs_cache: tokio::sync::RwLock<HashMap<Uuid, GraphInfo>>,
@@ -96,16 +97,22 @@ pub fn configure_routes(
             // Messages endpoints.
             .service(web::resource("/messages/compatible").route(web::post().to(messages::compatible::get_compatible_messages_endpoint)))
             // Preferences endpoints.
-            .service(web::resource("/preferences/schema").route(web::get().to(preferences::get_schema::get_preferences_schema_endpoint)))
             .service(
-                web::resource("/preferences")
-                    .route(web::get().to(preferences::get::get_preferences_endpoint))
-                    .route(web::put().to(preferences::update::update_preferences_endpoint))
+                web::resource("/preferences/logviewer_line_size")
+                    .route(web::get().to(preferences::logviewer_line_size::get_logviewer_line_size_endpoint))
+                    .route(web::put().to(preferences::logviewer_line_size::update_logviewer_line_size_endpoint))
             )
-            .service(web::resource("/preferences/field").route(web::patch().to(preferences::update_field::update_preferences_field_endpoint)))
-            // Internal config endpoints.
-            .service(web::resource("/internal-config/graph-ui/set").route(web::post().to(metadata::graph_ui::set::set_graph_ui_endpoint)))
-            .service(web::resource("/internal-config/graph-ui/get").route(web::post().to(metadata::graph_ui::get::get_graph_ui_endpoint)))
+            .service(
+                web::resource("/preferences/locale")
+                    .route(web::get().to(preferences::locale::get_locale_endpoint))
+                    .route(web::put().to(preferences::locale::update_locale_endpoint))
+            )
+            // Storage (in-memory) endpoints.
+            .service(web::resource("/storage/in-memory/set").route(web::post().to(storage::in_memory::set::set_in_memory_storage_endpoint)))
+            .service(web::resource("/storage/in-memory/get").route(web::post().to(storage::in_memory::get::get_in_memory_storage_endpoint)))
+            // Storage (persistent) endpoints.
+            // .service(web::resource("/storage/persistent/set").route(web::post().to(storage::persistent::set::set_persistent_storage_endpoint)))
+            // .service(web::resource("/storage/persistent/get").route(web::post().to(storage::persistent::get::get_persistent_storage_endpoint)))
             // File system endpoints.
             .service(web::resource("/dir-list").route(web::post().to(dir_list::list_dir_endpoint)))
             .service(

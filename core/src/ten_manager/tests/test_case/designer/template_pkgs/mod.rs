@@ -9,9 +9,10 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
+    config::TmanConfig,
     designer::{
         response::{ApiResponse, Status},
+        storage::in_memory::TmanStorageInMemory,
         template_pkgs::{
             get_template_endpoint, GetTemplateRequestPayload,
             GetTemplateResponseData, TemplateLanguage,
@@ -26,8 +27,8 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 async fn test_get_template_app_typescript() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -64,8 +65,8 @@ async fn test_get_template_app_typescript() {
 async fn test_get_template_extension_cpp() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -102,8 +103,8 @@ async fn test_get_template_extension_cpp() {
 async fn test_get_template_unsupported() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
