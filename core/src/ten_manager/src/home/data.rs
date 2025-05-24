@@ -7,11 +7,11 @@
 use std::path::PathBuf;
 
 use crate::constants::DATA_JSON;
-use crate::home::get_default_home_dir;
+use crate::home::get_home_dir;
 
 /// Get the path to the persistent storage data file
 pub fn get_home_data_path() -> PathBuf {
-    let mut path = get_default_home_dir();
+    let mut path = get_home_dir();
     path.push(DATA_JSON);
     path
 }

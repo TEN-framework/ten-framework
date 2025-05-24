@@ -18,7 +18,7 @@ pub struct Registry {
 }
 
 // Determine the tman home directory based on the platform.
-pub fn get_default_home_dir() -> PathBuf {
+pub fn get_home_dir() -> PathBuf {
     let mut home_dir =
         dirs::home_dir().expect("Cannot determine home directory.");
     if cfg!(target_os = "windows") {

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::constants::{CONFIG_JSON, DEFAULT, DEFAULT_REGISTRY};
 use crate::designer::preferences::{default_designer, Designer};
 use crate::home::package_cache::default_enable_package_cache;
-use crate::home::{get_default_home_dir, Registry};
+use crate::home::{get_home_dir, Registry};
 use crate::schema::validate_tman_config;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -73,7 +73,7 @@ impl Default for TmanConfig {
 /// Get the default configuration file path, located under the default home
 /// directory as `config.json`.
 pub fn get_home_config_path() -> PathBuf {
-    let mut config_path = get_default_home_dir();
+    let mut config_path = get_home_dir();
     config_path.push(CONFIG_JSON);
     config_path
 }
