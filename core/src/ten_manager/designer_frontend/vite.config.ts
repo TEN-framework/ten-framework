@@ -7,12 +7,31 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import {nodePolyfills} from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
-  plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['buffer', 'crypto', 'process'],
+  },
+  plugins: [
+    react(),
+    nodePolyfills({
+      protocolImports: true,
+      globals: {
+        process: true,
+        Buffer: true,
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      crypto: 'crypto-browserify',
+      buffer: 'buffer',
+      process: 'process/browser',
     },
   },
   server: {

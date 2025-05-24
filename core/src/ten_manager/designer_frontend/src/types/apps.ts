@@ -46,6 +46,17 @@ export enum EPreferencesTabs {
 export const PREFERENCES_SCHEMA_LOG = z.object({
   logviewer_line_size: z.number().min(1).default(1000),
 });
+
+export const PREFERENCES_SCHEMA_TRULIENCE = z.object({
+  trulience: z.object({
+    enabled: z.boolean().default(false),
+    trulienceAvatarId: z.string().default(""),
+    trulienceAvatarToken: z.string().default(""),
+    trulienceSdkUrl: z.string().default("https://trulience.com/sdk/trulience.sdk.js"),
+    trulienceAnimationUrl: z.string().default("https://trulience.com"),
+  }),
+});
+
 export enum EPreferencesLocale {
   EN_US = "en-US",
   ZH_CN = "zh-CN",
@@ -56,6 +67,7 @@ export enum EPreferencesLocale {
 export const PREFERENCES_SCHEMA = z.object({
   locale: z.nativeEnum(EPreferencesLocale).default(EPreferencesLocale.EN_US),
   ...PREFERENCES_SCHEMA_LOG.shape,
+  ...PREFERENCES_SCHEMA_TRULIENCE.shape,
 });
 
 export enum ETemplateLanguage {

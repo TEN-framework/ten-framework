@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "Extensions",
       "openExtensionStore": "Open Extension Store",
+      "startRTCInteraction": "Start RTC Interaction",
+      "configTrulienceAvatar": "Configure Trulience Avatar",
       "about": "About Extensions"
     },
     "language": {
@@ -109,7 +111,8 @@
     "deleteConnectionConfirmation": "Are you sure you want to delete the connection?",
     "deleteConnectionSuccess": "Connection deleted successfully",
     "deleteConnectionFailed": "Failed to delete connection",
-    "replaceNode": "Replace Node with ..."
+    "replaceNode": "Replace Node with ...",
+    "manageApps": "Manage Apps"
   },
   "toast": {
     "saveFileSuccess": "File saved successfully",
@@ -272,6 +275,17 @@
     "versionLatest": "Latest",
     "localAddonTip": "(local)",
     "tags": "Tags"
+  },
+  "rtcInteraction": {
+    "title": "RTC Interaction"
+  },
+  "trulienceConfig": {
+    "title": "Trulience Avatar Configuration",
+    "enabled": "Enabled",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",

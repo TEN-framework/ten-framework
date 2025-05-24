@@ -18,6 +18,8 @@ import {
 } from "@/components/Popup/Default/App";
 import { ExtensionStorePopupContent } from "@/components/Popup/Default/Extension";
 import { DocRefPopupContent } from "@/components/Popup/Default/DocRef";
+import { RTCWidgetContent } from "@/components/Popup/Default/RTC";
+import { TrulienceConfigWidgetContent } from "@/components/Popup/Default/TrulienceConfig";
 import { EDefaultWidgetType, IDefaultWidget } from "@/types/widgets";
 
 const PopupTabContentDefaultMappings: Record<
@@ -33,6 +35,8 @@ const PopupTabContentDefaultMappings: Record<
   [EDefaultWidgetType.AppRun]: AppRunPopupContent,
   [EDefaultWidgetType.ExtensionStore]: ExtensionStorePopupContent,
   [EDefaultWidgetType.DocRef]: DocRefPopupContent,
+  [EDefaultWidgetType.RTCInteraction]: RTCWidgetContent,
+  [EDefaultWidgetType.TrulienceConfig]: TrulienceConfigWidgetContent,
 };
 
 export const PopupTabContentDefault = (props: { widget: IDefaultWidget }) => {

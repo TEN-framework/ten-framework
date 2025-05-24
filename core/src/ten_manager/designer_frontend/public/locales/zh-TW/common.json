@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "擴充功能",
       "openExtensionStore": "開啟擴充功能商店",
+      "startRTCInteraction": "開始 RTC 互動",
+      "configTrulienceAvatar": "配置 Trulience 虛擬人",
       "about": "關於擴充功能"
     },
     "language": {
@@ -109,7 +111,8 @@
     "deleteConnectionConfirmation": "確定要刪除此連線嗎？",
     "deleteConnectionSuccess": "連線刪除成功",
     "deleteConnectionFailed": "連線刪除失敗",
-    "replaceNode": "替換節點..."
+    "replaceNode": "替換節點...",
+    "manageApps": "管理應用程式"
   },
   "toast": {
     "saveFileSuccess": "檔案儲存成功",
@@ -272,6 +275,17 @@
     "versionLatest": "最新",
     "localAddonTip": "(本地)",
     "tags": "標籤"
+  },
+  "rtcInteraction": {
+    "title": "RTC 互動"
+  },
+  "trulienceConfig": {
+    "title": "Trulience 虛擬人配置",
+    "enabled": "啟用",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
   },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",

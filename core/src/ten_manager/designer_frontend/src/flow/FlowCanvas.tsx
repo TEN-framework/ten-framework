@@ -46,6 +46,7 @@ import type { TCustomEdge, TCustomNode } from "@/types/flow";
 import "@xyflow/react/dist/style.css";
 import "@/flow/reactflow.css";
 import {
+  APPS_MANAGER_WIDGET_ID,
   CONTAINER_DEFAULT_ID,
   GRAPH_ACTIONS_WIDGET_ID,
   GRAPH_SELECT_WIDGET_ID,
@@ -58,6 +59,7 @@ import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import PaneContextMenu from "./ContextMenu/PaneContextMenu";
 import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
+import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
 
 export interface FlowCanvasRef {
   performAutoLayout: () => void;
@@ -217,6 +219,22 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       });
     };
 
+  const openAppsManagerPopup = () => {
+    appendWidget({
+      container_id: CONTAINER_DEFAULT_ID,
+      group_id: APPS_MANAGER_WIDGET_ID,
+      widget_id: APPS_MANAGER_WIDGET_ID,
+
+      category: EWidgetCategory.Default,
+      display_type: EWidgetDisplayType.Popup,
+
+      title: <LoadedAppsPopupTitle />,
+      metadata: {
+        type: EDefaultWidgetType.AppsManager,
+      },
+    });
+  };
+
     const renderContextMenu = () => {
       if (contextMenu.type === "node" && contextMenu.node) {
         return (
@@ -252,6 +270,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
             baseDir={currentWorkspace?.app?.base_dir}
             onOpenExistingGraph={onOpenExistingGraph}
             onGraphAct={onGraphAct}
+            onAppManager={openAppsManagerPopup}
             onClose={closeContextMenu}
           />
         );
@@ -363,9 +382,9 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           onNodeContextMenu={clickNodeContextMenu}
           onEdgeContextMenu={clickEdgeContextMenu}
           onPaneContextMenu={clickPaneContextMenu}
-          // onEdgeClick={(e, edge) => {
-          //   console.log("clicked", e, edge);
-          // }}
+        // onEdgeClick={(e, edge) => {
+        //   console.log("clicked", e, edge);
+        // }}
         >
           <Controls />
           <MiniMap zoomable pannable />
