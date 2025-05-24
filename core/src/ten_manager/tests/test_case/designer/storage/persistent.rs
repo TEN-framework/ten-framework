@@ -4,14 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::{collections::HashMap, env, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web};
 use serde_json::json;
-use tempfile::TempDir;
 
 use ten_manager::{
-    home::config::TmanConfig,
     designer::{
         response::ApiResponse,
         storage::{
@@ -28,36 +26,11 @@ use ten_manager::{
         },
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
-/// Helper struct to manage temporary home directory
-struct TempHome {
-    _temp_dir: TempDir,
-    original_home: Option<String>,
-}
-
-impl TempHome {
-    fn new() -> Self {
-        let temp_dir = TempDir::new().expect("Failed to create temp directory");
-        let original_home = env::var("HOME").ok();
-
-        env::set_var("HOME", temp_dir.path());
-
-        Self { _temp_dir: temp_dir, original_home }
-    }
-}
-
-impl Drop for TempHome {
-    fn drop(&mut self) {
-        // Restore original HOME
-        if let Some(ref home) = self.original_home {
-            env::set_var("HOME", home);
-        } else {
-            env::remove_var("HOME");
-        }
-    }
-}
+use crate::test_case::common::temp_home::TempHome;
 
 #[actix_web::test]
 async fn test_set_and_get_persistent_simple() {

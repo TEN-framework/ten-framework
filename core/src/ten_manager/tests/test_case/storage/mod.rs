@@ -6,10 +6,7 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::env;
-
     use serde_json::json;
-    use tempfile::TempDir;
     use ten_manager::{
         designer::storage::persistent::{
             read_persistent_storage, write_persistent_storage,
@@ -17,25 +14,7 @@ mod tests {
         home::data::get_home_data_path,
     };
 
-    /// Override the default home directory for testing
-    fn with_temp_home_dir<F>(f: F)
-    where
-        F: FnOnce(),
-    {
-        let temp_dir = TempDir::new().expect("Failed to create temp directory");
-        let original_home = env::var("HOME").ok();
-
-        env::set_var("HOME", temp_dir.path());
-
-        f();
-
-        // Restore original HOME
-        if let Some(home) = original_home {
-            env::set_var("HOME", home);
-        } else {
-            env::remove_var("HOME");
-        }
-    }
+    use crate::test_case::common::temp_home::with_temp_home_dir;
 
     #[test]
     fn test_read_nonexistent_storage() {
