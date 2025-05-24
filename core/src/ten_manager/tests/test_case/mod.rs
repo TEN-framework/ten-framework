@@ -13,4 +13,5 @@ mod graph;
 mod log;
 mod registry;
 mod schema;
+mod storage;
 mod version_utils;

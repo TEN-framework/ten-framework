@@ -58,7 +58,7 @@ impl Default for TmanConfig {
         Self {
             registry,
             config_file: Some(
-                get_default_config_path().to_string_lossy().to_string(),
+                get_home_config_path().to_string_lossy().to_string(),
             ),
             admin_token: None,
             user_token: None,
@@ -72,7 +72,7 @@ impl Default for TmanConfig {
 
 /// Get the default configuration file path, located under the default home
 /// directory as `config.json`.
-pub fn get_default_config_path() -> PathBuf {
+pub fn get_home_config_path() -> PathBuf {
     let mut config_path = get_default_home_dir();
     config_path.push(CONFIG_JSON);
     config_path
@@ -84,7 +84,7 @@ pub fn read_config(
 ) -> Result<Option<TmanConfigFile>> {
     let config_path = match config_file_path {
         Some(path) => PathBuf::from(path),
-        None => get_default_config_path(),
+        None => get_home_config_path(),
     };
 
     let config_data = fs::read_to_string(config_path.clone());

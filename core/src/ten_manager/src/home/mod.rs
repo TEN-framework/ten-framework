@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod config;
+pub mod data;
 pub mod package_cache;
 
 use std::path::PathBuf;
