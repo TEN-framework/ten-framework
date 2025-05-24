@@ -110,6 +110,9 @@ pub fn configure_routes(
             // Storage (in-memory) endpoints.
             .service(web::resource("/storage/in-memory/set").route(web::post().to(storage::in_memory::set::set_in_memory_storage_endpoint)))
             .service(web::resource("/storage/in-memory/get").route(web::post().to(storage::in_memory::get::get_in_memory_storage_endpoint)))
+            // Storage (persistent) endpoints.
+            // .service(web::resource("/storage/persistent/set").route(web::post().to(storage::persistent::set::set_persistent_storage_endpoint)))
+            // .service(web::resource("/storage/persistent/get").route(web::post().to(storage::persistent::get::get_persistent_storage_endpoint)))
             // File system endpoints.
             .service(web::resource("/dir-list").route(web::post().to(dir_list::list_dir_endpoint)))
             .service(

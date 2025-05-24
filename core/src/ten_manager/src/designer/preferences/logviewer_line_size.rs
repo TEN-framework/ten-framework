@@ -44,9 +44,9 @@ pub async fn update_logviewer_line_size_endpoint(
     request_payload: web::Json<UpdateLogviewerLineSizeRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    if request_payload.logviewer_line_size == 0 {
+    if request_payload.logviewer_line_size < 100 {
         return Err(actix_web::error::ErrorBadRequest(
-            "logviewer_line_size must be greater than 0",
+            "logviewer_line_size must be greater than or equal to 100",
         ));
     }
 
