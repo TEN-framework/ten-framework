@@ -43,22 +43,22 @@
 
 - [👋 欢迎使用 TEN](#-欢迎使用-ten)
 - [🎨 TMAN Designer](#-tman-designer)
-- [🤖 TEN Agent](#-ten-agent)
+- [✨ 功能特性](#-功能特性)
   - [1️⃣ 实时头像](#1️⃣-实时头像)
   - [2️⃣ 使用 MCP 服务器的实时语音](#2️⃣-使用-mcp-服务器的实时语音)
   - [3️⃣ 与硬件的实时通信](#3️⃣-与硬件的实时通信)
   - [4️⃣ 实时视觉和实时屏幕共享检测](#4️⃣-实时视觉和实时屏幕共享检测)
   - [5️⃣ 与其他 LLM 平台的集成](#5️⃣-与其他-llm-平台的集成)
   - [6️⃣ StoryTeller - TEN 图像生成](#6️⃣-storyteller---ten-图像生成)
-- [🛝 TEN Agent 游乐场](#-ten-agent-游乐场)
-  - [️🅰️ 在 `localhost` 运行游乐场](#🅰️-在-localhost-运行游乐场)
-  - [️🅱️ 在 Codespace 中运行游乐场(无需 docker)](#🅱️-在-codespace-中运行游乐场无需-docker)
+- [🛝 TEN Agent Playground](#-ten-agent-playground)
+  - [🅰️ 在 `localhost` 运行 Playground](#🅰️-在-localhost-运行-playground)
+  - [🅱️ 在 Codespace 中运行 Playground(无需 Docker)](#🅱️-在-codespace-中运行-playground无需-docker)
 - [🛳️ TEN Agent 自托管](#️-ten-agent-自托管)
   - [🅰️ 🐳 使用 Docker 部署](#️--使用-docker-部署)
   - [🅱️ 使用其他云服务部署](#️-使用其他云服务部署)
 - [🏗️ TEN Agent 架构](#️-ten-agent-架构)
-- [🌍 TEN 框架生态系统](#-ten-框架生态系统)
-- [❓ 提问](#-提问)
+- [🌍 TEN 生态](#-ten-生态)
+- [❓问题](#-问题)
 - [🥰 贡献](#-贡献)
   - [代码贡献者](#代码贡献者)
   - [贡献指南](#贡献指南)
@@ -227,17 +227,17 @@ TEN 提供了出色的支持，使其他 LLM 平台上的实时交互体验更�
 
 <br>
 
-## 🛝 TEN Agent 游乐场快速入门
+## 🛝 TEN Agent Playground
 
-#### 🅰️ 在 `localhost` 运行游乐场
+#### 🅰️ 在 `localhost` Playground
 
-#### 步骤 ⓵ - 前提条件
+#### 步骤 ⓵ - 先决条件
 
 | 类别 | 要求 |
 | --- | --- |
-| **密钥** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) 和 [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何与 OpenAI 兼容的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册即可获得免费额度）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册即可获得免费额度） |
+| **密钥** | • 声网 [APP ID](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service) 和 [APP 证书](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何兼容 OpenAI 的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册可获得免费积分）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册可获得免费积分） |
 | **安装** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **最低系统要求** | • CPU >= 2 核<br>• RAM >= 4 GB |
+| **最低系统要求** | • CPU >= 2 核<br>• 内存 >= 4 GB |
 
 <br>
 
@@ -249,7 +249,38 @@ TEN 提供了出色的支持，使其他 LLM 平台上的实时交互体验更�
 
 <br>
 
-#### 步骤 ⓶ - 在 VM 中构建代理
+如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
+
+```bash
+# 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
+# export 的有效期为一个 session
+export https_proxy=http://127.0.0.1:<port>
+export http_proxy=http://127.0.0.1:<port>
+export all_proxy=socks5://127.0.0.1:<port>
+
+# Docker
+export https_proxy=http://host.docker.internal:<port>
+export http_proxy=http://host.docker.internal:<port>
+export all_proxy=http://host.docker.internal:<port>
+
+# tman 镜像设置
+mkdir -p ~/.tman && echo '{
+  "registry": {
+    "default": {
+      "index": "https://registry-ten.rtcdeveloper.cn/api/ten-cloud-store/v1/packages"
+    }
+  }
+}' > ~/.tman/config.json
+
+# GO 代理设置
+export GOPROXY=https://goproxy.cn,direct
+
+# pip 代理设置, 此设置需要先安装 pip
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+#### 步骤 ⓶ - 在 VM 中构建 Agent
 
 ##### 1. 克隆仓库，`cd` 到 `ai-agents` 并从 `.env.example` 创建 `.env` 文件
 
@@ -297,7 +328,7 @@ task run
 
 <br>
 
-#### 步骤 ⓷ - 使用 TMAN Designer 自定义您的代理
+#### 步骤 ⓷ - 使用 TMAN Designer 自定义您的 Agent
 
 ![使用 TMAN Designer 自定义您的代理](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
 
@@ -314,9 +345,9 @@ task run
 
 <br>
 
-### 🅱️ 在 Codespace 中运行游乐场(无需 docker)
+### 🅱️ 在 Codespace 中运行 Playground(无需 Docker)
 
-GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运行游乐场而无需使用 Docker。此外，Codespace 的速度比 localhost 快得多。
+GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运行 Playground 而无需使用 Docker。此外，Codespace 的速度比 localhost 快得多。
 
 [codespaces-shield]: <https://github.com/codespaces/badge.svg>
 [![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
@@ -353,7 +384,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 <br>
 
-## 🌏 TEN 生态系统
+## 🌏 TEN 生态
 
 | 项目 | 预览 |
 | ------- | ------- |
@@ -373,7 +404,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 <br>
 
-## ❓ 提问
+## ❓ 问题
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
 
