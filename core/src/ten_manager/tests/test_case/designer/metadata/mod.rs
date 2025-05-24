@@ -12,7 +12,7 @@ use uuid::Uuid;
 use ten_manager::{
     config::{
         metadata::{
-            GraphGeometry, GraphUiMetadata, NodeGeometry, TmanMetadata,
+            GraphGeometry, GraphUiMetadata, NodeGeometry, TmanStorageInMemory,
         },
         TmanConfig,
     },
@@ -44,8 +44,8 @@ async fn test_get_graph_ui_empty() {
     // Create a clean state with empty config.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -105,8 +105,8 @@ async fn test_set_and_get_graph_ui() {
     // Create a clean state with empty config.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -205,11 +205,14 @@ async fn test_update_graph_ui() {
     let mut graph_ui_config = GraphUiMetadata::default();
     graph_ui_config.graphs_geometry.insert(graph_id, initial_graph_geometry);
 
-    let tman_metadata = TmanMetadata { graph_ui: graph_ui_config };
+    let tman_metadata = TmanStorageInMemory {
+        graph_ui: graph_ui_config,
+        extra_fields: serde_json::Map::new(),
+    };
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(tman_metadata)),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(tman_metadata)),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -299,11 +302,14 @@ async fn test_get_nonexistent_graph_ui() {
     let mut graph_ui_config = GraphUiMetadata::default();
     graph_ui_config.graphs_geometry.insert(existing_graph_id, graph_geometry);
 
-    let tman_metadata = TmanMetadata { graph_ui: graph_ui_config };
+    let tman_metadata = TmanStorageInMemory {
+        graph_ui: graph_ui_config,
+        extra_fields: serde_json::Map::new(),
+    };
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(tman_metadata)),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(tman_metadata)),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
