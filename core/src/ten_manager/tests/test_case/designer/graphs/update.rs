@@ -17,6 +17,7 @@ mod tests {
                 UpdateGraphRequestPayload,
             },
             response::{ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::graphs_cache_find_by_name,

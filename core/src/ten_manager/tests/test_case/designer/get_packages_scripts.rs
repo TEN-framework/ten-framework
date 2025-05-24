@@ -18,6 +18,7 @@ mod tests {
                 GetPackagesScriptsResponseData,
             },
             response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         output::cli::TmanOutputCli,

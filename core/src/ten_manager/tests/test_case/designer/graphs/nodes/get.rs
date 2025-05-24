@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::get::{
@@ -18,6 +18,7 @@ mod tests {
                 GraphNodesSingleResponseData,
             },
             response::{ApiResponse, ErrorResponse},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         output::cli::TmanOutputCli,

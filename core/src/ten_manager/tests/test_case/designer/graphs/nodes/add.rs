@@ -11,7 +11,7 @@ mod tests {
     use actix_web::{test, web, App};
     use serde_json::Value;
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::add::{
@@ -19,6 +19,7 @@ mod tests {
                 AddGraphNodeResponsePayload,
             },
             response::{ApiResponse, ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::graphs_cache_find_by_name,

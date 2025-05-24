@@ -9,9 +9,10 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::{TmanConfig},
+    config::TmanConfig,
     designer::{
         response::{ApiResponse, Status},
+        storage::in_memory::TmanStorageInMemory,
         template_pkgs::{
             get_template_endpoint, GetTemplateRequestPayload,
             GetTemplateResponseData, TemplateLanguage,

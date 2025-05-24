@@ -14,7 +14,6 @@ pub mod graphs;
 pub mod help_text;
 pub mod manifest;
 pub mod messages;
-pub mod metadata;
 pub mod preferences;
 pub mod property;
 pub mod storage;

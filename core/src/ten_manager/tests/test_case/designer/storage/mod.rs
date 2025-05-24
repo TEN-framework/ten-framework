@@ -10,7 +10,7 @@ use actix_web::{http::StatusCode, test, web};
 use serde_json::json;
 
 use ten_manager::{
-    config::{TmanConfig},
+    config::TmanConfig,
     designer::{
         response::ApiResponse,
         storage::in_memory::{
@@ -19,6 +19,7 @@ use ten_manager::{
                 set_in_memory_storage_endpoint, SetMemoryRequestPayload,
                 SetMemoryResponseData,
             },
+            TmanStorageInMemory,
         },
         DesignerState,
     },

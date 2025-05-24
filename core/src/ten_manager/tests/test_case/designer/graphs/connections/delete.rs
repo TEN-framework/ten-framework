@@ -16,7 +16,7 @@ mod tests {
     use uuid::Uuid;
 
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::connections::delete::{
@@ -25,6 +25,7 @@ mod tests {
                 DeleteGraphConnectionResponsePayload,
             },
             response::{ApiResponse, ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::{graphs_cache_find_by_id, graphs_cache_find_by_name},

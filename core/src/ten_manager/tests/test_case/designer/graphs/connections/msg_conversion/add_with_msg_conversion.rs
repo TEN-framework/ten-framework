@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         designer::{
             graphs::connections::add::{
                 add_graph_connection_endpoint,
@@ -18,6 +18,7 @@ mod tests {
                 AddGraphConnectionResponsePayload,
             },
             response::ApiResponse,
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::graphs_cache_find_by_name,

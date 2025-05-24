@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::{TmanConfig},
+    config::TmanConfig,
     designer::{
         graphs::{
             connections::get::{
@@ -23,6 +23,7 @@ use ten_manager::{
             },
         },
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     output::cli::TmanOutputCli,

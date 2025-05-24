@@ -10,7 +10,7 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::{TmanConfig},
+        config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::replace::{
@@ -18,6 +18,7 @@ mod tests {
                 ReplaceGraphNodeResponsePayload,
             },
             response::{ApiResponse, ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::graphs_cache_find_by_name,
