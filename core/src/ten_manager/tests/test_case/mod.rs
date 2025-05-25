@@ -10,6 +10,7 @@ mod designer;
 mod env_var;
 mod fs;
 mod graph;
+mod home;
 mod log;
 mod registry;
 mod schema;

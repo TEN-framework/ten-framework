@@ -9,53 +9,58 @@ use tempfile::TempDir;
 
 // # Problem
 //
-// When running tests in parallel, multiple test cases that modify the `HOME`
-// environment variable can interfere with each other, causing race conditions
-// and intermittent test failures.
+// When running tests in parallel, multiple test cases that modify the home
+// directory environment need to avoid interfering with each other, causing
+// race conditions and intermittent test failures.
 //
 // The issue occurs because:
 // 1. Environment variables are global to the entire process
-// 2. Multiple tests running concurrently can overwrite each other's `HOME`
-//    settings
+// 2. Multiple tests running concurrently can overwrite each other's home
+//    directory settings
 // 3. The cleanup code in `Drop` implementations may restore incorrect values
+// 4. Different platforms use different environment variables for home
+//    directory:
+//    - Unix systems: HOME
+//    - Windows: USERPROFILE
 //
 // # Solution
 //
-// A thread-safe solution using a global mutex to serialize access to the `HOME`
-// environment variable.
+// A thread-safe solution using a global mutex to serialize access to a custom
+// test-only environment variable `TEN_MANAGER_HOME_INTERNAL_USE_ONLY`. The
+// `get_home_dir()` function checks for this variable first, making it work
+// consistently across all platforms without interfering with system home
+// directory detection.
 
-// Use a global mutex to serialize access to HOME environment variable across
-// all tests
+// Use a global mutex to serialize access to TEN_MANAGER_HOME_INTERNAL_USE_ONLY
+// environment variable across all tests
 static HOME_MUTEX: Mutex<()> = Mutex::new(());
 
 /// Helper struct to manage temporary home directory with thread-safe access.
 ///
 /// This struct ensures that when multiple tests run in parallel, they won't
-/// interfere with each other's HOME environment variable settings.
-/// The mutex ensures exclusive access to the HOME environment variable.
+/// interfere with each other's TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment
+/// variable settings. The mutex ensures exclusive access to the
+/// TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable.
 pub struct TempHome {
     _temp_dir: TempDir,
-    original_home: Option<String>,
     _guard: std::sync::MutexGuard<'static, ()>,
 }
 
 impl TempHome {
-    /// Create a new temporary home directory and set it as the HOME environment
-    /// variable.
+    /// Create a new temporary home directory and set it as the
+    /// TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable.
     ///
     /// This will acquire a global mutex to ensure thread-safe access across
     /// parallel tests.
     pub fn new() -> Self {
-        // Acquire the lock to ensure exclusive access to HOME environment
-        // variable
+        // Acquire the lock to ensure exclusive access to
+        // TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable
         let guard = HOME_MUTEX.lock().expect("Failed to lock HOME mutex");
 
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
-        let original_home = env::var("HOME").ok();
+        env::set_var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY", temp_dir.path());
 
-        env::set_var("HOME", temp_dir.path());
-
-        Self { _temp_dir: temp_dir, original_home, _guard: guard }
+        Self { _temp_dir: temp_dir, _guard: guard }
     }
 
     /// Get the path to the temporary home directory
@@ -67,28 +72,33 @@ impl TempHome {
 
 impl Drop for TempHome {
     fn drop(&mut self) {
-        // Restore original HOME - the mutex guard will be released
-        // automatically when this struct is dropped, ensuring exclusive
-        // access during cleanup
-        if let Some(ref home) = self.original_home {
-            env::set_var("HOME", home);
-        } else {
-            env::remove_var("HOME");
-        }
+        // Restore original TEN_MANAGER_HOME_INTERNAL_USE_ONLY - the mutex guard
+        // will be released automatically when this struct is dropped,
+        // ensuring exclusive access during cleanup
+        env::remove_var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY");
         // _guard is dropped here, releasing the mutex
     }
 }
 
-/// Execute a closure with a temporary home directory set as HOME environment
-/// variable.
+/// Execute a closure with a temporary home directory set as
+/// TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable.
 ///
-/// This function provides thread-safe access to HOME environment variable
-/// modification for testing purposes.
+/// This function provides thread-safe access to
+/// TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable modification for
+/// testing purposes.
+///
+/// # Automatic Cleanup
+///
+/// The temporary directory created by this function is automatically cleaned up
+/// when the function returns. This is guaranteed by the `TempDir` type from the
+/// `tempfile` crate, which implements `Drop` to remove the temporary directory
+/// and all its contents when the `TempHome` struct is dropped.
 pub fn with_temp_home_dir<F>(f: F)
 where
     F: FnOnce(),
 {
     let _temp_home = TempHome::new();
     f();
-    // TempHome is dropped here, restoring the original HOME value
+    // TempHome is dropped here, which automatically cleans up the temporary
+    // directory
 }
