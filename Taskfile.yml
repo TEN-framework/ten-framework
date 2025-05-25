@@ -21,7 +21,7 @@ tasks:
   build-tman:
     desc: build tman only
     cmds:
-      - tgn build:ten_manager_package {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} {{ .CLI_ARGS }}
+      - tgn build:"ten_manager_package tests/ten_manager" {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} {{ .CLI_ARGS }}
 
   gen:
     desc: gen
