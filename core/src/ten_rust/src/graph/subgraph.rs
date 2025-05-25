@@ -69,6 +69,75 @@ impl Graph {
         }
     }
 
+    /// Helper function to process message flows and add them to extension_flows
+    /// HashMap
+    fn flatten_connection_source_for_type_for_subgraph(
+        flows: &[GraphMessageFlow],
+        msg_type: GraphExposedMessageType,
+        subgraph_name: &str,
+        subgraph: &Graph,
+        base_connection: &GraphConnection,
+        extension_flows: &mut HashMap<String, GraphConnection>,
+    ) -> Result<()> {
+        for flow in flows {
+            let extension_name = Self::resolve_subgraph_to_extension(
+                subgraph_name,
+                subgraph,
+                &flow.name,
+                msg_type.clone(),
+            )?;
+
+            let entry = extension_flows
+                .entry(extension_name.clone())
+                .or_insert_with(|| GraphConnection {
+                    loc: GraphLoc {
+                        app: base_connection.loc.app.clone(),
+                        extension: Some(extension_name),
+                        subgraph: None,
+                    },
+                    cmd: None,
+                    data: None,
+                    audio_frame: None,
+                    video_frame: None,
+                });
+
+            // Add flow to the appropriate field based on message type
+            match msg_type {
+                GraphExposedMessageType::CmdOut => {
+                    if entry.cmd.is_none() {
+                        entry.cmd = Some(Vec::new());
+                    }
+                    entry.cmd.as_mut().unwrap().push(flow.clone());
+                }
+                GraphExposedMessageType::DataOut => {
+                    if entry.data.is_none() {
+                        entry.data = Some(Vec::new());
+                    }
+                    entry.data.as_mut().unwrap().push(flow.clone());
+                }
+                GraphExposedMessageType::AudioFrameOut => {
+                    if entry.audio_frame.is_none() {
+                        entry.audio_frame = Some(Vec::new());
+                    }
+                    entry.audio_frame.as_mut().unwrap().push(flow.clone());
+                }
+                GraphExposedMessageType::VideoFrameOut => {
+                    if entry.video_frame.is_none() {
+                        entry.video_frame = Some(Vec::new());
+                    }
+                    entry.video_frame.as_mut().unwrap().push(flow.clone());
+                }
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported message type for source: {:?}",
+                        msg_type
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Expands a connection source if it references a subgraph element using
     /// colon notation (e.g., "subgraph_1:ext_c" -> "subgraph_1_ext_c") or
     /// subgraph field. Groups message flows by their resolved extension names
@@ -99,126 +168,50 @@ impl Graph {
 
             // Process cmd flows
             if let Some(ref cmd_flows) = base_connection.cmd {
-                for flow in cmd_flows {
-                    let extension_name = Self::resolve_subgraph_to_extension(
-                        subgraph_name,
-                        subgraph,
-                        &flow.name,
-                        GraphExposedMessageType::CmdOut,
-                    )?;
-
-                    let entry = extension_flows
-                        .entry(extension_name.clone())
-                        .or_insert_with(|| GraphConnection {
-                            loc: GraphLoc {
-                                app: base_connection.loc.app.clone(),
-                                extension: Some(extension_name),
-                                subgraph: None,
-                            },
-                            cmd: None,
-                            data: None,
-                            audio_frame: None,
-                            video_frame: None,
-                        });
-
-                    if entry.cmd.is_none() {
-                        entry.cmd = Some(Vec::new());
-                    }
-                    entry.cmd.as_mut().unwrap().push(flow.clone());
-                }
+                Self::flatten_connection_source_for_type_for_subgraph(
+                    cmd_flows,
+                    GraphExposedMessageType::CmdOut,
+                    subgraph_name,
+                    subgraph,
+                    &base_connection,
+                    &mut extension_flows,
+                )?;
             }
 
             // Process data flows
             if let Some(ref data_flows) = base_connection.data {
-                for flow in data_flows {
-                    let extension_name = Self::resolve_subgraph_to_extension(
-                        subgraph_name,
-                        subgraph,
-                        &flow.name,
-                        GraphExposedMessageType::DataOut,
-                    )?;
-
-                    let entry = extension_flows
-                        .entry(extension_name.clone())
-                        .or_insert_with(|| GraphConnection {
-                            loc: super::connection::GraphLoc {
-                                app: base_connection.loc.app.clone(),
-                                extension: Some(extension_name),
-                                subgraph: None,
-                            },
-                            cmd: None,
-                            data: None,
-                            audio_frame: None,
-                            video_frame: None,
-                        });
-
-                    if entry.data.is_none() {
-                        entry.data = Some(Vec::new());
-                    }
-                    entry.data.as_mut().unwrap().push(flow.clone());
-                }
+                Self::flatten_connection_source_for_type_for_subgraph(
+                    data_flows,
+                    GraphExposedMessageType::DataOut,
+                    subgraph_name,
+                    subgraph,
+                    &base_connection,
+                    &mut extension_flows,
+                )?;
             }
 
             // Process audio_frame flows
             if let Some(ref audio_frame_flows) = base_connection.audio_frame {
-                for flow in audio_frame_flows {
-                    let extension_name = Self::resolve_subgraph_to_extension(
-                        subgraph_name,
-                        subgraph,
-                        &flow.name,
-                        GraphExposedMessageType::AudioFrameOut,
-                    )?;
-
-                    let entry = extension_flows
-                        .entry(extension_name.clone())
-                        .or_insert_with(|| GraphConnection {
-                            loc: super::connection::GraphLoc {
-                                app: base_connection.loc.app.clone(),
-                                extension: Some(extension_name),
-                                subgraph: None,
-                            },
-                            cmd: None,
-                            data: None,
-                            audio_frame: None,
-                            video_frame: None,
-                        });
-
-                    if entry.audio_frame.is_none() {
-                        entry.audio_frame = Some(Vec::new());
-                    }
-                    entry.audio_frame.as_mut().unwrap().push(flow.clone());
-                }
+                Self::flatten_connection_source_for_type_for_subgraph(
+                    audio_frame_flows,
+                    GraphExposedMessageType::AudioFrameOut,
+                    subgraph_name,
+                    subgraph,
+                    &base_connection,
+                    &mut extension_flows,
+                )?;
             }
 
             // Process video_frame flows
             if let Some(ref video_frame_flows) = base_connection.video_frame {
-                for flow in video_frame_flows {
-                    let extension_name = Self::resolve_subgraph_to_extension(
-                        subgraph_name,
-                        subgraph,
-                        &flow.name,
-                        GraphExposedMessageType::VideoFrameOut,
-                    )?;
-
-                    let entry = extension_flows
-                        .entry(extension_name.clone())
-                        .or_insert_with(|| GraphConnection {
-                            loc: super::connection::GraphLoc {
-                                app: base_connection.loc.app.clone(),
-                                extension: Some(extension_name),
-                                subgraph: None,
-                            },
-                            cmd: None,
-                            data: None,
-                            audio_frame: None,
-                            video_frame: None,
-                        });
-
-                    if entry.video_frame.is_none() {
-                        entry.video_frame = Some(Vec::new());
-                    }
-                    entry.video_frame.as_mut().unwrap().push(flow.clone());
-                }
+                Self::flatten_connection_source_for_type_for_subgraph(
+                    video_frame_flows,
+                    GraphExposedMessageType::VideoFrameOut,
+                    subgraph_name,
+                    subgraph,
+                    &base_connection,
+                    &mut extension_flows,
+                )?;
             }
 
             // Convert the HashMap values to a Vec
