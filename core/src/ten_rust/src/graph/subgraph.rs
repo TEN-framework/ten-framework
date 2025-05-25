@@ -8,7 +8,10 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use super::{Graph, GraphConnection, GraphMessageFlow, GraphNodeType};
+use super::{
+    Graph, GraphConnection, GraphExposedMessageType, GraphMessageFlow,
+    GraphNodeType,
+};
 
 impl Graph {
     /// Flattens a graph containing subgraph nodes into a regular graph
@@ -125,12 +128,16 @@ impl Graph {
                 let mut flattened_connection = connection.clone();
 
                 // Update connection source if it references a subgraph element
-                Self::update_connection_source(&mut flattened_connection);
+                Self::update_connection_source(
+                    &mut flattened_connection,
+                    &subgraph_mappings,
+                )?;
 
                 // Update all message flow destinations
                 Self::update_message_flows_for_flattening(
                     &mut flattened_connection,
-                );
+                    &subgraph_mappings,
+                )?;
 
                 flattened_connections.push(flattened_connection);
             }
@@ -186,8 +193,13 @@ impl Graph {
     }
 
     /// Updates connection source if it references a subgraph element using
-    /// colon notation (e.g., "subgraph_1:ext_c" -> "subgraph_1_ext_c").
-    fn update_connection_source(connection: &mut GraphConnection) {
+    /// colon notation (e.g., "subgraph_1:ext_c" -> "subgraph_1_ext_c") or
+    /// subgraph field.
+    fn update_connection_source(
+        connection: &mut GraphConnection,
+        subgraph_mappings: &HashMap<String, Graph>,
+    ) -> Result<()> {
+        // Handle colon notation in extension field
         if let Some(ref extension) = connection.loc.extension {
             if extension.contains(':') {
                 let parts: Vec<&str> = extension.split(':').collect();
@@ -197,14 +209,118 @@ impl Graph {
                 }
             }
         }
+
+        // Handle subgraph field - resolve to actual extension based on
+        // exposed_messages
+        if let Some(ref subgraph_name) = connection.loc.subgraph.clone() {
+            let subgraph =
+                subgraph_mappings.get(subgraph_name).ok_or_else(|| {
+                    anyhow::anyhow!("Subgraph '{}' not found", subgraph_name)
+                })?;
+
+            // Helper function to process message flows for a specific type
+            let process_flows = |flows: &mut Vec<GraphMessageFlow>,
+                                 msg_type: GraphExposedMessageType|
+             -> Result<Option<String>> {
+                if let Some(flow) = flows.first() {
+                    if let Some(exposed_messages) = &subgraph.exposed_messages {
+                        let matching_exposed =
+                            exposed_messages.iter().find(|exposed| {
+                                exposed.msg_type == msg_type
+                                    && exposed.name == flow.name
+                            });
+
+                        if let Some(exposed) = matching_exposed {
+                            if let Some(ref extension_name) = exposed.extension
+                            {
+                                return Ok(Some(format!(
+                                    "{}_{}",
+                                    subgraph_name, extension_name
+                                )));
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "Exposed message '{}' in subgraph '{}' \
+                                     does not specify an extension",
+                                    flow.name,
+                                    subgraph_name
+                                ));
+                            }
+                        } else {
+                            return Err(anyhow::anyhow!(
+                                "Message '{}' of type '{:?}' is not exposed \
+                                 by subgraph '{}'",
+                                flow.name,
+                                msg_type,
+                                subgraph_name
+                            ));
+                        }
+                    } else {
+                        return Err(anyhow::anyhow!(
+                            "Subgraph '{}' does not have exposed_messages \
+                             defined",
+                            subgraph_name
+                        ));
+                    }
+                }
+                Ok(None)
+            };
+
+            // Process each message type
+            if let Some(ref mut cmd) = connection.cmd {
+                if let Some(extension_name) =
+                    process_flows(cmd, GraphExposedMessageType::CmdOut)?
+                {
+                    connection.loc.extension = Some(extension_name);
+                }
+            }
+
+            if let Some(ref mut data) = connection.data {
+                if let Some(extension_name) =
+                    process_flows(data, GraphExposedMessageType::DataOut)?
+                {
+                    connection.loc.extension = Some(extension_name);
+                }
+            }
+
+            if let Some(ref mut audio_frame) = connection.audio_frame {
+                if let Some(extension_name) = process_flows(
+                    audio_frame,
+                    GraphExposedMessageType::AudioFrameOut,
+                )? {
+                    connection.loc.extension = Some(extension_name);
+                }
+            }
+
+            if let Some(ref mut video_frame) = connection.video_frame {
+                if let Some(extension_name) = process_flows(
+                    video_frame,
+                    GraphExposedMessageType::VideoFrameOut,
+                )? {
+                    connection.loc.extension = Some(extension_name);
+                }
+            }
+
+            // Clear the subgraph field after processing
+            connection.loc.subgraph = None;
+        }
+
+        Ok(())
     }
 
     /// Updates all message flow destinations to convert subgraph references
-    /// from colon notation to underscore notation.
-    fn update_message_flows_for_flattening(connection: &mut GraphConnection) {
-        let update_destinations = |flows: &mut Vec<GraphMessageFlow>| {
+    /// from colon notation to underscore notation and resolve subgraph field
+    /// references using exposed_messages.
+    fn update_message_flows_for_flattening(
+        connection: &mut GraphConnection,
+        subgraph_mappings: &HashMap<String, Graph>,
+    ) -> Result<()> {
+        let update_destinations = |flows: &mut Vec<GraphMessageFlow>,
+                                   msg_type: &str,
+                                   is_source: bool|
+         -> Result<()> {
             for flow in flows {
                 for dest in &mut flow.dest {
+                    // Handle colon notation in extension field
                     if let Some(ref extension) = dest.loc.extension {
                         if extension.contains(':') {
                             let parts: Vec<&str> =
@@ -215,6 +331,95 @@ impl Graph {
                             }
                         }
                     }
+
+                    // Handle subgraph field - resolve to actual extension based
+                    // on exposed_messages
+                    if let Some(ref subgraph_name) = dest.loc.subgraph {
+                        let subgraph = subgraph_mappings
+                            .get(subgraph_name)
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "Subgraph '{}' not found",
+                                    subgraph_name
+                                )
+                            })?;
+
+                        // Determine the message type to look for in
+                        // exposed_messages
+                        let exposed_msg_type = match (msg_type, is_source) {
+                            ("cmd", false) => GraphExposedMessageType::CmdIn,
+                            ("cmd", true) => GraphExposedMessageType::CmdOut,
+                            ("data", false) => GraphExposedMessageType::DataIn,
+                            ("data", true) => GraphExposedMessageType::DataOut,
+                            ("audio_frame", false) => {
+                                GraphExposedMessageType::AudioFrameIn
+                            }
+                            ("audio_frame", true) => {
+                                GraphExposedMessageType::AudioFrameOut
+                            }
+                            ("video_frame", false) => {
+                                GraphExposedMessageType::VideoFrameIn
+                            }
+                            ("video_frame", true) => {
+                                GraphExposedMessageType::VideoFrameOut
+                            }
+                            _ => {
+                                return Err(anyhow::anyhow!(
+                                    "Unknown message type: {}",
+                                    msg_type
+                                ))
+                            }
+                        };
+
+                        // Find the corresponding extension in exposed_messages
+                        if let Some(exposed_messages) =
+                            &subgraph.exposed_messages
+                        {
+                            let matching_exposed =
+                                exposed_messages.iter().find(|exposed| {
+                                    exposed.msg_type == exposed_msg_type
+                                        && exposed.name == flow.name
+                                });
+
+                            if let Some(exposed) = matching_exposed {
+                                if let Some(ref extension_name) =
+                                    exposed.extension
+                                {
+                                    // Replace subgraph reference with the
+                                    // actual extension
+                                    dest.loc.extension = Some(format!(
+                                        "{}_{}",
+                                        subgraph_name, extension_name
+                                    ));
+                                    dest.loc.subgraph = None;
+                                } else {
+                                    return Err(anyhow::anyhow!(
+                                        "Exposed message '{}' in subgraph \
+                                         '{}' does not specify an extension",
+                                        flow.name,
+                                        subgraph_name
+                                    ));
+                                }
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "Message '{}' of type '{:?}' is not \
+                                     exposed by subgraph '{}'",
+                                    flow.name,
+                                    exposed_msg_type,
+                                    subgraph_name
+                                ));
+                            }
+                        } else {
+                            return Err(anyhow::anyhow!(
+                                "Subgraph '{}' does not have exposed_messages \
+                                 defined",
+                                subgraph_name
+                            ));
+                        }
+                    }
+
+                    // Handle colon notation in subgraph field (for nested
+                    // references)
                     if let Some(ref subgraph) = dest.loc.subgraph {
                         if subgraph.contains(':') {
                             let parts: Vec<&str> =
@@ -227,19 +432,22 @@ impl Graph {
                     }
                 }
             }
+            Ok(())
         };
 
         if let Some(ref mut cmd) = connection.cmd {
-            update_destinations(cmd);
+            update_destinations(cmd, "cmd", false)?;
         }
         if let Some(ref mut data) = connection.data {
-            update_destinations(data);
+            update_destinations(data, "data", false)?;
         }
         if let Some(ref mut audio_frame) = connection.audio_frame {
-            update_destinations(audio_frame);
+            update_destinations(audio_frame, "audio_frame", false)?;
         }
         if let Some(ref mut video_frame) = connection.video_frame {
-            update_destinations(video_frame);
+            update_destinations(video_frame, "video_frame", false)?;
         }
+
+        Ok(())
     }
 }
