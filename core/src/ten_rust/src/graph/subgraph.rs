@@ -321,29 +321,76 @@ impl Graph {
                         flattened_node.name =
                             format!("{}_{}", node.name, sub_node.name);
 
-                        // Merge properties if specified in the subgraph
-                        // reference
-                        if let Some(ref_property) = &node.property {
-                            match (&mut flattened_node.property, ref_property) {
-                                (Some(node_prop), ref_prop) => {
-                                    // Merge properties - reference properties
-                                    // override node properties
-                                    if let (
-                                        serde_json::Value::Object(node_obj),
-                                        serde_json::Value::Object(ref_obj),
-                                    ) = (node_prop, ref_prop)
+                        // Apply properties from subgraph node reference based
+                        // on exposed_properties mapping
+                        if let Some(serde_json::Value::Object(ref_obj)) =
+                            &node.property
+                        {
+                            // Process each property specified in the subgraph
+                            // node
+                            for (property_alias, property_value) in ref_obj {
+                                // Find the corresponding exposed property by
+                                // alias
+                                if let Some(exposed_properties) =
+                                    &subgraph.exposed_properties
+                                {
+                                    if let Some(exposed_prop) =
+                                        exposed_properties.iter().find(|ep| {
+                                            &ep.alias == property_alias
+                                        })
                                     {
-                                        for (key, value) in ref_obj {
-                                            node_obj.insert(
-                                                key.clone(),
-                                                value.clone(),
-                                            );
+                                        // Check if this exposed property
+                                        // applies to the current extension
+                                        if let Some(ref target_extension) =
+                                            exposed_prop.extension
+                                        {
+                                            if target_extension
+                                                == &sub_node.name
+                                            {
+                                                // Initialize property object if
+                                                // it doesn't exist
+                                                if flattened_node
+                                                    .property
+                                                    .is_none()
+                                                {
+                                                    flattened_node.property = Some(serde_json::Value::Object(serde_json::Map::new()));
+                                                }
+
+                                                // Apply the property value to
+                                                // the target property name
+                                                if let Some(
+                                                    serde_json::Value::Object(
+                                                        node_obj,
+                                                    ),
+                                                ) =
+                                                    &mut flattened_node.property
+                                                {
+                                                    node_obj.insert(
+                                                        exposed_prop
+                                                            .name
+                                                            .clone(),
+                                                        property_value.clone(),
+                                                    );
+                                                }
+                                            }
                                         }
+                                    } else {
+                                        return Err(anyhow::anyhow!(
+                                            "Property '{}' specified in \
+                                             subgraph node '{}' is not \
+                                             exposed by the subgraph",
+                                            property_alias,
+                                            node.name
+                                        ));
                                     }
-                                }
-                                (None, ref_prop) => {
-                                    flattened_node.property =
-                                        Some(ref_prop.clone());
+                                } else {
+                                    return Err(anyhow::anyhow!(
+                                        "Subgraph '{}' does not have \
+                                         exposed_properties defined, but \
+                                         properties are specified in the \
+                                         subgraph node",
+                                        node.name
+                                    ));
                                 }
                             }
                         }

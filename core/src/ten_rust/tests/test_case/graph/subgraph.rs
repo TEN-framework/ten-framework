@@ -12,6 +12,7 @@ mod tests {
         connection::{self, GraphConnection},
         node::{GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
+        GraphExposedProperty,
     };
 
     #[test]
@@ -111,7 +112,11 @@ mod tests {
                 video_frame: None,
             }]),
             exposed_messages: None,
-            exposed_properties: None,
+            exposed_properties: Some(vec![GraphExposedProperty {
+                extension: Some("ext_d".to_string()),
+                name: "app_id".to_string(),
+                alias: "app_id".to_string(),
+            }]),
         };
 
         // Mock subgraph loader
@@ -256,7 +261,11 @@ mod tests {
                 },
             ]),
             exposed_messages: None,
-            exposed_properties: None,
+            exposed_properties: Some(vec![GraphExposedProperty {
+                extension: Some("ext_d".to_string()),
+                name: "app_id".to_string(),
+                alias: "app_id".to_string(),
+            }]),
         };
 
         // Create a subgraph with exposed_messages
