@@ -511,6 +511,9 @@ pub unsafe extern "C" fn ten_service_hub_create(
                     server_thread_handle: Some(thread_handle),
                     server_thread_shutdown_tx: Some(shutdown_tx),
                 }));
+            } else {
+                eprintln!("Unexpected error in service hub creation");
+                return ptr::null_mut();
             }
         } else {
             // Both endpoints are different - we'll handle this with one HTTP
