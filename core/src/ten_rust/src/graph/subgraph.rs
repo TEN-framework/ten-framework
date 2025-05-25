@@ -273,21 +273,18 @@ impl Graph {
         Ok(())
     }
 
-    /// Flattens a graph containing subgraph nodes into a regular graph
-    /// structure with only extension nodes. This process converts subgraph
-    /// references into their constituent extensions with prefixed names and
-    /// merges all connections.
-    pub fn flatten<F>(&self, subgraph_loader: F) -> Result<Graph>
+    /// Processes all nodes in the graph, flattening subgraph nodes into their
+    /// constituent extensions and collecting subgraph mappings for later use.
+    fn flatten_nodes<F>(
+        &self,
+        subgraph_loader: F,
+        flattened_nodes: &mut Vec<super::GraphNode>,
+        flattened_connections: &mut Vec<GraphConnection>,
+        subgraph_mappings: &mut HashMap<String, Graph>,
+    ) -> Result<()>
     where
         F: Fn(&str) -> Result<Graph>,
     {
-        let mut flattened_nodes = Vec::new();
-        let mut flattened_connections = Vec::new();
-
-        // Keep track of subgraph mappings for connection resolution
-        let mut subgraph_mappings: HashMap<String, Graph> = HashMap::new();
-
-        // Process all nodes
         for node in &self.nodes {
             match node.type_ {
                 GraphNodeType::Extension => {
@@ -377,28 +374,66 @@ impl Graph {
                 }
             }
         }
+        Ok(())
+    }
 
-        // Process connections from the main graph
+    /// Processes connections from the main graph, expanding and flattening
+    /// any subgraph references.
+    fn flatten_main_graph_connections(
+        &self,
+        subgraph_mappings: &HashMap<String, Graph>,
+        flattened_connections: &mut Vec<GraphConnection>,
+    ) -> Result<()> {
         if let Some(connections) = &self.connections {
             for connection in connections {
                 // Expand connection source if it references a subgraph element
                 let expanded_connections =
                     Self::flatten_connection_source_for_subgraph(
                         connection,
-                        &subgraph_mappings,
+                        subgraph_mappings,
                     )?;
 
                 for mut flattened_connection in expanded_connections {
                     // Update all message flow destinations
                     Self::flatten_connection_destinations_for_subgraph(
                         &mut flattened_connection,
-                        &subgraph_mappings,
+                        subgraph_mappings,
                     )?;
 
                     flattened_connections.push(flattened_connection);
                 }
             }
         }
+        Ok(())
+    }
+
+    /// Flattens a graph containing subgraph nodes into a regular graph
+    /// structure with only extension nodes. This process converts subgraph
+    /// references into their constituent extensions with prefixed names and
+    /// merges all connections.
+    pub fn flatten<F>(&self, subgraph_loader: F) -> Result<Graph>
+    where
+        F: Fn(&str) -> Result<Graph>,
+    {
+        let mut flattened_nodes = Vec::new();
+        let mut flattened_connections = Vec::new();
+
+        // Keep track of subgraph mappings for connection resolution
+        let mut subgraph_mappings: HashMap<String, Graph> = HashMap::new();
+
+        // Process all nodes
+        self.flatten_nodes(
+            &subgraph_loader,
+            &mut flattened_nodes,
+            &mut flattened_connections,
+            &mut subgraph_mappings,
+        )?;
+
+        // Process connections from the main graph
+        self.flatten_main_graph_connections(
+            &subgraph_mappings,
+            &mut flattened_connections,
+        )?;
 
         Ok(Graph {
             nodes: flattened_nodes,
