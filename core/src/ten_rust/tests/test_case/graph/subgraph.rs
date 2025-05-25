@@ -796,7 +796,7 @@ mod tests {
 
         // Check that connections are resolved correctly
         let connections = flattened.connections.as_ref().unwrap();
-        assert_eq!(connections.len(), 5); // 1 original + 4 expanded from subgraph source
+        assert_eq!(connections.len(), 2); // 1 original + 1 grouped connection from subgraph source
 
         // Check that subgraph references in destinations are resolved correctly
         let connection_to_subgraph = connections
@@ -840,66 +840,41 @@ mod tests {
         );
 
         // Check that subgraph references in sources are resolved correctly
-        // Now we should have 4 separate connections, one for each message type
+        // Now we should have 1 grouped connection with all message types from
+        // the same extension
 
-        // Find cmd connection from subgraph
-        let cmd_connection = connections
+        // Find the grouped connection from subgraph
+        let grouped_connection = connections
             .iter()
             .find(|conn| {
                 conn.loc.extension.as_deref() == Some("subgraph_3_ext_output")
-                    && conn.cmd.is_some()
             })
             .unwrap();
-        let cmd_flow = &cmd_connection.cmd.as_ref().unwrap()[0];
+
+        // Verify all message types are present in the same connection
+        assert!(grouped_connection.cmd.is_some());
+        assert!(grouped_connection.data.is_some());
+        assert!(grouped_connection.audio_frame.is_some());
+        assert!(grouped_connection.video_frame.is_some());
+
+        // Verify cmd flow
+        let cmd_flow = &grouped_connection.cmd.as_ref().unwrap()[0];
         assert_eq!(cmd_flow.name, "ResponseCmd");
         assert_eq!(cmd_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
-        assert!(cmd_connection.data.is_none());
-        assert!(cmd_connection.audio_frame.is_none());
-        assert!(cmd_connection.video_frame.is_none());
 
-        // Find data connection from subgraph
-        let data_connection = connections
-            .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_3_ext_output")
-                    && conn.data.is_some()
-            })
-            .unwrap();
-        let data_flow = &data_connection.data.as_ref().unwrap()[0];
+        // Verify data flow
+        let data_flow = &grouped_connection.data.as_ref().unwrap()[0];
         assert_eq!(data_flow.name, "ResponseData");
         assert_eq!(data_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
-        assert!(data_connection.cmd.is_none());
-        assert!(data_connection.audio_frame.is_none());
-        assert!(data_connection.video_frame.is_none());
 
-        // Find audio_frame connection from subgraph
-        let audio_connection = connections
-            .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_3_ext_output")
-                    && conn.audio_frame.is_some()
-            })
-            .unwrap();
-        let audio_flow = &audio_connection.audio_frame.as_ref().unwrap()[0];
+        // Verify audio_frame flow
+        let audio_flow = &grouped_connection.audio_frame.as_ref().unwrap()[0];
         assert_eq!(audio_flow.name, "ResponseAudio");
         assert_eq!(audio_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
-        assert!(audio_connection.cmd.is_none());
-        assert!(audio_connection.data.is_none());
-        assert!(audio_connection.video_frame.is_none());
 
-        // Find video_frame connection from subgraph
-        let video_connection = connections
-            .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_3_ext_output")
-                    && conn.video_frame.is_some()
-            })
-            .unwrap();
-        let video_flow = &video_connection.video_frame.as_ref().unwrap()[0];
+        // Verify video_frame flow
+        let video_flow = &grouped_connection.video_frame.as_ref().unwrap()[0];
         assert_eq!(video_flow.name, "ResponseVideo");
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
-        assert!(video_connection.cmd.is_none());
-        assert!(video_connection.data.is_none());
-        assert!(video_connection.audio_frame.is_none());
     }
 }

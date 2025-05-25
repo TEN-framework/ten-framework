@@ -15,6 +15,7 @@ use super::{
 };
 
 impl Graph {
+    /// Updates connection source to use flattened names for subgraph elements.
     fn flatten_connection_source_in_subgraph(
         connection: &mut GraphConnection,
         subgraph_name: &str,
@@ -30,8 +31,8 @@ impl Graph {
         }
     }
 
-    /// Updates message flows within a connection to use flattened names for
-    /// subgraph elements.
+    /// Updates connection destinations to use flattened names for subgraph
+    /// elements.
     fn flatten_connection_destinations_in_subgraph(
         connection: &mut GraphConnection,
         subgraph_name: &str,
@@ -70,8 +71,9 @@ impl Graph {
 
     /// Expands a connection source if it references a subgraph element using
     /// colon notation (e.g., "subgraph_1:ext_c" -> "subgraph_1_ext_c") or
-    /// subgraph field. For each message flow, creates a separate connection
-    /// with the appropriate extension based on exposed_messages.
+    /// subgraph field. Groups message flows by their resolved extension names
+    /// so that flows with the same source extension are combined into a single
+    /// connection based on exposed_messages.
     fn flatten_connection_source_for_subgraph(
         connection: &GraphConnection,
         subgraph_mappings: &HashMap<String, Graph>,
@@ -83,15 +85,19 @@ impl Graph {
         Self::handle_colon_notation(&mut base_connection.loc.extension);
 
         // Handle subgraph field - resolve to actual extension based on
-        // exposed_messages. We need to create separate connections for each
-        // message flow.
+        // exposed_messages. We need to group message flows by their resolved
+        // extension names.
         if let Some(ref subgraph_name) = base_connection.loc.subgraph.clone() {
             let subgraph =
                 subgraph_mappings.get(subgraph_name).ok_or_else(|| {
                     anyhow::anyhow!("Subgraph '{}' not found", subgraph_name)
                 })?;
 
-            // Process cmd flows - create one connection per flow
+            // Use a HashMap to group flows by their resolved extension names
+            let mut extension_flows: HashMap<String, GraphConnection> =
+                HashMap::new();
+
+            // Process cmd flows
             if let Some(ref cmd_flows) = base_connection.cmd {
                 for flow in cmd_flows {
                     let extension_name = Self::resolve_subgraph_to_extension(
@@ -101,22 +107,28 @@ impl Graph {
                         GraphExposedMessageType::CmdOut,
                     )?;
 
-                    let new_connection = GraphConnection {
-                        loc: super::connection::GraphLoc {
-                            app: base_connection.loc.app.clone(),
-                            extension: Some(extension_name),
-                            subgraph: None,
-                        },
-                        cmd: Some(vec![flow.clone()]),
-                        data: None,
-                        audio_frame: None,
-                        video_frame: None,
-                    };
-                    expanded_connections.push(new_connection);
+                    let entry = extension_flows
+                        .entry(extension_name.clone())
+                        .or_insert_with(|| GraphConnection {
+                            loc: GraphLoc {
+                                app: base_connection.loc.app.clone(),
+                                extension: Some(extension_name),
+                                subgraph: None,
+                            },
+                            cmd: None,
+                            data: None,
+                            audio_frame: None,
+                            video_frame: None,
+                        });
+
+                    if entry.cmd.is_none() {
+                        entry.cmd = Some(Vec::new());
+                    }
+                    entry.cmd.as_mut().unwrap().push(flow.clone());
                 }
             }
 
-            // Process data flows - create one connection per flow
+            // Process data flows
             if let Some(ref data_flows) = base_connection.data {
                 for flow in data_flows {
                     let extension_name = Self::resolve_subgraph_to_extension(
@@ -126,22 +138,28 @@ impl Graph {
                         GraphExposedMessageType::DataOut,
                     )?;
 
-                    let new_connection = GraphConnection {
-                        loc: super::connection::GraphLoc {
-                            app: base_connection.loc.app.clone(),
-                            extension: Some(extension_name),
-                            subgraph: None,
-                        },
-                        cmd: None,
-                        data: Some(vec![flow.clone()]),
-                        audio_frame: None,
-                        video_frame: None,
-                    };
-                    expanded_connections.push(new_connection);
+                    let entry = extension_flows
+                        .entry(extension_name.clone())
+                        .or_insert_with(|| GraphConnection {
+                            loc: super::connection::GraphLoc {
+                                app: base_connection.loc.app.clone(),
+                                extension: Some(extension_name),
+                                subgraph: None,
+                            },
+                            cmd: None,
+                            data: None,
+                            audio_frame: None,
+                            video_frame: None,
+                        });
+
+                    if entry.data.is_none() {
+                        entry.data = Some(Vec::new());
+                    }
+                    entry.data.as_mut().unwrap().push(flow.clone());
                 }
             }
 
-            // Process audio_frame flows - create one connection per flow
+            // Process audio_frame flows
             if let Some(ref audio_frame_flows) = base_connection.audio_frame {
                 for flow in audio_frame_flows {
                     let extension_name = Self::resolve_subgraph_to_extension(
@@ -151,22 +169,28 @@ impl Graph {
                         GraphExposedMessageType::AudioFrameOut,
                     )?;
 
-                    let new_connection = GraphConnection {
-                        loc: super::connection::GraphLoc {
-                            app: base_connection.loc.app.clone(),
-                            extension: Some(extension_name),
-                            subgraph: None,
-                        },
-                        cmd: None,
-                        data: None,
-                        audio_frame: Some(vec![flow.clone()]),
-                        video_frame: None,
-                    };
-                    expanded_connections.push(new_connection);
+                    let entry = extension_flows
+                        .entry(extension_name.clone())
+                        .or_insert_with(|| GraphConnection {
+                            loc: super::connection::GraphLoc {
+                                app: base_connection.loc.app.clone(),
+                                extension: Some(extension_name),
+                                subgraph: None,
+                            },
+                            cmd: None,
+                            data: None,
+                            audio_frame: None,
+                            video_frame: None,
+                        });
+
+                    if entry.audio_frame.is_none() {
+                        entry.audio_frame = Some(Vec::new());
+                    }
+                    entry.audio_frame.as_mut().unwrap().push(flow.clone());
                 }
             }
 
-            // Process video_frame flows - create one connection per flow
+            // Process video_frame flows
             if let Some(ref video_frame_flows) = base_connection.video_frame {
                 for flow in video_frame_flows {
                     let extension_name = Self::resolve_subgraph_to_extension(
@@ -176,25 +200,33 @@ impl Graph {
                         GraphExposedMessageType::VideoFrameOut,
                     )?;
 
-                    let new_connection = GraphConnection {
-                        loc: super::connection::GraphLoc {
-                            app: base_connection.loc.app.clone(),
-                            extension: Some(extension_name),
-                            subgraph: None,
-                        },
-                        cmd: None,
-                        data: None,
-                        audio_frame: None,
-                        video_frame: Some(vec![flow.clone()]),
-                    };
-                    expanded_connections.push(new_connection);
+                    let entry = extension_flows
+                        .entry(extension_name.clone())
+                        .or_insert_with(|| GraphConnection {
+                            loc: super::connection::GraphLoc {
+                                app: base_connection.loc.app.clone(),
+                                extension: Some(extension_name),
+                                subgraph: None,
+                            },
+                            cmd: None,
+                            data: None,
+                            audio_frame: None,
+                            video_frame: None,
+                        });
+
+                    if entry.video_frame.is_none() {
+                        entry.video_frame = Some(Vec::new());
+                    }
+                    entry.video_frame.as_mut().unwrap().push(flow.clone());
                 }
             }
 
-            // If no message flows were found, return the original connection
-            // with cleared subgraph field
+            // Convert the HashMap values to a Vec
+            expanded_connections.extend(extension_flows.into_values());
+
+            // If no message flows were found, it should not happen
             if expanded_connections.is_empty() {
-                println!(
+                panic!(
                     "No message flows found for subgraph: {}",
                     subgraph_name
                 );
