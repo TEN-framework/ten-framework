@@ -11,19 +11,17 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use ten_rust::graph::{
-    node::{GraphNode, GraphNodeType},
-    Graph,
-};
+use ten_rust::graph::{node::GraphNodeType, Graph};
 
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{graphs_cache_find_by_id_mut, update_graph_node_all_fields},
-    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
+    graph::graphs_cache_find_by_id_mut,
 };
+
+use super::{update_graph_node_in_property_all_fields, GraphNodeUpdateAction};
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -182,40 +180,22 @@ pub async fn delete_graph_node_endpoint(
     }
 
     // Try to update property.json file if possible.
-    // First, try to find the belonging package info
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
-    {
-        // Check if property exists
-        if let Some(property) = &mut pkg_info.property {
-            // Create the GraphNode we want to remove
-            let node_to_remove = GraphNode {
-                type_: GraphNodeType::Extension,
-                name: request_payload.name.to_string(),
-                addon: Some(request_payload.addon.to_string()),
-                extension_group: request_payload
-                    .extension_group
-                    .as_deref()
-                    .map(String::from),
-                app: request_payload.app.as_deref().map(String::from),
-                property: None,
-                source_uri: None,
-            };
-
-            let nodes_to_remove = vec![node_to_remove];
-
-            // Update property.json file
-            if let Err(e) = update_graph_node_all_fields(
-                &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                None,
-                Some(&nodes_to_remove),
-                None,
-            ) {
-                eprintln!("Warning: Failed to update property.json file: {e}");
-            }
-        }
+    if let Err(e) = update_graph_node_in_property_all_fields(
+        &mut pkgs_cache,
+        graph_info,
+        &request_payload.name,
+        &request_payload.addon,
+        &request_payload.extension_group,
+        &request_payload.app,
+        &None,
+        GraphNodeUpdateAction::Delete,
+    ) {
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: format!("Failed to update property.json file: {e}"),
+            error: None,
+        };
+        return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
     // Return success response

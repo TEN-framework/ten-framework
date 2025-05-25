@@ -23,7 +23,7 @@ pub fn print_memory_stats(context: &str) {
     // Default case when no specific memory allocator feature is enabled
     #[cfg(not(feature = "jemalloc"))]
     {
-        println!("\n=== Memory Statistics ({}) ===", context);
+        println!("\n=== Memory Statistics ({context}) ===");
         println!(
             "No detailed memory statistics available - jemalloc not enabled"
         );
