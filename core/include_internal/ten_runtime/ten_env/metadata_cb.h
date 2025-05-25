@@ -67,7 +67,6 @@ typedef struct ten_env_set_property_async_context_t {
   ten_env_set_property_async_cb_t cb;
   void *cb_data;
 
-  // TODO(Liu): Replace with ten_error_t.
   bool res;
 
   union {

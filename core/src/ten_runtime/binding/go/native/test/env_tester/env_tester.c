@@ -56,16 +56,6 @@ static void ten_go_ten_env_tester_destroy_c_part(void *ten_env_tester_bridge_) {
   tenGoDestroyTenEnvTester(ten_env_tester_bridge->bridge.go_instance);
 }
 
-static void ten_go_ten_env_tester_detach_c_part(void *ten_env_tester_bridge_) {
-  ten_go_ten_env_tester_t *ten_env_tester_bridge =
-      (ten_go_ten_env_tester_t *)ten_env_tester_bridge_;
-  TEN_ASSERT(ten_env_tester_bridge &&
-                 ten_go_ten_env_tester_check_integrity(ten_env_tester_bridge),
-             "Should not happen.");
-
-  ten_env_tester_bridge->c_ten_env_tester = NULL;
-}
-
 ten_go_ten_env_tester_t *ten_go_ten_env_tester_wrap(
     ten_env_tester_t *c_ten_env_tester) {
   ten_go_ten_env_tester_t *ten_env_tester_bridge =
@@ -102,8 +92,6 @@ ten_go_ten_env_tester_t *ten_go_ten_env_tester_wrap(
 
   ten_env_tester_set_destroy_handler_in_target_lang(
       c_ten_env_tester, ten_go_ten_env_tester_destroy_c_part);
-  ten_env_tester_set_close_handler_in_target_lang(
-      c_ten_env_tester, ten_go_ten_env_tester_detach_c_part);
 
   return ten_env_tester_bridge;
 }
