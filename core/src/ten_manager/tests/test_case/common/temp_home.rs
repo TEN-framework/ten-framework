@@ -86,11 +86,19 @@ impl Drop for TempHome {
 /// This function provides thread-safe access to
 /// TEN_MANAGER_HOME_INTERNAL_USE_ONLY environment variable modification for
 /// testing purposes.
+///
+/// # Automatic Cleanup
+///
+/// The temporary directory created by this function is automatically cleaned up
+/// when the function returns. This is guaranteed by the `TempDir` type from the
+/// `tempfile` crate, which implements `Drop` to remove the temporary directory
+/// and all its contents when the `TempHome` struct is dropped.
 pub fn with_temp_home_dir<F>(f: F)
 where
     F: FnOnce(),
 {
     let _temp_home = TempHome::new();
     f();
-    // TempHome is dropped here
+    // TempHome is dropped here, which automatically cleans up the temporary
+    // directory
 }
