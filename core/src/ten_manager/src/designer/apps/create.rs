@@ -79,7 +79,7 @@ pub async fn create_app_endpoint(
 
     // Create app using create_pkg_in_path.
     let version_req = match template_version {
-        Some(version) => VersionReq::parse(&format!("={}", version)).unwrap(),
+        Some(version) => VersionReq::parse(&format!("={version}")).unwrap(),
         None => VersionReq::default(),
     };
 
