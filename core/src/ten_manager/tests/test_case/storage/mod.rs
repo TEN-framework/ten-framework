@@ -52,7 +52,7 @@ mod tests {
         with_temp_home_dir(|| {
             let path = get_home_data_path();
             let expected_suffix = if cfg!(target_os = "windows") {
-                "AppData/Roaming/tman/data.json"
+                r"AppData\Roaming\tman\data.json"
             } else {
                 ".tman/data.json"
             };
