@@ -490,6 +490,36 @@ impl Graph {
         }
     }
 
+    /// Helper function to process extension nodes from a subgraph and add them
+    /// to the flattened nodes list with proper name prefixing and property
+    /// application.
+    fn process_extension_nodes_from_subgraph(
+        subgraph_nodes: &[GraphNode],
+        subgraph_name: &str,
+        subgraph_node: &GraphNode,
+        subgraph: &Graph,
+        flattened_nodes: &mut Vec<GraphNode>,
+    ) -> Result<()> {
+        for sub_node in subgraph_nodes {
+            let mut flattened_node = sub_node.clone();
+            // Add subgraph name as prefix
+            flattened_node.name =
+                format!("{}_{}", subgraph_name, sub_node.name);
+
+            // Apply properties from subgraph node reference based on
+            // exposed_properties mapping
+            Self::apply_subgraph_properties_to_extension(
+                &mut flattened_node,
+                sub_node,
+                subgraph_node,
+                subgraph,
+            )?;
+
+            flattened_nodes.push(flattened_node);
+        }
+        Ok(())
+    }
+
     /// Helper function to process a single subgraph node and add its flattened
     /// content to the output collections.
     fn process_subgraph_node<F>(
@@ -530,23 +560,16 @@ impl Graph {
                     subgraph_node.name
                 ));
             }
-
-            let mut flattened_node = sub_node.clone();
-            // Add subgraph name as prefix
-            flattened_node.name =
-                format!("{}_{}", subgraph_node.name, sub_node.name);
-
-            // Apply properties from subgraph node reference based on
-            // exposed_properties mapping
-            Self::apply_subgraph_properties_to_extension(
-                &mut flattened_node,
-                sub_node,
-                subgraph_node,
-                &subgraph,
-            )?;
-
-            flattened_nodes.push(flattened_node);
         }
+
+        // Process all extension nodes from the subgraph
+        Self::process_extension_nodes_from_subgraph(
+            &subgraph.nodes,
+            &subgraph_node.name,
+            subgraph_node,
+            &subgraph,
+            flattened_nodes,
+        )?;
 
         // Add internal connections from subgraph
         Self::add_internal_connections_from_subgraph(
@@ -729,21 +752,13 @@ impl Graph {
                         .insert(node.name.clone(), flattened_nested.clone());
 
                     // Add flattened nodes with prefix
-                    for sub_node in &flattened_nested.nodes {
-                        let mut flattened_node = sub_node.clone();
-                        flattened_node.name =
-                            format!("{}_{}", node.name, sub_node.name);
-
-                        // Apply properties from subgraph node reference
-                        Self::apply_subgraph_properties_to_extension(
-                            &mut flattened_node,
-                            sub_node,
-                            node,
-                            &flattened_nested,
-                        )?;
-
-                        flattened_nodes.push(flattened_node);
-                    }
+                    Self::process_extension_nodes_from_subgraph(
+                        &flattened_nested.nodes,
+                        &node.name,
+                        node,
+                        &flattened_nested,
+                        &mut flattened_nodes,
+                    )?;
 
                     // Add internal connections from nested subgraph
                     Self::add_internal_connections_from_subgraph(
