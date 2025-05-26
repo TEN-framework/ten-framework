@@ -32,6 +32,19 @@ impl Graph {
                     }
                 };
 
+                // Skip validation for subgraph namespace references (xxx:yyy
+                // format) except for built-in extensions with
+                // "ten:" prefix These will be validated by
+                // check_subgraph_references_exist
+                if let Some(colon_pos) = extension_name.find(':') {
+                    let namespace = &extension_name[..colon_pos];
+                    if namespace != "ten" {
+                        // This is a subgraph namespace reference, skip
+                        // extension validation
+                        continue;
+                    }
+                }
+
                 let dest_extension = format!(
                     "{}:{}",
                     dest.get_app_uri().as_ref().map_or("", |s| s.as_str()),
@@ -90,21 +103,35 @@ impl Graph {
         for (conn_idx, connection) in connections.iter().enumerate() {
             // First, verify the source extension exists.
             if let Some(extension_name) = &connection.loc.extension {
-                let src_extension = format!(
-                    "{}:{}",
-                    connection
-                        .get_app_uri()
-                        .as_ref()
-                        .map_or("", |s| s.as_str()),
-                    extension_name
-                );
-                if !all_extensions.contains(&src_extension) {
-                    return Err(anyhow::anyhow!(
-                        "The extension declared in connections[{}] is not \
-                         defined in nodes, extension: {}.",
-                        conn_idx,
+                // Skip validation for subgraph namespace references (xxx:yyy
+                // format) except for built-in extensions with
+                // "ten:" prefix These will be validated by
+                // check_subgraph_references_exist
+                let should_skip =
+                    if let Some(colon_pos) = extension_name.find(':') {
+                        let namespace = &extension_name[..colon_pos];
+                        namespace != "ten"
+                    } else {
+                        false
+                    };
+
+                if !should_skip {
+                    let src_extension = format!(
+                        "{}:{}",
+                        connection
+                            .get_app_uri()
+                            .as_ref()
+                            .map_or("", |s| s.as_str()),
                         extension_name
-                    ));
+                    );
+                    if !all_extensions.contains(&src_extension) {
+                        return Err(anyhow::anyhow!(
+                            "The extension declared in connections[{}] is not \
+                             defined in nodes, extension: {}.",
+                            conn_idx,
+                            extension_name
+                        ));
+                    }
                 }
             }
 
