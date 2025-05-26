@@ -33,7 +33,7 @@ import {
 import { LanguageToggle } from "@/components/LangSwitch";
 import { ModeToggle } from "@/components/ModeToggle";
 import { useTheme } from "@/components/use-theme";
-import { updatePreferencesField } from "@/api/services/common";
+import { updatePreferencesLogViewerLines } from "@/api/services/storage";
 import type { IWidget } from "@/types/widgets";
 
 export const PreferencesWidgetTitle = () => {
@@ -142,8 +142,7 @@ export const PreferencesLogTab = (props: {
       if (!parsedValues.success) {
         throw new Error("Invalid values");
       }
-      await updatePreferencesField(
-        "logviewer_line_size",
+      await updatePreferencesLogViewerLines(
         parsedValues.data.logviewer_line_size
       );
       setPreferences(

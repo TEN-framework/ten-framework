@@ -30,7 +30,7 @@ import { EWidgetDisplayType } from "@/types/widgets";
 import { GlobalPopups } from "@/components/Popup";
 import { BackstageWidgets } from "@/components/Widget/BackstageWidgets";
 import { cn } from "@/lib/utils";
-import { usePreferences } from "@/api/services/common";
+import { usePreferencesLogViewerLines } from "@/api/services/storage";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
 
@@ -41,10 +41,10 @@ const App: React.FC = () => {
   const [resizablePanelMode] = useState<"left" | "bottom" | "right">("bottom");
 
   const {
-    data: remotePreferences,
+    data: remotePreferencesLogViewerLines,
     isLoading: isLoadingPreferences,
     error: errorPreferences,
-  } = usePreferences();
+  } = usePreferencesLogViewerLines();
 
   const { widgets } = useWidgetStore();
   const { setPreferences, currentWorkspace } = useAppStore();
@@ -95,11 +95,11 @@ const App: React.FC = () => {
   // init preferences
   React.useEffect(() => {
     if (
-      remotePreferences &&
-      remotePreferences?.preferences?.logviewer_line_size
+      remotePreferencesLogViewerLines &&
+      remotePreferencesLogViewerLines?.logviewer_line_size
     ) {
       const parsedValues = PREFERENCES_SCHEMA_LOG.safeParse(
-        remotePreferences.preferences
+        remotePreferencesLogViewerLines
       );
       if (!parsedValues.success) {
         throw new Error("Invalid values");
@@ -110,7 +110,7 @@ const App: React.FC = () => {
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remotePreferences]);
+  }, [remotePreferencesLogViewerLines]);
 
   React.useEffect(() => {
     if (errorPreferences) {
