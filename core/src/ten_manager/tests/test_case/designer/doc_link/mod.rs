@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web};
 
 use ten_manager::{
-    home::config::TmanConfig,
     designer::{
         doc_link::{
             get_doc_link_endpoint, DocLinkKey, GetDocLinkRequestPayload,
@@ -20,6 +19,7 @@ use ten_manager::{
         storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -40,6 +40,7 @@ async fn test_get_doc_link_success() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -90,6 +91,7 @@ async fn test_get_doc_link_chinese() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -142,6 +144,7 @@ async fn test_get_doc_link_language_fallback() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -192,6 +195,7 @@ async fn test_get_doc_link_not_found() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 

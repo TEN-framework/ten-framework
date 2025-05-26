@@ -15,7 +15,8 @@ use ten_manager::designer::{
     storage::in_memory::TmanStorageInMemory,
 };
 use ten_manager::{
-    home::config::TmanConfig, designer::DesignerState, output::cli::TmanOutputCli,
+    designer::DesignerState, home::config::TmanConfig,
+    output::cli::TmanOutputCli,
 };
 
 use crate::test_case::common::builtin_server::start_test_server;
@@ -106,6 +107,7 @@ async fn test_cmd_builtin_function_install_all() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let designer_state = Arc::new(designer_state);
