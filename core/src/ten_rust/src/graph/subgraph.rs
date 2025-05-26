@@ -520,6 +520,61 @@ impl Graph {
         Ok(())
     }
 
+    /// Helper function to process a loaded subgraph and integrate it into the
+    /// flattened structure.
+    fn process_loaded_subgraph<F>(
+        subgraph_node: &GraphNode,
+        loaded_subgraph: Graph,
+        subgraph_loader: &F,
+        flattened_nodes: &mut Vec<GraphNode>,
+        flattened_connections: &mut Vec<GraphConnection>,
+        subgraph_mappings: &mut HashMap<String, Graph>,
+    ) -> Result<()>
+    where
+        F: Fn(&str) -> Result<Graph>,
+    {
+        // First, recursively flatten any nested subgraphs within this subgraph.
+        // This ensures depth-first processing.
+        let flattened_subgraph = Self::flatten_subgraph_recursively(
+            loaded_subgraph,
+            subgraph_loader,
+        )?;
+
+        subgraph_mappings
+            .insert(subgraph_node.name.clone(), flattened_subgraph.clone());
+
+        // Flatten subgraph nodes (now all should be extensions after recursive
+        // flattening)
+        for sub_node in &flattened_subgraph.nodes {
+            if sub_node.type_ != GraphNodeType::Extension {
+                return Err(anyhow::anyhow!(
+                    "Unexpected non-extension node '{}' in flattened subgraph \
+                     '{}'",
+                    sub_node.name,
+                    subgraph_node.name
+                ));
+            }
+        }
+
+        // Process all extension nodes from the subgraph
+        Self::process_extension_nodes_from_subgraph(
+            &flattened_subgraph.nodes,
+            &subgraph_node.name,
+            subgraph_node,
+            &flattened_subgraph,
+            flattened_nodes,
+        )?;
+
+        // Add internal connections from subgraph
+        Self::add_internal_connections_from_subgraph(
+            &flattened_subgraph,
+            &subgraph_node.name,
+            flattened_connections,
+        );
+
+        Ok(())
+    }
+
     /// Helper function to process a single subgraph node and add its flattened
     /// content to the output collections.
     fn process_subgraph_node<F>(
@@ -542,43 +597,14 @@ impl Graph {
 
         let subgraph = subgraph_loader(source_uri)?;
 
-        // First, recursively flatten any nested subgraphs within this subgraph.
-        // This ensures depth-first processing.
-        let subgraph =
-            Self::flatten_subgraph_recursively(subgraph, subgraph_loader)?;
-
-        subgraph_mappings.insert(subgraph_node.name.clone(), subgraph.clone());
-
-        // Flatten subgraph nodes (now all should be extensions after recursive
-        // flattening)
-        for sub_node in &subgraph.nodes {
-            if sub_node.type_ != GraphNodeType::Extension {
-                return Err(anyhow::anyhow!(
-                    "Unexpected non-extension node '{}' in flattened subgraph \
-                     '{}'",
-                    sub_node.name,
-                    subgraph_node.name
-                ));
-            }
-        }
-
-        // Process all extension nodes from the subgraph
-        Self::process_extension_nodes_from_subgraph(
-            &subgraph.nodes,
-            &subgraph_node.name,
+        Self::process_loaded_subgraph(
             subgraph_node,
-            &subgraph,
+            subgraph,
+            subgraph_loader,
             flattened_nodes,
-        )?;
-
-        // Add internal connections from subgraph
-        Self::add_internal_connections_from_subgraph(
-            &subgraph,
-            &subgraph_node.name,
             flattened_connections,
-        );
-
-        Ok(())
+            subgraph_mappings,
+        )
     }
 
     /// Helper function to process connections from a graph using subgraph
@@ -642,23 +668,6 @@ impl Graph {
         Ok(())
     }
 
-    /// Processes connections from the main graph, expanding and flattening
-    /// any subgraph references.
-    fn flatten_main_graph_connections(
-        &self,
-        subgraph_mappings: &HashMap<String, Graph>,
-        flattened_connections: &mut Vec<GraphConnection>,
-    ) -> Result<()> {
-        if let Some(connections) = &self.connections {
-            Self::process_graph_connections(
-                connections,
-                subgraph_mappings,
-                flattened_connections,
-            )?;
-        }
-        Ok(())
-    }
-
     /// Flattens a graph containing subgraph nodes into a regular graph
     /// structure with only extension nodes. This process converts subgraph
     /// references into their constituent extensions with prefixed names and
@@ -682,10 +691,13 @@ impl Graph {
         )?;
 
         // Process connections from the main graph
-        self.flatten_main_graph_connections(
-            &subgraph_mappings,
-            &mut flattened_connections,
-        )?;
+        if let Some(connections) = &self.connections {
+            Self::process_graph_connections(
+                connections,
+                &subgraph_mappings,
+                &mut flattened_connections,
+            )?;
+        }
 
         Ok(Graph {
             nodes: flattened_nodes,
@@ -743,42 +755,15 @@ impl Graph {
                         })?;
 
                     let nested_subgraph = subgraph_loader(source_uri)?;
-                    let flattened_nested = Self::flatten_subgraph_recursively(
+
+                    Self::process_loaded_subgraph(
+                        node,
                         nested_subgraph,
                         subgraph_loader,
-                    )?;
-
-                    subgraph_mappings
-                        .insert(node.name.clone(), flattened_nested.clone());
-
-                    // Flatten subgraph nodes (now all should be extensions
-                    // after recursive flattening)
-                    for sub_node in &flattened_nested.nodes {
-                        if sub_node.type_ != GraphNodeType::Extension {
-                            return Err(anyhow::anyhow!(
-                                "Unexpected non-extension node '{}' in \
-                                 flattened subgraph '{}'",
-                                sub_node.name,
-                                node.name
-                            ));
-                        }
-                    }
-
-                    // Add flattened nodes with prefix
-                    Self::process_extension_nodes_from_subgraph(
-                        &flattened_nested.nodes,
-                        &node.name,
-                        node,
-                        &flattened_nested,
                         &mut flattened_nodes,
-                    )?;
-
-                    // Add internal connections from nested subgraph
-                    Self::add_internal_connections_from_subgraph(
-                        &flattened_nested,
-                        &node.name,
                         &mut flattened_connections,
-                    );
+                        &mut subgraph_mappings,
+                    )?;
                 }
             }
         }
