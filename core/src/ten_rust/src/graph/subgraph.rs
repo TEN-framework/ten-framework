@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 
 use super::connection::GraphLoc;
+use super::node::GraphNode;
 use super::{
     Graph, GraphConnection, GraphExposedMessageType, GraphMessageFlow,
     GraphNodeType,
@@ -70,8 +71,55 @@ impl Graph {
         }
     }
 
+    /// Helper function to resolve subgraph reference to actual extension name.
+    /// This function looks up the exposed_messages in the subgraph to find
+    /// the corresponding extension for a given message flow.
+    fn resolve_subgraph_to_extension(
+        subgraph_name: &str,
+        subgraph: &Graph,
+        flow_name: &str,
+        msg_type: GraphExposedMessageType,
+    ) -> Result<String> {
+        if let Some(exposed_messages) = &subgraph.exposed_messages {
+            let matching_exposed = exposed_messages.iter().find(|exposed| {
+                exposed.msg_type == msg_type && exposed.name == flow_name
+            });
+
+            if let Some(exposed) = matching_exposed {
+                if let Some(ref extension_name) = exposed.extension {
+                    Ok(format!("{}_{}", subgraph_name, extension_name))
+                } else {
+                    Err(anyhow::anyhow!(
+                        "Exposed message '{}' in subgraph '{}' does not \
+                         specify an extension",
+                        flow_name,
+                        subgraph_name
+                    ))
+                }
+            } else {
+                Err(anyhow::anyhow!(
+                    "Message '{}' of type '{:?}' is not exposed by subgraph \
+                     '{}'",
+                    flow_name,
+                    msg_type,
+                    subgraph_name
+                ))
+            }
+        } else {
+            Err(anyhow::anyhow!(
+                "Subgraph '{}' does not have exposed_messages defined",
+                subgraph_name
+            ))
+        }
+    }
+
     /// Helper function to process message flows and add them to extension_flows
-    /// HashMap
+    /// HashMap.
+    ///
+    /// Since connections originating from a subgraph as source may come from
+    /// different extensions within the subgraph, the logic of this function
+    /// is not to modify the existing connection, but to generate multiple new
+    /// connections originating from extensions within the subgraph.
     fn flatten_connection_source_of_one_type_for_subgraph(
         flows: &[GraphMessageFlow],
         msg_type: GraphExposedMessageType,
@@ -152,10 +200,10 @@ impl Graph {
         }
     }
 
-    /// Helper function to process a location (either source or destination)
-    /// for subgraph resolution. This function handles both colon notation
-    /// and subgraph field resolution.
-    fn process_location_for_subgraph_resolution(
+    /// Helper function to process a destination location for subgraph
+    /// resolution. This function handles both colon notation and subgraph
+    /// field resolution.
+    fn process_dest_location_for_subgraph_resolution(
         loc: &mut GraphLoc,
         subgraph_mappings: &HashMap<String, Graph>,
         flow_name: &str,
@@ -280,20 +328,15 @@ impl Graph {
     }
 
     /// Helper function to determine the appropriate GraphExposedMessageType
-    /// based on message type string and direction.
-    fn get_exposed_message_type(
+    /// based on message type string.
+    fn get_exposed_message_type_for_dest_subgraph(
         msg_type: &str,
-        is_source: bool,
     ) -> Result<GraphExposedMessageType> {
-        match (msg_type, is_source) {
-            ("cmd", false) => Ok(GraphExposedMessageType::CmdIn),
-            ("cmd", true) => Ok(GraphExposedMessageType::CmdOut),
-            ("data", false) => Ok(GraphExposedMessageType::DataIn),
-            ("data", true) => Ok(GraphExposedMessageType::DataOut),
-            ("audio_frame", false) => Ok(GraphExposedMessageType::AudioFrameIn),
-            ("audio_frame", true) => Ok(GraphExposedMessageType::AudioFrameOut),
-            ("video_frame", false) => Ok(GraphExposedMessageType::VideoFrameIn),
-            ("video_frame", true) => Ok(GraphExposedMessageType::VideoFrameOut),
+        match msg_type {
+            "cmd" => Ok(GraphExposedMessageType::CmdIn),
+            "data" => Ok(GraphExposedMessageType::DataIn),
+            "audio_frame" => Ok(GraphExposedMessageType::AudioFrameIn),
+            "video_frame" => Ok(GraphExposedMessageType::VideoFrameIn),
             _ => Err(anyhow::anyhow!("Unknown message type: {}", msg_type)),
         }
     }
@@ -310,9 +353,11 @@ impl Graph {
                 for flow in flows {
                     for dest in &mut flow.dest {
                         let exposed_msg_type =
-                            Self::get_exposed_message_type(msg_type, false)?;
+                            Self::get_exposed_message_type_for_dest_subgraph(
+                                msg_type,
+                            )?;
 
-                        Self::process_location_for_subgraph_resolution(
+                        Self::process_dest_location_for_subgraph_resolution(
                             &mut dest.loc,
                             subgraph_mappings,
                             &flow.name,
@@ -342,34 +387,32 @@ impl Graph {
     /// Applies properties from subgraph node reference to a flattened extension
     /// node based on exposed_properties mapping.
     fn apply_subgraph_properties_to_extension(
-        flattened_node: &mut super::GraphNode,
-        sub_node: &super::GraphNode,
-        subgraph_node: &super::GraphNode,
+        flattened_node: &mut GraphNode,
+        sub_node: &GraphNode,
+        subgraph_node: &GraphNode,
         subgraph: &Graph,
     ) -> Result<()> {
-        // Apply properties from subgraph node reference based
-        // on exposed_properties mapping
+        // Apply properties from subgraph node reference based on
+        // exposed_properties mapping
         if let Some(serde_json::Value::Object(ref_obj)) =
             &subgraph_node.property
         {
-            // Process each property specified in the subgraph
-            // node
+            // Process each property specified in the subgraph node
             for (property_alias, property_value) in ref_obj {
-                // Find the corresponding exposed property by
-                // alias
+                // Find the corresponding exposed property by alias
                 if let Some(exposed_properties) = &subgraph.exposed_properties {
                     if let Some(exposed_prop) = exposed_properties
                         .iter()
                         .find(|ep| &ep.alias == property_alias)
                     {
-                        // Check if this exposed property
-                        // applies to the current extension
+                        // Check if this exposed property applies to the current
+                        // extension
                         if let Some(ref target_extension) =
                             exposed_prop.extension
                         {
                             if target_extension == &sub_node.name {
-                                // Initialize property object if
-                                // it doesn't exist
+                                // Initialize property object if it doesn't
+                                // exist
                                 if flattened_node.property.is_none() {
                                     flattened_node.property =
                                         Some(serde_json::Value::Object(
@@ -377,8 +420,8 @@ impl Graph {
                                         ));
                                 }
 
-                                // Apply the property value to
-                                // the target property name
+                                // Apply the property value to the target
+                                // property name
                                 if let Some(serde_json::Value::Object(
                                     node_obj,
                                 )) = &mut flattened_node.property
@@ -389,6 +432,13 @@ impl Graph {
                                     );
                                 }
                             }
+                        } else {
+                            panic!(
+                                "Property '{property_alias}' specified in \
+                                 subgraph node '{}' is not exposed by the \
+                                 subgraph",
+                                subgraph_node.name
+                            );
                         }
                     } else {
                         return Err(anyhow::anyhow!(
@@ -408,15 +458,44 @@ impl Graph {
                 }
             }
         }
+
         Ok(())
+    }
+
+    /// Helper function to add internal connections from a subgraph with proper
+    /// name prefixing.
+    fn add_internal_connections_from_subgraph(
+        subgraph: &Graph,
+        subgraph_name: &str,
+        flattened_connections: &mut Vec<GraphConnection>,
+    ) {
+        if let Some(sub_connections) = &subgraph.connections {
+            for connection in sub_connections {
+                let mut flattened_connection = connection.clone();
+
+                // Update extension names in the connection source
+                Self::flatten_connection_source_in_subgraph(
+                    &mut flattened_connection,
+                    subgraph_name,
+                );
+
+                // Update extension names in all message flows
+                Self::flatten_connection_destinations_in_subgraph(
+                    &mut flattened_connection,
+                    subgraph_name,
+                );
+
+                flattened_connections.push(flattened_connection);
+            }
+        }
     }
 
     /// Helper function to process a single subgraph node and add its flattened
     /// content to the output collections.
     fn process_subgraph_node<F>(
-        subgraph_node: &super::GraphNode,
+        subgraph_node: &GraphNode,
         subgraph_loader: &F,
-        flattened_nodes: &mut Vec<super::GraphNode>,
+        flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
@@ -433,8 +512,8 @@ impl Graph {
 
         let subgraph = subgraph_loader(source_uri)?;
 
-        // First, recursively flatten any nested subgraphs within this subgraph
-        // This ensures depth-first processing
+        // First, recursively flatten any nested subgraphs within this subgraph.
+        // This ensures depth-first processing.
         let subgraph =
             Self::flatten_subgraph_recursively(subgraph, subgraph_loader)?;
 
@@ -479,34 +558,6 @@ impl Graph {
         Ok(())
     }
 
-    /// Helper function to add internal connections from a subgraph with proper
-    /// name prefixing.
-    fn add_internal_connections_from_subgraph(
-        subgraph: &Graph,
-        subgraph_name: &str,
-        flattened_connections: &mut Vec<GraphConnection>,
-    ) {
-        if let Some(sub_connections) = &subgraph.connections {
-            for connection in sub_connections {
-                let mut flattened_connection = connection.clone();
-
-                // Update extension names in the connection source
-                Self::flatten_connection_source_in_subgraph(
-                    &mut flattened_connection,
-                    subgraph_name,
-                );
-
-                // Update extension names in all message flows
-                Self::flatten_connection_destinations_in_subgraph(
-                    &mut flattened_connection,
-                    subgraph_name,
-                );
-
-                flattened_connections.push(flattened_connection);
-            }
-        }
-    }
-
     /// Helper function to process connections from a graph using subgraph
     /// mappings.
     fn process_graph_connections(
@@ -541,7 +592,7 @@ impl Graph {
     fn flatten_nodes<F>(
         &self,
         subgraph_loader: &F,
-        flattened_nodes: &mut Vec<super::GraphNode>,
+        flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
@@ -627,48 +678,6 @@ impl Graph {
         })
     }
 
-    /// Helper function to resolve subgraph reference to actual extension name.
-    /// This function looks up the exposed_messages in the subgraph to find
-    /// the corresponding extension for a given message flow.
-    fn resolve_subgraph_to_extension(
-        subgraph_name: &str,
-        subgraph: &Graph,
-        flow_name: &str,
-        msg_type: GraphExposedMessageType,
-    ) -> Result<String> {
-        if let Some(exposed_messages) = &subgraph.exposed_messages {
-            let matching_exposed = exposed_messages.iter().find(|exposed| {
-                exposed.msg_type == msg_type && exposed.name == flow_name
-            });
-
-            if let Some(exposed) = matching_exposed {
-                if let Some(ref extension_name) = exposed.extension {
-                    Ok(format!("{}_{}", subgraph_name, extension_name))
-                } else {
-                    Err(anyhow::anyhow!(
-                        "Exposed message '{}' in subgraph '{}' does not \
-                         specify an extension",
-                        flow_name,
-                        subgraph_name
-                    ))
-                }
-            } else {
-                Err(anyhow::anyhow!(
-                    "Message '{}' of type '{:?}' is not exposed by subgraph \
-                     '{}'",
-                    flow_name,
-                    msg_type,
-                    subgraph_name
-                ))
-            }
-        } else {
-            Err(anyhow::anyhow!(
-                "Subgraph '{}' does not have exposed_messages defined",
-                subgraph_name
-            ))
-        }
-    }
-
     /// Recursively flattens a subgraph to handle nested subgraphs.
     /// This is a separate function to avoid infinite recursion in type
     /// inference.
@@ -702,9 +711,6 @@ impl Graph {
                     flattened_nodes.push(node.clone());
                 }
                 GraphNodeType::Subgraph => {
-                    // For recursive flattening, we need a modified version that
-                    // doesn't call flatten_subgraph_recursively again to avoid
-                    // infinite recursion
                     let source_uri =
                         node.source_uri.as_ref().ok_or_else(|| {
                             anyhow::anyhow!(
