@@ -29,6 +29,11 @@ pub struct SetSchemaResponseData {
 }
 
 /// Validates and cleans persistent storage data against the provided schema
+///
+/// Currently uses a simple validation that checks if the top-level fields of
+/// persistent storage satisfy the schema. Fields that don't match are removed
+/// entirely. In the future, we may optimize this validation logic based on
+/// requirements, which might require more time to complete the validation.
 fn validate_and_clean_storage_data(
     data: &mut Value,
     schema: &Value,
@@ -39,7 +44,6 @@ fn validate_and_clean_storage_data(
         let mut keys_to_remove = Vec::new();
 
         for (key, value) in obj.iter() {
-            // TODO: recursive? array?
             // Check if this field has a corresponding schema
             if let Some(schema_props) =
                 schema.get("properties").and_then(|p| p.as_object())
