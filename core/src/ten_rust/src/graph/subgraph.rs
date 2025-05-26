@@ -75,7 +75,7 @@ impl Graph {
 
     /// Helper function to process message flows and add them to extension_flows
     /// HashMap
-    fn flatten_connection_source_for_type_for_subgraph(
+    fn flatten_connection_source_of_one_type_for_subgraph(
         flows: &[GraphMessageFlow],
         msg_type: GraphExposedMessageType,
         subgraph_name: &str,
@@ -142,6 +142,55 @@ impl Graph {
         Ok(())
     }
 
+    /// Helper function to handle colon notation in extension or subgraph
+    /// fields. Converts "prefix:suffix" to "prefix_suffix".
+    fn handle_colon_notation(field: &mut Option<String>) {
+        if let Some(ref value) = field {
+            if value.contains(':') {
+                let parts: Vec<&str> = value.split(':').collect();
+                if parts.len() == 2 {
+                    *field = Some(format!("{}_{}", parts[0], parts[1]));
+                }
+            }
+        }
+    }
+
+    /// Helper function to process a location (either source or destination)
+    /// for subgraph resolution. This function handles both colon notation
+    /// and subgraph field resolution.
+    fn process_location_for_subgraph_resolution(
+        loc: &mut GraphLoc,
+        subgraph_mappings: &HashMap<String, Graph>,
+        flow_name: &str,
+        msg_type: GraphExposedMessageType,
+    ) -> Result<()> {
+        // Since extension and subgraph fields are mutually exclusive, we can
+        // simplify the logic
+        if let Some(ref subgraph_name) = loc.subgraph.take() {
+            // Handle subgraph field - resolve to actual extension based on
+            // exposed_messages
+            let subgraph =
+                subgraph_mappings.get(subgraph_name).ok_or_else(|| {
+                    anyhow::anyhow!("Subgraph '{subgraph_name}' not found")
+                })?;
+
+            let extension_name = Self::resolve_subgraph_to_extension(
+                subgraph_name,
+                subgraph,
+                flow_name,
+                msg_type,
+            )?;
+
+            loc.extension = Some(extension_name);
+            // subgraph field is already cleared by take()
+        } else {
+            // Handle colon notation in extension field
+            Self::handle_colon_notation(&mut loc.extension);
+        }
+
+        Ok(())
+    }
+
     /// Expands a connection source if it references a subgraph element using
     /// colon notation (e.g., "subgraph_1:ext_c" -> "subgraph_1_ext_c") or
     /// subgraph field. Groups message flows by their resolved extension names
@@ -152,15 +201,11 @@ impl Graph {
         subgraph_mappings: &HashMap<String, Graph>,
     ) -> Result<Vec<GraphConnection>> {
         let mut expanded_connections = Vec::new();
-
-        // Handle colon notation in extension field first
         let mut base_connection = connection.clone();
-        Self::handle_colon_notation(&mut base_connection.loc.extension);
 
-        // Handle subgraph field - resolve to actual extension based on
-        // exposed_messages. We need to group message flows by their resolved
-        // extension names.
-        if let Some(ref subgraph_name) = base_connection.loc.subgraph.clone() {
+        // Check if we have a subgraph field that needs to be resolved
+        if base_connection.loc.subgraph.is_some() {
+            let subgraph_name = base_connection.loc.subgraph.as_ref().unwrap();
             let subgraph =
                 subgraph_mappings.get(subgraph_name).ok_or_else(|| {
                     anyhow::anyhow!("Subgraph '{}' not found", subgraph_name)
@@ -172,7 +217,7 @@ impl Graph {
 
             // Process cmd flows
             if let Some(ref cmd_flows) = base_connection.cmd {
-                Self::flatten_connection_source_for_type_for_subgraph(
+                Self::flatten_connection_source_of_one_type_for_subgraph(
                     cmd_flows,
                     GraphExposedMessageType::CmdOut,
                     subgraph_name,
@@ -184,7 +229,7 @@ impl Graph {
 
             // Process data flows
             if let Some(ref data_flows) = base_connection.data {
-                Self::flatten_connection_source_for_type_for_subgraph(
+                Self::flatten_connection_source_of_one_type_for_subgraph(
                     data_flows,
                     GraphExposedMessageType::DataOut,
                     subgraph_name,
@@ -196,7 +241,7 @@ impl Graph {
 
             // Process audio_frame flows
             if let Some(ref audio_frame_flows) = base_connection.audio_frame {
-                Self::flatten_connection_source_for_type_for_subgraph(
+                Self::flatten_connection_source_of_one_type_for_subgraph(
                     audio_frame_flows,
                     GraphExposedMessageType::AudioFrameOut,
                     subgraph_name,
@@ -208,7 +253,7 @@ impl Graph {
 
             // Process video_frame flows
             if let Some(ref video_frame_flows) = base_connection.video_frame {
-                Self::flatten_connection_source_for_type_for_subgraph(
+                Self::flatten_connection_source_of_one_type_for_subgraph(
                     video_frame_flows,
                     GraphExposedMessageType::VideoFrameOut,
                     subgraph_name,
@@ -229,11 +274,31 @@ impl Graph {
                 );
             }
         } else {
-            // No subgraph field, return the original connection
+            // Handle colon notation in extension field
+            Self::handle_colon_notation(&mut base_connection.loc.extension);
             expanded_connections.push(base_connection);
         }
 
         Ok(expanded_connections)
+    }
+
+    /// Helper function to determine the appropriate GraphExposedMessageType
+    /// based on message type string and direction.
+    fn get_exposed_message_type(
+        msg_type: &str,
+        is_source: bool,
+    ) -> Result<GraphExposedMessageType> {
+        match (msg_type, is_source) {
+            ("cmd", false) => Ok(GraphExposedMessageType::CmdIn),
+            ("cmd", true) => Ok(GraphExposedMessageType::CmdOut),
+            ("data", false) => Ok(GraphExposedMessageType::DataIn),
+            ("data", true) => Ok(GraphExposedMessageType::DataOut),
+            ("audio_frame", false) => Ok(GraphExposedMessageType::AudioFrameIn),
+            ("audio_frame", true) => Ok(GraphExposedMessageType::AudioFrameOut),
+            ("video_frame", false) => Ok(GraphExposedMessageType::VideoFrameIn),
+            ("video_frame", true) => Ok(GraphExposedMessageType::VideoFrameOut),
+            _ => Err(anyhow::anyhow!("Unknown message type: {}", msg_type)),
+        }
     }
 
     /// Updates all message flow destinations to convert subgraph references
@@ -565,38 +630,6 @@ impl Graph {
         })
     }
 
-    /// Helper function to handle colon notation in extension or subgraph
-    /// fields. Converts "prefix:suffix" to "prefix_suffix".
-    fn handle_colon_notation(field: &mut Option<String>) {
-        if let Some(ref value) = field {
-            if value.contains(':') {
-                let parts: Vec<&str> = value.split(':').collect();
-                if parts.len() == 2 {
-                    *field = Some(format!("{}_{}", parts[0], parts[1]));
-                }
-            }
-        }
-    }
-
-    /// Helper function to determine the appropriate GraphExposedMessageType
-    /// based on message type string and direction.
-    fn get_exposed_message_type(
-        msg_type: &str,
-        is_source: bool,
-    ) -> Result<GraphExposedMessageType> {
-        match (msg_type, is_source) {
-            ("cmd", false) => Ok(GraphExposedMessageType::CmdIn),
-            ("cmd", true) => Ok(GraphExposedMessageType::CmdOut),
-            ("data", false) => Ok(GraphExposedMessageType::DataIn),
-            ("data", true) => Ok(GraphExposedMessageType::DataOut),
-            ("audio_frame", false) => Ok(GraphExposedMessageType::AudioFrameIn),
-            ("audio_frame", true) => Ok(GraphExposedMessageType::AudioFrameOut),
-            ("video_frame", false) => Ok(GraphExposedMessageType::VideoFrameIn),
-            ("video_frame", true) => Ok(GraphExposedMessageType::VideoFrameOut),
-            _ => Err(anyhow::anyhow!("Unknown message type: {}", msg_type)),
-        }
-    }
-
     /// Helper function to resolve subgraph reference to actual extension name.
     /// This function looks up the exposed_messages in the subgraph to find
     /// the corresponding extension for a given message flow.
@@ -637,39 +670,6 @@ impl Graph {
                 subgraph_name
             ))
         }
-    }
-
-    /// Helper function to process a location (either source or destination)
-    /// for subgraph resolution.
-    fn process_location_for_subgraph_resolution(
-        loc: &mut GraphLoc,
-        subgraph_mappings: &HashMap<String, Graph>,
-        flow_name: &str,
-        msg_type: GraphExposedMessageType,
-    ) -> Result<()> {
-        // Handle colon notation in extension field
-        Self::handle_colon_notation(&mut loc.extension);
-
-        // Handle subgraph field - resolve to actual extension based on
-        // exposed_messages
-        if let Some(ref subgraph_name) = loc.subgraph.clone() {
-            let subgraph =
-                subgraph_mappings.get(subgraph_name).ok_or_else(|| {
-                    anyhow::anyhow!("Subgraph '{subgraph_name}' not found")
-                })?;
-
-            let extension_name = Self::resolve_subgraph_to_extension(
-                subgraph_name,
-                subgraph,
-                flow_name,
-                msg_type,
-            )?;
-
-            loc.extension = Some(extension_name);
-            loc.subgraph = None;
-        }
-
-        Ok(())
     }
 
     /// Recursively flattens a subgraph to handle nested subgraphs.
