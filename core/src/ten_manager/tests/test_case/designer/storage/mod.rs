@@ -12,7 +12,6 @@ use actix_web::{http::StatusCode, test, web};
 use serde_json::json;
 
 use ten_manager::{
-    home::config::TmanConfig,
     designer::{
         response::ApiResponse,
         storage::in_memory::{
@@ -25,6 +24,7 @@ use ten_manager::{
         },
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -39,6 +39,7 @@ async fn test_set_and_get_memory_simple() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -110,6 +111,7 @@ async fn test_set_and_get_memory_array_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -171,6 +173,7 @@ async fn test_get_memory_nonexistent_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -210,6 +213,7 @@ async fn test_set_memory_invalid_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -246,6 +250,7 @@ async fn test_overwrite_existing_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
