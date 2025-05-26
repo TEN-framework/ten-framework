@@ -102,6 +102,7 @@ pub fn configure_routes(
                 web::scope("/graphs")
                     .service(web::resource("").route(web::post().to(graphs::get::get_graphs_endpoint)))
                     .service(web::resource("/update").route(web::post().to(graphs::update::update_graph_endpoint)))
+                    .service(web::resource("/auto-start").route(web::post().to(graphs::auto_start::update_graph_auto_start_endpoint)))
                     .service(
                         web::scope("/nodes")
                             .service(web::resource("").route(web::post().to(graphs::nodes::get::get_graph_nodes_endpoint)))
