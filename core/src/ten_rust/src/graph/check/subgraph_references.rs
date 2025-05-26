@@ -9,6 +9,63 @@ use anyhow::Result;
 use crate::graph::{connection::GraphMessageFlow, node::GraphNodeType, Graph};
 
 impl Graph {
+    /// Creates a subgraph identifier in the format "app_uri:subgraph_name"
+    fn create_subgraph_identifier(
+        app_uri: Option<&String>,
+        subgraph_name: &str,
+    ) -> String {
+        format!("{}:{}", app_uri.map_or("", |s| s.as_str()), subgraph_name)
+    }
+
+    /// Validates that a direct subgraph reference exists in the list of all
+    /// subgraphs
+    fn validate_direct_subgraph_reference(
+        all_subgraphs: &[String],
+        app_uri: Option<&String>,
+        subgraph_name: &str,
+        error_context: &str,
+    ) -> Result<()> {
+        let subgraph_identifier =
+            Self::create_subgraph_identifier(app_uri, subgraph_name);
+
+        if !all_subgraphs.contains(&subgraph_identifier) {
+            return Err(anyhow::anyhow!(
+                "The subgraph '{subgraph_name}' {error_context} is not \
+                 defined in nodes.",
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Validates that a subgraph referenced through extension namespace exists
+    fn validate_extension_namespace_subgraph_reference(
+        all_subgraphs: &[String],
+        app_uri: Option<&String>,
+        extension_name: &str,
+        error_context: &str,
+    ) -> Result<()> {
+        if let Some(colon_pos) = extension_name.find(':') {
+            let subgraph_name = &extension_name[..colon_pos];
+
+            // Skip validation for built-in extensions with "ten:" prefix
+            if subgraph_name != "ten" {
+                let subgraph_identifier =
+                    Self::create_subgraph_identifier(app_uri, subgraph_name);
+
+                if !all_subgraphs.contains(&subgraph_identifier) {
+                    return Err(anyhow::anyhow!(
+                        "The subgraph '{subgraph_name}' {error_context} (from \
+                         extension '{extension_name}') is not defined in \
+                         nodes.",
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn check_destination_subgraph_references_exist(
         all_subgraphs: &[String],
         flows: &[GraphMessageFlow],
@@ -19,58 +76,35 @@ impl Graph {
             for (dest_idx, dest) in flow.dest.iter().enumerate() {
                 // Check if destination references a subgraph directly
                 if let Some(subgraph_name) = &dest.loc.subgraph {
-                    let subgraph_identifier = format!(
-                        "{}:{}",
-                        dest.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                        subgraph_name
+                    let error_context = format!(
+                        "referenced in \
+                         connections[{conn_idx}].{msg_type}[{flow_idx}].\
+                         dest[{dest_idx}]",
                     );
 
-                    if !all_subgraphs.contains(&subgraph_identifier) {
-                        return Err(anyhow::anyhow!(
-                            "The subgraph '{}' referenced in \
-                             connections[{}].{}[{}].dest[{}] is not defined \
-                             in nodes.",
-                            subgraph_name,
-                            conn_idx,
-                            msg_type,
-                            flow_idx,
-                            dest_idx
-                        ));
-                    }
+                    Self::validate_direct_subgraph_reference(
+                        all_subgraphs,
+                        dest.get_app_uri().as_ref(),
+                        subgraph_name,
+                        &error_context,
+                    )?;
                 }
 
                 // Check if extension name contains subgraph namespace (xxx:yyy
-                // format) Exclude built-in extensions that start with "ten:"
+                // format)
                 if let Some(extension_name) = &dest.loc.extension {
-                    if let Some(colon_pos) = extension_name.find(':') {
-                        let subgraph_name = &extension_name[..colon_pos];
+                    let error_context = format!(
+                        "referenced in \
+                         connections[{conn_idx}].{msg_type}[{flow_idx}].\
+                         dest[{dest_idx}]",
+                    );
 
-                        // Skip validation for built-in extensions with "ten:"
-                        // prefix
-                        if subgraph_name != "ten" {
-                            let subgraph_identifier = format!(
-                                "{}:{}",
-                                dest.get_app_uri()
-                                    .as_ref()
-                                    .map_or("", |s| s.as_str()),
-                                subgraph_name
-                            );
-
-                            if !all_subgraphs.contains(&subgraph_identifier) {
-                                return Err(anyhow::anyhow!(
-                                    "The subgraph '{}' referenced in \
-                                     connections[{}].{}[{}].dest[{}] (from \
-                                     extension '{}') is not defined in nodes.",
-                                    subgraph_name,
-                                    conn_idx,
-                                    msg_type,
-                                    flow_idx,
-                                    dest_idx,
-                                    extension_name
-                                ));
-                            }
-                        }
-                    }
+                    Self::validate_extension_namespace_subgraph_reference(
+                        all_subgraphs,
+                        dest.get_app_uri().as_ref(),
+                        extension_name,
+                        &error_context,
+                    )?;
                 }
             }
         }
@@ -100,10 +134,9 @@ impl Graph {
         let mut all_subgraphs: Vec<String> = Vec::new();
         for node in &self.nodes {
             if node.type_ == GraphNodeType::Subgraph {
-                let unique_subgraph_name = format!(
-                    "{}:{}",
-                    node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    node.name
+                let unique_subgraph_name = Self::create_subgraph_identifier(
+                    node.get_app_uri().as_ref(),
+                    &node.name,
                 );
                 all_subgraphs.push(unique_subgraph_name);
             }
@@ -113,52 +146,28 @@ impl Graph {
         for (conn_idx, connection) in connections.iter().enumerate() {
             // Check if the source connection references a subgraph directly
             if let Some(subgraph_name) = &connection.loc.subgraph {
-                let src_subgraph = format!(
-                    "{}:{}",
-                    connection
-                        .get_app_uri()
-                        .as_ref()
-                        .map_or("", |s| s.as_str()),
-                    subgraph_name
-                );
-                if !all_subgraphs.contains(&src_subgraph) {
-                    return Err(anyhow::anyhow!(
-                        "The subgraph '{}' declared in connections[{}] is not \
-                         defined in nodes.",
-                        subgraph_name,
-                        conn_idx
-                    ));
-                }
+                let error_context =
+                    format!("declared in connections[{conn_idx}]");
+
+                Self::validate_direct_subgraph_reference(
+                    &all_subgraphs,
+                    connection.get_app_uri().as_ref(),
+                    subgraph_name,
+                    &error_context,
+                )?;
             }
 
             // Check if the source extension contains subgraph namespace
             if let Some(extension_name) = &connection.loc.extension {
-                if let Some(colon_pos) = extension_name.find(':') {
-                    let subgraph_name = &extension_name[..colon_pos];
+                let error_context =
+                    format!("referenced in connections[{conn_idx}]");
 
-                    // Skip validation for built-in extensions with "ten:"
-                    // prefix
-                    if subgraph_name != "ten" {
-                        let src_subgraph = format!(
-                            "{}:{}",
-                            connection
-                                .get_app_uri()
-                                .as_ref()
-                                .map_or("", |s| s.as_str()),
-                            subgraph_name
-                        );
-                        if !all_subgraphs.contains(&src_subgraph) {
-                            return Err(anyhow::anyhow!(
-                                "The subgraph '{}' referenced in \
-                                 connections[{}] (from extension '{}') is not \
-                                 defined in nodes.",
-                                subgraph_name,
-                                conn_idx,
-                                extension_name
-                            ));
-                        }
-                    }
-                }
+                Self::validate_extension_namespace_subgraph_reference(
+                    &all_subgraphs,
+                    connection.get_app_uri().as_ref(),
+                    extension_name,
+                    &error_context,
+                )?;
             }
 
             // Check all command message flows if present.
