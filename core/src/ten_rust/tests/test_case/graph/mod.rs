@@ -6,6 +6,7 @@
 //
 mod exposed_message;
 mod source_uri;
+mod subgraph;
 
 #[cfg(test)]
 mod tests {

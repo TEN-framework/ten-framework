@@ -7,7 +7,9 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         node::{GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
     };
@@ -37,14 +39,19 @@ mod tests {
                 },
             ],
             connections: Some(vec![GraphConnection {
-                extension: "ext_c".to_string(),
-                app: None,
-                subgraph: None,
+                loc: GraphLoc {
+                    extension: Some("ext_c".to_string()),
+                    app: None,
+                    subgraph: None,
+                },
                 cmd: Some(vec![GraphMessageFlow {
                     name: "B".to_string(),
                     dest: vec![GraphDestination {
-                        extension: "ext_d".to_string(),
-                        app: None,
+                        loc: GraphLoc {
+                            extension: Some("ext_d".to_string()),
+                            subgraph: None,
+                            app: None,
+                        },
                         msg_conversion: None,
                     }],
                 }]),
@@ -56,17 +63,17 @@ mod tests {
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdIn,
                     name: "B".to_string(),
-                    extension: "ext_d".to_string(),
+                    extension: Some("ext_d".to_string()),
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdOut,
                     name: "C".to_string(),
-                    extension: "ext_c".to_string(),
+                    extension: Some("ext_c".to_string()),
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::DataIn,
                     name: "DataX".to_string(),
-                    extension: "ext_d".to_string(),
+                    extension: Some("ext_d".to_string()),
                 },
             ]),
             exposed_properties: None,
@@ -85,7 +92,7 @@ mod tests {
 
         let connections = deserialized_graph.connections.unwrap();
         assert_eq!(connections.len(), 1);
-        assert_eq!(connections[0].extension, "ext_c");
+        assert_eq!(connections[0].loc.extension, Some("ext_c".to_string()));
 
         let exposed_messages = deserialized_graph.exposed_messages.unwrap();
         assert_eq!(exposed_messages.len(), 3);
@@ -94,18 +101,18 @@ mod tests {
             GraphExposedMessageType::CmdIn
         );
         assert_eq!(exposed_messages[0].name, "B");
-        assert_eq!(exposed_messages[0].extension, "ext_d");
+        assert_eq!(exposed_messages[0].extension, Some("ext_d".to_string()));
         assert_eq!(
             exposed_messages[1].msg_type,
             GraphExposedMessageType::CmdOut
         );
         assert_eq!(exposed_messages[1].name, "C");
-        assert_eq!(exposed_messages[1].extension, "ext_c");
+        assert_eq!(exposed_messages[1].extension, Some("ext_c".to_string()));
         assert_eq!(
             exposed_messages[2].msg_type,
             GraphExposedMessageType::DataIn
         );
         assert_eq!(exposed_messages[2].name, "DataX");
-        assert_eq!(exposed_messages[2].extension, "ext_d");
+        assert_eq!(exposed_messages[2].extension, Some("ext_d".to_string()));
     }
 }

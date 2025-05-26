@@ -13,7 +13,7 @@ use std::{collections::HashMap, path::Path, sync::Arc};
 use anyhow::{anyhow, Result};
 
 use crate::{
-    config::{is_verbose, TmanConfig},
+    home::config::{is_verbose, TmanConfig},
     output::TmanOutput,
 };
 use ten_rust::{

@@ -139,10 +139,10 @@ def resize_image_keep_aspect(image, max_size=512):
 
 @dataclass
 class GeminiRealtimeConfig(BaseConfig):
-    base_uri: str = "generativelanguage.googleapis.com"
+    base_uri: str = ""
     api_key: str = ""
-    api_version: str = "v1alpha"
-    model: str = "gemini-2.0-flash-exp"
+    api_version: str = ""
+    model: str = "gemini-2.0-flash-live-001"
     language: str = "en-US"
     prompt: str = ""
     temperature: float = 0.5
@@ -220,10 +220,6 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
             self.client = genai.Client(
                 api_key=self.config.api_key,
-                http_options={
-                    "api_version": self.config.api_version,
-                    "url": self.config.base_uri,
-                },
             )
             self.loop.create_task(self._loop(ten_env))
             self.loop.create_task(self._on_video(ten_env))
@@ -238,7 +234,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             await asyncio.sleep(1)
             try:
                 config: LiveConnectConfig = self._get_session_config()
-                ten_env.log_info("Start listen")
+                ten_env.log_info(f"Start listen: {self.config.model}")
                 async with self.client.aio.live.connect(
                     model=self.config.model, config=config
                 ) as session:
@@ -269,13 +265,14 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                             ) in (
                                                 response.server_content.model_turn.parts
                                             ):
-                                                await self.send_audio_out(
-                                                    ten_env,
-                                                    part.inline_data.data,
-                                                    sample_rate=24000,
-                                                    bytes_per_sample=2,
-                                                    number_of_channels=1,
-                                                )
+                                                if part.inline_data:
+                                                    await self.send_audio_out(
+                                                        ten_env,
+                                                        part.inline_data.data,
+                                                        sample_rate=24000,
+                                                        bytes_per_sample=2,
+                                                        number_of_channels=1,
+                                                    )
                                         elif (
                                             response.server_content.turn_complete
                                         ):
@@ -294,8 +291,6 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                     ten_env.log_error(
                                         "Failed to handle response"
                                     )
-
-                            await self._flush()
                             ten_env.log_info("Finish listen")
                         except websockets.exceptions.ConnectionClosedOK:
                             ten_env.log_info("Connection closed")
@@ -426,16 +421,22 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             self.video_buff = rgb2base64jpeg(
                 image_data, image_width, image_height
             )
-            media_chunks = [
-                {
-                    "data": self.video_buff,
-                    "mime_type": "image/jpeg",
-                }
-            ]
+            # media_chunks = [
+            #     {
+            #         "data": self.video_buff,
+            #         "mime_type": "image/jpeg",
+            #     }
+            # ]
+            msg = {
+                "data": self.video_buff,
+                "mime_type": "image/jpeg",
+            }
             try:
                 if self.connected:
                     # ten_env.log_info(f"send image")
-                    await self.session.send(media_chunks)
+                    await self.session.send_realtime_input(
+                        video=msg,
+                    )
             except Exception as e:
                 self.ten_env.log_error(f"Failed to send image {e}")
 
@@ -453,14 +454,12 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         if self.connected and len(self.buff) >= self.audio_len_threshold:
             # await self.conn.send_audio_data(self.buff)
             try:
-                media_chunks = [
-                    {
-                        "data": base64.b64encode(self.buff).decode(),
-                        "mime_type": "audio/pcm",
-                    }
-                ]
                 # await self.session.send(LiveClientRealtimeInput(media_chunks=media_chunks))
-                await self.session.send(media_chunks)
+                msg = {
+                    "data": base64.b64encode(self.buff).decode(),
+                    "mime_type": "audio/pcm",
+                }
+                await self.session.send_realtime_input(audio=msg)
                 self.buff = b""
             except Exception as e:
                 # pass
@@ -513,7 +512,8 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                     prebuilt_voice_config=PrebuiltVoiceConfig(
                         voice_name=self.config.voice
                     )
-                )
+                ),
+                language_code=self.config.language,
             ),
             generation_config=GenerationConfig(
                 temperature=self.config.temperature,
@@ -696,12 +696,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         return content_parts
 
     async def _greeting(self) -> None:
-        if self.connected and self.users_count == 1:
-            text = self._greeting_text()
-            if self.config.greeting:
-                text = "Say '" + self.config.greeting + "' to me."
-            self.ten_env.log_info(f"send greeting {text}")
-            await self.session.send(text, end_of_turn=True)
+        pass
+        # if self.connected and self.users_count == 1:
+        #     text = self._greeting_text()
+        #     if self.config.greeting:
+        #         text = "Say '" + self.config.greeting + "' to me."
+        #     self.ten_env.log_info(f"send greeting {text}")
+        #     await self.session.send(text, end_of_turn=True)
 
     async def _flush(self) -> None:
         try:

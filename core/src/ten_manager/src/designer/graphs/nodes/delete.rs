@@ -11,19 +11,17 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use ten_rust::graph::{
-    node::{GraphNode, GraphNodeType},
-    Graph,
-};
+use ten_rust::graph::{node::GraphNodeType, Graph};
 
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{graphs_cache_find_by_id_mut, update_graph_node_all_fields},
-    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
+    graph::graphs_cache_find_by_id_mut,
 };
+
+use super::{update_graph_node_in_property_all_fields, GraphNodeUpdateAction};
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -65,8 +63,10 @@ pub fn graph_delete_extension_node(
     // The node was removed, now clean up any connections.
     if let Some(connections) = &mut graph.connections {
         // 1. Remove entire connections with matching app and extension.
-        connections
-            .retain(|conn| !(conn.extension == pkg_name && conn.app == app));
+        connections.retain(|conn| {
+            !((conn.loc.extension.as_ref() == Some(&pkg_name))
+                && conn.loc.app == app)
+        });
 
         // 2. Remove destinations from message flows in all connections.
         for connection in connections.iter_mut() {
@@ -74,7 +74,8 @@ pub fn graph_delete_extension_node(
             if let Some(cmd_flows) = &mut connection.cmd {
                 for flow in cmd_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !(dest.extension == pkg_name && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty cmd flows.
@@ -85,7 +86,8 @@ pub fn graph_delete_extension_node(
             if let Some(data_flows) = &mut connection.data {
                 for flow in data_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !(dest.extension == pkg_name && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty data flows.
@@ -96,7 +98,8 @@ pub fn graph_delete_extension_node(
             if let Some(audio_flows) = &mut connection.audio_frame {
                 for flow in audio_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !(dest.extension == pkg_name && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty audio_frame flows.
@@ -107,7 +110,8 @@ pub fn graph_delete_extension_node(
             if let Some(video_flows) = &mut connection.video_frame {
                 for flow in video_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !(dest.extension == pkg_name && dest.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
+                            && dest.loc.app == app)
                     });
                 }
                 // Remove empty video_frame flows.
@@ -176,40 +180,22 @@ pub async fn delete_graph_node_endpoint(
     }
 
     // Try to update property.json file if possible.
-    // First, try to find the belonging package info
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
-    {
-        // Check if property exists
-        if let Some(property) = &mut pkg_info.property {
-            // Create the GraphNode we want to remove
-            let node_to_remove = GraphNode {
-                type_: GraphNodeType::Extension,
-                name: request_payload.name.to_string(),
-                addon: Some(request_payload.addon.to_string()),
-                extension_group: request_payload
-                    .extension_group
-                    .as_deref()
-                    .map(String::from),
-                app: request_payload.app.as_deref().map(String::from),
-                property: None,
-                source_uri: None,
-            };
-
-            let nodes_to_remove = vec![node_to_remove];
-
-            // Update property.json file
-            if let Err(e) = update_graph_node_all_fields(
-                &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                None,
-                Some(&nodes_to_remove),
-                None,
-            ) {
-                eprintln!("Warning: Failed to update property.json file: {e}");
-            }
-        }
+    if let Err(e) = update_graph_node_in_property_all_fields(
+        &mut pkgs_cache,
+        graph_info,
+        &request_payload.name,
+        &request_payload.addon,
+        &request_payload.extension_group,
+        &request_payload.app,
+        &None,
+        GraphNodeUpdateAction::Delete,
+    ) {
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: format!("Failed to update property.json file: {e}"),
+            error: None,
+        };
+        return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
     // Return success response

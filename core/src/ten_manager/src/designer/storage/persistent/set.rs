@@ -1,0 +1,72 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+use std::sync::Arc;
+
+use actix_web::{web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use super::{read_persistent_storage, write_persistent_storage};
+use crate::designer::response::{ApiResponse, Status};
+use crate::designer::storage::in_memory::key_parser::set_value_by_key;
+use crate::designer::DesignerState;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SetPersistentRequestPayload {
+    pub key: String,
+    pub value: Value,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SetPersistentResponseData {
+    pub success: bool,
+}
+
+pub async fn set_persistent_storage_endpoint(
+    request_payload: web::Json<SetPersistentRequestPayload>,
+    _state: web::Data<Arc<DesignerState>>,
+) -> Result<impl Responder, actix_web::Error> {
+    let payload = request_payload.into_inner();
+    let key = payload.key;
+    let value = payload.value;
+
+    // Read current persistent storage data
+    let mut json_data = match read_persistent_storage() {
+        Ok(data) => data,
+        Err(_e) => {
+            return Ok(HttpResponse::InternalServerError().json(ApiResponse {
+                status: Status::Fail,
+                data: SetPersistentResponseData { success: false },
+                meta: None,
+            }));
+        }
+    };
+
+    // Set the value using the key parser
+    if let Err(_e) = set_value_by_key(&mut json_data, &key, value) {
+        return Ok(HttpResponse::BadRequest().json(ApiResponse {
+            status: Status::Fail,
+            data: SetPersistentResponseData { success: false },
+            meta: None,
+        }));
+    }
+
+    // Write the updated data back to disk
+    if let Err(_e) = write_persistent_storage(&json_data) {
+        return Ok(HttpResponse::InternalServerError().json(ApiResponse {
+            status: Status::Fail,
+            data: SetPersistentResponseData { success: false },
+            meta: None,
+        }));
+    }
+
+    let response_data = SetPersistentResponseData { success: true };
+    let response =
+        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+
+    Ok(HttpResponse::Ok().json(response))
+}

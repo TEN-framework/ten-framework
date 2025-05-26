@@ -16,7 +16,7 @@ mod tests {
     use uuid::Uuid;
 
     use ten_manager::{
-        config::{metadata::TmanMetadata, TmanConfig},
+        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::connections::delete::{
@@ -25,6 +25,7 @@ mod tests {
                 DeleteGraphConnectionResponsePayload,
             },
             response::{ApiResponse, ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::{graphs_cache_find_by_id, graphs_cache_find_by_name},
@@ -41,8 +42,8 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -105,8 +106,8 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -200,8 +201,8 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -290,8 +291,8 @@ mod tests {
                 .as_ref()
                 .is_some_and(|connections| {
                     connections.iter().any(|conn| {
-                        conn.extension == "extension_1"
-                            && conn.app.as_ref().is_some_and(|app| {
+                        conn.loc.extension == Some("extension_1".to_string())
+                            && conn.loc.app.as_ref().is_some_and(|app| {
                                 app == "http://example.com:8000"
                             })
                             && conn.cmd.as_ref().is_some_and(|cmds| {

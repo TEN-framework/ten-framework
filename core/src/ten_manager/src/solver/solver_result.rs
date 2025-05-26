@@ -24,7 +24,7 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    cmd::cmd_install::InstallCommand, config::TmanConfig,
+    cmd::cmd_install::InstallCommand, home::config::TmanConfig,
     install::install_pkg_info, output::TmanOutput,
 };
 

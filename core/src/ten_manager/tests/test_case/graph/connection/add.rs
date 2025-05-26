@@ -15,10 +15,12 @@ mod tests {
     use ten_manager::constants::TEST_DIR;
     use ten_manager::graph::connections::add::graph_add_connection;
     use ten_manager::graph::update_graph_connections_in_property_all_fields;
-    use ten_rust::graph::connection::{
-        GraphConnection, GraphDestination, GraphMessageFlow,
+    use ten_rust::graph::{
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
+        Graph,
     };
-    use ten_rust::graph::Graph;
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
     use ten_rust::pkg_info::message::MsgType;
 
@@ -50,14 +52,19 @@ mod tests {
 
         // Create connections to add.
         let connection1 = GraphConnection {
-            app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
-            subgraph: None,
+            loc: GraphLoc {
+                app: Some("http://example.com:8000".to_string()),
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd1".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_2".to_string(),
+                    loc: GraphLoc {
+                        app: Some("http://example.com:8000".to_string()),
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),
@@ -67,14 +74,19 @@ mod tests {
         };
 
         let connection2 = GraphConnection {
-            app: Some("http://example.com:8000".to_string()),
-            extension: "extension_1".to_string(),
-            subgraph: None,
+            loc: GraphLoc {
+                app: Some("http://example.com:8000".to_string()),
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![GraphMessageFlow {
                 name: "new_cmd2".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("http://example.com:8000".to_string()),
-                    extension: "extension_3".to_string(),
+                    loc: GraphLoc {
+                        app: Some("http://example.com:8000".to_string()),
+                        extension: Some("extension_3".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),
@@ -164,8 +176,11 @@ mod tests {
         assert_eq!(connections.len(), 1);
 
         let connection = &connections[0];
-        assert_eq!(connection.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(connection.extension, "ext1");
+        assert_eq!(
+            connection.loc.app,
+            Some("http://example.com:8000".to_string())
+        );
+        assert_eq!(connection.loc.extension, Some("ext1".to_string()));
 
         let cmd_flows = connection.cmd.as_ref().unwrap();
         assert_eq!(cmd_flows.len(), 1);
@@ -175,8 +190,8 @@ mod tests {
         assert_eq!(flow.dest.len(), 1);
 
         let dest = &flow.dest[0];
-        assert_eq!(dest.app, Some("http://example.com:8000".to_string()));
-        assert_eq!(dest.extension, "ext2");
+        assert_eq!(dest.loc.app, Some("http://example.com:8000".to_string()));
+        assert_eq!(dest.loc.extension, Some("ext2".to_string()));
     }
 
     #[test]
@@ -342,14 +357,14 @@ mod tests {
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
-        assert_eq!(flow.dest[0].extension, "ext2");
+        assert_eq!(flow.dest[0].loc.extension, Some("ext2".to_string()));
 
         let flow = &cmd_flows[1];
         assert_eq!(flow.name, "test_cmd_2");
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
-        assert_eq!(flow.dest[0].extension, "ext3");
+        assert_eq!(flow.dest[0].loc.extension, Some("ext3".to_string()));
     }
 
     #[test]

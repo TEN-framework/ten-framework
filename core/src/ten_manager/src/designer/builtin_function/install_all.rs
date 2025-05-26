@@ -32,7 +32,7 @@ impl WsBuiltinFunction {
 
         run_installation(
             self.tman_config.clone(),
-            self.tman_metadata.clone(),
+            self.tman_storage_in_memory.clone(),
             install_command,
             ctx,
         );

@@ -162,14 +162,23 @@ fn update_message_conversions(
 
         // Find matching connection to modify.
         for modify_conn in modify_connections {
-            // Check if app and extension match.
-            let app_match = match (conn_app, &modify_conn.app) {
+            // Connection matched? Check if app and extension match.
+            let app_match = match (&conn_app, &modify_conn.loc.app) {
                 (None, None) => true,
                 (Some(app1), Some(app2)) => app1 == app2,
                 _ => false,
             };
 
-            if !app_match || conn_extension != modify_conn.extension {
+            let extension_match =
+                match (Some(conn_extension), &modify_conn.loc.extension) {
+                    (Some(conn_ext), Some(modify_ext)) => {
+                        conn_ext == modify_ext
+                    }
+                    (None, None) => true,
+                    _ => false,
+                };
+
+            if !app_match || !extension_match {
                 continue;
             }
 
@@ -223,15 +232,22 @@ fn remove_specified_connections(
             // Check each connection to remove for a match.
             for (idx, remove_conn) in remove_connections.iter().enumerate() {
                 // Check if app and extension match.
-                let app_match = match (&conn_app, &remove_conn.app) {
+                let app_match = match (&conn_app, &remove_conn.loc.app) {
                     (None, None) => true,
                     (Some(app1), Some(app2)) => app1 == app2,
                     _ => false,
                 };
 
-                if !app_match
-                    || conn_extension.as_deref() != Some(&remove_conn.extension)
-                {
+                let extension_match =
+                    match (&conn_extension, &remove_conn.loc.extension) {
+                        (Some(conn_ext), Some(remove_ext)) => {
+                            conn_ext == remove_ext
+                        }
+                        (None, None) => true,
+                        _ => false,
+                    };
+
+                if !app_match || !extension_match {
                     continue;
                 }
 
@@ -278,8 +294,7 @@ fn remove_specified_connections(
                             for (flow_idx, remove_flow) in
                                 remove_flows.iter().enumerate()
                             {
-                                if flow_name.as_deref()
-                                    == Some(&remove_flow.name)
+                                if flow_name.as_ref() == Some(&remove_flow.name)
                                 {
                                     matching_flow = Some(flow_idx);
                                     break;
@@ -311,7 +326,7 @@ fn remove_specified_connections(
                                                 // Check if destination matches.
                                                 let app_match = match (
                                                     dest_app,
-                                                    &remove_dest.app,
+                                                    &remove_dest.loc.app,
                                                 ) {
                                                     (None, None) => true,
                                                     (
@@ -321,12 +336,22 @@ fn remove_specified_connections(
                                                     _ => false,
                                                 };
 
-                                                if app_match
-                                                    && dest_ext
-                                                        == Some(
-                                                            &remove_dest
-                                                                .extension,
-                                                        )
+                                                let extension_match = match (
+                                                    dest_ext,
+                                                    &remove_dest.loc.extension,
+                                                ) {
+                                                    (
+                                                        Some(dest_ext_str),
+                                                        Some(remove_ext),
+                                                    ) => {
+                                                        dest_ext_str
+                                                            == remove_ext
+                                                    }
+                                                    (None, None) => true,
+                                                    _ => false,
+                                                };
+
+                                                if app_match && extension_match
                                                 {
                                                     // Found a match, remove
                                                     // this destination.
@@ -591,13 +616,22 @@ fn update_destinations(
         // Find matching destination in the modify flow.
         for modify_dest in &modify_flow.dest {
             // Check if app and extension match.
-            let app_match = match (dest_app, &modify_dest.app) {
+            let app_match = match (dest_app, &modify_dest.loc.app) {
                 (None, None) => true,
                 (Some(app1), Some(app2)) => app1 == app2,
                 _ => false,
             };
 
-            if !app_match || dest_ext != modify_dest.extension {
+            let extension_match = match (Some(dest_ext), &modify_dest.loc.extension)
+            {
+                (Some(dest_ext_str), Some(modify_ext)) => {
+                    dest_ext_str == modify_ext
+                }
+                (None, None) => true,
+                _ => false,
+            };
+
+            if !app_match || !extension_match {
                 continue;
             }
 

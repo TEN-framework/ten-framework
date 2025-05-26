@@ -8,7 +8,9 @@
 mod tests {
     use ten_manager::designer::graphs::nodes::delete::graph_delete_extension_node;
     use ten_rust::graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         node::{GraphNode, GraphNodeType},
         Graph,
     };
@@ -38,8 +40,11 @@ mod tests {
         dest_app: Option<&str>,
     ) -> GraphConnection {
         let dest = GraphDestination {
-            app: dest_app.map(|s| s.to_string()),
-            extension: dest_extension.to_string(),
+            loc: GraphLoc {
+                app: dest_app.map(|s| s.to_string()),
+                extension: Some(dest_extension.to_string()),
+                subgraph: None,
+            },
             msg_conversion: None,
         };
 
@@ -47,9 +52,11 @@ mod tests {
             GraphMessageFlow { name: cmd_name.to_string(), dest: vec![dest] };
 
         GraphConnection {
-            app: app.map(|s| s.to_string()),
-            extension: extension.to_string(),
-            subgraph: None,
+            loc: GraphLoc {
+                app: app.map(|s| s.to_string()),
+                extension: Some(extension.to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![message_flow]),
             data: None,
             audio_frame: None,
@@ -142,7 +149,7 @@ mod tests {
         assert_eq!(connections.len(), 1);
 
         // The remaining connection should be for ext2.
-        assert_eq!(connections[0].extension, "ext2");
+        assert_eq!(connections[0].loc.extension, Some("ext2".to_string()));
 
         // Test case 3: Delete ext3 - should remove node and connections to/from
         // it.
@@ -191,38 +198,52 @@ mod tests {
 
         // Add a connection with multiple message types.
         let connection = GraphConnection {
-            app: Some("app1".to_string()),
-            extension: "ext1".to_string(),
-            subgraph: None,
+            loc: GraphLoc {
+                app: Some("app1".to_string()),
+                extension: Some("ext1".to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![GraphMessageFlow {
                 name: "cmd1".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    loc: GraphLoc {
+                        app: Some("app1".to_string()),
+                        extension: Some("ext2".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),
             data: Some(vec![GraphMessageFlow {
                 name: "data1".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    loc: GraphLoc {
+                        app: Some("app1".to_string()),
+                        extension: Some("ext2".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),
             audio_frame: Some(vec![GraphMessageFlow {
                 name: "audio1".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    loc: GraphLoc {
+                        app: Some("app1".to_string()),
+                        extension: Some("ext2".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),
             video_frame: Some(vec![GraphMessageFlow {
                 name: "video1".to_string(),
                 dest: vec![GraphDestination {
-                    app: Some("app1".to_string()),
-                    extension: "ext2".to_string(),
+                    loc: GraphLoc {
+                        app: Some("app1".to_string()),
+                        extension: Some("ext2".to_string()),
+                        subgraph: None,
+                    },
                     msg_conversion: None,
                 }],
             }]),

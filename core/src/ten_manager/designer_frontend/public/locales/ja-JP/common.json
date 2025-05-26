@@ -273,7 +273,8 @@
     "versionHistory": "バージョン履歴",
     "selectVersion": "バージョンを選択",
     "versionLatest": "最新",
-    "localAddonTip": "(ローカル)"
+    "localAddonTip": "(ローカル)",
+    "tags": "タグ"
   },
   "rtcInteraction": {
     "title": "RTCインタラクション"

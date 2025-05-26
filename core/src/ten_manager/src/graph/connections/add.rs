@@ -11,7 +11,9 @@ use anyhow::Result;
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         msg_conversion::MsgAndResultConversion,
         Graph,
     },
@@ -37,8 +39,8 @@ fn add_to_flow(
         // Add the destination to the existing flow if it doesn't already
         // exist.
         if !existing_flow.dest.iter().any(|dest| {
-            dest.extension == message_flow.dest[0].extension
-                && dest.app == message_flow.dest[0].app
+            dest.loc.extension == message_flow.dest[0].loc.extension
+                && dest.loc.app == message_flow.dest[0].loc.app
         }) {
             existing_flow.dest.push(message_flow.dest[0].clone());
         }
@@ -81,7 +83,13 @@ fn check_connection_exists(
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn.extension == src_extension && conn.app == *src_app {
+            if conn
+                .loc
+                .extension
+                .as_ref()
+                .is_some_and(|ext| ext == src_extension)
+                && conn.loc.app == *src_app
+            {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
                     MsgType::Cmd => conn.cmd.as_ref(),
@@ -96,8 +104,9 @@ fn check_connection_exists(
                         if flow.name == msg_name {
                             // Check if destination already exists.
                             for dest in &flow.dest {
-                                if dest.extension == dest_extension
-                                    && dest.app == *dest_app
+                                if dest.loc.extension.as_deref()
+                                    == Some(dest_extension)
+                                    && dest.loc.app == *dest_app
                                 {
                                     return Err(anyhow::anyhow!(
                                         "Connection already exists: \
@@ -217,8 +226,11 @@ pub fn graph_add_connection(
 
     // Create destination object.
     let destination = GraphDestination {
-        app: dest_app,
-        extension: dest_extension,
+        loc: GraphLoc {
+            app: dest_app,
+            extension: Some(dest_extension),
+            subgraph: None,
+        },
         msg_conversion,
     };
 
@@ -239,15 +251,18 @@ pub fn graph_add_connection(
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
             connections.iter().enumerate().find(|(_, conn)| {
-                conn.extension == src_extension && conn.app == src_app
+                (conn.loc.extension.as_ref() == Some(&src_extension))
+                    && conn.loc.app == src_app
             }) {
             idx
         } else {
             // Create a new connection for the source node.
             connections.push(GraphConnection {
-                app: src_app.clone(),
-                extension: src_extension,
-                subgraph: None,
+                loc: GraphLoc {
+                    app: src_app.clone(),
+                    extension: Some(src_extension),
+                    subgraph: None,
+                },
                 cmd: None,
                 data: None,
                 audio_frame: None,
