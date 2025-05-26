@@ -1,0 +1,97 @@
+{
+  "type": "extension",
+  "name": "text_webhook",
+  "version": "0.8.18",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8.18"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "url": {
+        "type": "string"
+      },
+      "headers": {
+        "type": "string"
+      },
+      "method": {
+        "type": "string"
+      },
+      "timeout": {
+        "type": "int32"
+      },
+      "send_final_only": {
+        "type": "bool"
+      },
+      "data_type": {
+        "type": "string"
+      },
+      "send_on_close": {
+        "type": "bool"
+      },
+      "send_on_start": {
+        "type": "bool"
+      },
+      "direct_forward": {
+        "type": "bool"
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          },
+          "stream_id": {
+            "type": "uint32"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        }
+      },
+      {
+        "name": "content_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          },
+          "stream_id": {
+            "type": "uint32"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
