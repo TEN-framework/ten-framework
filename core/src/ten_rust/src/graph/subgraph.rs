@@ -635,11 +635,10 @@ impl Graph {
         Ok(())
     }
 
-    /// Processes all nodes in the graph, flattening subgraph nodes into their
-    /// constituent extensions and collecting subgraph mappings for later use.
-    /// Supports nested subgraphs using depth-first traversal.
-    fn flatten_nodes<F>(
-        &self,
+    /// Helper function that contains the common logic for flattening a graph's
+    /// nodes and connections.
+    fn flatten_graph_internal<F>(
+        graph: &Graph,
         subgraph_loader: &F,
         flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
@@ -648,10 +647,10 @@ impl Graph {
     where
         F: Fn(&str) -> Result<Graph>,
     {
-        for node in &self.nodes {
+        // Process all nodes in the graph
+        for node in &graph.nodes {
             match node.type_ {
                 GraphNodeType::Extension => {
-                    // Extension nodes are kept as-is
                     flattened_nodes.push(node.clone());
                 }
                 GraphNodeType::Subgraph => {
@@ -665,6 +664,16 @@ impl Graph {
                 }
             }
         }
+
+        // Process connections from the graph
+        if let Some(connections) = &graph.connections {
+            Self::process_graph_connections(
+                connections,
+                subgraph_mappings,
+                flattened_connections,
+            )?;
+        }
+
         Ok(())
     }
 
@@ -678,26 +687,16 @@ impl Graph {
     {
         let mut flattened_nodes = Vec::new();
         let mut flattened_connections = Vec::new();
-
-        // Keep track of subgraph mappings for connection resolution
         let mut subgraph_mappings: HashMap<String, Graph> = HashMap::new();
 
-        // Process all nodes
-        self.flatten_nodes(
+        // Use the common internal function to process nodes and connections
+        Self::flatten_graph_internal(
+            self,
             &subgraph_loader,
             &mut flattened_nodes,
             &mut flattened_connections,
             &mut subgraph_mappings,
         )?;
-
-        // Process connections from the main graph
-        if let Some(connections) = &self.connections {
-            Self::process_graph_connections(
-                connections,
-                &subgraph_mappings,
-                &mut flattened_connections,
-            )?;
-        }
 
         Ok(Graph {
             nodes: flattened_nodes,
@@ -739,43 +738,14 @@ impl Graph {
         let mut flattened_connections = Vec::new();
         let mut subgraph_mappings = HashMap::new();
 
-        // Process all nodes in this subgraph
-        for node in &subgraph.nodes {
-            match node.type_ {
-                GraphNodeType::Extension => {
-                    flattened_nodes.push(node.clone());
-                }
-                GraphNodeType::Subgraph => {
-                    let source_uri =
-                        node.source_uri.as_ref().ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Subgraph node '{}' must have source_uri",
-                                node.name
-                            )
-                        })?;
-
-                    let nested_subgraph = subgraph_loader(source_uri)?;
-
-                    Self::process_loaded_subgraph(
-                        node,
-                        nested_subgraph,
-                        subgraph_loader,
-                        &mut flattened_nodes,
-                        &mut flattened_connections,
-                        &mut subgraph_mappings,
-                    )?;
-                }
-            }
-        }
-
-        // Process connections from the current subgraph
-        if let Some(connections) = &subgraph.connections {
-            Self::process_graph_connections(
-                connections,
-                &subgraph_mappings,
-                &mut flattened_connections,
-            )?;
-        }
+        // Use the common internal function to process nodes and connections
+        Self::flatten_graph_internal(
+            &subgraph,
+            subgraph_loader,
+            &mut flattened_nodes,
+            &mut flattened_connections,
+            &mut subgraph_mappings,
+        )?;
 
         // Update exposed_messages to reflect the flattened structure
         let updated_exposed_messages = if let Some(exposed_messages) =
