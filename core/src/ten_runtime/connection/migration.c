@@ -81,8 +81,8 @@ static void ten_protocol_on_cleaned_task(void *self_, void *arg) {
 
 static void ten_connection_on_migration_is_done_or_reset(
     ten_connection_t *self, bool is_migration_state_reset) {
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
-             "Access across threads.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_connection_check_integrity(self, true), "Invalid argument.");
 
   ten_protocol_t *protocol = self->protocol;
   TEN_ASSERT(protocol && ten_protocol_check_integrity(protocol, true),
@@ -127,7 +127,8 @@ static void ten_connection_on_migration_is_done_or_reset(
 
 void ten_connection_upgrade_migration_state_to_done(ten_connection_t *self,
                                                     ten_engine_t *engine) {
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_connection_check_integrity(self, true),
              "The migration is completed, the belonging thread must be the "
              "engine's thread.");
 
@@ -154,7 +155,8 @@ void ten_connection_upgrade_migration_state_to_done(ten_connection_t *self,
 
 void ten_connection_migration_state_reset_when_engine_not_found(
     ten_connection_t *self) {
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_connection_check_integrity(self, true),
              "This function is always called from the app thread when the "
              "expected engine was not found.");
   TEN_ASSERT(
@@ -169,16 +171,16 @@ void ten_connection_migration_state_reset_when_engine_not_found(
 
 TEN_CONNECTION_MIGRATION_STATE
 ten_connection_get_migration_state(ten_connection_t *self) {
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
-             "Access across threads.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_connection_check_integrity(self, true), "Invalid argument.");
 
   return self->migration_state;
 }
 
 void ten_connection_set_migration_state(
     ten_connection_t *self, TEN_CONNECTION_MIGRATION_STATE new_state) {
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
-             "Access across threads.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_connection_check_integrity(self, true), "Invalid argument.");
 
   self->migration_state = new_state;
 }
