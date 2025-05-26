@@ -15,23 +15,28 @@ use super::{
 };
 
 impl Graph {
-    /// Updates connection source to use flattened names for subgraph elements.
-    fn flatten_connection_source_in_subgraph(
-        connection: &mut GraphConnection,
-        subgraph_name: &str,
-    ) {
-        if let Some(ref extension) = connection.loc.extension {
-            connection.loc.extension =
-                Some(format!("{}_{}", subgraph_name, extension));
+    /// Helper function to flatten a GraphLoc by adding subgraph name prefix
+    /// to extension names and validating that no nested subgraphs exist.
+    fn flatten_graph_loc_in_subgraph(loc: &mut GraphLoc, subgraph_name: &str) {
+        if let Some(ref extension) = loc.extension {
+            loc.extension = Some(format!("{}_{}", subgraph_name, extension));
         }
 
-        if connection.loc.subgraph.is_some() {
+        if loc.subgraph.is_some() {
             panic!(
                 "Should not happen, when flattening a subgraph, the subgraphs \
                  inside it should have already been flattened, so we should \
                  not see any subgraph inside."
             );
         }
+    }
+
+    /// Updates connection source to use flattened names for subgraph elements.
+    fn flatten_connection_source_in_subgraph(
+        connection: &mut GraphConnection,
+        subgraph_name: &str,
+    ) {
+        Self::flatten_graph_loc_in_subgraph(&mut connection.loc, subgraph_name);
     }
 
     /// Updates connection destinations to use flattened names for subgraph
@@ -43,18 +48,10 @@ impl Graph {
         let update_destinations = |flows: &mut Vec<GraphMessageFlow>| {
             for flow in flows {
                 for dest in &mut flow.dest {
-                    if let Some(ref extension) = dest.loc.extension {
-                        dest.loc.extension =
-                            Some(format!("{}_{}", subgraph_name, extension));
-                    }
-                    if dest.loc.subgraph.is_some() {
-                        panic!(
-                            "Should not happen, when flattening a subgraph, \
-                             the subgraphs inside it should have already been \
-                             flattened, so we should not see any subgraph \
-                             inside."
-                        );
-                    }
+                    Self::flatten_graph_loc_in_subgraph(
+                        &mut dest.loc,
+                        subgraph_name,
+                    );
                 }
             }
         };
