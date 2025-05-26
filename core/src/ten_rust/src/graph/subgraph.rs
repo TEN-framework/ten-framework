@@ -751,6 +751,19 @@ impl Graph {
                     subgraph_mappings
                         .insert(node.name.clone(), flattened_nested.clone());
 
+                    // Flatten subgraph nodes (now all should be extensions
+                    // after recursive flattening)
+                    for sub_node in &flattened_nested.nodes {
+                        if sub_node.type_ != GraphNodeType::Extension {
+                            return Err(anyhow::anyhow!(
+                                "Unexpected non-extension node '{}' in \
+                                 flattened subgraph '{}'",
+                                sub_node.name,
+                                node.name
+                            ));
+                        }
+                    }
+
                     // Add flattened nodes with prefix
                     Self::process_extension_nodes_from_subgraph(
                         &flattened_nested.nodes,
