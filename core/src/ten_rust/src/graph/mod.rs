@@ -316,6 +316,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -340,6 +341,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.
