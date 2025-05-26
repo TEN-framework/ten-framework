@@ -18,4 +18,8 @@ if [[ "$*" == *"-asan"* ]]; then
     export LD_PRELOAD=../.ten/app/ten_packages/system/ten_runtime/lib/libasan.so
 fi
 
-npm test
+# We can run npm test to run the tests, but memory leak will be detected if we execute 'npm'.
+# So we run the test manually.
+# npm test
+
+node --expose-gc build/index.js
