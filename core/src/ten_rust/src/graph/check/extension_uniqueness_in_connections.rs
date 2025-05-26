@@ -60,13 +60,13 @@ impl Graph {
             // Create a unique identifier for the extension including app URI.
             if let Some(extension_name) = &connection.loc.extension {
                 let app_str = connection.loc.app.as_deref().unwrap_or("");
-                let unique_key = format!("{}::{}", app_str, extension_name);
+                let unique_key = format!("{app_str}::{extension_name}");
 
                 if let Some(idx) = extensions.get(&unique_key) {
                     errors.push(format!(
-                        "extension '{}' is defined in connection[{}] and \
-                         connection[{}], merge them into one section.",
-                        extension_name, idx, conn_idx
+                        "extension '{extension_name}' is defined in \
+                         connection[{idx}] and connection[{conn_idx}], merge \
+                         them into one section."
                     ));
                 } else {
                     // Record the first occurrence of the extension.

@@ -9,6 +9,7 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod subgraph;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -23,7 +24,7 @@ use crate::constants::{
 };
 use crate::pkg_info::localhost;
 
-use self::connection::GraphConnection;
+use self::connection::{GraphConnection, GraphMessageFlow};
 use self::node::GraphNodeType;
 
 /// The state of the 'app' field declaration in all nodes in the graph.

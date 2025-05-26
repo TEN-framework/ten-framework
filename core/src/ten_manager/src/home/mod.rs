@@ -17,16 +17,28 @@ pub struct Registry {
     pub index: String,
 }
 
+/// Append platform-specific tman directory path to the given base directory.
+fn append_tman_path(mut base_dir: PathBuf) -> PathBuf {
+    if cfg!(target_os = "windows") {
+        base_dir.push("AppData");
+        base_dir.push("Roaming");
+        base_dir.push("tman");
+    } else {
+        base_dir.push(".tman");
+    }
+    base_dir
+}
+
 // Determine the tman home directory based on the platform.
 pub fn get_home_dir() -> PathBuf {
-    let mut home_dir =
-        dirs::home_dir().expect("Cannot determine home directory.");
-    if cfg!(target_os = "windows") {
-        home_dir.push("AppData");
-        home_dir.push("Roaming");
-        home_dir.push("tman");
-    } else {
-        home_dir.push(".tman");
+    // First check if we're in test mode with TEN_MANAGER_HOME_INTERNAL_USE_ONLY
+    // set
+    if let Ok(test_home) = std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY") {
+        let home_dir = std::path::PathBuf::from(test_home);
+        return append_tman_path(home_dir);
     }
-    home_dir
+
+    // Normal operation: use system home directory
+    let home_dir = dirs::home_dir().expect("Cannot determine home directory.");
+    append_tman_path(home_dir)
 }

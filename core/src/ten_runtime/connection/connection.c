@@ -551,18 +551,17 @@ TEN_CONNECTION_ATTACH_TO ten_connection_attach_to(ten_connection_t *self) {
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: This function will be called from the protocol thread, so we
   // use 'ten_atomic_t' here.
-  TEN_ASSERT(self && ten_connection_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(self, false), "Should not happen.");
+
   return ten_atomic_load(&self->attach_to);
 }
 
 ten_runloop_t *ten_connection_get_attached_runloop(ten_connection_t *self) {
-  TEN_ASSERT(self &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: This function is intended to be called in
-                 // different threads.
-                 ten_connection_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is intended to be called in different threads.
+  TEN_ASSERT(ten_connection_check_integrity(self, false), "Should not happen.");
 
   // This function will be called from the implementation protocol thread (ex:
   // 'ten_protocol_asynced_on_input_async()'), and the

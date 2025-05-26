@@ -394,9 +394,6 @@ class value_t {
   std::string get_string(ten_error_t *err) const {
     TEN_ASSERT(c_value_, "Should not happen.");
 
-    (void)err;
-
-    // TODO(Liu): pass `err` to the underlying function.
     const char *result = ten_value_peek_raw_str(c_value_, err);
     if (result != nullptr) {
       return result;
@@ -410,8 +407,6 @@ class value_t {
   // Pay attention to its copy semantics.
   buf_t get_buf(ten_error_t *err) const {
     TEN_ASSERT(c_value_, "Should not happen.");
-
-    (void)err;
 
     void *orig_data = nullptr;
     size_t orig_size = 0;
