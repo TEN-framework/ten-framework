@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod get;
+pub mod schema;
 pub mod set;
 
 use anyhow::Result;
@@ -37,6 +38,6 @@ pub fn write_persistent_storage(data: &Value) -> Result<()> {
     }
 
     let content = serde_json::to_string_pretty(data)?;
-    fs::write(&path, content)?;
+    fs::write(&path, content)?; // TODO: bufwriter
     Ok(())
 }

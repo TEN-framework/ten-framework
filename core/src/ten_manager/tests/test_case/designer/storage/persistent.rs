@@ -45,6 +45,7 @@ async fn test_set_and_get_persistent_simple() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -117,6 +118,7 @@ async fn test_set_and_get_persistent_array_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -180,6 +182,7 @@ async fn test_get_persistent_nonexistent_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -221,6 +224,7 @@ async fn test_persistent_storage_persists_across_requests() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -287,6 +291,7 @@ async fn test_set_persistent_invalid_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 

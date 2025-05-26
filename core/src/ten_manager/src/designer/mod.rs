@@ -33,6 +33,7 @@ pub mod version;
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::web;
+use jsonschema::Validator;
 use storage::in_memory::TmanStorageInMemory;
 use uuid::Uuid;
 
@@ -49,6 +50,7 @@ pub struct DesignerState {
     pub out: Arc<Box<dyn TmanOutput>>,
     pub pkgs_cache: tokio::sync::RwLock<HashMap<String, PkgsInfoInApp>>,
     pub graphs_cache: tokio::sync::RwLock<HashMap<Uuid, GraphInfo>>,
+    pub persistent_storage_schema: Arc<tokio::sync::RwLock<Option<Validator>>>,
 }
 
 pub fn configure_routes(
@@ -153,6 +155,7 @@ pub fn configure_routes(
                         web::scope("/persistent")
                             .service(web::resource("/set").route(web::post().to(storage::persistent::set::set_persistent_storage_endpoint)))
                             .service(web::resource("/get").route(web::post().to(storage::persistent::get::get_persistent_storage_endpoint)))
+                            .service(web::resource("/schema").route(web::post().to(storage::persistent::schema::set_persistent_storage_schema_endpoint)))
                     )
             )
             // File system endpoints.

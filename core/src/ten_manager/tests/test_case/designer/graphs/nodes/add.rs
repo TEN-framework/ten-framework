@@ -11,7 +11,6 @@ mod tests {
     use actix_web::{test, web, App};
     use serde_json::Value;
     use ten_manager::{
-        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::add::{
@@ -23,6 +22,7 @@ mod tests {
             DesignerState,
         },
         graph::graphs_cache_find_by_name,
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
     use ten_rust::pkg_info::{
@@ -47,6 +47,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -110,6 +111,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -185,6 +187,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -266,6 +269,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -368,6 +372,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Inject the test app into the mock.
@@ -478,6 +483,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Inject the test app into the mock.
@@ -611,6 +617,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Inject the test app into the mock.
