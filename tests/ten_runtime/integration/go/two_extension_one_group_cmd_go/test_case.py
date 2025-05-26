@@ -9,7 +9,7 @@ from sys import stdout
 from .utils import msgpack, build_config, build_pkg, fs_utils
 
 
-def test_two_extension_on_group_cmd_go():
+def test_two_extension_one_group_cmd_go():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
@@ -61,7 +61,7 @@ def test_two_extension_on_group_cmd_go():
         assert False, "Failed to install package."
 
     if sys.platform == "win32":
-        print("test_two_extension_on_group_cmd_go doesn't support win32")
+        print("test_two_extension_one_group_cmd_go doesn't support win32")
         assert False
     elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
