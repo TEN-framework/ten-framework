@@ -11,7 +11,7 @@ import {
   useCancelableSWR,
   prepareReqUrl,
 } from "@/api/services/utils";
-import { ENDPOINT_PREFERENCES } from "@/api/endpoints";
+import { ENDPOINT_PREFERENCES, ENDPOINT_STORAGE } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 
 export const usePreferencesLogViewerLines = () => {
@@ -39,4 +39,39 @@ export const updatePreferencesLogViewerLines = async (size: number) => {
   });
   const res = await req;
   return template.responseSchema.parse(res).data;
+};
+
+export const getStorageValueByKey = async (
+  key: string,
+  options?: {
+    storageType?: "in-memory" | "persistent";
+  }
+) => {
+  const template =
+    options?.storageType === "persistent"
+      ? ENDPOINT_STORAGE.persistentGet[ENDPOINT_METHOD.POST]
+      : ENDPOINT_STORAGE.inMemoryGet[ENDPOINT_METHOD.POST];
+  const req = makeAPIRequest(template, {
+    body: { key },
+  });
+  const res = await req;
+  return template.responseSchema.parse(res).data.value;
+};
+
+export const setStorageValueByKey = async (
+  key: string,
+  value: unknown,
+  options?: {
+    storageType?: "in-memory" | "persistent";
+  }
+) => {
+  const template =
+    options?.storageType === "persistent"
+      ? ENDPOINT_STORAGE.persistentSet[ENDPOINT_METHOD.POST]
+      : ENDPOINT_STORAGE.inMemorySet[ENDPOINT_METHOD.POST];
+  const req = makeAPIRequest(template, {
+    body: { key, value },
+  });
+  const res = await req;
+  return template.responseSchema.parse(res);
 };

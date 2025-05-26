@@ -38,3 +38,66 @@ export const ENDPOINT_PREFERENCES = {
     },
   },
 };
+
+export const ENDPOINT_STORAGE = {
+  inMemoryGet: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/storage/in-memory/get`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        key: z.string(),
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      responseSchema: genResSchema<{ value?: any }>(
+        z.object({
+          value: z.any(),
+        })
+      ),
+    },
+  },
+  inMemorySet: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/storage/in-memory/set`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        key: z.string(),
+        value: z.any(),
+      }),
+      responseSchema: genResSchema<{ success: boolean }>(
+        z.object({
+          success: z.boolean(),
+        })
+      ),
+    },
+  },
+  persistentGet: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/storage/persistent/get`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        key: z.string(),
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      responseSchema: genResSchema<{ value?: any }>(
+        z.object({
+          value: z.any(),
+        })
+      ),
+    },
+  },
+  persistentSet: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/storage/persistent/set`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        key: z.string(),
+        value: z.any(),
+      }),
+      responseSchema: genResSchema<{ success: boolean }>(
+        z.object({
+          success: z.boolean(),
+        })
+      ),
+    },
+  },
+};
