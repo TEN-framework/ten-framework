@@ -689,7 +689,6 @@ impl Graph {
         let mut flattened_connections = Vec::new();
         let mut subgraph_mappings: HashMap<String, Graph> = HashMap::new();
 
-        // Use the common internal function to process nodes and connections
         Self::flatten_graph_internal(
             self,
             &subgraph_loader,
@@ -738,7 +737,6 @@ impl Graph {
         let mut flattened_connections = Vec::new();
         let mut subgraph_mappings = HashMap::new();
 
-        // Use the common internal function to process nodes and connections
         Self::flatten_graph_internal(
             &subgraph,
             subgraph_loader,
