@@ -73,5 +73,5 @@ export const setStorageValueByKey = async (
     body: { key, value },
   });
   const res = await req;
-  return template.responseSchema.parse(res);
+  return template.responseSchema.parse(res).data.success;
 };
