@@ -357,7 +357,8 @@ static void test_extension_addon_create_instance(ten_addon_t *addon,
                                                  ten_env_t *ten_env,
                                                  const char *name,
                                                  void *context) {
-  TEN_ASSERT(addon && name, "Invalid argument.");
+  TEN_ASSERT(addon, "Invalid argument.");
+  TEN_ASSERT(name, "Invalid argument.");
 
   ten_extension_t *extension = ten_extension_create(
       name, test_extension_on_configure, test_extension_on_init,

@@ -246,7 +246,8 @@ static void ten_builtin_extension_group_on_destroy_extensions(
 
   ten_list_foreach (&extensions, iter) {
     ten_extension_t *extension = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+    TEN_ASSERT(extension, "Invalid argument.");
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid argument.");
 
     ten_addon_destroy_extension(ten_env, extension,
@@ -258,7 +259,8 @@ void ten_builtin_extension_group_addon_create_instance(ten_addon_t *addon,
                                                        ten_env_t *ten_env,
                                                        const char *name,
                                                        void *context) {
-  TEN_ASSERT(addon && name, "Invalid argument.");
+  TEN_ASSERT(addon, "Invalid argument.");
+  TEN_ASSERT(name, "Invalid argument.");
 
   ten_extension_group_t *ext_group = ten_extension_group_create(
       name, NULL, ten_builtin_extension_group_on_init,
