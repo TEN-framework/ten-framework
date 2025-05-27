@@ -73,7 +73,7 @@ static void ten_global_sigint_sigterm_handler(int signo,
                                               TEN_UNUSED void *context) {
   (void)dprintf(STDERR_FILENO, "Received SIGINT/SIGTERM (%d)\n", signo);
 
-  ten_mutex_lock(g_apps_mutex);
+  ten_global_lock_apps();
 
   ten_list_foreach (&g_apps, iter) {
     ten_app_t *app = ten_ptr_listnode_get(iter.node);
@@ -82,7 +82,7 @@ static void ten_global_sigint_sigterm_handler(int signo,
     ten_app_close(app, NULL);
   }
 
-  ten_mutex_unlock(g_apps_mutex);
+  ten_global_unlock_apps();
 
   sigint_count++;
   if (sigint_count >= 2) {
@@ -293,7 +293,7 @@ BOOL WINAPI ConsoleHandler(DWORD dwCtrlType) {
   case CTRL_BREAK_EVENT:
     (void)fprintf(stderr, "Received CTRL+C/CTRL+BREAK\n");
 
-    ten_mutex_lock(g_apps_mutex);
+    ten_global_lock_apps();
 
     ten_list_foreach (&g_apps, iter) {
       ten_app_t *app = ten_ptr_listnode_get(iter.node);
@@ -302,7 +302,7 @@ BOOL WINAPI ConsoleHandler(DWORD dwCtrlType) {
       ten_app_close(app, NULL);
     }
 
-    ten_mutex_unlock(g_apps_mutex);
+    ten_global_unlock_apps();
 
     ctrl_c_count++;
     if (ctrl_c_count >= 2) {
