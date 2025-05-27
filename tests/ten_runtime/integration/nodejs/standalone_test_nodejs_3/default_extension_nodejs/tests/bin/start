@@ -15,7 +15,7 @@ export NODE_PATH=../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PA
 
 # Check if -asan argument is provided
 if [[ "$*" == *"-asan"* ]]; then
-    export LD_PRELOAD=../.ten/app/ten_packages/system/ten_runtime/lib/libasan.so
+  export LD_PRELOAD=../.ten/app/ten_packages/system/ten_runtime/lib/libasan.so
 fi
 
 # We can run npm test to run the tests, but memory leak will be detected if we execute 'npm'.

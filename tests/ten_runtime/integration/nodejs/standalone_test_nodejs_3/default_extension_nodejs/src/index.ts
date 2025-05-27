@@ -34,7 +34,7 @@ class DefaultExtension extends Extension {
 
     const greetingCmd = Cmd.Create("greeting");
 
-    const [greetingMsg, err] = await tenEnv.getPropertyString("greetingMsg");
+    const [greetingMsg] = await tenEnv.getPropertyString("greetingMsg");
 
     if (greetingMsg) {
       greetingCmd.setPropertyString("greetingMsg", greetingMsg);
@@ -110,7 +110,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

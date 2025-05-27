@@ -16,7 +16,6 @@ import {
 } from "ten-runtime-nodejs";
 
 export class CmdTester extends ExtensionTester {
-
   async onStart(tenEnvTester: TenEnvTester) {
     tenEnvTester.logInfo("CmdTester onStart");
 
@@ -48,7 +47,6 @@ export class CmdTester extends ExtensionTester {
 }
 
 export class DataTester extends ExtensionTester {
-
   async onStart(tenEnvTester: TenEnvTester) {
     tenEnvTester.logInfo("DataTester onStart");
 
@@ -77,7 +75,6 @@ export class DataTester extends ExtensionTester {
 }
 
 export class VideoFrameTester extends ExtensionTester {
-
   async onStart(tenEnvTester: TenEnvTester) {
     tenEnvTester.logInfo("VideoFrameTester onStart");
 
@@ -106,7 +103,6 @@ export class VideoFrameTester extends ExtensionTester {
 }
 
 export class AudioFrameTester extends ExtensionTester {
-
   async onStart(tenEnvTester: TenEnvTester) {
     tenEnvTester.logInfo("AudioFrameTester onStart");
 
