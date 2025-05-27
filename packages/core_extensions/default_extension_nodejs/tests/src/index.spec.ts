@@ -15,15 +15,11 @@ describe("MyExtensionTester", () => {
     await extensionTester.run();
 
     console.log("deinit done");
-
-    (global as unknown as { gc: () => void }).gc();
   });
 
   it("case2", async () => {
     const extensionTester = new MyExtensionTester();
     extensionTester.setTestModeSingle(test_addon_name, "{}");
     await extensionTester.run();
-
-    (global as unknown as { gc: () => void }).gc();
   });
 });

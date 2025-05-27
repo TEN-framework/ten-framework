@@ -33,12 +33,15 @@ class FakeApp extends App {
 }
 
 before(async () => {
+  // TODO(Wei): It needs to be changed to load addons/extensions on-demand
+  // instead of loading everything at once. To achieve this, the Node.js addon
+  // loader must also be usable when the app itself is a Node.js app.
   await AddonManager.getInstance().loadAllAddons();
 
   fakeApp = new FakeApp();
   fakeAppRunPromise = fakeApp.run();
 
-  // wait for the app to be initialized
+  // Wait for the app to be initialized.
   await fakeApp.waitForInit();
 });
 

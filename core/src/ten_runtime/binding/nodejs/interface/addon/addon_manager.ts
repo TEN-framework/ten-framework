@@ -42,8 +42,10 @@ export class AddonManager {
             return currentDir;
           }
           if (manifestJson.type === "extension") {
-            // If the extension is installed in standalone building mode,
-            // the app base dir is the .ten/app directory.
+            // In Node.js, it's basically not easy to get the symbolic link path
+            // of an imported module, and we always get the real path, so we
+            // need special handling here. If the extension is in standalone
+            // building mode, then the app base dir is the .ten/app directory.
             const standaloneBuildingAppDir = path.join(currentDir, ".ten/app");
             const standaloneBuildingAppManifestPath = path.join(
               standaloneBuildingAppDir,
