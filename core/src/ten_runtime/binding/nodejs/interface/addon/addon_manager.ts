@@ -13,7 +13,7 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 type Ctor<T> = {
-  new(): T;
+  new (): T;
   prototype: T;
 };
 
@@ -47,11 +47,13 @@ export class AddonManager {
             const standaloneBuildingAppDir = path.join(currentDir, ".ten/app");
             const standaloneBuildingAppManifestPath = path.join(
               standaloneBuildingAppDir,
-              "manifest.json"
+              "manifest.json",
             );
 
-            if (fs.existsSync(standaloneBuildingAppDir) &&
-              fs.existsSync(standaloneBuildingAppManifestPath)) {
+            if (
+              fs.existsSync(standaloneBuildingAppDir) &&
+              fs.existsSync(standaloneBuildingAppManifestPath)
+            ) {
               return standaloneBuildingAppDir;
             }
           }
@@ -93,7 +95,7 @@ export class AddonManager {
     const dirs = fs.opendirSync(extension_folder);
     const loadPromises = [];
 
-    for (; ;) {
+    for (;;) {
       const entry = dirs.readSync();
       if (!entry) {
         break;

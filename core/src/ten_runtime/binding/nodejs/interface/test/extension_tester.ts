@@ -12,90 +12,118 @@ import ten_addon from "../ten_addon.js";
 import { TenEnvTester } from "./env_tester.js";
 
 export class ExtensionTester {
-    constructor() {
-        ten_addon.ten_nodejs_extension_tester_create(this);
-    }
+  constructor() {
+    ten_addon.ten_nodejs_extension_tester_create(this);
+  }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onStart(tenEnvTester: TenEnvTester): Promise<void> {
+    // Stub for override.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onStop(tenEnvTester: TenEnvTester): Promise<void> {
+    // Stub for override.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onDeinit(tenEnvTester: TenEnvTester): Promise<void> {
+    // Stub for override.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onCmd(tenEnvTester: TenEnvTester, cmd: Cmd): Promise<void> {
+    // Stub for override.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onData(tenEnvTester: TenEnvTester, data: Data): Promise<void> {
+    // Stub for override.
+  }
+
+  async onAudioFrame(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onStart(tenEnvTester: TenEnvTester): Promise<void> {
-        // Stub for override.
-    }
-
+    tenEnvTester: TenEnvTester,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onStop(tenEnvTester: TenEnvTester): Promise<void> {
-        // Stub for override.
-    }
+    audioFrame: AudioFrame,
+  ): Promise<void> {
+    // Stub for override.
+  }
 
+  async onVideoFrame(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onDeinit(tenEnvTester: TenEnvTester): Promise<void> {
-        // Stub for override.
-    }
+    tenEnvTester: TenEnvTester,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    videoFrame: VideoFrame,
+  ): Promise<void> {
+    // Stub for override.
+  }
 
-    async onCmd(tenEnvTester: TenEnvTester, cmd: Cmd): Promise<void> {
-        // Stub for override.
-    }
+  async run(): Promise<void> {
+    return ten_addon.ten_nodejs_extension_tester_run(this);
+  }
 
-    async onData(tenEnvTester: TenEnvTester, data: Data): Promise<void> {
-        // Stub for override.
-    }
+  setTestModeSingle(addonName: string, propertyJsonStr: string): Error | null {
+    return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(
+      this,
+      addonName,
+      propertyJsonStr,
+    );
+  }
 
-    async onAudioFrame(tenEnvTester: TenEnvTester, audioFrame: AudioFrame): Promise<void> {
-        // Stub for override.
-    }
+  private async onInitProxy(tenEnvTester: TenEnvTester): Promise<void> {
+    ten_addon.ten_nodejs_ten_env_tester_on_init_done(tenEnvTester);
+  }
 
-    async onVideoFrame(tenEnvTester: TenEnvTester, videoFrame: VideoFrame): Promise<void> {
-        // Stub for override.
-    }
+  private async onStartProxy(tenEnvTester: TenEnvTester): Promise<void> {
+    await this.onStart(tenEnvTester);
 
-    async run(): Promise<void> {
-        return ten_addon.ten_nodejs_extension_tester_run(this);
-    }
+    ten_addon.ten_nodejs_ten_env_tester_on_start_done(tenEnvTester);
+  }
 
-    setTestModeSingle(addonName: string, propertyJsonStr: string): Error | null {
-        return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(this, addonName, propertyJsonStr);
-    }
+  private async onStopProxy(tenEnvTester: TenEnvTester): Promise<void> {
+    await this.onStop(tenEnvTester);
 
-    private async onInitProxy(tenEnvTester: TenEnvTester): Promise<void> {
-        ten_addon.ten_nodejs_ten_env_tester_on_init_done(tenEnvTester);
-    }
+    ten_addon.ten_nodejs_ten_env_tester_on_stop_done(tenEnvTester);
+  }
 
-    private async onStartProxy(tenEnvTester: TenEnvTester): Promise<void> {
-        await this.onStart(tenEnvTester);
+  private async onDeinitProxy(tenEnvTester: TenEnvTester): Promise<void> {
+    await this.onDeinit(tenEnvTester);
 
-        ten_addon.ten_nodejs_ten_env_tester_on_start_done(tenEnvTester);
-    }
+    ten_addon.ten_nodejs_ten_env_tester_on_deinit_done(tenEnvTester);
 
-    private async onStopProxy(tenEnvTester: TenEnvTester): Promise<void> {
-        await this.onStop(tenEnvTester);
+    // JS extension_tester prepare to be destroyed, so notify the underlying C
+    // runtime this fact.
+    ten_addon.ten_nodejs_extension_tester_on_end_of_life(this);
 
-        ten_addon.ten_nodejs_ten_env_tester_on_stop_done(tenEnvTester);
-    }
+    (global as unknown as { gc: () => void }).gc();
+  }
 
-    private async onDeinitProxy(tenEnvTester: TenEnvTester): Promise<void> {
-        await this.onDeinit(tenEnvTester);
+  private async onCmdProxy(
+    tenEnvTester: TenEnvTester,
+    cmd: Cmd,
+  ): Promise<void> {
+    await this.onCmd(tenEnvTester, cmd);
+  }
 
-        ten_addon.ten_nodejs_ten_env_tester_on_deinit_done(tenEnvTester);
+  private async onDataProxy(
+    tenEnvTester: TenEnvTester,
+    data: Data,
+  ): Promise<void> {
+    await this.onData(tenEnvTester, data);
+  }
 
-        // JS extension_tester prepare to be destroyed, so notify the underlying C runtime this
-        // fact.
-        ten_addon.ten_nodejs_extension_tester_on_end_of_life(this);
+  private async onAudioFrameProxy(
+    tenEnvTester: TenEnvTester,
+    audioFrame: AudioFrame,
+  ): Promise<void> {
+    await this.onAudioFrame(tenEnvTester, audioFrame);
+  }
 
-        (global as unknown as { gc: () => void }).gc();
-    }
-
-    private async onCmdProxy(tenEnvTester: TenEnvTester, cmd: Cmd): Promise<void> {
-        await this.onCmd(tenEnvTester, cmd);
-    }
-
-    private async onDataProxy(tenEnvTester: TenEnvTester, data: Data): Promise<void> {
-        await this.onData(tenEnvTester, data);
-    }
-
-    private async onAudioFrameProxy(tenEnvTester: TenEnvTester, audioFrame: AudioFrame): Promise<void> {
-        await this.onAudioFrame(tenEnvTester, audioFrame);
-    }
-
-    private async onVideoFrameProxy(tenEnvTester: TenEnvTester, videoFrame: VideoFrame): Promise<void> {
-        await this.onVideoFrame(tenEnvTester, videoFrame);
-    }
+  private async onVideoFrameProxy(
+    tenEnvTester: TenEnvTester,
+    videoFrame: VideoFrame,
+  ): Promise<void> {
+    await this.onVideoFrame(tenEnvTester, videoFrame);
+  }
 }
