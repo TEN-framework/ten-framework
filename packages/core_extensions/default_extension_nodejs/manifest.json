@@ -19,8 +19,12 @@
       "BUILD.gn",
       "src/**",
       "tsconfig.json",
-      "package.json"
+      "package.json",
+      "tests/**"
     ]
   },
-  "api": {}
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
 }

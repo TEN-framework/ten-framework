@@ -510,51 +510,396 @@ mod tests {
     }
 
     #[test]
-    fn test_flatten_nested_subgraphs_error() {
+    fn test_flatten_nested_subgraphs() {
+        // Create a main graph with a subgraph node
         let main_graph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Subgraph,
-                name: "subgraph_1".to_string(),
-                addon: None,
-                extension_group: None,
-                app: None,
-                property: None,
-                source_uri: Some(
-                    "http://example.com/subgraph.json".to_string(),
-                ),
-            }],
-            connections: None,
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph1.json".to_string(),
+                    ),
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_a".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "TestCmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: Some(
+                                "subgraph_1_subgraph_2_ext_z".to_string(),
+                            ),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
             exposed_messages: None,
             exposed_properties: None,
         };
 
         // Create a subgraph that contains another subgraph (nested)
-        let nested_subgraph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Subgraph,
-                name: "nested_subgraph".to_string(),
-                addon: None,
-                extension_group: None,
-                app: None,
-                property: None,
-                source_uri: Some("http://example.com/nested.json".to_string()),
-            }],
-            connections: None,
+        let subgraph_1 = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_x".to_string(),
+                    addon: Some("addon_x".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_2".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph2.json".to_string(),
+                    ),
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_x".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "InternalCmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: Some("subgraph_2_ext_z".to_string()),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
             exposed_messages: None,
             exposed_properties: None,
         };
 
-        let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(nested_subgraph.clone()) };
+        // Create the innermost subgraph
+        let subgraph_2 = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_y".to_string(),
+                    addon: Some("addon_y".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_z".to_string(),
+                    addon: Some("addon_z".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_y".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "DeepCmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: Some("ext_z".to_string()),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
+            exposed_messages: None,
+            exposed_properties: None,
+        };
 
-        // This should return an error because nested subgraphs are not
-        // supported
-        let result = main_graph.flatten(subgraph_loader);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Nested subgraphs are not supported"));
+        let subgraph_loader = |uri: &str| -> Result<Graph> {
+            match uri {
+                "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
+                "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
+                _ => Err(anyhow::anyhow!("Unknown URI: {}", uri)),
+            }
+        };
+
+        // Flatten the graph - should now work with nested subgraphs
+        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
+
+        // Check that original extension is preserved
+        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"
+            && node.addon == Some("addon_a".to_string())));
+
+        // Check that nested subgraph extensions are flattened with proper
+        // prefixes
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_x"
+                && node.addon == Some("addon_x".to_string())));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_y"
+                && node.addon == Some("addon_y".to_string())));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_z"
+                && node.addon == Some("addon_z".to_string())));
+
+        // Check that connections are flattened correctly
+        let connections = flattened.connections.as_ref().unwrap();
+        assert_eq!(connections.len(), 3); // Original + 2 internal connections
+
+        // Check that the main connection references the deeply nested extension
+        let main_connection = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        let cmd_flow = &main_connection.cmd.as_ref().unwrap()[0];
+        assert_eq!(
+            cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_subgraph_2_ext_z"
+        );
+
+        // Check internal connections are preserved with proper prefixes
+        let internal_connection_1 = connections
+            .iter()
+            .find(|conn| {
+                conn.loc.extension.as_deref() == Some("subgraph_1_ext_x")
+            })
+            .unwrap();
+        let internal_cmd_flow_1 =
+            &internal_connection_1.cmd.as_ref().unwrap()[0];
+        assert_eq!(
+            internal_cmd_flow_1.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_subgraph_2_ext_z"
+        );
+
+        let internal_connection_2 = connections
+            .iter()
+            .find(|conn| {
+                conn.loc.extension.as_deref()
+                    == Some("subgraph_1_subgraph_2_ext_y")
+            })
+            .unwrap();
+        let internal_cmd_flow_2 =
+            &internal_connection_2.cmd.as_ref().unwrap()[0];
+        assert_eq!(
+            internal_cmd_flow_2.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_subgraph_2_ext_z"
+        );
+    }
+
+    #[test]
+    fn test_flatten_nested_subgraphs_with_exposed_messages() {
+        // Create a main graph with subgraph field references
+        let main_graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph1.json".to_string(),
+                    ),
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_a".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "TestCmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: None,
+                            subgraph: Some("subgraph_1".to_string()),
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
+            exposed_messages: None,
+            exposed_properties: None,
+        };
+
+        // Create a subgraph that contains another subgraph (nested)
+        let subgraph_1 = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_x".to_string(),
+                    addon: Some("addon_x".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_2".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph2.json".to_string(),
+                    ),
+                },
+            ],
+            connections: None,
+            exposed_messages: Some(vec![GraphExposedMessage {
+                msg_type: GraphExposedMessageType::CmdIn,
+                name: "TestCmd".to_string(),
+                extension: Some("subgraph_2".to_string()),
+            }]),
+            exposed_properties: None,
+        };
+
+        // Create the innermost subgraph
+        let subgraph_2 = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_y".to_string(),
+                    addon: Some("addon_y".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_z".to_string(),
+                    addon: Some("addon_z".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+            ],
+            connections: None,
+            exposed_messages: Some(vec![GraphExposedMessage {
+                msg_type: GraphExposedMessageType::CmdIn,
+                name: "TestCmd".to_string(),
+                extension: Some("ext_z".to_string()),
+            }]),
+            exposed_properties: None,
+        };
+
+        let subgraph_loader = |uri: &str| -> Result<Graph> {
+            match uri {
+                "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
+                "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
+                _ => Err(anyhow::anyhow!("Unknown URI: {}", uri)),
+            }
+        };
+
+        // Flatten the graph - should work with nested subgraphs and
+        // exposed_messages
+        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
+
+        // Check that nested subgraph extensions are flattened with proper
+        // prefixes
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_x"));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_y"));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_z"));
+
+        // Check that connections are resolved correctly through nested
+        // exposed_messages
+        let connections = flattened.connections.as_ref().unwrap();
+        assert_eq!(connections.len(), 1);
+
+        let main_connection = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        let cmd_flow = &main_connection.cmd.as_ref().unwrap()[0];
+        // The subgraph reference should be resolved to the deeply nested
+        // extension
+        assert_eq!(
+            cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_subgraph_2_ext_z"
+        );
+        assert!(cmd_flow.dest[0].loc.subgraph.is_none());
     }
 
     #[test]
