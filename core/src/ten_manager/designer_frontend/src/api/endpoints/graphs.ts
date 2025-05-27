@@ -190,6 +190,21 @@ export const ENDPOINT_GRAPHS = {
       ),
     },
   },
+  graphsAutoStart: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/graphs/auto-start`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        graph_id: z.string(),
+        auto_start: z.boolean(),
+      }),
+      responseSchema: genResSchema(
+        z.object({
+          success: z.boolean(),
+        })
+      ),
+    },
+  },
 };
 
 export const ENDPOINT_GRAPH_UI = {

@@ -90,11 +90,29 @@ export const ENDPOINT_STORAGE = {
       method: ENDPOINT_METHOD.POST,
       requestSchema: z.object({
         key: z.string(),
-        value: z.any(),
+        value: z.unknown(),
       }),
       responseSchema: genResSchema<{ success: boolean }>(
         z.object({
           success: z.boolean(),
+        })
+      ),
+    },
+  },
+  persistentSchema: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/storage/persistent/schema`,
+      method: ENDPOINT_METHOD.POST,
+      requestSchema: z.object({
+        schema: z.any(), // Schema can be any valid JSON schema
+      }),
+      responseSchema: genResSchema<{
+        success: boolean;
+        cleaned_fields?: string[];
+      }>(
+        z.object({
+          success: z.boolean(),
+          cleaned_fields: z.array(z.string()).optional(),
         })
       ),
     },

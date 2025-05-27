@@ -39,7 +39,7 @@ import {
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { SpinnerLoading } from "@/components/Status/Loading";
-import { useGraphs } from "@/api/services/graphs";
+import { useGraphs, postGraphsAutoStart } from "@/api/services/graphs";
 import { useApps } from "@/api/services/apps";
 import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
 import { cn } from "@/lib/utils";
@@ -228,12 +228,13 @@ const GraphSelectTable = (props: {
     {
       accessorKey: "auto_start",
       header: t("action.autoStart"),
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue() as boolean;
         return (
-          <div className="flex items-center">
-            <Checkbox disabled checked={value} />
-          </div>
+          <GraphFieldAutoStart
+            defaultValue={value}
+            graphId={row.original.uuid}
+          />
         );
       },
     },
@@ -319,5 +320,44 @@ const GraphSelectTable = (props: {
         </TableBody>
       </Table>
     </>
+  );
+};
+
+const GraphFieldAutoStart = (props: {
+  defaultValue?: boolean;
+  graphId: string;
+}) => {
+  const { defaultValue = false, graphId } = props;
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [checked, setChecked] = React.useState<boolean>(defaultValue);
+
+  const { mutate: mutateGraphs, isLoading: isGraphLoading } = useGraphs();
+
+  const handleCheckedChange = async (checked: boolean) => {
+    setIsLoading(true);
+    try {
+      // Simulate an API call to update the auto-start setting
+      await postGraphsAutoStart({
+        auto_start: checked,
+        graph_id: graphId,
+      });
+      setChecked(checked);
+      mutateGraphs(); // Refresh the graphs data after updating
+    } catch (error) {
+      console.error("Failed to update auto-start setting:", error);
+      toast.error("Failed to update auto-start setting. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center">
+      <Checkbox
+        disabled={isLoading || isGraphLoading}
+        checked={checked}
+        onCheckedChange={handleCheckedChange}
+      />
+    </div>
   );
 };

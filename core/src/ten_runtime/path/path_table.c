@@ -173,7 +173,8 @@ static uint64_t ten_path_table_get_path_timeout_duration(
 
   if (self->attach_to == TEN_PATH_TABLE_ATTACH_TO_EXTENSION) {
     ten_extension_t *extension = self->attached_target.extension;
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+    TEN_ASSERT(extension, "Invalid argument.");
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid argument.");
 
     // Try to get general path timeout time in us from the extension.
