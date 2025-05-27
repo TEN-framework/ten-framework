@@ -70,8 +70,8 @@ napi_value ten_nodejs_ten_env_on_create_instance_done(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && extension_bridge != NULL,
                                 "Failed to get extension bridge: %d", status);
 
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
+  TEN_ASSERT(extension_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
              "Should not happen.");
 
   void *context = NULL;

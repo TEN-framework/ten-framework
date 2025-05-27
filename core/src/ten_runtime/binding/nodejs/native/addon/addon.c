@@ -74,11 +74,13 @@ addon_on_destroy_instance_callback_ctx_create(ten_nodejs_addon_t *addon_bridge,
                                               void *context) {
   addon_on_destroy_instance_callback_ctx_t *ctx =
       TEN_MALLOC(sizeof(addon_on_destroy_instance_callback_ctx_t));
+  TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->addon_bridge = addon_bridge;
   ctx->ten_env = ten_env;
   ctx->extension = extension;
   ctx->context = context;
+
   return ctx;
 }
 
@@ -147,8 +149,8 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
   addon_on_create_instance_callback_ctx_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
-  TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
-                                            call_info->addon_bridge, true),
+  TEN_ASSERT(call_info->addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(call_info->addon_bridge, true),
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = NULL;
@@ -215,8 +217,8 @@ void ten_nodejs_invoke_addon_js_on_destroy_instance(napi_env env, napi_value fn,
   addon_on_destroy_instance_callback_ctx_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
-  TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
-                                            call_info->addon_bridge, true),
+  TEN_ASSERT(call_info->addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(call_info->addon_bridge, true),
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = NULL;
@@ -252,8 +254,8 @@ void ten_nodejs_invoke_addon_js_on_destroy_instance(napi_env env, napi_value fn,
     ten_nodejs_extension_t *extension_bridge =
         ten_binding_handle_get_me_in_target_lang(
             (ten_binding_handle_t *)extension);
-    TEN_ASSERT(extension_bridge &&
-                   ten_nodejs_extension_check_integrity(extension_bridge, true),
+    TEN_ASSERT(extension_bridge, "Should not happen.");
+    TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
                "Should not happen.");
 
     napi_value js_extension = NULL;

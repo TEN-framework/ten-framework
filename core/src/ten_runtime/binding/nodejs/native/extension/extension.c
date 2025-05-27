@@ -153,8 +153,8 @@ static void ten_nodejs_invoke_extension_js_on_init(napi_env env, napi_value fn,
   TEN_ASSERT(call_info, "Should not happen.");
 
   ten_nodejs_extension_t *extension_bridge = call_info->extension_bridge;
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
+  TEN_ASSERT(extension_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = call_info->ten_env_bridge;
@@ -551,8 +551,8 @@ done:
 static void ten_nodejs_extension_create_and_attach_callbacks(
     napi_env env, ten_nodejs_extension_t *extension_bridge) {
   TEN_ASSERT(env, "Should not happen.");
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
+  TEN_ASSERT(extension_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
              "Should not happen.");
 
   napi_value js_extension = NULL;

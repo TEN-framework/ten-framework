@@ -5,8 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/common/tsfn.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/audio_frame.h"
-#include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
@@ -26,8 +26,8 @@ typedef struct ten_nodejs_send_audio_frame_callback_call_ctx_t {
 } ten_nodejs_send_audio_frame_callback_call_ctx_t;
 
 static ten_env_tester_notify_send_audio_frame_ctx_t *
-ten_env_tester_notify_send_audio_frame_ctx_create(ten_shared_ptr_t *c_audio_frame,
-                                           ten_nodejs_tsfn_t *js_cb) {
+ten_env_tester_notify_send_audio_frame_ctx_create(
+    ten_shared_ptr_t *c_audio_frame, ten_nodejs_tsfn_t *js_cb) {
   ten_env_tester_notify_send_audio_frame_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_env_tester_notify_send_audio_frame_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
@@ -54,7 +54,7 @@ static void ten_env_tester_notify_send_audio_frame_ctx_destroy(
 
 static ten_nodejs_send_audio_frame_callback_call_ctx_t *
 ten_nodejs_send_audio_frame_callback_call_ctx_create(ten_nodejs_tsfn_t *js_cb,
-                                              ten_error_t *error) {
+                                                     ten_error_t *error) {
   ten_nodejs_send_audio_frame_callback_call_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_nodejs_send_audio_frame_callback_call_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
@@ -78,7 +78,8 @@ static void ten_nodejs_send_audio_frame_callback_call_ctx_destroy(
 }
 
 static void tsfn_proxy_send_audio_frame_callback(napi_env env, napi_value js_cb,
-                                          void *context, void *audio_frame) {
+                                                 void *context,
+                                                 void *audio_frame) {
   ten_nodejs_send_audio_frame_callback_call_ctx_t *ctx = audio_frame;
   TEN_ASSERT(ctx, "Should not happen.");
 
@@ -101,9 +102,9 @@ static void tsfn_proxy_send_audio_frame_callback(napi_env env, napi_value js_cb,
   ten_nodejs_send_audio_frame_callback_call_ctx_destroy(ctx);
 }
 
-static void proxy_send_audio_frame_callback(ten_env_tester_t *ten_env_tester,
-                                     TEN_UNUSED ten_shared_ptr_t *c_cmd_result,
-                                     void *user_audio_frame, ten_error_t *err) {
+static void proxy_send_audio_frame_callback(
+    ten_env_tester_t *ten_env_tester, TEN_UNUSED ten_shared_ptr_t *c_cmd_result,
+    void *user_audio_frame, ten_error_t *err) {
   TEN_ASSERT(ten_env_tester, "Should not happen.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Should not happen.");
@@ -145,7 +146,8 @@ static void ten_env_tester_proxy_notify_send_audio_frame(
   TEN_ERROR_INIT(err);
 
   bool rc = ten_env_tester_send_audio_frame(ten_env_tester, ctx->c_audio_frame,
-                                     proxy_send_audio_frame_callback, ctx, &err);
+                                            proxy_send_audio_frame_callback,
+                                            ctx, &err);
   if (!rc) {
     proxy_send_audio_frame_callback(ten_env_tester, NULL, ctx, &err);
   }
@@ -154,7 +156,7 @@ static void ten_env_tester_proxy_notify_send_audio_frame(
 }
 
 napi_value ten_nodejs_ten_env_tester_send_audio_frame(napi_env env,
-                                               napi_callback_info info) {
+                                                      napi_callback_info info) {
   const size_t argc = 3;
   napi_value args[argc];  // this, audio_frame, callback
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
@@ -172,17 +174,18 @@ napi_value ten_nodejs_ten_env_tester_send_audio_frame(napi_env env,
       status == napi_ok && ten_env_tester_bridge != NULL,
       "Failed to unwrap TenEnv object");
 
-  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
-                                          ten_env_tester_bridge, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_tester_bridge, "Should not happen.");
+  TEN_ASSERT(
+      ten_nodejs_ten_env_tester_check_integrity(ten_env_tester_bridge, true),
+      "Should not happen.");
 
   if (ten_env_tester_bridge->c_ten_env_tester_proxy == NULL) {
     ten_error_t err;
     TEN_ERROR_INIT(err);
 
-    ten_error_set(
-        &err, TEN_ERROR_CODE_TEN_IS_CLOSED,
-        "ten_env_tester.send_audio_frame() failed because ten_env_tester is closed.");
+    ten_error_set(&err, TEN_ERROR_CODE_TEN_IS_CLOSED,
+                  "ten_env_tester.send_audio_frame() failed because "
+                  "ten_env_tester is closed.");
 
     napi_value js_error = ten_nodejs_create_error(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
@@ -197,9 +200,9 @@ napi_value ten_nodejs_ten_env_tester_send_audio_frame(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && audio_frame_bridge != NULL,
                                 "Failed to unwrap audio_frame object");
 
-  ten_nodejs_tsfn_t *cb_tsfn =
-      ten_nodejs_tsfn_create(env, "[TSFN] TenEnvTester::send_audio_frame callback",
-                             args[2], tsfn_proxy_send_audio_frame_callback);
+  ten_nodejs_tsfn_t *cb_tsfn = ten_nodejs_tsfn_create(
+      env, "[TSFN] TenEnvTester::send_audio_frame callback", args[2],
+      tsfn_proxy_send_audio_frame_callback);
   RETURN_UNDEFINED_IF_NAPI_FAIL(cb_tsfn, "Failed to create TSFN");
 
   ten_error_t err;

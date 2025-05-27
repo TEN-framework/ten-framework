@@ -50,9 +50,10 @@ napi_value ten_nodejs_ten_env_tester_on_deinit_done(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(
       status == napi_ok && ten_env_tester_bridge != NULL,
       "Failed to get rte bridge: %d", status);
-  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
-                                          ten_env_tester_bridge, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_tester_bridge, "Should not happen.");
+  TEN_ASSERT(
+      ten_nodejs_ten_env_tester_check_integrity(ten_env_tester_bridge, true),
+      "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);

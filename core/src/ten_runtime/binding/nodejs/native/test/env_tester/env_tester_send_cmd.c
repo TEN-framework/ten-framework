@@ -5,9 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/common/tsfn.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
-#include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
@@ -194,9 +193,10 @@ napi_value ten_nodejs_ten_env_tester_send_cmd(napi_env env,
       status == napi_ok && ten_env_tester_bridge != NULL,
       "Failed to unwrap TenEnv object");
 
-  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
-                                          ten_env_tester_bridge, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_tester_bridge, "Should not happen.");
+  TEN_ASSERT(
+      ten_nodejs_ten_env_tester_check_integrity(ten_env_tester_bridge, true),
+      "Should not happen.");
 
   if (ten_env_tester_bridge->c_ten_env_tester_proxy == NULL) {
     ten_error_t err;

@@ -6,17 +6,12 @@
 //
 #include "include_internal/ten_runtime/binding/nodejs/test/extension_tester.h"
 
-#include "include_internal/ten_runtime/binding/nodejs/msg/audio_frame.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/data.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/video_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "include_internal/ten_runtime/test/env_tester.h"
 #include "include_internal/ten_runtime/test/extension_tester.h"
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
-#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_nodejs_extension_tester_async_run_data_t {

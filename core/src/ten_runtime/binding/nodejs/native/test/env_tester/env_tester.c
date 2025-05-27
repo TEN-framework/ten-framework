@@ -85,9 +85,10 @@ napi_value ten_nodejs_ten_env_tester_create_new_js_object_and_wrap(
 
   // RTE_NOLINTNEXTLINE(thread-check)
   // thread-check: This function is intended to be called in any threads.
-  TEN_ASSERT(
-      ten_env_tester && ten_env_tester_check_integrity(ten_env_tester, false),
-      "Invalid use of ten_env_tester %p.", ten_env_tester);
+  TEN_ASSERT(ten_env_tester, "Invalid use of ten_env_tester %p.",
+             ten_env_tester);
+  TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, false),
+             "Invalid use of ten_env_tester %p.", ten_env_tester);
 
   ten_nodejs_ten_env_tester_t *env_tester_bridge =
       (ten_nodejs_ten_env_tester_t *)TEN_MALLOC(

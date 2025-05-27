@@ -86,9 +86,10 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
       status == napi_ok && ten_env_tester_bridge != NULL,
       "Failed to get ten_env_tester bridge: %d", status);
 
-  TEN_ASSERT(ten_env_tester_bridge && ten_nodejs_ten_env_tester_check_integrity(
-                                          ten_env_tester_bridge, true),
-             "Should not happen.");
+  TEN_ASSERT(ten_env_tester_bridge, "Should not happen.");
+  TEN_ASSERT(
+      ten_nodejs_ten_env_tester_check_integrity(ten_env_tester_bridge, true),
+      "Should not happen.");
 
   if (ten_env_tester_bridge->c_ten_env_tester_proxy == NULL) {
     ten_error_t err;
