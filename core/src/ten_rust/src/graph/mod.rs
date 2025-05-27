@@ -9,6 +9,7 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod subgraph;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -23,7 +24,7 @@ use crate::constants::{
 };
 use crate::pkg_info::localhost;
 
-use self::connection::GraphConnection;
+use self::connection::{GraphConnection, GraphMessageFlow};
 use self::node::GraphNodeType;
 
 /// The state of the 'app' field declaration in all nodes in the graph.
@@ -315,6 +316,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -339,6 +341,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.

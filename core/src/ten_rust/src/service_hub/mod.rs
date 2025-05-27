@@ -483,32 +483,38 @@ pub unsafe extern "C" fn ten_service_hub_create(
     // If both endpoints are the same and not None, use a single server.
     if telemetry_endpoint.is_some() && api_endpoint.is_some() {
         if telemetry_endpoint == api_endpoint {
-            let endpoint = telemetry_endpoint.as_ref().unwrap().clone();
-            eprintln!("Creating combined telemetry/API server at {endpoint}");
+            if let Some(endpoint) = telemetry_endpoint.as_ref() {
+                eprintln!(
+                    "Creating combined telemetry/API server at {endpoint}"
+                );
 
-            // Create a server with both routes.
-            let registry_clone = registry.clone();
+                // Create a server with both routes.
+                let registry_clone = registry.clone();
 
-            let server = match create_service_hub_server_with_retry(
-                &telemetry_endpoint,
-                &api_endpoint,
-                registry_clone,
-            ) {
-                Some(server) => server,
-                None => {
-                    eprintln!("Failed to bind server to {endpoint}");
-                    return ptr::null_mut();
-                }
-            };
+                let server = match create_service_hub_server_with_retry(
+                    &telemetry_endpoint,
+                    &api_endpoint,
+                    registry_clone,
+                ) {
+                    Some(server) => server,
+                    None => {
+                        eprintln!("Failed to bind server to {endpoint}");
+                        return ptr::null_mut();
+                    }
+                };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+                let (thread_handle, shutdown_tx) =
+                    create_service_hub_server_thread(server);
 
-            return Box::into_raw(Box::new(ServiceHub {
-                registry,
-                server_thread_handle: Some(thread_handle),
-                server_thread_shutdown_tx: Some(shutdown_tx),
-            }));
+                return Box::into_raw(Box::new(ServiceHub {
+                    registry,
+                    server_thread_handle: Some(thread_handle),
+                    server_thread_shutdown_tx: Some(shutdown_tx),
+                }));
+            } else {
+                eprintln!("Unexpected error in service hub creation");
+                return ptr::null_mut();
+            }
         } else {
             // Both endpoints are different - we'll handle this with one HTTP
             // server instance that uses guards to route based on endpoint.
@@ -549,62 +555,64 @@ pub unsafe extern "C" fn ten_service_hub_create(
 
     if telemetry_endpoint.is_some() && api_endpoint.is_none() {
         // Telemetry only.
-        let endpoint = telemetry_endpoint.as_ref().unwrap().clone();
-        eprintln!("Creating telemetry-only server at {endpoint}");
+        if let Some(endpoint) = telemetry_endpoint.as_ref() {
+            eprintln!("Creating telemetry-only server at {endpoint}");
 
-        // Create telemetry server with retry mechanism.
-        let registry_clone = registry.clone();
+            // Create telemetry server with retry mechanism.
+            let registry_clone = registry.clone();
 
-        let server = match create_service_hub_server_with_retry(
-            &telemetry_endpoint,
-            &None,
-            registry_clone,
-        ) {
-            Some(server) => server,
-            None => {
-                eprintln!("Failed to bind telemetry server to {endpoint}");
-                return ptr::null_mut();
-            }
-        };
+            let server = match create_service_hub_server_with_retry(
+                &telemetry_endpoint,
+                &None,
+                registry_clone,
+            ) {
+                Some(server) => server,
+                None => {
+                    eprintln!("Failed to bind telemetry server to {endpoint}");
+                    return ptr::null_mut();
+                }
+            };
 
-        let (thread_handle, shutdown_tx) =
-            create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) =
+                create_service_hub_server_thread(server);
 
-        return Box::into_raw(Box::new(ServiceHub {
-            registry,
-            server_thread_handle: Some(thread_handle),
-            server_thread_shutdown_tx: Some(shutdown_tx),
-        }));
+            return Box::into_raw(Box::new(ServiceHub {
+                registry,
+                server_thread_handle: Some(thread_handle),
+                server_thread_shutdown_tx: Some(shutdown_tx),
+            }));
+        }
     }
 
     if api_endpoint.is_some() && telemetry_endpoint.is_none() {
         // API only.
-        let endpoint = api_endpoint.as_ref().unwrap().clone();
-        eprintln!("Creating API-only server at {endpoint}");
+        if let Some(endpoint) = api_endpoint.as_ref() {
+            eprintln!("Creating API-only server at {endpoint}");
 
-        // Create API server with retry mechanism.
-        let registry_clone = registry.clone();
+            // Create API server with retry mechanism.
+            let registry_clone = registry.clone();
 
-        let server = match create_service_hub_server_with_retry(
-            &None,
-            &api_endpoint,
-            registry_clone,
-        ) {
-            Some(server) => server,
-            None => {
-                eprintln!("Failed to bind API server to {endpoint}");
-                return ptr::null_mut();
-            }
-        };
+            let server = match create_service_hub_server_with_retry(
+                &None,
+                &api_endpoint,
+                registry_clone,
+            ) {
+                Some(server) => server,
+                None => {
+                    eprintln!("Failed to bind API server to {endpoint}");
+                    return ptr::null_mut();
+                }
+            };
 
-        let (thread_handle, shutdown_tx) =
-            create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) =
+                create_service_hub_server_thread(server);
 
-        return Box::into_raw(Box::new(ServiceHub {
-            registry,
-            server_thread_handle: Some(thread_handle),
-            server_thread_shutdown_tx: Some(shutdown_tx),
-        }));
+            return Box::into_raw(Box::new(ServiceHub {
+                registry,
+                server_thread_handle: Some(thread_handle),
+                server_thread_shutdown_tx: Some(shutdown_tx),
+            }));
+        }
     }
 
     // This should never happen due to the checks above.

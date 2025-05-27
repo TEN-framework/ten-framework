@@ -9,7 +9,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use clap::{Arg, Command};
 
-use crate::config::{read_config, TmanConfig};
+use crate::home::config::{read_config, TmanConfig};
 
 pub struct ArgCfg {
     pub possible_values: Vec<&'static str>,

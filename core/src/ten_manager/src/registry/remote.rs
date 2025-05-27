@@ -23,14 +23,16 @@ use tokio::time::sleep;
 use ten_rust::pkg_info::PkgInfo;
 
 use super::pkg_cache::{find_in_package_cache, store_file_to_package_cache};
-use crate::config::is_verbose;
 use crate::constants::{
     ADMIN_TOKEN, DEFAULT_REGISTRY_PAGE_SIZE, REMOTE_REGISTRY_MAX_RETRIES,
     REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS, REMOTE_REGISTRY_RETRY_DELAY_MS,
 };
+use crate::home::config::is_verbose;
 use crate::http::create_http_client_with_proxies;
 use crate::output::TmanOutput;
-use crate::{config::TmanConfig, registry::found_result::PkgRegistryInfo};
+use crate::{
+    home::config::TmanConfig, registry::found_result::PkgRegistryInfo,
+};
 
 /// Checks if a package requires admin token authorization based on its tags.
 ///
@@ -716,17 +718,19 @@ pub async fn get_package_list(
                     if is_verbose(tman_config.clone()).await {
                         let query_info = format!(
                             "{}{}{}{}",
-                            pkg_type.as_ref().map_or(
-                                "".to_string(),
-                                |pt| format!("type={pt} ")
-                            ),
+                            pkg_type
+                                .as_ref()
+                                .map_or("".to_string(), |pt| format!(
+                                    "type={pt} "
+                                )),
                             name.as_ref().map_or("".to_string(), |n| format!(
                                 "name={n} "
                             )),
-                            version_req.as_ref().map_or(
-                                "".to_string(),
-                                |vr| format!("version={vr} ")
-                            ),
+                            version_req
+                                .as_ref()
+                                .map_or("".to_string(), |vr| format!(
+                                    "version={vr} "
+                                )),
                             tags.as_ref().map_or("".to_string(), |t| {
                                 if t.is_empty() {
                                     "".to_string()

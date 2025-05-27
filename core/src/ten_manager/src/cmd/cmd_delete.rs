@@ -16,10 +16,10 @@ use semver::Version;
 
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-use crate::config::is_verbose;
-use crate::config::metadata::TmanMetadata;
+use crate::designer::storage::in_memory::TmanStorageInMemory;
+use crate::home::config::is_verbose;
 use crate::output::TmanOutput;
-use crate::{config::TmanConfig, registry::delete_package};
+use crate::{home::config::TmanConfig, registry::delete_package};
 
 #[derive(Debug)]
 pub struct DeleteCommand {
@@ -71,7 +71,7 @@ pub fn parse_sub_cmd(
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    _tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: DeleteCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {

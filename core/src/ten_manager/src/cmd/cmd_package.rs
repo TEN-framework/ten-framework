@@ -14,8 +14,9 @@ use indicatif::HumanDuration;
 use ten_rust::pkg_info::get_pkg_info_from_path;
 
 use crate::{
-    config::{is_verbose, metadata::TmanMetadata, TmanConfig},
     constants::{DOT_TEN_DIR, PACKAGE_DIR_IN_DOT_TEN_DIR},
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::{is_verbose, TmanConfig},
     output::TmanOutput,
     package_file::{create_package_tar_gz_file, get_tpkg_file_name},
 };
@@ -64,7 +65,7 @@ pub fn parse_sub_cmd(
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    _tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: PackageCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {

@@ -8,7 +8,6 @@
 
 #include "ten_runtime/ten_config.h"
 
-// TODO(Wei): Note that this function has no effect on windows now.
 TEN_RUNTIME_API void ten_global_setup_signal_stuff(void);
 
 #if !defined(OS_WINDOWS)

@@ -19,9 +19,9 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::{metadata::TmanMetadata, TmanConfig},
     create::create_pkg_in_path,
-    output::TmanOutput,
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput,
     version_utils::parse_pkg_name_version_req,
 };
 
@@ -156,7 +156,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    _tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: CreateCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {

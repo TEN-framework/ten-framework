@@ -8,4 +8,5 @@ pub mod builtin_server;
 pub mod designer_state;
 pub mod fs;
 pub mod mock;
+pub mod temp_home;
 pub mod tman_config;

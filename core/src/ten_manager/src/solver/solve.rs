@@ -21,7 +21,7 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
-use crate::config::{is_verbose, TmanConfig};
+use crate::home::config::{is_verbose, TmanConfig};
 use crate::output::TmanOutput;
 #[derive(Debug)]
 pub struct DependencyRelationship {
@@ -165,7 +165,7 @@ async fn print_statistics(
                     .array_at(key, i)
                     .expect("Failed to retrieve statistics array.");
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
-                out.normal_partial(&format!("{} zu:", i));
+                out.normal_partial(&format!("{i} zu:"));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),
@@ -184,7 +184,7 @@ async fn print_statistics(
                 let name = stats.map_subkey_name(key, i).unwrap();
                 let subkey = stats.map_at(key, name).unwrap();
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
-                out.normal_partial(&format!("{}:", name));
+                out.normal_partial(&format!("{name}:"));
 
                 Box::pin(print_statistics(
                     tman_config.clone(),

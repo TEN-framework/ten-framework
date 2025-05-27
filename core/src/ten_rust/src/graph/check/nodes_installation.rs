@@ -44,12 +44,12 @@ impl Graph {
             };
 
             // Convert GraphNodeType to PkgType.
+            // Skip subgraph nodes as they don't need installation checks
             let pkg_type = match node.type_ {
                 GraphNodeType::Extension => PkgType::Extension,
                 GraphNodeType::Subgraph => {
-                    panic!(
-                        "Subgraph nodes should not be checked for installation"
-                    )
+                    // Subgraph nodes don't need installation checks, skip them
+                    continue;
                 }
             };
 

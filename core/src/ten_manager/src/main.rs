@@ -10,7 +10,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use console::Emoji;
 use ten_manager::cmd::execute_cmd;
-use ten_manager::config::metadata::TmanMetadata;
+use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 // use ten_manager::memory_stats::print_memory_stats;
 use ten_manager::output::cli::TmanOutputCli;
 use tokio::runtime::Runtime;
@@ -88,7 +88,7 @@ fn main() {
 
     let result = rt.block_on(execute_cmd(
         parsed_cmd.tman_config,
-        Arc::new(tokio::sync::RwLock::new(TmanMetadata::default())),
+        Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         parsed_cmd.command_data.unwrap(),
         out.clone(),
     ));

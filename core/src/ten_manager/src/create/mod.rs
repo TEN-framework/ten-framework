@@ -16,7 +16,7 @@ use semver::VersionReq;
 use ten_rust::pkg_info::pkg_type::PkgType;
 
 use crate::{
-    config::TmanConfig,
+    home::config::TmanConfig,
     output::TmanOutput,
     package_file::unpackage::extract_and_process_tpkg_file,
     registry::{get_package, get_package_list},

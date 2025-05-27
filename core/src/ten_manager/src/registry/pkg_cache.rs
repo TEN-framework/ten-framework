@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use semver::Version;
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-use crate::config::get_default_package_cache_folder;
+use crate::home::package_cache::get_default_package_cache_folder;
 
 /// Search under `package_cache` to see if there is a corresponding file for
 /// `pkg_type/pkg_name/pkg_version/`. If found, return its path; otherwise,
