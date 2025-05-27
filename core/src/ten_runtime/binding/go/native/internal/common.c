@@ -101,6 +101,8 @@ void ten_go_error_set(ten_go_error_t *self, ten_error_code_t error_code,
   //
   // `C.free(unsafe.Pointer(error.error_message))`
   self->error_message = (char *)TEN_MALLOC(self->error_message_size + 1);
+  TEN_ASSERT(self->error_message, "Failed to allocate memory.");
+
   strncpy(self->error_message, error_message, self->error_message_size);
   self->error_message[self->error_message_size] = '\0';
 }
