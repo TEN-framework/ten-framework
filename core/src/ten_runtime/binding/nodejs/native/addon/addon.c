@@ -34,6 +34,13 @@ typedef struct addon_on_create_instance_callback_ctx_t {
   void *context;
 } addon_on_create_instance_callback_ctx_t;
 
+typedef struct addon_on_destroy_instance_callback_ctx_t {
+  ten_nodejs_addon_t *addon_bridge;
+  ten_env_t *ten_env;
+  ten_extension_t *extension;
+  void *context;
+} addon_on_destroy_instance_callback_ctx_t;
+
 static addon_on_create_instance_callback_ctx_t *
 addon_on_create_instance_callback_ctx_create(ten_nodejs_addon_t *addon_bridge,
                                              ten_env_t *ten_env,
@@ -60,6 +67,30 @@ static void addon_on_create_instance_callback_ctx_destroy(
   TEN_FREE(ctx);
 }
 
+static addon_on_destroy_instance_callback_ctx_t *
+addon_on_destroy_instance_callback_ctx_create(ten_nodejs_addon_t *addon_bridge,
+                                              ten_env_t *ten_env,
+                                              ten_extension_t *extension,
+                                              void *context) {
+  addon_on_destroy_instance_callback_ctx_t *ctx =
+      TEN_MALLOC(sizeof(addon_on_destroy_instance_callback_ctx_t));
+  TEN_ASSERT(ctx, "Failed to allocate memory.");
+
+  ctx->addon_bridge = addon_bridge;
+  ctx->ten_env = ten_env;
+  ctx->extension = extension;
+  ctx->context = context;
+
+  return ctx;
+}
+
+static void addon_on_destroy_instance_callback_ctx_destroy(
+    addon_on_destroy_instance_callback_ctx_t *ctx) {
+  TEN_ASSERT(ctx, "Should not happen.");
+
+  TEN_FREE(ctx);
+}
+
 bool ten_nodejs_addon_check_integrity(ten_nodejs_addon_t *self,
                                       bool check_thread) {
   TEN_ASSERT(self, "Should not happen.");
@@ -78,6 +109,7 @@ bool ten_nodejs_addon_check_integrity(ten_nodejs_addon_t *self,
 
 static void ten_nodejs_addon_detach_callbacks(ten_nodejs_addon_t *self) {
   ten_nodejs_tsfn_dec_rc(self->js_on_create_instance);
+  ten_nodejs_tsfn_dec_rc(self->js_on_destroy_instance);
   ten_nodejs_tsfn_dec_rc(self->js_on_destroy);
 }
 
@@ -117,8 +149,8 @@ void ten_nodejs_invoke_addon_js_on_create_instance(napi_env env, napi_value fn,
   addon_on_create_instance_callback_ctx_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
-  TEN_ASSERT(call_info->addon_bridge && ten_nodejs_addon_check_integrity(
-                                            call_info->addon_bridge, true),
+  TEN_ASSERT(call_info->addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(call_info->addon_bridge, true),
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = NULL;
@@ -177,6 +209,82 @@ error:
 
 done:
   addon_on_create_instance_callback_ctx_destroy(call_info);
+}
+
+void ten_nodejs_invoke_addon_js_on_destroy_instance(napi_env env, napi_value fn,
+                                                    TEN_UNUSED void *context,
+                                                    void *data) {
+  addon_on_destroy_instance_callback_ctx_t *call_info = data;
+  TEN_ASSERT(call_info, "Should not happen.");
+
+  TEN_ASSERT(call_info->addon_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_addon_check_integrity(call_info->addon_bridge, true),
+             "Should not happen.");
+
+  ten_nodejs_ten_env_t *ten_env_bridge = NULL;
+  napi_value js_ten_env = ten_nodejs_ten_env_create_new_js_object_and_wrap(
+      env, call_info->ten_env, &ten_env_bridge);
+  TEN_ASSERT(js_ten_env, "Should not happen.");
+
+  TEN_ASSERT(ten_env_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),
+             "Should not happen.");
+
+  // Increase the reference count of the JS ten_env object to prevent it from
+  // being garbage collected.
+  uint32_t js_ten_env_ref_count = 0;
+  napi_reference_ref(env, ten_env_bridge->bridge.js_instance_ref,
+                     &js_ten_env_ref_count);
+
+  napi_status status = napi_ok;
+
+  {
+    // Call on_destroy_instance() of the TEN JS addon.
+
+    // Get the TEN JS addon.
+    napi_value js_addon = NULL;
+    status = napi_get_reference_value(
+        env, call_info->addon_bridge->bridge.js_instance_ref, &js_addon);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon != NULL,
+                            "Failed to get JS addon: %d", status);
+
+    ten_extension_t *extension = call_info->extension;
+    TEN_ASSERT(extension, "Should not happen.");
+
+    ten_nodejs_extension_t *extension_bridge =
+        ten_binding_handle_get_me_in_target_lang(
+            (ten_binding_handle_t *)extension);
+    TEN_ASSERT(extension_bridge, "Should not happen.");
+    TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
+               "Should not happen.");
+
+    napi_value js_extension = NULL;
+    status = napi_get_reference_value(
+        env, extension_bridge->bridge.js_instance_ref, &js_extension);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_extension != NULL,
+                            "Failed to get JS extension: %d", status);
+
+    napi_value js_context = NULL;
+    status =
+        napi_create_external(env, call_info->context, NULL, NULL, &js_context);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_context != NULL,
+                            "Failed to create JS context: %d", status);
+
+    napi_value result = NULL;
+    napi_value argv[] = {js_ten_env, js_extension, js_context};
+    status = napi_call_function(env, js_addon, fn, 3, argv, &result);
+    GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok,
+                            "Failed to call JS addon on_destroy_instance(): %d",
+                            status);
+  }
+
+  goto done;
+
+error:
+  TEN_LOGE("Failed to call JS addon on_destroy_instance()");
+
+done:
+  addon_on_destroy_instance_callback_ctx_destroy(call_info);
 }
 
 void ten_nodejs_invoke_addon_js_on_destroy(napi_env env, napi_value fn,
@@ -251,33 +359,19 @@ static void proxy_on_destroy_instance(ten_addon_t *addon, ten_env_t *ten_env,
   TEN_ASSERT(addon_bridge->c_addon_host->type == TEN_ADDON_TYPE_EXTENSION,
              "Should not happen.");
 
-  ten_nodejs_extension_t *extension_bridge =
-      ten_binding_handle_get_me_in_target_lang(
-          (ten_binding_handle_t *)instance);
-  TEN_ASSERT(extension_bridge &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 ten_nodejs_extension_check_integrity(extension_bridge, false),
-             "Should not happen.");
-
-  ten_extension_t *extension = extension_bridge->c_extension;
+  ten_extension_t *extension = instance;
   TEN_ASSERT(extension, "Should not happen.");
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: this function is called on the addon_host thread.
   TEN_ASSERT(ten_extension_check_integrity(extension, false),
              "Should not happen.");
 
-  ten_addon_host_t *addon_host = extension->addon_host;
-  TEN_ASSERT(addon_host, "Should not happen.");
-  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
-             "Should not happen.");
-
-  // Because the extension increases the reference count of the corresponding
-  // `addon_host` when it is created, the reference count must be decreased
-  // when the extension is destroyed.
-  ten_ref_dec_ref(&addon_host->ref);
-  extension->addon_host = NULL;
-
-  ten_env_on_destroy_instance_done(ten_env, context, NULL);
+  addon_on_destroy_instance_callback_ctx_t *call_info =
+      addon_on_destroy_instance_callback_ctx_create(addon_bridge, ten_env,
+                                                    extension, context);
+  bool rc =
+      ten_nodejs_tsfn_invoke(addon_bridge->js_on_destroy_instance, call_info);
+  TEN_ASSERT(rc, "Failed to call addon on_destroy_instance().");
 }
 
 static void proxy_on_destroy(ten_addon_t *addon) {
@@ -354,6 +448,7 @@ static void ten_nodejs_addon_release_js_on_xxx_tsfn(
   TEN_ASSERT(env && addon_bridge, "Should not happen.");
 
   ten_nodejs_tsfn_release(addon_bridge->js_on_create_instance);
+  ten_nodejs_tsfn_release(addon_bridge->js_on_destroy_instance);
   ten_nodejs_tsfn_release(addon_bridge->js_on_destroy);
 }
 
