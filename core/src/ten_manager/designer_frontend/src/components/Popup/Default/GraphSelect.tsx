@@ -345,7 +345,7 @@ const GraphFieldAutoStart = (props: {
       mutateGraphs(); // Refresh the graphs data after updating
     } catch (error) {
       console.error("Failed to update auto-start setting:", error);
-      // Optionally, you can show an error toast or message here
+      toast.error("Failed to update auto-start setting. Please try again.");
     } finally {
       setIsLoading(false);
     }
