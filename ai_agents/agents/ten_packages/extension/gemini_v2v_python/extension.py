@@ -65,8 +65,10 @@ from google.genai.types import (
     AudioTranscriptionConfig,
     ProactivityConfig,
     LiveServerContent,
+    Modality,
 )
 from google.genai.live import AsyncSession
+from google.genai import types
 from PIL import Image
 from io import BytesIO
 from base64 import b64encode
@@ -187,7 +189,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.config: GeminiRealtimeConfig = None
         self.stopped: bool = False
         self.connected: bool = False
-        self.buffer: bytearray = b""
+        self.buffer: bytearray = bytearray()
         self.memory: ChatMemory = None
         self.total_usage: LLMUsage = LLMUsage()
         self.users_count = 0
@@ -201,7 +203,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.connect_times = []
         self.first_token_times = []
 
-        self.buff: bytearray = b""
+        self.buff: bytearray = bytearray()
         self.transcript: str = ""
         self.ctx: dict = {}
         self.input_end = time.time()
@@ -500,17 +502,14 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.buff += buff
         # Buffer audio
         if self.connected and len(self.buff) >= self.audio_len_threshold:
-            # await self.conn.send_audio_data(self.buff)
             try:
-                # await self.session.send(LiveClientRealtimeInput(media_chunks=media_chunks))
-                msg = {
-                    "data": base64.b64encode(self.buff).decode(),
-                    "mime_type": "audio/pcm",
-                }
-                await self.session.send_realtime_input(audio=msg)
-                self.buff = b""
+                audio_blob = types.Blob(
+                    data=self.buff,
+                    mime_type="audio/pcm;rate=16000",
+                )
+                await self.session.send_realtime_input(audio=audio_blob)
+                self.buff = bytearray()
             except Exception as e:
-                # pass
                 self.ten_env.log_error(f"Failed to send audio {e}")
 
     def _get_realtime_input_config(self) -> RealtimeInputConfig:
@@ -564,6 +563,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
         return RealtimeInputConfig(
             automatic_activity_detection=AutomaticActivityDetection(
+                disabled=not self.config.server_vad,
                 start_of_speech_sensitivity=start_of_speech_sensitivity,
                 end_of_speech_sensitivity=end_of_speech_sensitivity,
                 prefix_padding_ms=self.config.prefix_padding_ms,
