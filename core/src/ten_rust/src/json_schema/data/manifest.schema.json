@@ -463,8 +463,11 @@
     },
     "scripts": {
       "type": "object",
-      "additionalProperties": {
+      "propertyNames": { // The property name should be alphanumericCharacters.
         "$ref": "#/$defs/alphanumericCharacters"
+      },
+      "additionalProperties": {
+        "type": "string"
       }
     }
   },
