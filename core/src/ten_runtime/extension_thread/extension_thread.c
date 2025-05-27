@@ -144,7 +144,8 @@ void ten_extension_thread_destroy(ten_extension_thread_t *self) {
 
   ten_signature_set(&self->signature, 0);
 
-  ten_list_clear(&self->pending_msgs_received_in_init_stage);
+  TEN_ASSERT(ten_list_is_empty(&self->pending_msgs_received_in_init_stage),
+             "Should not happen.");
 
   if (self->runloop) {
     ten_runloop_destroy(self->runloop);
