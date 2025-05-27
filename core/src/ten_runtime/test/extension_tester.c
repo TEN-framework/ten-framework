@@ -97,7 +97,7 @@ ten_extension_tester_t *ten_extension_tester_create(
   self->on_video_frame = on_video_frame;
 
   self->ten_env_tester = ten_env_tester_create(self);
-  self->tester_runloop = ten_runloop_create(NULL);
+  self->tester_runloop = NULL;
 
   self->test_extension_ten_env_proxy = NULL;
   self->test_extension_ten_env_proxy_create_completed = ten_event_create(0, 1);
@@ -225,7 +225,10 @@ void ten_extension_tester_destroy(ten_extension_tester_t *self) {
     ten_event_destroy(self->test_extension_ten_env_proxy_create_completed);
   }
 
-  ten_thread_join(self->test_app_thread, -1);
+  if (self->test_app_thread) {
+    ten_thread_join(self->test_app_thread, -1);
+    self->test_app_thread = NULL;
+  }
 
   ten_extension_tester_destroy_test_target(self);
 
@@ -234,8 +237,10 @@ void ten_extension_tester_destroy(ten_extension_tester_t *self) {
   ten_env_tester_destroy(self->ten_env_tester);
   ten_sanitizer_thread_check_deinit(&self->thread_check);
 
-  ten_runloop_destroy(self->tester_runloop);
-  self->tester_runloop = NULL;
+  if (self->tester_runloop) {
+    ten_runloop_destroy(self->tester_runloop);
+    self->tester_runloop = NULL;
+  }
 
   TEN_FREE(self);
 }
@@ -632,6 +637,8 @@ bool ten_extension_tester_run(ten_extension_tester_t *self) {
              "Invalid test mode.");
 
   ten_extension_tester_inherit_thread_ownership(self);
+
+  self->tester_runloop = ten_runloop_create(NULL);
 
   // Inject the task that calls the first task into the runloop of
   // extension_tester, ensuring that the first task is called within the
