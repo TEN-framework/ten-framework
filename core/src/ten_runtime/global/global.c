@@ -7,6 +7,9 @@
 #include "include_internal/ten_runtime/global/global.h"
 
 #include <signal.h>
+#if !defined(_WIN32)
+#include <pthread.h>
+#endif
 
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/common/preserved_metadata.h"
@@ -32,7 +35,7 @@ void ten_global_lock_apps(void) {
   sigemptyset(&blocked);
   sigaddset(&blocked, SIGINT);
   sigaddset(&blocked, SIGTERM);
-  sigprocmask(SIG_BLOCK, &blocked, &sigmask_saved);
+  pthread_sigmask(SIG_BLOCK, &blocked, &sigmask_saved);
 #endif
 
   ten_mutex_lock(g_apps_mutex);
@@ -43,7 +46,7 @@ void ten_global_unlock_apps(void) {
 
 #if !defined(_WIN32)
   // Restore the saved signal mask for this thread.
-  sigprocmask(SIG_SETMASK, &sigmask_saved, NULL);
+  pthread_sigmask(SIG_SETMASK, &sigmask_saved, NULL);
 #endif
 }
 
