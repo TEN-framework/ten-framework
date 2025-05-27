@@ -464,7 +464,7 @@
     "scripts": {
       "type": "object",
       "additionalProperties": {
-        "type": "string"
+        "$ref": "#/$defs/alphanumericCharacters"
       }
     }
   },

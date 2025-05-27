@@ -75,7 +75,8 @@ def test_standalone_test_nodejs():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    # extension folder in app is .ten/app/ten_packages/extension/default_extension_nodejs/ directory.
+    # extension folder in app is
+    # .ten/app/ten_packages/extension/default_extension_nodejs/ directory.
     extension_in_app_folder = os.path.join(
         extension_root_path,
         ".ten/app/ten_packages/extension/default_extension_nodejs",

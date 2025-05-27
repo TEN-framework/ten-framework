@@ -110,7 +110,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

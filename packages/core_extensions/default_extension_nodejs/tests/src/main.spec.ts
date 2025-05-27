@@ -10,41 +10,41 @@ let fakeApp: FakeApp;
 let fakeAppRunPromise: Promise<void>;
 
 class FakeApp extends App {
-    private initPromise: Promise<void>;
-    private resolveInit: (() => void) | null = null;
+  private initPromise: Promise<void>;
+  private resolveInit: (() => void) | null = null;
 
-    constructor() {
-        super();
-        this.initPromise = new Promise((resolve) => {
-            this.resolveInit = resolve;
-        });
-    }
+  constructor() {
+    super();
+    this.initPromise = new Promise((resolve) => {
+      this.resolveInit = resolve;
+    });
+  }
 
-    async onInit(_tenEnv: TenEnv): Promise<void> {
-        console.log("Default App onInit");
-        if (this.resolveInit) {
-            this.resolveInit();
-        }
+  async onInit(_tenEnv: TenEnv): Promise<void> {
+    console.log("Default App onInit");
+    if (this.resolveInit) {
+      this.resolveInit();
     }
+  }
 
-    async waitForInit(): Promise<void> {
-        return this.initPromise;
-    }
+  async waitForInit(): Promise<void> {
+    return this.initPromise;
+  }
 }
 
 before(async () => {
-    await AddonManager.getInstance().loadAllAddons();
+  await AddonManager.getInstance().loadAllAddons();
 
-    fakeApp = new FakeApp();
-    fakeAppRunPromise = fakeApp.run();
+  fakeApp = new FakeApp();
+  fakeAppRunPromise = fakeApp.run();
 
-    // wait for the app to be initialized
-    await fakeApp.waitForInit();
+  // wait for the app to be initialized
+  await fakeApp.waitForInit();
 });
 
 after(async () => {
-    fakeApp.close();
-    await fakeAppRunPromise;
+  fakeApp.close();
+  await fakeAppRunPromise;
 
-    (global as unknown as { gc: () => void }).gc();
+  (global as unknown as { gc: () => void }).gc();
 });
