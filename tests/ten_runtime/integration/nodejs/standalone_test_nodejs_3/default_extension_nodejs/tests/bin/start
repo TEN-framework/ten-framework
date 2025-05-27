@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+#print the current directory
+echo "Current directory: $(pwd)"
+
+npm install
+
+npm run build
+
+export NODE_PATH=../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
+
+# Check if -asan argument is provided
+if [[ "$*" == *"-asan"* ]]; then
+  export LD_PRELOAD=../.ten/app/ten_packages/system/ten_runtime/lib/libasan.so
+fi
+
+# We can run npm test to run the tests, but memory leak will be detected if we execute 'npm'.
+# So we run the test manually.
+# npm test
+
+node --expose-gc build/index.js
