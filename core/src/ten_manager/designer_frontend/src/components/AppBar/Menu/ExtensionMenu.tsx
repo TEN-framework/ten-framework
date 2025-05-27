@@ -90,7 +90,7 @@ export const ExtensionMenu = (props: {
       },
       popup: {
         width: 450,
-        height: 520,
+        height: 700,
         initialPosition: "top-left",
       },
     });

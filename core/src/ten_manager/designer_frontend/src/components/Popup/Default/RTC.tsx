@@ -5,10 +5,10 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { useTranslation } from "react-i18next";
-import AgoraRTC from "agora-rtc-react";
-import { 
-  AgoraRTCScreenShareProvider, 
-  useLocalScreenTrack 
+import AgoraRTC, { useRTCClient } from "agora-rtc-react";
+import {
+  AgoraRTCScreenShareProvider,
+  useLocalScreenTrack
 } from "agora-rtc-react";
 import {
   AgoraRTCProvider,
@@ -20,7 +20,7 @@ import {
 } from "agora-rtc-react";
 
 import { IWidget } from "@/types/widgets";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RtcTokenBuilder } from "agora-token";
 import { useRTCEnvVar } from "@/api/services/env-var";
 import React from "react";
@@ -29,7 +29,10 @@ import { useFlowStore } from "@/store";
 import AgentView from "@/components/Agent";
 import MicrophoneBlock from "@/components/RTC/Microphone";
 import VideoBlock from "@/components/RTC/Camera";
-import { VideoSourceType } from "@/types/rtc";
+import { IChatItem, VideoSourceType } from "@/types/rtc";
+import { Separator } from "@/components/ui/Separator";
+import MessageList from "@/components/Agent/Message";
+import { useChatItemReducer, useRTCMessageParser } from "@/hooks/use-rtc-message-parser";
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
@@ -47,12 +50,19 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   const [channel, setChannel] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [uid, setUid] = useState<number | null>(null);
+  const client = useRTCClient();
+  const { chatItems, addChatItem } = useChatItemReducer();
 
   React.useEffect(() => {
     if (error) {
       toast.error(error.message);
     }
   }, [error]);
+
+  // Register parser logic and hook up chat message updates
+  useRTCMessageParser(client, uid, (newMsg) => {
+    addChatItem(newMsg);
+  });
 
   React.useEffect(() => {
     const rtcNode = nodes.find((node) => node.data.addon === "agora_rtc");
@@ -146,24 +156,41 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
 
   usePublish(publishTracks);
 
+
   return (
     <div className="flex flex-col h-full w-full gap-2">
-      <AgentView />
-      <MicrophoneBlock
-        audioTrack={localMicrophoneTrack}
-        micOn={micOn}
-        setMicOn={setMic}
-      />
-      <AgoraRTCScreenShareProvider client={client}>
-        <VideoBlock
-          cameraTrack={localCameraTrack}
-          screenTrack={screenTrack}
-          videoOn={videoOn}
-          setVideoOn={setVideo}
-          videoSourceType={videoSourceType}
-          onVideoSourceChange={setVideoSource}
+      {/* Row 1 - Fixed height */}
+      <div className="shrink-0">
+        <AgentView />
+      </div>
+
+      <Separator orientation="horizontal" className="" />
+
+      {/* Row 2 - Fills remaining height */}
+      <div className="flex-1 overflow-auto">
+        <MessageList chatItems={chatItems} />
+      </div>
+
+      <Separator orientation="horizontal" />
+
+      {/* Row 3 - Fixed height */}
+      <div className="shrink-0 flex flex-col gap-2 mt-1">
+        <MicrophoneBlock
+          audioTrack={localMicrophoneTrack}
+          micOn={micOn}
+          setMicOn={setMic}
         />
-      </AgoraRTCScreenShareProvider>
+        <AgoraRTCScreenShareProvider client={client}>
+          <VideoBlock
+            cameraTrack={localCameraTrack}
+            screenTrack={screenTrack}
+            videoOn={videoOn}
+            setVideoOn={setVideo}
+            videoSourceType={videoSourceType}
+            onVideoSourceChange={setVideoSource}
+          />
+        </AgoraRTCScreenShareProvider>
+      </div>
     </div>
   );
 };

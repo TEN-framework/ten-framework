@@ -111,7 +111,7 @@ export default function VideoBlock(props: {
         />
       }
     >
-      <div className="my-3 h-60 w-full overflow-hidden rounded-lg">
+      <div className="mt-3 h-60 w-full overflow-hidden rounded-lg">
         <LocalVideoTrack
           key={
             videoSourceType === VideoSourceType.CAMERA
