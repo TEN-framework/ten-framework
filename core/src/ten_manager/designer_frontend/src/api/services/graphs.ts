@@ -179,3 +179,15 @@ export const postGetGraphNodeGeometry = async (
   const data = template.responseSchema.parse(res).data;
   return data?.graph_geometry?.nodes_geometry || [];
 };
+
+export const postGraphsAutoStart = async (payload: {
+  graph_id: string;
+  auto_start: boolean;
+}) => {
+  const template = ENDPOINT_GRAPHS.graphsAutoStart[ENDPOINT_METHOD.POST];
+  const req = makeAPIRequest(template, {
+    body: payload,
+  });
+  const res = await req;
+  return template.responseSchema.parse(res).data;
+};
