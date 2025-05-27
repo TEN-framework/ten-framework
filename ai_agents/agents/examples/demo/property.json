@@ -1907,7 +1907,8 @@
               "model": "gemini-2.5-flash-preview-native-audio-dialog",
               "server_vad": true,
               "temperature": 0.9,
-              "voice": "Puck"
+              "voice": "Puck",
+              "transcribe_agent": true
             }
           },
           {
