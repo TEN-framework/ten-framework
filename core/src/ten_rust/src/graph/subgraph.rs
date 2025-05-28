@@ -517,10 +517,8 @@ impl Graph {
     {
         // First, recursively flatten any nested subgraphs within this subgraph.
         // This ensures depth-first processing.
-        let flattened_subgraph = Self::flatten_subgraph_recursively(
-            loaded_subgraph,
-            subgraph_loader,
-        )?;
+        let flattened_subgraph =
+            Self::flatten(loaded_subgraph, subgraph_loader, true)?;
 
         subgraph_mappings
             .insert(subgraph_node.name.clone(), flattened_subgraph.clone());
@@ -774,8 +772,11 @@ impl Graph {
         }
     }
 
-    /// Core flattening logic that handles both top-level graphs and subgraphs
-    fn flatten_graph_core<F>(
+    /// Flattens a graph containing subgraph nodes into a regular graph
+    /// structure with only extension nodes. This process converts subgraph
+    /// references into their constituent extensions with prefixed names and
+    /// merges all connections.
+    pub fn flatten<F>(
         graph: &Graph,
         subgraph_loader: &F,
         preserve_exposed_info: bool,
@@ -837,27 +838,12 @@ impl Graph {
         })
     }
 
-    /// Flattens a graph containing subgraph nodes into a regular graph
-    /// structure with only extension nodes. This process converts subgraph
-    /// references into their constituent extensions with prefixed names and
-    /// merges all connections.
-    pub fn flatten<F>(&self, subgraph_loader: &F) -> Result<Graph>
+    /// Convenience method for flattening a graph instance without preserving
+    /// exposed info. This is the main public API for flattening graphs.
+    pub fn flatten_graph<F>(&self, subgraph_loader: &F) -> Result<Graph>
     where
         F: Fn(&str) -> Result<Graph>,
     {
-        Self::flatten_graph_core(self, &subgraph_loader, false)
-    }
-
-    /// Recursively flattens a subgraph to handle nested subgraphs.
-    /// This is a separate function to avoid infinite recursion in type
-    /// inference.
-    fn flatten_subgraph_recursively<F>(
-        subgraph: &Graph,
-        subgraph_loader: &F,
-    ) -> Result<Graph>
-    where
-        F: Fn(&str) -> Result<Graph>,
-    {
-        Self::flatten_graph_core(subgraph, subgraph_loader, true)
+        Self::flatten(self, subgraph_loader, false)
     }
 }
