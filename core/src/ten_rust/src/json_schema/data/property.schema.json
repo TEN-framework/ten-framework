@@ -856,7 +856,45 @@
                   ]
                 }
               }
-            }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "source_uri"
+                ],
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "nodes"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "connections"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "exposed_messages"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "exposed_properties"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "required": [
+                    "source_uri"
+                  ]
+                }
+              }
+            ]
           }
         }
       }

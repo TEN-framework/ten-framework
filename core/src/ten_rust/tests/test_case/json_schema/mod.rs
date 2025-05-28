@@ -1524,4 +1524,203 @@ mod tests {
             ten_validate_property_json_string(property_json_with_subgraph);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_validate_source_uri_mutual_exclusion_with_nodes() {
+        // Test that source_uri and nodes are mutually exclusive
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "source_uri": "test_graph.json",
+                "nodes": [
+                  {
+                    "type": "extension",
+                    "name": "test_ext",
+                    "addon": "test_addon",
+                    "extension_group": "test_group"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
+    fn test_validate_source_uri_mutual_exclusion_with_connections() {
+        // Test that source_uri and connections are mutually exclusive
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "source_uri": "test_graph.json",
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "dest": [
+                          {
+                            "extension": "test_ext"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
+    fn test_validate_source_uri_mutual_exclusion_with_exposed_messages() {
+        // Test that source_uri and exposed_messages are mutually exclusive
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "source_uri": "test_graph.json",
+                "exposed_messages": [
+                  {
+                    "type": "cmd_in",
+                    "name": "test_msg",
+                    "extension": "test_ext"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
+    fn test_validate_source_uri_mutual_exclusion_with_exposed_properties() {
+        // Test that source_uri and exposed_properties are mutually exclusive
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "source_uri": "test_graph.json",
+                "exposed_properties": [
+                  {
+                    "name": "test_prop",
+                    "extension": "test_ext"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
+    fn test_validate_source_uri_without_conflicting_fields_succeeds() {
+        // Test that source_uri alone is valid
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "source_uri": "test_graph.json"
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_without_source_uri_succeeds() {
+        // Test that a graph without source_uri but with other fields is valid
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [
+                  {
+                    "type": "extension",
+                    "name": "test_ext",
+                    "addon": "test_addon",
+                    "extension_group": "test_group"
+                  }
+                ],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "dest": [
+                          {
+                            "extension": "test_ext"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "exposed_messages": [
+                  {
+                    "type": "cmd_in",
+                    "name": "test_msg",
+                    "extension": "test_ext"
+                  }
+                ],
+                "exposed_properties": [
+                  {
+                    "name": "test_prop",
+                    "extension": "test_ext"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
 }

@@ -121,7 +121,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph
         let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
@@ -310,7 +312,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph
         let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
@@ -422,7 +426,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph - should fail
         let result = main_graph.flatten_graph(&subgraph_loader);
@@ -502,7 +508,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph - should fail
         let result = main_graph.flatten_graph(&subgraph_loader);
@@ -661,7 +669,9 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader = |uri: &str| -> Result<Graph> {
+        let subgraph_loader = |uri: &str,
+                               _base_dir: Option<&str>|
+         -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
                 "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
@@ -858,7 +868,9 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader = |uri: &str| -> Result<Graph> {
+        let subgraph_loader = |uri: &str,
+                               _base_dir: Option<&str>|
+         -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
                 "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
@@ -924,9 +936,10 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader = |_uri: &str| -> Result<Graph> {
-            unreachable!("Should not be called")
-        };
+        let subgraph_loader =
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                unreachable!("Should not be called")
+            };
 
         let result = main_graph.flatten_graph(&subgraph_loader);
         assert!(result.is_err());
@@ -1153,7 +1166,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph
         let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
@@ -1323,7 +1338,9 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
+                Ok(subgraph.clone())
+            };
 
         // Flatten the graph with preserve_exposed_info = true
         let flattened =
@@ -1351,5 +1368,159 @@ mod tests {
             .unwrap();
         assert_eq!(expanded_property.name, "config_b");
         assert!(expanded_property.subgraph.is_none());
+    }
+
+    #[test]
+    fn test_flatten_with_load_graph_from_uri_as_subgraph_loader() {
+        use std::fs;
+        use tempfile::tempdir;
+        use ten_rust::graph::graph_info::load_graph_from_uri_with_base_dir;
+
+        // Create a temporary directory and subgraph file
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("test_subgraph.json");
+
+        // Define a test subgraph
+        let subgraph_json = r#"
+        {
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "ext_c",
+                    "addon": "addon_c",
+                    "extension_group": "test_group"
+                },
+                {
+                    "type": "extension",
+                    "name": "ext_d",
+                    "addon": "addon_d",
+                    "extension_group": "test_group"
+                }
+            ],
+            "connections": [
+                {
+                    "extension": "ext_c",
+                    "cmd": [
+                        {
+                            "name": "internal_cmd",
+                            "dest": [
+                                {
+                                    "extension": "ext_d"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        "#;
+
+        // Write the subgraph to the file
+        fs::write(&subgraph_file_path, subgraph_json).unwrap();
+
+        // Create a main graph that references the subgraph file
+        let main_graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        subgraph_file_path.to_str().unwrap().to_string(),
+                    ),
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_a".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "test_cmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: Some("subgraph_1_ext_c".to_string()),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
+            exposed_messages: None,
+            exposed_properties: None,
+        };
+
+        // Use load_graph_from_uri_with_base_dir as the subgraph_loader
+        let base_dir = temp_dir.path().to_str().unwrap();
+        let subgraph_loader =
+            |uri: &str, base_dir_param: Option<&str>| -> Result<Graph> {
+                // For this test, we'll use the provided base_dir_param if
+                // available, otherwise fall back to the test's base_dir
+                let effective_base_dir = base_dir_param.or(Some(base_dir));
+                load_graph_from_uri_with_base_dir(uri, effective_base_dir)
+            };
+
+        // Flatten the graph
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Check that original extension is preserved
+        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"
+            && node.addon == Some("addon_a".to_string())));
+
+        // Check that subgraph extensions are flattened with prefix
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_c"
+                && node.addon == Some("addon_c".to_string())));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_d"
+                && node.addon == Some("addon_d".to_string())));
+
+        // Check that connections are flattened
+        let connections = flattened.connections.as_ref().unwrap();
+        assert_eq!(connections.len(), 2); // Original + internal subgraph connection
+
+        // Check that the connection destination is correct
+        let main_connection = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        let cmd_flow = &main_connection.cmd.as_ref().unwrap()[0];
+        assert_eq!(
+            cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_ext_c"
+        );
+
+        // Check internal subgraph connection is preserved
+        let internal_connection = connections
+            .iter()
+            .find(|conn| {
+                conn.loc.extension.as_deref() == Some("subgraph_1_ext_c")
+            })
+            .unwrap();
+        assert!(internal_connection.cmd.is_some());
     }
 }
