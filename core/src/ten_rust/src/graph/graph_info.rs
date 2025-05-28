@@ -14,6 +14,51 @@ use crate::pkg_info::pkg_type::PkgType;
 
 use super::Graph;
 
+/// Loads graph data from the specified URI with an optional base directory.
+///
+/// The URI can be:
+/// - A relative path (relative to the base_dir if provided)
+/// - An absolute path
+/// - A URL
+///
+/// This function returns the loaded Graph structure.
+pub fn load_graph_from_uri_with_base_dir(
+    uri: &str,
+    base_dir: Option<&str>,
+) -> Result<Graph> {
+    // Check if the URI is a URL (starts with http:// or https://)
+    if uri.starts_with("http://") || uri.starts_with("https://") {
+        // TODO: Implement HTTP request to fetch the graph file
+        // For now, return an error since HTTP requests are not implemented
+        // yet.
+        return Err(anyhow!("HTTP URLs are not supported yet for source_uri"));
+    }
+
+    // Handle relative and absolute paths.
+    let path = if Path::new(uri).is_absolute() {
+        PathBuf::from(uri)
+    } else if let Some(base_dir) = base_dir {
+        // If base_dir is available, use it as the base for relative
+        // paths.
+        Path::new(base_dir).join(uri)
+    } else {
+        panic!("base_dir is not available");
+    };
+
+    // Read the graph file.
+    let graph_content = read_file_to_string(&path).with_context(|| {
+        format!("Failed to read graph file from {}", path.display())
+    })?;
+
+    // Parse the graph file into a Graph structure.
+    let graph: Graph =
+        serde_json::from_str(&graph_content).with_context(|| {
+            format!("Failed to parse graph file from {}", path.display())
+        })?;
+
+    Ok(graph)
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -101,37 +146,8 @@ impl GraphInfo {
         uri: &str,
         base_dir: Option<&str>,
     ) -> Result<()> {
-        // Check if the URI is a URL (starts with http:// or https://)
-        if uri.starts_with("http://") || uri.starts_with("https://") {
-            // TODO: Implement HTTP request to fetch the graph file
-            // For now, return an error since HTTP requests are not implemented
-            // yet.
-            return Err(anyhow!(
-                "HTTP URLs are not supported yet for source_uri"
-            ));
-        }
-
-        // Handle relative and absolute paths.
-        let path = if Path::new(uri).is_absolute() {
-            PathBuf::from(uri)
-        } else if let Some(base_dir) = base_dir {
-            // If app_base_dir is available, use it as the base for relative
-            // paths.
-            Path::new(base_dir).join(uri)
-        } else {
-            panic!("base_dir is not available");
-        };
-
-        // Read the graph file.
-        let graph_content = read_file_to_string(&path).with_context(|| {
-            format!("Failed to read graph file from {}", path.display())
-        })?;
-
-        // Parse the graph file into a Graph structure.
-        let graph: Graph =
-            serde_json::from_str(&graph_content).with_context(|| {
-                format!("Failed to parse graph file from {}", path.display())
-            })?;
+        // Use the extracted function to load the graph
+        let graph = load_graph_from_uri_with_base_dir(uri, base_dir)?;
 
         // Replace the current graph with the loaded one.
         self.graph = graph;

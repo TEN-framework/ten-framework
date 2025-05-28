@@ -513,7 +513,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str) -> Result<Graph>,
+        F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
         // First, recursively flatten any nested subgraphs within this subgraph.
         // This ensures depth-first processing.
@@ -565,7 +565,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str) -> Result<Graph>,
+        F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
         let source_uri =
             subgraph_node.source_uri.as_ref().ok_or_else(|| {
@@ -575,7 +575,7 @@ impl Graph {
                 )
             })?;
 
-        let subgraph = subgraph_loader(source_uri)?;
+        let subgraph = subgraph_loader(source_uri, None)?;
 
         Self::process_loaded_subgraph(
             subgraph_node,
@@ -625,7 +625,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str) -> Result<Graph>,
+        F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
         // Process all nodes in the graph
         for node in &graph.nodes {
@@ -825,7 +825,7 @@ impl Graph {
         preserve_exposed_info: bool,
     ) -> Result<Graph>
     where
-        F: Fn(&str) -> Result<Graph>,
+        F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
         // Check if this graph contains any subgraphs
         let has_subgraphs = graph
@@ -885,7 +885,7 @@ impl Graph {
     /// exposed info. This is the main public API for flattening graphs.
     pub fn flatten_graph<F>(&self, subgraph_loader: &F) -> Result<Graph>
     where
-        F: Fn(&str) -> Result<Graph>,
+        F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
         Self::flatten(self, subgraph_loader, false)
     }
