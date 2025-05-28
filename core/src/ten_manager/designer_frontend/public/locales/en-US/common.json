@@ -148,7 +148,8 @@
       "filteredByAddon": "Filter logs by Addon",
       "noAddons": "No Avaliable Addons",
       "noMatchedAddons": "No matched addons",
-      "noLogs": "No logs to display."
+      "noLogs": "No logs to display.",
+      "cleanLogs": "Clean Logs"
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",
