@@ -48,7 +48,7 @@ class test_normal_extension_3 : public ten::extension_t {
   explicit test_normal_extension_3(const char *name) : ten::extension_t(name) {}
 
   void on_configure(ten::ten_env_t &ten_env) override {
-    ten_sleep_ms(2000);
+    ten_random_sleep_range_ms(0, 2000);
     ten_env.on_configure_done();
   }
 
