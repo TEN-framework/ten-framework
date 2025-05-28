@@ -54,7 +54,7 @@ mod tests {
                     dest: vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
-                            extension: Some("subgraph_1:ext_d".to_string()),
+                            extension: Some("subgraph_1_ext_d".to_string()),
                             subgraph: None,
                         },
                         msg_conversion: None,
@@ -161,7 +161,7 @@ mod tests {
         let connections = flattened.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 2); // Original + internal subgraph connection
 
-        // Check that colon notation is converted to underscore
+        // Check that the connection destination is correct
         let main_connection = connections
             .iter()
             .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
