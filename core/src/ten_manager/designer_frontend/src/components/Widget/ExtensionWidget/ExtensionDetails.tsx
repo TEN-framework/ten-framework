@@ -5,7 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
-import { BlocksIcon, HardDriveDownloadIcon, CheckIcon } from "lucide-react";
+import {
+  BlocksIcon,
+  HardDriveDownloadIcon,
+  CheckIcon,
+  BrushCleaningIcon,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/Button";
@@ -230,8 +235,17 @@ export const ExtensionDetails = (props: {
       actions: {
         onClose: () => {
           removeBackstageWidget(widgetId);
-          removeLogViewerHistory(widgetId);
         },
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(widgetId);
+            },
+          },
+        ],
       },
     });
   };
