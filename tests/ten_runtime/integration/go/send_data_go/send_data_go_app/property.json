@@ -1,7 +1,7 @@
 {
   "ten": {
     "log": {
-      "level": 2
+      "level": 1
     },
     "predefined_graphs": [
       {
