@@ -124,7 +124,7 @@ mod tests {
             |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -311,7 +311,7 @@ mod tests {
             |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -422,7 +422,7 @@ mod tests {
             |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "Message 'NonExistentCmd' of type 'CmdIn' is not exposed by \
@@ -502,7 +502,7 @@ mod tests {
             |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "Subgraph 'subgraph_2' does not have exposed_messages defined"
@@ -667,7 +667,7 @@ mod tests {
         };
 
         // Flatten the graph - should now work with nested subgraphs
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -863,7 +863,7 @@ mod tests {
 
         // Flatten the graph - should work with nested subgraphs and
         // exposed_messages
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -923,7 +923,7 @@ mod tests {
             unreachable!("Should not be called")
         };
 
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1143,7 +1143,7 @@ mod tests {
             |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened = main_graph.flatten_graph(&subgraph_loader).unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
