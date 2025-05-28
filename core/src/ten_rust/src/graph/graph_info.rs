@@ -78,8 +78,10 @@ impl GraphInfo {
         }
 
         // If source_uri is specified, load graph from the URI.
-        if let Some(uri) = self.source_uri.clone() {
-            self.load_graph_from_uri(&uri)?;
+        let source_uri = self.source_uri.clone();
+        let app_base_dir = self.app_base_dir.clone();
+        if let Some(uri) = source_uri {
+            self.load_graph_from_uri(&uri, app_base_dir.as_deref())?;
         }
 
         self.graph.validate_and_complete()
@@ -94,7 +96,11 @@ impl GraphInfo {
     ///
     /// This function replaces the current graph with the one loaded from the
     /// URI.
-    fn load_graph_from_uri(&mut self, uri: &str) -> Result<()> {
+    fn load_graph_from_uri(
+        &mut self,
+        uri: &str,
+        base_dir: Option<&str>,
+    ) -> Result<()> {
         // Check if the URI is a URL (starts with http:// or https://)
         if uri.starts_with("http://") || uri.starts_with("https://") {
             // TODO: Implement HTTP request to fetch the graph file
@@ -108,13 +114,12 @@ impl GraphInfo {
         // Handle relative and absolute paths.
         let path = if Path::new(uri).is_absolute() {
             PathBuf::from(uri)
-        } else if let Some(app_base_dir) = &self.app_base_dir {
+        } else if let Some(base_dir) = base_dir {
             // If app_base_dir is available, use it as the base for relative
             // paths.
-            Path::new(app_base_dir).join(uri)
+            Path::new(base_dir).join(uri)
         } else {
-            // If app_base_dir is not available, just use the URI as is.
-            PathBuf::from(uri)
+            panic!("base_dir is not available");
         };
 
         // Read the graph file.
