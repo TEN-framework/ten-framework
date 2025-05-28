@@ -82,4 +82,204 @@ mod tests {
         assert_eq!(connections.len(), 1);
         assert_eq!(connections[0].loc.extension, Some("test_ext".to_string()));
     }
+
+    #[test]
+    fn test_source_uri_mutual_exclusion_with_nodes() {
+        use ten_rust::graph::node::{GraphNode, GraphNodeType};
+
+        // Create a GraphInfo with both source_uri and nodes - this should fail
+        let mut graph_info = GraphInfo {
+            name: Some("test_graph".to_string()),
+            auto_start: Some(true),
+            graph: Graph {
+                nodes: vec![GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "test_ext".to_string(),
+                    addon: Some("test_addon".to_string()),
+                    extension_group: Some("test_group".to_string()),
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                }],
+                connections: None,
+                exposed_messages: None,
+                exposed_properties: None,
+            },
+            source_uri: Some("test_uri".to_string()),
+            app_base_dir: None,
+            belonging_pkg_type: None,
+            belonging_pkg_name: None,
+        };
+
+        // This should fail due to mutual exclusion
+        let result = graph_info.validate_and_complete();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains(
+            "When 'source_uri' is specified, 'nodes' field must not be present"
+        ));
+    }
+
+    #[test]
+    fn test_source_uri_mutual_exclusion_with_connections() {
+        use ten_rust::graph::connection::{
+            GraphConnection, GraphLoc, GraphMessageFlow,
+        };
+
+        // Create a GraphInfo with both source_uri and connections - this should
+        // fail
+        let mut graph_info = GraphInfo {
+            name: Some("test_graph".to_string()),
+            auto_start: Some(true),
+            graph: Graph {
+                nodes: Vec::new(),
+                connections: Some(vec![GraphConnection {
+                    loc: GraphLoc {
+                        app: None,
+                        extension: Some("test_ext".to_string()),
+                        subgraph: None,
+                    },
+                    cmd: Some(vec![GraphMessageFlow {
+                        name: "test_cmd".to_string(),
+                        dest: vec![],
+                    }]),
+                    data: None,
+                    audio_frame: None,
+                    video_frame: None,
+                }]),
+                exposed_messages: None,
+                exposed_properties: None,
+            },
+            source_uri: Some("test_uri".to_string()),
+            app_base_dir: None,
+            belonging_pkg_type: None,
+            belonging_pkg_name: None,
+        };
+
+        // This should fail due to mutual exclusion
+        let result = graph_info.validate_and_complete();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains(
+            "When 'source_uri' is specified, 'connections' field must not be \
+             present"
+        ));
+    }
+
+    #[test]
+    fn test_source_uri_mutual_exclusion_with_exposed_messages() {
+        use ten_rust::graph::{GraphExposedMessage, GraphExposedMessageType};
+
+        // Create a GraphInfo with both source_uri and exposed_messages - this
+        // should fail
+        let mut graph_info = GraphInfo {
+            name: Some("test_graph".to_string()),
+            auto_start: Some(true),
+            graph: Graph {
+                nodes: Vec::new(),
+                connections: None,
+                exposed_messages: Some(vec![GraphExposedMessage {
+                    msg_type: GraphExposedMessageType::CmdIn,
+                    name: "test_msg".to_string(),
+                    extension: Some("test_ext".to_string()),
+                    subgraph: None,
+                }]),
+                exposed_properties: None,
+            },
+            source_uri: Some("test_uri".to_string()),
+            app_base_dir: None,
+            belonging_pkg_type: None,
+            belonging_pkg_name: None,
+        };
+
+        // This should fail due to mutual exclusion
+        let result = graph_info.validate_and_complete();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains(
+            "When 'source_uri' is specified, 'exposed_messages' field must \
+             not be present"
+        ));
+    }
+
+    #[test]
+    fn test_source_uri_mutual_exclusion_with_exposed_properties() {
+        use ten_rust::graph::GraphExposedProperty;
+
+        // Create a GraphInfo with both source_uri and exposed_properties - this
+        // should fail
+        let mut graph_info = GraphInfo {
+            name: Some("test_graph".to_string()),
+            auto_start: Some(true),
+            graph: Graph {
+                nodes: Vec::new(),
+                connections: None,
+                exposed_messages: None,
+                exposed_properties: Some(vec![GraphExposedProperty {
+                    extension: Some("test_ext".to_string()),
+                    subgraph: None,
+                    name: "test_prop".to_string(),
+                }]),
+            },
+            source_uri: Some("test_uri".to_string()),
+            app_base_dir: None,
+            belonging_pkg_type: None,
+            belonging_pkg_name: None,
+        };
+
+        // This should fail due to mutual exclusion
+        let result = graph_info.validate_and_complete();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains(
+            "When 'source_uri' is specified, 'exposed_properties' field must \
+             not be present"
+        ));
+    }
+
+    #[test]
+    fn test_source_uri_without_conflicting_fields_succeeds() {
+        // Create a temporary graph file.
+        let temp_dir = tempdir().unwrap();
+        let graph_file_path = temp_dir.path().join("test_graph.json");
+
+        // Define a test graph.
+        let test_graph_str = r#"
+        {
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "test_ext",
+                    "addon": "test_addon",
+                    "extension_group": "test_group"
+                }
+            ]
+        }
+        "#;
+
+        // Write the test graph to the file.
+        fs::write(&graph_file_path, test_graph_str).unwrap();
+
+        // Create a GraphInfo with only source_uri and empty graph fields - this
+        // should succeed
+        let source_uri = graph_file_path.to_str().unwrap().to_string();
+        let mut graph_info = GraphInfo {
+            name: Some("test_graph".to_string()),
+            auto_start: Some(true),
+            graph: Graph {
+                nodes: Vec::new(),
+                connections: None,
+                exposed_messages: None,
+                exposed_properties: None,
+            },
+            source_uri: Some(source_uri),
+            app_base_dir: None,
+            belonging_pkg_type: None,
+            belonging_pkg_name: None,
+        };
+
+        // This should succeed
+        let result = graph_info.validate_and_complete();
+        assert!(result.is_ok());
+
+        // Verify that the graph was loaded from source_uri
+        assert_eq!(graph_info.graph.nodes.len(), 1);
+        assert_eq!(graph_info.graph.nodes[0].name, "test_ext");
+    }
 }

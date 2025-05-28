@@ -38,6 +38,45 @@ pub struct GraphInfo {
 
 impl GraphInfo {
     pub fn validate_and_complete(&mut self) -> Result<()> {
+        // Validate mutual exclusion between source_uri and graph fields
+        if self.source_uri.is_some() {
+            // When source_uri is present, the graph fields should be empty or
+            // None
+            if !self.graph.nodes.is_empty() {
+                return Err(anyhow!(
+                    "When 'source_uri' is specified, 'nodes' field must not \
+                     be present"
+                ));
+            }
+
+            if let Some(connections) = &self.graph.connections {
+                if !connections.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'connections' field \
+                         must not be present"
+                    ));
+                }
+            }
+
+            if let Some(exposed_messages) = &self.graph.exposed_messages {
+                if !exposed_messages.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'exposed_messages' \
+                         field must not be present"
+                    ));
+                }
+            }
+
+            if let Some(exposed_properties) = &self.graph.exposed_properties {
+                if !exposed_properties.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'exposed_properties' \
+                         field must not be present"
+                    ));
+                }
+            }
+        }
+
         // If source_uri is specified, load graph from the URI.
         if let Some(uri) = self.source_uri.clone() {
             self.load_graph_from_uri(&uri)?;
