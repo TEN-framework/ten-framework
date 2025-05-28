@@ -730,17 +730,13 @@
                   "additionalProperties": false,
                   "required": [
                     "extension",
-                    "name",
-                    "alias"
+                    "name"
                   ],
                   "properties": {
                     "extension": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     },
                     "name": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "alias": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     }
                   }

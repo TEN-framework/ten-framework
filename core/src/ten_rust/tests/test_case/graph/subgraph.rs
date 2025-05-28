@@ -115,7 +115,6 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
-                alias: "app_id".to_string(),
             }]),
         };
 
@@ -264,7 +263,6 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
-                alias: "app_id".to_string(),
             }]),
         };
 

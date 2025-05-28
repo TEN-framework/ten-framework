@@ -158,10 +158,6 @@ pub struct GraphExposedProperty {
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     pub name: String,
-
-    /// The alias of the property when exposed outside the graph.
-    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub alias: String,
 }
 
 /// Represents a connection graph that defines how extensions connect to each

@@ -380,12 +380,12 @@ impl Graph {
             &subgraph_node.property
         {
             // Process each property specified in the subgraph node
-            for (property_alias, property_value) in ref_obj {
-                // Find the corresponding exposed property by alias
+            for (property_name, property_value) in ref_obj {
+                // Find the corresponding exposed property by name
                 if let Some(exposed_properties) = &subgraph.exposed_properties {
                     if let Some(exposed_prop) = exposed_properties
                         .iter()
-                        .find(|ep| &ep.alias == property_alias)
+                        .find(|ep| &ep.name == property_name)
                     {
                         // Check if this exposed property applies to the current
                         // extension
@@ -416,7 +416,7 @@ impl Graph {
                             }
                         } else {
                             panic!(
-                                "Property '{property_alias}' specified in \
+                                "Property '{property_name}' specified in \
                                  subgraph node '{}' is not exposed by the \
                                  subgraph",
                                 subgraph_node.name
@@ -426,7 +426,7 @@ impl Graph {
                         return Err(anyhow::anyhow!(
                             "Property '{}' specified in subgraph node '{}' is \
                              not exposed by the subgraph",
-                            property_alias,
+                            property_name,
                             subgraph_node.name
                         ));
                     }
