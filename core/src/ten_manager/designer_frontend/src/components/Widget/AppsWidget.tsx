@@ -15,6 +15,7 @@ import {
   HardDriveDownloadIcon,
   PlayIcon,
   FolderIcon,
+  BrushCleaningIcon,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -266,8 +267,17 @@ export const AppsManagerWidget = (props: { className?: string }) => {
       actions: {
         onClose: () => {
           removeBackstageWidget(widgetId);
-          removeLogViewerHistory(widgetId);
         },
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(widgetId);
+            },
+          },
+        ],
       },
     });
   };

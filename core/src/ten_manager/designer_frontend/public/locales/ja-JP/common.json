@@ -148,7 +148,8 @@
       "filteredByAddon": "アドオンでログをフィルター",
       "noAddons": "利用可能なアドオンがありません",
       "noMatchedAddons": "一致するアドオンがありません",
-      "noLogs": "表示するログがありません"
+      "noLogs": "表示するログがありません",
+      "cleanLogs": "ログをクリア"
     },
     "default": {
       "defaultLabelForAppRun": "アプリ実行のデフォルトラベル",

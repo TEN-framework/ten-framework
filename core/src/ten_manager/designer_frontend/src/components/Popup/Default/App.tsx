@@ -7,7 +7,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { PlayIcon } from "lucide-react";
+import { PlayIcon, BrushCleaningIcon } from "lucide-react";
 
 import {
   Select,
@@ -138,10 +138,12 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const handleRun = () => {
     removeWidget(widget.widget_id);
 
+    const newAppStartWidgetId = "app-start-" + Date.now();
+
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
-      widget_id: "app-start-" + Date.now(),
+      widget_id: newAppStartWidgetId,
 
       category: EWidgetCategory.LogViewer,
       display_type: EWidgetDisplayType.Popup,
@@ -164,20 +166,18 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
       },
       actions: {
         onClose: () => {
-          removeBackstageWidget(widget.widget_id);
-          removeLogViewerHistory(widget.widget_id);
+          removeBackstageWidget(newAppStartWidgetId);
         },
-        // custom_actions: [
-        //   {
-        //     id: "app-start-widget-closed",
-        //     label: "app-start-widget-closed",
-        //     Icon: OctagonXIcon,
-        //     onClick: () => {
-        //       console.log("app-start-widget-closed");
-        //       console.log(baseDir, selectedScript);
-        //     },
-        //   },
-        // ],
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(newAppStartWidgetId);
+            },
+          },
+        ],
       },
     });
   };
