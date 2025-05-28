@@ -1322,4 +1322,206 @@ mod tests {
         let result = validate_manifest_lock_json_string(manifest_lock);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_validate_exposed_messages_extension_subgraph_mutual_exclusion() {
+        // Test that exposed_messages with both extension and subgraph fields
+        // fails
+        let property_json_with_both_fields = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_messages": [
+                            {
+                                "type": "cmd_in",
+                                "name": "test_cmd",
+                                "extension": "ext_a",
+                                "subgraph": "subgraph_1"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_both_fields);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("oneOf"));
+
+        // Test that exposed_messages with neither extension nor subgraph fields
+        // fails
+        let property_json_with_neither_field = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_messages": [
+                            {
+                                "type": "cmd_in",
+                                "name": "test_cmd"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_neither_field);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("oneOf"));
+
+        // Test that exposed_messages with only extension field succeeds
+        let property_json_with_extension = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_messages": [
+                            {
+                                "type": "cmd_in",
+                                "name": "test_cmd",
+                                "extension": "ext_a"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_extension);
+        assert!(result.is_ok());
+
+        // Test that exposed_messages with only subgraph field succeeds
+        let property_json_with_subgraph = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_messages": [
+                            {
+                                "type": "cmd_in",
+                                "name": "test_cmd",
+                                "subgraph": "subgraph_1"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_subgraph);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_exposed_properties_extension_subgraph_mutual_exclusion() {
+        // Test that exposed_properties with both extension and subgraph fields
+        // fails
+        let property_json_with_both_fields = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_properties": [
+                            {
+                                "name": "test_prop",
+                                "extension": "ext_a",
+                                "subgraph": "subgraph_1"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_both_fields);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("oneOf"));
+
+        // Test that exposed_properties with neither extension nor subgraph
+        // fields fails
+        let property_json_with_neither_field = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_properties": [
+                            {
+                                "name": "test_prop"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_neither_field);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("oneOf"));
+
+        // Test that exposed_properties with only extension field succeeds
+        let property_json_with_extension = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_properties": [
+                            {
+                                "name": "test_prop",
+                                "extension": "ext_a"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_extension);
+        assert!(result.is_ok());
+
+        // Test that exposed_properties with only subgraph field succeeds
+        let property_json_with_subgraph = r#"
+        {
+            "ten": {
+                "predefined_graphs": [
+                    {
+                        "name": "test_graph",
+                        "exposed_properties": [
+                            {
+                                "name": "test_prop",
+                                "subgraph": "subgraph_1"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let result =
+            ten_validate_property_json_string(property_json_with_subgraph);
+        assert!(result.is_ok());
+    }
 }

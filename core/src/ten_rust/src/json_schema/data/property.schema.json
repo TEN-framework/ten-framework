@@ -68,14 +68,14 @@
     "cmdDest": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "extension"
-      ],
       "properties": {
         "app": {
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
         "msg_conversion": {
@@ -182,7 +182,29 @@
             }
           }
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "extension"
+          ],
+          "not": {
+            "required": [
+              "subgraph"
+            ]
+          }
+        },
+        {
+          "required": [
+            "subgraph"
+          ],
+          "not": {
+            "required": [
+              "extension"
+            ]
+          }
+        }
+      ]
     },
     "dataDest": {
       "type": "object",
@@ -200,7 +222,29 @@
         "msg_conversion": {
           "$ref": "#/$defs/msgConversion"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "extension"
+          ],
+          "not": {
+            "required": [
+              "subgraph"
+            ]
+          }
+        },
+        {
+          "required": [
+            "subgraph"
+          ],
+          "not": {
+            "required": [
+              "extension"
+            ]
+          }
+        }
+      ]
     },
     "graphNode": {
       "type": "object",
@@ -289,7 +333,29 @@
         "audio_frame": {
           "$ref": "#/$defs/extensionDatasInGraph"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "extension"
+          ],
+          "not": {
+            "required": [
+              "subgraph"
+            ]
+          }
+        },
+        {
+          "required": [
+            "subgraph"
+          ],
+          "not": {
+            "required": [
+              "extension"
+            ]
+          }
+        }
+      ]
     },
     "msgConversion": {
       "type": "object",
@@ -697,8 +763,7 @@
                   "additionalProperties": false,
                   "required": [
                     "type",
-                    "name",
-                    "extension"
+                    "name"
                   ],
                   "properties": {
                     "type": {
@@ -719,8 +784,33 @@
                     },
                     "extension": {
                       "$ref": "#/$defs/alphanumericCharacters"
+                    },
+                    "subgraph": {
+                      "$ref": "#/$defs/alphanumericCharacters"
                     }
-                  }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "extension"
+                      ],
+                      "not": {
+                        "required": [
+                          "subgraph"
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "subgraph"
+                      ],
+                      "not": {
+                        "required": [
+                          "extension"
+                        ]
+                      }
+                    }
+                  ]
                 }
               },
               "exposed_properties": {
@@ -729,21 +819,41 @@
                   "type": "object",
                   "additionalProperties": false,
                   "required": [
-                    "extension",
-                    "name",
-                    "alias"
+                    "name"
                   ],
                   "properties": {
                     "extension": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     },
-                    "name": {
+                    "subgraph": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     },
-                    "alias": {
+                    "name": {
                       "$ref": "#/$defs/alphanumericCharacters"
                     }
-                  }
+                  },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "extension"
+                      ],
+                      "not": {
+                        "required": [
+                          "subgraph"
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "subgraph"
+                      ],
+                      "not": {
+                        "required": [
+                          "extension"
+                        ]
+                      }
+                    }
+                  ]
                 }
               }
             }
