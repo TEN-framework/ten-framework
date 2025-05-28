@@ -717,7 +717,8 @@ impl Graph {
                                             "{}_{}",
                                             subgraph_name, nested_extension
                                         ));
-                                        new_exposed.subgraph = None; // Clear subgraph field
+                                        // Clear subgraph field
+                                        new_exposed.subgraph = None;
                                         updated.push(new_exposed);
                                     }
                                 }
@@ -745,14 +746,40 @@ impl Graph {
         if let Some(exposed_properties) = original_exposed_properties {
             let mut updated = Vec::new();
             for exposed in exposed_properties {
-                if let Some(ref extension_name) = exposed.extension {
-                    // Check if this extension is actually a subgraph that was
-                    // flattened
-                    if let Some(flattened_subgraph) =
-                        subgraph_mappings.get(extension_name)
-                    {
-                        // This exposed property points to a subgraph, we need
-                        // to resolve it further
+                // Check that either extension or subgraph field is present, but
+                // not both
+                match (&exposed.extension, &exposed.subgraph) {
+                    (Some(_), Some(_)) => {
+                        panic!(
+                            "Both extension and subgraph fields are specified \
+                             in exposed property. Only one should be present."
+                        );
+                    }
+                    (None, None) => {
+                        panic!(
+                            "Neither extension nor subgraph field is \
+                             specified in exposed property. One must be \
+                             present."
+                        );
+                    }
+                    (Some(_), None) => {
+                        // Extension field is present - keep as-is
+                        updated.push(exposed.clone());
+                    }
+                    (None, Some(ref subgraph_name)) => {
+                        // Subgraph field is present - expand it
+                        let flattened_subgraph = subgraph_mappings
+                            .get(subgraph_name)
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "Subgraph '{}' referenced in exposed \
+                                     property not found in subgraph mappings",
+                                    subgraph_name
+                                );
+                            });
+
+                        // Find matching exposed properties in the flattened
+                        // subgraph
                         if let Some(nested_exposed_properties) =
                             &flattened_subgraph.exposed_properties
                         {
@@ -762,25 +789,20 @@ impl Graph {
                                         nested_exposed.extension
                                     {
                                         // Create a new exposed property with
-                                        // the
-                                        // flattened extension name
+                                        // the flattened extension name
                                         let mut new_exposed = exposed.clone();
                                         new_exposed.extension = Some(format!(
                                             "{}_{}",
-                                            extension_name, nested_extension
+                                            subgraph_name, nested_extension
                                         ));
+                                        // Clear subgraph field
+                                        new_exposed.subgraph = None;
                                         updated.push(new_exposed);
                                     }
                                 }
                             }
                         }
-                    } else {
-                        // This is a regular extension, keep as-is
-                        updated.push(exposed.clone());
                     }
-                } else {
-                    // No extension specified, keep as-is
-                    updated.push(exposed.clone());
                 }
             }
             if updated.is_empty() {

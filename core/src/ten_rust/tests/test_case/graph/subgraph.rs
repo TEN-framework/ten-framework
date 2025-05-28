@@ -115,6 +115,7 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
+                subgraph: None,
             }]),
         };
 
@@ -263,6 +264,7 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
+                subgraph: None,
             }]),
         };
 
@@ -1241,5 +1243,113 @@ mod tests {
         let video_flow = &grouped_connection.video_frame.as_ref().unwrap()[0];
         assert_eq!(video_flow.name, "ResponseVideo");
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
+    }
+
+    #[test]
+    fn test_flatten_subgraph_field_reference_exposed_properties() {
+        // Create a main graph with subgraph field references in
+        // exposed_properties
+        let main_graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph1.json".to_string(),
+                    ),
+                },
+            ],
+            connections: None,
+            exposed_messages: None,
+            exposed_properties: Some(vec![
+                // Extension-based exposed property
+                GraphExposedProperty {
+                    extension: Some("ext_a".to_string()),
+                    name: "config_a".to_string(),
+                    subgraph: None,
+                },
+                // Subgraph-based exposed property
+                GraphExposedProperty {
+                    extension: None,
+                    name: "config_b".to_string(),
+                    subgraph: Some("subgraph_1".to_string()),
+                },
+            ]),
+        };
+
+        // Create a subgraph with exposed_properties
+        let subgraph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_x".to_string(),
+                    addon: Some("addon_x".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_y".to_string(),
+                    addon: Some("addon_y".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+            ],
+            connections: None,
+            exposed_messages: None,
+            exposed_properties: Some(vec![GraphExposedProperty {
+                extension: Some("ext_y".to_string()),
+                name: "config_b".to_string(),
+                subgraph: None,
+            }]),
+        };
+
+        // Mock subgraph loader
+        let subgraph_loader =
+            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+
+        // Flatten the graph with preserve_exposed_info = true
+        let flattened =
+            Graph::flatten(&main_graph, &subgraph_loader, true).unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Check that exposed_properties are updated correctly
+        let exposed_properties = flattened.exposed_properties.as_ref().unwrap();
+        assert_eq!(exposed_properties.len(), 2);
+
+        // Check that extension-based exposed property is preserved
+        let ext_a_property = exposed_properties
+            .iter()
+            .find(|prop| prop.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        assert_eq!(ext_a_property.name, "config_a");
+        assert!(ext_a_property.subgraph.is_none());
+
+        // Check that subgraph-based exposed property is expanded
+        let expanded_property = exposed_properties
+            .iter()
+            .find(|prop| prop.extension.as_deref() == Some("subgraph_1_ext_y"))
+            .unwrap();
+        assert_eq!(expanded_property.name, "config_b");
+        assert!(expanded_property.subgraph.is_none());
     }
 }

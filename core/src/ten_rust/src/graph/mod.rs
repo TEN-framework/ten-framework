@@ -155,6 +155,11 @@ pub struct GraphExposedProperty {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
 
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     pub name: String,
