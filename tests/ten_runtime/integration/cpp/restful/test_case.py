@@ -98,7 +98,7 @@ def test_restful_http_app():
 
     is_started = http.is_app_started("127.0.0.1", 8001, 30)
     if not is_started:
-        print("The restful_app is not started after 10 seconds.")
+        print("The restful_app is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()
