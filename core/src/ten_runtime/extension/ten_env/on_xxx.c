@@ -396,6 +396,7 @@ static void ten_extension_thread_on_extension_on_deinit_done(
 
   // Flush the previously got messages, which are received before
   // on_init_done(), into the extension.
+  //
   // For example, when an extension is in the `on_configure` stage and its graph
   // is closed, the runtime will skip its `on_init` and `on_start` stages and
   // directly enter the `on_stop` stage. Messages that would normally be flushed
