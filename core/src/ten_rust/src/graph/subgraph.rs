@@ -506,7 +506,7 @@ impl Graph {
     /// flattened structure.
     fn process_loaded_subgraph<F>(
         subgraph_node: &GraphNode,
-        loaded_subgraph: Graph,
+        loaded_subgraph: &Graph,
         subgraph_loader: &F,
         flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
@@ -581,7 +581,7 @@ impl Graph {
 
         Self::process_loaded_subgraph(
             subgraph_node,
-            subgraph,
+            &subgraph,
             subgraph_loader,
             flattened_nodes,
             flattened_connections,
@@ -662,7 +662,7 @@ impl Graph {
     /// Helper function to update exposed_messages to reflect the flattened
     /// structure
     fn update_exposed_messages_after_flattening(
-        original_exposed_messages: Option<Vec<super::GraphExposedMessage>>,
+        original_exposed_messages: &Option<Vec<super::GraphExposedMessage>>,
         subgraph_mappings: &HashMap<String, Graph>,
     ) -> Option<Vec<super::GraphExposedMessage>> {
         if let Some(exposed_messages) = original_exposed_messages {
@@ -720,7 +720,7 @@ impl Graph {
     /// Helper function to update exposed_properties to reflect the flattened
     /// structure
     fn update_exposed_properties_after_flattening(
-        original_exposed_properties: Option<Vec<super::GraphExposedProperty>>,
+        original_exposed_properties: &Option<Vec<super::GraphExposedProperty>>,
         subgraph_mappings: &HashMap<String, Graph>,
     ) -> Option<Vec<super::GraphExposedProperty>> {
         if let Some(exposed_properties) = original_exposed_properties {
@@ -776,7 +776,7 @@ impl Graph {
 
     /// Core flattening logic that handles both top-level graphs and subgraphs
     fn flatten_graph_core<F>(
-        graph: Graph,
+        graph: &Graph,
         subgraph_loader: &F,
         preserve_exposed_info: bool,
     ) -> Result<Graph>
@@ -791,7 +791,7 @@ impl Graph {
 
         if !has_subgraphs {
             // No subgraphs, return as-is
-            return Ok(graph);
+            return Ok(graph.clone());
         }
 
         // This graph has subgraphs, so we need to flatten them
@@ -800,7 +800,7 @@ impl Graph {
         let mut subgraph_mappings = HashMap::new();
 
         Self::flatten_graph_internal(
-            &graph,
+            graph,
             subgraph_loader,
             &mut flattened_nodes,
             &mut flattened_connections,
@@ -813,11 +813,11 @@ impl Graph {
             if preserve_exposed_info {
                 (
                     Self::update_exposed_messages_after_flattening(
-                        graph.exposed_messages,
+                        &graph.exposed_messages,
                         &subgraph_mappings,
                     ),
                     Self::update_exposed_properties_after_flattening(
-                        graph.exposed_properties,
+                        &graph.exposed_properties,
                         &subgraph_mappings,
                     ),
                 )
@@ -841,18 +841,18 @@ impl Graph {
     /// structure with only extension nodes. This process converts subgraph
     /// references into their constituent extensions with prefixed names and
     /// merges all connections.
-    pub fn flatten<F>(&self, subgraph_loader: F) -> Result<Graph>
+    pub fn flatten<F>(&self, subgraph_loader: &F) -> Result<Graph>
     where
         F: Fn(&str) -> Result<Graph>,
     {
-        Self::flatten_graph_core(self.clone(), &subgraph_loader, false)
+        Self::flatten_graph_core(self, &subgraph_loader, false)
     }
 
     /// Recursively flattens a subgraph to handle nested subgraphs.
     /// This is a separate function to avoid infinite recursion in type
     /// inference.
     fn flatten_subgraph_recursively<F>(
-        subgraph: Graph,
+        subgraph: &Graph,
         subgraph_loader: &F,
     ) -> Result<Graph>
     where
