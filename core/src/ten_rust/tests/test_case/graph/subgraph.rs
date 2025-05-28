@@ -296,11 +296,13 @@ mod tests {
                     msg_type: GraphExposedMessageType::CmdIn,
                     name: "B".to_string(),
                     extension: Some("ext_d".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdOut,
                     name: "H".to_string(),
                     extension: Some("ext_c".to_string()),
+                    subgraph: None,
                 },
             ]),
             exposed_properties: None,
@@ -411,8 +413,9 @@ mod tests {
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
-                name: "B".to_string(),
-                extension: Some("ext_d".to_string()),
+                name: "TestCmd".to_string(),
+                extension: None,
+                subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
         };
@@ -817,7 +820,8 @@ mod tests {
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
                 name: "TestCmd".to_string(),
-                extension: Some("subgraph_2".to_string()),
+                extension: None,
+                subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
         };
@@ -847,6 +851,7 @@ mod tests {
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
+                subgraph: None,
                 name: "TestCmd".to_string(),
                 extension: Some("ext_z".to_string()),
             }]),
@@ -1097,42 +1102,50 @@ mod tests {
                     msg_type: GraphExposedMessageType::CmdIn,
                     name: "TestCmd".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::DataIn,
                     name: "TestData".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::AudioFrameIn,
                     name: "TestAudio".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::VideoFrameIn,
                     name: "TestVideo".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 // Output messages (from subgraph to external)
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdOut,
                     name: "ResponseCmd".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::DataOut,
                     name: "ResponseData".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::AudioFrameOut,
                     name: "ResponseAudio".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::VideoFrameOut,
                     name: "ResponseVideo".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
             ]),
             exposed_properties: None,
