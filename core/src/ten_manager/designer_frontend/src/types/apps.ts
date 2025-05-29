@@ -95,6 +95,7 @@ export const LogLineMetadataSchema = z.object({
 export const LogLineInfoSchema = z.object({
   line: z.string(),
   metadata: LogLineMetadataSchema.optional(),
+  type: z.nativeEnum(EWSMessageType),
 });
 
 export const LogSchema = z.object({
