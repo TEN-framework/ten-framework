@@ -5,9 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
-use std::{fs, str::FromStr};
 
 use anyhow::Result;
 use console::Emoji;
@@ -27,6 +29,7 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 use ten_rust::pkg_info::PkgInfo;
 
+use crate::constants::BUF_WRITER_BUF_SIZE;
 use crate::output::TmanOutput;
 
 // Helper function to check if an Option<Vec> is None or an empty Vec.
@@ -172,10 +175,10 @@ pub fn write_pkg_lockfile<P: AsRef<Path>>(
     manifest_lock: &ManifestLock,
     app_path: P,
 ) -> Result<bool> {
-    // Serialize the `ManifestLock` to a JSON string.
-    let encodable_resolve_str = serde_json::to_string_pretty(manifest_lock)?;
-
     let lock_file_path = app_path.as_ref().join(MANIFEST_LOCK_JSON_FILENAME);
+
+    // For comparison, we still need to serialize to string first
+    let encodable_resolve_str = serde_json::to_string_pretty(manifest_lock)?;
 
     // If the lock file contents haven't changed, we don't need to rewrite it.
     if are_equal_lockfiles(lock_file_path.as_ref(), &encodable_resolve_str) {
@@ -183,7 +186,19 @@ pub fn write_pkg_lockfile<P: AsRef<Path>>(
     }
 
     // TODO(xilin): Maybe RWlock is needed.
-    fs::write(lock_file_path, encodable_resolve_str)?;
+    // Use BufWriter with custom capacity for improved disk I/O efficiency.
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&lock_file_path)?;
+
+    let mut buf_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, file);
+
+    // Serialize directly to the writer to avoid intermediate string allocation
+    serde_json::to_writer_pretty(&mut buf_writer, manifest_lock)?;
+
+    buf_writer.flush()?;
     Ok(true)
 }
 

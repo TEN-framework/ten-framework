@@ -386,6 +386,7 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/usr/local/opt/llvm/bin:$PATH"

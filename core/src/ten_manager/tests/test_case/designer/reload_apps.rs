@@ -10,13 +10,13 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        home::config::TmanConfig,
         designer::{
             apps::reload::{reload_app_endpoint, ReloadPkgsRequestPayload},
             response::{ApiResponse, Status},
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
         pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
@@ -35,6 +35,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -109,6 +110,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {

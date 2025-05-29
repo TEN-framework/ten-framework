@@ -28,9 +28,21 @@ pub struct GetPersistentResponseData {
 
 pub async fn get_persistent_storage_endpoint(
     request_payload: web::Json<GetPersistentRequestPayload>,
-    _state: web::Data<Arc<DesignerState>>,
+    state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     let key = request_payload.key.clone();
+
+    // Check if schema has been set
+    {
+        let schema_lock = state.persistent_storage_schema.read().await;
+        if schema_lock.is_none() {
+            return Ok(HttpResponse::BadRequest().json(ApiResponse {
+                status: Status::Fail,
+                data: GetPersistentResponseData { value: None },
+                meta: None,
+            }));
+        }
+    }
 
     // Read persistent storage data from disk
     let json_data = match read_persistent_storage() {

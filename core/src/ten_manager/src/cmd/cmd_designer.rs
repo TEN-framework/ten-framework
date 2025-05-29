@@ -118,6 +118,7 @@ pub async fn execute_cmd(
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     let mut actual_base_dir_opt: Option<String> = Some(base_dir);

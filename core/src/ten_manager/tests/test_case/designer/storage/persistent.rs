@@ -18,6 +18,10 @@ use ten_manager::{
                 get::{
                     get_persistent_storage_endpoint, GetPersistentResponseData,
                 },
+                schema::{
+                    set_persistent_storage_schema_endpoint,
+                    SetSchemaRequestPayload,
+                },
                 set::{
                     set_persistent_storage_endpoint,
                     SetPersistentRequestPayload, SetPersistentResponseData,
@@ -45,13 +49,18 @@ async fn test_set_and_get_persistent_simple() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
-    // Create app with both endpoints.
+    // Create app with all endpoints.
     let app = test::init_service(
         actix_web::App::new()
             .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
             .route(
                 "/storage/persistent/set",
                 web::post().to(set_persistent_storage_endpoint),
@@ -62,6 +71,22 @@ async fn test_set_and_get_persistent_simple() {
             ),
     )
     .await;
+
+    // Set up schema first - use a very permissive schema for testing
+    let schema = json!({
+        "type": "object",
+        "additionalProperties": true
+    });
+
+    let schema_payload = SetSchemaRequestPayload { schema };
+
+    let schema_req = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload)
+        .to_request();
+
+    let schema_resp = test::call_service(&app, schema_req).await;
+    assert_eq!(schema_resp.status(), StatusCode::OK);
 
     // Test setting a simple value
     let set_payload = SetPersistentRequestPayload {
@@ -117,12 +142,17 @@ async fn test_set_and_get_persistent_array_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
     let app = test::init_service(
         actix_web::App::new()
             .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
             .route(
                 "/storage/persistent/set",
                 web::post().to(set_persistent_storage_endpoint),
@@ -133,6 +163,22 @@ async fn test_set_and_get_persistent_array_key() {
             ),
     )
     .await;
+
+    // Set up schema first - use a very permissive schema for testing
+    let schema = json!({
+        "type": "object",
+        "additionalProperties": true
+    });
+
+    let schema_payload = SetSchemaRequestPayload { schema };
+
+    let schema_req = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload)
+        .to_request();
+
+    let schema_resp = test::call_service(&app, schema_req).await;
+    assert_eq!(schema_resp.status(), StatusCode::OK);
 
     // Test setting a value with array key
     let set_payload = SetPersistentRequestPayload {
@@ -180,16 +226,39 @@ async fn test_get_persistent_nonexistent_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
     let app = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/persistent/get",
-            web::post().to(get_persistent_storage_endpoint),
-        ),
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
+            .route(
+                "/storage/persistent/get",
+                web::post().to(get_persistent_storage_endpoint),
+            ),
     )
     .await;
+
+    // Set up schema first - use a very permissive schema for testing
+    let schema = json!({
+        "type": "object",
+        "additionalProperties": true
+    });
+
+    let schema_payload = SetSchemaRequestPayload { schema };
+
+    let schema_req = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload)
+        .to_request();
+
+    let schema_resp = test::call_service(&app, schema_req).await;
+    assert_eq!(schema_resp.status(), StatusCode::OK);
 
     // Test getting a nonexistent key
     let get_payload = json!({"key": "nonexistent.key"});
@@ -210,6 +279,42 @@ async fn test_get_persistent_nonexistent_key() {
 }
 
 #[actix_web::test]
+async fn test_get_persistent_without_schema_fails() {
+    let _temp_home = TempHome::new();
+
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
+        )),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+    let state = web::Data::new(Arc::new(designer_state));
+
+    let app = test::init_service(
+        actix_web::App::new().app_data(state.clone()).route(
+            "/storage/persistent/get",
+            web::post().to(get_persistent_storage_endpoint),
+        ),
+    )
+    .await;
+
+    // Test getting without setting schema first - should fail
+    let get_payload = json!({"key": "nonexistent.key"});
+
+    let get_req = test::TestRequest::post()
+        .uri("/storage/persistent/get")
+        .set_json(&get_payload)
+        .to_request();
+
+    let get_resp = test::call_service(&app, get_req).await;
+    assert_eq!(get_resp.status(), StatusCode::BAD_REQUEST);
+}
+
+#[actix_web::test]
 async fn test_persistent_storage_persists_across_requests() {
     let _temp_home = TempHome::new();
 
@@ -221,17 +326,40 @@ async fn test_persistent_storage_persists_across_requests() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
     // Create first app instance
     let app1 = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/persistent/set",
-            web::post().to(set_persistent_storage_endpoint),
-        ),
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
+            .route(
+                "/storage/persistent/set",
+                web::post().to(set_persistent_storage_endpoint),
+            ),
     )
     .await;
+
+    // Set up schema first - use a very permissive schema for testing
+    let schema = json!({
+        "type": "object",
+        "additionalProperties": true
+    });
+
+    let schema_payload = SetSchemaRequestPayload { schema: schema.clone() };
+
+    let schema_req = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload)
+        .to_request();
+
+    let schema_resp = test::call_service(&app1, schema_req).await;
+    assert_eq!(schema_resp.status(), StatusCode::OK);
 
     // Set a value using first app instance
     let set_payload = SetPersistentRequestPayload {
@@ -249,12 +377,30 @@ async fn test_persistent_storage_persists_across_requests() {
 
     // Create second app instance (simulating restart)
     let app2 = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/persistent/get",
-            web::post().to(get_persistent_storage_endpoint),
-        ),
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
+            .route(
+                "/storage/persistent/get",
+                web::post().to(get_persistent_storage_endpoint),
+            ),
     )
     .await;
+
+    // Set up schema for second app instance (simulating schema being set again
+    // after restart)
+    let schema_payload2 = SetSchemaRequestPayload { schema };
+
+    let schema_req2 = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload2)
+        .to_request();
+
+    let schema_resp2 = test::call_service(&app2, schema_req2).await;
+    assert_eq!(schema_resp2.status(), StatusCode::OK);
 
     // Get the value using second app instance
     let get_payload = json!({"key": "persistent_test"});
@@ -287,6 +433,68 @@ async fn test_set_persistent_invalid_key() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+    let state = web::Data::new(Arc::new(designer_state));
+
+    let app = test::init_service(
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route(
+                "/storage/persistent/schema",
+                web::post().to(set_persistent_storage_schema_endpoint),
+            )
+            .route(
+                "/storage/persistent/set",
+                web::post().to(set_persistent_storage_endpoint),
+            ),
+    )
+    .await;
+
+    // Set up schema first - use a very permissive schema for testing
+    let schema = json!({
+        "type": "object",
+        "additionalProperties": true
+    });
+
+    let schema_payload = SetSchemaRequestPayload { schema };
+
+    let schema_req = test::TestRequest::post()
+        .uri("/storage/persistent/schema")
+        .set_json(&schema_payload)
+        .to_request();
+
+    let schema_resp = test::call_service(&app, schema_req).await;
+    assert_eq!(schema_resp.status(), StatusCode::OK);
+
+    // Test setting with invalid key (contains uppercase)
+    let set_payload = SetPersistentRequestPayload {
+        key: "Graph_ui.test".to_string(),
+        value: json!("test_value"),
+    };
+
+    let set_req = test::TestRequest::post()
+        .uri("/storage/persistent/set")
+        .set_json(&set_payload)
+        .to_request();
+
+    let set_resp = test::call_service(&app, set_req).await;
+    assert_eq!(set_resp.status(), StatusCode::BAD_REQUEST);
+}
+
+#[actix_web::test]
+async fn test_set_persistent_without_schema_fails() {
+    let _temp_home = TempHome::new();
+
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
+        )),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let state = web::Data::new(Arc::new(designer_state));
 
@@ -298,9 +506,9 @@ async fn test_set_persistent_invalid_key() {
     )
     .await;
 
-    // Test setting with invalid key (contains uppercase)
+    // Test setting without schema first - should fail
     let set_payload = SetPersistentRequestPayload {
-        key: "Graph_ui.test".to_string(),
+        key: "test.key".to_string(),
         value: json!("test_value"),
     };
 

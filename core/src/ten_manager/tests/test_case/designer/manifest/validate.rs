@@ -9,7 +9,6 @@ use std::sync::Arc;
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    home::config::TmanConfig,
     designer::{
         manifest::validate::{
             validate_manifest_endpoint, ValidateManifestRequestPayload,
@@ -19,6 +18,7 @@ use ten_manager::{
         storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -33,6 +33,7 @@ async fn test_validate_manifest_valid() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -90,6 +91,7 @@ async fn test_validate_manifest_with_api() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -181,6 +183,7 @@ async fn test_validate_app_manifest_with_incorrect_api() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -274,6 +277,7 @@ async fn test_validate_app_manifest_with_correct_api() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -338,6 +342,7 @@ async fn test_validate_manifest_missing_required_fields() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -397,6 +402,7 @@ async fn test_validate_manifest_invalid_type() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -458,6 +464,7 @@ async fn test_validate_manifest_invalid_version_format() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -519,6 +526,7 @@ async fn test_validate_manifest_invalid_json_syntax() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.

@@ -12,7 +12,6 @@ mod tests {
     use actix_web::{test, web, App};
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
-    use ten_manager::home::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::apps::get::{
         get_apps_endpoint, AppInfo, GetAppsResponseData,
@@ -20,6 +19,7 @@ mod tests {
     use ten_manager::designer::response::{ApiResponse, Status};
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
@@ -34,6 +34,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Create an empty PkgsInfoInApp.
@@ -83,6 +84,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
         let designer_state = Arc::new(designer_state);
 

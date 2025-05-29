@@ -14,10 +14,10 @@ mod tests {
 
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        home::config::TmanConfig,
         designer::{
             response::ApiResponse, version::get_version_endpoint, DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
         version::VERSION,
     };
@@ -40,6 +40,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Create the App with the routes configured.

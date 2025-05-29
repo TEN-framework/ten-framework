@@ -146,9 +146,10 @@
       "title": "Log Viewer",
       "appInstall": "App Install",
       "filteredByAddon": "Filter logs by Addon",
-      "noAddons": "No Avaliable Addons",
+      "noAddons": "No Available Addons",
       "noMatchedAddons": "No matched addons",
-      "noLogs": "No logs to display."
+      "noLogs": "No logs to display.",
+      "cleanLogs": "Clean Logs"
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",
