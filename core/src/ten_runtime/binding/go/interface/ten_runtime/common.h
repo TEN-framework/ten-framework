@@ -165,3 +165,5 @@ typedef struct ten_go_error_t {
  *   [issue](https://github.com/golang/go/issues/38512).
  */
 ten_go_error_t ten_go_copy_c_str_to_slice_and_free(const char *src, void *dest);
+
+void ten_go_free_c_str(const char *str);

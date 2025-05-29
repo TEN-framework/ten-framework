@@ -88,6 +88,13 @@ void ten_go_error_set(ten_go_error_t *self, ten_error_code_t error_code,
   TEN_ASSERT(self, "Should not happen.");
 
   self->error_code = error_code;
+
+  // If self->error_message is not NULL, we need to free it first.
+  if (self->error_message_size > 0 && self->error_message != NULL) {
+    TEN_FREE(self->error_message);
+    self->error_message = NULL;
+  }
+
   if (error_message == NULL || strlen(error_message) == 0) {
     return;
   }
@@ -118,4 +125,10 @@ ten_go_error_t ten_go_copy_c_str_to_slice_and_free(const char *src,
   TEN_FREE(src);
 
   return cgo_error;
+}
+
+void ten_go_free_c_str(const char *str) {
+  if (str != NULL) {
+    TEN_FREE(str);
+  }
 }
