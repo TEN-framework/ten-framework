@@ -31,3 +31,7 @@ export enum ENDPOINT_METHOD {
 
 // Github
 export const API_GH_ROOT = "https://api.github.com";
+
+
+export const ENV_VAR_AGORA_APP_ID = "AGORA_APP_ID";
+export const ENV_VAR_AGORA_APP_CERT = "AGORA_APP_CERTIFICATE";

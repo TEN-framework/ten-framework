@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "拡張機能",
       "openExtensionStore": "拡張機能ストアを開く",
+      "startRTCInteraction": "RTCインタラクションを開始",
+      "configTrulienceAvatar": "Trulienceアバターを設定",
       "about": "拡張機能について"
     },
     "language": {
@@ -109,7 +111,8 @@
     "deleteConnectionConfirmation": "接続を削除してもよろしいですか？",
     "deleteConnectionSuccess": "接続の削除に成功しました",
     "deleteConnectionFailed": "接続の削除に失敗しました",
-    "replaceNode": "ノードを置き換え..."
+    "replaceNode": "ノードを置き換え...",
+    "manageApps": "アプリを管理"
   },
   "toast": {
     "saveFileSuccess": "ファイルの保存に成功しました",
@@ -273,6 +276,17 @@
     "versionLatest": "最新",
     "localAddonTip": "(ローカル)",
     "tags": "タグ"
+  },
+  "rtcInteraction": {
+    "title": "RTCインタラクション"
+  },
+  "trulienceConfig": {
+    "title": "Trulienceアバターの設定",
+    "enabled": "有効",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",

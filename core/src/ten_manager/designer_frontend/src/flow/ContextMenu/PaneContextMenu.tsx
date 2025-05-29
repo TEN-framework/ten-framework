@@ -8,6 +8,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   FolderOpenIcon,
+  FolderTreeIcon,
   GitPullRequestCreateIcon,
   PackagePlusIcon,
   // PinIcon,
@@ -28,6 +29,7 @@ interface PaneContextMenuProps {
   baseDir?: string;
   onOpenExistingGraph?: () => void;
   onGraphAct?: (type: EGraphActions) => void;
+  onAppManager?: () => void;
   onClose: () => void;
 }
 
@@ -39,6 +41,7 @@ const PaneContextMenu: React.FC<PaneContextMenuProps> = ({
   baseDir,
   onOpenExistingGraph,
   onGraphAct,
+  onAppManager,
   onClose,
 }) => {
   const { t } = useTranslation();
@@ -77,6 +80,19 @@ const PaneContextMenu: React.FC<PaneContextMenuProps> = ({
       onClick: () => {
         onClose();
         onGraphAct?.(EGraphActions.ADD_CONNECTION);
+      },
+    },
+    {
+      _type: EContextMenuItemType.SEPARATOR,
+    },
+    {
+      _type: EContextMenuItemType.BUTTON,
+      label: t("action.manageApps"),
+      icon: <FolderTreeIcon className="size-3" />,
+      disabled: !graphId,
+      onClick: () => {
+        onClose();
+        onAppManager?.();
       },
     },
   ];
