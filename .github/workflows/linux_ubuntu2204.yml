@@ -85,7 +85,9 @@ jobs:
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
             go install golang.org/dl/go1.22.3@latest
+            export PATH=$PATH:$(go env GOPATH)/bin
             go1.22.3 download
+            go1.22.3 version
             rustup default nightly
           fi
 
