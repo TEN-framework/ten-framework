@@ -20,7 +20,7 @@ import {
 } from "agora-rtc-react";
 
 import { IWidget } from "@/types/widgets";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { RtcTokenBuilder } from "agora-token";
 import { useRTCEnvVar } from "@/api/services/env-var";
 import React from "react";
@@ -29,10 +29,13 @@ import { useFlowStore } from "@/store";
 import AgentView from "@/components/Agent";
 import MicrophoneBlock from "@/components/RTC/Microphone";
 import VideoBlock from "@/components/RTC/Camera";
-import { IChatItem, VideoSourceType } from "@/types/rtc";
+import { VideoSourceType } from "@/types/rtc";
 import { Separator } from "@/components/ui/Separator";
 import MessageList from "@/components/Agent/Message";
-import { useChatItemReducer, useRTCMessageParser } from "@/hooks/use-rtc-message-parser";
+import {
+  useChatItemReducer,
+  useRTCMessageParser,
+} from "@/hooks/use-rtc-message-parser";
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 

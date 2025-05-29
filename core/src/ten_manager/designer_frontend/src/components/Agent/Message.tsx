@@ -4,6 +4,7 @@ import { EMessageDataType, EMessageType, type IChatItem } from "@/types/rtc";
 import { cn } from "@/lib/utils";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { Avatar, AvatarFallback } from "@/components/ui/ChatProfile";
+import { t } from "i18next";
 
 export default function MessageList(
   props: { chatItems: IChatItem[]; className?: string }
@@ -28,7 +29,7 @@ export default function MessageList(
             h-full
           "
         >
-          <p>No messages yet.</p>
+          <p>{t("components.messageList.noMessages")}</p>
         </div>
       ) : (
         chatItems.map((item) => (

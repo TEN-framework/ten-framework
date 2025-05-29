@@ -15,6 +15,7 @@ import AgoraRTC, {
   LocalVideoTrack,
 } from "agora-rtc-react";
 import { VideoSourceType } from "@/types/rtc";
+import { t } from "i18next";
 
 
 export function VideoDeviceWrapper(props: {
@@ -51,14 +52,14 @@ export function VideoDeviceWrapper(props: {
                     <MonitorIcon className="h-5 w-5" />
                   ) : <MonitorXIcon className="h-5 w-5" />
                 }
-                <span className="ml-2">Screen</span>
+                <span className="ml-2">{t("rtc.videoSource.screen")}</span>
               </>
             ) : (
               <>
                 {isActive ? (
                   <CameraIcon className="h-5 w-5" />
                 ) : <CameraOffIcon className="h-5 w-5" />}
-                <span className="ml-2">Camera</span>
+                <span className="ml-2">{t("rtc.videoSource.camera")}</span>
               </>
             )}
           </Button>
@@ -171,7 +172,7 @@ const VideoDeviceSelect = (
             })),
             ...[
               {
-                label: "Screen",
+                label: t("rtc.videoSource.screen"),
                 value: VideoSourceType.SCREEN,
                 deviceId: VideoSourceType.SCREEN,
               }
@@ -203,7 +204,7 @@ const VideoDeviceSelect = (
       items={items}
       value={value}
       onChange={onChange}
-      placeholder="Select a camera"
+      placeholder={t("rtc.videoSource.cameraPlaceholder")}
     />
   );
 };
