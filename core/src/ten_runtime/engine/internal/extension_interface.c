@@ -88,12 +88,12 @@ bool ten_engine_enable_extension_system(ten_engine_t *self, ten_error_t *err) {
 }
 
 /**
- * After the initialization of all extension threads in the engine (representing
- * a graph) is completed (regardless of whether the result is success or
- * failure), the engine needs to respond to the original requester of the graph
- * creation (i.e., a `start_graph` command) with a result.
+ * Check if all extension threads in the engine (representing a graph) are
+ * ready. If all extension threads are ready, the engine needs to respond to the
+ * original requester of the graph creation (i.e., a `start_graph` command) with
+ * a result.
  */
-static void ten_engine_on_all_extension_threads_are_ready(
+static void ten_engine_check_if_all_extension_threads_are_ready(
     ten_engine_t *self, ten_extension_thread_t *extension_thread) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
@@ -249,7 +249,7 @@ void ten_engine_find_extension_info_for_all_extensions_of_extension_thread_task(
       TEN_ASSERT(0, "Should not happen.");
     }
   } else {
-    ten_engine_on_all_extension_threads_are_ready(self, extension_thread);
+    ten_engine_check_if_all_extension_threads_are_ready(self, extension_thread);
 
     int rc = ten_runloop_post_task_tail(
         ten_extension_thread_get_attached_runloop(extension_thread),

@@ -136,7 +136,7 @@ def test_two_async_exts_python():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The two_async_exts_python is not started after 10 seconds.")
+        print("The two_async_exts_python is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()

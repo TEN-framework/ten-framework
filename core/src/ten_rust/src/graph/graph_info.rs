@@ -14,6 +14,51 @@ use crate::pkg_info::pkg_type::PkgType;
 
 use super::Graph;
 
+/// Loads graph data from the specified URI with an optional base directory.
+///
+/// The URI can be:
+/// - A relative path (relative to the base_dir if provided)
+/// - An absolute path
+/// - A URL
+///
+/// This function returns the loaded Graph structure.
+pub fn load_graph_from_uri_with_base_dir(
+    uri: &str,
+    base_dir: Option<&str>,
+) -> Result<Graph> {
+    // Check if the URI is a URL (starts with http:// or https://)
+    if uri.starts_with("http://") || uri.starts_with("https://") {
+        // TODO: Implement HTTP request to fetch the graph file
+        // For now, return an error since HTTP requests are not implemented
+        // yet.
+        return Err(anyhow!("HTTP URLs are not supported yet for source_uri"));
+    }
+
+    // Handle relative and absolute paths.
+    let path = if Path::new(uri).is_absolute() {
+        PathBuf::from(uri)
+    } else if let Some(base_dir) = base_dir {
+        // If base_dir is available, use it as the base for relative
+        // paths.
+        Path::new(base_dir).join(uri)
+    } else {
+        panic!("base_dir is not available");
+    };
+
+    // Read the graph file.
+    let graph_content = read_file_to_string(&path).with_context(|| {
+        format!("Failed to read graph file from {}", path.display())
+    })?;
+
+    // Parse the graph file into a Graph structure.
+    let graph: Graph =
+        serde_json::from_str(&graph_content).with_context(|| {
+            format!("Failed to parse graph file from {}", path.display())
+        })?;
+
+    Ok(graph)
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,9 +83,50 @@ pub struct GraphInfo {
 
 impl GraphInfo {
     pub fn validate_and_complete(&mut self) -> Result<()> {
+        // Validate mutual exclusion between source_uri and graph fields
+        if self.source_uri.is_some() {
+            // When source_uri is present, the graph fields should be empty or
+            // None
+            if !self.graph.nodes.is_empty() {
+                return Err(anyhow!(
+                    "When 'source_uri' is specified, 'nodes' field must not \
+                     be present"
+                ));
+            }
+
+            if let Some(connections) = &self.graph.connections {
+                if !connections.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'connections' field \
+                         must not be present"
+                    ));
+                }
+            }
+
+            if let Some(exposed_messages) = &self.graph.exposed_messages {
+                if !exposed_messages.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'exposed_messages' \
+                         field must not be present"
+                    ));
+                }
+            }
+
+            if let Some(exposed_properties) = &self.graph.exposed_properties {
+                if !exposed_properties.is_empty() {
+                    return Err(anyhow!(
+                        "When 'source_uri' is specified, 'exposed_properties' \
+                         field must not be present"
+                    ));
+                }
+            }
+        }
+
         // If source_uri is specified, load graph from the URI.
-        if let Some(uri) = self.source_uri.clone() {
-            self.load_graph_from_uri(&uri)?;
+        let source_uri = self.source_uri.clone();
+        let app_base_dir = self.app_base_dir.clone();
+        if let Some(uri) = source_uri {
+            self.load_graph_from_uri(&uri, app_base_dir.as_deref())?;
         }
 
         self.graph.validate_and_complete()
@@ -55,39 +141,13 @@ impl GraphInfo {
     ///
     /// This function replaces the current graph with the one loaded from the
     /// URI.
-    fn load_graph_from_uri(&mut self, uri: &str) -> Result<()> {
-        // Check if the URI is a URL (starts with http:// or https://)
-        if uri.starts_with("http://") || uri.starts_with("https://") {
-            // TODO: Implement HTTP request to fetch the graph file
-            // For now, return an error since HTTP requests are not implemented
-            // yet.
-            return Err(anyhow!(
-                "HTTP URLs are not supported yet for source_uri"
-            ));
-        }
-
-        // Handle relative and absolute paths.
-        let path = if Path::new(uri).is_absolute() {
-            PathBuf::from(uri)
-        } else if let Some(app_base_dir) = &self.app_base_dir {
-            // If app_base_dir is available, use it as the base for relative
-            // paths.
-            Path::new(app_base_dir).join(uri)
-        } else {
-            // If app_base_dir is not available, just use the URI as is.
-            PathBuf::from(uri)
-        };
-
-        // Read the graph file.
-        let graph_content = read_file_to_string(&path).with_context(|| {
-            format!("Failed to read graph file from {}", path.display())
-        })?;
-
-        // Parse the graph file into a Graph structure.
-        let graph: Graph =
-            serde_json::from_str(&graph_content).with_context(|| {
-                format!("Failed to parse graph file from {}", path.display())
-            })?;
+    fn load_graph_from_uri(
+        &mut self,
+        uri: &str,
+        base_dir: Option<&str>,
+    ) -> Result<()> {
+        // Use the extracted function to load the graph
+        let graph = load_graph_from_uri_with_base_dir(uri, base_dir)?;
 
         // Replace the current graph with the loaded one.
         self.graph = graph;

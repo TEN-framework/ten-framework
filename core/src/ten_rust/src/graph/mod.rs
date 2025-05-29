@@ -139,6 +139,11 @@ pub struct GraphExposedMessage {
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
+
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
 }
 
 /// Represents a property that is exposed by the graph to the outside.
@@ -150,13 +155,14 @@ pub struct GraphExposedProperty {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
 
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     pub name: String,
-
-    /// The alias of the property when exposed outside the graph.
-    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub alias: String,
 }
 
 /// Represents a connection graph that defines how extensions connect to each

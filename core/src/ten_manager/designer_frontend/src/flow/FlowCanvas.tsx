@@ -21,6 +21,7 @@ import {
   type EdgeChange,
 } from "@xyflow/react";
 import { useTranslation } from "react-i18next";
+import { BrushCleaningIcon } from "lucide-react";
 
 import CustomNode from "@/flow/CustomNode";
 import CustomEdge from "@/flow/CustomEdge";
@@ -167,8 +168,17 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
         actions: {
           onClose: () => {
             removeBackstageWidget(widgetId);
-            removeLogViewerHistory(widgetId);
           },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(widgetId);
+              },
+            },
+          ],
         },
       });
     };

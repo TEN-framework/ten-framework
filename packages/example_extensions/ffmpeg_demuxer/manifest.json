@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_demuxer",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "tags": [
     "cpp"
   ],
