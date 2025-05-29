@@ -66,6 +66,7 @@ from google.genai.types import (
     ProactivityConfig,
     LiveServerContent,
     Modality,
+    MediaResolution,
 )
 from google.genai.live import AsyncSession
 from google.genai import types
@@ -163,7 +164,9 @@ class GeminiRealtimeConfig(BaseConfig):
     sample_rate: int = 24000
     stream_id: int = 0
     dump: bool = False
-    greeting: str = ""
+    greeting: str = "hello"
+    # Audio optimization settings
+    audio_chunk_size: int = 1024
     # Transcription settings
     transcribe_agent: bool = False
     transcribe_user: bool = False
@@ -175,6 +178,10 @@ class GeminiRealtimeConfig(BaseConfig):
     end_of_speech_sensitivity: Optional[str] = None
     prefix_padding_ms: Optional[int] = None
     silence_duration_ms: Optional[int] = None
+
+    media_resolution: MediaResolution = MediaResolution.MEDIA_RESOLUTION_MEDIUM
+    context_window_trigger_tokens: int = 25600
+    context_window_sliding_window_target_tokens: int = 12800
 
     def build_ctx(self) -> dict:
         return {
@@ -211,10 +218,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.session: AsyncSession = None
         self.leftover_bytes = b""
         self.video_task = None
-        self.image_queue = asyncio.Queue()
+        self.image_queue = asyncio.Queue(maxsize=5)
         self.video_buff: str = ""
         self.loop = None
         self.ten_env = None
+
+        # Cache for session configuration to reduce cold start time
+        self._cached_session_config = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -459,7 +469,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         image_data = video_frame.get_buf()
         image_width = video_frame.get_width()
         image_height = video_frame.get_height()
-        await self.image_queue.put([image_data, image_width, image_height])
+
+        # Use non-blocking put to avoid memory buildup
+        try:
+            self.image_queue.put_nowait([image_data, image_width, image_height])
+        except asyncio.QueueFull:
+            # Drop frames if queue is full to maintain performance
+            pass
 
     async def _on_video(self, _: AsyncTenEnv):
         while True:
@@ -500,17 +516,23 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
     # Direction: IN
     async def _on_audio(self, buff: bytearray):
         self.buff += buff
-        # Buffer audio
+        # Buffer audio with optimized threshold for better performance
         if self.connected and len(self.buff) >= self.audio_len_threshold:
             try:
+                # Process in larger chunks for efficiency
+                chunk_size = min(len(self.buff), self.audio_len_threshold * 2)
+                audio_data = self.buff[:chunk_size]
+                self.buff = self.buff[chunk_size:]
+
                 audio_blob = types.Blob(
-                    data=self.buff,
+                    data=audio_data,
                     mime_type="audio/pcm;rate=16000",
                 )
                 await self.session.send_realtime_input(audio=audio_blob)
-                self.buff = bytearray()
             except Exception as e:
                 self.ten_env.log_error(f"Failed to send audio {e}")
+                # Reset buffer on error to prevent accumulation
+                self.buff = bytearray()
 
     def _get_realtime_input_config(self) -> RealtimeInputConfig:
         """Extract and return configured speech sensitivities."""
@@ -572,6 +594,10 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         )
 
     def _get_session_config(self) -> LiveConnectConfigDict:
+        # Return cached config if available to reduce cold start time
+        if self._cached_session_config is not None:
+            return self._cached_session_config
+
         def tool_dict(tool: LLMToolMetadata):
             required = []
             properties: dict[str, "Schema"] = {}
@@ -609,7 +635,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         tools.append(Tool(code_execution={}))
 
         config = LiveConnectConfig(
-            response_modalities=["AUDIO"],
+            response_modalities=[Modality.AUDIO],
+            # Add media resolution for optimized video processing performance
+            media_resolution=self.config.media_resolution,
             system_instruction=Content(parts=[Part(text=self.config.prompt)]),
             tools=tools,
             # voice is currently not working
@@ -624,6 +652,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             generation_config=GenerationConfig(
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_tokens,
+            ),
+            # Add context window compression for better performance with long conversations
+            context_window_compression=types.ContextWindowCompressionConfig(
+                trigger_tokens=self.config.context_window_trigger_tokens,
+                sliding_window=types.SlidingWindow(
+                    target_tokens=self.config.context_window_sliding_window_target_tokens
+                ),
             ),
             realtime_input_config=self._get_realtime_input_config(),
             output_audio_transcription=(
@@ -646,6 +681,8 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             ),
         )
 
+        # Cache the configuration for future use
+        self._cached_session_config = config
         return config
 
     async def on_tools_update(
