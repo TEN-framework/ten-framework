@@ -79,12 +79,13 @@ jobs:
 
       - name: Build
         run: |
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
 
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
-            go1.20.12 download
+            go install golang.org/dl/go1.22.3@latest
+            go1.22.3 download
             rustup default nightly
           fi
 
