@@ -33,8 +33,8 @@
             "addon": "deepgram_asr_python",
             "extension_group": "stt",
             "property": {
-              "api_key": "${env:DEEPGRAM_API_KEY}",
-              "language": "en-US",
+              "api_key": "94a77ac9cdaada85f06367c8fb00105aa7a119f0",
+              "language": "zh-CN",
               "model": "nova-2",
               "sample_rate": 16000
             }
@@ -42,31 +42,32 @@
           {
             "type": "extension",
             "name": "llm",
-            "addon": "openai_chatgpt_python",
+            "addon": "coze_python_async",
             "extension_group": "chatgpt",
             "property": {
-              "api_key": "${env:OPENAI_API_KEY}",
-              "base_url": "",
-              "frequency_penalty": 0.9,
-              "greeting": "TEN Agent connected. How can I help you today?",
-              "max_memory_length": 10,
-              "max_tokens": 512,
-              "model": "${env:OPENAI_MODEL}",
+              "base_url": "https://api.coze.cn",
+              "bot_id": "7498272520953577483",
+              "greeting": "你好主人，我是你的语音助手！",
               "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL}"
+              "token": "pat_sVZBD84pADJPJx3zSyXIGACg3cZEBNwuJzns2b8ZHxrC95OXgxuR7t6bXal4Gay0"
             }
           },
           {
             "type": "extension",
             "name": "tts",
-            "addon": "fish_audio_tts",
+            "addon": "elevenlabs_tts_python",
             "extension_group": "tts",
             "property": {
-              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
-              "optimize_streaming_latency": true,
+              "api_key": "sk_c3ca4071205173c63dae8483cd07f7dd6d72e090ec2b4147",
+              "base_url": "",
+              "model_id": "eleven_multilingual_v2",
+              "optimize_streaming_latency": 0,
+              "prompt": "",
               "request_timeout_seconds": 30,
-              "base_url": "https://api.fish.audio"
+              "similarity_boost": 0.75,
+              "speaker_boost": false,
+              "stability": 0.5,
+              "voice_id": "pNInz6obpgDQGcFmaJgB"
             }
           },
           {
@@ -82,15 +83,6 @@
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
           }
         ],
         "connections": [
@@ -157,14 +149,6 @@
                 "dest": [
                   {
                     "extension": "tts"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -242,19 +226,6 @@
             "data": [
               {
                 "name": "text_data",
-                "dest": [
-                  {
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
                 "dest": [
                   {
                     "extension": "llm"
