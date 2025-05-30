@@ -288,7 +288,7 @@ ten_go_error_t ten_go_extension_tester_create(
   TEN_ASSERT(go_extension_tester > 0 && bridge_addr, "Invalid argument.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_extension_tester_t *extension_tester =
       ten_go_extension_tester_create_internal(go_extension_tester);
@@ -333,7 +333,7 @@ ten_go_error_t ten_go_extension_tester_set_test_mode_single(
       ten_string_get_raw_str(&property_json_str));
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_string_deinit(&addon_name_str);
   ten_string_deinit(&property_json_str);
@@ -347,7 +347,7 @@ ten_go_error_t ten_go_extension_tester_run(
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_extension_tester_run(extension_tester->c_extension_tester);
 

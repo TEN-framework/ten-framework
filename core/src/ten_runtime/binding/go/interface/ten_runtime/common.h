@@ -34,6 +34,17 @@ typedef struct ten_go_bridge_t {
   ten_go_handle_t go_instance;
 } ten_go_bridge_t;
 
+#define TEN_GO_ERROR_INIT_VAL                                 \
+  (ten_go_error_t) {                                          \
+    .error_code = TEN_ERROR_CODE_OK, .error_message_size = 0, \
+    .error_message = NULL                                     \
+  }
+
+#define TEN_GO_ERROR_INIT(var)     \
+  do {                             \
+    (var) = TEN_GO_ERROR_INIT_VAL; \
+  } while (0)
+
 // Return type for functions invoked from GO. The `ten_go_error_t` should
 // always be instantiated on the stack. This approach eliminates the need for
 // freeing it from the GO side, thereby reducing one cgo call.

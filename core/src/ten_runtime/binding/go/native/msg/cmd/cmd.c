@@ -28,7 +28,7 @@ ten_go_error_t ten_go_cmd_create_cmd(const void *name, int name_len,
   TEN_ASSERT(name && name_len > 0, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_string_t cmd_name;
   ten_string_init_from_c_str_with_size(&cmd_name, name, name_len);
@@ -60,7 +60,7 @@ ten_go_error_t ten_go_cmd_clone(uintptr_t bridge_addr,
   TEN_ASSERT(c_cmd, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_shared_ptr_t *cloned_c_cmd = ten_msg_clone(c_cmd, NULL);
   TEN_ASSERT(cloned_c_cmd, "Should not happen.");
@@ -117,7 +117,7 @@ ten_go_error_t ten_go_cmd_result_set_final(uintptr_t bridge_addr,
   TEN_ASSERT(c_cmd, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -146,7 +146,7 @@ ten_go_error_t ten_go_cmd_result_is_final(uintptr_t bridge_addr,
   TEN_ASSERT(c_cmd, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -175,7 +175,7 @@ ten_go_error_t ten_go_cmd_result_is_completed(uintptr_t bridge_addr,
   TEN_ASSERT(c_cmd, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -202,7 +202,7 @@ ten_go_error_t ten_go_cmd_result_clone(uintptr_t bridge_addr,
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_shared_ptr_t *c_cmd = ten_go_msg_c_msg(msg_bridge);
   TEN_ASSERT(c_cmd, "Should not happen.");
@@ -222,7 +222,7 @@ ten_go_error_t ten_go_cmd_result_clone(uintptr_t bridge_addr,
 
 ten_go_error_t ten_go_cmd_create_start_graph_cmd(uintptr_t *bridge) {
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_shared_ptr_t *c_cmd = ten_cmd_start_graph_create();
   TEN_ASSERT(c_cmd && ten_cmd_check_integrity(c_cmd), "Should not happen.");
@@ -244,7 +244,7 @@ ten_go_error_t ten_go_cmd_start_graph_set_predefined_graph_name(
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_string_t predefined_graph_name_str;
   ten_string_init_from_c_str_with_size(&predefined_graph_name_str,
@@ -275,7 +275,7 @@ ten_go_error_t ten_go_cmd_start_graph_set_graph_from_json_bytes(
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_string_t json_str_str;
   ten_string_init_from_c_str_with_size(&json_str_str, json_bytes,
@@ -305,7 +305,7 @@ ten_go_error_t ten_go_cmd_start_graph_set_long_running_mode(
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);

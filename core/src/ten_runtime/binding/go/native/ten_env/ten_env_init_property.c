@@ -74,10 +74,10 @@ ten_go_error_t ten_go_ten_env_init_property_from_json_bytes(
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_BEGIN(self, {
-    ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_TEN_IS_CLOSED);
+    ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_TEN_IS_CLOSED);
     return cgo_error;
   });
 
@@ -94,7 +94,7 @@ ten_go_error_t ten_go_ten_env_init_property_from_json_bytes(
   ten_event_wait(ctx->completed, -1);
 
 done:
-  ten_go_error_from_error(&cgo_error, &ctx->err);
+  ten_go_error_set_from_error(&cgo_error, &ctx->err);
   ten_env_notify_init_property_ctx_destroy(ctx);
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_END(self);
