@@ -55,7 +55,7 @@ import {
 } from "@/api/services/graphs";
 import {
   retrieveExtensionSchema,
-  useExtensionSchema,
+  useFetchExtSchema,
   retrieveExtensionDefaultProperty,
 } from "@/api/services/extension";
 import { useFetchAddons } from "@/api/services/addons";
@@ -929,7 +929,7 @@ export const GraphConnectionCreationWidget = (props: {
     data: extSchema,
     isLoading: isExtSchemaLoading,
     error: extSchemaError,
-  } = useExtensionSchema(
+  } = useFetchExtSchema(
     src_node || dest_node
       ? {
           appBaseDir: currentWorkspace?.app?.base_dir ?? "",
