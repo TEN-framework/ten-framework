@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { useGraphs, postGraphsAutoStart } from "@/api/services/graphs";
-import { useApps } from "@/api/services/apps";
+import { useFetchApps } from "@/api/services/apps";
 import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     data: loadedApps,
     isLoading: isLoadingApps,
     error: errorApps,
-  } = useApps();
+  } = useFetchApps();
   const { removeWidget } = useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();

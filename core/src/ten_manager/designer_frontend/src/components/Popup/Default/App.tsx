@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useWidgetStore, useAppStore } from "@/store";
 import { AppFileManager } from "@/components/FileManager/AppFolder";
-import { postLoadDir, useApps } from "@/api/services/apps";
+import { postLoadDir, useFetchApps } from "@/api/services/apps";
 import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
@@ -54,7 +54,7 @@ export const AppFolderPopupContent = (props: { widget: IWidget }) => {
   const { removeWidget } = useWidgetStore();
   const { folderPath } = useAppStore();
 
-  const { mutate: mutateApps } = useApps();
+  const { mutate: mutateApps } = useFetchApps();
 
   const handleSetBaseDir = async (folderPath: string) => {
     try {
