@@ -44,7 +44,7 @@ export function GHStargazersCount(props: {
     data: helpText,
     error: helpTextError,
     isLoading: helpTextIsLoading,
-  } = useHelpText(EHelpTextKey.TEN_FRAMEWORK, i18n.language);
+  } = useHelpText({ key: EHelpTextKey.TEN_FRAMEWORK, locale: i18n.language });
 
   const shouldFallbackMemo = React.useMemo(() => {
     return isLoading || error || !repository?.stargazers_count;
@@ -93,7 +93,7 @@ export function GHStargazersCount(props: {
           {helpTextIsLoading ? (
             <SpinnerLoading className="size-4" />
           ) : (
-            <p>{helpText}</p>
+            <p>{helpText?.text}</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -109,7 +109,7 @@ export function GHTryTENAgent(props: { className?: string }) {
     data: helpText,
     error: helpTextError,
     isLoading: helpTextIsLoading,
-  } = useHelpText(EHelpTextKey.TEN_AGENT, i18n.language);
+  } = useHelpText({ key: EHelpTextKey.TEN_AGENT, locale: i18n.language });
 
   React.useEffect(() => {
     if (helpTextError) {
@@ -145,7 +145,7 @@ export function GHTryTENAgent(props: { className?: string }) {
           {helpTextIsLoading ? (
             <SpinnerLoading className="size-4" />
           ) : (
-            <p>{helpText}</p>
+            <p>{helpText?.text}</p>
           )}
         </TooltipContent>
       </Tooltip>
