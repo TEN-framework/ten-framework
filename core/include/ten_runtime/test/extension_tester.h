@@ -12,6 +12,7 @@
 
 typedef struct ten_extension_tester_t ten_extension_tester_t;
 typedef struct ten_env_tester_t ten_env_tester_t;
+typedef struct ten_error_t ten_error_t;
 
 typedef enum TEN_EXTENSION_TESTER_TEST_MODE {
   TEN_EXTENSION_TESTER_TEST_MODE_INVALID,
@@ -89,7 +90,8 @@ TEN_RUNTIME_API void ten_extension_tester_set_test_mode_graph(
 TEN_RUNTIME_API void ten_extension_tester_init_test_app_property_from_json(
     ten_extension_tester_t *self, const char *property_json_str);
 
-TEN_RUNTIME_API bool ten_extension_tester_run(ten_extension_tester_t *self);
+TEN_RUNTIME_API bool ten_extension_tester_run(ten_extension_tester_t *self,
+                                              ten_error_t *err);
 
 TEN_RUNTIME_API ten_env_tester_t *ten_extension_tester_get_ten_env_tester(
     ten_extension_tester_t *self);

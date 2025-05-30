@@ -52,7 +52,8 @@ class extension_tester_t {
 
   bool run(error_t *err = nullptr) {
     TEN_ASSERT(c_extension_tester, "Should not happen.");
-    return ten_extension_tester_run(c_extension_tester);
+    return ten_extension_tester_run(
+        c_extension_tester, err != nullptr ? err->get_c_error() : nullptr);
   }
 
  protected:

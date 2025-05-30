@@ -70,6 +70,23 @@ bool ten_extension_tester_thread_call_by_me(ten_extension_tester_t *self) {
                                     &self->thread_check));
 }
 
+void ten_extension_tester_set_test_result(ten_extension_tester_t *self,
+                                          ten_error_t *test_result) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+  TEN_ASSERT(test_result, "Invalid argument.");
+
+  if (!ten_error_is_success(&self->test_result)) {
+    // If the test result is already set, it means the ten_env.stop_test has
+    // been called more than once. We determine that the first result was the
+    // main reason for failure, so we discard the subsequent results.
+    return;
+  }
+
+  ten_error_copy(&self->test_result, test_result);
+}
+
 ten_extension_tester_t *ten_extension_tester_create(
     ten_extension_tester_on_init_func_t on_init,
     ten_extension_tester_on_start_func_t on_start,
@@ -110,6 +127,8 @@ ten_extension_tester_t *ten_extension_tester_create(
   self->user_data = NULL;
 
   self->test_mode = TEN_EXTENSION_TESTER_TEST_MODE_INVALID;
+
+  TEN_ERROR_INIT(self->test_result);
 
   return self;
 }
@@ -241,6 +260,8 @@ void ten_extension_tester_destroy(ten_extension_tester_t *self) {
     ten_runloop_destroy(self->tester_runloop);
     self->tester_runloop = NULL;
   }
+
+  ten_error_deinit(&self->test_result);
 
   TEN_FREE(self);
 }
@@ -627,7 +648,7 @@ static void ten_extension_tester_inherit_thread_ownership(
       &self->thread_check);
 }
 
-bool ten_extension_tester_run(ten_extension_tester_t *self) {
+bool ten_extension_tester_run(ten_extension_tester_t *self, ten_error_t *err) {
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: this function could be called in different threads other than
   // the creation thread.
@@ -653,7 +674,11 @@ bool ten_extension_tester_run(ten_extension_tester_t *self) {
   // Start the runloop of tester.
   ten_runloop_run(self->tester_runloop);
 
-  return true;
+  if (err != NULL) {
+    ten_error_copy(err, &self->test_result);
+  }
+
+  return ten_error_is_success(&self->test_result);
 }
 
 ten_env_tester_t *ten_extension_tester_get_ten_env_tester(

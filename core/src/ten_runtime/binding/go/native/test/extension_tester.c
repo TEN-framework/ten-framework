@@ -380,7 +380,12 @@ ten_go_error_t ten_go_extension_tester_run(
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_extension_tester_run(extension_tester->c_extension_tester);
+  ten_error_t error;
+  TEN_ERROR_INIT(error);
+
+  ten_extension_tester_run(extension_tester->c_extension_tester, &error);
+
+  ten_go_error_from_error(&cgo_error, &error);
 
   return cgo_error;
 }
