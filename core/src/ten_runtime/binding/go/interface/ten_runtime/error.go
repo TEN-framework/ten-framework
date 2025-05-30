@@ -12,7 +12,6 @@ import "C"
 
 import (
 	"fmt"
-	"unsafe"
 )
 
 // TenError is the standard error returned to user from the golang binding. It
@@ -52,7 +51,7 @@ func withCGoError(cgoError *C.ten_go_error_t) error {
 	// It's crucial to free the memory allocated in the C environment to prevent
 	// memory leaks. Since C.GoString creates a copy of the memory content, it
 	// is safe to release the 'error_message' memory in C after its use.
-	defer C.free(unsafe.Pointer(cgoError.error_message))
+	defer C.ten_go_free_c_str(cgoError.error_message)
 
 	return &TenError{
 		errorCode:    uint32(cgoError.error_code),

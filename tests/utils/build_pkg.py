@@ -176,9 +176,14 @@ def _build_go_app(args: ArgumentInfo) -> int:
     if args.log_level > 0:
         cmd += ["--verbose"]
 
-    # `-asan` is not supported by go compiler on darwin/arm64.
-    if args.enable_sanitizer and not is_mac_arm64():
-        cmd += ['--build_flags="-asan"']
+    # `-asan` and `-race` are not supported by go compiler on darwin/arm64.
+    # To use -race and -asan simultaneously is not supported by go compiler,
+    # so we only use -race if -asan is not enabled.
+    if not is_mac_arm64():
+        if args.enable_sanitizer:
+            cmd += ['--build_flags="-asan"']
+        else:
+            cmd += ['--build_flags="-race"']
 
     envs = os.environ.copy()
     if args.is_clang:

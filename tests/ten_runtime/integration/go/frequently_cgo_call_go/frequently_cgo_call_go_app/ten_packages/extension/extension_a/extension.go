@@ -64,8 +64,10 @@ func (p *extensionA) OnStart(tenEnv ten.TenEnv) {
 					panic("Should not happen")
 				}
 
-				if atomic.AddInt32(&counter, 1)%10 == 0 {
-					fmt.Printf("extension_a %d goroutines completed\n", counter)
+				completedNumber := atomic.AddInt32(&counter, 1)
+
+				if completedNumber%10 == 0 {
+					fmt.Printf("extension_a %d goroutines completed\n", completedNumber)
 				}
 			}(i % 100)
 		}

@@ -34,10 +34,10 @@ ten_go_error_t ten_go_ten_env_tester_on_deinit_done(uintptr_t bridge_addr) {
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   if (!self->c_ten_env_tester_proxy) {
-    ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_GENERIC);
+    ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_GENERIC);
     return cgo_error;
   }
 

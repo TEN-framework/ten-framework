@@ -17,6 +17,12 @@ ten_package_test_prepare_app("unused_addon_python_app") {
     "unused_addon_python_app/property.json",
   ]
 
+  if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [ "unused_addon_python_app/main_with_leak_check.go=>unused_addon_python_app/main.go" ]
+  } else {
+    replace_paths_after_install_app += [ "unused_addon_python_app/main.go" ]
+  }
+
   replace_paths_after_install_all = [
     "unused_addon_python_app/ten_packages/extension/default_extension_python/addon.py",
     "unused_addon_python_app/ten_packages/extension/default_extension_python/extension.py",

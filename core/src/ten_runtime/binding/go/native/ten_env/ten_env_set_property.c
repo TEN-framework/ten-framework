@@ -65,7 +65,7 @@ static void ten_env_proxy_notify_set_property(ten_env_t *ten_env,
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -78,7 +78,7 @@ static void ten_env_proxy_notify_set_property(ten_env_t *ten_env,
     ctx->c_value = NULL;
   } else {
     // Prepare error information to pass to Go.
-    ten_go_error_from_error(&cgo_error, &err);
+    ten_go_error_set_from_error(&cgo_error, &err);
   }
 
   // Call back into Go to signal that the async operation in C is complete.
@@ -100,7 +100,7 @@ static ten_go_error_t ten_go_ten_env_set_property(ten_go_ten_env_t *self,
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_BEGIN(self, {
     ten_value_destroy(value);
@@ -119,7 +119,7 @@ static ten_go_error_t ten_go_ten_env_set_property(ten_go_ten_env_t *self,
                             &err)) {
     // Failed to invoke ten_env_proxy_notify.
     ten_env_notify_set_property_ctx_destroy(ctx);
-    ten_go_error_from_error(&cgo_error, &err);
+    ten_go_error_set_from_error(&cgo_error, &err);
   }
 
   ten_error_deinit(&err);
@@ -373,7 +373,7 @@ ten_go_error_t ten_go_ten_env_set_property_json_bytes(
   TEN_ASSERT(json_str && json_str_len > 0, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_json_t *json = ten_go_json_loads(json_str, json_str_len, &cgo_error);
   if (json == NULL) {

@@ -324,7 +324,7 @@ ten_go_error_t ten_go_extension_create(ten_go_handle_t go_extension,
              "Invalid argument.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_string_t extension_name;
   ten_string_init_formatted(&extension_name, "%.*s", name_len, name);

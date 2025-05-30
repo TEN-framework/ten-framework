@@ -74,11 +74,12 @@ static void proxy_send_cmd_callback(ten_env_tester_t *ten_env_tester,
   uintptr_t cmd_result_bridge_addr = (uintptr_t)cmd_result_bridge;
 
   ten_go_error_t cgo_error;
+  TEN_GO_ERROR_INIT(cgo_error);
 
   if (err) {
-    ten_go_error_from_error(&cgo_error, err);
+    ten_go_error_set_from_error(&cgo_error, err);
   } else {
-    ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+    ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_OK);
   }
 
   bool is_completed = ten_cmd_result_is_completed(c_cmd_result, NULL);
@@ -131,7 +132,9 @@ static void ten_env_tester_proxy_notify_send_cmd(
 
       TEN_ASSERT(err.error_code != TEN_ERROR_CODE_OK, "Should not happen.");
       ten_go_error_t cgo_error;
-      ten_go_error_from_error(&cgo_error, &err);
+      TEN_GO_ERROR_INIT(cgo_error);
+
+      ten_go_error_set_from_error(&cgo_error, &err);
 
       tenGoTesterOnCmdResult(ten_env_bridge->bridge.go_instance, 0,
                              ctx->handler_id, true, cgo_error);
@@ -157,7 +160,7 @@ ten_go_error_t ten_go_ten_env_tester_send_cmd(uintptr_t bridge_addr,
   TEN_ASSERT(ten_go_msg_c_msg(cmd), "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   if (!self->c_ten_env_tester_proxy) {
     ten_go_error_set(&cgo_error, TEN_ERROR_CODE_TEN_IS_CLOSED,
@@ -178,7 +181,7 @@ ten_go_error_t ten_go_ten_env_tester_send_cmd(uintptr_t bridge_addr,
                                    ten_env_tester_proxy_notify_send_cmd, ctx,
                                    &err)) {
     ten_go_ten_env_tester_send_cmd_ctx_destroy(ctx);
-    ten_go_error_from_error(&cgo_error, &err);
+    ten_go_error_set_from_error(&cgo_error, &err);
   }
 
   ten_error_deinit(&err);
