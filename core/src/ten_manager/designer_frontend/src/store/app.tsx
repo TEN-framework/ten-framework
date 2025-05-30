@@ -9,14 +9,9 @@ import { devtools } from "zustand/middleware";
 import { z } from "zod";
 
 import { TEN_DEFAULT_APP_RUN_SCRIPT } from "@/constants";
+import { PREFERENCES_SCHEMA, EPreferencesLocale, IApp } from "@/types/apps";
 
 import { type IFMItem } from "@/components/FileManager/utils";
-import {
-  type IExtensionAddon,
-  PREFERENCES_SCHEMA,
-  EPreferencesLocale,
-  IApp,
-} from "@/types/apps";
 import { type IGraph } from "@/types/graphs";
 
 export interface IAppStore {
