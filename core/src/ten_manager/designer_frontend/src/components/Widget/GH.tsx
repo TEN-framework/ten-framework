@@ -18,7 +18,7 @@ import {
 import { GHIcon } from "@/components/Icons";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { cn } from "@/lib/utils";
-import { useGHRepository } from "@/api/services/github";
+import { useGitHubRepository } from "@/api/services/github";
 import { formatNumberWithCommas } from "@/lib/utils";
 import { TEN_AGENT_GITHUB_URL, TEN_AGENT_URL } from "@/constants";
 import { useHelpText } from "@/api/services/helpText";
@@ -35,7 +35,11 @@ export function GHStargazersCount(props: {
   const { owner, repo, className } = props;
 
   const { i18n } = useTranslation();
-  const { repository, error, isLoading } = useGHRepository(owner, repo);
+  const {
+    data: repository,
+    error,
+    isLoading,
+  } = useGitHubRepository({ owner, repo });
   const {
     data: helpText,
     error: helpTextError,

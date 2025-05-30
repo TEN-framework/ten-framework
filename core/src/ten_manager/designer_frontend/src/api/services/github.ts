@@ -4,26 +4,48 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import z from "zod";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import { useCancelableSWR, prepareReqUrl } from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_GH } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 
-export const useGHRepository = (owner: string, repo: string) => {
+export const retrieveGHRepository = async (options: {
+  owner: string;
+  repo: string;
+}) => {
   const template = ENDPOINT_GH.repository[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template, {
-    pathParams: { owner, repo },
+  const req = makeAPIRequest(template, {
+    pathParams: { owner: options.owner, repo: options.repo },
   });
-  const [{ data, error, isLoading }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+  const res = await req;
+  return template.responseSchema.parse(res);
+};
+
+export const useGitHubRepository = (options: {
+  owner: string;
+  repo: string;
+}) => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["ghRepository", ENDPOINT_METHOD.GET, options];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: () => retrieveGHRepository(options),
   });
+  const mutation = useMutation({
+    mutationFn: () => retrieveGHRepository(options),
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    repository: data,
+    data,
     error,
-    isLoading,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
