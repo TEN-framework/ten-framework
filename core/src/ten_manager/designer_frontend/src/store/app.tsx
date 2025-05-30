@@ -37,8 +37,6 @@ export interface IAppStore {
   setFolderPath: (folderPath: string) => void;
   fmItems: IFMItem[][];
   setFmItems: (fmItems: IFMItem[][]) => void;
-  addons: IExtensionAddon[];
-  setAddons: (addons: IExtensionAddon[]) => void;
   defaultOsArch: {
     os?: string;
     arch?: string;
@@ -86,8 +84,6 @@ export const useAppStore = create<IAppStore>()(
     setFolderPath: (folderPath: string) => set({ folderPath }),
     fmItems: [[]],
     setFmItems: (fmItems: IFMItem[][]) => set({ fmItems }),
-    addons: [],
-    setAddons: (addons: IExtensionAddon[]) => set({ addons }),
     defaultOsArch: {
       os: undefined,
       arch: undefined,

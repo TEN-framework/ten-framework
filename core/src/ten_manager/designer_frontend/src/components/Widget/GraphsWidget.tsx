@@ -58,7 +58,7 @@ import {
   useExtensionSchema,
   retrieveExtensionDefaultProperty,
 } from "@/api/services/extension";
-import { useAddons } from "@/api/services/addons";
+import { useFetchAddons } from "@/api/services/addons";
 import { useCompatibleMessages } from "@/api/services/messages";
 import {
   generateRawNodes,
@@ -299,10 +299,10 @@ export const GraphAddNodeWidget = (props: {
 
   const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
   const {
-    addons,
+    data: addons,
     isLoading: isAddonsLoading,
     error: addonError,
-  } = useAddons(base_dir);
+  } = useFetchAddons({ base_dir });
 
   const comboboxOptionsMemo = React.useMemo(() => {
     const addonsOptions = addons
