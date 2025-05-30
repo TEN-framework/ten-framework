@@ -297,7 +297,11 @@ export const GraphAddNodeWidget = (props: {
     }
   };
 
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
   const {
     data: addons,
     isLoading: isAddonsLoading,
@@ -497,7 +501,11 @@ export const GraphAddConnectionWidget = (props: {
 
   const { t } = useTranslation();
   const { nodes, setNodesAndEdges } = useFlowStore();
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
   const { currentWorkspace } = useAppStore();
 
   const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
@@ -923,7 +931,11 @@ export const GraphConnectionCreationWidget = (props: {
 
   const { t } = useTranslation();
   const { nodes, setNodesAndEdges } = useFlowStore();
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
   const { currentWorkspace } = useAppStore();
   const {
     data: extSchema,

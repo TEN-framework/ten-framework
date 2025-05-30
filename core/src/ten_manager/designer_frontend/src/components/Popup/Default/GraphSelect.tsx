@@ -72,7 +72,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     currentWorkspace?.app ?? loadedApps?.app_info?.[0] ?? null
   );
 
-  const { graphs = [], error, isLoading, mutate } = useGraphs();
+  const { data: graphs = [], error, isLoading, mutate } = useGraphs();
 
   const handleOk = () => {
     removeWidget(widget.widget_id);
