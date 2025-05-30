@@ -137,7 +137,7 @@ export interface IGraphWidgetData {
   type: EGraphActions;
   base_dir: string;
   graph_id?: string;
-  app_uri?: string;
+  app_uri?: string | null;
   node?: TCustomNode;
   src_node?: TCustomNode;
   dest_node?: TCustomNode;

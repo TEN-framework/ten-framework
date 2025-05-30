@@ -55,10 +55,10 @@ import {
 } from "@/api/services/graphs";
 import {
   retrieveExtensionSchema,
-  useExtensionSchema,
+  useFetchExtSchema,
   retrieveExtensionDefaultProperty,
 } from "@/api/services/extension";
-import { useAddons } from "@/api/services/addons";
+import { useFetchAddons } from "@/api/services/addons";
 import { useCompatibleMessages } from "@/api/services/messages";
 import {
   generateRawNodes,
@@ -297,12 +297,16 @@ export const GraphAddNodeWidget = (props: {
     }
   };
 
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
   const {
-    addons,
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
+  const {
+    data: addons,
     isLoading: isAddonsLoading,
     error: addonError,
-  } = useAddons(base_dir);
+  } = useFetchAddons({ base_dir });
 
   const comboboxOptionsMemo = React.useMemo(() => {
     const addonsOptions = addons
@@ -497,7 +501,11 @@ export const GraphAddConnectionWidget = (props: {
 
   const { t } = useTranslation();
   const { nodes, setNodesAndEdges } = useFlowStore();
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
   const { currentWorkspace } = useAppStore();
 
   const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
@@ -923,13 +931,17 @@ export const GraphConnectionCreationWidget = (props: {
 
   const { t } = useTranslation();
   const { nodes, setNodesAndEdges } = useFlowStore();
-  const { graphs, isLoading: isGraphsLoading, error: graphError } = useGraphs();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
   const { currentWorkspace } = useAppStore();
   const {
     data: extSchema,
     isLoading: isExtSchemaLoading,
     error: extSchemaError,
-  } = useExtensionSchema(
+  } = useFetchExtSchema(
     src_node || dest_node
       ? {
           appBaseDir: currentWorkspace?.app?.base_dir ?? "",
