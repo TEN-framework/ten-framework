@@ -847,9 +847,20 @@ static void test_app_ten_env_send_close_app_cmd(ten_env_t *ten_env,
   TEN_ASSERT(rc, "Should not happen.");
 }
 
-bool ten_env_tester_stop_test(ten_env_tester_t *self, ten_error_t *err) {
+bool ten_env_tester_stop_test(ten_env_tester_t *self, ten_error_t *test_result,
+                              ten_error_t *err) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
+
+  ten_extension_tester_t *tester = self->tester;
+  TEN_ASSERT(tester, "Should not happen.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
+             "Should not happen.");
+
+  if (test_result) {
+    ten_extension_tester_set_test_result(tester, test_result);
+  }
+
   return ten_env_proxy_notify(self->tester->test_app_ten_env_proxy,
                               test_app_ten_env_send_close_app_cmd, NULL, false,
                               err);

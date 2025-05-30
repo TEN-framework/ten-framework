@@ -98,7 +98,7 @@ void ten_extension_tester_on_cmd(TEN_UNUSED ten_extension_tester_t *tester,
 
   if (test_info->ack_cmd_success && test_info->hello_world_cmd_success) {
     TEN_FREE(test_info);
-    bool rc = ten_env_tester_stop_test(ten_env, nullptr);
+    bool rc = ten_env_tester_stop_test(ten_env, nullptr, nullptr);
     TEN_ASSERT(rc, "Should not happen.");
   }
 }
@@ -112,7 +112,7 @@ TEST(StandaloneTest, OnCmdC) {  // NOLINT
   ten_extension_tester_set_test_mode_single(
       tester, "standalone_test_on_cmd_c__test_extension_1", nullptr);
 
-  bool rc = ten_extension_tester_run(tester);
+  bool rc = ten_extension_tester_run(tester, nullptr);
   TEN_ASSERT(rc, "Should not happen.");
 
   ten_extension_tester_destroy(tester);

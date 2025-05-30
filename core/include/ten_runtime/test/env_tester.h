@@ -57,6 +57,7 @@ TEN_RUNTIME_API bool ten_env_tester_return_result(
     ten_error_t *error);
 
 TEN_RUNTIME_API bool ten_env_tester_stop_test(ten_env_tester_t *self,
+                                              ten_error_t *test_result,
                                               ten_error_t *error);
 
 TEN_RUNTIME_API bool ten_env_tester_log(ten_env_tester_t *self,

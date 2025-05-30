@@ -433,7 +433,8 @@ static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
   PyThreadState *saved_py_thread_state = PyEval_SaveThread();
 
   // This ia a blocking operation.
-  bool rc = ten_extension_tester_run(py_extension_tester->c_extension_tester);
+  bool rc =
+      ten_extension_tester_run(py_extension_tester->c_extension_tester, NULL);
 
   PyEval_RestoreThread(saved_py_thread_state);
 

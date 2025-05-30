@@ -13,7 +13,7 @@
 
 static void ten_go_ten_env_tester_stop_test_proxy_notify(
     ten_env_tester_t *ten_env_tester, void *user_data) {
-  ten_env_tester_stop_test(ten_env_tester, NULL);
+  ten_env_tester_stop_test(ten_env_tester, NULL, NULL);
 }
 
 ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr) {
