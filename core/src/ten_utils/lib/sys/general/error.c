@@ -112,6 +112,19 @@ const char *ten_error_message(ten_error_t *self) {
   return ten_string_get_raw_str(&self->error_message);
 }
 
+void ten_error_set_error_code(ten_error_t *self, ten_error_code_t error_code) {
+  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  self->error_code = error_code;
+}
+
+void ten_error_set_error_message(ten_error_t *self, const char *error_message) {
+  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(error_message, "Invalid argument");
+
+  ten_string_clear(&self->error_message);
+  ten_string_set_from_c_str(&self->error_message, error_message);
+}
+
 void ten_error_reset(ten_error_t *self) {
   TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
 

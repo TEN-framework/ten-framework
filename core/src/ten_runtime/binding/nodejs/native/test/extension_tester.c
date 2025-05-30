@@ -976,7 +976,7 @@ static void ten_nodejs_extension_tester_async_run_execute(napi_env env,
 
   // Run the TEN extension tester.
   ten_extension_tester_run(
-      async_run_data->extension_tester_bridge->c_extension_tester);
+      async_run_data->extension_tester_bridge->c_extension_tester, NULL);
 
   TEN_LOGI("ten_extension_tester_run run done");
 
