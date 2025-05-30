@@ -28,10 +28,10 @@ class ElevenLabsTTS:
         self.config = config
         self.client = None
 
-    def text_to_speech_stream(self, text: str) -> AsyncIterator[bytes]:
+    async def text_to_speech_stream(self, text: str) -> AsyncIterator[bytes]:
         # to avoid circular import issue when using openai with 11labs
         from elevenlabs.client import AsyncElevenLabs
-        from elevenlabs import Voice, VoiceSettings
+        from elevenlabs import VoiceSettings
 
         if not self.client:
             self.client = AsyncElevenLabs(
@@ -39,20 +39,17 @@ class ElevenLabsTTS:
                 timeout=self.config.request_timeout_seconds,
             )
 
-        # pylint: disable=no-member
-        return self.client.generate(
+        # Use the correct API method for AsyncElevenLabs client
+        return self.client.text_to_speech.stream(
             text=text,
-            model=self.config.model_id,
-            optimize_streaming_latency=self.config.optimize_streaming_latency,
+            model_id=self.config.model_id,
+            voice_id=self.config.voice_id,
             output_format="pcm_16000",
-            stream=True,
-            voice=Voice(
-                voice_id=self.config.voice_id,
-                settings=VoiceSettings(
-                    stability=self.config.stability,
-                    similarity_boost=self.config.similarity_boost,
-                    style=self.config.style,
-                    speaker_boost=self.config.speaker_boost,
-                ),
+            optimize_streaming_latency=self.config.optimize_streaming_latency,
+            voice_settings=VoiceSettings(
+                stability=self.config.stability,
+                similarity_boost=self.config.similarity_boost,
+                style=self.config.style,
+                speaker_boost=self.config.speaker_boost,
             ),
         )
