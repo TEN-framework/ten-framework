@@ -12,6 +12,8 @@ import {
   NodeChange,
 } from "@xyflow/react";
 import { toast } from "sonner";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import AppBar from "@/components/AppBar";
@@ -39,8 +41,11 @@ import {
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
+import { getTanstackQueryClient } from "@/api/services/utils";
 
 import type { TCustomEdge, TCustomNode } from "@/types/flow";
+
+const queryClient = getTanstackQueryClient();
 
 const App: React.FC = () => {
   const { nodes, setNodes, edges, setEdges, setNodesAndEdges } = useFlowStore();
@@ -167,68 +172,74 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <AppBar onAutoLayout={performAutoLayout} className="z-9997" />
+      <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
 
-      <ResizablePanelGroup
-        key={`resizable-panel-group-${resizablePanelMode}`}
-        direction={resizablePanelMode === "bottom" ? "vertical" : "horizontal"}
-        className={cn("w-screen h-screen", "min-h-screen min-w-screen")}
-      >
-        {resizablePanelMode === "left" && dockWidgetsMemo.length > 0 && (
-          <>
-            <ResizablePanel defaultSize={40}>
-              {/* Global dock widgets. */}
-              {/* <Dock
+        <AppBar onAutoLayout={performAutoLayout} className="z-9997" />
+
+        <ResizablePanelGroup
+          key={`resizable-panel-group-${resizablePanelMode}`}
+          direction={
+            resizablePanelMode === "bottom" ? "vertical" : "horizontal"
+          }
+          className={cn("w-screen h-screen", "min-h-screen min-w-screen")}
+        >
+          {resizablePanelMode === "left" && dockWidgetsMemo.length > 0 && (
+            <>
+              <ResizablePanel defaultSize={40}>
+                {/* Global dock widgets. */}
+                {/* <Dock
                 position={resizablePanelMode}
                 onPositionChange={
                   setResizablePanelMode as (position: string) => void
                 }
               /> */}
-            </ResizablePanel>
-            <ResizableHandle />
-          </>
-        )}
-        <ResizablePanel defaultSize={dockWidgetsMemo.length > 0 ? 60 : 100}>
-          <FlowCanvas
-            ref={flowCanvasRef}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
-            // onConnect={(connection) => {
-            //   const newEdges = addEdge(connection, edges);
-            //   setEdges(newEdges);
-            // }}
-            onConnect={() => {}}
-            className="w-full h-[calc(100dvh-60px)] mt-10"
-          />
-        </ResizablePanel>
-        {resizablePanelMode !== "left" && dockWidgetsMemo.length > 0 && (
-          <>
-            <ResizableHandle />
-            <ResizablePanel defaultSize={40}>
-              {/* Global dock widgets. */}
-              {/* <Dock
+              </ResizablePanel>
+              <ResizableHandle />
+            </>
+          )}
+          <ResizablePanel defaultSize={dockWidgetsMemo.length > 0 ? 60 : 100}>
+            <FlowCanvas
+              ref={flowCanvasRef}
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={handleNodesChange}
+              onEdgesChange={handleEdgesChange}
+              // onConnect={(connection) => {
+              //   const newEdges = addEdge(connection, edges);
+              //   setEdges(newEdges);
+              // }}
+              onConnect={() => {}}
+              className="w-full h-[calc(100dvh-60px)] mt-10"
+            />
+          </ResizablePanel>
+          {resizablePanelMode !== "left" && dockWidgetsMemo.length > 0 && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={40}>
+                {/* Global dock widgets. */}
+                {/* <Dock
                 position={resizablePanelMode}
                 onPositionChange={
                   setResizablePanelMode as (position: string) => void
                 }
               /> */}
-            </ResizablePanel>
-          </>
-        )}
-      </ResizablePanelGroup>
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
 
-      {/* Global popups. */}
-      <GlobalPopups />
+        {/* Global popups. */}
+        <GlobalPopups />
 
-      {/* Global dialogs. */}
-      <GlobalDialogs />
+        {/* Global dialogs. */}
+        <GlobalDialogs />
 
-      {/* [invisible] Global backstage widgets. */}
-      <BackstageWidgets />
+        {/* [invisible] Global backstage widgets. */}
+        <BackstageWidgets />
 
-      <StatusBar className="z-9997" />
+        <StatusBar className="z-9997" />
+      </QueryClientProvider>
     </ThemeProvider>
   );
 };

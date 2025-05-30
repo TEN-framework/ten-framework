@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import useSWR, { type SWRResponse, type SWRConfiguration } from "swr";
+import { QueryClient } from "@tanstack/react-query";
 
 import logger from "@/logger";
 import type { IReqTemplate } from "@/api/endpoints";
@@ -153,6 +154,14 @@ export const makeAPIRequest = async <T extends ENDPOINT_METHOD, R = unknown>(
   return data;
 };
 
+/**
+ * @deprecated
+ * This hook is deprecated and will be removed in the future.
+ *
+ * Currently, swr is not compatible with POST requests
+ *
+ * Use tanstack query instead
+ */
 // https://github.com/vercel/swr/discussions/2330#discussioncomment-4460054
 export function useCancelableSWR<T>(
   key: string,
@@ -185,6 +194,7 @@ export function useCancelableSWR<T>(
   // controller.abort()
 }
 
+/** @deprecated */
 // TODO: refine this hook cache(post should not be used)
 // Singleton Design Pattern
 // For POST hook request, we can cache the response
@@ -231,6 +241,7 @@ export class QueryHookCache {
   }
 }
 let queryHookCache: QueryHookCache | undefined;
+/** @deprecated */
 export const getQueryHookCache = () => {
   if (queryHookCache === undefined) {
     queryHookCache = new QueryHookCache();
@@ -256,4 +267,13 @@ export const getShortLocale = (locale?: string) => {
   const inputLocale = locale ?? EPreferencesLocale.EN_US;
 
   return inputLocale.split("-")?.[0]?.toLowerCase();
+};
+
+let _tanstackQueryClient: QueryClient | null = null;
+
+export const getTanstackQueryClient = () => {
+  if (!_tanstackQueryClient) {
+    _tanstackQueryClient = new QueryClient();
+  }
+  return _tanstackQueryClient;
 };
