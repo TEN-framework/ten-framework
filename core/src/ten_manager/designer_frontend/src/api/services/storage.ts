@@ -55,12 +55,12 @@ export const updatePreferencesLogViewerLines = async (size: number) => {
   return template.responseSchema.parse(res).data;
 };
 
-export const getStorageValueByKey = async <T>(
+export const getStorageValueByKey = async (
   queryKey?: string,
   options?: {
     storageType?: "in-memory" | "persistent";
   }
-): Promise<T | null> => {
+) => {
   const key = queryKey || "properties"; // Default key if not provided
   const template =
     options?.storageType === "persistent"
@@ -109,16 +109,15 @@ export const initPersistentStorageSchema = async () => {
   return res;
 };
 
-export const useStorage = <T>(type?: "in-memory" | "persistent") => {
+export const useStorage = (type?: "in-memory" | "persistent") => {
   const queryClient = getTanstackQueryClient();
   const queryKey = ["ENDPOINT_STORAGE", ENDPOINT_METHOD.POST, type];
   const { isPending, data, error } = useQuery({
     queryKey,
-    queryFn: () => getStorageValueByKey<T>("properties", { storageType: type }),
+    queryFn: () => getStorageValueByKey("properties", { storageType: type }),
   });
   const mutation = useMutation({
-    mutationFn: () =>
-      getStorageValueByKey<T>("properties", { storageType: type }),
+    mutationFn: () => getStorageValueByKey("properties", { storageType: type }),
     onSuccess: () => {
       // Invalidate and refetch
       queryClient.invalidateQueries({

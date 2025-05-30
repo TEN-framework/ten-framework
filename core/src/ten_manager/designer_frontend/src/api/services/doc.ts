@@ -4,18 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
-import {
-  makeAPIRequest,
-  prepareReqUrl,
-  getTanstackQueryClient,
-} from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_DOC_LINK } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { EDocLinkKey } from "@/types/doc";
-import { localeStringToEnum, getShortLocale } from "@/api/services/utils";
+import { localeStringToEnum } from "@/api/services/utils";
 
 export const retrieveDocLink = async (key: EDocLinkKey, locale?: string) => {
   const template = ENDPOINT_DOC_LINK.retrieveDocLink[ENDPOINT_METHOD.POST];
@@ -48,57 +43,5 @@ export const useRetrieveDocLink = (key: EDocLinkKey, locale?: string) => {
     error,
     isLoading: isPending,
     mutate: mutation.mutate,
-  };
-};
-
-// TODO: refine this hook(post should not be used)
-export const useDocLink = (key: EDocLinkKey, locale?: string) => {
-  const template = ENDPOINT_DOC_LINK.retrieveDocLink[ENDPOINT_METHOD.POST];
-  const url = prepareReqUrl(template) + `${key}/${localeStringToEnum(locale)}`;
-  const queryHookCache = getQueryHookCache();
-
-  const [data, setData] = React.useState<{
-    key: string;
-    locale: string;
-    text: string;
-  } | null>(() => {
-    const [cachedData, cachedDataIsExpired] = queryHookCache.get<{
-      key: string;
-      locale: string;
-      text: string;
-    }>(url);
-    if (!cachedData || cachedDataIsExpired) {
-      return null;
-    }
-    return cachedData;
-  });
-  const [error, setError] = React.useState<Error | null>(null);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
-  const fetchData = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await retrieveDocLink(key, locale);
-      setData(res);
-      queryHookCache.set(url, res, {
-        ttl: 1000 * 60 * 60 * 24, // 1 day
-      });
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, locale, url]);
-
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return {
-    data: { ...data, shortLocale: getShortLocale(data?.locale) },
-    error,
-    isLoading,
-    mutate: fetchData,
   };
 };
