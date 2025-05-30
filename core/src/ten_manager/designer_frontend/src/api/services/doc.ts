@@ -5,11 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import {
   makeAPIRequest,
   prepareReqUrl,
-  getQueryHookCache,
+  getTanstackQueryClient,
 } from "@/api/services/utils";
 import { ENDPOINT_DOC_LINK } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
@@ -23,6 +24,31 @@ export const retrieveDocLink = async (key: EDocLinkKey, locale?: string) => {
   });
   const res = await req;
   return template.responseSchema.parse(res).data;
+};
+
+export const useRetrieveDocLink = (key: EDocLinkKey, locale?: string) => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["retrieveDocLink", key, localeStringToEnum(locale)];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: () => retrieveDocLink(key, locale),
+  });
+  const mutation = useMutation({
+    mutationFn: () => retrieveDocLink(key, locale),
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
+  return {
+    data: data,
+    error,
+    isLoading: isPending,
+    mutate: mutation.mutate,
+  };
 };
 
 // TODO: refine this hook(post should not be used)

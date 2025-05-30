@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { IDefaultWidget } from "@/types/widgets";
-import { useDocLink } from "@/api/services/doc";
+import { useRetrieveDocLink } from "@/api/services/doc";
 import { EDocLinkKey } from "@/types/doc";
 import { TEN_DOC_URL } from "@/constants";
 
@@ -38,7 +38,7 @@ const DocRefRemoteContent = (props: {
 }) => {
   const { locale, queryKey } = props;
 
-  const { data, error, isLoading } = useDocLink(queryKey, locale);
+  const { data, error, isLoading } = useRetrieveDocLink(queryKey, locale);
 
   const docPathMemo = React.useMemo(() => {
     const text = data?.text;
