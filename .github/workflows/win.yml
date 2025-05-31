@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build_win.yml"
+      - "!.github/workflows/win.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
