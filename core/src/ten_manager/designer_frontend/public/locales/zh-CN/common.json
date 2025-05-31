@@ -50,7 +50,7 @@
     "menuExtension": {
       "title": "扩展",
       "openExtensionStore": "打开扩展商店",
-      "startRTCInteraction": "开始 RTC 交互",
+      "startRTCInteraction": "与 TEN AI Agent 对话",
       "configTrulienceAvatar": "配置 Trulience 虚拟人",
       "about": "关于扩展"
     },
@@ -278,7 +278,7 @@
     "tags": "标签"
   },
   "rtcInteraction": {
-    "title": "RTC 交互"
+    "title": "实时对话式 AI Agent"
   },
   "trulienceConfig": {
     "title": "Trulience 虚拟人配置",
@@ -287,6 +287,13 @@
     "trulienceAvatarToken": "Trulience Avatar Token",
     "trulienceSdkUrl": "Trulience SDK URL",
     "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "摄像头",
+      "screen": "屏幕",
+      "cameraPlaceholder": "选择摄像头"
+    }
   },
   "statusBar": {
     "appsLoadedWithCount": "已加载 {{count}} 个应用",
@@ -322,6 +329,9 @@
       "placeholder": "搜索或创建新项目",
       "noItems": "无项目",
       "enterValueToCreate": "输入值以创建新项目"
+    },
+    "messageList": {
+      "noMessages": "暂无对话"
     }
   }
 }

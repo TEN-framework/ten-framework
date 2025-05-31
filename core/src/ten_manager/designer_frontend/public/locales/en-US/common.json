@@ -50,7 +50,7 @@
     "menuExtension": {
       "title": "Extensions",
       "openExtensionStore": "Open Extension Store",
-      "startRTCInteraction": "Start RTC Interaction",
+      "startRTCInteraction": "Talk to TEN AI Agent",
       "configTrulienceAvatar": "Configure Trulience Avatar",
       "about": "About Extensions"
     },
@@ -278,7 +278,7 @@
     "tags": "Tags"
   },
   "rtcInteraction": {
-    "title": "RTC Interaction"
+    "title": "Realtime Voice AI Agent"
   },
   "trulienceConfig": {
     "title": "Trulience Avatar Configuration",
@@ -287,6 +287,13 @@
     "trulienceAvatarToken": "Trulience Avatar Token",
     "trulienceSdkUrl": "Trulience SDK URL",
     "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "Camera",
+      "screen": "Screen",
+      "cameraPlaceholder": "Select a camera"
+    }
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",
@@ -322,6 +329,9 @@
       "placeholder": "Search or create new",
       "noItems": "No items",
       "enterValueToCreate": "Enter a value to create a new one"
+    },
+    "messageList": {
+      "noMessages": "No messages yet."
     }
   }
 }
