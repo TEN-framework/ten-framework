@@ -43,7 +43,7 @@ impl WsRunCmd {
         let mut command = Command::new("sh");
         command
             .arg("-c")
-            .arg(cmd)
+            .arg(format!("exec {cmd}"))
             // Set TEN_LOG_FORMATTER to default if any output is log content.
             .env(
                 "TEN_LOG_FORMATTER",
@@ -202,13 +202,13 @@ impl WsRunCmd {
                         let _ = child.wait();
                         None
                     },
-                    default => {
-                        // Normal wait path.
-                        match child.wait() {
-                            Ok(status) => Some(status.code().unwrap_or(-1)),
-                            Err(_) => None,
-                        }
-                    }
+                    // default => {
+                    //     // Normal wait path.
+                    //     match child.wait() {
+                    //         Ok(status) => Some(status.code().unwrap_or(-1)),
+                    //         Err(_) => None,
+                    //     }
+                    // }
                 };
 
                 if let Some(code) = exit_status {
