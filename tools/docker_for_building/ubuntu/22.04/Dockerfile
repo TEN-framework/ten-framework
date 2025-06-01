@@ -67,6 +67,7 @@ RUN export ARCH=$(dpkg --print-architecture) && \
 RUN pip3 install --upgrade setuptools pip && \
   pip3 install requests oss2 && \
   pip3 install --use-pep517 python-dotenv jinja2 && \
+  pip3 install debugpy pytest pytest-cov pytest-mock cython pylint pylint-exit black && \
   ln -sf /usr/bin/python3.10-config /usr/bin/python3-config && \
   ln -sf /usr/bin/python3 /usr/bin/python
 
@@ -114,6 +115,13 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
   /root/.cargo/bin/cargo install --force cbindgen
 
 ENV PATH="/root/.cargo/bin:$PATH"
+
+# =======================================
+# Install extra tools, e.g., uv and task.
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
 
 # =======================================
 # Cleanup
