@@ -508,6 +508,7 @@ impl Graph {
         subgraph_node: &GraphNode,
         loaded_subgraph: &Graph,
         subgraph_loader: &F,
+        current_base_dir: Option<&str>,
         flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
@@ -517,8 +518,12 @@ impl Graph {
     {
         // First, recursively flatten any nested subgraphs within this subgraph.
         // This ensures depth-first processing.
-        let flattened_subgraph =
-            Self::flatten(loaded_subgraph, subgraph_loader, true)?;
+        let flattened_subgraph = Self::flatten(
+            loaded_subgraph,
+            subgraph_loader,
+            current_base_dir,
+            true,
+        )?;
 
         subgraph_mappings
             .insert(subgraph_node.name.clone(), flattened_subgraph.clone());
@@ -560,6 +565,7 @@ impl Graph {
     fn process_subgraph_node<F>(
         subgraph_node: &GraphNode,
         subgraph_loader: &F,
+        current_base_dir: Option<&str>,
         flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
@@ -575,12 +581,13 @@ impl Graph {
                 )
             })?;
 
-        let subgraph = subgraph_loader(source_uri, None)?;
+        let subgraph = subgraph_loader(source_uri, current_base_dir)?;
 
         Self::process_loaded_subgraph(
             subgraph_node,
             &subgraph,
             subgraph_loader,
+            current_base_dir,
             flattened_nodes,
             flattened_connections,
             subgraph_mappings,
@@ -620,6 +627,7 @@ impl Graph {
     fn flatten_graph_internal<F>(
         graph: &Graph,
         subgraph_loader: &F,
+        current_base_dir: Option<&str>,
         flattened_nodes: &mut Vec<GraphNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
@@ -637,6 +645,7 @@ impl Graph {
                     Self::process_subgraph_node(
                         node,
                         subgraph_loader,
+                        current_base_dir,
                         flattened_nodes,
                         flattened_connections,
                         subgraph_mappings,
@@ -822,6 +831,7 @@ impl Graph {
     pub fn flatten<F>(
         graph: &Graph,
         subgraph_loader: &F,
+        current_base_dir: Option<&str>,
         preserve_exposed_info: bool,
     ) -> Result<Graph>
     where
@@ -846,6 +856,7 @@ impl Graph {
         Self::flatten_graph_internal(
             graph,
             subgraph_loader,
+            current_base_dir,
             &mut flattened_nodes,
             &mut flattened_connections,
             &mut subgraph_mappings,
@@ -883,10 +894,14 @@ impl Graph {
 
     /// Convenience method for flattening a graph instance without preserving
     /// exposed info. This is the main public API for flattening graphs.
-    pub fn flatten_graph<F>(&self, subgraph_loader: &F) -> Result<Graph>
+    pub fn flatten_graph<F>(
+        &self,
+        subgraph_loader: &F,
+        current_base_dir: Option<&str>,
+    ) -> Result<Graph>
     where
         F: Fn(&str, Option<&str>) -> Result<Graph>,
     {
-        Self::flatten(self, subgraph_loader, false)
+        Self::flatten(self, subgraph_loader, current_base_dir, false)
     }
 }
