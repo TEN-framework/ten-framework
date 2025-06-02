@@ -43,7 +43,7 @@ impl WsRunCmd {
         let mut command = Command::new("sh");
         command
             .arg("-c")
-            .arg(cmd)
+            .arg(format!("exec {cmd}"))
             // Set TEN_LOG_FORMATTER to default if any output is log content.
             .env(
                 "TEN_LOG_FORMATTER",
@@ -195,26 +195,37 @@ impl WsRunCmd {
             let shutdown_rx = wait_shutdown_rx;
 
             thread::spawn(move || {
-                let exit_status = crossbeam_channel::select! {
-                    recv(shutdown_rx) -> _ => {
-                        // Termination requested, kill the process.
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        None
-                    },
-                    default => {
-                        // Normal wait path.
-                        match child.wait() {
-                            Ok(status) => Some(status.code().unwrap_or(-1)),
-                            Err(_) => None,
+                loop {
+                    let exit_status = crossbeam_channel::select! {
+                        recv(shutdown_rx) -> _ => {
+                            // Termination requested, kill the process.
+                            let _ = child.kill();
+                            match child.wait(){
+                                Ok(status) => Some(status.code().unwrap_or(-1)),
+                                Err(_) => Some(-1),
+                            }
+                        },
+                        default => {
+                            // Non-blocking check for process exit
+                            match child.try_wait() {
+                                Ok(Some(status)) => Some(status.code().unwrap_or(-1)),
+                                Ok(None) => {
+                                    // Process still running, continue waiting
+                                    None
+                                },
+                                Err(_) => Some(-1),
+                            }
                         }
-                    }
-                };
+                    };
 
-                if let Some(code) = exit_status {
-                    addr2.do_send(RunCmdOutput::Exit(code));
-                } else {
-                    addr2.do_send(RunCmdOutput::Exit(-1));
+                    if let Some(code) = exit_status {
+                        addr2.do_send(RunCmdOutput::Exit(code));
+                        break;
+                    }
+
+                    // If no exit code (process still running),
+                    // continue the loop
+                    std::thread::sleep(std::time::Duration::from_millis(50));
                 }
             });
         }
