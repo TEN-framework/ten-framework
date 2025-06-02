@@ -48,8 +48,8 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   const [ready, setReady] = useState(false);
   const { nodes } = useFlowStore();
   const isConnected = useIsConnected();
-  const { value, error } = useRTCEnvVar();
-  const { appId, appCert } = value || {};
+  const { data, error } = useRTCEnvVar();
+  const { appId, appCert } = data || {};
   const [channel, setChannel] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [uid, setUid] = useState<number | null>(null);
