@@ -49,7 +49,7 @@ import {
   LoadedAppsPopupTitle,
 } from "@/components/Popup/Default/App";
 import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
-import { useApps, postReloadApps } from "@/api/services/apps";
+import { useFetchApps, postReloadApps } from "@/api/services/apps";
 
 export function AppMenu(props: {
   disableMenuClick?: boolean;
@@ -65,7 +65,7 @@ export function AppMenu(props: {
   const { updateCurrentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
-  const { mutate } = useApps();
+  const { mutate } = useFetchApps();
 
   const openAppFolderPopup = () => {
     appendWidget({

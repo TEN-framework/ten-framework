@@ -75,7 +75,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   const { setNodesAndEdges } = useFlowStore();
   const { appendWidget } = useWidgetStore();
 
-  const { graphs } = useGraphs();
+  const { data: graphs } = useGraphs();
 
   const editorRefMappings = React.useRef<
     Record<string, React.RefObject<IEditorWidgetRef>>

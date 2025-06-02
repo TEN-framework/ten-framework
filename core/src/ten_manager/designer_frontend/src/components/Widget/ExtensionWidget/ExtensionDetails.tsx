@@ -37,6 +37,7 @@ import { getWSEndpointFromWindow } from "@/constants/utils";
 import type { IListTenCloudStorePackage } from "@/types/extension";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { postReloadApps } from "@/api/services/apps";
+import { useFetchAddons } from "@/api/services/addons";
 import { GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
 import { CONTAINER_DEFAULT_ID } from "@/constants/widgets";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
@@ -137,8 +138,12 @@ export const ExtensionDetails = (props: {
     versions[0].hash
   );
 
-  const { addons, defaultOsArch } = useAppStore();
+  const { currentWorkspace, defaultOsArch } = useAppStore();
+
   const { mutate } = useListTenCloudStorePackages();
+  const { data: addons } = useFetchAddons({
+    base_dir: currentWorkspace.app?.base_dir || "",
+  });
 
   const selectedVersionItemMemo = React.useMemo(() => {
     return versions.find((version) => version.hash === selectedVersion);
@@ -150,7 +155,6 @@ export const ExtensionDetails = (props: {
   const { t } = useTranslation();
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
-  const { currentWorkspace } = useAppStore();
 
   const osArchMemo = React.useMemo(() => {
     const result = new Map<string, IListTenCloudStorePackage[]>();

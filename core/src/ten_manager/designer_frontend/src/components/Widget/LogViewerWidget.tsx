@@ -299,7 +299,7 @@ const inferLogType = (
   if (
     raw.type === EWSMessageType.STANDARD_ERROR ||
     raw.type === EWSMessageType.STANDARD_ERROR_LOG ||
-    ["error", "xxception", "failed", "error"].some((s) =>
+    ["error", "exception", "failed", "error"].some((s) =>
       logStr.toLowerCase().includes(s)
     )
   ) {

@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
-import { useApps } from "@/api/services/apps";
+import { useFetchApps } from "@/api/services/apps";
 import {
   EWidgetDisplayType,
   EDefaultWidgetType,
@@ -66,7 +66,7 @@ export default function StatusBar(props: { className?: string }) {
 
 const StatusApps = () => {
   const { t } = useTranslation();
-  const { data, error, isLoading } = useApps();
+  const { data, error, isLoading } = useFetchApps();
   const { appendWidget } = useWidgetStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
 

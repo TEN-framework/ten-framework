@@ -18,7 +18,7 @@ export interface IGetBaseDirResponse {
 
 export interface IApp {
   base_dir: string;
-  app_uri: string;
+  app_uri: string | null;
 }
 
 export interface IGetAppsResponse {

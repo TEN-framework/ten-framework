@@ -4,17 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import {
-  makeAPIRequest,
-  getQueryHookCache,
-  prepareReqUrl,
-} from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_ADDONS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-
-import type { IExtensionAddon } from "@/types/apps";
 
 export const retrieveAddons = async (payload: {
   // base_dir is the base directory of the app to retrieve addons for.
@@ -34,53 +28,47 @@ export const retrieveAddons = async (payload: {
   return template.responseSchema.parse(res).data;
 };
 
-export const useAddons = (baseDir?: string | null) => {
-  const template = ENDPOINT_ADDONS.addons[ENDPOINT_METHOD.POST];
-  const url =
-    prepareReqUrl(template) + `${baseDir ? encodeURIComponent(baseDir) : ""}`;
-  const queryHookCache = getQueryHookCache();
-
-  const [data, setData] = React.useState<IExtensionAddon[] | null>(() => {
-    const [cachedData, cachedDataIsExpired] =
-      queryHookCache.get<IExtensionAddon[]>(url);
-    if (!cachedData || cachedDataIsExpired) {
-      return null;
-    }
-    return cachedData;
+export const useFetchAddons = (payload: {
+  base_dir?: string;
+  addon_name?: string;
+  addon_type?: string;
+}) => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["addons", ENDPOINT_METHOD.POST, payload];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: () =>
+      retrieveAddons(
+        payload as {
+          base_dir: string;
+          addon_name?: string;
+          addon_type?: string;
+        }
+      ),
+    enabled: Boolean(payload.base_dir),
+    initialData: [],
   });
-  const [error, setError] = React.useState<Error | null>(null);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
-  const fetchData = React.useCallback(async () => {
-    if (baseDir === null) {
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const template = ENDPOINT_ADDONS.addons[ENDPOINT_METHOD.POST];
-      const req = makeAPIRequest(template, {
-        body: { base_dir: baseDir },
+  const mutation = useMutation({
+    mutationFn: () =>
+      retrieveAddons(
+        payload as {
+          base_dir: string;
+          addon_name?: string;
+          addon_type?: string;
+        }
+      ),
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
       });
-      const res = await req;
-      const parsedData = template.responseSchema.parse(res).data;
-      setData(parsedData);
-      queryHookCache.set(url, parsedData);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseDir, url]);
-
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    },
+  });
 
   return {
-    addons: data,
+    data,
     error,
-    isLoading,
-    mutate: fetchData,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };

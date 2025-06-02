@@ -65,8 +65,8 @@ import {
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import {
-  useApps,
-  useAppScripts,
+  useFetchApps,
+  useFetchAppScripts,
   retrieveTemplatePkgs,
   postReloadApps,
   postUnloadApps,
@@ -111,7 +111,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   const [isReloading, setIsReloading] = React.useState<boolean>(false);
 
   const { t } = useTranslation();
-  const { data: loadedApps, isLoading, error, mutate } = useApps();
+  const { data: loadedApps, isLoading, error, mutate } = useFetchApps();
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
@@ -409,7 +409,7 @@ const AppRowActions = (props: {
     data: scripts,
     isLoading: isScriptsLoading,
     error: scriptsError,
-  } = useAppScripts(baseDir);
+  } = useFetchAppScripts(baseDir);
 
   React.useEffect(() => {
     if (scriptsError) {
@@ -520,7 +520,7 @@ export const AppTemplateWidget = (props: {
   const [isCreating, setIsCreating] = React.useState<boolean>(false);
 
   const { t } = useTranslation();
-  const { mutate: mutateApps } = useApps();
+  const { mutate: mutateApps } = useFetchApps();
 
   const formSchema = z.object({
     ...TemplatePkgsReqSchema.shape,
