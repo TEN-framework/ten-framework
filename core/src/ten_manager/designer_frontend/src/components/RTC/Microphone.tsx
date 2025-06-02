@@ -1,3 +1,9 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
 "use client";
 
 import * as React from "react";
@@ -9,9 +15,9 @@ import { DEFAULT_DEVICE_ITEM, TDeviceSelectItem } from "@/types/rtc";
 import { DeviceSelect } from "@/components/RTC/Device";
 
 export default function MicrophoneBlock(props: {
-  audioTrack: IMicrophoneAudioTrack | null
-  micOn: boolean
-  setMicOn: (value: boolean) => void
+  audioTrack: IMicrophoneAudioTrack | null;
+  micOn: boolean;
+  setMicOn: (value: boolean) => void;
 }) {
   const { audioTrack, micOn, setMicOn } = props;
   const onClickMute = () => {
@@ -31,21 +37,15 @@ export default function MicrophoneBlock(props: {
 }
 
 export function MicrophoneDeviceWrapper(props: {
-  children: React.ReactNode
+  children: React.ReactNode;
   Icon: (
-    props: React.SVGProps<SVGSVGElement> & { active?: boolean },
-  ) => React.ReactNode
-  onIconClick: () => void
-  select?: React.ReactNode
-  audioTrack: IMicrophoneAudioTrack | null
+    props: React.SVGProps<SVGSVGElement> & { active?: boolean }
+  ) => React.ReactNode;
+  onIconClick: () => void;
+  select?: React.ReactNode;
+  audioTrack: IMicrophoneAudioTrack | null;
 }) {
-  const {
-    Icon,
-    onIconClick,
-    select,
-    children,
-    audioTrack
-  } = props;
+  const { Icon, onIconClick, select, children, audioTrack } = props;
 
   return (
     <div className="flex flex-col">
@@ -70,9 +70,7 @@ export function MicrophoneDeviceWrapper(props: {
             />
           </Button>
           <div className="flex-grow">
-            <div className="flex justify-end">
-              {select}
-            </div>
+            <div className="flex justify-end">{select}</div>
           </div>
         </div>
       </div>
@@ -82,7 +80,7 @@ export function MicrophoneDeviceWrapper(props: {
 }
 
 export const MicrophoneSelect = (props: {
-  audioTrack: IMicrophoneAudioTrack | null
+  audioTrack: IMicrophoneAudioTrack | null;
 }) => {
   const { audioTrack } = props;
   const [items, setItems] = React.useState<TDeviceSelectItem[]>([
@@ -100,7 +98,7 @@ export const MicrophoneSelect = (props: {
             label: item.label,
             value: item.label,
             deviceId: item.deviceId,
-          })),
+          }))
         );
       });
     }

@@ -54,7 +54,7 @@ export const ExtensionMenu = (props: {
 
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
-  const {currentWorkspace} = useAppStore();
+  const { currentWorkspace } = useAppStore();
 
   const onOpenExtensionStore = () => {
     appendWidget({
@@ -97,7 +97,6 @@ export const ExtensionMenu = (props: {
       },
     });
   };
-
 
   const onConfigTrulience = () => {
     appendWidget({

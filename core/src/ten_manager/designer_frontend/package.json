@@ -76,7 +76,6 @@
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "trulience-sdk": "https://trulience.com/release/prod/latest/trulience-sdk.tar.gz",
-    "vite-plugin-node-polyfills": "^0.23.0",
     "zod": "^3.25.20",
     "zustand": "^5.0.4"
   },
@@ -103,7 +102,8 @@
     "tailwindcss": "^4.1.5",
     "typescript": "~5.7.3",
     "typescript-eslint": "^8.32.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-node-polyfills": "^0.23.0"
   },
   "pnpm": {
     "overrides": {

@@ -8,18 +8,17 @@ import { useTranslation } from "react-i18next";
 import AgoraRTC, { useRTCClient } from "agora-rtc-react";
 import {
   AgoraRTCScreenShareProvider,
-  useLocalScreenTrack
+  useLocalScreenTrack,
 } from "agora-rtc-react";
 import {
   AgoraRTCProvider,
-  useIsConnected,
   useJoin,
   useLocalCameraTrack,
   useLocalMicrophoneTrack,
   usePublish,
 } from "agora-rtc-react";
 
-import { IWidget } from "@/types/widgets";
+import { IDefaultWidget } from "@/types/widgets";
 import { useEffect, useState } from "react";
 import { RtcTokenBuilder } from "agora-token";
 import { useRTCEnvVar } from "@/api/services/env-var";
@@ -44,7 +43,8 @@ export const RTCWidgetTitle = () => {
   return t("rtcInteraction.title");
 };
 
-const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const RTCWidgetContentInner = ({ widget: _ }: { widget: IDefaultWidget }) => {
   const [ready, setReady] = useState(false);
   const { nodes } = useFlowStore();
   // const isConnected = useIsConnected();
@@ -67,7 +67,7 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
       const property = rtcNode.data.property;
       if (property) {
         const propChannel = (property["channel"] || "") as string;
-        const propUid = (property["remote_stream_id"]) as (number | null);
+        const propUid = property["remote_stream_id"] as number | null;
         setChannel(propChannel);
         setUid(propUid);
       }
@@ -86,21 +86,21 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
         uid,
         1,
         Math.floor(Date.now() / 1000) + 3600, // 1 hour expiration
-        Math.floor(Date.now() / 1000) + 3600  // 1 hour expiration
+        Math.floor(Date.now() / 1000) + 3600 // 1 hour expiration
       );
     }
     setToken(token);
     setReady(true);
 
-    return () => { };
+    return () => {};
   }, [channel, appId, appCert, uid]);
 
-  const {error:joinError} = useJoin(
+  const { error: joinError } = useJoin(
     {
       appid: appId || "",
       channel: channel || "",
       token: token ? token : null,
-      uid: uid
+      uid: uid,
     },
     ready
   );
@@ -110,7 +110,8 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>(
     VideoSourceType.CAMERA
   );
-  const { localMicrophoneTrack, error: micError } = useLocalMicrophoneTrack(micOn);
+  const { localMicrophoneTrack, error: micError } =
+    useLocalMicrophoneTrack(micOn);
   const { localCameraTrack, error: camError } = useLocalCameraTrack(
     videoSourceType === VideoSourceType.CAMERA ? videoOn : false
   );
@@ -147,15 +148,22 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
     setVideoSourceType(value);
   };
 
-  const publishTracks = videoSourceType === VideoSourceType.CAMERA
-    ? [localMicrophoneTrack, localCameraTrack]
-    : [localMicrophoneTrack, screenTrack];
+  const publishTracks =
+    videoSourceType === VideoSourceType.CAMERA
+      ? [localMicrophoneTrack, localCameraTrack]
+      : [localMicrophoneTrack, screenTrack];
 
-  const {error: publishError} = usePublish(publishTracks);
+  const { error: publishError } = usePublish(publishTracks);
 
-  
   React.useEffect(() => {
-    [rtcEnvError, joinError, publishError, micError, camError, screenError].forEach((error) => {
+    [
+      rtcEnvError,
+      joinError,
+      publishError,
+      micError,
+      camError,
+      screenError,
+    ].forEach((error) => {
       if (error) {
         toast.error(error.message);
       }
@@ -200,7 +208,7 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   );
 };
 
-export const RTCWidgetContent = (props: { widget: IWidget }) => {
+export const RTCWidgetContent = (props: { widget: IDefaultWidget }) => {
   const { widget } = props;
 
   return (

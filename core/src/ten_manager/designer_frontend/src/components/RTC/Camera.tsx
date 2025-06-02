@@ -1,13 +1,16 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
 "use client";
 
 import * as React from "react";
 import { CameraIcon, CameraOffIcon } from "lucide-react";
 import { DeviceSelect } from "@/components/RTC/Device";
 import { Button } from "@/components/ui/Button";
-import {
-  SelectItem,
-} from "@/components/ui/Select";
-// import { VIDEO_SOURCE_OPTIONS, VideoSourceType } from "@/common"
+import { SelectItem } from "@/components/ui/Select";
 import { MonitorIcon, MonitorXIcon } from "lucide-react";
 import AgoraRTC, {
   ICameraVideoTrack,
@@ -17,22 +20,15 @@ import AgoraRTC, {
 import { VideoSourceType } from "@/types/rtc";
 import { t } from "i18next";
 
-
 export function VideoDeviceWrapper(props: {
-  children: React.ReactNode
-  onIconClick: () => void
-  videoSourceType: VideoSourceType
-  onVideoSourceChange: (value: VideoSourceType) => void
-  isActive: boolean
-  select?: React.ReactNode
+  children: React.ReactNode;
+  onIconClick: () => void;
+  videoSourceType: VideoSourceType;
+  onVideoSourceChange: (value: VideoSourceType) => void;
+  isActive: boolean;
+  select?: React.ReactNode;
 }) {
-  const {
-    onIconClick,
-    isActive,
-    select,
-    children,
-    videoSourceType,
-  } = props;
+  const { onIconClick, isActive, select, children, videoSourceType } = props;
 
   return (
     <div className="flex flex-col">
@@ -47,18 +43,20 @@ export function VideoDeviceWrapper(props: {
           >
             {videoSourceType === VideoSourceType.SCREEN ? (
               <>
-                {
-                  isActive ? (
-                    <MonitorIcon className="h-5 w-5" />
-                  ) : <MonitorXIcon className="h-5 w-5" />
-                }
+                {isActive ? (
+                  <MonitorIcon className="h-5 w-5" />
+                ) : (
+                  <MonitorXIcon className="h-5 w-5" />
+                )}
                 <span className="ml-2">{t("rtc.videoSource.screen")}</span>
               </>
             ) : (
               <>
                 {isActive ? (
                   <CameraIcon className="h-5 w-5" />
-                ) : <CameraOffIcon className="h-5 w-5" />}
+                ) : (
+                  <CameraOffIcon className="h-5 w-5" />
+                )}
                 <span className="ml-2">{t("rtc.videoSource.camera")}</span>
               </>
             )}
@@ -66,9 +64,7 @@ export function VideoDeviceWrapper(props: {
 
           {/* Select grows to fill the remaining space */}
           <div className="flex-grow">
-            <div className="flex justify-end">
-              {select}
-            </div>
+            <div className="flex justify-end">{select}</div>
           </div>
         </div>
       </div>
@@ -78,12 +74,12 @@ export function VideoDeviceWrapper(props: {
 }
 
 export default function VideoBlock(props: {
-  videoSourceType: VideoSourceType,
-  onVideoSourceChange: (value: VideoSourceType) => void,
-  cameraTrack: ICameraVideoTrack | null,
-  screenTrack: ILocalVideoTrack | null,
-  videoOn: boolean,
-  setVideoOn: (value: boolean) => void,
+  videoSourceType: VideoSourceType;
+  onVideoSourceChange: (value: VideoSourceType) => void;
+  cameraTrack: ICameraVideoTrack | null;
+  screenTrack: ILocalVideoTrack | null;
+  videoOn: boolean;
+  setVideoOn: (value: boolean) => void;
 }) {
   const {
     cameraTrack,
@@ -91,7 +87,7 @@ export default function VideoBlock(props: {
     videoOn,
     setVideoOn,
     videoSourceType,
-    onVideoSourceChange
+    onVideoSourceChange,
   } = props;
 
   const onClickMute = () => {
@@ -120,8 +116,8 @@ export default function VideoBlock(props: {
               : VideoSourceType.SCREEN
           }
           track={
-            videoSourceType === VideoSourceType.CAMERA 
-              ? cameraTrack 
+            videoSourceType === VideoSourceType.CAMERA
+              ? cameraTrack
               : screenTrack
           }
           play
@@ -132,9 +128,9 @@ export default function VideoBlock(props: {
 }
 
 interface SelectItem {
-  label: string
-  value: string
-  deviceId: string
+  label: string;
+  value: string;
+  deviceId: string;
 }
 
 const DEFAULT_ITEM: SelectItem = {
@@ -143,13 +139,11 @@ const DEFAULT_ITEM: SelectItem = {
   deviceId: "",
 };
 
-const VideoDeviceSelect = (
-  props: {
-    cameraTrack?: ICameraVideoTrack;
-    videoSourceType: VideoSourceType;
-    onVideoSourceChange: (value: VideoSourceType) => void;
-  }
-) => {
+const VideoDeviceSelect = (props: {
+  cameraTrack?: ICameraVideoTrack;
+  videoSourceType: VideoSourceType;
+  onVideoSourceChange: (value: VideoSourceType) => void;
+}) => {
   const { cameraTrack, onVideoSourceChange, videoSourceType } = props;
   const [items, setItems] = React.useState<SelectItem[]>([DEFAULT_ITEM]);
   const [value, setValue] = React.useState("default");
@@ -163,22 +157,20 @@ const VideoDeviceSelect = (
         setValue(label);
       }
       AgoraRTC.getCameras().then((arr) => {
-        setItems(
-          [
-            ...arr.map((item) => ({
-              label: item.label,
-              value: item.label,
-              deviceId: item.deviceId,
-            })),
-            ...[
-              {
-                label: t("rtc.videoSource.screen"),
-                value: VideoSourceType.SCREEN,
-                deviceId: VideoSourceType.SCREEN,
-              }
-            ]
+        setItems([
+          ...arr.map((item) => ({
+            label: item.label,
+            value: item.label,
+            deviceId: item.deviceId,
+          })),
+          ...[
+            {
+              label: t("rtc.videoSource.screen"),
+              value: VideoSourceType.SCREEN,
+              deviceId: VideoSourceType.SCREEN,
+            },
           ],
-        );
+        ]);
       });
     }
   }, [videoSourceType, cameraTrack]);

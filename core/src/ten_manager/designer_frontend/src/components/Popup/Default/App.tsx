@@ -46,10 +46,9 @@ import {
 import { LogViewerPopupTitle } from "../LogViewer";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Separator } from "@/components/ui/Separator";
-import {
-  RTCInteractionPopupTitle,
-} from "@/components/AppBar/Menu/ExtensionMenu";
-import { addRecentRunApp, setStorageValueByKey, useStorage } from "@/api/services/storage";
+// eslint-disable-next-line max-len
+import { RTCInteractionPopupTitle } from "@/components/AppBar/Menu/ExtensionMenu";
+import { addRecentRunApp } from "@/api/services/storage";
 
 export const AppFolderPopupTitle = () => {
   const { t } = useTranslation();
@@ -200,7 +199,6 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         ],
       },
     });
-
 
     if (runWithAgent) {
       appendWidget({

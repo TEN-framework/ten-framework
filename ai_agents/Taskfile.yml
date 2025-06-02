@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   clean:
@@ -107,7 +107,7 @@ tasks:
       - for: { var: EXTENSIONS }
         task: test-extension
         vars:
-          EXTENSION: '{{ .ITEM }}'
+          EXTENSION: "{{ .ITEM }}"
 
   test-extension:
     desc: run standalone testing of one single extension
@@ -115,7 +115,7 @@ tasks:
       EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
     env:
       PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
-    dotenv: ['.env']
+    dotenv: [".env"]
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
 

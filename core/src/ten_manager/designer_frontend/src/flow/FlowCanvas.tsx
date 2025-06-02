@@ -64,9 +64,13 @@ import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import { TEN_PATH_WS_EXEC } from "@/constants";
+// eslint-disable-next-line max-len
 import { RTCInteractionPopupTitle } from "@/components/AppBar/Menu/ExtensionMenu";
 import { IRunAppParams } from "@/types/apps";
-import { addRecentRunApp as addToRecentRunApp, setStorageValueByKey, useStorage } from "@/api/services/storage";
+import {
+  addRecentRunApp as addToRecentRunApp,
+  useStorage,
+} from "@/api/services/storage";
 
 export interface FlowCanvasRef {
   performAutoLayout: () => void;
@@ -85,7 +89,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
   ({ nodes, edges, onNodesChange, onEdgesChange, onConnect, className }) => {
     const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
       useWidgetStore();
-    const { data } = useStorage();
+    useStorage();
     const { currentWorkspace } = useAppStore();
     const { t } = useTranslation();
 
@@ -258,7 +262,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       run_with_agent,
       stderr_is_log,
       stdout_is_log,
-    }:IRunAppParams) => {
+    }: IRunAppParams) => {
       const newAppStartWidgetId = "app-start-" + Date.now();
 
       await addToRecentRunApp({
@@ -309,7 +313,6 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           ],
         },
       });
-
 
       if (run_with_agent) {
         appendWidget({
@@ -481,9 +484,9 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           onNodeContextMenu={clickNodeContextMenu}
           onEdgeContextMenu={clickEdgeContextMenu}
           onPaneContextMenu={clickPaneContextMenu}
-        // onEdgeClick={(e, edge) => {
-        //   console.log("clicked", e, edge);
-        // }}
+          // onEdgeClick={(e, edge) => {
+          //   console.log("clicked", e, edge);
+          // }}
         >
           <Controls />
           <MiniMap zoomable pannable />

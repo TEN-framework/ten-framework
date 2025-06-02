@@ -1,3 +1,9 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
 import { useCallback, useRef, useState } from "react";
 import { EMessageDataType, EMessageType, IChatItem } from "@/types/rtc";
 import { UID, useClientEvent } from "agora-rtc-react";
@@ -20,8 +26,8 @@ export function useRTCMessageParser(
   // @ts-expect-error-next-line
   useClientEvent(client, "stream-message", (uid: UID, payload: Uint8Array) => {
     // Handle incoming stream messages
-      const decoded = new TextDecoder("utf-8").decode(payload);
-      handleChunk(decoded);
+    const decoded = new TextDecoder("utf-8").decode(payload);
+    handleChunk(decoded);
   });
 
   const reconstructMessage = (chunks: TextDataChunk[]) => {
@@ -31,83 +37,78 @@ export function useRTCMessageParser(
       .join("");
   };
 
-  const handleChunk = useCallback((formattedChunk: string) => {
-    try {
-      const [
-        message_id,
-        partIndexStr,
-        totalPartsStr,
-        content
-      ] = formattedChunk.split("|");
+  const handleChunk = useCallback(
+    (formattedChunk: string) => {
+      try {
+        const [message_id, partIndexStr, totalPartsStr, content] =
+          formattedChunk.split("|");
 
-      const part_index = parseInt(partIndexStr, 10);
-      const total_parts =
-        totalPartsStr === "???" ? -1 : parseInt(totalPartsStr, 10);
-      if (total_parts === -1) return;
+        const part_index = parseInt(partIndexStr, 10);
+        const total_parts =
+          totalPartsStr === "???" ? -1 : parseInt(totalPartsStr, 10);
+        if (total_parts === -1) return;
 
-      const chunkData: TextDataChunk = {
-        message_id,
-        part_index,
-        total_parts,
-        content,
-      };
-
-      if (!messageCache.current[message_id]) {
-        messageCache.current[message_id] = [];
-        setTimeout(() => {
-          if (messageCache.current[message_id]?.length !== total_parts) {
-            delete messageCache.current[message_id];
-          }
-        }, TIMEOUT_MS);
-      }
-
-      messageCache.current[message_id].push(chunkData);
-
-      if (messageCache.current[message_id].length === total_parts) {
-        const complete = reconstructMessage(messageCache.current[message_id]);
-        const {
-          stream_id,
-          is_final,
-          text,
-          text_ts,
-          data_type
-        } = JSON.parse(atob(complete));
-        const isAgent = Number(stream_id) !== Number(userId);
-
-        const chatItem: IChatItem = {
-          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
-          time: text_ts,
-          text,
-          data_type: EMessageDataType.TEXT,
-          userId: stream_id,
-          isFinal: is_final,
+        const chunkData: TextDataChunk = {
+          message_id,
+          part_index,
+          total_parts,
+          content,
         };
 
-        if (data_type === "raw") {
-          const { data, type } = JSON.parse(text);
-          if (type === "image_url") {
-            chatItem.data_type = EMessageDataType.IMAGE;
-            chatItem.text = data.image_url;
-          } else if (type === "reasoning") {
-            chatItem.data_type = EMessageDataType.REASON;
-            chatItem.text = data.text;
-          } else if (type === "action" && data.action === "browse_website") {
-            window.open(data.data.url, "_blank");
-            delete messageCache.current[message_id];
-            return;
+        if (!messageCache.current[message_id]) {
+          messageCache.current[message_id] = [];
+          setTimeout(() => {
+            if (messageCache.current[message_id]?.length !== total_parts) {
+              delete messageCache.current[message_id];
+            }
+          }, TIMEOUT_MS);
+        }
+
+        messageCache.current[message_id].push(chunkData);
+
+        if (messageCache.current[message_id].length === total_parts) {
+          const complete = reconstructMessage(messageCache.current[message_id]);
+          const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
+            atob(complete)
+          );
+          const isAgent = Number(stream_id) !== Number(userId);
+
+          const chatItem: IChatItem = {
+            type: isAgent ? EMessageType.AGENT : EMessageType.USER,
+            time: text_ts,
+            text,
+            data_type: EMessageDataType.TEXT,
+            userId: stream_id,
+            isFinal: is_final,
+          };
+
+          if (data_type === "raw") {
+            const { data, type } = JSON.parse(text);
+            if (type === "image_url") {
+              chatItem.data_type = EMessageDataType.IMAGE;
+              chatItem.text = data.image_url;
+            } else if (type === "reasoning") {
+              chatItem.data_type = EMessageDataType.REASON;
+              chatItem.text = data.text;
+            } else if (type === "action" && data.action === "browse_website") {
+              window.open(data.data.url, "_blank");
+              delete messageCache.current[message_id];
+              return;
+            }
           }
-        }
 
-        if (chatItem.text.trim().length > 0) {
-          onMessage(chatItem);
-        }
+          if (chatItem.text.trim().length > 0) {
+            onMessage(chatItem);
+          }
 
-        delete messageCache.current[message_id];
+          delete messageCache.current[message_id];
+        }
+      } catch (err) {
+        console.error("Error handling RTC chunk:", err);
       }
-    } catch (err) {
-      console.error("Error handling RTC chunk:", err);
-    }
-  }, [onMessage, userId]);
+    },
+    [onMessage, userId]
+  );
 }
 
 /**
@@ -120,12 +121,12 @@ export function useChatItemReducer() {
     setChatItems((prev) => {
       const { userId, time, isFinal, text, type } = newMsg;
 
-      const lastFinalIndex = [...prev].reverse().findIndex(
-        (el) => el.userId === userId && el.isFinal
-      );
-      const lastNonFinalIndex = [...prev].reverse().findIndex(
-        (el) => el.userId === userId && !el.isFinal
-      );
+      const lastFinalIndex = [...prev]
+        .reverse()
+        .findIndex((el) => el.userId === userId && el.isFinal);
+      const lastNonFinalIndex = [...prev]
+        .reverse()
+        .findIndex((el) => el.userId === userId && !el.isFinal);
 
       const realLastFinalIndex =
         lastFinalIndex === -1 ? -1 : prev.length - 1 - lastFinalIndex;

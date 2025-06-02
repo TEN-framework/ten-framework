@@ -12,7 +12,6 @@ import {
   GitPullRequestCreateIcon,
   PackagePlusIcon,
   PlayIcon,
-  // PinIcon,
 } from "lucide-react";
 
 import ContextMenu, {
@@ -22,7 +21,6 @@ import ContextMenu, {
 import { EGraphActions } from "@/types/graphs";
 import { useStorage } from "@/api/services/storage";
 import { IRunAppParams } from "@/types/apps";
-
 
 interface PaneContextMenuProps {
   visible: boolean;
@@ -52,8 +50,6 @@ const PaneContextMenu: React.FC<PaneContextMenuProps> = ({
   const { t } = useTranslation();
   const { data } = useStorage();
   const { recent_run_apps = [] } = data || {};
-
-
 
   const items: IContextMenuItem[] = [
     {
@@ -114,9 +110,12 @@ const PaneContextMenu: React.FC<PaneContextMenuProps> = ({
         onAppRun?.({
           script_name: app.script_name,
           base_dir: app.base_dir,
-          run_with_agent: app.run_with_agent, // Assuming default value, adjust as needed
-          stderr_is_log: true, // Assuming default value, adjust as needed
-          stdout_is_log: true, // Assuming default value, adjust as needed
+          // Assuming default value, adjust as needed
+          run_with_agent: app.run_with_agent,
+          // Assuming default value, adjust as needed
+          stderr_is_log: true,
+          // Assuming default value, adjust as needed
+          stdout_is_log: true,
         });
       },
     })),

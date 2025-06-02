@@ -28,9 +28,15 @@ export const PERSISTENT_SCHEMA = {
           stderr_is_log: { type: "boolean", description: "Std Err Logs" },
           run_with_agent: { type: "boolean", description: "Run with Agent" },
         },
-        required: ["base_dir", "script_name", "stdout_is_log", "stderr_is_log", "run_with_agent"],
-      }
-    }
+        required: [
+          "base_dir",
+          "script_name",
+          "stdout_is_log",
+          "stderr_is_log",
+          "run_with_agent",
+        ],
+      },
+    },
   },
   required: ["version"],
 };

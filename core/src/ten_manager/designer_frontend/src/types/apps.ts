@@ -60,7 +60,9 @@ export const PREFERENCES_SCHEMA_TRULIENCE = z.object({
     enabled: z.boolean().default(false),
     trulienceAvatarId: z.string().default(""),
     trulienceAvatarToken: z.string().default(""),
-    trulienceSdkUrl: z.string().default("https://trulience.com/sdk/trulience.sdk.js"),
+    trulienceSdkUrl: z
+      .string()
+      .default("https://trulience.com/sdk/trulience.sdk.js"),
     trulienceAnimationUrl: z.string().default("https://trulience.com"),
   }),
 });

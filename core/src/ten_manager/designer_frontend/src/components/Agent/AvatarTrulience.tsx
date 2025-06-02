@@ -1,3 +1,9 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +20,7 @@ interface AvatarProps {
 }
 
 export default function Avatar({ audioTrack }: AvatarProps) {
-  const {preferences} = useAppStore();
+  const { preferences } = useAppStore();
   const trulienceSettings = preferences.trulience;
   const trulienceAvatarRef = useRef<TrulienceAvatar>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -31,14 +37,14 @@ export default function Avatar({ audioTrack }: AvatarProps) {
       "auth-success": (resp: string) => {
         console.log("Trulience Avatar auth-success:", resp);
       },
-      "auth-fail": (resp: {message: string}) => {
+      "auth-fail": (resp: { message: string }) => {
         console.log("Trulience Avatar auth-fail:", resp);
         setErrorMessage(resp.message);
       },
       "websocket-connect": (resp: string) => {
         console.log("Trulience Avatar websocket-connect:", resp);
       },
-      "load-progress": (details: {progress: number}) => {
+      "load-progress": (details: { progress: number }) => {
         console.log("Trulience Avatar load-progress:", details.progress);
         setLoadProgress(details.progress);
       },
@@ -90,16 +96,18 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   }, [audioTrack]);
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden rounded-lg", {
-      ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen
-    })}>
+    <div
+      className={cn("relative h-full w-full overflow-hidden rounded-lg", {
+        ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
+      })}
+    >
       <button
         className={cn(
           "absolute z-10 top-2 right-2",
           "bg-black/50 p-2 rounded-lg",
           "hover:bg-black/70 transition"
         )}
-        onClick={() => setFullscreen(prevValue => !prevValue)}
+        onClick={() => setFullscreen((prevValue) => !prevValue)}
       >
         {fullscreen ? (
           <Minimize className="text-white" size={24} />
@@ -114,41 +122,45 @@ export default function Avatar({ audioTrack }: AvatarProps) {
       {/* Show a loader overlay while progress < 1 */}
       {errorMessage ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center 
+          className="absolute inset-0 z-10 flex items-center justify-center
                      bg-red-500 bg-opacity-80 text-white"
         >
           <div>{errorMessage}</div>
         </div>
-      ) : loadProgress < 1 && (
-        <div
-          className={cn(
-            "absolute inset-0 z-10 flex items-center justify-center",
-            "bg-black bg-opacity-80"
-          )}
-        >
-          {/* Simple Tailwind spinner */}
-          <Progress
+      ) : (
+        loadProgress < 1 && (
+          <div
             className={cn(
-              "relative h-[15px] w-[200px]",
-              "overflow-hidden rounded-full bg-blackA6"
+              "absolute inset-0 z-10 flex items-center justify-center",
+              "bg-black bg-opacity-80"
             )}
-            style={{
-              // Fix overflow clipping in Safari
-              // https://gist.github.com/domske/b66047671c780a238b51c51ffde8d3a0
-              transform: "translateZ(0)",
-            }}
-            value={loadProgress*100}
           >
-            <ProgressIndicator
+            {/* Simple Tailwind spinner */}
+            <Progress
               className={cn(
-                "ease-[cubic-bezier(0.65, 0, 0.35, 1)]",
-                "size-full bg-white",
-                "transition-transform duration-[660ms]"
+                "relative h-[15px] w-[200px]",
+                "overflow-hidden rounded-full bg-blackA6"
               )}
-              style={{ transform: `translateX(-${100 - loadProgress*100}%)` }}
-            />
-          </Progress>
-        </div>
+              style={{
+                // Fix overflow clipping in Safari
+                // https://gist.github.com/domske/b66047671c780a238b51c51ffde8d3a0
+                transform: "translateZ(0)",
+              }}
+              value={loadProgress * 100}
+            >
+              <ProgressIndicator
+                className={cn(
+                  "ease-[cubic-bezier(0.65, 0, 0.35, 1)]",
+                  "size-full bg-white",
+                  "transition-transform duration-[660ms]"
+                )}
+                style={{
+                  transform: `translateX(-${100 - loadProgress * 100}%)`,
+                }}
+              />
+            </Progress>
+          </div>
+        )
       )}
     </div>
   );

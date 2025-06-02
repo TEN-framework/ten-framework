@@ -1,15 +1,21 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
 import { useMultibandTrackVolume } from "@/hooks/use-audio-visualizer";
 import { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-react";
 
 export interface AudioVisualizerProps {
-  type: "agent" | "user"
-  track?: IMicrophoneAudioTrack | IRemoteAudioTrack | null
-  bands: number
-  gap: number
-  barWidth: number
-  minBarHeight: number
-  maxBarHeight: number
-  borderRadius: number
+  type: "agent" | "user";
+  track?: IMicrophoneAudioTrack | IRemoteAudioTrack | null;
+  bands: number;
+  gap: number;
+  barWidth: number;
+  minBarHeight: number;
+  maxBarHeight: number;
+  borderRadius: number;
 }
 
 export default function AudioVisualizer(props: AudioVisualizerProps) {
@@ -23,10 +29,7 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
     borderRadius,
   } = props;
 
-  const frequencies = useMultibandTrackVolume(
-    track,
-    bands,
-  );
+  const frequencies = useMultibandTrackVolume(track, bands);
 
   const summedFrequencies = frequencies.map((bandFrequencies) => {
     const sum = bandFrequencies.reduce((a, b) => a + b, 0);
@@ -49,13 +52,7 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
           width: barWidth + "px",
         };
 
-        return (
-          <span
-            key={index}
-            className="bg-foreground"
-            style={style}
-          />
-        );
+        return <span key={index} className="bg-foreground" style={style} />;
       })}
     </div>
   );

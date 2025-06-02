@@ -136,7 +136,13 @@ export const useStorage = (type?: "in-memory" | "persistent") => {
 };
 
 export const addRecentRunApp = async (app: IRunAppParams) => {
-  const { base_dir, script_name, stdout_is_log, stderr_is_log, run_with_agent } = app;
+  const {
+    base_dir,
+    script_name,
+    stdout_is_log,
+    stderr_is_log,
+    run_with_agent,
+  } = app;
   const data = await getStorageValueByKey();
   await setStorageValueByKey(undefined, {
     ...data,
@@ -149,6 +155,6 @@ export const addRecentRunApp = async (app: IRunAppParams) => {
         run_with_agent: run_with_agent,
       },
       ...(data?.recent_run_apps || []),
-    ].slice(0, 3) // keep only the first 3
+    ].slice(0, 3), // keep only the first 3
   });
-}
+};
