@@ -112,7 +112,8 @@
     "deleteConnectionSuccess": "接続の削除に成功しました",
     "deleteConnectionFailed": "接続の削除に失敗しました",
     "replaceNode": "ノードを置き換え...",
-    "manageApps": "アプリを管理"
+    "manageApps": "アプリを管理",
+    "runApp": "実行"
   },
   "toast": {
     "saveFileSuccess": "ファイルの保存に成功しました",

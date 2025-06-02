@@ -112,7 +112,8 @@
     "deleteConnectionSuccess": "連線刪除成功",
     "deleteConnectionFailed": "連線刪除失敗",
     "replaceNode": "替換節點...",
-    "manageApps": "管理應用程式"
+    "manageApps": "管理應用程式",
+    "runApp": "執行"
   },
   "toast": {
     "saveFileSuccess": "檔案儲存成功",

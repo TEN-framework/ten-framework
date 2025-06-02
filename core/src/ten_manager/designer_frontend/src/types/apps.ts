@@ -25,6 +25,14 @@ export interface IGetAppsResponse {
   app_info: IApp[];
 }
 
+export interface IRunAppParams {
+  base_dir: string;
+  script_name: string;
+  stdout_is_log: boolean;
+  stderr_is_log: boolean;
+  run_with_agent: boolean;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface IExtensionAddon
   extends z.infer<typeof TenLocalStorePackageSchema> {}

@@ -112,7 +112,8 @@
     "deleteConnectionSuccess": "连接删除成功",
     "deleteConnectionFailed": "连接删除失败",
     "replaceNode": "替换节点...",
-    "manageApps": "管理应用"
+    "manageApps": "管理应用",
+    "runApp": "运行"
   },
   "toast": {
     "saveFileSuccess": "文件保存成功",

@@ -55,12 +55,18 @@ import {
   GROUP_GRAPH_ID,
   GROUP_LOG_VIEWER_ID,
   GROUP_TERMINAL_ID,
+  RTC_INTERACTION_WIDGET_ID,
 } from "@/constants/widgets";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import PaneContextMenu from "./ContextMenu/PaneContextMenu";
 import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
+import { getWSEndpointFromWindow } from "@/constants/utils";
+import { TEN_PATH_WS_EXEC } from "@/constants";
+import { RTCInteractionPopupTitle } from "@/components/AppBar/Menu/ExtensionMenu";
+import { IRunAppParams } from "@/types/apps";
+import { addRecentRunApp as addToRecentRunApp, setStorageValueByKey, useStorage } from "@/api/services/storage";
 
 export interface FlowCanvasRef {
   performAutoLayout: () => void;
@@ -79,6 +85,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
   ({ nodes, edges, onNodesChange, onEdgesChange, onConnect, className }) => {
     const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
       useWidgetStore();
+    const { data } = useStorage();
     const { currentWorkspace } = useAppStore();
     const { t } = useTranslation();
 
@@ -229,21 +236,102 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       });
     };
 
-  const openAppsManagerPopup = () => {
-    appendWidget({
-      container_id: CONTAINER_DEFAULT_ID,
-      group_id: APPS_MANAGER_WIDGET_ID,
-      widget_id: APPS_MANAGER_WIDGET_ID,
+    const openAppsManagerPopup = () => {
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: APPS_MANAGER_WIDGET_ID,
+        widget_id: APPS_MANAGER_WIDGET_ID,
 
-      category: EWidgetCategory.Default,
-      display_type: EWidgetDisplayType.Popup,
+        category: EWidgetCategory.Default,
+        display_type: EWidgetDisplayType.Popup,
 
-      title: <LoadedAppsPopupTitle />,
-      metadata: {
-        type: EDefaultWidgetType.AppsManager,
-      },
-    });
-  };
+        title: <LoadedAppsPopupTitle />,
+        metadata: {
+          type: EDefaultWidgetType.AppsManager,
+        },
+      });
+    };
+
+    const onAppRun = async ({
+      base_dir,
+      script_name,
+      run_with_agent,
+      stderr_is_log,
+      stdout_is_log,
+    }:IRunAppParams) => {
+      const newAppStartWidgetId = "app-start-" + Date.now();
+
+      await addToRecentRunApp({
+        base_dir: base_dir,
+        script_name: script_name,
+        stdout_is_log: stdout_is_log,
+        stderr_is_log: stderr_is_log,
+        run_with_agent: run_with_agent,
+      });
+
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: GROUP_LOG_VIEWER_ID,
+        widget_id: newAppStartWidgetId,
+
+        category: EWidgetCategory.LogViewer,
+        display_type: EWidgetDisplayType.Popup,
+
+        title: <LogViewerPopupTitle />,
+        metadata: {
+          wsUrl: getWSEndpointFromWindow() + TEN_PATH_WS_EXEC,
+          scriptType: ELogViewerScriptType.RUN_SCRIPT,
+          script: {
+            type: ELogViewerScriptType.RUN_SCRIPT,
+            base_dir: base_dir,
+            name: script_name,
+            stdout_is_log: stdout_is_log,
+            stderr_is_log: stderr_is_log,
+          },
+        },
+        popup: {
+          width: 0.5,
+          height: 0.8,
+        },
+        actions: {
+          onClose: () => {
+            removeBackstageWidget(newAppStartWidgetId);
+          },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(newAppStartWidgetId);
+              },
+            },
+          ],
+        },
+      });
+
+
+      if (run_with_agent) {
+        appendWidget({
+          container_id: CONTAINER_DEFAULT_ID,
+          group_id: RTC_INTERACTION_WIDGET_ID,
+          widget_id: RTC_INTERACTION_WIDGET_ID,
+
+          category: EWidgetCategory.Default,
+          display_type: EWidgetDisplayType.Popup,
+
+          title: <RTCInteractionPopupTitle />,
+          metadata: {
+            type: EDefaultWidgetType.RTCInteraction,
+          },
+          popup: {
+            width: 450,
+            height: 700,
+            initialPosition: "top-left",
+          },
+        });
+      }
+    };
 
     const renderContextMenu = () => {
       if (contextMenu.type === "node" && contextMenu.node) {
@@ -281,6 +369,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
             onOpenExistingGraph={onOpenExistingGraph}
             onGraphAct={onGraphAct}
             onAppManager={openAppsManagerPopup}
+            onAppRun={onAppRun}
             onClose={closeContextMenu}
           />
         );

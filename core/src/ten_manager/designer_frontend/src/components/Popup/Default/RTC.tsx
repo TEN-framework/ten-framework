@@ -47,20 +47,14 @@ export const RTCWidgetTitle = () => {
 const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   const [ready, setReady] = useState(false);
   const { nodes } = useFlowStore();
-  const isConnected = useIsConnected();
-  const { data, error } = useRTCEnvVar();
+  // const isConnected = useIsConnected();
+  const { data, error: rtcEnvError } = useRTCEnvVar();
   const { appId, appCert } = data || {};
   const [channel, setChannel] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [uid, setUid] = useState<number | null>(null);
   const client = useRTCClient();
   const { chatItems, addChatItem } = useChatItemReducer();
-
-  React.useEffect(() => {
-    if (error) {
-      toast.error(error.message);
-    }
-  }, [error]);
 
   // Register parser logic and hook up chat message updates
   useRTCMessageParser(client, uid, (newMsg) => {
@@ -101,7 +95,7 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
     return () => { };
   }, [channel, appId, appCert, uid]);
 
-  useJoin(
+  const {error:joinError} = useJoin(
     {
       appid: appId || "",
       channel: channel || "",
@@ -116,11 +110,11 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
   const [videoSourceType, setVideoSourceType] = useState<VideoSourceType>(
     VideoSourceType.CAMERA
   );
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
-  const { localCameraTrack } = useLocalCameraTrack(
+  const { localMicrophoneTrack, error: micError } = useLocalMicrophoneTrack(micOn);
+  const { localCameraTrack, error: camError } = useLocalCameraTrack(
     videoSourceType === VideoSourceType.CAMERA ? videoOn : false
   );
-  const { screenTrack } = useLocalScreenTrack(
+  const { screenTrack, error: screenError } = useLocalScreenTrack(
     videoSourceType === VideoSourceType.SCREEN ? videoOn : false,
     {},
     "disable" // withAudio: "enable" | "disable"
@@ -157,8 +151,16 @@ const RTCWidgetContentInner = ({ widget }: { widget: IWidget }) => {
     ? [localMicrophoneTrack, localCameraTrack]
     : [localMicrophoneTrack, screenTrack];
 
-  usePublish(publishTracks);
+  const {error: publishError} = usePublish(publishTracks);
 
+  
+  React.useEffect(() => {
+    [rtcEnvError, joinError, publishError, micError, camError, screenError].forEach((error) => {
+      if (error) {
+        toast.error(error.message);
+      }
+    });
+  }, [rtcEnvError, joinError, publishError, micError, camError, screenError]);
 
   return (
     <div className="flex flex-col h-full w-full gap-2">

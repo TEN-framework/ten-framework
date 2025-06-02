@@ -49,6 +49,7 @@ import { Separator } from "@/components/ui/Separator";
 import {
   RTCInteractionPopupTitle,
 } from "@/components/AppBar/Menu/ExtensionMenu";
+import { addRecentRunApp, setStorageValueByKey, useStorage } from "@/api/services/storage";
 
 export const AppFolderPopupTitle = () => {
   const { t } = useTranslation();
@@ -146,10 +147,18 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   >(scripts?.[0] || undefined);
   const [runWithAgent, setRunWithAgent] = React.useState<boolean>(false);
 
-  const handleRun = () => {
+  const handleRun = async () => {
     removeWidget(widget.widget_id);
 
     const newAppStartWidgetId = "app-start-" + Date.now();
+
+    await addRecentRunApp({
+      base_dir: baseDir || "",
+      script_name: selectedScript || "",
+      stdout_is_log: true,
+      stderr_is_log: true,
+      run_with_agent: runWithAgent,
+    });
 
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,

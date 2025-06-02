@@ -112,7 +112,8 @@
     "deleteConnectionSuccess": "Connection deleted successfully",
     "deleteConnectionFailed": "Failed to delete connection",
     "replaceNode": "Replace Node with ...",
-    "manageApps": "Manage Apps"
+    "manageApps": "Manage Apps",
+    "runApp": "Run"
   },
   "toast": {
     "saveFileSuccess": "File saved successfully",
