@@ -181,7 +181,9 @@
       "templateVersionDescription": "选择应用的模板版本。",
       "appName": "应用名称",
       "appNameDescription": "输入应用的名称。",
-      "baseDirDescription": "选择应用的基础目录。"
+      "baseDirDescription": "选择应用的基础目录。",
+      "run_opts": "选项",
+      "run_with_agent": "使用 TEN Agent 运行"
     },
     "graph": {
       "title": "节点",

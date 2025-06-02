@@ -181,7 +181,9 @@
       "templateVersionDescription": "アプリのテンプレートバージョンを選択してください。",
       "appName": "アプリ名",
       "appNameDescription": "アプリの名前を入力してください。",
-      "baseDirDescription": "アプリのベースディレクトリを選択してください。"
+      "baseDirDescription": "アプリのベースディレクトリを選択してください。",
+      "run_opts": "オプション",
+      "run_with_agent": "エージェントで実行"
     },
     "graph": {
       "title": "ノード",

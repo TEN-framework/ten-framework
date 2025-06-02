@@ -23,7 +23,11 @@ import { Input } from "@/components/ui/Input";
 import { useWidgetStore, useAppStore } from "@/store";
 import { AppFileManager } from "@/components/FileManager/AppFolder";
 import { postLoadDir, useApps } from "@/api/services/apps";
-import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
+import {
+  CONTAINER_DEFAULT_ID,
+  GROUP_LOG_VIEWER_ID,
+  RTC_INTERACTION_WIDGET_ID,
+} from "@/constants/widgets";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
   AppsManagerWidget,
@@ -37,8 +41,14 @@ import {
   IWidget,
   IDefaultWidgetData,
   IDefaultWidget,
+  EDefaultWidgetType,
 } from "@/types/widgets";
 import { LogViewerPopupTitle } from "../LogViewer";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Separator } from "@/components/ui/Separator";
+import {
+  RTCInteractionPopupTitle,
+} from "@/components/AppBar/Menu/ExtensionMenu";
 
 export const AppFolderPopupTitle = () => {
   const { t } = useTranslation();
@@ -134,6 +144,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const [selectedScript, setSelectedScript] = React.useState<
     string | undefined
   >(scripts?.[0] || undefined);
+  const [runWithAgent, setRunWithAgent] = React.useState<boolean>(false);
 
   const handleRun = () => {
     removeWidget(widget.widget_id);
@@ -180,6 +191,28 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         ],
       },
     });
+
+
+    if (runWithAgent) {
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: RTC_INTERACTION_WIDGET_ID,
+        widget_id: RTC_INTERACTION_WIDGET_ID,
+
+        category: EWidgetCategory.Default,
+        display_type: EWidgetDisplayType.Popup,
+
+        title: <RTCInteractionPopupTitle />,
+        metadata: {
+          type: EDefaultWidgetType.RTCInteraction,
+        },
+        popup: {
+          width: 450,
+          height: 700,
+          initialPosition: "top-left",
+        },
+      });
+    }
   };
 
   if (!baseDir || !scripts || scripts.length === 0) {
@@ -187,7 +220,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full">
+    <div className="flex flex-col gap-2 w-full h-full p-2">
       <div className="flex flex-col gap-2">
         <Label htmlFor="runapp_base_dir">{t("popup.apps.baseDir")}</Label>
         <Input id="runapp_base_dir" type="text" value={baseDir} disabled />
@@ -208,6 +241,20 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
             </SelectGroup>
           </SelectContent>
         </Select>
+      </div>
+      <Separator className="my-2" />
+      <div className="flex flex-col gap-2 mb-2">
+        <Label>{t("popup.apps.run_opts")}</Label>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="runapp_with_rtc"
+            checked={runWithAgent}
+            onCheckedChange={() => setRunWithAgent(!runWithAgent)}
+          />
+          <Label htmlFor="runapp_with_rtc">
+            {t("popup.apps.run_with_agent")}
+          </Label>
+        </div>
       </div>
       <div className="flex justify-end gap-2 mt-auto">
         <Button

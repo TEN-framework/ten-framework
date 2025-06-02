@@ -33,6 +33,7 @@ import {
 import { EDocLinkKey } from "@/types/doc";
 import { ExtensionStorePopupTitle } from "@/components/Popup/Default/Extension";
 import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
+import { useAppStore } from "@/store";
 
 export const RTCInteractionPopupTitle = () => {
   const { t } = useTranslation();
@@ -53,6 +54,7 @@ export const ExtensionMenu = (props: {
 
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
+  const {currentWorkspace} = useAppStore();
 
   const onOpenExtensionStore = () => {
     appendWidget({
@@ -175,6 +177,7 @@ export const ExtensionMenu = (props: {
             className="w-full justify-start"
             variant="ghost"
             onClick={onStartRTCInteraction}
+            disabled={!currentWorkspace?.graph}
           >
             <PodcastIcon />
             {t("header.menuExtension.startRTCInteraction")}

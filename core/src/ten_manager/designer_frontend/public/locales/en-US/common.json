@@ -181,7 +181,9 @@
       "templateVersionDescription": "Select the template version for the app.",
       "appName": "App Name",
       "appNameDescription": "Enter the name for the app.",
-      "baseDirDescription": "Select the base directory for the app."
+      "baseDirDescription": "Select the base directory for the app.",
+      "run_opts": "Options",
+      "run_with_agent": "Run with TEN Agent"
     },
     "graph": {
       "title": "Node",
