@@ -266,7 +266,7 @@ Experience the real-time image generation with StoryTeller, it is a ready-to-use
 ##### 1. Clone down the repo,`cd` to `ai-agents` and create `.env` file from `.env.example`
 
 ```bash
-cd ai_agent
+cd ai_agents
 cp ./.env.example ./.env
 ```
 
