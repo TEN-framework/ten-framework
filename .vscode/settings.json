@@ -3,19 +3,9 @@
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp.formatting": "disabled",
   "C_Cpp.intelliSenseEngine": "disabled",
-  "[c]": {
-    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-  },
-  "[cpp]": {
-    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-  },
   "[markdown]": {
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
-  },
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.tabSize": 4
   },
   "black-formatter.args": [
     "--line-length",
@@ -108,8 +98,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "[yaml]": {
-    "editor.defaultFormatter": "redhat.vscode-yaml"
   }
 }

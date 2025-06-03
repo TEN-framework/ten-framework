@@ -17,14 +17,11 @@ export const ENDPOINT_EXTENSION = {
       url: `${API_DESIGNER_V1}/registry/packages`,
       method: ENDPOINT_METHOD.GET,
       queryParams: ["page", "pageSize"],
-      responseSchema: z.object({
-        status: z.string(),
-        meta: z.any(),
-        data: z.object({
-          totalSize: z.number(),
+      responseSchema: genResSchema(
+        z.object({
           packages: z.array(TenCloudStorePackageSchema),
-        }),
-      }),
+        })
+      ),
     },
   },
   schema: {

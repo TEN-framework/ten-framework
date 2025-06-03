@@ -22,9 +22,10 @@ use super::Graph;
 /// - A URL
 ///
 /// This function returns the loaded Graph structure.
-pub fn load_graph_from_uri_with_base_dir(
+pub fn load_graph_from_uri(
     uri: &str,
     base_dir: Option<&str>,
+    new_base_dir: &mut Option<String>,
 ) -> Result<Graph> {
     // Check if the URI is a URL (starts with http:// or https://)
     if uri.starts_with("http://") || uri.starts_with("https://") {
@@ -37,12 +38,23 @@ pub fn load_graph_from_uri_with_base_dir(
     // Handle relative and absolute paths.
     let path = if Path::new(uri).is_absolute() {
         PathBuf::from(uri)
-    } else if let Some(base_dir) = base_dir {
-        // If base_dir is available, use it as the base for relative
-        // paths.
-        Path::new(base_dir).join(uri)
     } else {
-        panic!("base_dir is not available");
+        // For relative paths, base_dir must not be None
+        let base_dir = base_dir.ok_or_else(|| {
+            anyhow!("base_dir cannot be None when uri is a relative path")
+        })?;
+
+        // If base_dir is available, use it as the base for relative paths.
+        let new_path = Path::new(base_dir).join(uri);
+
+        // Set the new_base_dir to the directory containing the resolved path
+        if let Some(parent_dir) = new_path.parent() {
+            if new_base_dir.is_some() {
+                *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
+            }
+        }
+
+        new_path
     };
 
     // Read the graph file.
@@ -82,7 +94,7 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    pub fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         // Validate mutual exclusion between source_uri and graph fields
         if self.source_uri.is_some() {
             // When source_uri is present, the graph fields should be empty or
@@ -125,33 +137,16 @@ impl GraphInfo {
         // If source_uri is specified, load graph from the URI.
         let source_uri = self.source_uri.clone();
         let app_base_dir = self.app_base_dir.clone();
-        if let Some(uri) = source_uri {
-            self.load_graph_from_uri(&uri, app_base_dir.as_deref())?;
+        if let Some(source_uri) = source_uri {
+            // Load graph from URI and replace the current graph
+            let graph = load_graph_from_uri(
+                &source_uri,
+                app_base_dir.as_deref(),
+                &mut None,
+            )?;
+            self.graph = graph;
         }
 
-        self.graph.validate_and_complete()
-    }
-
-    /// Loads graph data from the specified URI.
-    ///
-    /// The URI can be:
-    /// - A relative path (relative to the directory containing property.json)
-    /// - An absolute path
-    /// - A URL
-    ///
-    /// This function replaces the current graph with the one loaded from the
-    /// URI.
-    fn load_graph_from_uri(
-        &mut self,
-        uri: &str,
-        base_dir: Option<&str>,
-    ) -> Result<()> {
-        // Use the extracted function to load the graph
-        let graph = load_graph_from_uri_with_base_dir(uri, base_dir)?;
-
-        // Replace the current graph with the loaded one.
-        self.graph = graph;
-
-        Ok(())
+        self.graph.validate_and_complete_and_flatten(None)
     }
 }

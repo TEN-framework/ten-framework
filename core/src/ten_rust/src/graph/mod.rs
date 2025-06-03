@@ -187,7 +187,7 @@ impl FromStr for Graph {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete()?;
+        graph.validate_and_complete_and_flatten(None)?;
 
         // Return the parsed data.
         Ok(graph)
@@ -268,7 +268,10 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    fn validate_and_complete(
+        &mut self,
+        _current_base_dir: Option<&str>,
+    ) -> Result<()> {
         // Determine the app URI declaration state by examining all nodes.
         let app_uri_declaration_state =
             self.analyze_app_uri_declaration_state()?;
@@ -309,6 +312,34 @@ impl Graph {
                     ));
                 }
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_and_complete_and_flatten(
+        &mut self,
+        current_base_dir: Option<&str>,
+    ) -> Result<()> {
+        self.validate_and_complete(current_base_dir)?;
+
+        // Always attempt to flatten the graph, regardless of current_base_dir
+        // If there are subgraphs that need current_base_dir but it's None,
+        // the flatten_graph method will return an appropriate error
+        if let Some(flattened) = self.flatten_graph(
+            &|uri: &str,
+              base_dir: Option<&str>,
+              new_base_dir: &mut Option<String>| {
+                crate::graph::graph_info::load_graph_from_uri(
+                    uri,
+                    base_dir,
+                    new_base_dir,
+                )
+            },
+            current_base_dir,
+        )? {
+            // Replace current graph with flattened version
+            *self = flattened;
         }
 
         Ok(())

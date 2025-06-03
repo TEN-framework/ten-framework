@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "扩展",
       "openExtensionStore": "打开扩展商店",
+      "startRTCInteraction": "与 TEN AI Agent 对话",
+      "configTrulienceAvatar": "配置 Trulience 虚拟人",
       "about": "关于扩展"
     },
     "language": {
@@ -109,7 +111,9 @@
     "deleteConnectionConfirmation": "确定要删除此连接吗？",
     "deleteConnectionSuccess": "连接删除成功",
     "deleteConnectionFailed": "连接删除失败",
-    "replaceNode": "替换节点..."
+    "replaceNode": "替换节点...",
+    "manageApps": "管理应用",
+    "runApp": "运行"
   },
   "toast": {
     "saveFileSuccess": "文件保存成功",
@@ -178,7 +182,9 @@
       "templateVersionDescription": "选择应用的模板版本。",
       "appName": "应用名称",
       "appNameDescription": "输入应用的名称。",
-      "baseDirDescription": "选择应用的基础目录。"
+      "baseDirDescription": "选择应用的基础目录。",
+      "run_opts": "选项",
+      "run_with_agent": "使用 TEN Agent 运行"
     },
     "graph": {
       "title": "节点",
@@ -274,6 +280,24 @@
     "localAddonTip": "(本地)",
     "tags": "标签"
   },
+  "rtcInteraction": {
+    "title": "实时对话式 AI Agent"
+  },
+  "trulienceConfig": {
+    "title": "Trulience 虚拟人配置",
+    "enabled": "启用",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "摄像头",
+      "screen": "屏幕",
+      "cameraPlaceholder": "选择摄像头"
+    }
+  },
   "statusBar": {
     "appsLoadedWithCount": "已加载 {{count}} 个应用",
     "appsError": "获取应用失败",
@@ -308,6 +332,9 @@
       "placeholder": "搜索或创建新项目",
       "noItems": "无项目",
       "enterValueToCreate": "输入值以创建新项目"
+    },
+    "messageList": {
+      "noMessages": "暂无对话"
     }
   }
 }
