@@ -22,7 +22,6 @@
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/ten_env_proxy/ten_env_proxy.h"
 #include "ten_utils/lib/alloc.h"
-#include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
 

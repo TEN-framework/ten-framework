@@ -83,6 +83,7 @@ void ten_go_error_set(ten_go_error_t *self, ten_error_code_t error_code,
   // If self->error_message is not NULL, we need to free it first.
   if (self->error_message_size > 0 && self->error_message != NULL) {
     TEN_FREE(self->error_message);
+
     self->error_message = NULL;
     self->error_message_size = 0;
   }
