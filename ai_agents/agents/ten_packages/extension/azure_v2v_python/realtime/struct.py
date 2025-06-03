@@ -74,6 +74,9 @@ class RealtimeError:
 class InputAudioTranscription:
     model: str = "whisper-1"  # Default transcription model is "whisper-1"
 
+@dataclass
+class AzureInputAudioTranscription(InputAudioTranscription):
+    model: str = "azure-fast-transcription"  # Default transcription model for Azure
 
 @dataclass
 class ServerVADUpdateParams:
@@ -88,14 +91,14 @@ class ServerVADUpdateParams:
 
 @dataclass
 class AzureSemanticVadEoUDetection:
-    threshold: float = 0.1
-    timeout: int = 4
+    threshold: float = 0.01
+    timeout: int = 2
     model: str = "semantic_detection_v1"
 
 @dataclass
 class AzureSemanticVadUpdateParams:
     threshold: float = 0.3
-    prefix_padding_ms: int = 200
+    prefix_padding_ms: int = 500
     silence_duration_ms: int = 200
     remove_filter_words: bool = False
     end_of_utterance_detection: AzureSemanticVadEoUDetection = AzureSemanticVadEoUDetection()
@@ -103,7 +106,7 @@ class AzureSemanticVadUpdateParams:
 
 @dataclass
 class AzureVoice:
-    name: str = "en-US-AndrewMultilingualNeural"
+    name: str = "en-US-Emma:DragonHDLatestNeural"
     type: Literal["azure-standard"] | Literal["azure-custom"] =  "azure-standard" # Type of Azure voice
     temperature: float = 0.8 # Temperature for voice generation
     endpoint_id: Optional[str] = None # Optional endpoint ID for custom voice
@@ -164,9 +167,7 @@ class SessionUpdateParams:
     output_audio_format: Optional[AudioFormats] = (
         None  # Output audio format from `AudioFormats` Enum
     )
-    input_audio_transcription: Optional[InputAudioTranscription] = (
-        None  # Optional transcription model
-    )
+    input_audio_transcription: Optional[InputAudioTranscription] = AzureInputAudioTranscription()  # Input audio transcription settings
     tools: Optional[List[Dict[str, Union[str, any]]]] = (
         None  # List of tools (e.g., dictionaries)
     )
