@@ -394,6 +394,15 @@ static void ten_extension_thread_on_extension_on_deinit_done(
                  ten_env_check_integrity(deinit_extension->ten_env, true),
              "Should not happen.");
 
+  // Flush the previously got messages, which are received before
+  // on_init_done(), into the extension.
+  //
+  // For example, when an extension is in the `on_configure` stage and its graph
+  // is closed, the runtime will skip its `on_init` and `on_start` stages and
+  // directly enter the `on_stop` stage. Messages that would normally be flushed
+  // in `on_init_done` now need to be flushed here.
+  ten_extension_flush_all_pending_msgs_received_in_init_stage(deinit_extension);
+
   // The extensions cannot be deleted immediately at this point. Instead, the
   // deletion action needs to be turned into an asynchronous task and placed at
   // the end of the task queue. The reason for this is that at this moment, the

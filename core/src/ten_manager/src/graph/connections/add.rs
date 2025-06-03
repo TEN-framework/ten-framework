@@ -277,7 +277,7 @@ pub fn graph_add_connection(
     }
 
     // Validate the updated graph.
-    match graph.validate_and_complete() {
+    match graph.validate_and_complete_and_flatten(None) {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.

@@ -4,33 +4,45 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
 import z from "zod";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import {
-  makeAPIRequest,
-  useCancelableSWR,
-  prepareReqUrl,
-  getQueryHookCache,
-} from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_PREFERENCES, ENDPOINT_STORAGE } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { PERSISTENT_SCHEMA, PERSISTENT_DEFAULTS } from "@/constants/persistent";
+import { IRunAppParams } from "@/types/apps";
 
-export const usePreferencesLogViewerLines = () => {
+export const getPreferencesLogViewerLines = async () => {
   const template =
     ENDPOINT_PREFERENCES.logviewer_line_size[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template);
-  const [{ data, error, isLoading }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+  const req = makeAPIRequest(template);
+  const res = await req;
+  return template.responseSchema.parse(res).data;
+};
+
+export const usePreferencesLogViewerLines = () => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["logviewer_line_size", ENDPOINT_METHOD.GET];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: getPreferencesLogViewerLines,
   });
+  const mutation = useMutation({
+    mutationFn: getPreferencesLogViewerLines,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    data: data?.data,
+    data,
     error,
-    isLoading,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
 
@@ -98,52 +110,51 @@ export const initPersistentStorageSchema = async () => {
   return res;
 };
 
-export const useStorage = <T>(type?: "in-memory" | "persistent") => {
-  const template =
-    type === "persistent"
-      ? ENDPOINT_STORAGE.persistentGet[ENDPOINT_METHOD.POST]
-      : ENDPOINT_STORAGE.inMemoryGet[ENDPOINT_METHOD.POST];
-  const url = prepareReqUrl(template) + type;
-  const queryHookCache = getQueryHookCache();
-
-  const [data, setData] = React.useState<T | null>(() => {
-    const [cachedData, cachedDataIsExpired] = queryHookCache.get<T>(url);
-    if (!cachedData || cachedDataIsExpired) {
-      return null;
-    }
-    return cachedData;
+export const useStorage = (type?: "in-memory" | "persistent") => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["ENDPOINT_STORAGE", ENDPOINT_METHOD.POST, type];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: () => getStorageValueByKey("properties", { storageType: type }),
   });
-  const [error, setError] = React.useState<Error | null>(null);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
-  const fetchData = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const req = makeAPIRequest(template, {
-        body: {
-          key: "properties",
-        },
+  const mutation = useMutation({
+    mutationFn: () => getStorageValueByKey("properties", { storageType: type }),
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
       });
-      const res = await req;
-      const parsedData = template.responseSchema.parse(res).data as T;
-      setData(parsedData);
-      queryHookCache.set(url, parsedData);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]);
-
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    },
+  });
 
   return {
     data,
     error,
-    isLoading,
-    mutate: fetchData,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
+};
+
+export const addRecentRunApp = async (app: IRunAppParams) => {
+  const {
+    base_dir,
+    script_name,
+    stdout_is_log,
+    stderr_is_log,
+    run_with_agent,
+  } = app;
+  const data = await getStorageValueByKey();
+  await setStorageValueByKey(undefined, {
+    ...data,
+    recent_run_apps: [
+      {
+        base_dir: base_dir,
+        script_name: script_name,
+        stdout_is_log: stdout_is_log,
+        stderr_is_log: stderr_is_log,
+        run_with_agent: run_with_agent,
+      },
+      ...(data?.recent_run_apps || []),
+    ].slice(0, 3), // keep only the first 3
+  });
 };

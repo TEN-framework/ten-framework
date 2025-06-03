@@ -12,6 +12,8 @@ import {
   NodeChange,
 } from "@xyflow/react";
 import { toast } from "sonner";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import AppBar from "@/components/AppBar";
@@ -39,10 +41,26 @@ import {
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
+import { getTanstackQueryClient } from "@/api/services/utils";
 
 import type { TCustomEdge, TCustomNode } from "@/types/flow";
 
-const App: React.FC = () => {
+const queryClient = getTanstackQueryClient();
+
+export default function App() {
+  return (
+    <>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <ReactQueryDevtools initialIsOpen={false} />
+          <Main />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </>
+  );
+}
+
+const Main = () => {
   const { nodes, setNodes, edges, setEdges, setNodesAndEdges } = useFlowStore();
   const [resizablePanelMode] = React.useState<"left" | "bottom" | "right">(
     "bottom"
@@ -166,7 +184,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <>
       <AppBar onAutoLayout={performAutoLayout} className="z-9997" />
 
       <ResizablePanelGroup
@@ -229,8 +247,6 @@ const App: React.FC = () => {
       <BackstageWidgets />
 
       <StatusBar className="z-9997" />
-    </ThemeProvider>
+    </>
   );
 };
-
-export default App;

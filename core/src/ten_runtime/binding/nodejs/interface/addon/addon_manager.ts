@@ -41,6 +41,24 @@ export class AddonManager {
           if (manifestJson.type === "app") {
             return currentDir;
           }
+          if (manifestJson.type === "extension") {
+            // In Node.js, it's basically not easy to get the symbolic link path
+            // of an imported module, and we always get the real path, so we
+            // need special handling here. If the extension is in standalone
+            // building mode, then the app base dir is the .ten/app directory.
+            const standaloneBuildingAppDir = path.join(currentDir, ".ten/app");
+            const standaloneBuildingAppManifestPath = path.join(
+              standaloneBuildingAppDir,
+              "manifest.json",
+            );
+
+            if (
+              fs.existsSync(standaloneBuildingAppDir) &&
+              fs.existsSync(standaloneBuildingAppManifestPath)
+            ) {
+              return standaloneBuildingAppDir;
+            }
+          }
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           // Ignore
@@ -69,21 +87,7 @@ export class AddonManager {
   async loadAllAddons(): Promise<void> {
     const app_base_dir = AddonManager.findAppBaseDir();
 
-    const manifest_path = path.join(app_base_dir, "manifest.json");
-    if (!fs.existsSync(manifest_path)) {
-      throw new Error("Cannot find manifest.json");
-    }
-
-    const manifest = JSON.parse(fs.readFileSync(manifest_path, "utf-8"));
-
-    const extension_names = [];
-
-    const dependencies = manifest.dependencies;
-    for (const dep of dependencies) {
-      if (dep.type === "extension") {
-        extension_names.push(dep.name);
-      }
-    }
+    console.log(`app_base_dir: ${app_base_dir}`);
 
     const extension_folder = path.join(app_base_dir, "ten_packages/extension");
     if (!fs.existsSync(extension_folder)) {
@@ -105,7 +109,7 @@ export class AddonManager {
 
       const packageJsonFile = `${extension_folder}/${entry.name}/package.json`;
 
-      if (entry.isDirectory() && fs.existsSync(packageJsonFile)) {
+      if (fs.existsSync(packageJsonFile)) {
         // Log the extension name.
         console.log(`_load_all_addons Loading extension ${entry.name}`);
         loadPromises.push(

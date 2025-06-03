@@ -63,7 +63,7 @@ pub fn graph_add_extension_node(
     graph.nodes.push(node);
 
     // Validate the graph.
-    match graph.validate_and_complete() {
+    match graph.validate_and_complete_and_flatten(None) {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.

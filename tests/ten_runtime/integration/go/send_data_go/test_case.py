@@ -118,7 +118,7 @@ def test_send_data_go():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The send_data_go is not started after 10 seconds.")
+        print("The send_data_go is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()

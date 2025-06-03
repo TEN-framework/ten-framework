@@ -16,6 +16,10 @@ test.describe("first load", () => {
   test.beforeEach(async ({ page }) => {
     // Go to the starting url before each test.
 
+    page.on("console", (msg) => {
+      console.log(`[${msg.type()}] ${msg.text()}`);
+    });
+
     await page.goto(BASE_URL, {
       timeout: 30000,
       waitUntil: "load",

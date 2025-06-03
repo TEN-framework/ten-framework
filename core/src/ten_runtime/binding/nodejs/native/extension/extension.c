@@ -153,8 +153,8 @@ static void ten_nodejs_invoke_extension_js_on_init(napi_env env, napi_value fn,
   TEN_ASSERT(call_info, "Should not happen.");
 
   ten_nodejs_extension_t *extension_bridge = call_info->extension_bridge;
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
+  TEN_ASSERT(extension_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
              "Should not happen.");
 
   ten_nodejs_ten_env_t *ten_env_bridge = call_info->ten_env_bridge;
@@ -551,8 +551,8 @@ done:
 static void ten_nodejs_extension_create_and_attach_callbacks(
     napi_env env, ten_nodejs_extension_t *extension_bridge) {
   TEN_ASSERT(env, "Should not happen.");
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
+  TEN_ASSERT(extension_bridge, "Should not happen.");
+  TEN_ASSERT(ten_nodejs_extension_check_integrity(extension_bridge, true),
              "Should not happen.");
 
   napi_value js_extension = NULL;
@@ -615,8 +615,7 @@ static void ten_nodejs_extension_create_and_attach_callbacks(
                     ten_nodejs_invoke_extension_js_on_video_frame);
 }
 
-static void ten_nodejs_extension_release_js_on_xxx_tsfn(
-    ten_nodejs_extension_t *self) {
+void ten_nodejs_extension_release_js_on_xxx_tsfn(ten_nodejs_extension_t *self) {
   TEN_ASSERT(self && ten_nodejs_extension_check_integrity(self, true),
              "Should not happen.");
 
@@ -1054,47 +1053,9 @@ done:
   return js_undefined(env);
 }
 
-static napi_value ten_nodejs_extension_on_end_of_life(napi_env env,
-                                                      napi_callback_info info) {
-  TEN_ASSERT(env, "Should not happen.");
-
-  const size_t argc = 1;
-  napi_value args[argc];  // this
-
-  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
-    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
-                     "Incorrect number of parameters passed.",
-                     NAPI_AUTO_LENGTH);
-    TEN_ASSERT(0, "Should not happen.");
-    goto done;
-  }
-
-  ten_nodejs_extension_t *extension_bridge = NULL;
-  napi_status status = napi_unwrap(env, args[0], (void **)&extension_bridge);
-  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && extension_bridge != NULL,
-                                "Failed to get extension bridge: %d", status);
-
-  TEN_ASSERT(extension_bridge &&
-                 ten_nodejs_extension_check_integrity(extension_bridge, true),
-             "Should not happen.");
-
-  // From now on, the JS on_xxx callback(s) are useless, so release them all.
-  ten_nodejs_extension_release_js_on_xxx_tsfn(extension_bridge);
-
-  // Decrease the reference count of the JS extension object.
-  uint32_t js_extension_ref_count = 0;
-  status = napi_reference_unref(env, extension_bridge->bridge.js_instance_ref,
-                                &js_extension_ref_count);
-  TEN_ASSERT(status == napi_ok, "Failed to decrease the reference count.");
-
-done:
-  return js_undefined(env);
-}
-
 napi_value ten_nodejs_extension_module_init(napi_env env, napi_value exports) {
   TEN_ASSERT(env && exports, "Should not happen.");
   EXPORT_FUNC(env, exports, ten_nodejs_extension_create);
-  EXPORT_FUNC(env, exports, ten_nodejs_extension_on_end_of_life);
 
   return exports;
 }

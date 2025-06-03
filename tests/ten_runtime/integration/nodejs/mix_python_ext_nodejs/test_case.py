@@ -106,7 +106,7 @@ def test_mix_python_ext_nodejs():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The mix_python_ext_nodejs is not started after 10 seconds.")
+        print("The mix_python_ext_nodejs is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()

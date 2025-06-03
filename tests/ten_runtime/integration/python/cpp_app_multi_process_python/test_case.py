@@ -142,7 +142,7 @@ def test_cpp_app_multi_process_python():
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
         print(
-            "The cpp_app_multi_process_python is not started after 10 seconds."
+            "The cpp_app_multi_process_python is not started after 30 seconds."
         )
 
         server.kill()

@@ -46,7 +46,8 @@ ten_env_tester_proxy_t *ten_env_tester_proxy_create(
   self->ten_env_tester = ten_env_tester;
 
   ten_extension_tester_t *tester = ten_env_tester->tester;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Should not happen.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Should not happen.");
 
   // Add a reference to the `ten_env_proxy` object.
@@ -69,14 +70,15 @@ ten_env_tester_proxy_t *ten_env_tester_proxy_create(
 static void ten_env_tester_on_proxy_deleted(void *self_, void *arg) {
   ten_env_tester_t *ten_env_tester = self_;
   ten_env_tester_proxy_t *self = arg;
-  TEN_ASSERT(
-      ten_env_tester && ten_env_tester_check_integrity(ten_env_tester, true),
-      "Should not happen.");
-  TEN_ASSERT(self && ten_env_tester_proxy_check_integrity(self),
+  TEN_ASSERT(ten_env_tester, "Should not happen.");
+  TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_env_tester_proxy_check_integrity(self), "Should not happen.");
 
   ten_extension_tester_t *tester = ten_env_tester->tester;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Should not happen.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Should not happen.");
 
   // Release the reference to the `ten_env_proxy` object.

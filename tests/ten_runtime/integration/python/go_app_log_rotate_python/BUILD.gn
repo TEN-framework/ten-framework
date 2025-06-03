@@ -22,6 +22,13 @@ ten_package_test_prepare_app("go_app_log_rotate_python_app") {
     "go_app_log_rotate_python_app/bin/bootstrap",
   ]
 
+  if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [ "go_app_log_rotate_python_app/main_with_leak_check.go=>go_app_log_rotate_python_app/main.go" ]
+  } else {
+    replace_paths_after_install_app +=
+        [ "go_app_log_rotate_python_app/main.go" ]
+  }
+
   if (ten_enable_ten_manager) {
     deps = [
       "//core/src/ten_manager",

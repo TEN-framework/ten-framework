@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
-import { BlocksIcon, CheckIcon } from "lucide-react";
+import { BlocksIcon, CheckIcon, BrushCleaningIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FixedSizeList as VirtualList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -179,8 +179,17 @@ export const ExtensionBaseItem = React.forwardRef<
         actions: {
           onClose: () => {
             removeBackstageWidget(widgetId);
-            removeLogViewerHistory(widgetId);
           },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(widgetId);
+              },
+            },
+          ],
         },
       });
     };
