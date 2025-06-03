@@ -22,10 +22,7 @@ use super::Graph;
 /// - A URL
 ///
 /// This function returns the loaded Graph structure.
-pub fn load_graph_from_uri_with_base_dir(
-    uri: &str,
-    base_dir: Option<&str>,
-) -> Result<Graph> {
+pub fn load_graph_from_uri(uri: &str, base_dir: Option<&str>) -> Result<Graph> {
     // Check if the URI is a URL (starts with http:// or https://)
     if uri.starts_with("http://") || uri.starts_with("https://") {
         // TODO: Implement HTTP request to fetch the graph file
@@ -125,33 +122,13 @@ impl GraphInfo {
         // If source_uri is specified, load graph from the URI.
         let source_uri = self.source_uri.clone();
         let app_base_dir = self.app_base_dir.clone();
-        if let Some(uri) = source_uri {
-            self.load_graph_from_uri(&uri, app_base_dir.as_deref())?;
+        if let Some(source_uri) = source_uri {
+            // Load graph from URI and replace the current graph
+            let graph =
+                load_graph_from_uri(&source_uri, app_base_dir.as_deref())?;
+            self.graph = graph;
         }
 
         self.graph.validate_and_complete()
-    }
-
-    /// Loads graph data from the specified URI.
-    ///
-    /// The URI can be:
-    /// - A relative path (relative to the directory containing property.json)
-    /// - An absolute path
-    /// - A URL
-    ///
-    /// This function replaces the current graph with the one loaded from the
-    /// URI.
-    fn load_graph_from_uri(
-        &mut self,
-        uri: &str,
-        base_dir: Option<&str>,
-    ) -> Result<()> {
-        // Use the extracted function to load the graph
-        let graph = load_graph_from_uri_with_base_dir(uri, base_dir)?;
-
-        // Replace the current graph with the loaded one.
-        self.graph = graph;
-
-        Ok(())
     }
 }

@@ -4,19 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import z from "zod";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import {
-  makeAPIRequest,
-  useCancelableSWR,
-  prepareReqUrl,
-} from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_COMMON } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 
-/**
- * @deprecated Use useVersion instead.
- */
 export const getVersion = async () => {
   const template = ENDPOINT_COMMON.version[ENDPOINT_METHOD.GET];
   const req = makeAPIRequest(template);
@@ -24,35 +17,60 @@ export const getVersion = async () => {
   return template.responseSchema.parse(res).data.version;
 };
 
-export const useVersion = () => {
-  const template = ENDPOINT_COMMON.version[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template);
-  const [{ data, error, isLoading }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+export const useFetchVersion = () => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["version", ENDPOINT_METHOD.GET];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: getVersion,
   });
+  const mutation = useMutation({
+    mutationFn: getVersion,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    version: data?.data?.version,
+    data,
     error,
-    isLoading,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
 
-export const useCheckUpdate = () => {
+export const checkUpdate = async () => {
   const template = ENDPOINT_COMMON.checkUpdate[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template);
-  const [{ data, error, isLoading }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+  const req = makeAPIRequest(template);
+  const res = await req;
+  return template.responseSchema.parse(res).data;
+};
+
+export const useCheckUpdate = () => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["checkUpdate", ENDPOINT_METHOD.GET];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: checkUpdate,
   });
+  const mutation = useMutation({
+    mutationFn: checkUpdate,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    data: data?.data,
+    data,
     error,
-    isLoading,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
 
@@ -64,17 +82,26 @@ export const getEnv = async () => {
 };
 
 export const useEnv = () => {
-  const template = ENDPOINT_COMMON.env[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template);
-  const [{ data, error, isLoading }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["env", ENDPOINT_METHOD.GET];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: getEnv,
   });
+  const mutation = useMutation({
+    mutationFn: getEnv,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    data: data?.data,
+    data,
     error,
-    isLoading,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
