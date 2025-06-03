@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:prepare": "playwright install",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:show-report": "playwright show-report"
   },
   "dependencies": {
     "@autoform/react": "^3.1.0",
