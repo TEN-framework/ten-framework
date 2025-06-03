@@ -10,6 +10,7 @@ mod tests {
 
     use ten_rust::graph::{
         connection::{self, GraphConnection},
+        graph_info::load_graph_from_uri,
         node::{GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
         GraphExposedProperty,
@@ -1379,7 +1380,6 @@ mod tests {
     fn test_flatten_with_load_graph_from_uri_as_subgraph_loader() {
         use std::fs;
         use tempfile::tempdir;
-        use ten_rust::graph::graph_info::load_graph_from_uri_with_base_dir;
 
         // Create a temporary directory and subgraph file
         let temp_dir = tempdir().unwrap();
@@ -1479,7 +1479,7 @@ mod tests {
                 // For this test, we'll use the provided base_dir_param if
                 // available, otherwise fall back to the test's base_dir
                 let effective_base_dir = base_dir_param.or(Some(base_dir));
-                load_graph_from_uri_with_base_dir(uri, effective_base_dir)
+                load_graph_from_uri(uri, effective_base_dir)
             };
 
         // Flatten the graph
