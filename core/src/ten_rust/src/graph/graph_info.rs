@@ -147,6 +147,6 @@ impl GraphInfo {
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete()
+        self.graph.validate_and_complete(None)
     }
 }
