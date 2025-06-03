@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test:prepare": "playwright install",
     "test:e2e": "playwright test"
   },
   "dependencies": {
