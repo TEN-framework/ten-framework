@@ -17,6 +17,7 @@
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/msg.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/ten_env.h"
+#include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/macro/check.h"
@@ -94,8 +95,8 @@ static void ten_go_extension_tester_bridge_destroy(
   TEN_FREE(self);
 }
 
-static void proxy_on_start(ten_extension_tester_t *self,
-                           ten_env_tester_t *ten_env_tester) {
+static void proxy_on_init(ten_extension_tester_t *self,
+                          ten_env_tester_t *ten_env_tester) {
   TEN_ASSERT(self && ten_extension_tester_check_integrity(self, true),
              "Should not happen.");
   TEN_ASSERT(
@@ -116,6 +117,27 @@ static void proxy_on_start(ten_extension_tester_t *self,
       ten_env_tester_proxy_create(ten_env_tester, NULL);
   TEN_ASSERT(ten_env_tester_bridge->c_ten_env_tester_proxy,
              "Should not happen.");
+
+  ten_env_tester_on_init_done(ten_env_tester, NULL);
+}
+
+static void proxy_on_start(ten_extension_tester_t *self,
+                           ten_env_tester_t *ten_env_tester) {
+  TEN_ASSERT(self && ten_extension_tester_check_integrity(self, true),
+             "Should not happen.");
+  TEN_ASSERT(
+      ten_env_tester && ten_env_tester_check_integrity(ten_env_tester, true),
+      "Should not happen.");
+  TEN_ASSERT(ten_extension_tester_get_ten_env_tester(self) == ten_env_tester,
+             "Should not happen.");
+
+  ten_go_extension_tester_t *extension_tester_bridge =
+      ten_binding_handle_get_me_in_target_lang((ten_binding_handle_t *)self);
+  TEN_ASSERT(ten_go_extension_tester_check_integrity(extension_tester_bridge),
+             "Should not happen.");
+
+  ten_go_ten_env_tester_t *ten_env_tester_bridge =
+      ten_go_ten_env_tester_wrap(ten_env_tester);
 
   tenGoExtensionTesterOnStart(
       ten_go_extension_tester_go_handle(extension_tester_bridge),
@@ -370,8 +392,8 @@ ten_go_extension_tester_t *ten_go_extension_tester_create_internal(
   extension_tester_bridge->bridge.sp_ref_by_c = NULL;
 
   extension_tester_bridge->c_extension_tester = ten_extension_tester_create(
-      NULL, proxy_on_start, proxy_on_stop, proxy_on_deinit, proxy_on_cmd,
-      proxy_on_data, proxy_on_audio_frame, proxy_on_video_frame);
+      proxy_on_init, proxy_on_start, proxy_on_stop, proxy_on_deinit,
+      proxy_on_cmd, proxy_on_data, proxy_on_audio_frame, proxy_on_video_frame);
 
   ten_binding_handle_set_me_in_target_lang(
       &extension_tester_bridge->c_extension_tester->binding_handle,

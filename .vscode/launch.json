@@ -865,9 +865,11 @@
       "name": "standalone test (go) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go/.ten/app/bin/test.out",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go/.ten/app/bin/default_extension_go_test",
       "args": [
-        "-test.v"
+        "-test.v",
+        "-test.run",
+        "TestGreetingTester"
       ],
       "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/go/standalone_test_2_go/default_extension_go",
       "env": {
