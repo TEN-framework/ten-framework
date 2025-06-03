@@ -12,7 +12,14 @@ mod tests {
 
     use ten_rust::{
         base_dir_pkg_info::PkgsInfoInApp,
-        graph::{graph_info::GraphInfo, Graph},
+        graph::{
+            connection::{
+                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+            },
+            graph_info::GraphInfo,
+            node::{GraphNode, GraphNodeType},
+            Graph,
+        },
         pkg_info::get_app_installed_pkgs,
     };
 
@@ -210,40 +217,54 @@ mod tests {
     #[test]
     fn test_graph_check_subgraph_reference_valid() {
         // Test that valid subgraph references pass validation
-        let graph_json = r#"
-        {
-            "nodes": [
-                {
-                    "type": "extension",
-                    "name": "ext_a",
-                    "addon": "addon_a",
-                    "extension_group": "some_group"
+        // Construct the graph directly to avoid triggering file loading during
+        // parsing
+        let graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: Some("some_group".to_string()),
+                    app: None,
+                    property: None,
+                    source_uri: None,
                 },
-                {
-                    "type": "subgraph",
-                    "name": "subgraph_1",
-                    "source_uri": "./subgraph.json"
-                }
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some("/tmp/subgraph.json".to_string()),
+                },
             ],
-            "connections": [
-                {
-                    "extension": "ext_a",
-                    "cmd": [
-                        {
-                            "name": "test_cmd",
-                            "dest": [
-                                {
-                                    "extension": "subgraph_1:ext_b"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-        "#;
+            connections: Some(vec![GraphConnection {
+                loc: GraphLoc {
+                    app: None,
+                    extension: Some("ext_a".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![GraphMessageFlow {
+                    name: "test_cmd".to_string(),
+                    dest: vec![GraphDestination {
+                        loc: GraphLoc {
+                            app: None,
+                            extension: Some("subgraph_1:ext_b".to_string()),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
+            exposed_messages: None,
+            exposed_properties: None,
+        };
 
-        let graph = Graph::from_str(graph_json).unwrap();
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
 
         let result = graph.check(&None, &pkgs_cache);
