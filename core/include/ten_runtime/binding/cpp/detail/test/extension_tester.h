@@ -38,6 +38,10 @@ class extension_tester_t {
   extension_tester_t &operator=(const extension_tester_t &&) = delete;
   // @}
 
+  void set_timeout(uint32_t timeout_ms) {
+    ten_extension_tester_set_timeout(c_extension_tester, timeout_ms);
+  }
+
   void set_test_mode_single(const char *addon_name,
                             const char *property_json_str = nullptr) {
     TEN_ASSERT(addon_name, "Invalid argument.");

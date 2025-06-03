@@ -21,6 +21,7 @@
 #include "include_internal/ten_runtime/test/env_tester.h"
 #include "include_internal/ten_runtime/test/test_app.h"
 #include "include_internal/ten_runtime/test/test_extension.h"
+#include "include_internal/ten_runtime/timer/timer.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_runtime/extension/extension.h"
@@ -30,6 +31,7 @@
 #include "ten_runtime/ten_env/internal/metadata.h"
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
 #include "ten_runtime/ten_env_proxy/ten_env_proxy.h"
+#include "ten_runtime/test/env_tester.h"
 #include "ten_utils/io/runloop.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/event.h"
@@ -87,6 +89,25 @@ void ten_extension_tester_set_test_result(ten_extension_tester_t *self,
   ten_error_copy(&self->test_result, test_result);
 }
 
+bool ten_extension_tester_could_be_closed(ten_extension_tester_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+
+  // Check if the timeout timer is closed.
+  return self->timeout_timer == NULL;
+}
+
+void ten_extension_tester_do_close(ten_extension_tester_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+  TEN_ASSERT(self->timeout_timer == NULL, "Should not happen.");
+
+  TEN_LOGI("Stopping tester's runloop");
+  ten_runloop_stop(self->tester_runloop);
+}
+
 ten_extension_tester_t *ten_extension_tester_create(
     ten_extension_tester_on_init_func_t on_init,
     ten_extension_tester_on_start_func_t on_start,
@@ -129,6 +150,9 @@ ten_extension_tester_t *ten_extension_tester_create(
   self->test_mode = TEN_EXTENSION_TESTER_TEST_MODE_INVALID;
 
   TEN_ERROR_INIT(self->test_result);
+
+  self->timeout = 0;
+  self->timeout_timer = NULL;
 
   return self;
 }
@@ -185,6 +209,18 @@ void ten_extension_tester_set_test_mode_graph(ten_extension_tester_t *self,
   self->test_mode = TEN_EXTENSION_TESTER_TEST_MODE_GRAPH;
   ten_string_init_from_c_str_with_size(&self->test_target.graph.graph_json,
                                        graph_json, strlen(graph_json));
+}
+
+void ten_extension_tester_set_timeout(ten_extension_tester_t *self,
+                                      uint64_t timeout) {
+  TEN_ASSERT(self, "Invalid argument.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: this function could be called in different threads other than
+  // the creation thread.
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, false),
+             "Invalid argument.");
+
+  self->timeout = timeout;
 }
 
 void ten_extension_tester_init_test_app_property_from_json(
@@ -337,6 +373,91 @@ static void test_app_ten_env_send_start_graph_cmd(ten_env_t *ten_env,
   TEN_ASSERT(rc, "Should not happen.");
 
   ten_error_deinit(&err);
+}
+
+static void ten_extension_tester_on_timeout_triggered(ten_timer_t *timer,
+                                                      void *user_data) {
+  TEN_ASSERT(timer, "Invalid argument.");
+  TEN_ASSERT(user_data, "Invalid argument.");
+
+  ten_extension_tester_t *self = user_data;
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+
+  TEN_LOGI("Timeout triggered for extension_tester, timeout: %dms.",
+           self->timeout / 1000);
+
+  // Set the test result to `timeout` and stop the test.
+
+  ten_env_tester_t *ten_env_tester = self->ten_env_tester;
+  TEN_ASSERT(ten_env_tester, "Should not happen.");
+  TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
+             "Should not happen.");
+
+  ten_error_t test_result;
+  TEN_ERROR_INIT(test_result);
+
+  ten_error_set(&test_result, TEN_ERROR_CODE_TIMEOUT, "Test timeout.");
+
+  ten_env_tester_stop_test(ten_env_tester, &test_result, NULL);
+
+  ten_error_deinit(&test_result);
+}
+
+static void ten_extension_tester_on_timeout_closed(ten_timer_t *timer,
+                                                   void *user_data) {
+  TEN_ASSERT(timer, "Invalid argument.");
+  TEN_ASSERT(user_data, "Invalid argument.");
+
+  ten_extension_tester_t *self = user_data;
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+
+  TEN_LOGI("Timeout closed for extension_tester, timeout: %dms.",
+           self->timeout / 1000);
+
+  self->timeout_timer = NULL;
+
+  if (ten_extension_tester_could_be_closed(self)) {
+    ten_extension_tester_do_close(self);
+  } else {
+    TEN_ASSERT(0, "Should not happen.");
+  }
+}
+
+static void ten_extension_tester_start_timeout_timer(
+    ten_extension_tester_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, true),
+             "Invalid argument.");
+
+  TEN_ASSERT(self->tester_runloop, "Should not happen.");
+  TEN_ASSERT(ten_runloop_check_integrity(self->tester_runloop, true),
+             "Should not happen.");
+
+  TEN_ASSERT(self->timeout_timer == NULL, "Should not happen.");
+
+  if (self->timeout <= 0) {
+    TEN_LOGV(
+        "Timeout is not set, skipping timeout timer for extension_tester.");
+    return;
+  }
+
+  self->timeout_timer =
+      ten_timer_create(self->tester_runloop, self->timeout * 1000, 1, false);
+  TEN_ASSERT(self->timeout_timer, "Should not happen.");
+
+  ten_timer_set_on_triggered(self->timeout_timer,
+                             ten_extension_tester_on_timeout_triggered, self);
+  ten_timer_set_on_closed(self->timeout_timer,
+                          ten_extension_tester_on_timeout_closed, self);
+
+  ten_timer_enable(self->timeout_timer);
+
+  TEN_LOGD("Started timeout timer for extension_tester, timeout: %dms.",
+           self->timeout / 1000);
 }
 
 static void ten_extension_tester_create_and_start_graph(
@@ -634,6 +755,7 @@ static void ten_extension_tester_on_first_task(void *self_,
 
   ten_extension_tester_create_and_run_app(self);
   ten_extension_tester_create_and_start_graph(self);
+  ten_extension_tester_start_timeout_timer(self);
 }
 
 static void ten_extension_tester_inherit_thread_ownership(

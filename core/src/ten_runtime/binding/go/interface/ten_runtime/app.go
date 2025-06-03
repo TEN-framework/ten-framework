@@ -82,7 +82,7 @@ func NewApp(
 	iApp IApp,
 ) (App, error) {
 	if iApp == nil {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"iApp is required.",
 		)

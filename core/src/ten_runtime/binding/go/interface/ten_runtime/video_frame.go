@@ -75,7 +75,7 @@ var _ VideoFrame = new(videoFrame)
 // NewVideoFrame creates a new video frame.
 func NewVideoFrame(videoFrameName string) (VideoFrame, error) {
 	if len(videoFrameName) == 0 {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"video frame name is required.",
 		)
@@ -95,7 +95,7 @@ func NewVideoFrame(videoFrameName string) (VideoFrame, error) {
 
 		if bridge == 0 {
 			// Should not happen.
-			return nil, newTenError(
+			return nil, NewTenError(
 				ErrorCodeInvalidArgument,
 				"bridge is nil",
 			)
@@ -107,7 +107,7 @@ func NewVideoFrame(videoFrameName string) (VideoFrame, error) {
 
 func (p *videoFrame) AllocBuf(size int) error {
 	if size <= 0 {
-		return newTenError(ErrorCodeInvalidArgument, "the size should be > 0")
+		return NewTenError(ErrorCodeInvalidArgument, "the size should be > 0")
 	}
 
 	err := withCGOLimiter(func() error {
@@ -144,7 +144,7 @@ func (p *videoFrame) LockBuf() ([]byte, error) {
 
 func (p *videoFrame) UnlockBuf(buf *[]byte) error {
 	if buf == nil {
-		return newTenError(ErrorCodeInvalidArgument, "buf is nil")
+		return NewTenError(ErrorCodeInvalidArgument, "buf is nil")
 	}
 
 	err := withCGOLimiter(func() error {
@@ -200,7 +200,7 @@ func (p *videoFrame) GetBuf() ([]byte, error) {
 
 func (p *videoFrame) SetWidth(width int32) error {
 	if width <= 0 {
-		return newTenError(ErrorCodeInvalidArgument, "the width should be > 0")
+		return NewTenError(ErrorCodeInvalidArgument, "the width should be > 0")
 	}
 
 	return withCGOLimiter(func() error {
@@ -229,7 +229,7 @@ func (p *videoFrame) GetWidth() (int32, error) {
 
 func (p *videoFrame) SetHeight(height int32) error {
 	if height <= 0 {
-		return newTenError(ErrorCodeInvalidArgument, "the height should be > 0")
+		return NewTenError(ErrorCodeInvalidArgument, "the height should be > 0")
 	}
 
 	return withCGOLimiter(func() error {
@@ -258,7 +258,7 @@ func (p *videoFrame) GetHeight() (int32, error) {
 
 func (p *videoFrame) SetTimestamp(timestamp int64) error {
 	if timestamp <= 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"the timestamp should be > 0",
 		)
@@ -351,7 +351,7 @@ func (p *videoFrame) Clone() (VideoFrame, error) {
 
 	if bridge == 0 {
 		// Should not happen.
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"bridge is nil",
 		)

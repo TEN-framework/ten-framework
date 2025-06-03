@@ -101,6 +101,14 @@ void ten_extension_tester2_on_start(TEN_UNUSED ten_extension_tester_t *tester,
   ten_env_tester_on_start_done(ten_env, nullptr);
 }
 
+void ten_extension_tester3_on_start(TEN_UNUSED ten_extension_tester_t *tester,
+                                    ten_env_tester_t *ten_env) {
+  // Do nothing but sleep for 1 second to make the test timeout.
+  ten_sleep_ms(1000);
+
+  ten_env_tester_on_start_done(ten_env, nullptr);
+}
+
 }  // namespace
 
 TEST(StandaloneTest, BasicC) {  // NOLINT
@@ -140,6 +148,30 @@ TEST(StandaloneTest, BasicCFail) {  // NOLINT
   TEN_ASSERT(ten_error_code(&err) == TEN_ERROR_CODE_GENERIC,
              "Should not happen.");
   TEN_ASSERT(strcmp(ten_error_message(&err), "Error response.") == 0,
+             "Should not happen.");
+
+  ten_error_deinit(&err);
+
+  ten_extension_tester_destroy(tester);
+}
+
+TEST(StandaloneTest, BasicCTimeout) {  // NOLINT
+  ten_extension_tester_t *tester = ten_extension_tester_create(
+      nullptr, ten_extension_tester3_on_start, nullptr, nullptr, nullptr,
+      nullptr, nullptr, nullptr);
+  ten_extension_tester_set_test_mode_single(
+      tester, "standalone_test_basic_c__test_extension_1", nullptr);
+  ten_extension_tester_set_timeout(tester, 500);  // 500ms
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool rc = ten_extension_tester_run(tester, &err);
+  // The test should fail because the command is unknown.
+  TEN_ASSERT(!rc, "Should not happen.");
+
+  TEN_ASSERT(!ten_error_is_success(&err), "Should not happen.");
+  TEN_ASSERT(ten_error_code(&err) == TEN_ERROR_CODE_TIMEOUT,
              "Should not happen.");
 
   ten_error_deinit(&err);

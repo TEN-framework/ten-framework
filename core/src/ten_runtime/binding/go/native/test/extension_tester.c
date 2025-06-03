@@ -336,6 +336,20 @@ void ten_go_extension_tester_finalize(ten_go_extension_tester_t *self) {
   ten_go_bridge_destroy_go_part(&self->bridge);
 }
 
+ten_go_error_t ten_go_extension_tester_set_timeout(
+    ten_go_extension_tester_t *extension_tester, uint32_t timeout_ms) {
+  TEN_ASSERT(ten_go_extension_tester_check_integrity(extension_tester),
+             "Should not happen.");
+
+  ten_go_error_t cgo_error;
+  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+
+  ten_extension_tester_set_timeout(extension_tester->c_extension_tester,
+                                   timeout_ms);
+
+  return cgo_error;
+}
+
 ten_go_error_t ten_go_extension_tester_set_test_mode_single(
     ten_go_extension_tester_t *extension_tester, const void *addon_name,
     int addon_name_len, const void *property_json, int property_json_len) {

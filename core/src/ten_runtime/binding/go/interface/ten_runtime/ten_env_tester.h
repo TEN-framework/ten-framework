@@ -42,7 +42,10 @@ ten_go_error_t ten_go_ten_env_tester_return_result(
     uintptr_t bridge_addr, uintptr_t cmd_result_bridge_addr,
     ten_go_handle_t handler_id);
 
-ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr);
+ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr,
+                                               uint32_t error_code,
+                                               void *error_message,
+                                               uint32_t error_message_size);
 
 ten_go_error_t ten_go_ten_env_tester_log(uintptr_t bridge_addr, int level,
                                          const void *func_name,

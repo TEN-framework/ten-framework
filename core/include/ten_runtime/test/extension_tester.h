@@ -82,6 +82,14 @@ TEN_RUNTIME_API void ten_extension_tester_set_test_mode_single(
 TEN_RUNTIME_API void ten_extension_tester_set_test_mode_graph(
     ten_extension_tester_t *self, const char *graph_json);
 
+// Set the timeout(ms) for the test.
+//
+// Note: This function must be called before the run() of extension_tester,
+// so the internal implementation of this function does not need to perform a
+// thread check.
+TEN_RUNTIME_API void ten_extension_tester_set_timeout(
+    ten_extension_tester_t *self, uint64_t timeout);
+
 // Initialize the test app property from a json string.
 //
 // Note: This function must be called before the run() of extension_tester,

@@ -85,6 +85,16 @@ class extension_tester_2 : public ten::extension_tester_t {
   }
 };
 
+class extension_tester_3 : public ten::extension_tester_t {
+ public:
+  void on_start(ten::ten_env_tester_t &ten_env) override {
+    // sleep 1000ms to make the test timeout
+    ten_sleep_ms(1000);
+
+    ten_env.on_start_done();
+  }
+};
+
 }  // namespace
 
 TEST(StandaloneTest, Basic) {  // NOLINT
@@ -110,6 +120,22 @@ TEST(StandaloneTest, BasicFail) {  // NOLINT
   TEN_ASSERT(err.error_code() == TEN_ERROR_CODE_GENERIC, "Should not happen.");
   TEN_ASSERT(strcmp(err.error_message(), "Error response.") == 0,
              "Should not happen.");
+
+  delete tester;
+}
+
+TEST(StandaloneTest, BasicTimeout) {  // NOLINT
+  auto *tester = new extension_tester_3();
+  tester->set_test_mode_single("standalone_test_basic__test_extension_1");
+  tester->set_timeout(500);
+
+  ten::error_t err;
+  bool rc = tester->run(&err);
+
+  // The test should fail because the test timeout.
+  TEN_ASSERT(!rc, "Should not happen.");
+  TEN_ASSERT(!err.is_success(), "Should not happen.");
+  TEN_ASSERT(err.error_code() == TEN_ERROR_CODE_TIMEOUT, "Should not happen.");
 
   delete tester;
 }
