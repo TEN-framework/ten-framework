@@ -68,7 +68,7 @@ mod tests {
         };
 
         // Validate and complete (this should load the graph from source_uri).
-        graph_info.validate_and_complete().unwrap();
+        graph_info.validate_and_complete_and_flatten().unwrap();
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes.len(), 1);
@@ -112,7 +112,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete();
+        let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'source_uri' is specified, 'nodes' field must not be present"
@@ -156,7 +156,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete();
+        let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'source_uri' is specified, 'connections' field must not be \
@@ -191,7 +191,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete();
+        let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'source_uri' is specified, 'exposed_messages' field must \
@@ -225,7 +225,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete();
+        let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'source_uri' is specified, 'exposed_properties' field must \
@@ -275,7 +275,7 @@ mod tests {
         };
 
         // This should succeed
-        let result = graph_info.validate_and_complete();
+        let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_ok());
 
         // Verify that the graph was loaded from source_uri

@@ -129,7 +129,7 @@ mod tests {
 
         // Flatten the graph
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -322,7 +322,7 @@ mod tests {
 
         // Flatten the graph
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -689,7 +689,7 @@ mod tests {
 
         // Flatten the graph - should now work with nested subgraphs
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -891,7 +891,7 @@ mod tests {
         // Flatten the graph - should work with nested subgraphs and
         // exposed_messages
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -1186,7 +1186,7 @@ mod tests {
 
         // Flatten the graph
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -1360,7 +1360,9 @@ mod tests {
 
         // Flatten the graph with preserve_exposed_info = true
         let flattened =
-            Graph::flatten(&main_graph, &subgraph_loader, None, true).unwrap();
+            Graph::flatten(&main_graph, &subgraph_loader, None, true)
+                .unwrap()
+                .unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -1496,7 +1498,7 @@ mod tests {
 
         // Flatten the graph
         let flattened =
-            main_graph.flatten_graph(&subgraph_loader, None).unwrap();
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph

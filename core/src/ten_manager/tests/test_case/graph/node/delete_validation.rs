@@ -60,8 +60,8 @@ mod tests {
         assert_eq!(graph.nodes[0].name, "test_extension_2");
 
         // Test case 2: Delete the remaining node - should also succeed
-        // because validate_and_complete() doesn't check for minimum extension
-        // count.
+        // because validate_and_complete_and_flatten() doesn't check for minimum
+        // extension count.
         let result = graph_delete_extension_node(
             &mut graph,
             "test_extension_2".to_string(),
@@ -110,7 +110,7 @@ mod tests {
             }
 
             // Validate the graph.
-            match graph.validate_and_complete(None) {
+            match graph.validate_and_complete_and_flatten(None) {
                 Ok(_) => Ok(()),
                 Err(e) => {
                     // Restore the original graph if validation fails.

@@ -94,7 +94,7 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    pub fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         // Validate mutual exclusion between source_uri and graph fields
         if self.source_uri.is_some() {
             // When source_uri is present, the graph fields should be empty or
@@ -147,6 +147,6 @@ impl GraphInfo {
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete(None)
+        self.graph.validate_and_complete_and_flatten(None)
     }
 }

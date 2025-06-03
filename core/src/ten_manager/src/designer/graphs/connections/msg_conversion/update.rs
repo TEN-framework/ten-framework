@@ -114,7 +114,7 @@ fn update_graph_info(
     }
 
     // Validate the updated graph.
-    match graph_info.graph.validate_and_complete(None) {
+    match graph_info.graph.validate_and_complete_and_flatten(None) {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.

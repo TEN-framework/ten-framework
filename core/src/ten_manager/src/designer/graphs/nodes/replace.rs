@@ -106,7 +106,7 @@ pub async fn replace_graph_node_endpoint(
     graph_node.property = request_payload.property.clone();
 
     // Validate the graph.
-    if let Err(e) = graph_info.graph.validate_and_complete(None) {
+    if let Err(e) = graph_info.graph.validate_and_complete_and_flatten(None) {
         // Restore the original graph if validation fails.
         graph_info.graph = original_graph;
         let error_response = ErrorResponse {

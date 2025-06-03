@@ -516,14 +516,18 @@ impl Graph {
     where
         F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
-        // First, recursively flatten any nested subgraphs within this subgraph.
-        // This ensures depth-first processing.
+        // Recursively flatten the loaded subgraph first to handle nested
+        // subgraphs. This ensures depth-first processing.
         let flattened_subgraph = Self::flatten(
             loaded_subgraph,
             subgraph_loader,
             current_base_dir,
             true,
         )?;
+
+        // If the subgraph doesn't need flattening, use the original
+        let flattened_subgraph =
+            flattened_subgraph.unwrap_or_else(|| loaded_subgraph.clone());
 
         subgraph_mappings
             .insert(subgraph_node.name.clone(), flattened_subgraph.clone());
@@ -830,12 +834,16 @@ impl Graph {
     /// structure with only extension nodes. This process converts subgraph
     /// references into their constituent extensions with prefixed names and
     /// merges all connections.
+    ///
+    /// Returns `Ok(None)` if the graph contains no subgraphs and doesn't need
+    /// flattening. Returns `Ok(Some(flattened_graph))` if the graph was
+    /// successfully flattened.
     pub fn flatten<F>(
         graph: &Graph,
         subgraph_loader: &F,
         current_base_dir: Option<&str>,
         preserve_exposed_info: bool,
-    ) -> Result<Graph>
+    ) -> Result<Option<Graph>>
     where
         F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
@@ -846,8 +854,8 @@ impl Graph {
             .any(|node| node.type_ == GraphNodeType::Subgraph);
 
         if !has_subgraphs {
-            // No subgraphs, return as-is
-            return Ok(graph.clone());
+            // No subgraphs, return None to indicate no flattening needed
+            return Ok(None);
         }
 
         // This graph has subgraphs, so we need to flatten them
@@ -882,7 +890,7 @@ impl Graph {
                 (None, None)
             };
 
-        Ok(Graph {
+        Ok(Some(Graph {
             nodes: flattened_nodes,
             connections: if flattened_connections.is_empty() {
                 None
@@ -891,16 +899,20 @@ impl Graph {
             },
             exposed_messages: updated_exposed_messages,
             exposed_properties: updated_exposed_properties,
-        })
+        }))
     }
 
     /// Convenience method for flattening a graph instance without preserving
     /// exposed info. This is the main public API for flattening graphs.
+    ///
+    /// Returns `Ok(None)` if the graph contains no subgraphs and doesn't need
+    /// flattening. Returns `Ok(Some(flattened_graph))` if the graph was
+    /// successfully flattened.
     pub fn flatten_graph<F>(
         &self,
         subgraph_loader: &F,
         current_base_dir: Option<&str>,
-    ) -> Result<Graph>
+    ) -> Result<Option<Graph>>
     where
         F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {

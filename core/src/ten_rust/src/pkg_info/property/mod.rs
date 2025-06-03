@@ -98,7 +98,7 @@ pub fn parse_property_from_str(
                 let mut graph_uuids = Vec::new();
 
                 for mut graph_info in graph_infos {
-                    graph_info.validate_and_complete()?;
+                    graph_info.validate_and_complete_and_flatten()?;
 
                     graph_info.belonging_pkg_type = belonging_pkg_type;
                     graph_info.belonging_pkg_name = belonging_pkg_name.clone();
