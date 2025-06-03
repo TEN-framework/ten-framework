@@ -62,6 +62,8 @@ void hello_world_cmd_result_handler(ten_env_tester_t *ten_env,
 
     bool rc = ten_env_tester_stop_test(ten_env, &test_result, nullptr);
     TEN_ASSERT(rc, "Should not happen.");
+
+    ten_error_deinit(&test_result);
   }
 }
 
@@ -115,6 +117,8 @@ TEST(StandaloneTest, BasicC) {  // NOLINT
   TEN_ASSERT(rc, "Should not happen.");
   TEN_ASSERT(ten_error_is_success(&err), "Should not happen.");
 
+  ten_error_deinit(&err);
+
   ten_extension_tester_destroy(tester);
 }
 
@@ -137,6 +141,8 @@ TEST(StandaloneTest, BasicCFail) {  // NOLINT
              "Should not happen.");
   TEN_ASSERT(strcmp(ten_error_message(&err), "Error response.") == 0,
              "Should not happen.");
+
+  ten_error_deinit(&err);
 
   ten_extension_tester_destroy(tester);
 }
