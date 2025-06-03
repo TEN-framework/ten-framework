@@ -15,14 +15,14 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use tempfile::tempdir;
 
-    use ten_manager::config::metadata::TmanMetadata;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        config::TmanConfig,
         designer::{
             dir_list::list_dir_endpoint,
             response::{ApiResponse, Status},
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
 
@@ -56,12 +56,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Configure the `list_dir` route.
@@ -112,12 +113,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Configure the `list_dir` route.
@@ -160,12 +162,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         let app = test::init_service(App::new().app_data(state.clone()).route(

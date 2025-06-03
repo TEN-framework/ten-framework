@@ -11,7 +11,6 @@ use actix_web::{test, web, App};
 use serde_json::json;
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
     constants::TEST_DIR,
     designer::{
         messages::compatible::{
@@ -19,8 +18,10 @@ use ten_manager::{
             GetCompatibleMsgsSingleResponseData,
         },
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 use ten_rust::pkg_info::message::{MsgDirection, MsgType};
@@ -31,12 +32,13 @@ use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 async fn test_get_compatible_messages_success() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -153,12 +155,13 @@ async fn test_get_compatible_messages_success() {
 async fn test_get_compatible_messages_fail() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -256,12 +259,13 @@ async fn test_get_compatible_messages_fail() {
 async fn test_get_compatible_messages_cmd_has_required_success_1() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -382,12 +386,13 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
 async fn test_get_compatible_messages_cmd_has_required_success_2() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -508,12 +513,13 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
 async fn test_get_compatible_messages_cmd_has_required_success_3() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -634,12 +640,13 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
 async fn test_get_compatible_messages_cmd_has_required_success_4() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![

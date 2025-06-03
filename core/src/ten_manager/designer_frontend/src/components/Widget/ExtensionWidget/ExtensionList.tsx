@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
-import { BlocksIcon, CheckIcon } from "lucide-react";
+import { BlocksIcon, CheckIcon, BrushCleaningIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FixedSizeList as VirtualList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -36,6 +36,7 @@ import {
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
+import { HighlightText } from "@/components/Highlight";
 
 import type { TooltipContentProps } from "@radix-ui/react-tooltip";
 import { postReloadApps } from "@/api/services/apps";
@@ -123,10 +124,16 @@ export const ExtensionBaseItem = React.forwardRef<
   const { item, className, isInstalled, _type, readOnly, ...rest } = props;
 
   const { t } = useTranslation();
-  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
-    useWidgetStore();
+  const {
+    extSearch,
+    appendWidget,
+    removeBackstageWidget,
+    removeLogViewerHistory,
+  } = useWidgetStore();
   const { currentWorkspace } = useAppStore();
   const { mutate } = useListTenCloudStorePackages();
+
+  const deferredSearch = React.useDeferredValue(extSearch);
 
   const handleInstall =
     (baseDir: string, item: IListTenCloudStorePackage) =>
@@ -172,8 +179,17 @@ export const ExtensionBaseItem = React.forwardRef<
         actions: {
           onClose: () => {
             removeBackstageWidget(widgetId);
-            removeLogViewerHistory(widgetId);
           },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(widgetId);
+              },
+            },
+          ],
         },
       });
     };
@@ -205,7 +221,8 @@ export const ExtensionBaseItem = React.forwardRef<
             "text-foreground"
           )}
         >
-          {item.name}
+          <HighlightText highlight={deferredSearch}>{item.name}</HighlightText>
+
           {_type === EPackageSource.Local && (
             <span className={cn("text-ten-icontext-2", "text-xs font-normal")}>
               {t("extensionStore.localAddonTip")}

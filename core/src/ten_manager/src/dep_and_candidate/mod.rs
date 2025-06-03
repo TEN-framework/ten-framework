@@ -23,9 +23,9 @@ use ten_rust::pkg_info::{
 };
 use ten_rust::pkg_info::{get_pkg_info_from_path, PkgInfo};
 
-use super::config::TmanConfig;
+use super::home::config::TmanConfig;
 use super::registry::get_package_list;
-use crate::config::is_verbose;
+use crate::home::config::is_verbose;
 use crate::output::TmanOutput;
 use crate::registry::pkg_list_cache::{is_superset_of, PackageListCache};
 

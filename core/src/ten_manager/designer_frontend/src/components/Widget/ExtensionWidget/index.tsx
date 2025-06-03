@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { useListTenCloudStorePackages } from "@/api/services/extension";
-import { retrieveAddons } from "@/api/services/addons";
+import { useFetchAddons } from "@/api/services/addons";
 import { useEnv } from "@/api/services/common";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { useWidgetStore, useAppStore } from "@/store";
@@ -45,16 +45,26 @@ export const ExtensionStoreWidget = (props: {
   toolTipSide?: TooltipContentProps["side"];
 }) => {
   const { className, toolTipSide } = props;
-  const [isFetchingAddons, setIsFetchingAddons] = React.useState(false);
 
   const { t } = useTranslation();
   const { data, error, isLoading } = useListTenCloudStorePackages();
   const { data: envData, error: envError, isLoading: isLoadingEnv } = useEnv();
   const { extSearch, extFilter, appendWidget } = useWidgetStore();
-  const { addons, setAddons, setDefaultOsArch, currentWorkspace } =
-    useAppStore();
+  const { setDefaultOsArch, currentWorkspace } = useAppStore();
 
   const deferredSearch = React.useDeferredValue(extSearch);
+
+  const {
+    data: addons,
+    error: addonError,
+    isLoading: isFetchingAddons,
+  } = useFetchAddons(
+    currentWorkspace.app?.base_dir
+      ? {
+          base_dir: currentWorkspace.app.base_dir,
+        }
+      : {}
+  );
 
   const [matched, versions, packagesMetadata] = React.useMemo(() => {
     const cloudExtNames = data?.packages?.map((item) => item.name) || [];
@@ -139,6 +149,21 @@ export const ExtensionStoreWidget = (props: {
       packagesMetadata.uninstalledPackageNames.filter((item) => {
         return item.toLowerCase().includes(deferredSearch.toLowerCase());
       });
+    // tags matched
+    const tagsMatchedInstalledPackages = packagesMetadata.installedPackages
+      .filter((item) => {
+        return item.tags?.some((tag) =>
+          tag.toLowerCase().includes(deferredSearch.toLowerCase())
+        );
+      })
+      .map((item) => item.name);
+    const tagsMatchedUninstalledPackages = packagesMetadata.uninstalledPackages
+      .filter((item) => {
+        return item.tags?.some((tag) =>
+          tag.toLowerCase().includes(deferredSearch.toLowerCase())
+        );
+      })
+      .map((item) => item.name);
     // sort
     const sortedNameMatchedLocalOnlyAddons = nameMatchedLocalOnlyAddons.sort(
       (a, b) => {
@@ -151,8 +176,15 @@ export const ExtensionStoreWidget = (props: {
         return 0;
       }
     );
-    const sortedNameMatchedInstalledPackageNames =
-      nameMatchedInstalledPackages.sort((a, b) => {
+    const sortedNameMatchedInstalledPackageNames = [
+      ...nameMatchedInstalledPackages,
+      ...tagsMatchedInstalledPackages,
+    ]
+      .reduce(
+        (acc, curr) => (acc.includes(curr) ? acc : [...acc, curr]),
+        [] as string[]
+      )
+      .sort((a, b) => {
         if (extFilter.sort === "name") {
           return a.localeCompare(b);
         }
@@ -180,8 +212,15 @@ export const ExtensionStoreWidget = (props: {
         },
         []
       );
-    const sortedNameMatchedUninstalledPackageNames =
-      nameMatchedUninstalledPackages.sort((a, b) => {
+    const sortedNameMatchedUninstalledPackageNames = [
+      ...nameMatchedUninstalledPackages,
+      ...tagsMatchedUninstalledPackages,
+    ]
+      .reduce(
+        (acc, curr) => (acc.includes(curr) ? acc : [...acc, curr]),
+        [] as string[]
+      )
+      .sort((a, b) => {
         if (extFilter.sort === "name") {
           return a.localeCompare(b);
         }
@@ -253,30 +292,6 @@ export const ExtensionStoreWidget = (props: {
   };
 
   React.useEffect(() => {
-    const fetchAddons = async (baseDir: string) => {
-      try {
-        setIsFetchingAddons(true);
-        const res = await retrieveAddons({
-          base_dir: baseDir,
-        });
-        setAddons(res);
-      } catch (error) {
-        console.error("Failed to fetch addons", error);
-        toast.error("Failed to fetch addons", {
-          description: error instanceof Error ? error.message : String(error),
-        });
-      } finally {
-        setIsFetchingAddons(false);
-      }
-    };
-
-    if (currentWorkspace.app?.base_dir) {
-      fetchAddons(currentWorkspace.app.base_dir);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWorkspace.app?.base_dir]);
-
-  React.useEffect(() => {
     if (error) {
       toast.error(error.message, {
         description: error?.message,
@@ -287,7 +302,12 @@ export const ExtensionStoreWidget = (props: {
         description: envError?.message,
       });
     }
-  }, [error, envError]);
+    if (addonError) {
+      toast.error(addonError.message, {
+        description: addonError?.message,
+      });
+    }
+  }, [error, envError, addonError]);
 
   React.useEffect(() => {
     if (envData?.os && envData?.arch) {

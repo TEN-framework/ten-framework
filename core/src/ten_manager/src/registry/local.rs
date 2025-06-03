@@ -26,10 +26,10 @@ use super::found_result::{
     get_pkg_registry_info_from_manifest, PkgRegistryInfo,
 };
 use super::pkg_cache::{find_in_package_cache, store_file_to_package_cache};
-use crate::config::{is_verbose, TmanConfig};
 use crate::constants::{
     DEFAULT_REGISTRY_PAGE_SIZE, TEN_PACKAGE_FILE_EXTENSION,
 };
+use crate::home::config::{is_verbose, TmanConfig};
 use crate::output::TmanOutput;
 
 pub async fn upload_package(
@@ -544,9 +544,8 @@ pub async fn delete_package(
     };
 
     // Construct the directory path.
-    let dir_path = PathBuf::from(format!(
-        "{path_url}{pkg_type}/{name}/{version}/"
-    ));
+    let dir_path =
+        PathBuf::from(format!("{path_url}{pkg_type}/{name}/{version}/"));
 
     if dir_path.exists() {
         // Iterate over the files in the directory.

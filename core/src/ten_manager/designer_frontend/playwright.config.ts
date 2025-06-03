@@ -84,11 +84,15 @@ export default defineConfig({
     //   use: { ...devices["Desktop Firefox"] },
     // },
 
-    {
-      // Safari/WebKit for testing Apple browser compatibility.
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    ...(process.env.PLAYWRIGHT_RUNTIME === "macos"
+      ? [
+          {
+            // Safari/WebKit for testing Apple browser compatibility.
+            name: "webkit",
+            use: { ...devices["Desktop Safari"] },
+          },
+        ]
+      : []),
 
     // Mobile viewport testing configurations - currently disabled.
     // {

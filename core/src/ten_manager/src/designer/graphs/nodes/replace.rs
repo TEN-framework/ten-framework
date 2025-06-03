@@ -77,6 +77,9 @@ pub async fn replace_graph_node_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
+    // Store the original state in case validation fails.
+    let original_graph = graph_info.graph.clone();
+
     // Find the graph node in the graph.
     let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
         node.name == request_payload.name && node.app == request_payload.app
@@ -101,6 +104,18 @@ pub async fn replace_graph_node_endpoint(
     let extension_group = graph_node.extension_group.clone();
     graph_node.addon = Some(request_payload.addon.clone());
     graph_node.property = request_payload.property.clone();
+
+    // Validate the graph.
+    if let Err(e) = graph_info.graph.validate_and_complete_and_flatten(None) {
+        // Restore the original graph if validation fails.
+        graph_info.graph = original_graph;
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: format!("Graph validation failed: {e}"),
+            error: None,
+        };
+        return Ok(HttpResponse::BadRequest().json(error_response));
+    }
 
     // Update property.json file with the updated graph node.
     if let Err(e) = update_graph_node_in_property_all_fields(

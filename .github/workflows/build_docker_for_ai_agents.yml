@@ -6,6 +6,7 @@ on:
     tags: ["**"]
     paths-ignore:
       - "core/**"
+      - "tests/**"
       - "tools/**"
       - "packages/**"
       - "build/**"
@@ -13,7 +14,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build-docker.yaml"
+      - "!.github/workflows/build_docker_for_ai_agents.yml"
       - ".vscode/**"
       - "ai_agents/docs/**"
       - "**.md"
@@ -21,6 +22,7 @@ on:
     branches: ["main"]
     paths-ignore:
       - "core/**"
+      - "tests/**"
       - "tools/**"
       - "packages/**"
       - "build/**"
@@ -28,7 +30,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build-docker.yaml"
+      - "!.github/workflows/build_docker_for_ai_agents.yml"
       - ".vscode/**"
       - "ai_agents/docs/**"
       - "**.md"

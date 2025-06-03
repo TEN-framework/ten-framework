@@ -10,21 +10,24 @@ mod tests {
 
     use actix_web::{test, web, App};
     use ten_manager::{
-        config::{metadata::TmanMetadata, TmanConfig},
         designer::{
             graphs::update::{
                 update_graph_endpoint, GraphNodeForUpdate,
                 UpdateGraphRequestPayload,
             },
             response::{ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         graph::graphs_cache_find_by_name,
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
     use ten_rust::{
         graph::{
-            connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+            connection::{
+                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+            },
             node::{GraphNode, GraphNodeType},
         },
         pkg_info::constants::PROPERTY_JSON_FILENAME,
@@ -40,12 +43,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Create a temporary directory for our test to store the generated
@@ -116,8 +120,11 @@ mod tests {
 
         // Create a connection with message flow.
         let dest = GraphDestination {
-            app: None,
-            extension: "node2".to_string(),
+            loc: GraphLoc {
+                app: None,
+                extension: Some("node2".to_string()),
+                subgraph: None,
+            },
             msg_conversion: None,
         };
 
@@ -125,8 +132,11 @@ mod tests {
             GraphMessageFlow { name: "test_cmd".to_string(), dest: vec![dest] };
 
         let connection = GraphConnection {
-            app: None,
-            extension: "node1".to_string(),
+            loc: GraphLoc {
+                app: None,
+                extension: Some("node1".to_string()),
+                subgraph: None,
+            },
             cmd: Some(vec![message_flow]),
             data: None,
             audio_frame: None,
@@ -203,12 +213,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         });
 
         // Create a test app with the update_graph_endpoint.
@@ -261,12 +272,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Create a temporary directory for our test to store the generated

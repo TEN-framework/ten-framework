@@ -2,7 +2,7 @@
   "ten": {
     "uri": "msgpack://127.0.0.1:8007/",
     "log": {
-      "level": 2
+      "level": 1
     },
     "predefined_graphs": [
       {

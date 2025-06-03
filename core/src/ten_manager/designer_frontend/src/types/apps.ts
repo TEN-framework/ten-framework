@@ -18,11 +18,19 @@ export interface IGetBaseDirResponse {
 
 export interface IApp {
   base_dir: string;
-  app_uri: string;
+  app_uri: string | null;
 }
 
 export interface IGetAppsResponse {
   app_info: IApp[];
+}
+
+export interface IRunAppParams {
+  base_dir: string;
+  script_name: string;
+  stdout_is_log: boolean;
+  stderr_is_log: boolean;
+  run_with_agent: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -46,6 +54,19 @@ export enum EPreferencesTabs {
 export const PREFERENCES_SCHEMA_LOG = z.object({
   logviewer_line_size: z.number().min(1).default(1000),
 });
+
+export const PREFERENCES_SCHEMA_TRULIENCE = z.object({
+  trulience: z.object({
+    enabled: z.boolean().default(false),
+    trulienceAvatarId: z.string().default(""),
+    trulienceAvatarToken: z.string().default(""),
+    trulienceSdkUrl: z
+      .string()
+      .default("https://trulience.com/sdk/trulience.sdk.js"),
+    trulienceAnimationUrl: z.string().default("https://trulience.com"),
+  }),
+});
+
 export enum EPreferencesLocale {
   EN_US = "en-US",
   ZH_CN = "zh-CN",
@@ -56,6 +77,7 @@ export enum EPreferencesLocale {
 export const PREFERENCES_SCHEMA = z.object({
   locale: z.nativeEnum(EPreferencesLocale).default(EPreferencesLocale.EN_US),
   ...PREFERENCES_SCHEMA_LOG.shape,
+  ...PREFERENCES_SCHEMA_TRULIENCE.shape,
 });
 
 export enum ETemplateLanguage {
@@ -83,15 +105,19 @@ export const AppCreateReqSchema = z.object({
   base_dir: z.string().min(1),
   app_name: z.string().min(1),
   template_name: z.string().min(1),
+  template_version: z.string().optional(),
 });
 
 export const LogLineMetadataSchema = z.object({
+  graph_id: z.string().optional(),
+  graph_name: z.string().optional(),
   extension: z.string().optional(),
 });
 
 export const LogLineInfoSchema = z.object({
   line: z.string(),
   metadata: LogLineMetadataSchema.optional(),
+  type: z.nativeEnum(EWSMessageType),
 });
 
 export const LogSchema = z.object({

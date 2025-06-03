@@ -10,7 +10,7 @@ use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
 
-use crate::config::is_verbose;
+use crate::home::config::is_verbose;
 
 use super::DesignerState;
 
@@ -86,8 +86,8 @@ pub async fn get_frontend_asset(
             None => {
                 if is_verbose(state.tman_config.clone()).await {
                     println!(
-                        "[FRONTEND ASSET] Asset '{path}' not found, falling back \
-                         to index.html (SPA mode)"
+                        "[FRONTEND ASSET] Asset '{path}' not found, falling \
+                         back to index.html (SPA mode)"
                     );
                 }
 

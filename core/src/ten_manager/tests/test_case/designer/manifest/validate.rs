@@ -9,15 +9,16 @@ use std::sync::Arc;
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
     designer::{
         manifest::validate::{
             validate_manifest_endpoint, ValidateManifestRequestPayload,
             ValidateManifestResponseData,
         },
         response::{ApiResponse, Status},
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -26,12 +27,13 @@ async fn test_validate_manifest_valid() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -83,12 +85,13 @@ async fn test_validate_manifest_with_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -174,12 +177,13 @@ async fn test_validate_app_manifest_with_incorrect_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -267,12 +271,13 @@ async fn test_validate_app_manifest_with_correct_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -331,12 +336,13 @@ async fn test_validate_manifest_missing_required_fields() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -390,12 +396,13 @@ async fn test_validate_manifest_invalid_type() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -451,12 +458,13 @@ async fn test_validate_manifest_invalid_version_format() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.
@@ -512,12 +520,13 @@ async fn test_validate_manifest_invalid_json_syntax() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     // Initialize test application with the endpoint.

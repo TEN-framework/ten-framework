@@ -13,10 +13,11 @@ use clap::{value_parser, Arg, ArgMatches, Command};
 use console::Emoji;
 
 use crate::{
-    config::{is_verbose, metadata::TmanMetadata, TmanConfig},
     constants::DESIGNER_BACKEND_DEFAULT_PORT,
+    designer::storage::in_memory::TmanStorageInMemory,
     designer::{configure_routes, frontend::get_frontend_asset, DesignerState},
     fs::{check_is_app_folder, get_cwd},
+    home::config::{is_verbose, TmanConfig},
     output::{cli::TmanOutputCli, TmanOutput},
     pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };
@@ -82,7 +83,7 @@ pub fn parse_sub_cmd(
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: DesignerCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
@@ -113,10 +114,11 @@ pub async fn execute_cmd(
 
     let state = Arc::new(DesignerState {
         tman_config,
-        tman_metadata,
+        storage_in_memory: tman_storage_in_memory,
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     });
 
     let mut actual_base_dir_opt: Option<String> = Some(base_dir);

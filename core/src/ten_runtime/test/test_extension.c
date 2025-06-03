@@ -41,6 +41,10 @@ static void test_extension_on_configure(ten_extension_t *self,
                                         ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_env, "Invalid argument.");
 
+#if defined(_DEBUG)
+  ten_random_sleep_range_ms(0, 1000);
+#endif
+
   ten_extension_tester_t *tester =
       test_extension_get_extension_tester_ptr(ten_env);
   self->user_data = tester;
@@ -86,6 +90,10 @@ static void ten_extension_tester_on_test_extension_stop_task(
 static void test_extension_on_init(ten_extension_t *self, ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_env, "Invalid argument.");
 
+#if defined(_DEBUG)
+  ten_random_sleep_range_ms(0, 1000);
+#endif
+
   // The tester framework needs to ensure that the tester's environment is
   // always destroyed later than the test_extension, so calling the tester
   // within the test_extension is always valid.
@@ -105,6 +113,10 @@ static void test_extension_on_init(ten_extension_t *self, ten_env_t *ten_env) {
 static void test_extension_on_start(ten_extension_t *self, ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_env, "Invalid argument.");
 
+#if defined(_DEBUG)
+  ten_random_sleep_range_ms(0, 1000);
+#endif
+
   // The tester framework needs to ensure that the tester's environment is
   // always destroyed later than the test_extension, so calling the tester
   // within the test_extension is always valid.
@@ -123,6 +135,10 @@ static void test_extension_on_start(ten_extension_t *self, ten_env_t *ten_env) {
 
 static void test_extension_on_stop(ten_extension_t *self, ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_env, "Invalid argument.");
+
+#if defined(_DEBUG)
+  ten_random_sleep_range_ms(0, 1000);
+#endif
 
   // The tester framework needs to ensure that the tester's environment is
   // always destroyed later than the test_extension, so calling the tester
@@ -335,6 +351,10 @@ static void test_extension_on_deinit(ten_extension_t *self,
                                      ten_env_t *ten_env) {
   TEN_ASSERT(self && ten_env, "Invalid argument.");
 
+#if defined(_DEBUG)
+  ten_random_sleep_range_ms(0, 1000);
+#endif
+
   // The tester framework needs to ensure that the tester's environment is
   // always destroyed later than the test_extension, so calling the tester
   // within the test_extension is always valid.
@@ -357,7 +377,8 @@ static void test_extension_addon_create_instance(ten_addon_t *addon,
                                                  ten_env_t *ten_env,
                                                  const char *name,
                                                  void *context) {
-  TEN_ASSERT(addon && name, "Invalid argument.");
+  TEN_ASSERT(addon, "Invalid argument.");
+  TEN_ASSERT(name, "Invalid argument.");
 
   ten_extension_t *extension = ten_extension_create(
       name, test_extension_on_configure, test_extension_on_init,

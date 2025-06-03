@@ -78,7 +78,7 @@ pub async fn create_extension_endpoint(
     }
 
     let version_req = match template_version {
-        Some(version) => VersionReq::parse(&format!("={}", version)).unwrap(),
+        Some(version) => VersionReq::parse(&format!("={version}")).unwrap(),
         None => VersionReq::default(),
     };
 

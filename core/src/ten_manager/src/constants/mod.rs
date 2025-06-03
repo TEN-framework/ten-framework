@@ -65,6 +65,10 @@ pub const TEN_NAME_RULE_PATH: &str = "ten.name";
 
 pub const PACKAGE_CACHE: &str = "package_cache";
 pub const CONFIG_JSON: &str = "config.json";
+pub const DATA_JSON: &str = "data.json";
 pub const METADATA_FILE: &str = "metadata.json";
 
 pub const BUF_WRITER_BUF_SIZE: usize = 1024 * 1024;
+
+pub const DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL: i32 = 3;
+pub const DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL_STR: &str = "3";

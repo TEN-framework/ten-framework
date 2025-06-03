@@ -10,12 +10,13 @@ use actix_web::{test, web, App};
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
-use ten_manager::{
-    config::metadata::TmanMetadata,
-    designer::builtin_function::{builtin_function_endpoint, msg::InboundMsg},
+use ten_manager::designer::{
+    builtin_function::{builtin_function_endpoint, msg::InboundMsg},
+    storage::in_memory::TmanStorageInMemory,
 };
 use ten_manager::{
-    config::TmanConfig, designer::DesignerState, output::cli::TmanOutputCli,
+    designer::DesignerState, home::config::TmanConfig,
+    output::cli::TmanOutputCli,
 };
 
 use crate::test_case::common::builtin_server::start_test_server;
@@ -100,12 +101,13 @@ async fn test_ws_builtin_function_install_all() {
 async fn test_cmd_builtin_function_install_all() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let designer_state = Arc::new(designer_state);

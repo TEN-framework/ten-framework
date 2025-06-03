@@ -35,11 +35,13 @@ impl WsBuiltinFunction {
             standalone: false,
             local_path: None,
             cwd: base_dir.clone(),
+            max_latest_versions:
+                crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         };
 
         run_installation(
             self.tman_config.clone(),
-            self.tman_metadata.clone(),
+            self.tman_storage_in_memory.clone(),
             install_command,
             ctx,
         );

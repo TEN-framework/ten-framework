@@ -11,15 +11,15 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
 
-    use ten_manager::config::metadata::TmanMetadata;
-    use ten_manager::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::extensions::property::{
         get_extension_property_endpoint, GetExtensionPropertyRequestPayload,
         GetExtensionPropertyResponseData,
     };
     use ten_manager::designer::response::{ApiResponse, Status};
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
 
     use crate::test_case::common::mock::{
@@ -33,12 +33,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         let all_pkgs_json_str = vec![
@@ -135,12 +136,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         let designer_state = Arc::new(designer_state);
@@ -180,12 +182,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -236,12 +239,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {

@@ -34,10 +34,14 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    config::{is_verbose, metadata::TmanMetadata, TmanConfig},
-    constants::{APP_DIR_IN_DOT_TEN_DIR, DOT_TEN_DIR},
+    constants::{
+        APP_DIR_IN_DOT_TEN_DIR, DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
+        DOT_TEN_DIR,
+    },
     dep_and_candidate::get_all_candidates_from_deps,
+    designer::storage::in_memory::TmanStorageInMemory,
     fs::{check_is_addon_folder, find_nearest_app_dir},
+    home::config::{is_verbose, TmanConfig},
     install::{
         compare_solver_results_with_installed_pkgs,
         filter_compatible_pkgs_to_candidates,
@@ -87,6 +91,7 @@ pub struct InstallCommand {
     pub local_install_mode: LocalInstallMode,
     pub standalone: bool,
     pub cwd: String,
+    pub max_latest_versions: i32,
 
     /// When the user only inputs a single path parameter, if a `manifest.json`
     /// exists under that path, it indicates installation from a local path.
@@ -146,6 +151,15 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .value_name("DIR")
                 .required(false),
         )
+        .arg(
+            Arg::new("MAX_LATEST_VERSIONS")
+                .long("max-latest-versions")
+                .help("Maximum number of latest versions to consider")
+                .value_name("NUMBER")
+                .value_parser(clap::value_parser!(i32))
+                .default_value(crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL_STR)
+                .required(false),
+        )
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
@@ -163,6 +177,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         local_install_mode: LocalInstallMode::Invalid,
         standalone: false,
         cwd: String::new(),
+        max_latest_versions: DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         local_path: None,
     };
 
@@ -173,6 +188,13 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         cmd.cwd = cwd.clone();
     } else {
         cmd.cwd = crate::fs::get_cwd()?.to_string_lossy().to_string();
+    }
+
+    // Set max_latest_versions if provided.
+    if let Some(max_versions) =
+        sub_cmd_args.get_one::<i32>("MAX_LATEST_VERSIONS")
+    {
+        cmd.max_latest_versions = *max_versions;
     }
 
     // Retrieve the first positional parameter (in the `PACKAGE_TYPE`
@@ -361,7 +383,7 @@ async fn determine_app_dir_to_work_with(
 
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    _tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     command_data: InstallCommand,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
@@ -472,9 +494,7 @@ pub async fn execute_cmd(
         let local_path_str = command_data.local_path.clone().unwrap();
         let local_path = Path::new(&local_path_str);
         let local_path = local_path.canonicalize().with_context(|| {
-            format!(
-                "Failed to find the specified local path {local_path_str}"
-            )
+            format!("Failed to find the specified local path {local_path_str}")
         })?;
 
         let local_manifest_dir = if local_path.is_dir() {
@@ -632,6 +652,7 @@ pub async fn execute_cmd(
         &all_candidates,
         locked_pkgs.as_ref(),
         out.clone(),
+        command_data.max_latest_versions,
     )
     .await?;
 

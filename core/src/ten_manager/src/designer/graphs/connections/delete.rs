@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::{
     graph::{
         connection::GraphConnection, connection::GraphDestination,
-        connection::GraphMessageFlow, Graph,
+        connection::GraphLoc, connection::GraphMessageFlow, Graph,
     },
     pkg_info::message::MsgType,
 };
@@ -57,6 +57,9 @@ fn graph_delete_connection(
     dest_app: Option<String>,
     dest_extension: String,
 ) -> Result<()> {
+    // Store the original state in case validation fails.
+    let original_graph = graph.clone();
+
     // If no connections exist, return an error.
     if graph.connections.is_none() {
         return Err(anyhow!("No connections found in the graph"));
@@ -66,7 +69,8 @@ fn graph_delete_connection(
 
     // Find the source node's connection in the connections list.
     let connection_idx = connections.iter().position(|conn| {
-        conn.app == src_app && conn.extension == src_extension
+        conn.loc.app == src_app
+            && (conn.loc.extension.as_ref() == Some(&src_extension))
     });
 
     if let Some(idx) = connection_idx {
@@ -83,21 +87,15 @@ fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            let flow_idx = flows.iter().position(|flow| {
-                flow.name == msg_name
-                    && flow.dest.iter().any(|dest| {
-                        dest.app == dest_app && dest.extension == dest_extension
-                    })
-            });
-
-            if let Some(flow_idx) = flow_idx {
-                // If there are multiple destinations for this message, we
-                // need to remove only the specific destination.
+            if let Some(flow_idx) =
+                flows.iter().position(|flow| flow.name == msg_name)
+            {
                 let flow = &mut flows[flow_idx];
 
                 // Find the destination to remove.
                 let dest_idx = flow.dest.iter().position(|dest| {
-                    dest.app == dest_app && dest.extension == dest_extension
+                    dest.loc.app == dest_app
+                        && dest.loc.extension.as_ref() == Some(&dest_extension)
                 });
 
                 if let Some(dest_idx) = dest_idx {
@@ -132,7 +130,15 @@ fn graph_delete_connection(
                         graph.connections = None;
                     }
 
-                    return Ok(());
+                    // Validate the updated graph.
+                    match graph.validate_and_complete_and_flatten(None) {
+                        Ok(_) => return Ok(()),
+                        Err(e) => {
+                            // Restore the original graph if validation fails.
+                            *graph = original_graph;
+                            return Err(e);
+                        }
+                    }
                 }
             }
         }
@@ -191,9 +197,12 @@ pub async fn delete_graph_connection_endpoint(
         if let Some(property) = &mut pkg_info.property {
             // Create a GraphConnection representing what we
             // want to remove.
-            let mut connection = GraphConnection {
-                app: request_payload.src_app.clone(),
-                extension: request_payload.src_extension.clone(),
+            let mut connection_to_remove = GraphConnection {
+                loc: GraphLoc {
+                    app: request_payload.src_app.clone(),
+                    extension: Some(request_payload.src_extension.clone()),
+                    subgraph: None,
+                },
                 cmd: None,
                 data: None,
                 audio_frame: None,
@@ -201,35 +210,38 @@ pub async fn delete_graph_connection_endpoint(
             };
 
             // Create destination for the message flow.
-            let destination = GraphDestination {
-                app: request_payload.dest_app.clone(),
-                extension: request_payload.dest_extension.clone(),
+            let dest_to_remove = GraphDestination {
+                loc: GraphLoc {
+                    app: request_payload.dest_app.clone(),
+                    extension: Some(request_payload.dest_extension.clone()),
+                    subgraph: None,
+                },
                 msg_conversion: None,
             };
 
             // Create the message flow with destination.
             let message_flow = GraphMessageFlow {
                 name: request_payload.msg_name.clone(),
-                dest: vec![destination],
+                dest: vec![dest_to_remove],
             };
 
             // Set the appropriate message type field.
             match request_payload.msg_type {
                 MsgType::Cmd => {
-                    connection.cmd = Some(vec![message_flow]);
+                    connection_to_remove.cmd = Some(vec![message_flow]);
                 }
                 MsgType::Data => {
-                    connection.data = Some(vec![message_flow]);
+                    connection_to_remove.data = Some(vec![message_flow]);
                 }
                 MsgType::AudioFrame => {
-                    connection.audio_frame = Some(vec![message_flow]);
+                    connection_to_remove.audio_frame = Some(vec![message_flow]);
                 }
                 MsgType::VideoFrame => {
-                    connection.video_frame = Some(vec![message_flow]);
+                    connection_to_remove.video_frame = Some(vec![message_flow]);
                 }
             }
 
-            let connections_to_remove = vec![connection];
+            let connections_to_remove = vec![connection_to_remove];
 
             // Write the updated property_all_fields map to
             // property.json.
@@ -241,9 +253,7 @@ pub async fn delete_graph_connection_endpoint(
                 Some(&connections_to_remove),
                 None,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }
@@ -254,4 +264,44 @@ pub async fn delete_graph_connection_endpoint(
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))
+}
+
+pub fn find_connection_with_extensions<'a>(
+    connection_list: &'a [GraphConnection],
+    src_app: &Option<String>,
+    src_extension: &str,
+) -> Option<&'a GraphConnection> {
+    // Find connection with matching src app and extension.
+    connection_list.iter().find(|conn| {
+        conn.loc.app == *src_app
+            && conn
+                .loc
+                .extension
+                .as_ref()
+                .is_some_and(|ext| ext == src_extension)
+    })
+}
+
+pub fn find_flow_with_name(
+    flows: &[GraphMessageFlow],
+    name: &str,
+) -> Option<usize> {
+    // Find flow with matching name.
+    flows.iter().position(|flow| flow.name == name)
+}
+
+pub fn find_dest_with_extension(
+    flow: &GraphMessageFlow,
+    dest_app: &Option<String>,
+    dest_extension: &str,
+) -> Option<usize> {
+    // Find destination with matching extension and app.
+    flow.dest.iter().position(|dest| {
+        dest.loc.app == *dest_app
+            && dest
+                .loc
+                .extension
+                .as_ref()
+                .is_some_and(|ext| ext == dest_extension)
+    })
 }

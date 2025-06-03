@@ -45,6 +45,10 @@ impl Graph {
     ///   }]
     /// }]
     pub fn check_extension_uniqueness_in_connections(&self) -> Result<()> {
+        if self.connections.is_none() {
+            return Ok(());
+        }
+
         let mut errors: Vec<String> = vec![];
 
         // HashMap to track first occurrence of each extension.
@@ -54,22 +58,20 @@ impl Graph {
             self.connections.as_ref().unwrap().iter().enumerate()
         {
             // Create a unique identifier for the extension including app URI.
-            let extension = format!(
-                "{}:{}",
-                connection.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                connection.extension
-            );
+            if let Some(extension_name) = &connection.loc.extension {
+                let app_str = connection.loc.app.as_deref().unwrap_or("");
+                let unique_key = format!("{app_str}::{extension_name}");
 
-            // Check if we've seen this extension before.
-            if let Some(idx) = extensions.get(&extension) {
-                errors.push(format!(
-                    "extension '{}' is defined in connection[{}] and \
-                     connection[{}], merge them into one section.",
-                    connection.extension, idx, conn_idx
-                ));
-            } else {
-                // Record the first occurrence of the extension.
-                extensions.insert(extension, conn_idx);
+                if let Some(idx) = extensions.get(&unique_key) {
+                    errors.push(format!(
+                        "extension '{extension_name}' is defined in \
+                         connection[{idx}] and connection[{conn_idx}], merge \
+                         them into one section."
+                    ));
+                } else {
+                    // Record the first occurrence of the extension.
+                    extensions.insert(unique_key, conn_idx);
+                }
             }
         }
 

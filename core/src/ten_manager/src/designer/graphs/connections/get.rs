@@ -10,7 +10,9 @@ use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use ten_rust::graph::connection::{GraphConnection, GraphMessageFlow};
+use ten_rust::graph::connection::{
+    GraphConnection, GraphLoc, GraphMessageFlow,
+};
 
 use crate::designer::response::{ApiResponse, ErrorResponse, Status};
 use crate::designer::DesignerState;
@@ -28,6 +30,9 @@ pub struct GraphConnectionsSingleResponseData {
     pub app: Option<String>,
 
     pub extension: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd: Option<Vec<DesignerMessageFlow>>,
@@ -61,8 +66,9 @@ fn get_property_msg_flow_from_designer(
 impl From<GraphConnection> for GraphConnectionsSingleResponseData {
     fn from(conn: GraphConnection) -> Self {
         GraphConnectionsSingleResponseData {
-            app: conn.app,
-            extension: conn.extension,
+            app: conn.loc.app,
+            extension: conn.loc.extension.unwrap_or_default(),
+            subgraph: conn.loc.subgraph,
 
             cmd: conn.cmd.map(get_designer_msg_flow_from_property),
 
@@ -82,8 +88,11 @@ impl From<GraphConnection> for GraphConnectionsSingleResponseData {
 impl From<GraphConnectionsSingleResponseData> for GraphConnection {
     fn from(designer_connection: GraphConnectionsSingleResponseData) -> Self {
         GraphConnection {
-            app: designer_connection.app,
-            extension: designer_connection.extension,
+            loc: GraphLoc {
+                app: designer_connection.app,
+                extension: Some(designer_connection.extension),
+                subgraph: designer_connection.subgraph,
+            },
 
             cmd: designer_connection
                 .cmd

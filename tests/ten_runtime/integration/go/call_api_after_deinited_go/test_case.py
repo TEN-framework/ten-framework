@@ -126,7 +126,7 @@ def test_call_api_after_deinited_go():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The call_api_after_deinited_go is not started after 10 seconds.")
+        print("The call_api_after_deinited_go is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()

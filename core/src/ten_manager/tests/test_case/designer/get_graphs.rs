@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
     designer::{
         graphs::{
             connections::get::{
@@ -23,8 +22,10 @@ use ten_manager::{
             },
         },
         response::ApiResponse,
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -34,12 +35,13 @@ use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 async fn test_cmd_designer_graphs_app_property_not_exist() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -122,12 +124,13 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
 async fn test_cmd_designer_connections_has_msg_conversion() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![

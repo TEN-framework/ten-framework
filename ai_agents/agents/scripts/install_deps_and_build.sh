@@ -131,7 +131,7 @@ main() {
 
   # Install all dependencies specified in manifest.json.
   echo "install dependencies..."
-  tman install
+  tman --verbose install
 
   # build extensions and app
   echo "build_cxx_extensions..."

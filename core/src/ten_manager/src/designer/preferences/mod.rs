@@ -4,16 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-pub mod get;
-pub mod get_schema;
-pub mod update;
-pub mod update_field;
+pub mod locale;
+pub mod logviewer_line_size;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{TmanConfig, TmanConfigFile},
     constants::DESIGNER_FRONTEND_DEFAULT_LOGVIEWER_LINE_SIZE,
+    home::config::{TmanConfig, TmanConfigFile},
 };
 
 use super::locale::Locale;

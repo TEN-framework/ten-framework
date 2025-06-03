@@ -11,15 +11,16 @@ mod tests {
     use actix_web::{http::StatusCode, test, web, App};
 
     use ten_manager::{
-        config::{metadata::TmanMetadata, TmanConfig},
         designer::{
             apps::scripts::{
                 get_app_scripts_endpoint, GetPackagesScriptsRequestPayload,
                 GetPackagesScriptsResponseData,
             },
             response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
         pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
@@ -31,12 +32,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -103,12 +105,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         let designer_state = Arc::new(designer_state);

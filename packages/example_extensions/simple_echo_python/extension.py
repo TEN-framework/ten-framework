@@ -22,12 +22,12 @@ class SimpleEchoExtension(AsyncExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
 
-        # TODO: read properties, initialize resources
+        # IMPLEMENT: read properties, initialize resources
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
-        # TODO: clean up resources
+        # IMPLEMENT: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")

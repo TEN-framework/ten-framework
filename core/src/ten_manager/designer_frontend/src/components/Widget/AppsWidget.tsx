@@ -15,6 +15,7 @@ import {
   HardDriveDownloadIcon,
   PlayIcon,
   FolderIcon,
+  BrushCleaningIcon,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -64,8 +65,8 @@ import {
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import {
-  useApps,
-  useAppScripts,
+  useFetchApps,
+  useFetchAppScripts,
   retrieveTemplatePkgs,
   postReloadApps,
   postUnloadApps,
@@ -110,7 +111,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   const [isReloading, setIsReloading] = React.useState<boolean>(false);
 
   const { t } = useTranslation();
-  const { data: loadedApps, isLoading, error, mutate } = useApps();
+  const { data: loadedApps, isLoading, error, mutate } = useFetchApps();
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
@@ -266,8 +267,17 @@ export const AppsManagerWidget = (props: { className?: string }) => {
       actions: {
         onClose: () => {
           removeBackstageWidget(widgetId);
-          removeLogViewerHistory(widgetId);
         },
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(widgetId);
+            },
+          },
+        ],
       },
     });
   };
@@ -301,7 +311,12 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   }, [error]);
 
   return (
-    <div className={cn("flex flex-col gap-2 w-full h-full", props.className)}>
+    <div
+      className={cn(
+        "flex flex-col gap-2 w-full h-full overflow-y-auto",
+        props.className
+      )}
+    >
       <Table>
         <TableCaption className="select-none">
           {t("popup.apps.tableCaption")}
@@ -394,7 +409,7 @@ const AppRowActions = (props: {
     data: scripts,
     isLoading: isScriptsLoading,
     error: scriptsError,
-  } = useAppScripts(baseDir);
+  } = useFetchAppScripts(baseDir);
 
   React.useEffect(() => {
     if (scriptsError) {
@@ -505,7 +520,7 @@ export const AppTemplateWidget = (props: {
   const [isCreating, setIsCreating] = React.useState<boolean>(false);
 
   const { t } = useTranslation();
-  const { mutate: mutateApps } = useApps();
+  const { mutate: mutateApps } = useFetchApps();
 
   const formSchema = z.object({
     ...TemplatePkgsReqSchema.shape,
@@ -526,12 +541,13 @@ export const AppTemplateWidget = (props: {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsCreating(true);
-      const templateName = values.template_name.split("@").shift() as string;
-      const res = await postCreateApp(
-        values.base_dir,
-        templateName,
-        values.app_name
-      );
+      const templateName = values.template_name;
+      const res = await postCreateApp({
+        base_dir: values.base_dir,
+        app_name: values.app_name,
+        template_name: templateName,
+        template_version: values.template_version,
+      });
       toast.success(t("popup.apps.createAppSuccess"), {
         description: res?.app_path || values.base_dir,
       });
@@ -654,14 +670,15 @@ export const AppTemplateWidget = (props: {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="w-full max-w-sm">
-                  {templatePkgs[
-                    `${form.watch("pkg_type")}-${form.watch("language")}`
-                  ]?.map((pkg) => (
-                    <SelectItem
-                      key={`${pkg.pkg_name}@${pkg.pkg_version}`}
-                      value={`${pkg.pkg_name}@${pkg.pkg_version}`}
-                    >
-                      {pkg.pkg_name}@{pkg.pkg_version}
+                  {Array.from(
+                    new Set(
+                      templatePkgs[
+                        `${form.watch("pkg_type")}-${form.watch("language")}`
+                      ]?.map((pkg) => pkg.pkg_name)
+                    )
+                  ).map((pkgName) => (
+                    <SelectItem key={pkgName} value={pkgName}>
+                      {pkgName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -673,6 +690,49 @@ export const AppTemplateWidget = (props: {
             </FormItem>
           )}
         />
+        {form.watch("template_name") && (
+          <FormField
+            control={form.control}
+            name="template_version"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("popup.apps.templateVersion")}</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full max-w-sm">
+                      <SelectValue
+                        placeholder={t("popup.apps.templateVersion")}
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="w-full max-w-sm">
+                    {templatePkgs[
+                      `${form.watch("pkg_type")}-${form.watch("language")}`
+                    ]
+                      ?.filter(
+                        (pkg) => pkg.pkg_name === form.watch("template_name")
+                      )
+                      .map((pkg) => (
+                        <SelectItem
+                          key={pkg.pkg_version + pkg.pkg_name}
+                          value={pkg.pkg_version}
+                        >
+                          {pkg.pkg_version}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {t("popup.apps.templateVersionDescription")}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="app_name"

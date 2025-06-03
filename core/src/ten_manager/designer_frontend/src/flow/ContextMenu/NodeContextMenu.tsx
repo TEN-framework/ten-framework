@@ -56,7 +56,7 @@ interface NodeContextMenuProps {
   graphId?: string | null;
   onClose: () => void;
   onLaunchTerminal: (data: ITerminalWidgetData) => void;
-  onLaunchLogViewer?: () => void;
+  onLaunchLogViewer?: (node: TCustomNode) => void;
 }
 
 const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
@@ -75,7 +75,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   const { setNodesAndEdges } = useFlowStore();
   const { appendWidget } = useWidgetStore();
 
-  const { graphs } = useGraphs();
+  const { data: graphs } = useGraphs();
 
   const editorRefMappings = React.useRef<
     Record<string, React.RefObject<IEditorWidgetRef>>
@@ -286,7 +286,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       icon: <LogsIcon />,
       onClick: () => {
         onClose();
-        onLaunchLogViewer?.();
+        onLaunchLogViewer?.(node);
       },
     },
     {

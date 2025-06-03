@@ -14,8 +14,11 @@ use actix_web::{
 };
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, TmanConfig},
-    designer::{builtin_function::builtin_function_endpoint, DesignerState},
+    designer::{
+        builtin_function::builtin_function_endpoint,
+        storage::in_memory::TmanStorageInMemory, DesignerState,
+    },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -23,12 +26,13 @@ use ten_manager::{
 async fn test_cmd_builtin_function_websocket_connection() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let designer_state = Arc::new(designer_state);

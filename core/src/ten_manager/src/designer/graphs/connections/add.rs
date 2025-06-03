@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 
 use ten_rust::{
     graph::{
-        connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+        connection::{
+            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+        },
         msg_conversion::MsgAndResultConversion,
     },
     pkg_info::message::MsgType,
@@ -56,23 +58,29 @@ pub struct AddGraphConnectionResponsePayload {
 fn create_graph_connection(
     request_payload: &AddGraphConnectionRequestPayload,
 ) -> GraphConnection {
-    // Create the destination.
+    // Create destination object
     let destination = GraphDestination {
-        app: request_payload.dest_app.clone(),
-        extension: request_payload.dest_extension.clone(),
+        loc: GraphLoc {
+            app: request_payload.dest_app.clone(),
+            extension: Some(request_payload.dest_extension.clone()),
+            subgraph: None,
+        },
         msg_conversion: request_payload.msg_conversion.clone(),
     };
 
-    // Create the message flow.
+    // Create message flow
     let message_flow = GraphMessageFlow {
         name: request_payload.msg_name.clone(),
         dest: vec![destination],
     };
 
-    // Create the connection object.
+    // Create connection
     let mut connection = GraphConnection {
-        app: request_payload.src_app.clone(),
-        extension: request_payload.src_extension.clone(),
+        loc: GraphLoc {
+            app: request_payload.src_app.clone(),
+            extension: Some(request_payload.src_extension.clone()),
+            subgraph: None,
+        },
         cmd: None,
         data: None,
         audio_frame: None,
@@ -160,9 +168,7 @@ pub async fn add_graph_connection_endpoint(
                 None,
                 None,
             ) {
-                eprintln!(
-                    "Warning: Failed to update property.json file: {e}"
-                );
+                eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
     }

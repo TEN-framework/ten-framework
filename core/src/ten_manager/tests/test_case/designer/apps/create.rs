@@ -12,13 +12,13 @@ mod tests {
     use actix_web::{test, web, App};
     use tempfile::tempdir;
 
-    use ten_manager::config::metadata::TmanMetadata;
-    use ten_manager::config::TmanConfig;
     use ten_manager::constants::DEFAULT_APP_CPP;
     use ten_manager::designer::apps::create::{
         create_app_endpoint, CreateAppRequestPayload,
     };
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
@@ -31,12 +31,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
         let designer_state = Arc::new(designer_state);
 
@@ -79,12 +80,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
         let designer_state = Arc::new(designer_state);
 

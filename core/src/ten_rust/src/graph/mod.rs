@@ -9,11 +9,13 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod subgraph;
 
 use std::collections::HashMap;
 use std::str::FromStr;
 
 use anyhow::Result;
+use node::GraphNode;
 use serde::{Deserialize, Serialize};
 
 use crate::base_dir_pkg_info::PkgsInfoInApp;
@@ -22,7 +24,7 @@ use crate::constants::{
 };
 use crate::pkg_info::localhost;
 
-use self::connection::GraphConnection;
+use self::connection::{GraphConnection, GraphMessageFlow};
 use self::node::GraphNodeType;
 
 /// The state of the 'app' field declaration in all nodes in the graph.
@@ -135,7 +137,13 @@ pub struct GraphExposedMessage {
 
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
+
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
 }
 
 /// Represents a property that is exposed by the graph to the outside.
@@ -144,25 +152,27 @@ pub struct GraphExposedMessage {
 pub struct GraphExposedProperty {
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
+
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
 
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     pub name: String,
-
-    /// The alias of the property when exposed outside the graph.
-    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub alias: String,
 }
 
 /// Represents a connection graph that defines how extensions connect to each
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Graph {
-    pub nodes: Vec<node::GraphNode>,
+    pub nodes: Vec<GraphNode>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connections: Option<Vec<connection::GraphConnection>>,
+    pub connections: Option<Vec<GraphConnection>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_messages: Option<Vec<GraphExposedMessage>>,
@@ -177,7 +187,7 @@ impl FromStr for Graph {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete()?;
+        graph.validate_and_complete_and_flatten(None)?;
 
         // Return the parsed data.
         Ok(graph)
@@ -258,7 +268,10 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    fn validate_and_complete(
+        &mut self,
+        _current_base_dir: Option<&str>,
+    ) -> Result<()> {
         // Determine the app URI declaration state by examining all nodes.
         let app_uri_declaration_state =
             self.analyze_app_uri_declaration_state()?;
@@ -284,19 +297,49 @@ impl Graph {
         if let Some(exposed_properties) = &self.exposed_properties {
             for (idx, property) in exposed_properties.iter().enumerate() {
                 // Verify that the extension exists in the graph
-                if !self
-                    .nodes
-                    .iter()
-                    .any(|node| node.name == property.extension)
-                {
+                if !self.nodes.iter().any(|node| {
+                    if let Some(ext) = &property.extension {
+                        &node.name == ext
+                    } else {
+                        false
+                    }
+                }) {
                     return Err(anyhow::anyhow!(
                         "exposed_properties[{}]: extension '{}' does not \
                          exist in the graph",
                         idx,
-                        property.extension
+                        property.extension.as_ref().unwrap_or(&String::new())
                     ));
                 }
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_and_complete_and_flatten(
+        &mut self,
+        current_base_dir: Option<&str>,
+    ) -> Result<()> {
+        self.validate_and_complete(current_base_dir)?;
+
+        // Always attempt to flatten the graph, regardless of current_base_dir
+        // If there are subgraphs that need current_base_dir but it's None,
+        // the flatten_graph method will return an appropriate error
+        if let Some(flattened) = self.flatten_graph(
+            &|uri: &str,
+              base_dir: Option<&str>,
+              new_base_dir: &mut Option<String>| {
+                crate::graph::graph_info::load_graph_from_uri(
+                    uri,
+                    base_dir,
+                    new_base_dir,
+                )
+            },
+            current_base_dir,
+        )? {
+            // Replace current graph with flattened version
+            *self = flattened;
         }
 
         Ok(())
@@ -310,6 +353,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -334,6 +378,7 @@ impl Graph {
         self.check_extension_uniqueness()?;
         self.check_extension_existence()?;
         self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.

@@ -24,17 +24,18 @@
 
 pub mod cmd;
 pub mod cmd_line;
-pub mod config;
 pub mod constants;
 mod create;
 mod dep_and_candidate;
 pub mod designer;
 pub mod fs;
 pub mod graph;
+pub mod home;
 pub mod http;
 mod install;
 pub mod log;
 mod manifest_lock;
+pub mod memory_stats;
 pub mod output;
 mod package_file;
 pub mod pkg_info;
@@ -44,8 +45,19 @@ mod solver;
 pub mod version;
 pub mod version_utils;
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(
+    not(target_os = "windows"),
+    feature = "mimalloc",
+    not(feature = "jemalloc")
+))]
 use mimalloc::MiMalloc;
+
+#[cfg(all(
+    not(target_os = "windows"),
+    feature = "jemalloc",
+    not(feature = "mimalloc")
+))]
+use jemallocator::Jemalloc;
 
 // TODO(Wei): When adding a URL route with variables (e.g., /api/{name}) in
 // actix-web, using the default allocator can lead to a memory leak. According
@@ -58,6 +70,19 @@ use mimalloc::MiMalloc;
 // https://github.com/hyperium/hyper/issues/1790#issuecomment-2170644852
 // https://github.com/actix/actix-web/issues/1780
 // https://news.ycombinator.com/item?id=21962195
-#[cfg(not(target_os = "windows"))]
+
+#[cfg(all(
+    not(target_os = "windows"),
+    feature = "mimalloc",
+    not(feature = "jemalloc")
+))]
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+static ALLOC: MiMalloc = MiMalloc;
+
+#[cfg(all(
+    not(target_os = "windows"),
+    feature = "jemalloc",
+    not(feature = "mimalloc")
+))]
+#[global_allocator]
+static ALLOC: Jemalloc = Jemalloc;

@@ -11,15 +11,15 @@ mod tests {
 
     use actix_web::{test, web, App};
 
-    use ten_manager::config::metadata::TmanMetadata;
-    use ten_manager::config::TmanConfig;
     use ten_manager::constants::TEST_DIR;
     use ten_manager::designer::apps::addons::{
         get_app_addons_endpoint, GetAppAddonsRequestPayload,
         GetAppAddonsSingleResponseData,
     };
     use ten_manager::designer::response::ApiResponse;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
+    use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
@@ -30,12 +30,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         let all_pkgs_json_str = vec![

@@ -12,12 +12,12 @@ mod tests {
     use actix_web::{http::StatusCode, test, web, App};
     use serde::{Deserialize, Serialize};
 
-    use ten_manager::config::metadata::TmanMetadata;
+    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        config::TmanConfig,
         designer::{
             response::ApiResponse, version::get_version_endpoint, DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
         version::VERSION,
     };
@@ -34,12 +34,13 @@ mod tests {
             tman_config: Arc::new(tokio::sync::RwLock::new(
                 TmanConfig::default(),
             )),
-            tman_metadata: Arc::new(tokio::sync::RwLock::new(
-                TmanMetadata::default(),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
             )),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Create the App with the routes configured.

@@ -7,8 +7,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use ten_manager::{
-    config::{metadata::TmanMetadata, read_config, TmanConfig},
-    designer::DesignerState,
+    designer::{storage::in_memory::TmanStorageInMemory, DesignerState},
+    home::config::{read_config, TmanConfig},
     output::cli::TmanOutputCli,
 };
 
@@ -33,12 +33,13 @@ pub fn create_designer_state() -> Arc<DesignerState> {
     // Setup designer state
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(tman_config)),
-        tman_metadata: Arc::new(tokio::sync::RwLock::new(
-            TmanMetadata::default(),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
         )),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     Arc::new(designer_state)

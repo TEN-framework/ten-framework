@@ -7,6 +7,11 @@ name = "ten_manager"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["mimalloc"]
+mimalloc = ["dep:mimalloc"]
+jemalloc = ["dep:jemallocator", "dep:jemalloc-sys"]
+
 [dependencies]
 ten_rust = { path = "../ten_rust", version = "0.1.0", default-features = false, features = [
 ] }
@@ -74,7 +79,9 @@ libc = "0.2.172"
 winapi = { version = "0.3.9", features = ["fileapi"] }
 
 [target."cfg(unix)".dependencies]
-mimalloc = "0.1"
+mimalloc = { version = "0.1", optional = true }
+jemallocator = { version = "0.5", optional = true, features = ["stats"] }
+jemalloc-sys = { version = "0.5", optional = true, features = ["stats"] }
 
 [target."cfg(unix)".dependencies.clingo]
 version = "0.8"
@@ -87,3 +94,9 @@ tokio-tungstenite = { version = "0.21", features = ["connect"] }
 
 [patch.crates-io]
 clingo-sys = { path = "../../../third_party/clingo-sys" }
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+panic = "abort"

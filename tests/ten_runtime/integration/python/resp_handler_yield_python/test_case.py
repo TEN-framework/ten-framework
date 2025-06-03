@@ -138,7 +138,7 @@ def test_resp_handler_yield_python():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The resp_handler_yield_python is not started after 10 seconds.")
+        print("The resp_handler_yield_python is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()

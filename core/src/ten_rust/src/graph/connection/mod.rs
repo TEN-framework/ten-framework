@@ -21,30 +21,38 @@ use crate::{
 use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GraphConnection {
+pub struct GraphLoc {
     #[serde(skip_serializing_if = "is_app_default_loc_or_none")]
     pub app: Option<String>,
 
-    pub extension: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cmd: Option<Vec<GraphMessageFlow>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Vec<GraphMessageFlow>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub audio_frame: Option<Vec<GraphMessageFlow>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub video_frame: Option<Vec<GraphMessageFlow>>,
+    pub subgraph: Option<String>,
 }
 
-impl GraphConnection {
-    /// Validates and completes a graph connection by ensuring it follows the
-    /// app declaration rules of the graph and validating all message flows.
-    pub fn validate_and_complete(
-        &mut self,
+impl GraphLoc {
+    pub fn new() -> Self {
+        Self { app: None, extension: None, subgraph: None }
+    }
+
+    pub fn with_app_and_extension(
+        app: Option<String>,
+        extension: Option<String>,
+    ) -> Self {
+        Self { app, extension, subgraph: None }
+    }
+
+    pub fn get_app_uri(&self) -> &Option<String> {
+        &self.app
+    }
+
+    /// Validates the app field according to the graph's app declaration rules.
+    pub fn validate_app_field(
+        &self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
-        // Check if app URI is provided and validate it.
         if let Some(app) = &self.app {
             // Disallow 'localhost' as an app URI in graph definitions.
             if app.as_str() == localhost() {
@@ -58,7 +66,7 @@ impl GraphConnection {
                 return Err(anyhow::anyhow!(err_msg));
             }
 
-            // If no nodes have declared app, connections shouldn't either.
+            // If no nodes have declared app, locations shouldn't either.
             if *app_uri_declaration_state
                 == AppUriDeclarationState::NoneDeclared
             {
@@ -67,7 +75,7 @@ impl GraphConnection {
                 ));
             }
         } else {
-            // If nodes have declared app, connections must also declare it.
+            // If nodes have declared app, locations must also declare it.
             if *app_uri_declaration_state
                 != AppUriDeclarationState::NoneDeclared
             {
@@ -76,6 +84,51 @@ impl GraphConnection {
                 ));
             }
         }
+
+        Ok(())
+    }
+}
+
+impl Default for GraphLoc {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphConnection {
+    #[serde(flatten)]
+    pub loc: GraphLoc,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmd: Option<Vec<GraphMessageFlow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Vec<GraphMessageFlow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio_frame: Option<Vec<GraphMessageFlow>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_frame: Option<Vec<GraphMessageFlow>>,
+}
+
+impl GraphConnection {
+    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+        Self {
+            loc: GraphLoc::with_app_and_extension(app, extension),
+            cmd: None,
+            data: None,
+            audio_frame: None,
+            video_frame: None,
+        }
+    }
+
+    /// Validates and completes a graph connection by ensuring it follows the
+    /// app declaration rules of the graph and validating all message flows.
+    pub fn validate_and_complete(
+        &mut self,
+        app_uri_declaration_state: &AppUriDeclarationState,
+    ) -> Result<()> {
+        // Validate the location's app field.
+        self.loc.validate_app_field(app_uri_declaration_state)?;
 
         // Validate all message flows.
         if let Some(cmd) = &mut self.cmd {
@@ -118,7 +171,7 @@ impl GraphConnection {
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
-        &self.app
+        self.loc.get_app_uri()
     }
 }
 
@@ -160,16 +213,21 @@ impl GraphMessageFlow {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphDestination {
-    #[serde(skip_serializing_if = "is_app_default_loc_or_none")]
-    pub app: Option<String>,
-
-    pub extension: String,
+    #[serde(flatten)]
+    pub loc: GraphLoc,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub msg_conversion: Option<MsgAndResultConversion>,
 }
 
 impl GraphDestination {
+    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+        Self {
+            loc: GraphLoc::with_app_and_extension(app, extension),
+            msg_conversion: None,
+        }
+    }
+
     /// Validates and completes a destination by ensuring it follows the app
     /// declaration rules and has valid message conversion if specified.
     ///
@@ -183,37 +241,8 @@ impl GraphDestination {
         &mut self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
-        if let Some(app) = &self.app {
-            // Disallow 'localhost' as an app URI in graph definitions.
-            if app.as_str() == localhost() {
-                let err_msg = if app_uri_declaration_state.is_single_app_graph()
-                {
-                    ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE
-                } else {
-                    ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE
-                };
-
-                return Err(anyhow::anyhow!(err_msg));
-            }
-
-            // If no nodes have declared app, destinations shouldn't either.
-            if *app_uri_declaration_state
-                == AppUriDeclarationState::NoneDeclared
-            {
-                return Err(anyhow::anyhow!(
-                    ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED
-                ));
-            }
-        } else {
-            // If nodes have declared app, destinations must also declare it.
-            if *app_uri_declaration_state
-                != AppUriDeclarationState::NoneDeclared
-            {
-                return Err(anyhow::anyhow!(
-                    ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED
-                ));
-            }
-        }
+        // Validate the location's app field.
+        self.loc.validate_app_field(app_uri_declaration_state)?;
 
         // Validate message conversion configuration if present.
         if let Some(msg_conversion) = &self.msg_conversion {
@@ -226,6 +255,6 @@ impl GraphDestination {
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
-        &self.app
+        self.loc.get_app_uri()
     }
 }

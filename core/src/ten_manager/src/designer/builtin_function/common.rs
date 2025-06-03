@@ -11,17 +11,17 @@ use actix::{fut, AsyncContext};
 use actix_web_actors::ws::WebsocketContext;
 
 use crate::cmd::cmd_install::InstallCommand;
-use crate::config::metadata::TmanMetadata;
-use crate::config::TmanConfig;
 use crate::designer::builtin_function::{
     BuiltinFunctionOutput, WsBuiltinFunction,
 };
+use crate::designer::storage::in_memory::TmanStorageInMemory;
+use crate::home::config::TmanConfig;
 use crate::output::channel::TmanOutputChannel;
 use crate::output::TmanOutput;
 
 pub fn run_installation(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-    tman_metadata: Arc<tokio::sync::RwLock<TmanMetadata>>,
+    tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     install_command: InstallCommand,
     ctx: &mut WebsocketContext<WsBuiltinFunction>,
 ) {
@@ -76,7 +76,7 @@ pub fn run_installation(
         let result = rt.block_on(async {
             crate::cmd::cmd_install::execute_cmd(
                 tman_config,
-                tman_metadata,
+                tman_storage_in_memory,
                 install_command,
                 output_channel,
             )

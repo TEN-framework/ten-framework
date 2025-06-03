@@ -17,6 +17,13 @@ ten_package_test_prepare_app("go_app_preload_all_addons_nodejs_app") {
     "go_app_preload_all_addons_nodejs_app/property.json",
   ]
 
+  if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [ "go_app_preload_all_addons_nodejs_app/main_with_leak_check.go=>go_app_preload_all_addons_nodejs_app/main.go" ]
+  } else {
+    replace_paths_after_install_app +=
+        [ "go_app_preload_all_addons_nodejs_app/main.go" ]
+  }
+
   replace_paths_after_install_all = [
     "go_app_preload_all_addons_nodejs_app/ten_packages/extension/default_extension_nodejs/src/index.ts",
     "go_app_preload_all_addons_nodejs_app/ten_packages/extension/default_extension_python/addon.py",
@@ -30,9 +37,9 @@ ten_package_test_prepare_app("go_app_preload_all_addons_nodejs_app") {
       "//packages/core_addon_loaders/nodejs_addon_loader:upload_nodejs_addon_loader_to_server",
       "//packages/core_apps/default_app_go:upload_default_app_go_to_server",
       "//packages/core_extensions/default_extension_go:upload_default_extension_go_to_server",
-      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_ts_to_server",
-      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
+      "//packages/core_extensions/default_extension_nodejs:upload_default_extension_nodejs_to_server",
       "//packages/core_extensions/default_extension_python:upload_default_extension_python_to_server",
+      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
       "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
     ]
   }
