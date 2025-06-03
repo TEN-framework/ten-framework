@@ -187,7 +187,7 @@ impl FromStr for Graph {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete(None)?;
+        graph.validate_and_complete_and_flatten(None)?;
 
         // Return the parsed data.
         Ok(graph)
@@ -268,7 +268,7 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    pub fn validate_and_complete(
+    fn validate_and_complete(
         &mut self,
         _current_base_dir: Option<&str>,
     ) -> Result<()> {
@@ -313,6 +313,15 @@ impl Graph {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    pub fn validate_and_complete_and_flatten(
+        &mut self,
+        current_base_dir: Option<&str>,
+    ) -> Result<()> {
+        self.validate_and_complete(current_base_dir)?;
 
         Ok(())
     }
