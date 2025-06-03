@@ -12,7 +12,6 @@ pub mod node;
 pub mod subgraph;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use anyhow::Result;
 use node::GraphNode;
@@ -179,19 +178,6 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_properties: Option<Vec<GraphExposedProperty>>,
-}
-
-impl FromStr for Graph {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut graph: Graph = serde_json::from_str(s)?;
-
-        graph.validate_and_complete()?;
-
-        // Return the parsed data.
-        Ok(graph)
-    }
 }
 
 impl Graph {
