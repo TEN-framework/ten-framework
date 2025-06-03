@@ -120,11 +120,15 @@ jobs:
             out/mac/arm64/tman-mac-${{ matrix.build_type }}-arm64.zip
 
       - name: Install Playwright Browsers
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
         run: |
           cd core/src/ten_manager/designer_frontend
           npx playwright install --with-deps
 
       - name: Run Playwright tests
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
         run: |
           # Start the tman designer backend
           cd ${GITHUB_WORKSPACE}/out/mac/arm64/ten_manager/bin

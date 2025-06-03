@@ -17,10 +17,31 @@ export const PERSISTENT_SCHEMA = {
       type: "string",
       description: "Schema version",
     },
+    recent_run_apps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          base_dir: { type: "string", description: "Base Dir" },
+          script_name: { type: "string", description: "Selected Script Name" },
+          stdout_is_log: { type: "boolean", description: "Std Out Logs" },
+          stderr_is_log: { type: "boolean", description: "Std Err Logs" },
+          run_with_agent: { type: "boolean", description: "Run with Agent" },
+        },
+        required: [
+          "base_dir",
+          "script_name",
+          "stdout_is_log",
+          "stderr_is_log",
+          "run_with_agent",
+        ],
+      },
+    },
   },
   required: ["version"],
 };
 
 export const PERSISTENT_DEFAULTS = {
   version: "0.0.1",
+  recent_run_apps: [],
 };
