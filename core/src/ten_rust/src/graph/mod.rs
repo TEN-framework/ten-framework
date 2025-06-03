@@ -290,23 +290,36 @@ impl Graph {
             }
         }
 
+        // Validate exposed_messages if they exist
+        if let Some(exposed_messages) = &self.exposed_messages {
+            for (idx, message) in exposed_messages.iter().enumerate() {
+                // Verify that the extension exists in the graph
+                if let Some(ext) = &message.extension {
+                    if !self.nodes.iter().any(|node| &node.name == ext) {
+                        return Err(anyhow::anyhow!(
+                            "exposed_messages[{}]: extension '{}' does not \
+                             exist in the graph",
+                            idx,
+                            ext
+                        ));
+                    }
+                }
+            }
+        }
+
         // Validate exposed_properties if they exist
         if let Some(exposed_properties) = &self.exposed_properties {
             for (idx, property) in exposed_properties.iter().enumerate() {
                 // Verify that the extension exists in the graph
-                if !self.nodes.iter().any(|node| {
-                    if let Some(ext) = &property.extension {
-                        &node.name == ext
-                    } else {
-                        false
+                if let Some(ext) = &property.extension {
+                    if !self.nodes.iter().any(|node| &node.name == ext) {
+                        return Err(anyhow::anyhow!(
+                            "exposed_properties[{}]: extension '{}' does not \
+                             exist in the graph",
+                            idx,
+                            ext
+                        ));
                     }
-                }) {
-                    return Err(anyhow::anyhow!(
-                        "exposed_properties[{}]: extension '{}' does not \
-                         exist in the graph",
-                        idx,
-                        property.extension.as_ref().unwrap_or(&String::new())
-                    ));
                 }
             }
         }
