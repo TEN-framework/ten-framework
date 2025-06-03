@@ -11,7 +11,7 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.12.0"
+      "version": "=0.16.4-rc2"
     },
     {
       "type": "extension",
@@ -173,5 +173,8 @@
       "name": "stepfun_v2v_python",
       "version": "=0.1.0"
     }
-  ]
+  ],
+  "scripts": {
+    "start": "bin/start"
+  }
 }

@@ -54,6 +54,9 @@ func (tester *GreetingTester) OnCmd(
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 		tenEnv.ReturnResult(cmdResult, nil)
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "Extensions",
       "openExtensionStore": "Open Extension Store",
+      "startRTCInteraction": "Talk to TEN AI Agent",
+      "configTrulienceAvatar": "Configure Trulience Avatar",
       "about": "About Extensions"
     },
     "language": {
@@ -109,7 +111,9 @@
     "deleteConnectionConfirmation": "Are you sure you want to delete the connection?",
     "deleteConnectionSuccess": "Connection deleted successfully",
     "deleteConnectionFailed": "Failed to delete connection",
-    "replaceNode": "Replace Node with ..."
+    "replaceNode": "Replace Node with ...",
+    "manageApps": "Manage Apps",
+    "runApp": "Run"
   },
   "toast": {
     "saveFileSuccess": "File saved successfully",
@@ -146,9 +150,10 @@
       "title": "Log Viewer",
       "appInstall": "App Install",
       "filteredByAddon": "Filter logs by Addon",
-      "noAddons": "No Avaliable Addons",
+      "noAddons": "No Available Addons",
       "noMatchedAddons": "No matched addons",
-      "noLogs": "No logs to display."
+      "noLogs": "No logs to display.",
+      "cleanLogs": "Clean Logs"
     },
     "default": {
       "defaultLabelForAppRun": "Default label for app run",
@@ -177,7 +182,9 @@
       "templateVersionDescription": "Select the template version for the app.",
       "appName": "App Name",
       "appNameDescription": "Enter the name for the app.",
-      "baseDirDescription": "Select the base directory for the app."
+      "baseDirDescription": "Select the base directory for the app.",
+      "run_opts": "Options",
+      "run_with_agent": "Run with TEN Agent"
     },
     "graph": {
       "title": "Node",
@@ -273,6 +280,24 @@
     "localAddonTip": "(local)",
     "tags": "Tags"
   },
+  "rtcInteraction": {
+    "title": "Realtime Voice AI Agent"
+  },
+  "trulienceConfig": {
+    "title": "Trulience Avatar Configuration",
+    "enabled": "Enabled",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "Camera",
+      "screen": "Screen",
+      "cameraPlaceholder": "Select a camera"
+    }
+  },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",
     "appsError": "Failed to get apps",
@@ -307,6 +332,9 @@
       "placeholder": "Search or create new",
       "noItems": "No items",
       "enterValueToCreate": "Enter a value to create a new one"
+    },
+    "messageList": {
+      "noMessages": "No messages yet."
     }
   }
 }

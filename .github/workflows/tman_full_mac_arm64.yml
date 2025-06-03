@@ -77,7 +77,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -120,11 +120,15 @@ jobs:
             out/mac/arm64/tman-mac-${{ matrix.build_type }}-arm64.zip
 
       - name: Install Playwright Browsers
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
         run: |
           cd core/src/ten_manager/designer_frontend
           npx playwright install --with-deps
 
       - name: Run Playwright tests
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
         run: |
           # Start the tman designer backend
           cd ${GITHUB_WORKSPACE}/out/mac/arm64/ten_manager/bin

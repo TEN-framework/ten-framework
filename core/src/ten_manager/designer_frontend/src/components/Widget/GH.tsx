@@ -18,7 +18,7 @@ import {
 import { GHIcon } from "@/components/Icons";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { cn } from "@/lib/utils";
-import { useGHRepository } from "@/api/services/github";
+import { useGitHubRepository } from "@/api/services/github";
 import { formatNumberWithCommas } from "@/lib/utils";
 import { TEN_AGENT_GITHUB_URL, TEN_AGENT_URL } from "@/constants";
 import { useHelpText } from "@/api/services/helpText";
@@ -35,12 +35,16 @@ export function GHStargazersCount(props: {
   const { owner, repo, className } = props;
 
   const { i18n } = useTranslation();
-  const { repository, error, isLoading } = useGHRepository(owner, repo);
+  const {
+    data: repository,
+    error,
+    isLoading,
+  } = useGitHubRepository({ owner, repo });
   const {
     data: helpText,
     error: helpTextError,
     isLoading: helpTextIsLoading,
-  } = useHelpText(EHelpTextKey.TEN_FRAMEWORK, i18n.language);
+  } = useHelpText({ key: EHelpTextKey.TEN_FRAMEWORK, locale: i18n.language });
 
   const shouldFallbackMemo = React.useMemo(() => {
     return isLoading || error || !repository?.stargazers_count;
@@ -89,7 +93,7 @@ export function GHStargazersCount(props: {
           {helpTextIsLoading ? (
             <SpinnerLoading className="size-4" />
           ) : (
-            <p>{helpText}</p>
+            <p>{helpText?.text}</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -105,7 +109,7 @@ export function GHTryTENAgent(props: { className?: string }) {
     data: helpText,
     error: helpTextError,
     isLoading: helpTextIsLoading,
-  } = useHelpText(EHelpTextKey.TEN_AGENT, i18n.language);
+  } = useHelpText({ key: EHelpTextKey.TEN_AGENT, locale: i18n.language });
 
   React.useEffect(() => {
     if (helpTextError) {
@@ -141,7 +145,7 @@ export function GHTryTENAgent(props: { className?: string }) {
           {helpTextIsLoading ? (
             <SpinnerLoading className="size-4" />
           ) : (
-            <p>{helpText}</p>
+            <p>{helpText?.text}</p>
           )}
         </TooltipContent>
       </Tooltip>

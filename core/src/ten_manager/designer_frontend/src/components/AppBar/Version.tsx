@@ -18,12 +18,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { useVersion, useCheckUpdate } from "@/api/services/common";
+import { useFetchVersion, useCheckUpdate } from "@/api/services/common";
 import { cn } from "@/lib/utils";
 import { TEN_FRAMEWORK_RELEASE_URL } from "@/constants";
 
 export function Version() {
-  const { version } = useVersion();
+  const { data: version } = useFetchVersion();
   const { data: updateData } = useCheckUpdate();
 
   const { t } = useTranslation();

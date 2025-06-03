@@ -27,7 +27,7 @@ export const ENDPOINT_APPS = {
           app_info: z.array(
             z.object({
               base_dir: z.string(),
-              app_uri: z.string(),
+              app_uri: z.string().nullable(),
             })
           ),
         })

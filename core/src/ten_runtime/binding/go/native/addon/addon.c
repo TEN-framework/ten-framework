@@ -283,7 +283,7 @@ ten_go_error_t ten_go_addon_register_extension(const void *addon_name,
              "Invalid argument.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_addon_t *addon_bridge = ten_go_addon_register(
       addon_name, addon_name_len, go_addon, TEN_ADDON_TYPE_EXTENSION,
@@ -314,7 +314,7 @@ ten_go_error_t ten_go_addon_manager_add_extension_addon(const void *addon_name,
   ten_addon_manager_t *addon_manager = ten_addon_manager_get_instance();
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t error;
   TEN_ERROR_INIT(error);
@@ -323,7 +323,7 @@ ten_go_error_t ten_go_addon_manager_add_extension_addon(const void *addon_name,
       addon_manager, "extension", ten_string_get_raw_str(&addon_name_str),
       ten_go_addon_register_func, NULL, &error);
   if (!rc) {
-    ten_go_error_from_error(&cgo_error, &error);
+    ten_go_error_set_from_error(&cgo_error, &error);
   }
 
   ten_error_deinit(&error);

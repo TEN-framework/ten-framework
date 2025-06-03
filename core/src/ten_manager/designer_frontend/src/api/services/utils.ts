@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import useSWR, { type SWRResponse, type SWRConfiguration } from "swr";
+import { QueryClient } from "@tanstack/react-query";
 
 import logger from "@/logger";
 import type { IReqTemplate } from "@/api/endpoints";
@@ -153,6 +154,14 @@ export const makeAPIRequest = async <T extends ENDPOINT_METHOD, R = unknown>(
   return data;
 };
 
+/**
+ * @deprecated
+ * This hook is deprecated and will be removed in the future.
+ *
+ * Currently, swr is not compatible with POST requests
+ *
+ * Use tanstack query instead
+ */
 // https://github.com/vercel/swr/discussions/2330#discussioncomment-4460054
 export function useCancelableSWR<T>(
   key: string,
@@ -185,59 +194,6 @@ export function useCancelableSWR<T>(
   // controller.abort()
 }
 
-// TODO: refine this hook cache(post should not be used)
-// Singleton Design Pattern
-// For POST hook request, we can cache the response
-// and return the cached response if the request is the same
-// and the cache is not expired
-export class QueryHookCache {
-  private cache: Map<string, unknown> = new Map();
-  private lastUpdateMap: Map<string, number> = new Map();
-  private ttlMap: Map<string, number> = new Map();
-  private _defaultTtl: number = 1000 * 60; // 1 minute
-
-  public get<T>(key: string): [T | undefined, boolean | undefined] {
-    const isExpired = this.isExpired(key);
-    return [this.cache.get(key) as T | undefined, isExpired];
-  }
-
-  public set<T>(key: string, value: T, options?: { ttl?: number }) {
-    this.cache.set(key, value);
-    const lastUpdate = Date.now();
-    this.lastUpdateMap.set(key, lastUpdate);
-    const ttl = options?.ttl ?? this._defaultTtl;
-    this.ttlMap.set(key, ttl);
-  }
-
-  public isExpired(key: string): boolean | undefined {
-    const ttl = this.ttlMap.get(key) ?? this._defaultTtl;
-    const lastUpdate = this.lastUpdateMap.get(key);
-    if (lastUpdate === undefined) {
-      return undefined;
-    }
-    return Date.now() - lastUpdate > ttl;
-  }
-
-  public delete(key: string) {
-    this.cache.delete(key);
-    this.lastUpdateMap.delete(key);
-    this.ttlMap.delete(key);
-  }
-
-  public clear() {
-    this.cache.clear();
-    this.lastUpdateMap.clear();
-    this.ttlMap.clear();
-  }
-}
-let queryHookCache: QueryHookCache | undefined;
-export const getQueryHookCache = () => {
-  if (queryHookCache === undefined) {
-    queryHookCache = new QueryHookCache();
-  }
-  return queryHookCache;
-};
-
 export const localeStringToEnum = (locale?: string) => {
   switch (locale) {
     case "zh-CN":
@@ -256,4 +212,13 @@ export const getShortLocale = (locale?: string) => {
   const inputLocale = locale ?? EPreferencesLocale.EN_US;
 
   return inputLocale.split("-")?.[0]?.toLowerCase();
+};
+
+let _tanstackQueryClient: QueryClient | null = null;
+
+export const getTanstackQueryClient = () => {
+  if (!_tanstackQueryClient) {
+    _tanstackQueryClient = new QueryClient();
+  }
+  return _tanstackQueryClient;
 };
