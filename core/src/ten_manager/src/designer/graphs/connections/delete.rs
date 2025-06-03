@@ -131,7 +131,7 @@ fn graph_delete_connection(
                     }
 
                     // Validate the updated graph.
-                    match graph.validate_and_complete() {
+                    match graph.validate_and_complete(None) {
                         Ok(_) => return Ok(()),
                         Err(e) => {
                             // Restore the original graph if validation fails.
