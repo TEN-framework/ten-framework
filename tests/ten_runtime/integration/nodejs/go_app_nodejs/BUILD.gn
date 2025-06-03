@@ -17,6 +17,14 @@ ten_package_test_prepare_app("go_app_nodejs_app") {
     "go_app_nodejs_app/property.json",
   ]
 
+  if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [
+      "go_app_nodejs_app/main_with_leak_check.go=>go_app_nodejs_app/main.go",
+    ]
+  } else {
+    replace_paths_after_install_app += [ "go_app_nodejs_app/main.go" ]
+  }
+
   replace_paths_after_install_all = [
     "go_app_nodejs_app/ten_packages/extension/default_extension_nodejs/src/index.ts",
     "go_app_nodejs_app/bin",

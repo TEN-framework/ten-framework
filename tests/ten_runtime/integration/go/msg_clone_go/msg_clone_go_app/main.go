@@ -7,9 +7,6 @@
 
 package main
 
-// void __lsan_do_leak_check(void);
-import "C"
-
 import (
 	"fmt"
 	"runtime"
@@ -45,6 +42,12 @@ func main() {
 
 	// A single GC is not enough; multiple rounds of GC are needed to clean up
 	// as thoroughly as possible.
+	//
+	// Note: Because the ten-runtime's own leak check mechanism is enabled
+	// during testing, we still need the following multiple GC calls to actually
+	// trigger the Go layer's finalizers to avoid a situation where Go
+	// finalizers are not called before the entire process exits, which would
+	// cause what could be considered a real memory leak to some extent.
 	for i := 0; i < 10; i++ {
 		// Explicitly trigger GC to increase the likelihood of finalizer
 		// execution.
@@ -55,7 +58,4 @@ func main() {
 		runtime.Gosched()
 		time.Sleep(1 * time.Second)
 	}
-
-	// To detect memory leaks with ASan, need to enable the following cgo code.
-	C.__lsan_do_leak_check()
 }
