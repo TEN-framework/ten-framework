@@ -122,9 +122,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
         let flattened =
@@ -314,9 +315,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
         let flattened =
@@ -429,9 +431,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
         let result = main_graph.flatten_graph(&subgraph_loader, None);
@@ -511,9 +514,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
         let result = main_graph.flatten_graph(&subgraph_loader, None);
@@ -673,7 +677,8 @@ mod tests {
         };
 
         let subgraph_loader = |uri: &str,
-                               _base_dir: Option<&str>|
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
          -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
@@ -873,7 +878,8 @@ mod tests {
         };
 
         let subgraph_loader = |uri: &str,
-                               _base_dir: Option<&str>|
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
          -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
@@ -941,10 +947,12 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                unreachable!("Should not be called")
-            };
+        let subgraph_loader = |_uri: &str,
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
+            unreachable!("Should not be called")
+        };
 
         let result = main_graph.flatten_graph(&subgraph_loader, None);
         assert!(result.is_err());
@@ -1171,9 +1179,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
         let flattened =
@@ -1344,9 +1353,10 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str, _base_dir: Option<&str>| -> Result<Graph> {
-                Ok(subgraph.clone())
-            };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph with preserve_exposed_info = true
         let flattened =
@@ -1474,13 +1484,15 @@ mod tests {
 
         // Use load_graph_from_uri_with_base_dir as the subgraph_loader
         let base_dir = temp_dir.path().to_str().unwrap();
-        let subgraph_loader =
-            |uri: &str, base_dir_param: Option<&str>| -> Result<Graph> {
-                // For this test, we'll use the provided base_dir_param if
-                // available, otherwise fall back to the test's base_dir
-                let effective_base_dir = base_dir_param.or(Some(base_dir));
-                load_graph_from_uri(uri, effective_base_dir)
-            };
+        let subgraph_loader = |uri: &str,
+                               base_dir_param: Option<&str>,
+                               new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
+            // For this test, we'll use the provided base_dir_param if
+            // available, otherwise fall back to the test's base_dir
+            let effective_base_dir = base_dir_param.or(Some(base_dir));
+            load_graph_from_uri(uri, effective_base_dir, new_base_dir)
+        };
 
         // Flatten the graph
         let flattened =
