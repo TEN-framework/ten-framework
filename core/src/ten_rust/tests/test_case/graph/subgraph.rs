@@ -1486,12 +1486,12 @@ mod tests {
         let base_dir = temp_dir.path().to_str().unwrap();
         let subgraph_loader = |uri: &str,
                                base_dir_param: Option<&str>,
-                               _new_base_dir: &mut Option<String>|
+                               new_base_dir: &mut Option<String>|
          -> Result<Graph> {
             // For this test, we'll use the provided base_dir_param if
             // available, otherwise fall back to the test's base_dir
             let effective_base_dir = base_dir_param.or(Some(base_dir));
-            load_graph_from_uri(uri, effective_base_dir)
+            load_graph_from_uri(uri, effective_base_dir, new_base_dir)
         };
 
         // Flatten the graph
