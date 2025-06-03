@@ -514,7 +514,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str, Option<&str>) -> Result<Graph>,
+        F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
         // First, recursively flatten any nested subgraphs within this subgraph.
         // This ensures depth-first processing.
@@ -571,7 +571,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str, Option<&str>) -> Result<Graph>,
+        F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
         let source_uri =
             subgraph_node.source_uri.as_ref().ok_or_else(|| {
@@ -581,13 +581,15 @@ impl Graph {
                 )
             })?;
 
-        let subgraph = subgraph_loader(source_uri, current_base_dir)?;
+        let mut new_base_dir: Option<String> = None;
+        let subgraph =
+            subgraph_loader(source_uri, current_base_dir, &mut new_base_dir)?;
 
         Self::process_loaded_subgraph(
             subgraph_node,
             &subgraph,
             subgraph_loader,
-            current_base_dir,
+            new_base_dir.as_deref(),
             flattened_nodes,
             flattened_connections,
             subgraph_mappings,
@@ -633,7 +635,7 @@ impl Graph {
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()>
     where
-        F: Fn(&str, Option<&str>) -> Result<Graph>,
+        F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
         // Process all nodes in the graph
         for node in &graph.nodes {
@@ -835,7 +837,7 @@ impl Graph {
         preserve_exposed_info: bool,
     ) -> Result<Graph>
     where
-        F: Fn(&str, Option<&str>) -> Result<Graph>,
+        F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
         // Check if this graph contains any subgraphs
         let has_subgraphs = graph
@@ -900,7 +902,7 @@ impl Graph {
         current_base_dir: Option<&str>,
     ) -> Result<Graph>
     where
-        F: Fn(&str, Option<&str>) -> Result<Graph>,
+        F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
         Self::flatten(self, subgraph_loader, current_base_dir, false)
     }

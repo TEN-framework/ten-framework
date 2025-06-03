@@ -50,6 +50,8 @@
     "menuExtension": {
       "title": "擴充功能",
       "openExtensionStore": "開啟擴充功能商店",
+      "startRTCInteraction": "與 TEN AI Agent 對話",
+      "configTrulienceAvatar": "配置 Trulience 虛擬人",
       "about": "關於擴充功能"
     },
     "language": {
@@ -109,7 +111,9 @@
     "deleteConnectionConfirmation": "確定要刪除此連線嗎？",
     "deleteConnectionSuccess": "連線刪除成功",
     "deleteConnectionFailed": "連線刪除失敗",
-    "replaceNode": "替換節點..."
+    "replaceNode": "替換節點...",
+    "manageApps": "管理應用程式",
+    "runApp": "執行"
   },
   "toast": {
     "saveFileSuccess": "檔案儲存成功",
@@ -178,7 +182,9 @@
       "templateVersionDescription": "選擇應用程式的模板版本。",
       "appName": "應用程式名稱",
       "appNameDescription": "輸入應用程式的名稱。",
-      "baseDirDescription": "選擇應用程式的基礎目錄。"
+      "baseDirDescription": "選擇應用程式的基礎目錄。",
+      "run_opts": "選項",
+      "run_with_agent": "使用 TEN Agent 執行"
     },
     "graph": {
       "title": "節點",
@@ -274,6 +280,24 @@
     "localAddonTip": "(本地)",
     "tags": "標籤"
   },
+  "rtcInteraction": {
+    "title": "實時語音 AI 代理"
+  },
+  "trulienceConfig": {
+    "title": "Trulience 虛擬人配置",
+    "enabled": "啟用",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "攝像頭",
+      "screen": "螢幕",
+      "cameraPlaceholder": "選擇攝像頭"
+    }
+  },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",
     "appsError": "獲取應用程式失敗",
@@ -308,6 +332,9 @@
       "placeholder": "搜尋或建立新項目",
       "noItems": "無項目",
       "enterValueToCreate": "輸入值以建立新項目"
+    },
+    "messageList": {
+      "noMessages": "無訊息"
     }
   }
 }

@@ -11,6 +11,7 @@ import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_PREFERENCES, ENDPOINT_STORAGE } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { PERSISTENT_SCHEMA, PERSISTENT_DEFAULTS } from "@/constants/persistent";
+import { IRunAppParams } from "@/types/apps";
 
 export const getPreferencesLogViewerLines = async () => {
   const template =
@@ -132,4 +133,28 @@ export const useStorage = (type?: "in-memory" | "persistent") => {
     isLoading: isPending,
     mutate: mutation.mutate,
   };
+};
+
+export const addRecentRunApp = async (app: IRunAppParams) => {
+  const {
+    base_dir,
+    script_name,
+    stdout_is_log,
+    stderr_is_log,
+    run_with_agent,
+  } = app;
+  const data = await getStorageValueByKey();
+  await setStorageValueByKey(undefined, {
+    ...data,
+    recent_run_apps: [
+      {
+        base_dir: base_dir,
+        script_name: script_name,
+        stdout_is_log: stdout_is_log,
+        stderr_is_log: stderr_is_log,
+        run_with_agent: run_with_agent,
+      },
+      ...(data?.recent_run_apps || []),
+    ].slice(0, 3), // keep only the first 3
+  });
 };

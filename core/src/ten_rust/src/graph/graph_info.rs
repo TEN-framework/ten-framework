@@ -22,7 +22,11 @@ use super::Graph;
 /// - A URL
 ///
 /// This function returns the loaded Graph structure.
-pub fn load_graph_from_uri(uri: &str, base_dir: Option<&str>) -> Result<Graph> {
+pub fn load_graph_from_uri(
+    uri: &str,
+    base_dir: Option<&str>,
+    new_base_dir: &mut Option<String>,
+) -> Result<Graph> {
     // Check if the URI is a URL (starts with http:// or https://)
     if uri.starts_with("http://") || uri.starts_with("https://") {
         // TODO: Implement HTTP request to fetch the graph file
@@ -34,12 +38,23 @@ pub fn load_graph_from_uri(uri: &str, base_dir: Option<&str>) -> Result<Graph> {
     // Handle relative and absolute paths.
     let path = if Path::new(uri).is_absolute() {
         PathBuf::from(uri)
-    } else if let Some(base_dir) = base_dir {
-        // If base_dir is available, use it as the base for relative
-        // paths.
-        Path::new(base_dir).join(uri)
     } else {
-        panic!("base_dir is not available");
+        // For relative paths, base_dir must not be None
+        let base_dir = base_dir.ok_or_else(|| {
+            anyhow!("base_dir cannot be None when uri is a relative path")
+        })?;
+
+        // If base_dir is available, use it as the base for relative paths.
+        let new_path = Path::new(base_dir).join(uri);
+
+        // Set the new_base_dir to the directory containing the resolved path
+        if let Some(parent_dir) = new_path.parent() {
+            if new_base_dir.is_some() {
+                *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
+            }
+        }
+
+        new_path
     };
 
     // Read the graph file.
@@ -124,11 +139,14 @@ impl GraphInfo {
         let app_base_dir = self.app_base_dir.clone();
         if let Some(source_uri) = source_uri {
             // Load graph from URI and replace the current graph
-            let graph =
-                load_graph_from_uri(&source_uri, app_base_dir.as_deref())?;
+            let graph = load_graph_from_uri(
+                &source_uri,
+                app_base_dir.as_deref(),
+                &mut None,
+            )?;
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete()
+        self.graph.validate_and_complete(None)
     }
 }
