@@ -49,8 +49,8 @@ class RealtimeApiConnection:
         self.ten_env = ten_env
 
         # Normalize base_uri and path to avoid double slashes
-        base_uri = base_uri.rstrip('/')
-        path = path.lstrip('/')
+        base_uri = base_uri.rstrip("/")
+        path = path.lstrip("/")
         base_url = f"{base_uri}/{path}"
 
         # Ensure scheme is wss:// or ws://

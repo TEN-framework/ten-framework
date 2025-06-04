@@ -176,7 +176,9 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key or not self.config.base_uri:
-            ten_env.log_error("mandatory properties are missing. api_key / base_uri are required")
+            ten_env.log_error(
+                "mandatory properties are missing. api_key / base_uri are required"
+            )
             return
 
         try:
@@ -555,7 +557,9 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"Memory expired: {message}")
         item_id = message.get("item_id")
         if item_id:
-            asyncio.create_task(self.conn.send_request(ItemDelete(item_id=item_id)))
+            asyncio.create_task(
+                self.conn.send_request(ItemDelete(item_id=item_id))
+            )
 
     def _on_memory_appended(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory appended: {message}")
@@ -623,16 +627,29 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
                 instructions=prompt,
                 turn_detection=AzureSemanticVadUpdateParams(),
                 model=self.config.model,
-                input_audio_noise_reduction=AzureInputAudioNoiseReduction() if self.config.input_audio_noise_reduction else None,
-                input_audio_echo_cancellation=AzureInputAudioEchoCancellation() if self.config.input_audio_echo_cancellation else None,
+                input_audio_noise_reduction=(
+                    AzureInputAudioNoiseReduction()
+                    if self.config.input_audio_noise_reduction
+                    else None
+                ),
+                input_audio_echo_cancellation=(
+                    AzureInputAudioEchoCancellation()
+                    if self.config.input_audio_echo_cancellation
+                    else None
+                ),
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
             )
         )
 
-        if self.config.model == "gpt-4o-realtime-preview" or  self.config.model == "gpt-4o-mini-realtime-preview":
+        if (
+            self.config.model == "gpt-4o-realtime-preview"
+            or self.config.model == "gpt-4o-mini-realtime-preview"
+        ):
             # gpt-realtime models do not support azure semantic vad
-            su.session.turn_detection = ServerVADUpdateParams() if self.config.server_vad else None
+            su.session.turn_detection = (
+                ServerVADUpdateParams() if self.config.server_vad else None
+            )
 
         if self.config.audio_out:
             su.session.voice = AzureVoice(
@@ -645,11 +662,16 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
             su.session.modalities = ["text"]
 
         if self.config.input_transcript:
-            if self.config.model == "gpt-4o-realtime-preview" or  self.config.model == "gpt-4o-mini-realtime-preview":
+            if (
+                self.config.model == "gpt-4o-realtime-preview"
+                or self.config.model == "gpt-4o-mini-realtime-preview"
+            ):
                 su.session.input_audio_transcription = InputAudioTranscription()
             else:
                 # Azure InputAudioTranscription is not supported for gpt realtime models
-                su.session.input_audio_transcription = AzureInputAudioTranscription()
+                su.session.input_audio_transcription = (
+                    AzureInputAudioTranscription()
+                )
         await self.conn.send_request(su)
 
     async def on_tools_update(
