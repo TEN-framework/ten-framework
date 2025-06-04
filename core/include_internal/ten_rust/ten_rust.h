@@ -18,7 +18,52 @@ typedef struct MetricHandle MetricHandle;
 typedef struct ServiceHub ServiceHub;
 typedef struct ten_app_t ten_app_t;
 
+/**
+ * @brief Frees a C string that was allocated by Rust.
+ *
+ * This function takes ownership of a raw pointer and frees it. The caller must
+ * ensure that the pointer was originally allocated by Rust and that it is not
+ * used after being freed. Passing a null pointer is safe, as the function will
+ * simply return in that case.
+ *
+ * @param ptr Pointer to the C string to be freed. Can be NULL.
+ */
 TEN_RUST_PRIVATE_API void ten_rust_free_cstring(const char *ptr);
+
+/**
+ * @brief Parses a JSON string into a Graph and returns it as a JSON string.
+ *
+ * This function takes a C string containing JSON, validates and processes it,
+ * then serializes it back to JSON.
+ *
+ * @param json_str A null-terminated C string containing the JSON representation
+ *                 of a graph. Must not be NULL.
+ *
+ * @return On success: A pointer to a newly allocated C string containing the
+ *         processed graph JSON. On failure: NULL pointer.
+ *
+ * @note The caller must ensure that:
+ *       - json_str is a valid null-terminated C string
+ *       - The returned pointer (if not null) is freed using
+ *         ten_rust_free_cstring()
+ *       - The input string contains valid UTF-8 encoded JSON
+ *
+ * @note Memory Management: The returned string is allocated by Rust and must be
+ *       freed by calling ten_rust_free_cstring() when no longer needed.
+ *
+ * @example
+ * ```c
+ * const char* input_json = "{\"nodes\": []}";
+ * const char* result = ten_rust_graph_from_str(input_json);
+ * if (result != NULL) {
+ *     printf("Processed graph: %s\n", result);
+ *     ten_rust_free_cstring(result);
+ * } else {
+ *     printf("Failed to process graph\n");
+ * }
+ * ```
+ */
+TEN_RUST_PRIVATE_API const char *ten_rust_graph_from_str(const char *json_str);
 
 TEN_RUST_PRIVATE_API Cipher *ten_cipher_create(const char *algorithm,
                                                const char *params);
