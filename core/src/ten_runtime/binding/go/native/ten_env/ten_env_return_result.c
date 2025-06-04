@@ -63,10 +63,10 @@ static void proxy_handle_return_error(ten_env_t *ten_env,
   TEN_ASSERT(callback_info, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   if (err) {
-    ten_go_error_from_error(&cgo_error, err);
+    ten_go_error_set_from_error(&cgo_error, err);
   }
 
   TEN_ASSERT(callback_info->callback_id != TEN_GO_NO_RESPONSE_HANDLER,
@@ -90,7 +90,7 @@ static void ten_env_proxy_notify_return_result(ten_env_t *ten_env,
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -107,7 +107,7 @@ static void ten_env_proxy_notify_return_result(ten_env_t *ten_env,
 
     if (!rc) {
       // Prepare error information to pass to Go.
-      ten_go_error_from_error(&cgo_error, &err);
+      ten_go_error_set_from_error(&cgo_error, &err);
 
       ten_go_ten_env_t *ten_env_bridge = ten_go_ten_env_wrap(ten_env);
 
@@ -135,7 +135,7 @@ ten_go_error_t ten_go_ten_env_return_result(uintptr_t bridge_addr,
              "Should not happen.");
 
   ten_go_error_t cgo_error;
-  ten_go_error_init_with_error_code(&cgo_error, TEN_ERROR_CODE_OK);
+  TEN_GO_ERROR_INIT(cgo_error);
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_BEGIN(self, {
     ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_TEN_IS_CLOSED);
@@ -152,7 +152,7 @@ ten_go_error_t ten_go_ten_env_return_result(uintptr_t bridge_addr,
                             ten_env_proxy_notify_return_result,
                             return_result_info, false, &err)) {
     ten_env_notify_return_result_ctx_destroy(return_result_info);
-    ten_go_error_from_error(&cgo_error, &err);
+    ten_go_error_set_from_error(&cgo_error, &err);
   }
 
   ten_error_deinit(&err);
