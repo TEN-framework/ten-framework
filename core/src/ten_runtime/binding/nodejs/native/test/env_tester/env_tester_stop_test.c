@@ -10,7 +10,6 @@
 #include "ten_runtime/test/env_tester_proxy.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
-#include "ten_utils/macro/mark.h"
 
 static void ten_env_tester_proxy_notify_stop_test(
     ten_env_tester_t *ten_env_tester, void *user_data) {

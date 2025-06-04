@@ -11,7 +11,8 @@ from libten_runtime_python import _TenError
 T = TypeVar("T", bound="TenError")
 
 
-# We use IntEnum so it can be directly compared with integers without converting to enum
+# We use IntEnum so it can be directly compared with integers without converting
+# to enum
 class TenErrorCode(IntEnum):
     # ErrorCodeGeneric is the default errno, for those users only care error
     # msgs.

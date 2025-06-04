@@ -64,7 +64,10 @@ export class ExtensionTester {
     return ten_addon.ten_nodejs_extension_tester_run(this);
   }
 
-  setTestModeSingle(addonName: string, propertyJsonStr: string): TenError | null {
+  setTestModeSingle(
+    addonName: string,
+    propertyJsonStr: string,
+  ): TenError | null {
     return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(
       this,
       addonName,

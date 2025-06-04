@@ -9,7 +9,6 @@
 #include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
 #include "ten_utils/macro/check.h"
-#include "ten_utils/macro/mark.h"
 
 static void ten_py_ten_env_tester_stop_test_proxy_notify(
     ten_env_tester_t *ten_env_tester, void *user_data) {

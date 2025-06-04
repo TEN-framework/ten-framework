@@ -17,12 +17,7 @@ export class Msg {
     graphId: string | undefined = undefined,
     extension: string | undefined = undefined,
   ) {
-    ten_addon.ten_nodejs_msg_set_dest(
-      this,
-      appUri,
-      graphId,
-      extension,
-    );
+    ten_addon.ten_nodejs_msg_set_dest(this, appUri, graphId, extension);
   }
 
   setPropertyFromJson(path: string, jsonStr: string): TenError | null {

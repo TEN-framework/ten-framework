@@ -81,11 +81,13 @@ async function main() {
   );
   const result2 = await greetingFailedTest.run();
   assert(result2 !== null, "result2 should not be null");
-  assert(result2.errorCode === TenErrorCode.ErrorCodeGeneric,
+  assert(
+    result2.errorCode === TenErrorCode.ErrorCodeGeneric,
     "result2 should be TenErrorCode.ErrorCodeGeneric",
   );
   assert(
-    result2.errorMessage === `Expected greeting message: ${greetingMsg}, but got: xxx`,
+    result2.errorMessage ===
+      `Expected greeting message: ${greetingMsg}, but got: xxx`,
   );
 
   const cmdTester = new CmdTester();
@@ -113,7 +115,8 @@ async function main() {
   timeoutTester.setTimeout(1000 * 1000); // 1 second
   const result7 = await timeoutTester.run();
   assert(result7 !== null, "result7 should not be null");
-  assert(result7.errorCode === TenErrorCode.ErrorCodeTimeout,
+  assert(
+    result7.errorCode === TenErrorCode.ErrorCodeTimeout,
     "result7 should be TenErrorCode.ErrorCodeTimeout",
   );
 

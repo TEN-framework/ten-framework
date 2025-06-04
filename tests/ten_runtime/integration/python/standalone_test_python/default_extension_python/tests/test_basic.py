@@ -120,6 +120,7 @@ class ExtensionTesterFail2(ExtensionTester):
 
         ten_env.on_start_done()
 
+
 class ExtensionTesterTimeout(ExtensionTester):
     def on_start(self, ten_env: TenEnvTester) -> None:
         time.sleep(3)
@@ -159,6 +160,7 @@ def test_failure2():
 
     # The error message is not provided, so it should be empty.
     assert err.error_message() == ""
+
 
 def test_timeout():
     tester = ExtensionTesterTimeout()

@@ -158,7 +158,10 @@ export class TenEnv {
     });
   }
 
-  async setPropertyNumber(path: string, value: number): Promise<TenError | null> {
+  async setPropertyNumber(
+    path: string,
+    value: number,
+  ): Promise<TenError | null> {
     return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_set_property_number(
         this,
@@ -191,7 +194,10 @@ export class TenEnv {
     });
   }
 
-  async setPropertyString(path: string, value: string): Promise<TenError | null> {
+  async setPropertyString(
+    path: string,
+    value: string,
+  ): Promise<TenError | null> {
     return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_set_property_string(
         this,

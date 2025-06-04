@@ -81,7 +81,7 @@ class DefaultExtension extends Extension {
 
     err = await tenEnv.setPropertyFromJson(
       "setKeyObject",
-      JSON.stringify({ key1: "value1", key2: 2 })
+      JSON.stringify({ key1: "value1", key2: 2 }),
     );
     assert(err == null, "err is not null");
 
@@ -91,7 +91,7 @@ class DefaultExtension extends Extension {
     [setFloatValue, err] = await tenEnv.getPropertyNumber("setKeyFloat");
     assert(
       setFloatValue > 3.1414 && setFloatValue < 3.1416,
-      "setFloatValue incorrect"
+      "setFloatValue incorrect",
     );
 
     [setStringValue, err] = await tenEnv.getPropertyString("setKeyString");
@@ -124,7 +124,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

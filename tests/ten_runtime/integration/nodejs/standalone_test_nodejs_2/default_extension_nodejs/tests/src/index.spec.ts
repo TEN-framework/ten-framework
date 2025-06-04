@@ -13,7 +13,7 @@ import {
   VideoFrameTester,
 } from "./basic_msg.js";
 import assert from "assert";
-import { TenErrorCode, TenError } from "ten-runtime-nodejs";
+import { TenErrorCode } from "ten-runtime-nodejs";
 
 const test_addon_name = "default_extension_nodejs";
 
@@ -37,11 +37,13 @@ describe("MyExtensionTester", () => {
     );
     const result = await extensionTester.run();
     assert(result !== null, "result should not be null");
-    assert(result.errorCode === TenErrorCode.ErrorCodeGeneric,
+    assert(
+      result.errorCode === TenErrorCode.ErrorCodeGeneric,
       "result should be TenErrorCode.ErrorCodeGeneric",
     );
     assert(
-      result.errorMessage === `Expected greeting message: ${greetingMsg}, but got: xxx`,
+      result.errorMessage ===
+        `Expected greeting message: ${greetingMsg}, but got: xxx`,
     );
   });
 
@@ -75,7 +77,8 @@ describe("MyExtensionTester", () => {
     extensionTester.setTimeout(1000 * 1000); // 1 second
     const result = await extensionTester.run();
     assert(result !== null, "result should not be null");
-    assert(result.errorCode === TenErrorCode.ErrorCodeTimeout,
+    assert(
+      result.errorCode === TenErrorCode.ErrorCodeTimeout,
       "result should be TenErrorCode.ErrorCodeTimeout",
     );
   });
