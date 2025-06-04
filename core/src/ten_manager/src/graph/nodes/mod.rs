@@ -120,12 +120,8 @@ fn create_new_nodes_array(
 ) {
     let mut nodes_array = Vec::new();
 
-    // Add all new nodes to the array.
-    for new_node in new_nodes {
-        if let Ok(new_node_value) = serde_json::to_value(new_node) {
-            nodes_array.push(new_node_value);
-        }
-    }
+    // Add all new nodes to the array using the shared function.
+    add_nodes_to_array(&mut nodes_array, new_nodes);
 
     // Only insert if we successfully added nodes.
     if !nodes_array.is_empty() {
@@ -315,9 +311,31 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
 /// Add new nodes to the nodes array.
 #[allow(clippy::ptr_arg)]
 fn add_nodes_to_array(nodes_array: &mut Vec<Value>, new_nodes: &[GraphNode]) {
+    use std::env;
+
+    // Check if TMAN_08_COMPATIBLE is set to true
+    let is_tman_08_compatible = env::var("TMAN_08_COMPATIBLE")
+        .map(|val| val == "true")
+        .unwrap_or(false);
+
     // Append new nodes to the existing array.
     for new_node in new_nodes {
-        if let Ok(new_node_value) = serde_json::to_value(new_node) {
+        if let Ok(mut new_node_value) = serde_json::to_value(new_node) {
+            // If TMAN_08_COMPATIBLE is true and extension_group is None,
+            // add "default_extension_group" to the JSON
+            if is_tman_08_compatible {
+                if let Value::Object(ref mut node_obj) = new_node_value {
+                    if new_node.extension_group.is_none() {
+                        node_obj.insert(
+                            "extension_group".to_string(),
+                            Value::String(
+                                "default_extension_group".to_string(),
+                            ),
+                        );
+                    }
+                }
+            }
+
             nodes_array.push(new_node_value);
         }
     }
