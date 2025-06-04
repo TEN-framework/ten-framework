@@ -8,4 +8,4 @@ export { ExtensionMenu } from "@/components/AppBar/Menu/ExtensionMenu";
 export { AppMenu } from "@/components/AppBar/Menu/AppMenu";
 export { GraphMenu } from "@/components/AppBar/Menu/GraphMenu";
 export { DesignerMenu } from "@/components/AppBar/Menu/DesignerMenu";
-export { ExternalToolsMenu } from "@/components/AppBar/Menu/ExternalToolsMenu";
+export { TenAgentToolsMenu } from "@/components/AppBar/Menu/TenAgentToolsMenu";

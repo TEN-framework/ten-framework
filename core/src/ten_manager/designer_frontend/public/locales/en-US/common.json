@@ -54,8 +54,8 @@
       "configTrulienceAvatar": "Configure Trulience Avatar",
       "about": "About Extensions"
     },
-    "menuExternalTools": {
-      "title": "External Tools"
+    "menuTenAgentTools": {
+      "title": "TEN Agent Tools"
     },
     "language": {
       "title": "Language",

@@ -54,8 +54,8 @@
       "configTrulienceAvatar": "Trulienceアバターを設定",
       "about": "拡張機能について"
     },
-    "menuExternalTools": {
-      "title": "外部ツール"
+    "menuTenAgentTools": {
+      "title": "TEN Agentツール"
     },
     "language": {
       "title": "言語",

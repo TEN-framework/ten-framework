@@ -54,8 +54,8 @@
       "configTrulienceAvatar": "配置 Trulience 虚拟人",
       "about": "关于扩展"
     },
-    "menuExternalTools": {
-      "title": "外部工具"
+    "menuTenAgentTools": {
+      "title": "TEN Agent 工具"
     },
     "language": {
       "title": "语言",

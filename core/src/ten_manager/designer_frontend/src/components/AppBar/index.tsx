@@ -17,7 +17,7 @@ import {
   GraphMenu,
   DesignerMenu,
   ExtensionMenu,
-  ExternalToolsMenu,
+  TenAgentToolsMenu,
 } from "@/components/AppBar/Menu";
 import { Separator } from "@/components/ui/Separator";
 import { AppStatus } from "@/components/AppBar/AppStatus";
@@ -126,7 +126,7 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
             triggerListRef={targetMenuListRef}
           />
           <Separator orientation="vertical" className="h-6" />
-          <ExternalToolsMenu
+          <TenAgentToolsMenu
             disableMenuClick={disableMenuClick}
             idx={4}
             triggerListRef={targetMenuListRef}

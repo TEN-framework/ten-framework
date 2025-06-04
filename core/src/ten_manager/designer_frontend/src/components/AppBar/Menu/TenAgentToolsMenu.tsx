@@ -29,7 +29,7 @@ import {
 } from "@/constants/widgets";
 import { useAppStore } from "@/store";
 
-export const ExternalToolsMenu = (props: {
+export const TenAgentToolsMenu = (props: {
   disableMenuClick?: boolean;
   idx: number;
   triggerListRef?: React.RefObject<HTMLButtonElement[]>;
@@ -98,7 +98,7 @@ export const ExternalToolsMenu = (props: {
             }
           }}
         >
-          {t("header.menuExternalTools.title")}
+          {t("header.menuTenAgentTools.title")}
         </NavigationMenuTrigger>
         <NavigationMenuContent
           className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
