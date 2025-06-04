@@ -4,14 +4,16 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { AddonManager, App, TenEnv } from "ten-runtime-nodejs";
+import { AddonManager, App, TenEnv, TenErrorCode } from "ten-runtime-nodejs";
 import { GreetingTester } from "./greeting.js";
 import {
   AudioFrameTester,
   CmdTester,
   DataTester,
+  TimeoutTester,
   VideoFrameTester,
 } from "./basic_msg.js";
+import assert from "assert";
 
 // Note: The reason for this test case is that in mocha tests, if asan is
 // enabled, it will catch leaks from mocha/npm itself, not from the TEN
@@ -69,23 +71,54 @@ async function main() {
     test_addon_name,
     `{"greetingMsg": "${greetingMsg}"}`,
   );
-  await greetingTester.run();
+  const result = await greetingTester.run();
+  assert(result === null, "result should be null");
+
+  const greetingFailedTest = new GreetingTester(greetingMsg);
+  greetingFailedTest.setTestModeSingle(
+    test_addon_name,
+    `{"greetingMsg": "xxx"}`,
+  );
+  const result2 = await greetingFailedTest.run();
+  assert(result2 !== null, "result2 should not be null");
+  assert(
+    result2.errorCode === TenErrorCode.ErrorCodeGeneric,
+    "result2 should be TenErrorCode.ErrorCodeGeneric",
+  );
+  assert(
+    result2.errorMessage ===
+      `Expected greeting message: ${greetingMsg}, but got: xxx`,
+  );
 
   const cmdTester = new CmdTester();
   cmdTester.setTestModeSingle(test_addon_name, "{}");
-  await cmdTester.run();
+  const result3 = await cmdTester.run();
+  assert(result3 === null, "result3 should be null");
 
   const dataTester = new DataTester();
   dataTester.setTestModeSingle(test_addon_name, "{}");
-  await dataTester.run();
+  const result4 = await dataTester.run();
+  assert(result4 === null, "result4 should be null");
 
   const videoFrameTester = new VideoFrameTester();
   videoFrameTester.setTestModeSingle(test_addon_name, "{}");
-  await videoFrameTester.run();
+  const result5 = await videoFrameTester.run();
+  assert(result5 === null, "result5 should be null");
 
   const audioFrameTester = new AudioFrameTester();
   audioFrameTester.setTestModeSingle(test_addon_name, "{}");
-  await audioFrameTester.run();
+  const result6 = await audioFrameTester.run();
+  assert(result6 === null, "result6 should be null");
+
+  const timeoutTester = new TimeoutTester();
+  timeoutTester.setTestModeSingle(test_addon_name, "{}");
+  timeoutTester.setTimeout(1000 * 1000); // 1 second
+  const result7 = await timeoutTester.run();
+  assert(result7 !== null, "result7 should not be null");
+  assert(
+    result7.errorCode === TenErrorCode.ErrorCodeTimeout,
+    "result7 should be TenErrorCode.ErrorCodeTimeout",
+  );
 
   console.log("All tests passed");
 

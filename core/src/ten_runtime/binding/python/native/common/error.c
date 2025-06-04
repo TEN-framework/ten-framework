@@ -14,6 +14,46 @@
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 
+static ten_py_error_t *ten_py_error_create_internal(PyTypeObject *py_type) {
+  if (!py_type) {
+    py_type = ten_py_error_py_type();
+  }
+
+  ten_py_error_t *py_error = (ten_py_error_t *)py_type->tp_alloc(py_type, 0);
+  TEN_ASSERT(py_error, "Failed to allocate memory.");
+
+  TEN_ERROR_INIT(py_error->c_error);
+
+  return py_error;
+}
+
+PyObject *ten_py_error_create(PyTypeObject *type, PyObject *args,
+                              PyObject *kwds) {
+  if (PyTuple_GET_SIZE(args) != 2) {
+    return ten_py_raise_py_value_error_exception(
+        "Invalid argument count when TenError.create.");
+  }
+
+  ten_error_code_t error_code = TEN_ERROR_CODE_OK;
+  const char *error_message = NULL;
+
+  if (!PyArg_ParseTuple(args, "iz", &error_code, &error_message)) {
+    return ten_py_raise_py_value_error_exception("Failed to parse arguments.");
+  }
+
+  ten_py_error_t *py_error = ten_py_error_create_internal(type);
+  if (!py_error) {
+    return ten_py_raise_py_memory_error_exception("Failed to allocate memory.");
+  }
+
+  ten_error_set_error_code(&py_error->c_error, error_code);
+  if (error_message) {
+    ten_error_set_error_message(&py_error->c_error, error_message);
+  }
+
+  return (PyObject *)py_error;
+}
+
 ten_py_error_t *ten_py_error_wrap(ten_error_t *error) {
   if (!error) {
     return NULL;

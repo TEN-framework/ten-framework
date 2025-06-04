@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/video_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/macro/mark.h"
@@ -80,7 +81,7 @@ static void tsfn_proxy_send_video_frame_callback(napi_env env, napi_value js_cb,
   napi_value js_error = NULL;
 
   if (ctx->error) {
-    js_error = ten_nodejs_create_error(env, ctx->error);
+    js_error = ten_nodejs_error_wrap(env, ctx->error);
     ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
   } else {
     js_error = js_undefined(env);
@@ -174,7 +175,7 @@ napi_value ten_nodejs_ten_env_send_video_frame(napi_env env,
     ten_error_set(&err, TEN_ERROR_CODE_TEN_IS_CLOSED,
                   "ten_env.send_video_frame() failed because ten is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -204,7 +205,7 @@ napi_value ten_nodejs_ten_env_send_video_frame(napi_env env,
                                  ten_env_proxy_notify_send_video_frame,
                                  notify_info, false, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     // The JS callback will not be called, so release the TSFN here.

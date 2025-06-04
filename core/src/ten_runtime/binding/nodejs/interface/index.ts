@@ -17,3 +17,4 @@ export * from "./msg/audio_frame.js";
 export * from "./msg/video_frame.js";
 export * from "./test/extension_tester.js";
 export * from "./test/env_tester.js";
+export * from "./error/error.js";
