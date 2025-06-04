@@ -104,7 +104,7 @@ func (p *extTester) SetTestModeSingle(
 func (p *extTester) SetTimeout(timeout time.Duration) error {
 	cStatus := C.ten_go_extension_tester_set_timeout(
 		p.cPtr,
-		C.uint32_t(timeout.Milliseconds()),
+		C.uint64_t(timeout.Microseconds()),
 	)
 
 	return withCGoError(&cStatus)

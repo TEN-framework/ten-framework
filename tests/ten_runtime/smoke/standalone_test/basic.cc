@@ -127,7 +127,7 @@ TEST(StandaloneTest, BasicFail) {  // NOLINT
 TEST(StandaloneTest, BasicTimeout) {  // NOLINT
   auto *tester = new extension_tester_3();
   tester->set_test_mode_single("standalone_test_basic__test_extension_1");
-  tester->set_timeout(500);
+  tester->set_timeout(500 * 1000);  // 500ms
 
   ten::error_t err;
   bool rc = tester->run(&err);

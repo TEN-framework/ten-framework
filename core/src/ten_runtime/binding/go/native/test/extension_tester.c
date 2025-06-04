@@ -337,7 +337,7 @@ void ten_go_extension_tester_finalize(ten_go_extension_tester_t *self) {
 }
 
 ten_go_error_t ten_go_extension_tester_set_timeout(
-    ten_go_extension_tester_t *extension_tester, uint32_t timeout_ms) {
+    ten_go_extension_tester_t *extension_tester, uint64_t timeout_us) {
   TEN_ASSERT(ten_go_extension_tester_check_integrity(extension_tester),
              "Should not happen.");
 
@@ -345,7 +345,7 @@ ten_go_error_t ten_go_extension_tester_set_timeout(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_extension_tester_set_timeout(extension_tester->c_extension_tester,
-                                   timeout_ms);
+                                   timeout_us);
 
   return cgo_error;
 }

@@ -161,7 +161,7 @@ TEST(StandaloneTest, BasicCTimeout) {  // NOLINT
       nullptr, nullptr, nullptr);
   ten_extension_tester_set_test_mode_single(
       tester, "standalone_test_basic_c__test_extension_1", nullptr);
-  ten_extension_tester_set_timeout(tester, 500);  // 500ms
+  ten_extension_tester_set_timeout(tester, 500 * 1000);  // 500ms
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
