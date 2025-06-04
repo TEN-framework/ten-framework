@@ -9,6 +9,7 @@ import asyncio
 import base64
 import json
 from enum import Enum
+import string
 import traceback
 import time
 import numpy as np
@@ -45,9 +46,13 @@ from ten_ai_base.types import (
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
+    AzureInputAudioEchoCancellation,
+    AzureInputAudioNoiseReduction,
+    AzureInputAudioTranscription,
     AzureSemanticVadUpdateParams,
     AzureVoice,
     ItemCreate,
+    ServerVADUpdateParams,
     SessionCreated,
     ItemCreated,
     UserMessageItemParam,
@@ -94,7 +99,7 @@ class AzureRealtimeConfig(BaseConfig):
     base_uri: str = ""
     api_key: str = ""
     path: str = "/voice-live/realtime"
-    model: str = "gpt-4o-realtime-preview"
+    model: str = "gpt-4o"
     api_version: str = "2025-05-01-preview"
     language: str = "en-US"
     prompt: str = ""
@@ -114,6 +119,9 @@ class AzureRealtimeConfig(BaseConfig):
     greeting: str = ""
     max_history: int = 20
     enable_storage: bool = False
+
+    input_audio_noise_reduction: bool = True
+    input_audio_echo_cancellation: bool = False
 
     def build_ctx(self) -> dict:
         return {
@@ -291,7 +299,7 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
             self.ten_env.log_info("Client loop started")
             async for message in self.conn.listen():
                 try:
-                    self.ten_env.log_info(f"Received message: {message.type}")
+                    # self.ten_env.log_info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
                             self.ten_env.log_info(
@@ -543,13 +551,13 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
 
             self.loop.create_task(self._loop())
 
-    async def _on_memory_expired(self, message: dict) -> None:
+    def _on_memory_expired(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory expired: {message}")
         item_id = message.get("item_id")
         if item_id:
-            await self.conn.send_request(ItemDelete(item_id=item_id))
+            asyncio.create_task(self.conn.send_request(ItemDelete(item_id=item_id)))
 
-    async def _on_memory_appended(self, message: dict) -> None:
+    def _on_memory_appended(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory appended: {message}")
         if not self.config.enable_storage:
             return
@@ -615,10 +623,17 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
                 instructions=prompt,
                 turn_detection=AzureSemanticVadUpdateParams(),
                 model=self.config.model,
+                input_audio_noise_reduction=AzureInputAudioNoiseReduction() if self.config.input_audio_noise_reduction else None,
+                input_audio_echo_cancellation=AzureInputAudioEchoCancellation() if self.config.input_audio_echo_cancellation else None,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
             )
         )
+
+        if self.config.model == "gpt-4o-realtime-preview" or  self.config.model == "gpt-4o-mini-realtime-preview":
+            # gpt-realtime models do not support azure semantic vad
+            su.session.turn_detection = ServerVADUpdateParams() if self.config.server_vad else None
+
         if self.config.audio_out:
             su.session.voice = AzureVoice(
                 name=self.config.voice_name,
@@ -630,9 +645,11 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
             su.session.modalities = ["text"]
 
         if self.config.input_transcript:
-            su.session.input_audio_transcription = InputAudioTranscription(
-                model="whisper-1"
-            )
+            if self.config.model == "gpt-4o-realtime-preview" or  self.config.model == "gpt-4o-mini-realtime-preview":
+                su.session.input_audio_transcription = InputAudioTranscription()
+            else:
+                # Azure InputAudioTranscription is not supported for gpt realtime models
+                su.session.input_audio_transcription = AzureInputAudioTranscription()
         await self.conn.send_request(su)
 
     async def on_tools_update(
@@ -809,20 +826,19 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
         return content_parts
 
     async def _greeting(self) -> None:
-        pass
-        # if self.connected and self.users_count == 1:
-        #     text = self._greeting_text()
-        #     if self.config.greeting:
-        #         text = "Say '" + self.config.greeting + "' to me."
-        #     self.ten_env.log_info(f"send greeting {text}")
-        #     await self.conn.send_request(
-        #         ItemCreate(
-        #             item=UserMessageItemParam(
-        #                 content=[{"type": ContentType.InputText, "text": text}]
-        #             )
-        #         )
-        #     )
-        #     await self.conn.send_request(ResponseCreate())
+        if self.connected and self.users_count == 1:
+            text = self._greeting_text()
+            if self.config.greeting:
+                text = "Say '" + self.config.greeting + "' to me."
+            self.ten_env.log_info(f"send greeting {text}")
+            await self.conn.send_request(
+                ItemCreate(
+                    item=UserMessageItemParam(
+                        content=[{"type": ContentType.InputText, "text": text}]
+                    )
+                )
+            )
+            await self.conn.send_request(ResponseCreate())
 
     async def _flush(self) -> None:
         try:

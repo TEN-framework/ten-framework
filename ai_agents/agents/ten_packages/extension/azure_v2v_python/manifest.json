@@ -50,7 +50,16 @@
       "max_tokens": {
         "type": "int32"
       },
-      "voice": {
+      "voice_name": {
+        "type": "string"
+      },
+      "voice_type": {
+        "type": "string"
+      },
+      "voice_temperature": {
+        "type": "float64"
+      },
+      "voice_endpoint": {
         "type": "string"
       },
       "server_vad": {
@@ -78,6 +87,12 @@
         "type": "int32"
       },
       "enable_storage": {
+        "type": "bool"
+      },
+      "input_audio_echo_cancellation": {
+        "type": "bool"
+      },
+      "input_audio_noise_reduction": {
         "type": "bool"
       }
     },

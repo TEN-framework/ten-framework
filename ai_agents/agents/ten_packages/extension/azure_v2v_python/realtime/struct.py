@@ -105,6 +105,14 @@ class AzureSemanticVadUpdateParams:
     type: str = "azure_semantic_vad"  # Fixed value for VAD type
 
 @dataclass
+class AzureInputAudioEchoCancellation:
+    type: Literal["server_echo_cancellation"] = "server_echo_cancellation"  # Fixed value for echo cancellation type
+
+@dataclass
+class AzureInputAudioNoiseReduction:
+    type: Literal["azure_deep_noise_suppression"] = "azure_deep_noise_suppression"  # Fixed value for noise reduction type
+
+@dataclass
 class AzureVoice:
     name: str = "en-US-Emma:DragonHDLatestNeural"
     type: Literal["azure-standard"] | Literal["azure-custom"] =  "azure-standard" # Type of Azure voice
@@ -127,7 +135,7 @@ class Session:
     instructions: Optional[str] = (
         None  # Instructions or guidance for the session
     )
-    turn_detection: Optional[ServerVADUpdateParams] = (
+    turn_detection: Optional[ServerVADUpdateParams | AzureSemanticVadUpdateParams] = (
         None  # Voice activity detection (VAD) settings
     )
     input_audio_format: AudioFormats = (
@@ -161,13 +169,19 @@ class SessionUpdateParams:
     turn_detection: Optional[ServerVADUpdateParams] = (
         None  # Server VAD update params
     )
+    input_audio_echo_cancellation: Optional[AzureInputAudioEchoCancellation] = (
+        None  # Echo cancellation settings for input audio
+    )
+    input_audio_noise_reduction: Optional[AzureInputAudioNoiseReduction] = (
+        None  # Noise reduction settings for input audio
+    )
     input_audio_format: Optional[AudioFormats] = (
         None  # Input audio format from `AudioFormats` Enum
     )
     output_audio_format: Optional[AudioFormats] = (
         None  # Output audio format from `AudioFormats` Enum
     )
-    input_audio_transcription: Optional[InputAudioTranscription] = AzureInputAudioTranscription()  # Input audio transcription settings
+    input_audio_transcription: Optional[InputAudioTranscription | AzureInputAudioTranscription] = AzureInputAudioTranscription()  # Input audio transcription settings
     tools: Optional[List[Dict[str, Union[str, any]]]] = (
         None  # List of tools (e.g., dictionaries)
     )
