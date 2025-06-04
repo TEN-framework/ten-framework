@@ -10,6 +10,7 @@ package tests
 import (
 	ten "ten_framework/ten_runtime"
 	"testing"
+	"time"
 )
 
 func TestGreetingTester(t *testing.T) {
@@ -74,7 +75,7 @@ func TestGreetingTesterTimeout(t *testing.T) {
 		t.FailNow()
 	}
 
-	tester.SetTimeout(500)
+	tester.SetTimeout(time.Duration(500) * time.Millisecond)
 	tester.SetTestModeSingle("default_extension_go", "{}")
 	err = tester.Run()
 	if err != nil {

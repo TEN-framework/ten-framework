@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"time"
 	"unsafe"
 )
 
@@ -79,7 +80,7 @@ type extTester struct {
 // ExtensionTester is the interface for the extension tester.
 type ExtensionTester interface {
 	SetTestModeSingle(addonName string, propertyJSONStr string) error
-	SetTimeout(timeoutMs uint32) error
+	SetTimeout(timeout time.Duration) error
 	Run() error
 }
 
@@ -100,10 +101,10 @@ func (p *extTester) SetTestModeSingle(
 	return withCGoError(&cStatus)
 }
 
-func (p *extTester) SetTimeout(timeoutMs uint32) error {
+func (p *extTester) SetTimeout(timeout time.Duration) error {
 	cStatus := C.ten_go_extension_tester_set_timeout(
 		p.cPtr,
-		C.uint32_t(timeoutMs),
+		C.uint32_t(timeout.Milliseconds()),
 	)
 
 	return withCGoError(&cStatus)

@@ -151,7 +151,7 @@ ten_extension_tester_t *ten_extension_tester_create(
 
   TEN_ERROR_INIT(self->test_result);
 
-  self->timeout_us = TEN_EXTENSION_TESTER_DEFAULT_TIMEOUT_US;
+  self->timeout_ms = TEN_EXTENSION_TESTER_DEFAULT_TIMEOUT_MS;
   self->timeout_timer = NULL;
 
   return self;
@@ -212,7 +212,7 @@ void ten_extension_tester_set_test_mode_graph(ten_extension_tester_t *self,
 }
 
 void ten_extension_tester_set_timeout(ten_extension_tester_t *self,
-                                      uint64_t timeout_us) {
+                                      uint64_t timeout_ms) {
   TEN_ASSERT(self, "Invalid argument.");
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: this function could be called in different threads other than
@@ -220,7 +220,7 @@ void ten_extension_tester_set_timeout(ten_extension_tester_t *self,
   TEN_ASSERT(ten_extension_tester_check_integrity(self, false),
              "Invalid argument.");
 
-  self->timeout_us = timeout_us;
+  self->timeout_ms = timeout_ms;
 }
 
 void ten_extension_tester_init_test_app_property_from_json(
@@ -386,7 +386,7 @@ static void ten_extension_tester_on_timeout_triggered(ten_timer_t *timer,
              "Invalid argument.");
 
   TEN_LOGI("Timeout triggered for extension_tester, timeout: %d ms.",
-           self->timeout_us / 1000);
+           self->timeout_ms);
 
   // Set the test result to `timeout` and stop the test.
 
@@ -416,7 +416,7 @@ static void ten_extension_tester_on_timeout_closed(ten_timer_t *timer,
              "Invalid argument.");
 
   TEN_LOGI("Timeout closed for extension_tester, timeout: %d ms.",
-           self->timeout_us / 1000);
+           self->timeout_ms);
 
   self->timeout_timer = NULL;
 
@@ -439,14 +439,14 @@ static void ten_extension_tester_start_timeout_timer(
 
   TEN_ASSERT(self->timeout_timer == NULL, "Should not happen.");
 
-  if (self->timeout_us <= 0) {
+  if (self->timeout_ms <= 0) {
     TEN_LOGV(
         "Timeout is not set, skipping timeout timer for extension_tester.");
     return;
   }
 
   self->timeout_timer =
-      ten_timer_create(self->tester_runloop, self->timeout_us * 1000, 1, false);
+      ten_timer_create(self->tester_runloop, self->timeout_ms * 1000, 1, false);
   TEN_ASSERT(self->timeout_timer, "Should not happen.");
 
   ten_timer_set_on_triggered(self->timeout_timer,
@@ -457,7 +457,7 @@ static void ten_extension_tester_start_timeout_timer(
   ten_timer_enable(self->timeout_timer);
 
   TEN_LOGD("Started timeout timer for extension_tester, timeout: %dms.",
-           self->timeout_us / 1000);
+           self->timeout_ms);
 }
 
 static void ten_extension_tester_create_and_start_graph(
