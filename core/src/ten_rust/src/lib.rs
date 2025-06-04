@@ -6,7 +6,7 @@
 //
 pub mod _0_8_compatible;
 pub mod base_dir_pkg_info;
-mod bindings;
+pub mod bindings;
 pub mod constants;
 pub mod crypto;
 pub mod env;

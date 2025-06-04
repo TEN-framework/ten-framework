@@ -33,9 +33,7 @@ class NeuphonicTTS:
     def text_to_speech_stream(
         self, text: str
     ) -> AsyncIterator[APIResponse[TTSResponse]]:
-        sse_client = self.client.tts.AsyncSSEClient(
-            timeout=self.config.request_timeout_seconds
-        )
+        sse_client = self.client.tts.AsyncSSEClient()
         tts_config = TTSConfig(
             lang_code=self.config.lang_code,
             sampling_rate=self.config.sample_rate,
