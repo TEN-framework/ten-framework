@@ -57,7 +57,7 @@ pub extern "C" fn ten_rust_free_cstring(ptr: *const c_char) {
 /// The returned string is allocated by Rust and must be freed by calling
 /// `ten_rust_free_cstring()` when no longer needed.
 #[no_mangle]
-pub unsafe extern "C" fn ten_rust_graph_from_str(
+pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     json_str: *const c_char,
 ) -> *const c_char {
     if json_str.is_null() {

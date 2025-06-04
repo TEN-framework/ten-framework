@@ -54,7 +54,7 @@ TEN_RUST_PRIVATE_API void ten_rust_free_cstring(const char *ptr);
  * @example
  * ```c
  * const char* input_json = "{\"nodes\": []}";
- * const char* result = ten_rust_graph_from_str(input_json);
+ * const char* result = ten_rust_graph_validate_complete_flatten(input_json);
  * if (result != NULL) {
  *     printf("Processed graph: %s\n", result);
  *     ten_rust_free_cstring(result);
@@ -63,7 +63,8 @@ TEN_RUST_PRIVATE_API void ten_rust_free_cstring(const char *ptr);
  * }
  * ```
  */
-TEN_RUST_PRIVATE_API const char *ten_rust_graph_from_str(const char *json_str);
+TEN_RUST_PRIVATE_API const char *ten_rust_graph_validate_complete_flatten(
+    const char *json_str);
 
 TEN_RUST_PRIVATE_API Cipher *ten_cipher_create(const char *algorithm,
                                                const char *params);
