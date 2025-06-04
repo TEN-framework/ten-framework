@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon.h"
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon_manager.h"
 #include "include_internal/ten_runtime/binding/nodejs/app/app.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/extension/extension.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/audio_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
@@ -32,6 +33,7 @@ static napi_value ten_runtime_nodejs_init(napi_env env, napi_value exports) {
   ten_nodejs_audio_frame_module_init(env, exports);
   ten_nodejs_ten_env_tester_module_init(env, exports);
   ten_nodejs_extension_tester_module_init(env, exports);
+  ten_nodejs_error_module_init(env, exports);
 
   return exports;
 }
