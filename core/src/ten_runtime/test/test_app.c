@@ -9,7 +9,6 @@
 #include "include_internal/ten_runtime/test/extension_tester.h"
 #include "include_internal/ten_runtime/timer/timer.h"
 #include "ten_runtime/ten_env/ten_env.h"
-#include "ten_utils/container/list.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/mark.h"
 

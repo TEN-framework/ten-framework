@@ -167,8 +167,9 @@ class ten_env_tester_t {
   // empty or its error code is `TEN_STATUS_CODE_OK`, it means the test is
   // successful. The test result will be returned in the out parameter of
   // `extension_tester.run`.
+  //
   // The `err` solely indicates whether the `stop_test()` operation itself
-  // succeeded
+  // succeeded.
   bool stop_test(error_t *test_result = nullptr, error_t *err = nullptr) {
     TEN_ASSERT(c_ten_env_tester, "Should not happen.");
     return ten_env_tester_stop_test(
