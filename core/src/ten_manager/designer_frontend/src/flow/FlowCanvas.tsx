@@ -64,8 +64,6 @@ import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import { TEN_PATH_WS_EXEC } from "@/constants";
-// eslint-disable-next-line max-len
-import { RTCInteractionPopupTitle } from "@/components/AppBar/Menu/ExtensionMenu";
 import { IRunAppParams } from "@/types/apps";
 import {
   addRecentRunApp as addToRecentRunApp,
@@ -323,7 +321,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           category: EWidgetCategory.Default,
           display_type: EWidgetDisplayType.Popup,
 
-          title: <RTCInteractionPopupTitle />,
+          title: t("rtcInteraction.title"),
           metadata: {
             type: EDefaultWidgetType.RTCInteraction,
           },
