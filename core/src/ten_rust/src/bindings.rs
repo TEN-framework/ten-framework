@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::ffi::{c_char, CStr, CString};
-use std::str::FromStr;
 
 use crate::graph::Graph;
 
@@ -31,8 +30,8 @@ pub extern "C" fn ten_rust_free_cstring(ptr: *const c_char) {
 
 /// Parses a JSON string into a Graph and returns it as a JSON string.
 ///
-/// This function wraps the Graph::from_str() functionality for C code.
-/// It takes a C string containing JSON, parses it into a Graph structure,
+/// This function wraps the Graph::from_str_with_base_dir() functionality for C
+/// code. It takes a C string containing JSON, parses it into a Graph structure,
 /// validates and processes it, then serializes it back to JSON.
 ///
 /// # Parameters
@@ -73,7 +72,7 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     };
 
     // Parse the JSON string into a Graph
-    let graph = match Graph::from_str(rust_str) {
+    let graph = match Graph::from_str_with_base_dir(rust_str, None) {
         Ok(g) => g,
         Err(_) => return std::ptr::null(), // Parsing failed
     };
