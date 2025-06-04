@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import os
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import aiohttp
 
