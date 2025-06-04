@@ -108,6 +108,7 @@ func (p *extTester) SetTimeout(timeoutMs uint32) error {
 
 	return withCGoError(&cStatus)
 }
+
 func (p *extTester) Run() error {
 	cStatus := C.ten_go_extension_tester_run(p.cPtr)
 

@@ -35,7 +35,7 @@ ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   if (!self->c_ten_env_tester_proxy) {
-    ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_GENERIC);
+    ten_go_error_set_error_code(&cgo_error, TEN_ERROR_CODE_TEN_IS_CLOSED);
     return cgo_error;
   }
 
@@ -61,7 +61,10 @@ ten_go_error_t ten_go_ten_env_tester_stop_test(uintptr_t bridge_addr,
   bool rc = ten_env_tester_proxy_notify(
       self->c_ten_env_tester_proxy,
       ten_go_ten_env_tester_stop_test_proxy_notify, test_result, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+
+  if (!rc) {
+    ten_go_error_set_from_error(&cgo_error, &err);
+  }
 
   ten_error_deinit(&err);
 

@@ -16,6 +16,9 @@
 
 #define TEN_EXTENSION_TESTER_SIGNATURE 0x2343E0B8559B7147U
 
+#define TEN_DEFAULT_EXTENSION_TESTER_TIMEOUT \
+  ((uint64_t)(3 * 60 * 1000 * 1000))  // 3min by default.
+
 typedef struct ten_extension_tester_t ten_extension_tester_t;
 typedef struct ten_env_tester_t ten_env_tester_t;
 typedef struct ten_timer_t ten_timer_t;

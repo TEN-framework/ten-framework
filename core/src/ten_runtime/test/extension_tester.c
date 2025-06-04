@@ -151,7 +151,7 @@ ten_extension_tester_t *ten_extension_tester_create(
 
   TEN_ERROR_INIT(self->test_result);
 
-  self->timeout = 0;
+  self->timeout = TEN_DEFAULT_EXTENSION_TESTER_TIMEOUT;
   self->timeout_timer = NULL;
 
   return self;
