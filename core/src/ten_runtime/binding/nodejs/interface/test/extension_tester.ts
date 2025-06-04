@@ -60,7 +60,7 @@ export class ExtensionTester {
     // Stub for override.
   }
 
-  async run(): Promise<void> {
+  async run(): Promise<TenError | null> {
     return ten_addon.ten_nodejs_extension_tester_run(this);
   }
 
@@ -70,6 +70,10 @@ export class ExtensionTester {
       addonName,
       propertyJsonStr,
     );
+  }
+
+  setTimeout(usec: number): TenError | null {
+    return ten_addon.ten_nodejs_extension_tester_set_timeout(this, usec);
   }
 
   private async onInitProxy(tenEnvTester: TenEnvTester): Promise<void> {

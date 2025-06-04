@@ -129,3 +129,9 @@ export class AudioFrameTester extends ExtensionTester {
     tenEnvTester.logInfo("AudioFrameTester onDeinit");
   }
 }
+
+export class TimeoutTester extends ExtensionTester {
+  async onStart(tenEnvTester: TenEnvTester) {
+    tenEnvTester.logInfo("TimeoutTester onStart");
+  }
+}

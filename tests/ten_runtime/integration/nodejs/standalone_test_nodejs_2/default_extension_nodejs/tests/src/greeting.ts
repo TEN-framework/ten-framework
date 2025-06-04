@@ -11,6 +11,7 @@ import {
   StatusCode,
   TenEnvTester,
   TenError,
+  TenErrorCode,
 } from "ten-runtime-nodejs";
 
 export class GreetingTester extends ExtensionTester {
@@ -40,9 +41,12 @@ export class GreetingTester extends ExtensionTester {
       }
 
       if (actualGreetingMsg !== this.expectedGreetingMsg) {
-        throw new Error(
+        const err = new TenError(
+          TenErrorCode.ErrorCodeGeneric,
           `Expected greeting message: ${this.expectedGreetingMsg}, but got: ${actualGreetingMsg}`,
         );
+        tenEnvTester.stopTest(err);
+        return;
       }
 
       const cmdResult = CmdResult.Create(StatusCode.OK, cmd);

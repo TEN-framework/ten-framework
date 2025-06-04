@@ -94,8 +94,16 @@ export class TenEnvTester {
     });
   }
 
-  stopTest(): TenError | null {
-    return ten_addon.ten_nodejs_ten_env_tester_stop_test(this);
+  stopTest(result: TenError | null = null): TenError | null {
+    if (result) {
+      return ten_addon.ten_nodejs_ten_env_tester_stop_test(
+        this,
+        result.errorCode,
+        result.errorMessage,
+      );
+    }
+
+    return ten_addon.ten_nodejs_ten_env_tester_stop_test(this, 0, "");
   }
 
   logVerbose(message: string): TenError | null {
