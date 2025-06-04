@@ -37,7 +37,7 @@ type TenEnvTester interface {
 
 	ReturnResult(result CmdResult, handler TesterErrorHandler) error
 
-	StopTest() error
+	StopTest(testResult *TenError) error
 
 	LogVerbose(msg string) error
 	LogDebug(msg string) error
@@ -78,7 +78,7 @@ func (p *tenEnvTester) OnDeinitDone() error {
 
 func (p *tenEnvTester) SendCmd(cmd Cmd, handler TesterResultHandler) error {
 	if cmd == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd is required.",
 		)
@@ -91,7 +91,7 @@ func (p *tenEnvTester) SendCmd(cmd Cmd, handler TesterResultHandler) error {
 
 func (p *tenEnvTester) SendCmdEx(cmd Cmd, handler TesterResultHandler) error {
 	if cmd == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd is required.",
 		)
@@ -104,7 +104,7 @@ func (p *tenEnvTester) SendCmdEx(cmd Cmd, handler TesterResultHandler) error {
 
 func (p *tenEnvTester) SendData(data Data, handler TesterErrorHandler) error {
 	if data == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"data is required.",
 		)
@@ -120,7 +120,7 @@ func (p *tenEnvTester) SendAudioFrame(
 	handler TesterErrorHandler,
 ) error {
 	if audioFrame == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"audioFrame is required.",
 		)
@@ -136,7 +136,7 @@ func (p *tenEnvTester) SendVideoFrame(
 	handler TesterErrorHandler,
 ) error {
 	if videoFrame == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"videoFrame is required.",
 		)
@@ -152,7 +152,7 @@ func (p *tenEnvTester) ReturnResult(
 	handler TesterErrorHandler,
 ) error {
 	if result == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"result is required.",
 		)
@@ -163,9 +163,9 @@ func (p *tenEnvTester) ReturnResult(
 	})
 }
 
-func (p *tenEnvTester) StopTest() error {
+func (p *tenEnvTester) StopTest(testResult *TenError) error {
 	return withCGOLimiter(func() error {
-		return p.stopTest()
+		return p.stopTest(testResult)
 	})
 }
 
@@ -267,7 +267,7 @@ func (p *tenEnvTester) returnResult(
 	handler TesterErrorHandler,
 ) error {
 	if result == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"result is required.",
 		)
@@ -287,8 +287,24 @@ func (p *tenEnvTester) returnResult(
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) stopTest() error {
-	cStatus := C.ten_go_ten_env_tester_stop_test(p.cPtr)
+func (p *tenEnvTester) stopTest(testResult *TenError) error {
+	var cStatus C.ten_go_error_t
+
+	if testResult != nil {
+		cStatus = C.ten_go_ten_env_tester_stop_test(
+			p.cPtr,
+			C.uint(testResult.ErrorCode),
+			unsafe.Pointer(unsafe.StringData(testResult.ErrorMessage)),
+			C.uint(len(testResult.ErrorMessage)),
+		)
+	} else {
+		cStatus = C.ten_go_ten_env_tester_stop_test(
+			p.cPtr,
+			0,
+			nil,
+			0,
+		)
+	}
 
 	return withCGoError(&cStatus)
 }

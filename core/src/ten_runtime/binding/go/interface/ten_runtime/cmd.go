@@ -39,7 +39,7 @@ type StartGraphCmd interface {
 // extension using tenEnv.SendCmd().
 func NewCmd(cmdName string) (Cmd, error) {
 	if len(cmdName) == 0 {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd name is required.",
 		)
@@ -169,7 +169,7 @@ func (p *cmd) Clone() (Cmd, error) {
 
 	if bridge == 0 {
 		// Should not happen.
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"bridge is nil",
 		)

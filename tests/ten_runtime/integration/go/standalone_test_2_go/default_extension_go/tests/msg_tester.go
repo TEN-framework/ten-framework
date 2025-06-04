@@ -37,7 +37,10 @@ func (tester *CmdTester) OnCmd(
 	if cmdName == "pong" {
 		tenEnv.LogInfo("pong cmd received")
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -68,7 +71,10 @@ func (tester *DataTester) OnData(
 	if dataName == "pong" {
 		tenEnv.LogInfo("pong data received")
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest(nil)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		panic("unknown data received: " + dataName)
 	}
@@ -100,7 +106,10 @@ func (tester *VideoFrameTester) OnVideoFrame(
 	if videoFrameName == "pong" {
 		tenEnv.LogInfo("pong video frame received")
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -130,6 +139,9 @@ func (tester *AudioFrameTester) OnAudioFrame(
 	if audioFrameName == "pong" {
 		tenEnv.LogInfo("pong audio frame received")
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }

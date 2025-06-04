@@ -154,7 +154,7 @@ func (p *cmdResult) Clone() (CmdResult, error) {
 
 	if bridge == 0 {
 		// Should not happen.
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"bridge is nil",
 		)

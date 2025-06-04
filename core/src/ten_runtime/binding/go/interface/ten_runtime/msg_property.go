@@ -59,7 +59,7 @@ func (p *msg) getPropertyString(path string) (string, error) {
 	}
 
 	if realPt != propTypeStr {
-		return "", newTenError(
+		return "", NewTenError(
 			ErrorCodeInvalidType,
 			fmt.Sprintf("expected: string, actual: %s", realPt),
 		)
@@ -94,7 +94,7 @@ func (p *msg) getPropertyString(path string) (string, error) {
 // allocations associated with type conversions involving the `any` type.
 func (p *msg) GetPropertyString(path string) (string, error) {
 	if len(path) == 0 {
-		return "", newTenError(
+		return "", NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required.",
 		)
@@ -115,7 +115,7 @@ func (p *msg) getPropertyBytes(path string) ([]byte, error) {
 	}
 
 	if realPt != propTypeBuf {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidType,
 			fmt.Sprintf("expected: []byte, actual: %s", realPt),
 		)
@@ -150,7 +150,7 @@ func (p *msg) getPropertyBytes(path string) ([]byte, error) {
 // allocations associated with type conversions involving the `any` type.
 func (p *msg) GetPropertyBytes(path string) ([]byte, error) {
 	if len(path) == 0 {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required.",
 		)
@@ -165,7 +165,7 @@ func (p *msg) GetPropertyBytes(path string) ([]byte, error) {
 
 func (p *msg) GetPropertyInt8(path string) (int8, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -186,7 +186,7 @@ func (p *msg) GetPropertyInt8(path string) (int8, error) {
 
 func (p *msg) GetPropertyInt16(path string) (int16, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -207,7 +207,7 @@ func (p *msg) GetPropertyInt16(path string) (int16, error) {
 
 func (p *msg) GetPropertyInt32(path string) (int32, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -228,7 +228,7 @@ func (p *msg) GetPropertyInt32(path string) (int32, error) {
 
 func (p *msg) GetPropertyInt64(path string) (int64, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -249,7 +249,7 @@ func (p *msg) GetPropertyInt64(path string) (int64, error) {
 
 func (p *msg) GetPropertyUint8(path string) (uint8, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -271,7 +271,7 @@ func (p *msg) GetPropertyUint8(path string) (uint8, error) {
 
 func (p *msg) GetPropertyUint16(path string) (uint16, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -292,7 +292,7 @@ func (p *msg) GetPropertyUint16(path string) (uint16, error) {
 
 func (p *msg) GetPropertyUint32(path string) (uint32, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -313,7 +313,7 @@ func (p *msg) GetPropertyUint32(path string) (uint32, error) {
 
 func (p *msg) GetPropertyUint64(path string) (uint64, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -335,7 +335,7 @@ func (p *msg) GetPropertyUint64(path string) (uint64, error) {
 
 func (p *msg) GetPropertyFloat32(path string) (float32, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -356,7 +356,7 @@ func (p *msg) GetPropertyFloat32(path string) (float32, error) {
 
 func (p *msg) GetPropertyFloat64(path string) (float64, error) {
 	if len(path) == 0 {
-		return 0, newTenError(
+		return 0, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -377,7 +377,7 @@ func (p *msg) GetPropertyFloat64(path string) (float64, error) {
 
 func (p *msg) GetPropertyBool(path string) (bool, error) {
 	if len(path) == 0 {
-		return false, newTenError(
+		return false, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -398,7 +398,7 @@ func (p *msg) GetPropertyBool(path string) (bool, error) {
 
 func (p *msg) GetPropertyPtr(path string) (any, error) {
 	if len(path) == 0 {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required",
 		)
@@ -434,7 +434,7 @@ func (p *msg) setPropertyString(path string, value string) error {
 // less memory allocation than calling SetProperty.
 func (p *msg) SetPropertyString(path string, value string) error {
 	if len(path) == 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path is required.",
 		)
@@ -450,7 +450,7 @@ func (p *msg) SetPropertyString(path string, value string) error {
 func (p *msg) setPropertyBytes(path string, value []byte) error {
 	// TEN runtime can not malloc memory with size 0.
 	if len(value) == 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"property value is required",
 		)
@@ -474,7 +474,7 @@ func (p *msg) setPropertyBytes(path string, value []byte) error {
 // less memory allocation than calling SetProperty.
 func (p *msg) SetPropertyBytes(path string, value []byte) error {
 	if len(path) == 0 || len(value) == 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"property path and value are required.",
 		)
@@ -664,7 +664,7 @@ func (p *msg) setProperty(path string, value any) error {
 // SetPropertyString or SetPropertyBytes is more appropriate.
 func (p *msg) SetProperty(path string, value any) error {
 	if len(path) == 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"the property path is required.",
 		)
@@ -723,7 +723,7 @@ func (p *msg) getPropertyToJSONBytes(path string) ([]byte, error) {
 	size := uintptr(cJSONStrLen)
 	if size == 0 {
 		// The size of any valid json could not be 0.
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidJSON,
 			"the size of json data is 0",
 		)

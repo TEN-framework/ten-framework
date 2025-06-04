@@ -29,8 +29,17 @@ class error_t {
   error_t(error_t &&) = delete;
   error_t &operator=(error_t &&) = delete;
 
-  const char *error_message() const { return ten_error_message(c_error); }
   ten_error_code_t error_code() const { return ten_error_code(c_error); }
+
+  void set_error_code(ten_error_code_t code) {
+    ten_error_set_error_code(c_error, code);
+  }
+
+  const char *error_message() const { return ten_error_message(c_error); }
+
+  void set_error_message(const char *message) {
+    ten_error_set_error_message(c_error, message);
+  }
 
   // Internal use only.
   bool is_success() const { return ten_error_is_success(c_error); }

@@ -6,6 +6,7 @@
 //
 #include "include/ten_runtime/common/error_code.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/test/env_tester.h"
@@ -99,7 +100,7 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
     ten_error_set(&err, TEN_ERROR_CODE_TEN_IS_CLOSED,
                   "ten_env.log_internal() failed because ten is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -133,7 +134,7 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
       ten_env_tester_bridge->c_ten_env_tester_proxy,
       ten_env_tester_proxy_notify_log, notify_info, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);

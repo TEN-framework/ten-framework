@@ -70,6 +70,12 @@ TEN_UTILS_API ten_error_code_t ten_error_code(ten_error_t *self);
 
 TEN_UTILS_API const char *ten_error_message(ten_error_t *self);
 
+TEN_UTILS_API void ten_error_set_error_code(ten_error_t *self,
+                                            ten_error_code_t error_code);
+
+TEN_UTILS_API void ten_error_set_error_message(ten_error_t *self,
+                                               const char *error_message);
+
 TEN_UTILS_API void ten_error_reset(ten_error_t *self);
 
 TEN_UTILS_API void ten_error_destroy(ten_error_t *self);

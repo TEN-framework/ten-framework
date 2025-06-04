@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 mod exposed_message;
+mod flatten_integration;
 mod source_uri;
 mod subgraph;
 

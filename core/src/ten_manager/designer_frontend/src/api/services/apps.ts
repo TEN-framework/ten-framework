@@ -4,15 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
 import z from "zod";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
-import {
-  makeAPIRequest,
-  useCancelableSWR,
-  prepareReqUrl,
-  getQueryHookCache,
-} from "@/api/services/utils";
+import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
 import { ENDPOINT_APPS, ENDPOINT_TEMPLATES } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import {
@@ -28,20 +23,28 @@ export const getApps = async () => {
   return template.responseSchema.parse(res).data;
 };
 
-export const useApps = () => {
-  const template = ENDPOINT_APPS.apps[ENDPOINT_METHOD.GET];
-  const url = prepareReqUrl(template);
-  const [{ data, error, isLoading, mutate }] = useCancelableSWR<
-    z.infer<typeof template.responseSchema>
-  >(url, {
-    revalidateOnFocus: false,
-    refreshInterval: 0,
+export const useFetchApps = () => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["apps", ENDPOINT_METHOD.GET];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: getApps,
   });
+  const mutation = useMutation({
+    mutationFn: getApps,
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
+
   return {
-    data: data?.data,
+    data,
     error,
-    isLoading,
-    mutate,
+    isLoading: isPending,
+    mutate: mutation.mutate,
   };
 };
 
@@ -81,52 +84,31 @@ export const retrieveAppScripts = async (baseDir: string) => {
   return template.responseSchema.parse(res).data;
 };
 
-// TODO: refine this hook(post should not be used)
-export const useAppScripts = (baseDir: string) => {
-  const template = ENDPOINT_APPS.appScripts[ENDPOINT_METHOD.POST];
-  const url = prepareReqUrl(template) + `${encodeURIComponent(baseDir)}`;
-  const queryHookCache = getQueryHookCache();
-
-  const [scripts, setScripts] = React.useState<string[]>(() => {
-    const [cachedData, cachedDataIsExpired] = queryHookCache.get<{
-      scripts: string[];
-    }>(url);
-    if (!cachedData || cachedDataIsExpired) {
-      return [];
-    }
-    return cachedData.scripts;
+export const useFetchAppScripts = (baseDir: string) => {
+  const queryClient = getTanstackQueryClient();
+  const queryKey = ["appScripts", baseDir];
+  const { isPending, data, error } = useQuery({
+    queryKey,
+    queryFn: () => retrieveAppScripts(baseDir),
   });
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<Error | null>(null);
+  const mutation = useMutation({
+    mutationFn: () => retrieveAppScripts(baseDir),
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({
+        queryKey,
+      });
+    },
+  });
 
-  const fetchScripts = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await retrieveAppScripts(baseDir);
-      setScripts(data?.scripts || []);
-      queryHookCache.set(url, data);
-    } catch (error) {
-      setError(error as Error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseDir, url]);
-
-  const mutate = React.useCallback(() => {
-    queryHookCache.delete(url);
-    fetchScripts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchScripts, url]);
-
-  React.useEffect(() => {
-    fetchScripts();
-  }, [fetchScripts]);
-
-  return { data: scripts, isLoading, error, mutate };
+  return {
+    data: data?.scripts || [],
+    error,
+    isLoading: isPending,
+    mutate: mutation.mutate,
+  };
 };
 
-// TODO: refine this hook(post should not be used)
 export const retrieveTemplatePkgs = async (
   pkgType: ETemplateType,
   language: ETemplateLanguage

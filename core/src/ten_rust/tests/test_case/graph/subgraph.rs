@@ -10,6 +10,7 @@ mod tests {
 
     use ten_rust::graph::{
         connection::{self, GraphConnection},
+        graph_info::load_graph_from_uri,
         node::{GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
         GraphExposedProperty,
@@ -54,7 +55,7 @@ mod tests {
                     dest: vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
-                            extension: Some("subgraph_1:ext_d".to_string()),
+                            extension: Some("subgraph_1_ext_d".to_string()),
                             subgraph: None,
                         },
                         msg_conversion: None,
@@ -115,16 +116,20 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
-                alias: "app_id".to_string(),
+                subgraph: None,
             }]),
         };
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -161,7 +166,7 @@ mod tests {
         let connections = flattened.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 2); // Original + internal subgraph connection
 
-        // Check that colon notation is converted to underscore
+        // Check that the connection destination is correct
         let main_connection = connections
             .iter()
             .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
@@ -264,7 +269,7 @@ mod tests {
             exposed_properties: Some(vec![GraphExposedProperty {
                 extension: Some("ext_d".to_string()),
                 name: "app_id".to_string(),
-                alias: "app_id".to_string(),
+                subgraph: None,
             }]),
         };
 
@@ -296,11 +301,13 @@ mod tests {
                     msg_type: GraphExposedMessageType::CmdIn,
                     name: "B".to_string(),
                     extension: Some("ext_d".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdOut,
                     name: "H".to_string(),
                     extension: Some("ext_c".to_string()),
+                    subgraph: None,
                 },
             ]),
             exposed_properties: None,
@@ -308,10 +315,14 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -411,18 +422,22 @@ mod tests {
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
-                name: "B".to_string(),
-                extension: Some("ext_d".to_string()),
+                name: "TestCmd".to_string(),
+                extension: None,
+                subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
         };
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader, None);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "Message 'NonExistentCmd' of type 'CmdIn' is not exposed by \
@@ -499,10 +514,13 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph - should fail
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader, None);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "Subgraph 'subgraph_2' does not have exposed_messages defined"
@@ -658,7 +676,10 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader = |uri: &str| -> Result<Graph> {
+        let subgraph_loader = |uri: &str,
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
                 "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
@@ -667,7 +688,8 @@ mod tests {
         };
 
         // Flatten the graph - should now work with nested subgraphs
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -817,7 +839,8 @@ mod tests {
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
                 name: "TestCmd".to_string(),
-                extension: Some("subgraph_2".to_string()),
+                extension: None,
+                subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
         };
@@ -847,13 +870,17 @@ mod tests {
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
+                subgraph: None,
                 name: "TestCmd".to_string(),
                 extension: Some("ext_z".to_string()),
             }]),
             exposed_properties: None,
         };
 
-        let subgraph_loader = |uri: &str| -> Result<Graph> {
+        let subgraph_loader = |uri: &str,
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
             match uri {
                 "http://example.com/subgraph1.json" => Ok(subgraph_1.clone()),
                 "http://example.com/subgraph2.json" => Ok(subgraph_2.clone()),
@@ -863,7 +890,8 @@ mod tests {
 
         // Flatten the graph - should work with nested subgraphs and
         // exposed_messages
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
@@ -919,11 +947,14 @@ mod tests {
             exposed_properties: None,
         };
 
-        let subgraph_loader = |_uri: &str| -> Result<Graph> {
+        let subgraph_loader = |_uri: &str,
+                               _base_dir: Option<&str>,
+                               _new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
             unreachable!("Should not be called")
         };
 
-        let result = main_graph.flatten(subgraph_loader);
+        let result = main_graph.flatten_graph(&subgraph_loader, None);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1097,42 +1128,50 @@ mod tests {
                     msg_type: GraphExposedMessageType::CmdIn,
                     name: "TestCmd".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::DataIn,
                     name: "TestData".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::AudioFrameIn,
                     name: "TestAudio".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::VideoFrameIn,
                     name: "TestVideo".to_string(),
                     extension: Some("ext_input".to_string()),
+                    subgraph: None,
                 },
                 // Output messages (from subgraph to external)
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::CmdOut,
                     name: "ResponseCmd".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::DataOut,
                     name: "ResponseData".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::AudioFrameOut,
                     name: "ResponseAudio".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
                 GraphExposedMessage {
                     msg_type: GraphExposedMessageType::VideoFrameOut,
                     name: "ResponseVideo".to_string(),
                     extension: Some("ext_output".to_string()),
+                    subgraph: None,
                 },
             ]),
             exposed_properties: None,
@@ -1140,10 +1179,14 @@ mod tests {
 
         // Mock subgraph loader
         let subgraph_loader =
-            |_uri: &str| -> Result<Graph> { Ok(subgraph.clone()) };
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
 
         // Flatten the graph
-        let flattened = main_graph.flatten(subgraph_loader).unwrap();
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
@@ -1230,5 +1273,274 @@ mod tests {
         let video_flow = &grouped_connection.video_frame.as_ref().unwrap()[0];
         assert_eq!(video_flow.name, "ResponseVideo");
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
+    }
+
+    #[test]
+    fn test_flatten_subgraph_field_reference_exposed_properties() {
+        // Create a main graph with subgraph field references in
+        // exposed_properties
+        let main_graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        "http://example.com/subgraph1.json".to_string(),
+                    ),
+                },
+            ],
+            connections: None,
+            exposed_messages: None,
+            exposed_properties: Some(vec![
+                // Extension-based exposed property
+                GraphExposedProperty {
+                    extension: Some("ext_a".to_string()),
+                    name: "config_a".to_string(),
+                    subgraph: None,
+                },
+                // Subgraph-based exposed property
+                GraphExposedProperty {
+                    extension: None,
+                    name: "config_b".to_string(),
+                    subgraph: Some("subgraph_1".to_string()),
+                },
+            ]),
+        };
+
+        // Create a subgraph with exposed_properties
+        let subgraph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_x".to_string(),
+                    addon: Some("addon_x".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_y".to_string(),
+                    addon: Some("addon_y".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+            ],
+            connections: None,
+            exposed_messages: None,
+            exposed_properties: Some(vec![GraphExposedProperty {
+                extension: Some("ext_y".to_string()),
+                name: "config_b".to_string(),
+                subgraph: None,
+            }]),
+        };
+
+        // Mock subgraph loader
+        let subgraph_loader =
+            |_uri: &str,
+             _base_dir: Option<&str>,
+             _new_base_dir: &mut Option<String>|
+             -> Result<Graph> { Ok(subgraph.clone()) };
+
+        // Flatten the graph with preserve_exposed_info = true
+        let flattened =
+            Graph::flatten(&main_graph, &subgraph_loader, None, true)
+                .unwrap()
+                .unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Check that exposed_properties are updated correctly
+        let exposed_properties = flattened.exposed_properties.as_ref().unwrap();
+        assert_eq!(exposed_properties.len(), 2);
+
+        // Check that extension-based exposed property is preserved
+        let ext_a_property = exposed_properties
+            .iter()
+            .find(|prop| prop.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        assert_eq!(ext_a_property.name, "config_a");
+        assert!(ext_a_property.subgraph.is_none());
+
+        // Check that subgraph-based exposed property is expanded
+        let expanded_property = exposed_properties
+            .iter()
+            .find(|prop| prop.extension.as_deref() == Some("subgraph_1_ext_y"))
+            .unwrap();
+        assert_eq!(expanded_property.name, "config_b");
+        assert!(expanded_property.subgraph.is_none());
+    }
+
+    #[test]
+    fn test_flatten_with_load_graph_from_uri_as_subgraph_loader() {
+        use std::fs;
+        use tempfile::tempdir;
+
+        // Create a temporary directory and subgraph file
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("test_subgraph.json");
+
+        // Define a test subgraph
+        let subgraph_json = r#"
+        {
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "ext_c",
+                    "addon": "addon_c",
+                    "extension_group": "test_group"
+                },
+                {
+                    "type": "extension",
+                    "name": "ext_d",
+                    "addon": "addon_d",
+                    "extension_group": "test_group"
+                }
+            ],
+            "connections": [
+                {
+                    "extension": "ext_c",
+                    "cmd": [
+                        {
+                            "name": "internal_cmd",
+                            "dest": [
+                                {
+                                    "extension": "ext_d"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        "#;
+
+        // Write the subgraph to the file
+        fs::write(&subgraph_file_path, subgraph_json).unwrap();
+
+        // Create a main graph that references the subgraph file
+        let main_graph = Graph {
+            nodes: vec![
+                GraphNode {
+                    type_: GraphNodeType::Extension,
+                    name: "ext_a".to_string(),
+                    addon: Some("addon_a".to_string()),
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: None,
+                },
+                GraphNode {
+                    type_: GraphNodeType::Subgraph,
+                    name: "subgraph_1".to_string(),
+                    addon: None,
+                    extension_group: None,
+                    app: None,
+                    property: None,
+                    source_uri: Some(
+                        subgraph_file_path.to_str().unwrap().to_string(),
+                    ),
+                },
+            ],
+            connections: Some(vec![GraphConnection {
+                loc: connection::GraphLoc {
+                    app: None,
+                    extension: Some("ext_a".to_string()),
+                    subgraph: None,
+                },
+                cmd: Some(vec![connection::GraphMessageFlow {
+                    name: "test_cmd".to_string(),
+                    dest: vec![connection::GraphDestination {
+                        loc: connection::GraphLoc {
+                            app: None,
+                            extension: Some("subgraph_1_ext_c".to_string()),
+                            subgraph: None,
+                        },
+                        msg_conversion: None,
+                    }],
+                }]),
+                data: None,
+                audio_frame: None,
+                video_frame: None,
+            }]),
+            exposed_messages: None,
+            exposed_properties: None,
+        };
+
+        // Use load_graph_from_uri_with_base_dir as the subgraph_loader
+        let base_dir = temp_dir.path().to_str().unwrap();
+        let subgraph_loader = |uri: &str,
+                               base_dir_param: Option<&str>,
+                               new_base_dir: &mut Option<String>|
+         -> Result<Graph> {
+            // For this test, we'll use the provided base_dir_param if
+            // available, otherwise fall back to the test's base_dir
+            let effective_base_dir = base_dir_param.or(Some(base_dir));
+            load_graph_from_uri(uri, effective_base_dir, new_base_dir)
+        };
+
+        // Flatten the graph
+        let flattened =
+            main_graph.flatten_graph(&subgraph_loader, None).unwrap().unwrap();
+
+        // Verify results
+        assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Check that original extension is preserved
+        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"
+            && node.addon == Some("addon_a".to_string())));
+
+        // Check that subgraph extensions are flattened with prefix
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_c"
+                && node.addon == Some("addon_c".to_string())));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.name == "subgraph_1_ext_d"
+                && node.addon == Some("addon_d".to_string())));
+
+        // Check that connections are flattened
+        let connections = flattened.connections.as_ref().unwrap();
+        assert_eq!(connections.len(), 2); // Original + internal subgraph connection
+
+        // Check that the connection destination is correct
+        let main_connection = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
+            .unwrap();
+        let cmd_flow = &main_connection.cmd.as_ref().unwrap()[0];
+        assert_eq!(
+            cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
+            "subgraph_1_ext_c"
+        );
+
+        // Check internal subgraph connection is preserved
+        let internal_connection = connections
+            .iter()
+            .find(|conn| {
+                conn.loc.extension.as_deref() == Some("subgraph_1_ext_c")
+            })
+            .unwrap();
+        assert!(internal_connection.cmd.is_some());
     }
 }

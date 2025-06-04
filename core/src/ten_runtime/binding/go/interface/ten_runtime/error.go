@@ -12,30 +12,27 @@ import "C"
 
 import (
 	"fmt"
-	"unsafe"
 )
 
 // TenError is the standard error returned to user from the golang binding. It
 // shall be exported, as the callers will determine whether an error is
 // TenError.
 type TenError struct {
-	errorCode    uint32
-	errorMessage string
+	ErrorCode    TenErrorCode
+	ErrorMessage string
 }
 
-// newTenError constructor of ApiError. Note that the ApiError is always created
-// from the golang binding, so it's unexported.
-func newTenError(errorCode uint32, errorMessage string) error {
+// NewTenError creates a new TenError.
+func NewTenError(errorCode TenErrorCode, errorMessage string) *TenError {
 	return &TenError{
-		errorCode:    errorCode,
-		errorMessage: errorMessage,
+		ErrorCode:    errorCode,
+		ErrorMessage: errorMessage,
 	}
 }
 
 // withCGoError creates an TenError based on the api status from C. Note that
 // the `error_message` in `cgoError` will be freed after this function, do not
-// access
-// it again.
+// access it again.
 func withCGoError(cgoError *C.ten_go_error_t) error {
 	if cgoError.error_code == 0 {
 		// No error.
@@ -45,38 +42,31 @@ func withCGoError(cgoError *C.ten_go_error_t) error {
 	if cgoError.error_message_size == 0 {
 		// An error occurred, but no error message.
 		return &TenError{
-			errorCode: uint32(cgoError.error_code),
+			ErrorCode: TenErrorCode(cgoError.error_code),
 		}
 	}
 
 	// It's crucial to free the memory allocated in the C environment to prevent
 	// memory leaks. Since C.GoString creates a copy of the memory content, it
 	// is safe to release the 'error_message' memory in C after its use.
-	defer C.free(unsafe.Pointer(cgoError.error_message))
+	defer C.ten_go_free_c_str(cgoError.error_message)
 
 	return &TenError{
-		errorCode:    uint32(cgoError.error_code),
-		errorMessage: C.GoString(cgoError.error_message),
+		ErrorCode:    TenErrorCode(cgoError.error_code),
+		ErrorMessage: C.GoString(cgoError.error_message),
 	}
 }
 
 func (e *TenError) Error() string {
 	return fmt.Sprintf(
 		"error_code: %d, error_message: %s",
-		e.errorCode,
-		e.errorMessage,
+		e.ErrorCode,
+		e.ErrorMessage,
 	)
 }
 
-// ErrorCode returns the inner error number.
-func (e *TenError) ErrorCode() uint32 {
-	return e.errorCode
-}
-
-// ErrorMessage returns the inner error message.
-func (e *TenError) ErrorMessage() string {
-	return e.errorMessage
-}
+// TenErrorCode is the error code.
+type TenErrorCode uint32
 
 // These definitions need to be the same as the TEN_ERROR_CODE enum in C.
 //
@@ -85,23 +75,26 @@ func (e *TenError) ErrorMessage() string {
 const (
 	// ErrorCodeGeneric is the default errno, for those users only care error
 	// msgs.
-	ErrorCodeGeneric = 1
+	ErrorCodeGeneric TenErrorCode = 1
 
 	// ErrorCodeInvalidJSON means the json data is invalid.
-	ErrorCodeInvalidJSON = 2
+	ErrorCodeInvalidJSON TenErrorCode = 2
 
 	// ErrorCodeInvalidArgument means invalid parameter.
-	ErrorCodeInvalidArgument = 3
+	ErrorCodeInvalidArgument TenErrorCode = 3
 
 	// ErrorCodeInvalidType means invalid type.
-	ErrorCodeInvalidType = 4
+	ErrorCodeInvalidType TenErrorCode = 4
 
 	// ErrorCodeInvalidGraph means invalid graph.
-	ErrorCodeInvalidGraph = 5
+	ErrorCodeInvalidGraph TenErrorCode = 5
 
 	// ErrorCodeTenIsClosed means the TEN world is closed.
-	ErrorCodeTenIsClosed = 6
+	ErrorCodeTenIsClosed TenErrorCode = 6
 
 	// ErrorCodeMsgNotConnected means the msg is not connected in the graph.
-	ErrorCodeMsgNotConnected = 7
+	ErrorCodeMsgNotConnected TenErrorCode = 7
+
+	// ErrorCodeTimeout means timed out.
+	ErrorCodeTimeout TenErrorCode = 8
 )

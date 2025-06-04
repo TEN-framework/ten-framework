@@ -29,8 +29,10 @@ pub struct DeleteGraphNodeRequestPayload {
 
     pub name: String,
     pub addon: String,
-    pub extension_group: Option<String>,
     pub app: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension_group: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -45,6 +47,9 @@ pub fn graph_delete_extension_node(
     app: Option<String>,
     extension_group: Option<String>,
 ) -> Result<()> {
+    // Store the original state in case validation fails.
+    let original_graph = graph.clone();
+
     // Find and remove the matching node.
     let original_nodes_len = graph.nodes.len();
     graph.nodes.retain(|node| {
@@ -136,7 +141,15 @@ pub fn graph_delete_extension_node(
         }
     }
 
-    Ok(())
+    // Validate the graph.
+    match graph.validate_and_complete_and_flatten(None) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            // Restore the original graph if validation fails.
+            *graph = original_graph;
+            Err(e)
+        }
+    }
 }
 
 pub async fn delete_graph_node_endpoint(

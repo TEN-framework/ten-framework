@@ -15,7 +15,7 @@ if (ten_enable_go_lint) {
   ten_go_lint("ten_go_binding_lint") {
     # The module path must contain .go files.
     lint_dir = "//core/src/ten_runtime/binding/go/interface/ten_runtime"
-    go_exec = "go1.20.12"
+    go_exec = "go1.24.3"
   }
 }
 

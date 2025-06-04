@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build_win.yml"
+      - "!.github/workflows/win.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -72,7 +72,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly
           cargo install --force cbindgen
@@ -198,7 +198,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly
           cargo install --force cbindgen
@@ -319,7 +319,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly
           cargo install --force cbindgen

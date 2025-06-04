@@ -23,6 +23,10 @@ TEN_RUNTIME_PRIVATE_API PyTypeObject *ten_py_error_py_type(void);
 
 TEN_RUNTIME_PRIVATE_API bool ten_py_error_init_for_module(PyObject *module);
 
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_error_create(PyTypeObject *type,
+                                                      PyObject *args,
+                                                      PyObject *kwds);
+
 TEN_RUNTIME_PRIVATE_API ten_py_error_t *ten_py_error_wrap(ten_error_t *error);
 
 TEN_RUNTIME_PRIVATE_API void ten_py_error_invalidate(ten_py_error_t *error);

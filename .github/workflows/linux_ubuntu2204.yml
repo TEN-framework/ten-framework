@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build_linux_ubuntu2204.yml"
+      - "!.github/workflows/linux_ubuntu2204.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -79,12 +79,15 @@ jobs:
 
       - name: Build
         run: |
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
 
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
-            go1.20.12 download
+            go install golang.org/dl/go1.24.3@latest
+            export PATH=$PATH:$(go env GOPATH)/bin
+            go1.24.3 download
+            go1.24.3 version
             rustup default nightly
           fi
 
@@ -518,6 +521,7 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 

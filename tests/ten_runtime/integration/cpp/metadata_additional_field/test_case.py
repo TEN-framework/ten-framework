@@ -70,9 +70,12 @@ def test_metadata_additional_field_app():
             + my_env["PATH"]
         )
         server_cmd = os.path.join(
-            base_path, "metadata_additional_field_app/bin/metadata_additional_field_app.exe"
+            base_path,
+            "metadata_additional_field_app/bin/metadata_additional_field_app.exe",
         )
-        client_cmd = os.path.join(base_path, "metadata_additional_field_app_client.exe")
+        client_cmd = os.path.join(
+            base_path, "metadata_additional_field_app_client.exe"
+        )
     elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
@@ -80,9 +83,12 @@ def test_metadata_additional_field_app():
             "metadata_additional_field_app/ten_packages/system/ten_runtime/lib",
         )
         server_cmd = os.path.join(
-            base_path, "metadata_additional_field_app/bin/metadata_additional_field_app"
+            base_path,
+            "metadata_additional_field_app/bin/metadata_additional_field_app",
         )
-        client_cmd = os.path.join(base_path, "metadata_additional_field_app_client")
+        client_cmd = os.path.join(
+            base_path, "metadata_additional_field_app_client"
+        )
     else:
         # client depends on some libraries in the TEN app.
         my_env["LD_LIBRARY_PATH"] = os.path.join(
@@ -90,9 +96,12 @@ def test_metadata_additional_field_app():
             "metadata_additional_field_app/ten_packages/system/ten_runtime/lib",
         )
         server_cmd = os.path.join(
-            base_path, "metadata_additional_field_app/bin/metadata_additional_field_app"
+            base_path,
+            "metadata_additional_field_app/bin/metadata_additional_field_app",
         )
-        client_cmd = os.path.join(base_path, "metadata_additional_field_app_client")
+        client_cmd = os.path.join(
+            base_path, "metadata_additional_field_app_client"
+        )
 
         if (
             build_config_args.enable_sanitizer
@@ -121,9 +130,11 @@ def test_metadata_additional_field_app():
         cwd=app_root_path,
     )
 
-    is_started, sock = msgpack.is_app_started("127.0.0.1", 8001, 10)
+    is_started, sock = msgpack.is_app_started("127.0.0.1", 8001, 30)
     if not is_started:
-        print("The metadata_additional_field_app is not started after 10 seconds.")
+        print(
+            "The metadata_additional_field_app is not started after 30 seconds."
+        )
 
         server.kill()
         exit_code = server.wait()

@@ -17,6 +17,13 @@ ten_package_test_prepare_app("go_app_websocket_server_nodejs_app") {
     "go_app_websocket_server_nodejs_app/property.json",
   ]
 
+  if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [ "go_app_websocket_server_nodejs_app/main_with_leak_check.go=>go_app_websocket_server_nodejs_app/main.go" ]
+  } else {
+    replace_paths_after_install_app +=
+        [ "go_app_websocket_server_nodejs_app/main.go" ]
+  }
+
   replace_paths_after_install_all = [ "go_app_websocket_server_nodejs_app/bin" ]
 
   if (ten_enable_ten_manager) {

@@ -57,6 +57,9 @@ fn graph_delete_connection(
     dest_app: Option<String>,
     dest_extension: String,
 ) -> Result<()> {
+    // Store the original state in case validation fails.
+    let original_graph = graph.clone();
+
     // If no connections exist, return an error.
     if graph.connections.is_none() {
         return Err(anyhow!("No connections found in the graph"));
@@ -84,25 +87,15 @@ fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            let flow_idx = flows.iter().position(|flow| {
-                flow.name == msg_name
-                    && flow.dest.iter().any(|dest| {
-                        dest.loc.app == dest_app
-                            && (dest.loc.extension.as_ref()
-                                == Some(&dest_extension))
-                    })
-            });
-
-            if let Some(flow_idx) = flow_idx {
-                // If there are multiple destinations for this message, we
-                // need to remove only the specific destination.
+            if let Some(flow_idx) =
+                flows.iter().position(|flow| flow.name == msg_name)
+            {
                 let flow = &mut flows[flow_idx];
 
                 // Find the destination to remove.
                 let dest_idx = flow.dest.iter().position(|dest| {
                     dest.loc.app == dest_app
-                        && (dest.loc.extension.as_ref()
-                            == Some(&dest_extension))
+                        && dest.loc.extension.as_ref() == Some(&dest_extension)
                 });
 
                 if let Some(dest_idx) = dest_idx {
@@ -137,7 +130,15 @@ fn graph_delete_connection(
                         graph.connections = None;
                     }
 
-                    return Ok(());
+                    // Validate the updated graph.
+                    match graph.validate_and_complete_and_flatten(None) {
+                        Ok(_) => return Ok(()),
+                        Err(e) => {
+                            // Restore the original graph if validation fails.
+                            *graph = original_graph;
+                            return Err(e);
+                        }
+                    }
                 }
             }
         }

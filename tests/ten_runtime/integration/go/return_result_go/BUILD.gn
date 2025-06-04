@@ -26,6 +26,8 @@ ten_package_test_prepare_app("return_result_go_app") {
   ]
 
   if (ten_enable_go_app_leak_check) {
+    replace_paths_after_install_app += [ "return_result_go_app/main_with_leak_check.go=>return_result_go_app/main.go" ]
+  } else {
     replace_paths_after_install_app += [ "return_result_go_app/main.go" ]
   }
 
