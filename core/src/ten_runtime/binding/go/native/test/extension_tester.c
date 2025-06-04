@@ -336,6 +336,20 @@ void ten_go_extension_tester_finalize(ten_go_extension_tester_t *self) {
   ten_go_bridge_destroy_go_part(&self->bridge);
 }
 
+ten_go_error_t ten_go_extension_tester_set_timeout(
+    ten_go_extension_tester_t *extension_tester, uint64_t timeout_us) {
+  TEN_ASSERT(ten_go_extension_tester_check_integrity(extension_tester),
+             "Should not happen.");
+
+  ten_go_error_t cgo_error;
+  TEN_GO_ERROR_INIT(cgo_error);
+
+  ten_extension_tester_set_timeout(extension_tester->c_extension_tester,
+                                   timeout_us);
+
+  return cgo_error;
+}
+
 ten_go_error_t ten_go_extension_tester_set_test_mode_single(
     ten_go_extension_tester_t *extension_tester, const void *addon_name,
     int addon_name_len, const void *property_json, int property_json_len) {
@@ -380,7 +394,12 @@ ten_go_error_t ten_go_extension_tester_run(
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_extension_tester_run(extension_tester->c_extension_tester);
+  ten_error_t error;
+  TEN_ERROR_INIT(error);
+
+  ten_extension_tester_run(extension_tester->c_extension_tester, &error);
+
+  ten_go_error_set_from_error(&cgo_error, &error);
 
   return cgo_error;
 }

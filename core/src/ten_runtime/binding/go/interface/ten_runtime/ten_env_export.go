@@ -233,7 +233,7 @@ func tenGoSetPropertyCallback(
 	if result {
 		handlerObj(tenEnvObj, nil)
 	} else {
-		handlerObj(tenEnvObj, newTenError(
+		handlerObj(tenEnvObj, NewTenError(
 			ErrorCodeGeneric,
 			"Failed to set property",
 		))
@@ -268,7 +268,7 @@ func tenGoGetPropertyCallback(
 
 	valueObj, ok := handle(valueObjID).get().(*value)
 	if !ok {
-		handlerObj(tenEnvObj, nil, newTenError(
+		handlerObj(tenEnvObj, nil, NewTenError(
 			ErrorCodeGeneric,
 			"Failed to get property",
 		))

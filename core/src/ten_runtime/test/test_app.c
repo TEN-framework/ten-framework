@@ -7,8 +7,8 @@
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/ten_env/metadata.h"
 #include "include_internal/ten_runtime/test/extension_tester.h"
+#include "include_internal/ten_runtime/timer/timer.h"
 #include "ten_runtime/ten_env/ten_env.h"
-#include "ten_utils/container/list.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/mark.h"
 
@@ -120,8 +120,18 @@ static void ten_extension_tester_on_test_app_deinit_task(void *self_,
 
   tester->test_app_ten_env_proxy = NULL;
 
-  TEN_LOGI("Stopping tester's runloop");
-  ten_runloop_stop(tester->tester_runloop);
+  if (tester->timeout_timer) {
+    ten_timer_stop_async(tester->timeout_timer);
+    ten_timer_close_async(tester->timeout_timer);
+  }
+
+  if (ten_extension_tester_could_be_closed(tester)) {
+    ten_extension_tester_do_close(tester);
+  } else {
+    TEN_LOGI(
+        "Tester's runloop is still running, waiting for the timeout timer "
+        "to be closed");
+  }
 }
 
 static void test_app_on_deinit(ten_app_t *app, ten_env_t *ten_env) {

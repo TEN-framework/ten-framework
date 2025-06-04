@@ -220,7 +220,7 @@ TEN_UTILS_API void ten_runloop_flush_task(ten_runloop_t *loop);
  * @return The timer. NULL if failed.
  */
 TEN_UTILS_API ten_runloop_timer_t *ten_runloop_timer_create(const char *type,
-                                                            uint64_t timeout,
+                                                            uint64_t timeout_ms,
                                                             uint64_t periodic);
 
 /**
@@ -232,7 +232,7 @@ TEN_UTILS_API ten_runloop_timer_t *ten_runloop_timer_create(const char *type,
  * @note Will not take effect immediately if already started.
  */
 TEN_UTILS_API int ten_runloop_timer_set_timeout(ten_runloop_timer_t *timer,
-                                                uint64_t timeout,
+                                                uint64_t timeout_ms,
                                                 uint64_t periodic);
 
 /**

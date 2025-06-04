@@ -71,7 +71,7 @@ typedef struct ten_runloop_timer_t {
    */
   ten_runloop_t *loop;
 
-  uint64_t timeout;
+  uint64_t timeout_ms;
   uint64_t periodic;
 
   /**
