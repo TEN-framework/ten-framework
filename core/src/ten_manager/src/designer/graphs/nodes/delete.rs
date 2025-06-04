@@ -29,8 +29,10 @@ pub struct DeleteGraphNodeRequestPayload {
 
     pub name: String,
     pub addon: String,
-    pub extension_group: Option<String>,
     pub app: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension_group: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
