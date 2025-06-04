@@ -46,8 +46,6 @@ import {
 import { LogViewerPopupTitle } from "../LogViewer";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Separator } from "@/components/ui/Separator";
-// eslint-disable-next-line max-len
-import { RTCInteractionPopupTitle } from "@/components/AppBar/Menu/ExtensionMenu";
 import { addRecentRunApp } from "@/api/services/storage";
 
 export const AppFolderPopupTitle = () => {
@@ -209,7 +207,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         category: EWidgetCategory.Default,
         display_type: EWidgetDisplayType.Popup,
 
-        title: <RTCInteractionPopupTitle />,
+        title: t("rtcInteraction.title"),
         metadata: {
           type: EDefaultWidgetType.RTCInteraction,
         },

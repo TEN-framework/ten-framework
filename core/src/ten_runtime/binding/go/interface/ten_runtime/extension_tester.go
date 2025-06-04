@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"time"
 	"unsafe"
 )
 
@@ -79,6 +80,7 @@ type extTester struct {
 // ExtensionTester is the interface for the extension tester.
 type ExtensionTester interface {
 	SetTestModeSingle(addonName string, propertyJSONStr string) error
+	SetTimeout(timeout time.Duration) error
 	Run() error
 }
 
@@ -99,6 +101,15 @@ func (p *extTester) SetTestModeSingle(
 	return withCGoError(&cStatus)
 }
 
+func (p *extTester) SetTimeout(timeout time.Duration) error {
+	cStatus := C.ten_go_extension_tester_set_timeout(
+		p.cPtr,
+		C.uint64_t(timeout.Microseconds()),
+	)
+
+	return withCGoError(&cStatus)
+}
+
 func (p *extTester) Run() error {
 	cStatus := C.ten_go_extension_tester_run(p.cPtr)
 
@@ -110,7 +121,7 @@ func NewExtensionTester(
 	iExtensionTester IExtensionTester,
 ) (ExtensionTester, error) {
 	if iExtensionTester == nil {
-		return nil, newTenError(
+		return nil, NewTenError(
 			ErrorCodeInvalidArgument,
 			"iExtensionTester is nil",
 		)

@@ -83,7 +83,7 @@ export const TrulienceConfigWidgetContent = (_props: { widget: IWidget }) => {
   ];
 
   return (
-    <div className="flex flex-col gap-2 h-full w-full">
+    <div className="flex flex-col gap-2 h-full w-full overflow-y-auto">
       <>
         <AutoForm
           onSubmit={async (data) => {

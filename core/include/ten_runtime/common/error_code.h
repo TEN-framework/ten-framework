@@ -35,6 +35,9 @@ typedef enum TEN_ERROR_CODE {
 
   // The msg is not connected in the graph.
   TEN_ERROR_CODE_MSG_NOT_CONNECTED = 7,
+
+  // Timeout.
+  TEN_ERROR_CODE_TIMEOUT = 8,
 } TEN_ERROR_CODE;
 
 static_assert(

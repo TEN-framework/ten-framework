@@ -67,7 +67,7 @@ func TestPropertyTypeMismatch(t *testing.T) {
 		var e *TenError
 		if errors.As(err, &e) {
 			// Error from runtime.
-			if e.ErrorCode() != 1 {
+			if e.ErrorCode != 1 {
 				t.FailNow()
 			}
 		} else {
@@ -91,7 +91,7 @@ func TestPropertyTypeMismatch2(t *testing.T) {
 	} else {
 		var e *TenError
 		if errors.As(err, &e) {
-			if e.ErrorCode() != ErrorCodeInvalidType {
+			if e.ErrorCode != ErrorCodeInvalidType {
 				t.FailNow()
 			}
 		} else {
