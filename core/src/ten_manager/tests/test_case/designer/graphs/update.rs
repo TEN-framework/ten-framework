@@ -163,6 +163,7 @@ mod tests {
                 .collect(),
             connections: connections.clone(),
             exposed_messages: vec![],
+            auto_start: None,
         };
 
         // Make the request.
@@ -240,6 +241,7 @@ mod tests {
             nodes: vec![],
             connections: vec![],
             exposed_messages: vec![],
+            auto_start: None,
         };
 
         // Make the request.
@@ -366,6 +368,7 @@ mod tests {
                 .collect(),
             connections,
             exposed_messages: vec![],
+            auto_start: None,
         };
 
         // Make the request.

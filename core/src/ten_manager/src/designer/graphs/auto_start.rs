@@ -15,7 +15,8 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::graphs_cache_find_by_id_mut,
+    graph::{graphs_cache_find_by_id_mut, update_graph_all_fields},
+    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub async fn update_graph_auto_start_endpoint(
     request_payload: web::Json<UpdateGraphAutoStartRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
+    let mut pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
 
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -55,6 +57,28 @@ pub async fn update_graph_auto_start_endpoint(
 
     // Update the auto_start field
     graph_info.auto_start = Some(request_payload.auto_start);
+
+    // Try to update property.json file with the auto_start change
+    if let Ok(Some(pkg_info)) =
+        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
+    {
+        if let (Some(app_base_dir), Some(property), Some(graph_name)) =
+            (&graph_info.app_base_dir, &mut pkg_info.property, &graph_info.name)
+        {
+            if let Err(e) = update_graph_all_fields(
+                app_base_dir,
+                &mut property.all_fields,
+                graph_name,
+                &graph_info.graph.nodes,
+                graph_info.graph.connections.as_ref().unwrap_or(&vec![]),
+                graph_info.graph.exposed_messages.as_ref().unwrap_or(&vec![]),
+                graph_info.graph.exposed_properties.as_ref().unwrap_or(&vec![]),
+                Some(request_payload.auto_start),
+            ) {
+                eprintln!("Warning: Failed to update property.json file: {e}");
+            }
+        }
+    }
 
     let response = ApiResponse {
         status: Status::Ok,
