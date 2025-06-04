@@ -12,10 +12,14 @@ import {
 } from "@/components/ui/NavigationMenu";
 import { ModeToggle } from "@/components/ModeToggle";
 import { LanguageToggle } from "@/components/LangSwitch";
-import { AppMenu } from "@/components/AppBar/Menu/AppMenu";
-import { GraphMenu } from "@/components/AppBar/Menu/GraphMenu";
-import { DesignerMenu } from "@/components/AppBar/Menu/DesignerMenu";
-import { ExtensionMenu } from "@/components/AppBar/Menu/ExtensionMenu";
+import {
+  AppMenu,
+  GraphMenu,
+  DesignerMenu,
+  ExtensionMenu,
+  TenAgentToolsMenu,
+} from "@/components/AppBar/Menu";
+import { Separator } from "@/components/ui/Separator";
 import { AppStatus } from "@/components/AppBar/AppStatus";
 import { GHStargazersCount, GHTryTENAgent } from "@/components/Widget/GH";
 import { Version } from "@/components/AppBar/Version";
@@ -119,6 +123,12 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
           <ExtensionMenu
             disableMenuClick={disableMenuClick}
             idx={3}
+            triggerListRef={targetMenuListRef}
+          />
+          <Separator orientation="vertical" className="h-6" />
+          <TenAgentToolsMenu
+            disableMenuClick={disableMenuClick}
+            idx={4}
             triggerListRef={targetMenuListRef}
           />
         </NavigationMenuList>

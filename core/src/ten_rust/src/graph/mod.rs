@@ -325,22 +325,19 @@ impl Graph {
 
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
-        // the flatten_graph method will return an appropriate error
+        // the flatten_graph method will return an appropriate error.
         if let Some(flattened) = self.flatten_graph(
-            &|uri: &str,
-              base_dir: Option<&str>,
-              new_base_dir: &mut Option<String>| {
-                crate::graph::graph_info::load_graph_from_uri(
-                    uri,
-                    base_dir,
-                    new_base_dir,
-                )
-            },
+            &crate::graph::graph_info::load_graph_from_uri,
             current_base_dir,
         )? {
             // Replace current graph with flattened version
             *self = flattened;
         }
+
+        // After flattening, there should basically be no logic that requires
+        // current_base_dir, so passing None here should not cause
+        // errors, and we can use this for validation.
+        self.validate_and_complete(None)?;
 
         Ok(())
     }

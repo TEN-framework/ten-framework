@@ -32,7 +32,8 @@ void ten_error_init(ten_error_t *self) {
 }
 
 void ten_error_deinit(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   ten_string_deinit(&self->error_message);
 }
@@ -47,7 +48,8 @@ ten_error_t *ten_error_create(void) {
 }
 
 void ten_error_copy(ten_error_t *self, ten_error_t *other) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
   TEN_ASSERT(other && ten_error_check_integrity(other), "Invalid argument");
 
   self->error_code = other->error_code;
@@ -55,7 +57,8 @@ void ten_error_copy(ten_error_t *self, ten_error_t *other) {
 }
 
 bool ten_error_prepend_error_message(ten_error_t *self, const char *fmt, ...) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   va_list ap;
   va_start(ap, fmt);
@@ -66,7 +69,8 @@ bool ten_error_prepend_error_message(ten_error_t *self, const char *fmt, ...) {
 }
 
 bool ten_error_append_error_message(ten_error_t *self, const char *fmt, ...) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   va_list ap;
   va_start(ap, fmt);
@@ -102,32 +106,53 @@ bool ten_error_vset(ten_error_t *self, ten_error_code_t error_code,
 }
 
 ten_error_code_t ten_error_code(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
   return self->error_code;
 }
 
 const char *ten_error_message(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   return ten_string_get_raw_str(&self->error_message);
 }
 
+void ten_error_set_error_code(ten_error_t *self, ten_error_code_t error_code) {
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
+
+  self->error_code = error_code;
+}
+
+void ten_error_set_error_message(ten_error_t *self, const char *error_message) {
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(error_message, "Invalid argument");
+
+  ten_string_clear(&self->error_message);
+  ten_string_set_from_c_str(&self->error_message, error_message);
+}
+
 void ten_error_reset(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   self->error_code = TEN_ERROR_CODE_OK;
   ten_string_clear(&self->error_message);
 }
 
 void ten_error_destroy(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   ten_error_deinit(self);
   TEN_FREE(self);
 }
 
 bool ten_error_is_success(ten_error_t *self) {
-  TEN_ASSERT(self && ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
 
   return self->error_code == TEN_ERROR_CODE_OK;
 }

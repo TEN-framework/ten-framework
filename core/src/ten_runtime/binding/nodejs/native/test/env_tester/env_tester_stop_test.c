@@ -21,7 +21,7 @@ static void ten_env_tester_proxy_notify_stop_test(
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_env_tester_stop_test(ten_env_tester, &err);
+  bool rc = ten_env_tester_stop_test(ten_env_tester, NULL, &err);
   TEN_ASSERT(rc, "Should not happen.");
 
   ten_error_deinit(&err);

@@ -38,6 +38,10 @@ class extension_tester_t {
   extension_tester_t &operator=(const extension_tester_t &&) = delete;
   // @}
 
+  void set_timeout(uint64_t timeout_us) {
+    ten_extension_tester_set_timeout(c_extension_tester, timeout_us);
+  }
+
   void set_test_mode_single(const char *addon_name,
                             const char *property_json_str = nullptr) {
     TEN_ASSERT(addon_name, "Invalid argument.");
@@ -52,7 +56,8 @@ class extension_tester_t {
 
   bool run(error_t *err = nullptr) {
     TEN_ASSERT(c_extension_tester, "Should not happen.");
-    return ten_extension_tester_run(c_extension_tester);
+    return ten_extension_tester_run(
+        c_extension_tester, err != nullptr ? err->get_c_error() : nullptr);
   }
 
  protected:

@@ -102,7 +102,7 @@ func (p *tenEnv) attachToApp() {
 
 func (p *tenEnv) SendCmd(cmd Cmd, handler ResultHandler) error {
 	if cmd == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd is required.",
 		)
@@ -133,7 +133,7 @@ func (p *tenEnv) sendCmd(cmd Cmd, handler ResultHandler) error {
 
 func (p *tenEnv) SendCmdEx(cmd Cmd, handler ResultHandler) error {
 	if cmd == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd is required.",
 		)
@@ -185,7 +185,7 @@ func tenGoCAsyncApiCallback(
 
 func (p *tenEnv) SendData(data Data, handler ErrorHandler) error {
 	if data == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"data is required.",
 		)
@@ -221,7 +221,7 @@ func (p *tenEnv) SendVideoFrame(
 	handler ErrorHandler,
 ) error {
 	if videoFrame == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"videoFrame is required.",
 		)
@@ -256,7 +256,7 @@ func (p *tenEnv) SendAudioFrame(
 	handler ErrorHandler,
 ) error {
 	if audioFrame == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"audioFrame is required.",
 		)

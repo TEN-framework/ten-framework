@@ -159,6 +159,7 @@ pub fn update_graph_endpoint(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_graph_all_fields(
     pkg_url: &str,
     property_all_fields: &mut serde_json::Map<String, serde_json::Value>,
@@ -167,6 +168,7 @@ pub fn update_graph_all_fields(
     connections: &[GraphConnection],
     exposed_messages: &[GraphExposedMessage],
     exposed_properties: &[GraphExposedProperty],
+    auto_start: Option<bool>,
 ) -> Result<()> {
     // Get ten object if it exists.
     let ten_field_str = get_ten_field_string();
@@ -232,6 +234,14 @@ pub fn update_graph_all_fields(
             graph_obj.insert(
                 "exposed_properties".to_string(),
                 exposed_properties_value,
+            );
+        }
+
+        // Update auto_start if provided.
+        if let Some(auto_start_value) = auto_start {
+            graph_obj.insert(
+                "auto_start".to_string(),
+                serde_json::Value::Bool(auto_start_value),
             );
         }
 

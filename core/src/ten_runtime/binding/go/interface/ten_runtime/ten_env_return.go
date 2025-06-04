@@ -15,7 +15,7 @@ func (p *tenEnv) ReturnResult(
 	handler ErrorHandler,
 ) error {
 	if statusCmd == nil {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"cmd result is required.",
 		)

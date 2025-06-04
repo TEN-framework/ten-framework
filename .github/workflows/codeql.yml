@@ -5,6 +5,8 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+    paths-ignore:
+      - "ai_agents/**"
   schedule:
     - cron: "35 3 * * 1"
 

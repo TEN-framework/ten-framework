@@ -25,5 +25,8 @@ ten_go_error_t ten_go_extension_tester_set_test_mode_single(
     int addon_name_len, const void *property_json_str,
     int property_json_str_len);
 
+ten_go_error_t ten_go_extension_tester_set_timeout(
+    ten_go_extension_tester_t *extension_tester, uint64_t timeout_us);
+
 ten_go_error_t ten_go_extension_tester_run(
     ten_go_extension_tester_t *extension_tester);

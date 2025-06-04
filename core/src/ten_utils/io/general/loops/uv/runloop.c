@@ -624,7 +624,7 @@ static int ten_runloop_timer_uv_start(
   }
 
   int rc = uv_timer_start(&timer_impl->uv_timer, uv_timer_callback,
-                          base->timeout, base->periodic);
+                          base->timeout_ms, base->periodic);
   TEN_ASSERT(!rc, "uv_timer_start() failed: %d", rc);
 
   return rc;

@@ -763,7 +763,7 @@ void ten_runloop_flush_task(ten_runloop_t *loop) {
 }
 
 ten_runloop_timer_t *ten_runloop_timer_create(const char *type,
-                                              uint64_t timeout,
+                                              uint64_t timeout_ms,
                                               uint64_t periodic) {
   const char *name = type ? type : get_default_impl();
   ten_runloop_timer_common_t *impl = NULL;
@@ -786,14 +786,14 @@ ten_runloop_timer_t *ten_runloop_timer_create(const char *type,
   ten_sanitizer_thread_check_init_with_current_thread(&impl->base.thread_check);
 
   impl->base.loop = NULL;
-  impl->base.timeout = timeout;
+  impl->base.timeout_ms = timeout_ms;
   impl->base.periodic = periodic;
 
   return &impl->base;
 }
 
-int ten_runloop_timer_set_timeout(ten_runloop_timer_t *timer, uint64_t timeout,
-                                  uint64_t periodic) {
+int ten_runloop_timer_set_timeout(ten_runloop_timer_t *timer,
+                                  uint64_t timeout_ms, uint64_t periodic) {
   TEN_ASSERT(timer, "Invalid argument.");
   TEN_ASSERT(ten_runloop_timer_check_integrity(timer, true),
              "Invalid argument.");
@@ -804,7 +804,7 @@ int ten_runloop_timer_set_timeout(ten_runloop_timer_t *timer, uint64_t timeout,
     return -1;
   }
 
-  impl->base.timeout = timeout;
+  impl->base.timeout_ms = timeout_ms;
   impl->base.periodic = periodic;
   return 0;
 }
