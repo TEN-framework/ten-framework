@@ -86,6 +86,10 @@ class DefaultExtension(Extension):
             if self.stopping and self.register_count == 0:
                 ten_env.log_info("received unregister cmd, marking stop done")
                 ten_env.on_stop_done()
+        else:
+            ten_env.log_info("Unknown cmd: " + cmd.get_name())
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            ten_env.return_result(cmd_result)
 
     def on_stop(self, ten_env: TenEnv) -> None:
         self.stopping = True

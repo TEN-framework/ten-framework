@@ -13,6 +13,7 @@ import {
   Cmd,
   StatusCode,
   CmdResult,
+  TenError,
 } from "ten-runtime-nodejs";
 
 class HttpServerExtension extends Extension {
@@ -86,10 +87,10 @@ class HttpServerExtension extends Extension {
           cmd.setPropertyString("url", req.url!);
 
           this.tenEnv!.sendCmd(cmd).then(
-            ([cmdResult, error]: [CmdResult | null, Error | null]) => {
+            ([cmdResult, error]: [CmdResult | null, TenError | null]) => {
               if (error) {
                 res.writeHead(500, { "Content-Type": "text/plain" });
-                res.end("Error: " + error.message);
+                res.end("Error: " + error.errorMessage);
               } else {
                 if (cmdResult?.getStatusCode() == StatusCode.OK) {
                   const [detail, err] = cmdResult!.getPropertyToJson("detail");

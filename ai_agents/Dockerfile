@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.6.1 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.6.4 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 # Add a new argument for USE_AGENT (defaulting to 'agents/examples/default')
@@ -10,23 +10,23 @@ COPY . .
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
 RUN task clean && task use AGENT=${USE_AGENT} && \
-    cd agents && ./scripts/package.sh
+  cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
-    libasound2 \
-    libgstreamer1.0-dev \
-    libunwind-dev \
-    libc++1 \
-    libssl-dev \
-    python3 \
-    python3-venv \
-    python3-pip \
-    python3-dev \
-    jq vim \
-    ca-certificates \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
+  libasound2 \
+  libgstreamer1.0-dev \
+  libunwind-dev \
+  libc++1 \
+  libssl-dev \
+  python3 \
+  python3-venv \
+  python3-pip \
+  python3-dev \
+  jq vim \
+  ca-certificates \
+  && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
 WORKDIR /app
 

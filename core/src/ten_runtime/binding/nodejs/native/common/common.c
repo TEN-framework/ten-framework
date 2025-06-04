@@ -287,33 +287,6 @@ done:
   return js_instance;
 }
 
-napi_value ten_nodejs_create_error(napi_env env, ten_error_t *error) {
-  TEN_ASSERT(env, "Should not happen.");
-  TEN_ASSERT(error, "Should not happen.");
-
-  napi_value js_error = NULL;
-  napi_value _code = NULL;
-  napi_value _msg = NULL;
-
-  ten_string_t code_str;
-  ten_string_init_formatted(&code_str, "%d", ten_error_code(error));
-
-  napi_status status = napi_create_string_utf8(
-      env, ten_string_get_raw_str(&code_str), NAPI_AUTO_LENGTH, &_code);
-  TEN_ASSERT(status == napi_ok, "Failed to create JS string.");
-
-  ten_string_deinit(&code_str);
-
-  status = napi_create_string_utf8(env, ten_error_message(error),
-                                   NAPI_AUTO_LENGTH, &_msg);
-  TEN_ASSERT(status == napi_ok, "Failed to create JS string.");
-
-  status = napi_create_error(env, _code, _msg, &js_error);
-  TEN_ASSERT(status == napi_ok, "Failed to create JS error.");
-
-  return js_error;
-}
-
 napi_value ten_nodejs_create_value_number(napi_env env, ten_value_t *value,
                                           ten_error_t *error) {
   TEN_ASSERT(env, "Should not happen.");

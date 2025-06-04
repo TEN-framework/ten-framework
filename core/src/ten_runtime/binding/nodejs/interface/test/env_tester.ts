@@ -11,14 +11,15 @@ import { VideoFrame } from "../msg/video_frame.js";
 import { AudioFrame } from "../msg/audio_frame.js";
 import ten_addon from "../ten_addon.js";
 import { LogLevel } from "../ten_env/log_level.js";
+import { TenError } from "../error/error.js";
 
 export class TenEnvTester {
-  async sendCmd(cmd: Cmd): Promise<[CmdResult | null, Error | null]> {
-    return new Promise<[CmdResult | null, Error | null]>((resolve) => {
+  async sendCmd(cmd: Cmd): Promise<[CmdResult | null, TenError | null]> {
+    return new Promise<[CmdResult | null, TenError | null]>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_tester_send_cmd(
         this,
         cmd,
-        async (cmdResult: CmdResult | null, error: Error | null) => {
+        async (cmdResult: CmdResult | null, error: TenError | null) => {
           resolve([cmdResult, error]);
         },
       );
@@ -29,12 +30,12 @@ export class TenEnvTester {
     });
   }
 
-  async sendData(data: Data): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendData(data: Data): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_tester_send_data(
         this,
         data,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -45,12 +46,12 @@ export class TenEnvTester {
     });
   }
 
-  async sendVideoFrame(videoFrame: VideoFrame): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendVideoFrame(videoFrame: VideoFrame): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_tester_send_video_frame(
         this,
         videoFrame,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -61,12 +62,12 @@ export class TenEnvTester {
     });
   }
 
-  async sendAudioFrame(audioFrame: AudioFrame): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendAudioFrame(audioFrame: AudioFrame): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_tester_send_audio_frame(
         this,
         audioFrame,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -77,12 +78,12 @@ export class TenEnvTester {
     });
   }
 
-  async returnResult(cmdResult: CmdResult): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async returnResult(cmdResult: CmdResult): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_tester_return_result(
         this,
         cmdResult,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -93,35 +94,43 @@ export class TenEnvTester {
     });
   }
 
-  stopTest(): Error | null {
-    return ten_addon.ten_nodejs_ten_env_tester_stop_test(this);
+  stopTest(result: TenError | null = null): TenError | null {
+    if (result) {
+      return ten_addon.ten_nodejs_ten_env_tester_stop_test(
+        this,
+        result.errorCode,
+        result.errorMessage,
+      );
+    }
+
+    return ten_addon.ten_nodejs_ten_env_tester_stop_test(this, 0, "");
   }
 
-  logVerbose(message: string): Error | null {
+  logVerbose(message: string): TenError | null {
     return this.log_internal(LogLevel.VERBOSE, message);
   }
 
-  logDebug(message: string): Error | null {
+  logDebug(message: string): TenError | null {
     return this.log_internal(LogLevel.DEBUG, message);
   }
 
-  logInfo(message: string): Error | null {
+  logInfo(message: string): TenError | null {
     return this.log_internal(LogLevel.INFO, message);
   }
 
-  logWarn(message: string): Error | null {
+  logWarn(message: string): TenError | null {
     return this.log_internal(LogLevel.WARN, message);
   }
 
-  logError(message: string): Error | null {
+  logError(message: string): TenError | null {
     return this.log_internal(LogLevel.ERROR, message);
   }
 
-  logFatal(message: string): Error | null {
+  logFatal(message: string): TenError | null {
     return this.log_internal(LogLevel.FATAL, message);
   }
 
-  private log_internal(level: number, message: string): Error | null {
+  private log_internal(level: number, message: string): TenError | null {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
     const stack_ = new Error().stack as unknown as NodeJS.CallSite[];

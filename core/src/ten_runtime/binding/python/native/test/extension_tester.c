@@ -420,6 +420,32 @@ static PyObject *ten_py_extension_tester_set_test_mode_single(PyObject *self,
   Py_RETURN_NONE;
 }
 
+static PyObject *ten_py_extension_tester_set_timeout(PyObject *self,
+                                                     PyObject *args) {
+  ten_py_extension_tester_t *py_extension_tester =
+      (ten_py_extension_tester_t *)self;
+  TEN_ASSERT(py_extension_tester &&
+                 ten_py_extension_tester_check_integrity(py_extension_tester),
+             "Invalid argument.");
+
+  if (PyTuple_GET_SIZE(args) != 1) {
+    return ten_py_raise_py_value_error_exception(
+        "Invalid argument count when extension_tester.set_timeout.");
+  }
+
+  uint64_t timeout_us = 0;
+  if (!PyArg_ParseTuple(args, "K", &timeout_us)) {
+    return ten_py_raise_py_value_error_exception(
+        "Failed to parse arguments when "
+        "extension_tester.set_timeout.");
+  }
+
+  ten_extension_tester_set_timeout(py_extension_tester->c_extension_tester,
+                                   timeout_us);
+
+  Py_RETURN_NONE;
+}
+
 static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
@@ -432,21 +458,27 @@ static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
 
   PyThreadState *saved_py_thread_state = PyEval_SaveThread();
 
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  ten_py_error_t *py_error = NULL;
+
   // This ia a blocking operation.
   bool rc =
-      ten_extension_tester_run(py_extension_tester->c_extension_tester, NULL);
+      ten_extension_tester_run(py_extension_tester->c_extension_tester, &err);
+  if (!rc) {
+    py_error = ten_py_error_wrap(&err);
+  }
 
   PyEval_RestoreThread(saved_py_thread_state);
 
   TEN_LOGI("ten_py_extension_tester_run done: %d", rc);
 
-  if (!rc) {
-    return ten_py_raise_py_runtime_error_exception(
-        "Failed to run ten_extension_tester.");
-  }
+  ten_error_deinit(&err);
 
-  bool err_occurred = ten_py_check_and_clear_py_error();
-  TEN_ASSERT(!err_occurred, "Should not happen.");
+  if (py_error) {
+    return (PyObject *)py_error;
+  }
 
   Py_RETURN_NONE;
 }
@@ -455,6 +487,7 @@ PyTypeObject *ten_py_extension_tester_py_type(void) {
   static PyMethodDef py_methods[] = {
       {"set_test_mode_single", ten_py_extension_tester_set_test_mode_single,
        METH_VARARGS, NULL},
+      {"set_timeout", ten_py_extension_tester_set_timeout, METH_VARARGS, NULL},
       {"run", ten_py_extension_tester_run, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
   };

@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
@@ -53,7 +54,7 @@ static void tsfn_proxy_init_property_from_json_callback(napi_env env,
   napi_value js_error = NULL;
 
   if (call_info->error) {
-    js_error = ten_nodejs_create_error(env, call_info->error);
+    js_error = ten_nodejs_error_wrap(env, call_info->error);
     ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
   } else {
     js_error = js_undefined(env);
@@ -144,7 +145,7 @@ napi_value ten_nodejs_ten_env_init_property_from_json(napi_env env,
         &err, TEN_ERROR_CODE_TEN_IS_CLOSED,
         "ten_env.initPropertyFromJson() failed because ten is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -171,7 +172,7 @@ napi_value ten_nodejs_ten_env_init_property_from_json(napi_env env,
                             ten_env_proxy_notify_init_property_from_json,
                             notify_info, false, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_env_notify_init_property_from_json_ctx_destroy(notify_info);

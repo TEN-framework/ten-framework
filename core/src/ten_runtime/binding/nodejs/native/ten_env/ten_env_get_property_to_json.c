@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
@@ -27,12 +28,12 @@ static void tsfn_proxy_get_property_to_json_callback(napi_env env,
   ten_value_t *value = ctx->value;
   if (!value) {
     if (ctx->error) {
-      js_error = ten_nodejs_create_error(env, ctx->error);
+      js_error = ten_nodejs_error_wrap(env, ctx->error);
       ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
     } else {
       ten_error_set(&err, TEN_ERROR_CODE_GENERIC,
                     "Failed to get property value");
-      js_error = ten_nodejs_create_error(env, &err);
+      js_error = ten_nodejs_error_wrap(env, &err);
       ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
     }
   } else {
@@ -41,7 +42,7 @@ static void tsfn_proxy_get_property_to_json_callback(napi_env env,
     if (!success) {
       ten_error_set(&err, TEN_ERROR_CODE_GENERIC,
                     "Failed to convert property value to JSON");
-      js_error = ten_nodejs_create_error(env, &err);
+      js_error = ten_nodejs_error_wrap(env, &err);
       ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
     } else {
       bool must_free = false;
@@ -110,7 +111,7 @@ napi_value ten_nodejs_ten_env_get_property_to_json(napi_env env,
         &err, TEN_ERROR_CODE_TEN_IS_CLOSED,
         "ten_env.get_property_to_json() failed because ten is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -135,7 +136,7 @@ napi_value ten_nodejs_ten_env_get_property_to_json(napi_env env,
   rc = ten_nodejs_ten_env_peek_property_value(
       ten_env_bridge, ten_string_get_raw_str(&name), cb_tsfn, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     // The JS callback will not be called, so we need to clean up the tsfn.

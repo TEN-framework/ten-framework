@@ -11,14 +11,15 @@ import { CmdResult } from "../msg/cmd_result.js";
 import { Data } from "../msg/data.js";
 import ten_addon from "../ten_addon.js";
 import { LogLevel } from "./log_level.js";
+import { TenError } from "../error/error.js";
 
 export class TenEnv {
-  async sendCmd(cmd: Cmd): Promise<[CmdResult | null, Error | null]> {
-    return new Promise<[CmdResult | null, Error | null]>((resolve) => {
+  async sendCmd(cmd: Cmd): Promise<[CmdResult | null, TenError | null]> {
+    return new Promise<[CmdResult | null, TenError | null]>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_cmd(
         this,
         cmd,
-        async (cmdResult: CmdResult | null, error: Error | null) => {
+        async (cmdResult: CmdResult | null, error: TenError | null) => {
           resolve([cmdResult, error]);
         },
       );
@@ -29,12 +30,12 @@ export class TenEnv {
     });
   }
 
-  async sendData(data: Data): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendData(data: Data): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_data(
         this,
         data,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -45,12 +46,12 @@ export class TenEnv {
     });
   }
 
-  async sendVideoFrame(videoFrame: VideoFrame): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendVideoFrame(videoFrame: VideoFrame): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_video_frame(
         this,
         videoFrame,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -61,12 +62,12 @@ export class TenEnv {
     });
   }
 
-  async sendAudioFrame(audioFrame: AudioFrame): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async sendAudioFrame(audioFrame: AudioFrame): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_audio_frame(
         this,
         audioFrame,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -77,12 +78,12 @@ export class TenEnv {
     });
   }
 
-  async returnResult(cmdResult: CmdResult): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async returnResult(cmdResult: CmdResult): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_return_result(
         this,
         cmdResult,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -105,12 +106,12 @@ export class TenEnv {
     });
   }
 
-  async getPropertyToJson(path: string): Promise<[string, Error | null]> {
-    return new Promise<[string, Error | null]>((resolve) => {
+  async getPropertyToJson(path: string): Promise<[string, TenError | null]> {
+    return new Promise<[string, TenError | null]>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_get_property_to_json(
         this,
         path,
-        async (result: string, error: Error | null) => {
+        async (result: string, error: TenError | null) => {
           resolve([result, error]);
         },
       );
@@ -124,13 +125,13 @@ export class TenEnv {
   async setPropertyFromJson(
     path: string,
     jsonStr: string,
-  ): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  ): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_set_property_from_json(
         this,
         path,
         jsonStr,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -141,12 +142,12 @@ export class TenEnv {
     });
   }
 
-  async getPropertyNumber(path: string): Promise<[number, Error | null]> {
-    return new Promise<[number, Error | null]>((resolve) => {
+  async getPropertyNumber(path: string): Promise<[number, TenError | null]> {
+    return new Promise<[number, TenError | null]>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_get_property_number(
         this,
         path,
-        async (result: number, error: Error | null) => {
+        async (result: number, error: TenError | null) => {
           resolve([result, error]);
         },
       );
@@ -157,13 +158,16 @@ export class TenEnv {
     });
   }
 
-  async setPropertyNumber(path: string, value: number): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async setPropertyNumber(
+    path: string,
+    value: number,
+  ): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_set_property_number(
         this,
         path,
         value,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -174,12 +178,12 @@ export class TenEnv {
     });
   }
 
-  async getPropertyString(path: string): Promise<[string, Error | null]> {
-    return new Promise<[string, Error | null]>((resolve) => {
+  async getPropertyString(path: string): Promise<[string, TenError | null]> {
+    return new Promise<[string, TenError | null]>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_get_property_string(
         this,
         path,
-        async (result: string, error: Error | null) => {
+        async (result: string, error: TenError | null) => {
           resolve([result, error]);
         },
       );
@@ -190,13 +194,16 @@ export class TenEnv {
     });
   }
 
-  async setPropertyString(path: string, value: string): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async setPropertyString(
+    path: string,
+    value: string,
+  ): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_set_property_string(
         this,
         path,
         value,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -207,12 +214,12 @@ export class TenEnv {
     });
   }
 
-  async initPropertyFromJson(jsonStr: string): Promise<Error | null> {
-    return new Promise<Error | null>((resolve) => {
+  async initPropertyFromJson(jsonStr: string): Promise<TenError | null> {
+    return new Promise<TenError | null>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_init_property_from_json(
         this,
         jsonStr,
-        async (error: Error | null) => {
+        async (error: TenError | null) => {
           resolve(error);
         },
       );
@@ -223,31 +230,31 @@ export class TenEnv {
     });
   }
 
-  logVerbose(message: string): Error | null {
+  logVerbose(message: string): TenError | null {
     return this.log_internal(LogLevel.VERBOSE, message);
   }
 
-  logDebug(message: string): Error | null {
+  logDebug(message: string): TenError | null {
     return this.log_internal(LogLevel.DEBUG, message);
   }
 
-  logInfo(message: string): Error | null {
+  logInfo(message: string): TenError | null {
     return this.log_internal(LogLevel.INFO, message);
   }
 
-  logWarn(message: string): Error | null {
+  logWarn(message: string): TenError | null {
     return this.log_internal(LogLevel.WARN, message);
   }
 
-  logError(message: string): Error | null {
+  logError(message: string): TenError | null {
     return this.log_internal(LogLevel.ERROR, message);
   }
 
-  logFatal(message: string): Error | null {
+  logFatal(message: string): TenError | null {
     return this.log_internal(LogLevel.FATAL, message);
   }
 
-  private log_internal(level: number, message: string): Error | null {
+  private log_internal(level: number, message: string): TenError | null {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
     const stack_ = new Error().stack as unknown as NodeJS.CallSite[];
