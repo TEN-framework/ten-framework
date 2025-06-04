@@ -19,6 +19,7 @@ import {
   ExtensionMenu,
   ExternalToolsMenu,
 } from "@/components/AppBar/Menu";
+import { Separator } from "@/components/ui/Separator";
 import { AppStatus } from "@/components/AppBar/AppStatus";
 import { GHStargazersCount, GHTryTENAgent } from "@/components/Widget/GH";
 import { Version } from "@/components/AppBar/Version";
@@ -124,6 +125,7 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
             idx={3}
             triggerListRef={targetMenuListRef}
           />
+          <Separator orientation="vertical" className="h-6" />
           <ExternalToolsMenu
             disableMenuClick={disableMenuClick}
             idx={4}
