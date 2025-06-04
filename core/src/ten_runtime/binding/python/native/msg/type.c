@@ -258,7 +258,7 @@ PyTypeObject *ten_py_error_py_type(void) {
       .tp_methods = py_methods,
       .tp_init = NULL,
       .tp_getset = NULL,
-      .tp_new = NULL,
+      .tp_new = ten_py_error_create,
   };
 
   return &py_type;

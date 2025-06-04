@@ -10,6 +10,7 @@ import {
   Extension,
   TenEnv,
   Cmd,
+  TenError,
 } from "ten-runtime-nodejs";
 
 function assert(condition: boolean, message: string) {
@@ -35,7 +36,7 @@ class DefaultExtension extends Extension {
     assert(aaaExist, "aaa not exist");
     assert(!bbbExist, "bbb exist");
 
-    let err: Error | null = null;
+    let err: TenError | null = null;
     let intValue: number;
     let floatValue: number;
     let nonExistNumValue: number;

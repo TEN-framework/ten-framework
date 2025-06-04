@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import asyncio
 from ten_runtime import (
     Cmd,
     Data,
@@ -13,6 +14,7 @@ from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
 )
+from ten_runtime.error import TenError, TenErrorCode
 
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):
@@ -44,11 +46,63 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
         ten_env.log_info("tester on_stop")
 
 
+class AsyncExtensionTesterFail(AsyncExtensionTester):
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
+        unknown_cmd = Cmd.create("unknown_cmd")
+
+        ten_env.log_info("send unknown_cmd")
+        result, error = await ten_env.send_cmd(
+            unknown_cmd,
+        )
+        if error is not None:
+            assert False, error
+
+        assert result is not None
+
+        statusCode = result.get_status_code()
+        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+
+        ten_env.log_info("tester on_start_done")
+
+        if statusCode == StatusCode.OK:
+            ten_env.stop_test()
+        else:
+            test_result = TenError.create(
+                TenErrorCode.ErrorCodeGeneric, "error response"
+            )
+            ten_env.stop_test(test_result)
+
+    async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
+        ten_env.log_info("tester on_stop")
+
+
+class AsyncExtensionTesterTimeout(AsyncExtensionTester):
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
+        await asyncio.sleep(3)
+        ten_env.stop_test()
+
+
 def test_basic():
     tester = AsyncExtensionTesterBasic()
     tester.set_test_mode_single("default_extension_python")
     tester.run()
 
 
-if __name__ == "__main__":
-    test_basic()
+def test_failure():
+    tester = AsyncExtensionTesterFail()
+    tester.set_test_mode_single("default_extension_python")
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeGeneric
+    assert err.error_message() == "error response"
+
+
+def test_timeout():
+    tester = AsyncExtensionTesterTimeout()
+    tester.set_test_mode_single("default_extension_python")
+    tester.set_timeout(1000 * 1000)  # 1s
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeTimeout

@@ -10,6 +10,7 @@ import { Cmd } from "../msg/cmd.js";
 import { VideoFrame } from "../msg/video_frame.js";
 import ten_addon from "../ten_addon.js";
 import { TenEnvTester } from "./env_tester.js";
+import { TenError } from "../error/error.js";
 
 export class ExtensionTester {
   constructor() {
@@ -63,7 +64,7 @@ export class ExtensionTester {
     return ten_addon.ten_nodejs_extension_tester_run(this);
   }
 
-  setTestModeSingle(addonName: string, propertyJsonStr: string): Error | null {
+  setTestModeSingle(addonName: string, propertyJsonStr: string): TenError | null {
     return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(
       this,
       addonName,
