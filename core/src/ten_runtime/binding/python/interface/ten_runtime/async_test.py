@@ -155,9 +155,6 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         err = await q.get()
         return err
 
-    def stop_test(self) -> None:
-        return self._internal.stop_test()
-
 
 class AsyncExtensionTester(_ExtensionTester):
     def __init__(self) -> None:
@@ -363,9 +360,13 @@ class AsyncExtensionTester(_ExtensionTester):
         )
 
     @final
-    def run(self) -> None:
+    def set_timeout(self, timeout_us: int) -> None:
+        return _ExtensionTester.set_timeout(self, timeout_us)
+
+    @final
+    def run(self) -> Optional[TenError]:
         # This is a blocking operation.
-        _ExtensionTester.run(self)
+        err = _ExtensionTester.run(self)
 
         # The `extension_tester` has two attributes.
         #
@@ -400,6 +401,8 @@ class AsyncExtensionTester(_ExtensionTester):
 
             # Wait for the asyncio thread to finish.
             self._ten_thread.join()
+
+        return err
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         pass

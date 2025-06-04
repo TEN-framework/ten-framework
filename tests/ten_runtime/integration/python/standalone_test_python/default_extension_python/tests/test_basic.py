@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import time
 from typing import Optional
 from ten_runtime import (
     ExtensionTester,
@@ -16,6 +17,7 @@ from ten_runtime import (
     StatusCode,
     TenError,
 )
+from ten_runtime.error import TenErrorCode
 
 
 class ExtensionTesterBasic(ExtensionTester):
@@ -59,11 +61,112 @@ class ExtensionTesterBasic(ExtensionTester):
         ten_env.on_stop_done()
 
 
+class ExtensionTesterFail(ExtensionTester):
+    def check_hello(
+        self,
+        ten_env: TenEnvTester,
+        result: Optional[CmdResult],
+        error: Optional[TenError],
+    ):
+        if error is not None:
+            assert False, error
+
+        assert result is not None
+
+        statusCode = result.get_status_code()
+        if statusCode == StatusCode.ERROR:
+            test_result = TenError.create(
+                TenErrorCode.ErrorCodeGeneric, "error response"
+            )
+            ten_env.stop_test(test_result)
+
+    def on_start(self, ten_env: TenEnvTester) -> None:
+        unknown_cmd = Cmd.create("unknown_cmd")
+        ten_env.send_cmd(
+            unknown_cmd,
+            lambda ten_env, result, error: self.check_hello(
+                ten_env, result, error
+            ),
+        )
+
+        ten_env.on_start_done()
+
+
+class ExtensionTesterFail2(ExtensionTester):
+    def check_hello(
+        self,
+        ten_env: TenEnvTester,
+        result: Optional[CmdResult],
+        error: Optional[TenError],
+    ):
+        if error is not None:
+            assert False, error
+
+        assert result is not None
+
+        statusCode = result.get_status_code()
+        if statusCode == StatusCode.ERROR:
+            test_result = TenError.create(TenErrorCode.ErrorCodeGeneric)
+            ten_env.stop_test(test_result)
+
+    def on_start(self, ten_env: TenEnvTester) -> None:
+        unknown_cmd = Cmd.create("unknown_cmd")
+        ten_env.send_cmd(
+            unknown_cmd,
+            lambda ten_env, result, error: self.check_hello(
+                ten_env, result, error
+            ),
+        )
+
+        ten_env.on_start_done()
+
+
+class ExtensionTesterTimeout(ExtensionTester):
+    def on_start(self, ten_env: TenEnvTester) -> None:
+        time.sleep(3)
+        ten_env.on_start_done()
+        ten_env.stop_test()
+
+
 def test_basic():
     tester = ExtensionTesterBasic()
     tester.set_test_mode_single("default_extension_python")
     tester.run()
 
 
-if __name__ == "__main__":
-    test_basic()
+def test_failure():
+    """
+    Test the case where the error message is provided.
+    """
+    tester = ExtensionTesterFail()
+    tester.set_test_mode_single("default_extension_python")
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeGeneric
+    assert err.error_message() == "error response"
+
+
+def test_failure2():
+    """
+    Test the case where the error message is not provided.
+    """
+    tester = ExtensionTesterFail2()
+    tester.set_test_mode_single("default_extension_python")
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeGeneric
+
+    # The error message is not provided, so it should be empty.
+    assert err.error_message() == ""
+
+
+def test_timeout():
+    tester = ExtensionTesterTimeout()
+    tester.set_test_mode_single("default_extension_python")
+    tester.set_timeout(1000 * 1000)  # 1s
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeTimeout

@@ -7,6 +7,7 @@
 #include "include/ten_runtime/common/error_code.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/tsfn.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "ten_runtime/common/error_code.h"
@@ -86,7 +87,7 @@ static void tsfn_proxy_return_result_callback(napi_env env, napi_value js_cb,
   napi_value js_error = NULL;
 
   if (ctx->error) {
-    js_error = ten_nodejs_create_error(env, ctx->error);
+    js_error = ten_nodejs_error_wrap(env, ctx->error);
     ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
   } else {
     js_error = js_undefined(env);
@@ -190,7 +191,7 @@ napi_value ten_nodejs_ten_env_tester_return_result(napi_env env,
                   "ten_env_tester.return_result() failed because "
                   "ten_env_tester is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -219,7 +220,7 @@ napi_value ten_nodejs_ten_env_tester_return_result(napi_env env,
       ten_env_tester_bridge->c_ten_env_tester_proxy,
       ten_env_tester_proxy_notify_return_result, notify_info, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     // The JS callback will not be called, so release the TSFN here.
