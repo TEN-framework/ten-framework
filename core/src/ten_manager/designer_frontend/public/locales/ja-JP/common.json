@@ -54,6 +54,9 @@
       "configTrulienceAvatar": "Trulienceアバターを設定",
       "about": "拡張機能について"
     },
+    "menuExternalTools": {
+      "title": "外部ツール"
+    },
     "language": {
       "title": "言語",
       "enUS": "English",
