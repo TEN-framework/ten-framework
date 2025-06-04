@@ -56,7 +56,10 @@ func TestGreetingTesterFailure(t *testing.T) {
 		t.FailNow()
 	}
 
-	tester.SetTestModeSingle("default_extension_go", "{\"greetingMsg\": \"im ok!\"}")
+	tester.SetTestModeSingle(
+		"default_extension_go",
+		"{\"greetingMsg\": \"im ok!\"}",
+	)
 	err = tester.Run()
 	if err != nil {
 		t.Logf("Expected error: %v", err)
