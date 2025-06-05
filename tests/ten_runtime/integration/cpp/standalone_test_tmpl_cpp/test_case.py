@@ -55,8 +55,8 @@ def test_standalone_test_tmpl_cpp():
         "--config-file",
         os.path.join(root_dir, "tests/local_registry/config.json"),
         "--yes",
-        "run",
-        "install_dev_deps",
+        "install",
+        "--standalone",
     ]
 
     tman_install_process = subprocess.Popen(
@@ -103,7 +103,7 @@ def test_standalone_test_tmpl_cpp():
     tgn_gen_rc = tgn_gen_process.wait()
     assert tgn_gen_rc == 0
 
-    # Step 3:
+    # Step 4:
     #
     # Execute tgn build to build the extension and its test cases.
     tgn_build_cmd = [
@@ -127,7 +127,7 @@ def test_standalone_test_tmpl_cpp():
     tgn_build_rc = tgn_build_process.wait()
     assert tgn_build_rc == 0
 
-    # Step 4:
+    # Step 5:
     #
     # Run standalone test cases.
 

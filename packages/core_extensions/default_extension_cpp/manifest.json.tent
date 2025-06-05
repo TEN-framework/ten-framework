@@ -11,6 +11,11 @@
       "type": "system",
       "name": "ten_runtime",
       "version": "0.10.11"
+    },
+    {
+      "type": "system",
+      "name": "googletest",
+      "version": "=1.7.0-rc2"
     }
   ],
   "package": {
@@ -20,8 +25,7 @@
   },
   "api": {},
   "scripts": {
-    "test": "tests/bin/start_test",
-    "install_dev_deps": "sh -c tman install --standalone && cd .ten/app && tman install system googletest@=1.7.0-rc2",
-    "build": "sh -c tgn gen linux x64 debug -- ten_enable_standalone_test=true && tgn build linux x64 debug"
+    "test": "python3 tools/run_script.py test",
+    "build": "python3 tools/run_script.py build"
   }
 }
