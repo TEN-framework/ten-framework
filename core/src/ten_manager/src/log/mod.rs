@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -22,11 +23,41 @@ pub struct GraphResourcesLog {
     pub extension_threads: HashMap<String, ExtensionThreadInfo>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum TenLogLevel {
+    Invalid,
+    Verbose,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal,
+    Mandatory,
+}
+
+impl FromStr for TenLogLevel {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "V" => Ok(TenLogLevel::Verbose),
+            "D" => Ok(TenLogLevel::Debug),
+            "I" => Ok(TenLogLevel::Info),
+            "W" => Ok(TenLogLevel::Warn),
+            "E" => Ok(TenLogLevel::Error),
+            "F" => Ok(TenLogLevel::Fatal),
+            "M" => Ok(TenLogLevel::Mandatory),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogLineMetadata {
     pub graph_id: Option<String>,
     pub graph_name: Option<String>,
     pub extension: Option<String>,
+    pub log_level: Option<TenLogLevel>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +106,12 @@ pub fn extract_extension_from_log_line(
         return None;
     }
 
+    // Parse the log level, if parsing fails, return None
+    let log_level = match parts[log_level_pos].parse::<TenLogLevel>() {
+        Ok(level) => Some(level),
+        Err(_) => return None,
+    };
+
     // Find the content part (everything after the function name part).
     let function_part = parts[log_level_pos + 1]; // This is the function@file:line part.
     if !function_part.contains('@') {
@@ -109,6 +146,7 @@ pub fn extract_extension_from_log_line(
                 graph_id: Some(graph_resources_log.graph_id.clone()),
                 graph_name: graph_resources_log.graph_name.clone(),
                 extension: Some(extension_name.to_string()),
+                log_level,
             });
         }
     }
