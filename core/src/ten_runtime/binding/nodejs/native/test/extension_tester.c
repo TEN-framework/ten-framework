@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/binding/nodejs/test/extension_tester.h"
 
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/audio_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/data.h"
@@ -23,6 +24,7 @@ typedef struct ten_nodejs_extension_tester_async_run_data_t {
   napi_deferred deferred;
   napi_async_work work;
   int async_action_status;
+  ten_error_t *test_result;
 } ten_nodejs_extension_tester_async_run_data_t;
 
 typedef struct ten_nodejs_extension_tester_on_xxx_call_info_t {
@@ -974,9 +976,16 @@ static void ten_nodejs_extension_tester_async_run_execute(napi_env env,
       (ten_nodejs_extension_tester_async_run_data_t *)data;
   TEN_ASSERT(async_run_data, "Should not happen.");
 
+  ten_error_t *test_result = ten_error_create();
+
   // Run the TEN extension tester.
-  ten_extension_tester_run(
-      async_run_data->extension_tester_bridge->c_extension_tester, NULL);
+  bool rc = ten_extension_tester_run(
+      async_run_data->extension_tester_bridge->c_extension_tester, test_result);
+  if (!rc) {
+    async_run_data->test_result = test_result;
+  } else {
+    ten_error_destroy(test_result);
+  }
 
   TEN_LOGI("ten_extension_tester_run run done");
 
@@ -1008,9 +1017,16 @@ static void ten_nodejs_extension_tester_async_run_complete(napi_env env,
 
   int async_action_status = async_run_data->async_action_status;
   if (async_action_status == 0) {
-    napi_resolve_deferred(env, async_run_data->deferred, js_undefined(env));
+    if (async_run_data->test_result) {
+      napi_value js_error =
+          ten_nodejs_error_wrap(env, async_run_data->test_result);
+      napi_resolve_deferred(env, async_run_data->deferred, js_error);
+      ten_error_destroy(async_run_data->test_result);
+    } else {
+      napi_resolve_deferred(env, async_run_data->deferred, js_null(env));
+    }
   } else {
-    napi_reject_deferred(env, async_run_data->deferred, js_undefined(env));
+    napi_reject_deferred(env, async_run_data->deferred, js_null(env));
   }
 
   // From now on, the JS on_xxx callback(s) are useless, so release them all.
@@ -1067,6 +1083,7 @@ static napi_value ten_nodejs_extension_tester_run(napi_env env,
 
   async_run_data->extension_tester_bridge = extension_tester_bridge;
   async_run_data->async_action_status = 1;
+  async_run_data->test_result = NULL;
 
   napi_value promise = NULL;
   status = napi_create_promise(env, &async_run_data->deferred, &promise);
@@ -1134,7 +1151,43 @@ static napi_value ten_nodejs_extension_tester_set_test_mode_single(
   ten_string_deinit(&mode);
   ten_string_deinit(&property_json_str);
 
-  return js_undefined(env);
+  return js_null(env);
+}
+
+static napi_value ten_nodejs_extension_tester_set_timeout(
+    napi_env env, napi_callback_info info) {
+  TEN_ASSERT(env && info, "Should not happen.");
+
+  const size_t argc = 2;
+  napi_value args[argc];  // this, usec
+
+  // If the function call fails, throw an exception directly, not expected to be
+  // caught by developers
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  // Get the TEN extension tester object.
+  ten_nodejs_extension_tester_t *extension_tester_bridge = NULL;
+  napi_status status =
+      napi_unwrap(env, args[0], (void **)&extension_tester_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(
+      status == napi_ok && extension_tester_bridge != NULL,
+      "Failed to get extension tester bridge: %d", status);
+
+  int64_t usec = 0;
+  status = napi_get_value_int64(env, args[1], &usec);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok, "Failed to get timeout: %d",
+                                status);
+
+  ten_extension_tester_set_timeout(extension_tester_bridge->c_extension_tester,
+                                   usec);
+
+  return js_null(env);
 }
 
 static napi_value ten_nodejs_extension_tester_on_end_of_life(
@@ -1188,6 +1241,7 @@ napi_value ten_nodejs_extension_tester_module_init(napi_env env,
   EXPORT_FUNC(env, exports, ten_nodejs_extension_tester_create);
   EXPORT_FUNC(env, exports, ten_nodejs_extension_tester_run);
   EXPORT_FUNC(env, exports, ten_nodejs_extension_tester_set_test_mode_single);
+  EXPORT_FUNC(env, exports, ten_nodejs_extension_tester_set_timeout);
 
   EXPORT_FUNC(env, exports, ten_nodejs_extension_tester_on_end_of_life);
   return exports;

@@ -75,9 +75,6 @@ class TenEnvTester(TenEnvTesterBase):
     ) -> Optional[TenError]:
         return self._internal.return_result(cmd_result, error_handler)
 
-    def stop_test(self) -> None:
-        return self._internal.stop_test()
-
 
 class ExtensionTester(_ExtensionTester):
     @final
@@ -89,7 +86,11 @@ class ExtensionTester(_ExtensionTester):
         )
 
     @final
-    def run(self) -> None:
+    def set_timeout(self, timeout_us: int) -> None:
+        return _ExtensionTester.set_timeout(self, timeout_us)
+
+    @final
+    def run(self) -> Optional[TenError]:
         return _ExtensionTester.run(self)
 
     @final
