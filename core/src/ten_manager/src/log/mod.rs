@@ -71,7 +71,7 @@ pub struct LogLineInfo {
 /// This function checks if the log line contains extension information in the
 /// format "[extension_name]" and returns metadata about the extension if found
 /// in the graph resources.
-pub fn extract_extension_from_log_line(
+pub fn parse_log_line(
     log_message: &str,
     graph_resources_log: &GraphResourcesLog,
 ) -> Option<LogLineMetadata> {
@@ -122,36 +122,41 @@ pub fn extract_extension_from_log_line(
     let content_index = log_message.find(function_part)? + function_part.len();
     let content = log_message[content_index..].trim();
 
-    // Check if content begins with [...], if not, return None.
-    if !content.starts_with('[') || !content.contains(']') {
-        return None;
-    }
-
-    // Extract the extension name from [...].
-    let end_pos = content.find(']')?;
-    if end_pos <= 1 {
-        return None; // No content inside brackets.
-    }
-
-    let extension_name = &content[1..end_pos];
-
-    // Check if extension_name exists in the extension_threads for the given
-    // thread_id.
-    if let Some(thread_info) =
-        graph_resources_log.extension_threads.get(thread_id)
-    {
-        if thread_info.extensions.contains(&extension_name.to_string()) {
-            // Create and return LogLineMetadata.
-            return Some(LogLineMetadata {
-                graph_id: Some(graph_resources_log.graph_id.clone()),
-                graph_name: graph_resources_log.graph_name.clone(),
-                extension: Some(extension_name.to_string()),
-                log_level,
-            });
+    // Try to extract extension name from [...], if not found, set
+    // extension_name to None.
+    let extension_name = if content.starts_with('[') && content.contains(']') {
+        // Extract the extension name from [...].
+        let end_pos = content.find(']')?;
+        if end_pos <= 1 {
+            return None; // No content inside brackets.
         }
-    }
 
-    None
+        let extracted_name = &content[1..end_pos];
+
+        // Check if extension_name exists in the extension_threads for the given
+        // thread_id.
+        if let Some(thread_info) =
+            graph_resources_log.extension_threads.get(thread_id)
+        {
+            if thread_info.extensions.contains(&extracted_name.to_string()) {
+                Some(extracted_name.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Create and return LogLineMetadata.
+    Some(LogLineMetadata {
+        graph_id: Some(graph_resources_log.graph_id.clone()),
+        graph_name: graph_resources_log.graph_name.clone(),
+        extension: extension_name,
+        log_level,
+    })
 }
 
 pub fn parse_graph_resources_log(
@@ -245,7 +250,7 @@ pub fn process_log_line(
         }
         Err(_) => {
             // Not a graph resources log, try to extract extension information.
-            extract_extension_from_log_line(log_line, graph_resources_log)
+            parse_log_line(log_line, graph_resources_log)
         }
     }
 }
