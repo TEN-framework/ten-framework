@@ -49,7 +49,7 @@ def detect_arch() -> str:
     raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
-def run_cmd(cmd: str, env: dict[str, str] = {}) -> int:
+def run_cmd(cmd: str, env: dict[str, str] = os.environ.copy()) -> int:
     """Run a shell command."""
     print(f"Running: {cmd}")
     result = subprocess.run(cmd, shell=True, check=True, env=env)
