@@ -11,7 +11,7 @@ mod subgraph;
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, str::FromStr};
+    use std::collections::HashMap;
 
     use anyhow::Result;
 
@@ -86,7 +86,8 @@ mod tests {
             "../../test_data/start_graph_cmd_has_duplicated_extension.json"
         );
 
-        let graph: Graph = Graph::from_str(cmd_str).unwrap();
+        let graph: Graph =
+            Graph::from_str_with_base_dir(cmd_str, None).unwrap();
         let result = check_extension_existence_and_uniqueness(&graph);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -173,7 +174,7 @@ mod tests {
              json"
         );
 
-        let graph = Graph::from_str(graph_str);
+        let graph = Graph::from_str_with_base_dir(graph_str, None);
 
         // 'localhost' is not allowed in graph definition.
         assert!(graph.is_err());
@@ -191,7 +192,7 @@ mod tests {
             "../../test_data/start_graph_cmd_multi_apps_node_app_localhost.\
              json"
         );
-        let graph = Graph::from_str(graph_str);
+        let graph = Graph::from_str_with_base_dir(graph_str, None);
 
         // 'localhost' is not allowed in graph definition.
         assert!(graph.is_err());
@@ -347,7 +348,7 @@ mod tests {
              graph_same_extension_in_two_section_of_connections.json"
         );
 
-        let graph = Graph::from_str(graph_str).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None).unwrap();
 
         let result = graph.check_extension_uniqueness_in_connections();
 
@@ -367,7 +368,7 @@ mod tests {
             "../../test_data/graph_duplicated_cmd_name_in_one_connection.json"
         );
 
-        let graph = Graph::from_str(graph_str).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None).unwrap();
         let result = graph.check_message_names();
         assert!(result.is_err());
         println!("Error: {result:?}");
@@ -383,7 +384,7 @@ mod tests {
              graph_messages_same_name_in_different_type_are_ok.json"
         );
 
-        let graph = Graph::from_str(graph_str).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None).unwrap();
         let result = graph.check_message_names();
         assert!(result.is_ok());
     }
@@ -393,7 +394,7 @@ mod tests {
         let graph_str = include_str!(
             "../../test_data/graph_app_can_not_be_empty_string.json"
         );
-        let graph = Graph::from_str(graph_str);
+        let graph = Graph::from_str_with_base_dir(graph_str, None);
 
         // The 'app' can not be empty string.
         assert!(graph.is_err());
@@ -408,7 +409,7 @@ mod tests {
         let graph_str = include_str!(
             "../../test_data/graph_message_conversion_fixed_value.json"
         );
-        let graph = Graph::from_str(graph_str).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None).unwrap();
 
         let connections = graph.connections.unwrap();
         let cmd =
