@@ -7,7 +7,9 @@
 #[cfg(test)]
 mod tests {
     use std::ffi::{CStr, CString};
-    use ten_rust::bindings::{ten_rust_free_cstring, ten_rust_graph_from_str};
+    use ten_rust::bindings::{
+        ten_rust_free_cstring, ten_rust_graph_validate_complete_flatten,
+    };
 
     #[test]
     fn test_ten_rust_graph_from_str_valid_json() {
@@ -22,7 +24,9 @@ mod tests {
         }"#;
 
         let c_input = CString::new(input_json).unwrap();
-        let result_ptr = unsafe { ten_rust_graph_from_str(c_input.as_ptr()) };
+        let result_ptr = unsafe {
+            ten_rust_graph_validate_complete_flatten(c_input.as_ptr())
+        };
 
         assert!(!result_ptr.is_null());
 
@@ -45,7 +49,9 @@ mod tests {
         let input_json = "invalid json";
 
         let c_input = CString::new(input_json).unwrap();
-        let result_ptr = unsafe { ten_rust_graph_from_str(c_input.as_ptr()) };
+        let result_ptr = unsafe {
+            ten_rust_graph_validate_complete_flatten(c_input.as_ptr())
+        };
 
         // Should return null for invalid JSON
         assert!(result_ptr.is_null());
@@ -53,7 +59,9 @@ mod tests {
 
     #[test]
     fn test_ten_rust_graph_from_str_null_input() {
-        let result_ptr = unsafe { ten_rust_graph_from_str(std::ptr::null()) };
+        let result_ptr = unsafe {
+            ten_rust_graph_validate_complete_flatten(std::ptr::null())
+        };
 
         // Should return null for null input
         assert!(result_ptr.is_null());
@@ -72,7 +80,9 @@ mod tests {
         }"#;
 
         let c_input = CString::new(input_json).unwrap();
-        let result_ptr = unsafe { ten_rust_graph_from_str(c_input.as_ptr()) };
+        let result_ptr = unsafe {
+            ten_rust_graph_validate_complete_flatten(c_input.as_ptr())
+        };
 
         assert!(!result_ptr.is_null());
 
