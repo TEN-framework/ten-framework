@@ -147,6 +147,6 @@ impl GraphInfo {
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete_and_flatten(None)
+        self.graph.validate_and_complete_and_flatten(app_base_dir.as_deref())
     }
 }
