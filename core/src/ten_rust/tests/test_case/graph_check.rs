@@ -6,7 +6,7 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, path::Path, str::FromStr};
+    use std::{collections::HashMap, path::Path};
 
     use uuid::Uuid;
 
@@ -134,7 +134,8 @@ mod tests {
 
         let graph_json_str =
             include_str!("../test_data/graph_check_single_app/graph.json");
-        let graph = Graph::from_str(graph_json_str).unwrap();
+        let graph =
+            Graph::from_str_with_base_dir(graph_json_str, None).unwrap();
 
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
@@ -161,7 +162,8 @@ mod tests {
         let graph_json_str = include_str!(
             "../test_data/graph_check_builtin_extension/graph.json"
         );
-        let graph = Graph::from_str(graph_json_str).unwrap();
+        let graph =
+            Graph::from_str_with_base_dir(graph_json_str, None).unwrap();
 
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
@@ -203,7 +205,7 @@ mod tests {
         }
         "#;
 
-        let graph = Graph::from_str(graph_json).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_json, None).unwrap();
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
 
         let result = graph.check(&None, &pkgs_cache);
@@ -309,7 +311,7 @@ mod tests {
         }
         "#;
 
-        let graph = Graph::from_str(graph_json).unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_json, None).unwrap();
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
 
         let result = graph.check(&None, &pkgs_cache);
