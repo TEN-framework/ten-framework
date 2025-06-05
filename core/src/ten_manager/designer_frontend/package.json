@@ -35,8 +35,8 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-tooltip": "^1.2.7",
-    "@tanstack/react-query": "^5.79.0",
-    "@tanstack/react-query-devtools": "^5.79.0",
+    "@tanstack/react-query": "^5.80.5",
+    "@tanstack/react-query-devtools": "^5.80.5",
     "@tanstack/react-table": "^8.21.3",
     "@types/react-window": "^1.8.8",
     "@xterm/addon-attach": "^0.11.0",
@@ -59,7 +59,7 @@
     "i18next-http-backend": "^3.0.2",
     "lucide-react": "^0.511.0",
     "monaco-editor": "^0.52.2",
-    "motion": "^12.15.0",
+    "motion": "^12.16.0",
     "next-themes": "^0.4.6",
     "pino": "^9.7.0",
     "process": "^0.11.10",
@@ -78,7 +78,7 @@
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "trulience-sdk": "https://trulience.com/release/prod/latest/trulience-sdk.tar.gz",
-    "zod": "^3.25.48",
+    "zod": "^3.25.51",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
@@ -90,7 +90,7 @@
     "@types/node": "^22.15.29",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react-swc": "^3.10.0",
+    "@vitejs/plugin-react-swc": "^3.10.1",
     "esbuild": "^0.24.2",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -103,7 +103,7 @@
     "prettier-plugin-tailwindcss": "^0.6.12",
     "tailwindcss": "^4.1.8",
     "typescript": "~5.7.3",
-    "typescript-eslint": "^8.33.0",
+    "typescript-eslint": "^8.33.1",
     "vite": "^6.3.5",
     "vite-plugin-node-polyfills": "^0.23.0"
   }
