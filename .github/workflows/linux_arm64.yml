@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build_linux_arm64.yml"
+      - "!.github/workflows/linux_arm64.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -97,7 +97,8 @@ jobs:
               export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
               echo $PATH && \
               go env -w GOFLAGS="-buildvcs=false" && \
-              go1.20.12 download && \
+              go install golang.org/dl/go1.24.3@latest && \
+              go1.24.3 download && \
               apt-get install -y curl && \
               curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
               bash nodesource_setup.sh && \

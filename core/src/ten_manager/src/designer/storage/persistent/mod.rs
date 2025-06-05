@@ -5,12 +5,15 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod get;
+pub mod schema;
 pub mod set;
 
 use anyhow::Result;
 use serde_json::Value;
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::{BufWriter, Write};
 
+use crate::constants::BUF_WRITER_BUF_SIZE;
 use crate::home::data::get_home_data_path;
 
 /// Read the persistent storage data from disk
@@ -36,7 +39,16 @@ pub fn write_persistent_storage(data: &Value) -> Result<()> {
         fs::create_dir_all(parent)?;
     }
 
-    let content = serde_json::to_string_pretty(data)?;
-    fs::write(&path, content)?;
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&path)?;
+
+    let mut buf_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, file);
+
+    serde_json::to_writer_pretty(&mut buf_writer, data)?;
+    buf_writer.flush()?;
+
     Ok(())
 }

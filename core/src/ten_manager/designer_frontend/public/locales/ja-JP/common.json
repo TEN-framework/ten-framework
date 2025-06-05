@@ -50,7 +50,12 @@
     "menuExtension": {
       "title": "拡張機能",
       "openExtensionStore": "拡張機能ストアを開く",
+      "startRTCInteraction": "TEN AIエージェントと話す",
+      "configTrulienceAvatar": "Trulienceアバターを設定",
       "about": "拡張機能について"
+    },
+    "menuTenAgentTools": {
+      "title": "TEN Agentツール"
     },
     "language": {
       "title": "言語",
@@ -109,7 +114,9 @@
     "deleteConnectionConfirmation": "接続を削除してもよろしいですか？",
     "deleteConnectionSuccess": "接続の削除に成功しました",
     "deleteConnectionFailed": "接続の削除に失敗しました",
-    "replaceNode": "ノードを置き換え..."
+    "replaceNode": "ノードを置き換え...",
+    "manageApps": "アプリを管理",
+    "runApp": "実行"
   },
   "toast": {
     "saveFileSuccess": "ファイルの保存に成功しました",
@@ -148,7 +155,8 @@
       "filteredByAddon": "アドオンでログをフィルター",
       "noAddons": "利用可能なアドオンがありません",
       "noMatchedAddons": "一致するアドオンがありません",
-      "noLogs": "表示するログがありません"
+      "noLogs": "表示するログがありません",
+      "cleanLogs": "ログをクリア"
     },
     "default": {
       "defaultLabelForAppRun": "アプリ実行のデフォルトラベル",
@@ -177,7 +185,9 @@
       "templateVersionDescription": "アプリのテンプレートバージョンを選択してください。",
       "appName": "アプリ名",
       "appNameDescription": "アプリの名前を入力してください。",
-      "baseDirDescription": "アプリのベースディレクトリを選択してください。"
+      "baseDirDescription": "アプリのベースディレクトリを選択してください。",
+      "run_opts": "オプション",
+      "run_with_agent": "エージェントで実行"
     },
     "graph": {
       "title": "ノード",
@@ -273,6 +283,24 @@
     "localAddonTip": "(ローカル)",
     "tags": "タグ"
   },
+  "rtcInteraction": {
+    "title": "リアルタイム音声AIエージェント"
+  },
+  "trulienceConfig": {
+    "title": "Trulienceアバターの設定",
+    "enabled": "有効",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "カメラ",
+      "screen": "画面",
+      "cameraPlaceholder": "カメラを選択"
+    }
+  },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",
     "appsError": "アプリの取得に失敗しました",
@@ -307,6 +335,9 @@
       "placeholder": "検索または新規作成",
       "noItems": "項目がありません",
       "enterValueToCreate": "新しい項目を作成するには値を入力してください"
+    },
+    "messageList": {
+      "noMessages": "メッセージがありません"
     }
   }
 }

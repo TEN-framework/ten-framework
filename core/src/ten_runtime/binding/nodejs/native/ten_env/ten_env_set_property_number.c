@@ -4,7 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include/ten_runtime/common/error_code.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/value/value.h"
@@ -22,14 +24,14 @@ static void tsfn_proxy_set_property_number_callback(napi_env env,
     js_error = js_undefined(env);
   } else {
     if (ctx->error) {
-      js_error = ten_nodejs_create_error(env, ctx->error);
+      js_error = ten_nodejs_error_wrap(env, ctx->error);
       ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
     } else {
       ten_error_t err;
       TEN_ERROR_INIT(err);
       ten_error_set(&err, TEN_ERROR_CODE_GENERIC,
                     "Failed to set property value");
-      js_error = ten_nodejs_create_error(env, &err);
+      js_error = ten_nodejs_error_wrap(env, &err);
       ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
       ten_error_deinit(&err);
     }
@@ -74,7 +76,7 @@ napi_value ten_nodejs_ten_env_set_property_number(napi_env env,
     ten_error_set(&err, TEN_ERROR_CODE_TEN_IS_CLOSED,
                   "ten_env.setPropertyNumber() failed because ten is closed.");
 
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     ten_error_deinit(&err);
@@ -105,7 +107,7 @@ napi_value ten_nodejs_ten_env_set_property_number(napi_env env,
   rc = ten_nodejs_ten_env_set_property_value(
       ten_env_bridge, ten_string_get_raw_str(&name), value, cb_tsfn, &err);
   if (!rc) {
-    napi_value js_error = ten_nodejs_create_error(env, &err);
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     // The JS callback will not be called, so we need to clean up the tsfn.

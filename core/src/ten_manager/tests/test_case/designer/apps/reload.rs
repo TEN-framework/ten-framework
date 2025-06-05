@@ -11,7 +11,6 @@ mod tests {
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
-        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             apps::reload::{reload_app_endpoint, ReloadPkgsRequestPayload},
@@ -19,6 +18,7 @@ mod tests {
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
@@ -39,6 +39,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Inject initial package data.
@@ -121,6 +122,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // We'll use a special path that should cause get_all_pkgs to fail.

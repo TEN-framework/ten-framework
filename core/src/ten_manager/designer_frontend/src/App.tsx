@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React, { useState, useCallback, useRef } from "react";
+import * as React from "react";
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -12,6 +12,8 @@ import {
   NodeChange,
 } from "@xyflow/react";
 import { toast } from "sonner";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import AppBar from "@/components/AppBar";
@@ -30,26 +32,52 @@ import { EWidgetDisplayType } from "@/types/widgets";
 import { GlobalPopups } from "@/components/Popup";
 import { BackstageWidgets } from "@/components/Widget/BackstageWidgets";
 import { cn } from "@/lib/utils";
-import { usePreferences } from "@/api/services/common";
+import {
+  usePreferencesLogViewerLines,
+  initPersistentStorageSchema,
+  getStorageValueByKey,
+  setStorageValueByKey,
+} from "@/api/services/storage";
+import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
+import { getTanstackQueryClient } from "@/api/services/utils";
 
 import type { TCustomEdge, TCustomNode } from "@/types/flow";
 
-const App: React.FC = () => {
+const queryClient = getTanstackQueryClient();
+
+export default function App() {
+  return (
+    <>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <ReactQueryDevtools initialIsOpen={false} />
+          <Main />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </>
+  );
+}
+
+const Main = () => {
   const { nodes, setNodes, edges, setEdges, setNodesAndEdges } = useFlowStore();
-  const [resizablePanelMode] = useState<"left" | "bottom" | "right">("bottom");
+  const [resizablePanelMode] = React.useState<"left" | "bottom" | "right">(
+    "bottom"
+  );
+  const [isPersistentSchemaInited, setIsPersistentSchemaInitialized] =
+    React.useState(false);
 
   const {
-    data: remotePreferences,
+    data: remotePreferencesLogViewerLines,
     isLoading: isLoadingPreferences,
     error: errorPreferences,
-  } = usePreferences();
+  } = usePreferencesLogViewerLines();
 
   const { widgets } = useWidgetStore();
   const { setPreferences, currentWorkspace } = useAppStore();
 
-  const flowCanvasRef = useRef<FlowCanvasRef | null>(null);
+  const flowCanvasRef = React.useRef<FlowCanvasRef | null>(null);
 
   const dockWidgetsMemo = React.useMemo(
     () =>
@@ -59,14 +87,14 @@ const App: React.FC = () => {
     [widgets]
   );
 
-  const performAutoLayout = useCallback(() => {
+  const performAutoLayout = React.useCallback(() => {
     const { nodes: layoutedNodes, edges: layoutedEdges } =
       generateNodesAndEdges(nodes, edges);
     setNodesAndEdges(layoutedNodes, layoutedEdges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges]);
 
-  const handleNodesChange = useCallback(
+  const handleNodesChange = React.useCallback(
     (changes: NodeChange<TCustomNode>[]) => {
       const newNodes = applyNodeChanges(changes, nodes);
       const positionChanges = changes.filter(
@@ -83,7 +111,7 @@ const App: React.FC = () => {
     [nodes]
   );
 
-  const handleEdgesChange = useCallback(
+  const handleEdgesChange = React.useCallback(
     (changes: EdgeChange<TCustomEdge>[]) => {
       const newEdges = applyEdgeChanges(changes, edges);
       setEdges(newEdges);
@@ -95,11 +123,11 @@ const App: React.FC = () => {
   // init preferences
   React.useEffect(() => {
     if (
-      remotePreferences &&
-      remotePreferences?.preferences?.logviewer_line_size
+      remotePreferencesLogViewerLines &&
+      remotePreferencesLogViewerLines?.logviewer_line_size
     ) {
       const parsedValues = PREFERENCES_SCHEMA_LOG.safeParse(
-        remotePreferences.preferences
+        remotePreferencesLogViewerLines
       );
       if (!parsedValues.success) {
         throw new Error("Invalid values");
@@ -110,7 +138,7 @@ const App: React.FC = () => {
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remotePreferences]);
+  }, [remotePreferencesLogViewerLines]);
 
   React.useEffect(() => {
     if (errorPreferences) {
@@ -119,7 +147,35 @@ const App: React.FC = () => {
     }
   }, [errorPreferences]);
 
-  if (isLoadingPreferences) {
+  // Initialize the persistent storage schema if it is not initialized.
+  React.useEffect(() => {
+    const init = async () => {
+      if (!isPersistentSchemaInited) {
+        try {
+          const remoteCfg = await getStorageValueByKey();
+          if (remoteCfg?.version === PERSISTENT_DEFAULTS.version) {
+            // If the schema is already initialized,
+            // we can skip the initialization.
+            return;
+          }
+          // If the schema is not initialized, we need to initialize it.
+          await initPersistentStorageSchema();
+          // After initialization, we can set the default values.
+          await setStorageValueByKey();
+        } catch (error) {
+          console.error("Failed to initialize persistent schema:", error);
+          toast.error("Failed to initialize persistent schema.");
+        } finally {
+          // Do not block the UI if any error occurs during initialization.
+          setIsPersistentSchemaInitialized(true);
+        }
+      }
+    };
+
+    init();
+  }, [isPersistentSchemaInited]);
+
+  if (isLoadingPreferences || !isPersistentSchemaInited) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
         <SpinnerLoading />
@@ -128,7 +184,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <>
       <AppBar onAutoLayout={performAutoLayout} className="z-9997" />
 
       <ResizablePanelGroup
@@ -191,8 +247,6 @@ const App: React.FC = () => {
       <BackstageWidgets />
 
       <StatusBar className="z-9997" />
-    </ThemeProvider>
+    </>
   );
 };
-
-export default App;

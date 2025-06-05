@@ -64,10 +64,10 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
         ) {
           if (isLegacy) {
             const line = (msg as z.infer<typeof LegacyLogSchema>).data;
-            appendLogsById(id, [{ line }]);
+            appendLogsById(id, [{ line, type: msg.type }]);
           } else {
             const data = (msg as z.infer<typeof LogSchema>).data;
-            appendLogsById(id, [data]);
+            appendLogsById(id, [{ ...data, type: msg.type }]);
           }
         } else if (msg.type === EWSMessageType.EXIT) {
           const code = msg.code;
@@ -79,24 +79,29 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
           lines.push(`Process exited with code ${code}. Closing...`);
           appendLogsById(
             id,
-            lines.map((line) => ({ line }))
+            lines.map((line) => ({ line, type: msg.type }))
           );
 
           wsRef.current?.close();
         } else if (msg.status === "fail") {
           appendLogsById(id, [
-            { line: `Error: ${msg.message || "Unknown error"}` },
+            {
+              line: `Error: ${msg.message || "Unknown error"}`,
+              type: msg.type,
+            },
           ]);
         } else {
           appendLogsById(id, [
-            { line: `Unknown message: ${JSON.stringify(msg)}` },
+            { line: `Unknown message: ${JSON.stringify(msg)}`, type: msg.type },
           ]);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         // If it's not JSON, output it directly as text.
-        appendLogsById(id, [{ line: event.data }]);
+        appendLogsById(id, [
+          { line: event.data, type: EWSMessageType.NORMAL_LINE },
+        ]);
       }
     };
 
@@ -251,13 +256,18 @@ export interface ILogViewerLogItemProps {
   line?: number;
   host?: string;
   message: string;
+  raw?: z.infer<typeof LogLineInfoSchema>;
 }
 
-const string2LogItem = (str?: string): ILogViewerLogItemProps => {
+const parseLogLine = (
+  logItem: z.infer<typeof LogLineInfoSchema>
+): ILogViewerLogItemProps => {
+  const { line: str } = logItem;
   if (!str) {
     return {
       id: string2uuid(new Date().getTime().toString()),
       message: "",
+      raw: logItem,
     };
   }
   const regex = /^(\w+)@([^:]+):(\d+)\s+\[([^\]]+)\]\s+(.+)$/;
@@ -267,6 +277,7 @@ const string2LogItem = (str?: string): ILogViewerLogItemProps => {
     return {
       id: randomId,
       message: str,
+      raw: logItem,
     };
   }
   const [, extension, file, line, host, message] = match;
@@ -277,14 +288,49 @@ const string2LogItem = (str?: string): ILogViewerLogItemProps => {
     line: parseInt(line, 10),
     host,
     message,
+    raw: logItem,
   };
+};
+
+const inferLogType = (
+  logStr: string,
+  raw: z.infer<typeof LogLineInfoSchema>
+): "error" | "warning" | "info" => {
+  if (
+    raw.type === EWSMessageType.STANDARD_ERROR ||
+    raw.type === EWSMessageType.STANDARD_ERROR_LOG ||
+    ["error", "exception", "failed", "error"].some((s) =>
+      logStr.toLowerCase().includes(s)
+    )
+  ) {
+    return "error";
+  }
+  if (["warning", "warn"].some((s) => logStr.includes(s))) {
+    return "warning";
+  }
+  return "info";
 };
 
 const LogViewerLogItem = React.forwardRef<
   HTMLDivElement,
   ILogViewerLogItemProps & { search?: string; className?: string }
 >((props, ref) => {
-  const { id, extension, file, line, host, message, search, className } = props;
+  const {
+    id,
+    extension,
+    file,
+    line,
+    host,
+    message = "",
+    search,
+    raw,
+    className,
+  } = props;
+
+  const logType = React.useMemo(() => {
+    if (!raw) return "info";
+    return inferLogType(message, raw);
+  }, [message, raw]);
 
   return (
     <div
@@ -292,6 +338,10 @@ const LogViewerLogItem = React.forwardRef<
       className={cn(
         "font-mono text-xs py-0.5",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
+        {
+          "bg-red-50 dark:bg-red-900": logType === "error",
+          "bg-orange-50 dark:bg-orange-900": logType === "warning",
+        },
         className
       )}
       id={id}
@@ -373,7 +423,7 @@ function LogViewerLogItemList(props: {
 
   const logsMemo = React.useMemo(() => {
     return rawLogs.map((log) => {
-      const line = string2LogItem(log.line);
+      const line = parseLogLine(log);
       return line;
     });
   }, [rawLogs]);

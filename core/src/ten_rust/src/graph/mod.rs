@@ -139,6 +139,11 @@ pub struct GraphExposedMessage {
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
+
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
 }
 
 /// Represents a property that is exposed by the graph to the outside.
@@ -150,13 +155,14 @@ pub struct GraphExposedProperty {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
 
+    /// The name of the subgraph.
+    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
     /// The name of the property.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
     pub name: String,
-
-    /// The alias of the property when exposed outside the graph.
-    /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$
-    pub alias: String,
 }
 
 /// Represents a connection graph that defines how extensions connect to each
@@ -181,7 +187,7 @@ impl FromStr for Graph {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete()?;
+        graph.validate_and_complete_and_flatten(None)?;
 
         // Return the parsed data.
         Ok(graph)
@@ -262,7 +268,10 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    fn validate_and_complete(
+        &mut self,
+        _current_base_dir: Option<&str>,
+    ) -> Result<()> {
         // Determine the app URI declaration state by examining all nodes.
         let app_uri_declaration_state =
             self.analyze_app_uri_declaration_state()?;
@@ -304,6 +313,31 @@ impl Graph {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    pub fn validate_and_complete_and_flatten(
+        &mut self,
+        current_base_dir: Option<&str>,
+    ) -> Result<()> {
+        self.validate_and_complete(current_base_dir)?;
+
+        // Always attempt to flatten the graph, regardless of current_base_dir
+        // If there are subgraphs that need current_base_dir but it's None,
+        // the flatten_graph method will return an appropriate error.
+        if let Some(flattened) = self.flatten_graph(
+            &crate::graph::graph_info::load_graph_from_uri,
+            current_base_dir,
+        )? {
+            // Replace current graph with flattened version
+            *self = flattened;
+        }
+
+        // After flattening, there should basically be no logic that requires
+        // current_base_dir, so passing None here should not cause
+        // errors, and we can use this for validation.
+        self.validate_and_complete(None)?;
 
         Ok(())
     }

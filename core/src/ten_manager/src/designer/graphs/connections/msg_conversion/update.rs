@@ -64,6 +64,9 @@ fn update_graph_info(
         UpdateGraphConnectionMsgConversionRequestPayload,
     >,
 ) -> Result<()> {
+    // Store the original state in case validation fails.
+    let original_graph = graph_info.graph.clone();
+
     // First check if connections exist in the graph.
     if let Some(connections) = &mut graph_info.graph.connections {
         // Try to find the matching connection based on app and extension.
@@ -110,7 +113,15 @@ fn update_graph_info(
         }
     }
 
-    Ok(())
+    // Validate the updated graph.
+    match graph_info.graph.validate_and_complete_and_flatten(None) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            // Restore the original graph if validation fails.
+            graph_info.graph = original_graph;
+            Err(e)
+        }
+    }
 }
 
 fn update_property_all_fields(

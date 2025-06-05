@@ -346,7 +346,7 @@ mod tests {
                  \"extension_threads\": {\"1713045\": {\"extensions\": \
                  [\"test_extension\"]}}}
 05-02 22:23:37.406 1713000(1713002) D \
-                 ten_engine_on_all_extension_threads_are_ready@\
+                 ten_engine_check_if_all_extension_threads_are_ready@\
                  extension_interface.c:173 [msgpack://127.0.0.1:8001/] Engine \
                  is ready to handle messages
 05-02 22:23:37.460 1713000(1713045) D \

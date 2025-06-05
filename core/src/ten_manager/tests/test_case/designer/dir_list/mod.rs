@@ -17,12 +17,12 @@ mod tests {
 
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        home::config::TmanConfig,
         designer::{
             dir_list::list_dir_endpoint,
             response::{ApiResponse, Status},
             DesignerState,
         },
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
 
@@ -62,6 +62,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Configure the `list_dir` route.
@@ -118,6 +119,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         // Configure the `list_dir` route.
@@ -166,6 +168,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
         let app = test::init_service(App::new().app_data(state.clone()).route(

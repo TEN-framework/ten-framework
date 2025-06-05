@@ -163,10 +163,19 @@ class ten_env_tester_t {
     return rc;
   }
 
-  bool stop_test(error_t *err = nullptr) {
+  // The `test_result` is used to identify the result of this test. If it is
+  // empty or its error code is `TEN_STATUS_CODE_OK`, it means the test is
+  // successful. The test result will be returned in the out parameter of
+  // `extension_tester.run`.
+  //
+  // The `err` solely indicates whether the `stop_test()` operation itself
+  // succeeded.
+  bool stop_test(error_t *test_result = nullptr, error_t *err = nullptr) {
     TEN_ASSERT(c_ten_env_tester, "Should not happen.");
     return ten_env_tester_stop_test(
-        c_ten_env_tester, err != nullptr ? err->get_c_error() : nullptr);
+        c_ten_env_tester,
+        test_result != nullptr ? test_result->get_c_error() : nullptr,
+        err != nullptr ? err->get_c_error() : nullptr);
   }
 
  private:

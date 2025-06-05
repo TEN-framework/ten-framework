@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{http::StatusCode, test, web, App};
 
 use ten_manager::{
-    home::config::TmanConfig,
     designer::{
         graphs::{
             connections::get::{
@@ -26,6 +25,7 @@ use ten_manager::{
         storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
+    home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
 
@@ -41,6 +41,7 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![
@@ -129,6 +130,7 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
     };
 
     let all_pkgs_json_str = vec![

@@ -11,6 +11,7 @@ export const TEN_FRAMEWORK_RELEASE_URL =
 export const TEN_FRAMEWORK_ISSUES_URL =
   "https://github.com/TEN-framework/ten-framework/issues";
 export const TEN_AGENT_URL = "https://agent.theten.ai/";
+/** @deprecated */
 export const TEN_AGENT_GITHUB_URL =
   "https://github.com/TEN-framework/TEN-Agent";
 export const TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL =

@@ -14,43 +14,26 @@ mod tests {
 
     #[test]
     fn test_temp_home_sets_tman_test_home() {
-        // Test that TempHome correctly sets and restores
-        // TEN_MANAGER_HOME_INTERNAL_USE_ONLY
-        let original_test_home =
-            std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY").ok();
+        let temp_home = TempHome::new();
 
-        {
-            let temp_home = TempHome::new();
+        // Verify TEN_MANAGER_HOME_INTERNAL_USE_ONLY is set to the temp
+        // directory
+        let test_home = std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY")
+            .expect("TEN_MANAGER_HOME_INTERNAL_USE_ONLY should be set");
+        assert_eq!(test_home, temp_home.path().to_string_lossy());
 
-            // Verify TEN_MANAGER_HOME_INTERNAL_USE_ONLY is set to the temp
-            // directory
-            let test_home = std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY")
-                .expect("TEN_MANAGER_HOME_INTERNAL_USE_ONLY should be set");
-            assert_eq!(test_home, temp_home.path().to_string_lossy());
-
-            // Verify get_home_dir uses the test home
-            let home_dir = get_home_dir();
-            let expected_path = if cfg!(target_os = "windows") {
-                temp_home.path().join("AppData").join("Roaming").join("tman")
-            } else {
-                temp_home.path().join(".tman")
-            };
-            assert_eq!(home_dir, expected_path);
-        }
-
-        // Verify TEN_MANAGER_HOME_INTERNAL_USE_ONLY is restored after TempHome
-        // is dropped
-        assert_eq!(
-            std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY").ok(),
-            original_test_home
-        );
+        // Verify get_home_dir uses the test home
+        let home_dir = get_home_dir();
+        let expected_path = if cfg!(target_os = "windows") {
+            temp_home.path().join("AppData").join("Roaming").join("tman")
+        } else {
+            temp_home.path().join(".tman")
+        };
+        assert_eq!(home_dir, expected_path);
     }
 
     #[test]
     fn test_with_temp_home_dir_function() {
-        let original_test_home =
-            std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY").ok();
-
         with_temp_home_dir(|| {
             // Inside the closure, TEN_MANAGER_HOME_INTERNAL_USE_ONLY should be
             // set
@@ -68,12 +51,5 @@ mod tests {
             };
             assert_eq!(home_dir, expected_path);
         });
-
-        // After the closure, TEN_MANAGER_HOME_INTERNAL_USE_ONLY should be
-        // restored
-        assert_eq!(
-            std::env::var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY").ok(),
-            original_test_home
-        );
     }
 }

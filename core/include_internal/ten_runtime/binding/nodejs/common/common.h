@@ -99,9 +99,6 @@ TEN_RUNTIME_PRIVATE_API napi_value ten_nodejs_create_new_js_object_and_wrap(
     napi_finalize finalizer, napi_ref *bridge_weak_ref, size_t argc,
     const napi_value *argv);
 
-TEN_RUNTIME_PRIVATE_API napi_value ten_nodejs_create_error(napi_env env,
-                                                           ten_error_t *error);
-
 TEN_RUNTIME_PRIVATE_API napi_value ten_nodejs_create_value_number(
     napi_env env, ten_value_t *value, ten_error_t *error);
 

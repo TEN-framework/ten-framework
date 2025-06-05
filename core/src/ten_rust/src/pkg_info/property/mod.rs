@@ -97,15 +97,15 @@ pub fn parse_property_from_str(
                 let mut temp_graphs_cache = HashMap::new();
                 let mut graph_uuids = Vec::new();
 
-                for mut graph in graph_infos {
-                    graph.validate_and_complete()?;
+                for mut graph_info in graph_infos {
+                    graph_info.validate_and_complete_and_flatten()?;
 
-                    graph.belonging_pkg_type = belonging_pkg_type;
-                    graph.belonging_pkg_name = belonging_pkg_name.clone();
-                    graph.app_base_dir = app_base_dir.clone();
+                    graph_info.belonging_pkg_type = belonging_pkg_type;
+                    graph_info.belonging_pkg_name = belonging_pkg_name.clone();
+                    graph_info.app_base_dir = app_base_dir.clone();
 
                     let uuid = Uuid::new_v4();
-                    temp_graphs_cache.insert(uuid, graph);
+                    temp_graphs_cache.insert(uuid, graph_info);
                     graph_uuids.push(uuid);
                 }
 

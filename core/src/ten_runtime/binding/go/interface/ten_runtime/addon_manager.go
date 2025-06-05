@@ -39,7 +39,7 @@ func (am *AddonManager) RegisterAddonAsExtension(
 	instance Addon,
 ) error {
 	if len(addonName) == 0 {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			"addon name is empty",
 		)
@@ -81,7 +81,7 @@ func (am *AddonManager) RegisterAddonAsExtension(
 	defer am.registryMutex.Unlock()
 
 	if _, exists := am.registry[addonName]; exists {
-		return newTenError(
+		return NewTenError(
 			ErrorCodeInvalidArgument,
 			fmt.Sprintf("Addon '%s' is already registered", addonName),
 		)

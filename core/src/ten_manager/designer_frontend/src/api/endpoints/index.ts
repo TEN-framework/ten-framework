@@ -65,43 +65,6 @@ export const ENDPOINT_COMMON = {
       ),
     },
   },
-  preferences: {
-    [ENDPOINT_METHOD.GET]: {
-      url: `${API_DESIGNER_V1}/preferences`,
-      method: ENDPOINT_METHOD.GET,
-      responseSchema: genResSchema<{
-        preferences: Record<string, unknown>;
-      }>(
-        z.object({
-          preferences: z.record(z.unknown()),
-        })
-      ),
-    },
-    [ENDPOINT_METHOD.PUT]: {
-      url: `${API_DESIGNER_V1}/preferences`,
-      method: ENDPOINT_METHOD.PUT,
-      requestSchema: z.object({
-        preferences: z.record(z.unknown()),
-      }),
-      responseSchema: genResSchema(z.any()),
-    },
-    [ENDPOINT_METHOD.PATCH]: {
-      url: `${API_DESIGNER_V1}/preferences/field`,
-      method: ENDPOINT_METHOD.PATCH,
-      requestSchema: z.object({
-        field: z.string(),
-        value: z.any(),
-      }),
-      responseSchema: genResSchema(z.any()),
-    },
-  },
-  preferencesSchema: {
-    [ENDPOINT_METHOD.GET]: {
-      url: `${API_DESIGNER_V1}/preferences/schema`,
-      method: ENDPOINT_METHOD.GET,
-      responseSchema: genResSchema(z.any()),
-    },
-  },
 };
 
 export { ENDPOINT_GRAPHS, ENDPOINT_GRAPH_UI } from "@/api/endpoints/graphs";
@@ -118,3 +81,7 @@ export { ENDPOINT_GH } from "@/api/endpoints/github";
 export { ENDPOINT_HELP_TEXT, EHelpTextKey } from "@/api/endpoints/help-text";
 export { ENDPOINT_DOC_LINK } from "@/api/endpoints/doc";
 export { ENDPOINT_MESSAGES } from "@/api/endpoints/messages";
+export {
+  ENDPOINT_PREFERENCES,
+  ENDPOINT_STORAGE,
+} from "@/api/endpoints/storage";

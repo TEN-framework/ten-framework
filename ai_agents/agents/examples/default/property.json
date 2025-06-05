@@ -12,7 +12,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -267,7 +267,7 @@
       },
       {
         "name": "voice_assistant_integrated_stt",
-        "auto_start": true,
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -275,20 +275,20 @@
             "addon": "agora_rtc",
             "extension_group": "default",
             "property": {
-              "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
-              "channel": "ten_agent_test",
-              "stream_id": 1234,
-              "remote_stream_id": 123,
-              "subscribe_audio": true,
-              "publish_audio": true,
-              "publish_data": true,
               "enable_agora_asr": true,
               "agora_asr_vendor_name": "microsoft",
+              "channel": "ten_agent_test",
+              "subscribe_audio": true,
+              "publish_data": true,
               "agora_asr_language": "en-US",
-              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "remote_stream_id": 123,
               "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
-              "agora_asr_session_control_file_path": "session_control.conf"
+              "publish_audio": true,
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "app_id": "${env:AGORA_APP_ID}",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "stream_id": 1234
             }
           },
           {
@@ -506,7 +506,7 @@
       },
       {
         "name": "voice_assistant_realtime",
-        "auto_start": true,
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -515,7 +515,7 @@
             "extension_group": "rtc",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "",
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -680,7 +680,7 @@
       },
       {
         "name": "story_teller",
-        "auto_start": true,
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -689,7 +689,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -941,7 +941,7 @@
       },
       {
         "name": "story_teller_stt_integrated",
-        "auto_start": true,
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -950,7 +950,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -1182,7 +1182,7 @@
       },
       {
         "name": "story_teller_realtime",
-        "auto_start": true,
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -1191,7 +1191,7 @@
             "extension_group": "rtc",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "",
+              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,

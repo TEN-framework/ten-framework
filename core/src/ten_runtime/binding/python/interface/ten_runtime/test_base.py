@@ -19,6 +19,9 @@ class TenEnvTesterBase:
     def __del__(self) -> None:
         pass
 
+    def stop_test(self, error: Optional[TenError] = None) -> Optional[TenError]:
+        return self._internal.stop_test(error)
+
     def log_verbose(self, msg: str) -> Optional[TenError]:
         return self._log_internal(LogLevel.VERBOSE, msg, 2)
 

@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build_mac.yml"
+      - "!.github/workflows/mac_arm64.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -71,7 +71,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -201,7 +201,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -354,7 +354,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -395,6 +395,7 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/opt/homebrew/opt/llvm/bin:$PATH"

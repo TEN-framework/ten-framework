@@ -10,6 +10,7 @@ package tests
 import (
 	"fmt"
 	ten "ten_framework/ten_runtime"
+	"time"
 )
 
 // GreetingTester is a tester for the Greeting extension.
@@ -17,11 +18,17 @@ type GreetingTester struct {
 	ten.DefaultExtensionTester
 
 	ExpectedGreetingMsg string
+	DelayMs             uint32
 }
 
 // OnStart is called when the test starts.
 func (tester *GreetingTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
+
+	if tester.DelayMs > 0 {
+		time.Sleep(time.Duration(tester.DelayMs) * time.Millisecond)
+	}
+
 	tenEnvTester.OnStartDone()
 }
 
@@ -42,18 +49,22 @@ func (tester *GreetingTester) OnCmd(
 	if cmdName == "greeting" {
 		actualGreetingMsg, _ := cmd.GetPropertyString("greetingMsg")
 		if actualGreetingMsg != tester.ExpectedGreetingMsg {
-			panic(
+			tenEnv.StopTest(ten.NewTenError(ten.ErrorCodeGeneric,
 				fmt.Sprintf(
 					"Expected greeting message: %s, but got: %s",
 					tester.ExpectedGreetingMsg,
 					actualGreetingMsg,
 				),
-			)
+			))
+			return
 		}
 
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 		tenEnv.ReturnResult(cmdResult, nil)
 
-		tenEnv.StopTest()
+		err := tenEnv.StopTest(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }

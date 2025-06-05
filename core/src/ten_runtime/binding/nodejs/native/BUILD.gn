@@ -38,9 +38,11 @@ ten_shared_library("ten_runtime_nodejs") {
     "addon",
     "app",
     "common",
+    "error",
     "extension",
     "msg",
     "ten_env",
+    "test",
     "//core/src/ten_runtime:ten_runtime_library",
   ]
 }

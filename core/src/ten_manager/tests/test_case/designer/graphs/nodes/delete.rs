@@ -15,7 +15,6 @@ mod tests {
     use uuid::Uuid;
 
     use ten_manager::{
-        home::config::TmanConfig,
         constants::TEST_DIR,
         designer::{
             graphs::nodes::{
@@ -30,6 +29,7 @@ mod tests {
             DesignerState,
         },
         graph::{graphs_cache_find_by_id, graphs_cache_find_by_name},
+        home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
 
@@ -49,6 +49,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -111,6 +112,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         {
@@ -208,6 +210,7 @@ mod tests {
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         // Inject the test app into the mock.

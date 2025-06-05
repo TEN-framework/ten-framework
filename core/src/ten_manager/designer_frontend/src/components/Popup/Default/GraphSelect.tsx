@@ -39,8 +39,8 @@ import {
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { SpinnerLoading } from "@/components/Status/Loading";
-import { useGraphs } from "@/api/services/graphs";
-import { useApps } from "@/api/services/apps";
+import { useGraphs, postGraphsAutoStart } from "@/api/services/graphs";
+import { useFetchApps } from "@/api/services/apps";
 import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     data: loadedApps,
     isLoading: isLoadingApps,
     error: errorApps,
-  } = useApps();
+  } = useFetchApps();
   const { removeWidget } = useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
@@ -72,7 +72,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     currentWorkspace?.app ?? loadedApps?.app_info?.[0] ?? null
   );
 
-  const { graphs = [], error, isLoading } = useGraphs();
+  const { data: graphs = [], error, isLoading, mutate } = useGraphs();
 
   const handleOk = () => {
     removeWidget(widget.widget_id);
@@ -169,7 +169,9 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
                 (graph) => graph.base_dir === selectedApp?.base_dir
               )}
               onSelect={handleSelectGraph}
+              onReload={mutate}
               className="pointer-events-auto"
+              disabled={isLoadingApps || isLoading}
             />
           </div>
         </div>
@@ -187,8 +189,10 @@ const GraphSelectTable = (props: {
   items?: IGraph[];
   onSelect?: (item: IGraph) => void;
   className?: string;
+  onReload?: () => void;
+  disabled?: boolean;
 }) => {
-  const { items = [], onSelect, className } = props;
+  const { items = [], onSelect, className, onReload, disabled } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { t } = useTranslation();
@@ -228,12 +232,15 @@ const GraphSelectTable = (props: {
     {
       accessorKey: "auto_start",
       header: t("action.autoStart"),
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue() as boolean;
         return (
-          <div className="flex items-center">
-            <Checkbox disabled checked={value} />
-          </div>
+          <GraphFieldAutoStart
+            defaultValue={value}
+            graphId={row.original.uuid}
+            onChange={() => onReload?.()}
+            disabled={disabled}
+          />
         );
       },
     },
@@ -247,7 +254,7 @@ const GraphSelectTable = (props: {
             <Button
               size="sm"
               variant="outline"
-              disabled={isCurrent}
+              disabled={isCurrent || disabled}
               onClick={() => {
                 const graph = row.original as IGraph;
                 onSelect?.(graph);
@@ -319,5 +326,44 @@ const GraphSelectTable = (props: {
         </TableBody>
       </Table>
     </>
+  );
+};
+
+const GraphFieldAutoStart = (props: {
+  defaultValue?: boolean;
+  graphId: string;
+  onChange?: () => void;
+  disabled?: boolean;
+}) => {
+  const { defaultValue = false, graphId, onChange, disabled } = props;
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [checked, setChecked] = React.useState<boolean>(defaultValue);
+
+  const handleCheckedChange = async (checked: boolean) => {
+    setIsLoading(true);
+    try {
+      // Simulate an API call to update the auto-start setting
+      await postGraphsAutoStart({
+        auto_start: checked,
+        graph_id: graphId,
+      });
+      setChecked(checked);
+      onChange?.(); // Refresh the graphs data after updating
+    } catch (error) {
+      console.error("Failed to update auto-start setting:", error);
+      toast.error("Failed to update auto-start setting. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center">
+      <Checkbox
+        disabled={isLoading || disabled}
+        checked={checked}
+        onCheckedChange={handleCheckedChange}
+      />
+    </div>
   );
 };

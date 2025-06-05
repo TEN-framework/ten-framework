@@ -32,7 +32,7 @@ func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				panic(statusCode)
 			}
 
-			tenEnvTester.StopTest()
+			tenEnvTester.StopTest(nil)
 		},
 	)
 
