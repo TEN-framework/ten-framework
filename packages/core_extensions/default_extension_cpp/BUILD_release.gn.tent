@@ -11,11 +11,52 @@ ten_package("{{package_name}}") {
   package_kind = "extension"
   enable_build = true
 
-  sources = [ "src/main.cc" ]
+  sources = []
+  source_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                             [
+                               "--dir",
+                               rebase_path("src/**/*.h"),
+                               "--dir",
+                               rebase_path("src/**/*.cc"),
+                               "--recursive",
+                             ],
+                             "json")
+  foreach(source_file, source_files) {
+    sources += [ source_file.path ]
+  }
+
   include_dirs = [
+    "src",
     "include",
-    "include/nlohmann_json",
+
+    # The build flags for in-app building
+    "//ten_packages/system/ten_runtime/include",
+    "//ten_packages/system/nlohmann_json/include",
+
+    # The build flags for standalone building.
+    ".ten/app/ten_packages/system/ten_runtime/include",
+    ".ten/app/ten_packages/system/nlohmann_json/include",
   ]
+
+  lib_dirs = [
+    # The build flags for in-app building
+    "//ten_packages/system/ten_runtime/lib",
+
+    # The build flags for standalone building.
+    ".ten/app/ten_packages/system/ten_runtime/lib",
+  ]
+
+  if (is_win) {
+    libs = [
+      "ten_runtime.dll.lib",
+      "ten_utils.dll.lib",
+    ]
+  } else {
+    libs = [
+      "ten_runtime",
+      "ten_utils",
+    ]
+  }
 }
 
 if (ten_enable_standalone_test) {
@@ -28,15 +69,49 @@ if (ten_enable_standalone_test) {
   ten_package_test("{{package_name}}_test") {
     package_kind = "extension"
 
-    sources = [
-      ".ten/app/ten_packages/system/googletest/src/gtest-all.cc",
-      ".ten/app/ten_packages/system/googletest/src/gtest_main.cc",
-      "tests/basic.cc",
-    ]
+    sources = []
+    source_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                               [
+                                 "--dir",
+                                 rebase_path("tests/**/*.cc"),
+                                 "--recursive",
+                               ],
+                               "json")
+    foreach(source_file, source_files) {
+      sources += [ source_file.path ]
+    }
 
     include_dirs = [
       ".ten/app/ten_packages/system/googletest",
       ".ten/app/ten_packages/system/googletest/include",
+      ".ten/app/ten_packages/system/ten_runtime/include",
+      ".ten/app/ten_packages/system/nlohmann_json/include",
     ]
+
+    lib_dirs = [ ".ten/app/ten_packages/system/ten_runtime/lib" ]
+
+    if (is_win) {
+      libs = [
+        "ten_runtime.dll.lib",
+        "ten_utils.dll.lib",
+      ]
+    } else {
+      libs = [
+        "ten_runtime",
+        "ten_utils",
+      ]
+
+      if (is_mac) {
+        ldflags = [
+          "-Wl,-rpath=@loader_path/../.ten/app/ten_packages/system/ten_runtime/lib",
+        ]
+      } else if (is_linux) {
+        ldflags = [
+          "-Wl,-rpath=\$ORIGIN/../.ten/app/ten_packages/system/ten_runtime/lib",
+        ]
+      }
+    }
+
+    public_deps = [ ".ten/app/ten_packages/system/googletest" ]
   }
 }
