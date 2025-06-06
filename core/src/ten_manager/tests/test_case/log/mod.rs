@@ -8,7 +8,7 @@
 mod tests {
     use std::collections::HashMap;
 
-    use ten_manager::log::{parse_graph_resources_log, GraphResourcesLog};
+    use ten_manager::log::{parse_log_line, GraphResourcesLog};
 
     #[test]
     fn test_parse_graph_resources_log_extension_context() {
@@ -27,9 +27,8 @@ mod tests {
             extension_threads: HashMap::new(),
         };
 
-        let result =
-            parse_graph_resources_log(log_message, &mut graph_resources_log);
-        assert!(result.is_ok());
+        let result = parse_log_line(log_message, &mut graph_resources_log);
+        assert!(result.is_none()); // Graph resources log returns None
 
         assert_eq!(
             graph_resources_log.graph_id,
@@ -60,9 +59,8 @@ mod tests {
             extension_threads: HashMap::new(),
         };
 
-        let result =
-            parse_graph_resources_log(log_message, &mut graph_resources_log);
-        assert!(result.is_ok());
+        let result = parse_log_line(log_message, &mut graph_resources_log);
+        assert!(result.is_none()); // Graph resources log returns None
 
         assert_eq!(
             graph_resources_log.graph_id,
@@ -96,9 +94,8 @@ mod tests {
             extension_threads: HashMap::new(),
         };
 
-        let result =
-            parse_graph_resources_log(log_message, &mut graph_resources_log);
-        assert!(result.is_err());
+        let result = parse_log_line(log_message, &mut graph_resources_log);
+        assert!(result.is_none()); // Non-graph resources log without valid thread returns None
 
         // The log should be ignored, so the graph_resources_log should remain
         // unchanged
