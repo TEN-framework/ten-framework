@@ -3,51 +3,42 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from typing import Optional
 from ten_runtime import (
-    ExtensionTester,
-    TenEnvTester,
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
     Cmd,
-    CmdResult,
     StatusCode,
     TenError,
+    TenErrorCode,
 )
 
 
-class ExtensionTesterBasic(ExtensionTester):
-    def check_hello(
-        self,
-        ten_env: TenEnvTester,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
-    ):
-        if error is not None:
-            assert False, error.error_message()
-
-        assert result is not None
-
-        statusCode = result.get_status_code()
-        ten_env.log_debug(f"receive hello_world, status: {statusCode}")
-
-        if statusCode == StatusCode.OK:
-            ten_env.stop_test()
-
-    def on_start(self, ten_env: TenEnvTester) -> None:
+class ExtensionTesterBasic(AsyncExtensionTester):
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
 
         ten_env.log_debug("send hello_world")
-        ten_env.send_cmd(
-            new_cmd,
-            lambda ten_env, result, error: self.check_hello(
-                ten_env, result, error
-            ),
-        )
+        result, err = await ten_env.send_cmd(new_cmd)
+        if (
+            err is not None
+            or result is None
+            or result.get_status_code() != StatusCode.OK
+        ):
+            ten_env.stop_test(
+                TenError.create(
+                    TenErrorCode.ErrorCodeGeneric,
+                    "Failed to send hello_world",
+                )
+            )
+        else:
+            ten_env.stop_test()
 
         ten_env.log_debug("tester on_start_done")
-        ten_env.on_start_done()
 
 
 def test_basic():
     tester = ExtensionTesterBasic()
     tester.set_test_mode_single("default_async_extension_python")
-    tester.run()
+    err = tester.run()
+    if err is not None:
+        assert False, err.error_message()

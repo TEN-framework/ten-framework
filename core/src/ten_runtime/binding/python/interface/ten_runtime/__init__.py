@@ -20,7 +20,7 @@ from .video_frame import VideoFrame, PixelFmt
 from .audio_frame import AudioFrame, AudioFrameDataFmt
 from .data import Data
 from .log_level import LogLevel
-from .error import TenError
+from .error import TenError, TenErrorCode
 from .test import ExtensionTester, TenEnvTester
 from .async_test import AsyncExtensionTester, AsyncTenEnvTester
 
@@ -34,6 +34,7 @@ __all__ = [
     "Extension",
     "AsyncExtension",
     "TenEnv",
+    "TenErrorCode",
     "AsyncTenEnv",
     "Cmd",
     "StatusCode",
