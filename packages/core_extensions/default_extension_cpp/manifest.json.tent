@@ -20,7 +20,8 @@
   ],
   "package": {
     "include": [
-      "**"
+      "**",
+      ".vscode/**"
     ]
   },
   "api": {},
