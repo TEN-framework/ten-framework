@@ -172,6 +172,11 @@
       "type": "extension",
       "name": "stepfun_v2v_python",
       "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "azure_v2v_python",
+      "version": "=0.1.0"
     }
   ],
   "scripts": {
