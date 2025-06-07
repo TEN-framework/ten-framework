@@ -1,0 +1,5 @@
+agora-token-builder>=1.0.0
+requests>=2.32.3
+websockets>=15.0.1
+scipy
+numpy

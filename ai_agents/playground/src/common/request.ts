@@ -41,7 +41,12 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     user_uid: userId,
     graph_name: graphName,
     language,
-    voice_type: voiceType
+    voice_type: voiceType,
+    properties: {
+      "avatar": {
+        "agora_channel_name": channel,
+      }
+    }
   }
   let resp: any = await axios.post(url, data)
   resp = (resp.data) || {}

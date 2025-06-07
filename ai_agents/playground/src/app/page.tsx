@@ -42,7 +42,7 @@ export default function Home() {
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
     }
-    if (user.audioTrack) {
+    if (user.remoteAudioTrack) {
       setRemoteUser(user)
     } 
   }

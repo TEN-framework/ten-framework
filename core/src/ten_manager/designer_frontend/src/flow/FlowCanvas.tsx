@@ -327,7 +327,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
           },
           popup: {
             width: 450,
-            height: 700,
+            height: 1000,
             initialPosition: "top-left",
           },
         });

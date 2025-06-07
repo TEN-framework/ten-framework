@@ -146,16 +146,16 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       }
       this.emit("remoteUserChanged", {
         userId: user.uid,
-        audioTrack: user.audioTrack,
-        videoTrack: user.videoTrack,
+        remoteAudioTrack: user.audioTrack,
+        remoteVideoTrack: user.videoTrack,
       });
     });
     this.client.on("user-unpublished", async (user, mediaType) => {
       await this.client.unsubscribe(user, mediaType);
       this.emit("remoteUserChanged", {
         userId: user.uid,
-        audioTrack: user.audioTrack,
-        videoTrack: user.videoTrack,
+        remoteAudioTrack: user.audioTrack,
+        remoteVideoTrack: user.videoTrack,
       });
     });
     this.client.on("stream-message", (uid: UID, stream: any) => {
