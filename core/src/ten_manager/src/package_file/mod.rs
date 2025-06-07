@@ -83,6 +83,10 @@ pub async fn create_package_tar_gz_file(
     }
 
     let mut globset_builder = GlobSetBuilder::new();
+    // For hidden files/folders specified in manifest.json, we add them to the
+    // hidden_globset_builder. And we will not ignore them when packing the
+    // package.
+    let mut hidden_globset_builder = GlobSetBuilder::new();
 
     // manifest.json is needed for all TEN packages.
     globset_builder.add(
@@ -97,12 +101,19 @@ pub async fn create_package_tar_gz_file(
             .add(GlobBuilder::new("*").literal_separator(false).build()?);
     } else {
         for pattern in &include_patterns.unwrap() {
-            globset_builder.add(
-                GlobBuilder::new(pattern).literal_separator(true).build()?,
-            );
+            if pattern.starts_with('.') || pattern.contains("/.") {
+                hidden_globset_builder.add(GlobBuilder::new(pattern).build()?);
+            } else {
+                globset_builder.add(
+                    GlobBuilder::new(pattern)
+                        .literal_separator(true)
+                        .build()?,
+                );
+            }
         }
     }
     let include_globset = globset_builder.build()?;
+    let hidden_globset = hidden_globset_builder.build()?;
 
     let mut ignore_builder = WalkBuilder::new(folder_to_tar_gz);
 
@@ -139,6 +150,23 @@ pub async fn create_package_tar_gz_file(
                 let name = path.strip_prefix(folder_to_tar_gz)?;
 
                 if include_globset.is_match(name) {
+                    files_to_include.push(path.to_path_buf());
+                }
+            }
+            Err(err) => println!("Error: {err:?}"),
+        }
+    }
+
+    // For hidden files/folders specified in manifest.json, we will not ignore
+    // them when packing the package.
+    ignore_builder.hidden(false);
+    for result in ignore_builder.build() {
+        match result {
+            Ok(entry) => {
+                let path = entry.path();
+                let name = path.strip_prefix(folder_to_tar_gz)?;
+
+                if hidden_globset.is_match(name) {
                     files_to_include.push(path.to_path_buf());
                 }
             }

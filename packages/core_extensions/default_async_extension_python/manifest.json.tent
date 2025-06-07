@@ -19,7 +19,10 @@
       "property.json",
       "**.py",
       "README.md",
-      "requirements.txt"
+      "tests/**.py",
+      "tests/bin/*",
+      "requirements.txt",
+      ".vscode/**"
     ]
   },
   "api": {},

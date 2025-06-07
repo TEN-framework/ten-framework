@@ -18,6 +18,8 @@ ten_package("default_extension_cpp") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
+    ".vscode/launch.json.tent",
     "BUILD_release.gn.tent=>BUILD.gn.tent",
     "BUILD_release.gn=>BUILD.gn",
     "manifest.json",
@@ -25,6 +27,8 @@ ten_package("default_extension_cpp") {
     "property.json",
     "src/main.cc",
     "src/main.cc.tent",
+    "tools/run_script.py",
+    "tools/run_script.py.tent",
   ]
 
   tests_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
@@ -43,8 +47,6 @@ ten_package("default_extension_cpp") {
     resources +=
         [ "tests/${tests_file_rel_path}=>tests/${tests_file_rel_path}" ]
   }
-
-  deps = [ ":copy_nlohmann_headers_for_default_extension_cpp" ]
 }
 
 if (ten_enable_ten_manager) {

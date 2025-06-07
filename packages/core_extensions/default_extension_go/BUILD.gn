@@ -12,6 +12,8 @@ ten_package("default_extension_go") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
+    ".vscode/settings.json",
     "README-CN.md",
     "README-CN.md.tent",
     "README.md",

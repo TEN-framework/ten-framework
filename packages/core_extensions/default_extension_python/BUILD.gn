@@ -12,10 +12,11 @@ ten_package("default_extension_python") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
+    ".vscode/settings.json",
     "README.md",
     "README.md.tent",
     "__init__.py",
-    "__init__.py.tent",
     "addon.py",
     "addon.py.tent",
     "extension.py",

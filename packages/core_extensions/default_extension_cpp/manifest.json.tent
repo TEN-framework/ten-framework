@@ -11,16 +11,22 @@
       "type": "system",
       "name": "ten_runtime",
       "version": "0.10.11"
+    },
+    {
+      "type": "system",
+      "name": "googletest",
+      "version": "=1.7.0-rc2"
     }
   ],
   "package": {
     "include": [
-      "**"
+      "**",
+      ".vscode/**"
     ]
   },
   "api": {},
   "scripts": {
-    "test": "bin/{{package_name}}_test",
-    "build": "sh -c cd .ten/app && tgn gen linux x64 debug -- ten_enable_standalone_test=true && tgn build linux x64 debug"
+    "test": "python3 tools/run_script.py test",
+    "build": "python3 tools/run_script.py build"
   }
 }
