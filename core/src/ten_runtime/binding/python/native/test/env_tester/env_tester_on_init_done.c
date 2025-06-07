@@ -22,7 +22,7 @@ static void ten_py_ten_env_tester_on_init_done_proxy_notify(
 }
 
 PyObject *ten_py_ten_env_tester_on_init_done(PyObject *self,
-                                              TEN_UNUSED PyObject *args) {
+                                             TEN_UNUSED PyObject *args) {
   ten_py_ten_env_tester_t *py_ten_env_tester = (ten_py_ten_env_tester_t *)self;
   TEN_ASSERT(py_ten_env_tester &&
                  ten_py_ten_env_tester_check_integrity(py_ten_env_tester),
