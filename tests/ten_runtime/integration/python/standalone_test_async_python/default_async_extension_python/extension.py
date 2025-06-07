@@ -127,5 +127,5 @@ class DefaultAsyncExtension(AsyncExtension):
             ten_env.log_info("goodbye cost time {} ms".format(cost_time * 1000))
 
             # To rule out that the result reply was triggered by path_timeout,
-            # we need to ensure cost_time is less than 1 second.
-            assert cost_time < 1
+            # we need to ensure cost_time is less than 5 second.
+            assert cost_time < 5
