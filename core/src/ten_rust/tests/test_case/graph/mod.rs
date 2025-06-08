@@ -6,7 +6,7 @@
 //
 mod exposed_message;
 mod flatten_integration;
-mod source_uri;
+mod import_uri;
 mod subgraph;
 
 #[cfg(test)]

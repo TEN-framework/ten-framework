@@ -577,17 +577,17 @@ impl Graph {
     where
         F: Fn(&str, Option<&str>, &mut Option<String>) -> Result<Graph>,
     {
-        let source_uri =
-            subgraph_node.source_uri.as_ref().ok_or_else(|| {
+        let import_uri =
+            subgraph_node.import_uri.as_ref().ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Subgraph node '{}' must have source_uri",
+                    "Subgraph node '{}' must have import_uri",
                     subgraph_node.name
                 )
             })?;
 
         let mut new_base_dir: Option<String> = None;
         let subgraph =
-            subgraph_loader(source_uri, current_base_dir, &mut new_base_dir)?;
+            subgraph_loader(import_uri, current_base_dir, &mut new_base_dir)?;
 
         Self::process_loaded_subgraph(
             subgraph_node,

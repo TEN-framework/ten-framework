@@ -50,7 +50,7 @@ pub struct GraphNode {
     /// The URI to the source subgraph JSON file. This field is only present
     /// for subgraph nodes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_uri: Option<String>,
+    pub import_uri: Option<String>,
 }
 
 impl GraphNode {

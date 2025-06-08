@@ -13,7 +13,7 @@ mod tests {
     use ten_rust::graph::{graph_info::GraphInfo, node::GraphNodeType, Graph};
 
     #[test]
-    fn test_graph_source_uri() {
+    fn test_graph_import_uri() {
         // Create a temporary graph file.
         let temp_dir = tempdir().unwrap();
         let graph_file_path = temp_dir.path().join("test_graph.json");
@@ -50,8 +50,8 @@ mod tests {
         // Write the test graph to the file.
         fs::write(&graph_file_path, test_graph_str).unwrap();
 
-        // Create a GraphInfo with source_uri pointing to the test graph file.
-        let source_uri = graph_file_path.to_str().unwrap().to_string();
+        // Create a GraphInfo with import_uri pointing to the test graph file.
+        let import_uri = graph_file_path.to_str().unwrap().to_string();
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
@@ -61,13 +61,13 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some(source_uri),
+            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
         };
 
-        // Validate and complete (this should load the graph from source_uri).
+        // Validate and complete (this should load the graph from import_uri).
         graph_info.validate_and_complete_and_flatten().unwrap();
 
         // Verify that the graph was loaded correctly.
@@ -84,10 +84,10 @@ mod tests {
     }
 
     #[test]
-    fn test_source_uri_mutual_exclusion_with_nodes() {
+    fn test_import_uri_mutual_exclusion_with_nodes() {
         use ten_rust::graph::node::{GraphNode, GraphNodeType};
 
-        // Create a GraphInfo with both source_uri and nodes - this should fail
+        // Create a GraphInfo with both import_uri and nodes - this should fail
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
@@ -99,13 +99,13 @@ mod tests {
                     extension_group: Some("test_group".to_string()),
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 }],
                 connections: None,
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -115,17 +115,17 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'source_uri' is specified, 'nodes' field must not be present"
+            "When 'import_uri' is specified, 'nodes' field must not be present"
         ));
     }
 
     #[test]
-    fn test_source_uri_mutual_exclusion_with_connections() {
+    fn test_import_uri_mutual_exclusion_with_connections() {
         use ten_rust::graph::connection::{
             GraphConnection, GraphLoc, GraphMessageFlow,
         };
 
-        // Create a GraphInfo with both source_uri and connections - this should
+        // Create a GraphInfo with both import_uri and connections - this should
         // fail
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
@@ -149,7 +149,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -159,16 +159,16 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'source_uri' is specified, 'connections' field must not be \
+            "When 'import_uri' is specified, 'connections' field must not be \
              present"
         ));
     }
 
     #[test]
-    fn test_source_uri_mutual_exclusion_with_exposed_messages() {
+    fn test_import_uri_mutual_exclusion_with_exposed_messages() {
         use ten_rust::graph::{GraphExposedMessage, GraphExposedMessageType};
 
-        // Create a GraphInfo with both source_uri and exposed_messages - this
+        // Create a GraphInfo with both import_uri and exposed_messages - this
         // should fail
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
@@ -184,7 +184,7 @@ mod tests {
                 }]),
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -194,16 +194,16 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'source_uri' is specified, 'exposed_messages' field must \
+            "When 'import_uri' is specified, 'exposed_messages' field must \
              not be present"
         ));
     }
 
     #[test]
-    fn test_source_uri_mutual_exclusion_with_exposed_properties() {
+    fn test_import_uri_mutual_exclusion_with_exposed_properties() {
         use ten_rust::graph::GraphExposedProperty;
 
-        // Create a GraphInfo with both source_uri and exposed_properties - this
+        // Create a GraphInfo with both import_uri and exposed_properties - this
         // should fail
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
@@ -218,7 +218,7 @@ mod tests {
                     name: "test_prop".to_string(),
                 }]),
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -228,13 +228,13 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'source_uri' is specified, 'exposed_properties' field must \
+            "When 'import_uri' is specified, 'exposed_properties' field must \
              not be present"
         ));
     }
 
     #[test]
-    fn test_source_uri_without_conflicting_fields_succeeds() {
+    fn test_import_uri_without_conflicting_fields_succeeds() {
         // Create a temporary graph file.
         let temp_dir = tempdir().unwrap();
         let graph_file_path = temp_dir.path().join("test_graph.json");
@@ -256,9 +256,9 @@ mod tests {
         // Write the test graph to the file.
         fs::write(&graph_file_path, test_graph_str).unwrap();
 
-        // Create a GraphInfo with only source_uri and empty graph fields - this
+        // Create a GraphInfo with only import_uri and empty graph fields - this
         // should succeed
-        let source_uri = graph_file_path.to_str().unwrap().to_string();
+        let import_uri = graph_file_path.to_str().unwrap().to_string();
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
@@ -268,7 +268,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some(source_uri),
+            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -278,7 +278,7 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten();
         assert!(result.is_ok());
 
-        // Verify that the graph was loaded from source_uri
+        // Verify that the graph was loaded from import_uri
         assert_eq!(graph_info.graph.nodes.len(), 1);
         assert_eq!(graph_info.graph.nodes[0].name, "test_ext");
     }

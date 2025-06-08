@@ -28,7 +28,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -39,7 +39,7 @@ mod tests {
                     property: Some(
                         serde_json::json!({"app_id": "${env:AGORA_APP_ID}"}),
                     ),
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph.json".to_string(),
                     ),
                 },
@@ -79,7 +79,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -88,7 +88,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: Some(vec![GraphConnection {
@@ -203,7 +203,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -212,7 +212,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph2.json".to_string(),
                     ),
                 },
@@ -283,7 +283,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -292,7 +292,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -368,7 +368,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -377,7 +377,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph2.json".to_string(),
                     ),
                 },
@@ -417,7 +417,7 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: None,
-                source_uri: None,
+                import_uri: None,
             }],
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
@@ -457,7 +457,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -466,7 +466,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph2.json".to_string(),
                     ),
                 },
@@ -505,7 +505,7 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: None,
-                source_uri: None,
+                import_uri: None,
             }],
             connections: None,
             exposed_messages: None,
@@ -539,7 +539,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -548,7 +548,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph1.json".to_string(),
                     ),
                 },
@@ -590,7 +590,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -599,7 +599,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph2.json".to_string(),
                     ),
                 },
@@ -639,7 +639,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -648,7 +648,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: Some(vec![GraphConnection {
@@ -772,7 +772,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -781,7 +781,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph1.json".to_string(),
                     ),
                 },
@@ -821,7 +821,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -830,7 +830,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph2.json".to_string(),
                     ),
                 },
@@ -855,7 +855,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -864,7 +864,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -931,7 +931,7 @@ mod tests {
     }
 
     #[test]
-    fn test_flatten_missing_source_uri_error() {
+    fn test_flatten_missing_import_uri_error() {
         let main_graph = Graph {
             nodes: vec![GraphNode {
                 type_: GraphNodeType::Subgraph,
@@ -940,7 +940,7 @@ mod tests {
                 extension_group: None,
                 app: None,
                 property: None,
-                source_uri: None, // Missing source_uri
+                import_uri: None, // Missing import_uri
             }],
             connections: None,
             exposed_messages: None,
@@ -959,7 +959,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Subgraph node 'subgraph_1' must have source_uri"));
+            .contains("Subgraph node 'subgraph_1' must have import_uri"));
     }
 
     #[test]
@@ -975,7 +975,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -984,7 +984,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph3.json".to_string(),
                     ),
                 },
@@ -1109,7 +1109,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -1118,7 +1118,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -1288,7 +1288,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -1297,7 +1297,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         "http://example.com/subgraph1.json".to_string(),
                     ),
                 },
@@ -1330,7 +1330,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -1339,7 +1339,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -1445,7 +1445,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -1454,7 +1454,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some(
+                    import_uri: Some(
                         subgraph_file_path.to_str().unwrap().to_string(),
                     ),
                 },
