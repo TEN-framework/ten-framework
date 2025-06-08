@@ -99,7 +99,7 @@ mod tests {
                     extension_group: Some("test_group".to_string()),
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 }],
                 connections: None,
                 exposed_messages: None,

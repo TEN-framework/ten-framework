@@ -56,7 +56,7 @@ pub fn graph_add_extension_node(
         extension_group: extension_group.clone(),
         app: app.clone(),
         property: property.clone(),
-        source_uri: None,
+        import_uri: None,
     };
 
     // Add the node to the graph.
