@@ -71,7 +71,7 @@ pub fn get_pkg_predefined_graph_from_nodes_and_connections(
                 Some(exposed_properties.to_vec())
             },
         },
-        source_uri: None,
+        import_uri: None,
         app_base_dir: None,
         belonging_pkg_type: None,
         belonging_pkg_name: None,
