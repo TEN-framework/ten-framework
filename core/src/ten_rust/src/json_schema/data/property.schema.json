@@ -275,7 +275,9 @@
           "$ref": "#/$defs/alphanumericCharacters"
         },
         "import_uri": {
-          "$ref": "#/$defs/non_empty_non_localhost_uri"
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1
         },
         "property": {
           "type": "object",
@@ -744,7 +746,9 @@
                 "default": false
               },
               "source_uri": {
-                "$ref": "#/$defs/non_empty_non_localhost_uri"
+                "type": "string",
+                "format": "uri-reference",
+                "minLength": 1
               },
               "nodes": {
                 "type": "array",
