@@ -1526,15 +1526,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_source_uri_mutual_exclusion_with_nodes() {
-        // Test that source_uri and nodes are mutually exclusive
+    fn test_validate_import_uri_mutual_exclusion_with_nodes() {
+        // Test that import_uri and nodes are mutually exclusive
         let property = r#"
         {
           "ten": {
             "predefined_graphs": [
               {
                 "name": "default",
-                "source_uri": "test_graph.json",
+                "import_uri": "test_graph.json",
                 "nodes": [
                   {
                     "type": "extension",
@@ -1556,15 +1556,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_source_uri_mutual_exclusion_with_connections() {
-        // Test that source_uri and connections are mutually exclusive
+    fn test_validate_import_uri_mutual_exclusion_with_connections() {
+        // Test that import_uri and connections are mutually exclusive
         let property = r#"
         {
           "ten": {
             "predefined_graphs": [
               {
                 "name": "default",
-                "source_uri": "test_graph.json",
+                "import_uri": "test_graph.json",
                 "connections": [
                   {
                     "extension": "test_ext",
@@ -1593,15 +1593,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_source_uri_mutual_exclusion_with_exposed_messages() {
-        // Test that source_uri and exposed_messages are mutually exclusive
+    fn test_validate_import_uri_mutual_exclusion_with_exposed_messages() {
+        // Test that import_uri and exposed_messages are mutually exclusive
         let property = r#"
         {
           "ten": {
             "predefined_graphs": [
               {
                 "name": "default",
-                "source_uri": "test_graph.json",
+                "import_uri": "test_graph.json",
                 "exposed_messages": [
                   {
                     "type": "cmd_in",
@@ -1622,15 +1622,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_source_uri_mutual_exclusion_with_exposed_properties() {
-        // Test that source_uri and exposed_properties are mutually exclusive
+    fn test_validate_import_uri_mutual_exclusion_with_exposed_properties() {
+        // Test that import_uri and exposed_properties are mutually exclusive
         let property = r#"
         {
           "ten": {
             "predefined_graphs": [
               {
                 "name": "default",
-                "source_uri": "test_graph.json",
+                "import_uri": "test_graph.json",
                 "exposed_properties": [
                   {
                     "name": "test_prop",
@@ -1650,15 +1650,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_source_uri_without_conflicting_fields_succeeds() {
-        // Test that source_uri alone is valid
+    fn test_validate_import_uri_without_conflicting_fields_succeeds() {
+        // Test that import_uri alone is valid
         let property = r#"
         {
           "ten": {
             "predefined_graphs": [
               {
                 "name": "default",
-                "source_uri": "test_graph.json"
+                "import_uri": "test_graph.json"
               }
             ]
           }
@@ -1670,8 +1670,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_graph_without_source_uri_succeeds() {
-        // Test that a graph without source_uri but with other fields is valid
+    fn test_validate_graph_without_import_uri_succeeds() {
+        // Test that a graph without import_uri but with other fields is valid
         let property = r#"
         {
           "ten": {

@@ -51,7 +51,7 @@ mod tests {
         fs::write(&graph_file_path, test_graph_str).unwrap();
 
         // Create a GraphInfo with source_uri pointing to the test graph file.
-        let source_uri = graph_file_path.to_str().unwrap().to_string();
+        let import_uri = graph_file_path.to_str().unwrap().to_string();
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
@@ -61,7 +61,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some(source_uri),
+            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -105,7 +105,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -149,7 +149,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -184,7 +184,7 @@ mod tests {
                 }]),
                 exposed_properties: None,
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -218,7 +218,7 @@ mod tests {
                     name: "test_prop".to_string(),
                 }]),
             },
-            source_uri: Some("test_uri".to_string()),
+            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -268,7 +268,7 @@ mod tests {
                 exposed_messages: None,
                 exposed_properties: None,
             },
-            source_uri: Some(source_uri),
+            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,

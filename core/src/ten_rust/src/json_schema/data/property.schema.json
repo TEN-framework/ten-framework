@@ -745,7 +745,7 @@
                 "type": "boolean",
                 "default": false
               },
-              "source_uri": {
+              "import_uri": {
                 "type": "string",
                 "format": "uri-reference",
                 "minLength": 1
@@ -866,7 +866,7 @@
             "oneOf": [
               {
                 "required": [
-                  "source_uri"
+                  "import_uri"
                 ],
                 "not": {
                   "anyOf": [
@@ -896,7 +896,7 @@
               {
                 "not": {
                   "required": [
-                    "source_uri"
+                    "import_uri"
                   ]
                 }
               }
