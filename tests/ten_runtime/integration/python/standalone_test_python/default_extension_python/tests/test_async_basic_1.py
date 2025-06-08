@@ -106,3 +106,13 @@ def test_timeout():
 
     assert err is not None
     assert err.error_code() == TenErrorCode.ErrorCodeTimeout
+
+
+def test_timeout2():
+    tester = AsyncExtensionTesterTimeout()
+    tester.set_test_mode_single("default_extension_python")
+    tester.set_timeout(50 * 1000)  # 50ms
+    err = tester.run()
+
+    assert err is not None
+    assert err.error_code() == TenErrorCode.ErrorCodeTimeout
