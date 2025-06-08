@@ -274,6 +274,9 @@
         "extension_group": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
+        "import_uri": {
+          "$ref": "#/$defs/non_empty_non_localhost_uri"
+        },
         "property": {
           "type": "object",
           "propertyNames": { // The property name should be alphanumericCharacters.
@@ -741,8 +744,7 @@
                 "default": false
               },
               "source_uri": {
-                "type": "string",
-                "minLength": 1
+                "$ref": "#/$defs/non_empty_non_localhost_uri"
               },
               "nodes": {
                 "type": "array",
