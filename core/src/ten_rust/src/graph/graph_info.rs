@@ -32,7 +32,7 @@ pub fn load_graph_from_uri(
         // TODO: Implement HTTP request to fetch the graph file
         // For now, return an error since HTTP requests are not implemented
         // yet.
-        return Err(anyhow!("HTTP URLs are not supported yet for source_uri"));
+        return Err(anyhow!("HTTP URLs are not supported yet for import_uri"));
     }
 
     // Handle relative and absolute paths.
@@ -83,7 +83,7 @@ pub struct GraphInfo {
     pub graph: Graph,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_uri: Option<String>,
+    pub import_uri: Option<String>,
 
     #[serde(skip)]
     pub app_base_dir: Option<String>,
@@ -95,13 +95,13 @@ pub struct GraphInfo {
 
 impl GraphInfo {
     pub fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
-        // Validate mutual exclusion between source_uri and graph fields
-        if self.source_uri.is_some() {
-            // When source_uri is present, the graph fields should be empty or
+        // Validate mutual exclusion between import_uri and graph fields
+        if self.import_uri.is_some() {
+            // When import_uri is present, the graph fields should be empty or
             // None
             if !self.graph.nodes.is_empty() {
                 return Err(anyhow!(
-                    "When 'source_uri' is specified, 'nodes' field must not \
+                    "When 'import_uri' is specified, 'nodes' field must not \
                      be present"
                 ));
             }
@@ -109,7 +109,7 @@ impl GraphInfo {
             if let Some(connections) = &self.graph.connections {
                 if !connections.is_empty() {
                     return Err(anyhow!(
-                        "When 'source_uri' is specified, 'connections' field \
+                        "When 'import_uri' is specified, 'connections' field \
                          must not be present"
                     ));
                 }
@@ -118,7 +118,7 @@ impl GraphInfo {
             if let Some(exposed_messages) = &self.graph.exposed_messages {
                 if !exposed_messages.is_empty() {
                     return Err(anyhow!(
-                        "When 'source_uri' is specified, 'exposed_messages' \
+                        "When 'import_uri' is specified, 'exposed_messages' \
                          field must not be present"
                     ));
                 }
@@ -127,20 +127,20 @@ impl GraphInfo {
             if let Some(exposed_properties) = &self.graph.exposed_properties {
                 if !exposed_properties.is_empty() {
                     return Err(anyhow!(
-                        "When 'source_uri' is specified, 'exposed_properties' \
+                        "When 'import_uri' is specified, 'exposed_properties' \
                          field must not be present"
                     ));
                 }
             }
         }
 
-        // If source_uri is specified, load graph from the URI.
-        let source_uri = self.source_uri.clone();
+        // If import_uri is specified, load graph from the URI.
+        let import_uri = self.import_uri.clone();
         let app_base_dir = self.app_base_dir.clone();
-        if let Some(source_uri) = source_uri {
+        if let Some(import_uri) = import_uri {
             // Load graph from URI and replace the current graph
             let graph = load_graph_from_uri(
-                &source_uri,
+                &import_uri,
                 app_base_dir.as_deref(),
                 &mut None,
             )?;

@@ -42,7 +42,7 @@ impl GraphNodeForUpdate {
             extension_group: self.extension_group.clone(),
             app: self.app.clone(),
             property: self.property.clone(),
-            source_uri: None,
+            import_uri: None,
         }
     }
 }

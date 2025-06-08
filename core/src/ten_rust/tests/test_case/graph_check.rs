@@ -230,7 +230,7 @@ mod tests {
                     extension_group: Some("some_group".to_string()),
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Subgraph,
@@ -239,7 +239,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: Some("/tmp/subgraph.json".to_string()),
+                    import_uri: Some("/tmp/subgraph.json".to_string()),
                 },
             ],
             connections: Some(vec![GraphConnection {
