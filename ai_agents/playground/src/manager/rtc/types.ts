@@ -1,11 +1,11 @@
 import {
   UID,
-  IAgoraRTCRemoteUser,
-  IAgoraRTCClient,
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
   NetworkQuality,
   ILocalVideoTrack,
+  IRemoteVideoTrack,
+  IRemoteAudioTrack,
 } from "agora-rtc-sdk-ng"
 import { IChatItem, ITextItem } from "@/types"
 
@@ -24,4 +24,6 @@ export interface IUserTracks {
   videoTrack?: ICameraVideoTrack
   screenTrack?: ILocalVideoTrack
   audioTrack?: IMicrophoneAudioTrack
+  remoteVideoTrack?: IRemoteVideoTrack
+  remoteAudioTrack?: IRemoteAudioTrack
 }

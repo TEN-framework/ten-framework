@@ -99,9 +99,11 @@ export default function RTCCard(props: { className?: string }) {
       // trulience SDK will play audio in synch with mouth
       user.audioTrack?.stop();
     }
-    if (user.audioTrack) {
+    if (user.remoteAudioTrack) {
       setRemoteUser(user)
-    } 
+    }  else {
+      setRemoteUser(undefined)
+    }
   }
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
@@ -146,7 +148,7 @@ export default function RTCCard(props: { className?: string }) {
             />
           )
         ) : (
-          <AgentView  audioTrack={remoteuser?.audioTrack} />
+          <AgentView  audioTrack={remoteuser?.remoteAudioTrack} videoTrack={remoteuser?.remoteVideoTrack} />
         )}
       </div>
 

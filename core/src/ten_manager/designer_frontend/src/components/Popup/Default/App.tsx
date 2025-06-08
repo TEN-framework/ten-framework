@@ -213,7 +213,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         },
         popup: {
           width: 450,
-          height: 700,
+          height: 1000,
           initialPosition: "top-left",
         },
       });

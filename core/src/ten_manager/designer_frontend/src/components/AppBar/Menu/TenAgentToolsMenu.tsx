@@ -55,7 +55,7 @@ export const TenAgentToolsMenu = (props: {
       },
       popup: {
         width: 450,
-        height: 700,
+        height: 1000,
         initialPosition: "top-left",
       },
     });
