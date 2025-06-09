@@ -139,6 +139,7 @@
 #define TEN_STR_GRAPH "graph"
 #define TEN_STR_GRAPH_NAME "graph_name"
 #define TEN_STR_GRAPH_ID "graph_id"
+#define TEN_STR_IMPORT_URI "import_uri"
 
 #define TEN_STR_CASCADE_CLOSE_UPWARD "cascade_close_upward"
 #define TEN_STR_DUPLICATE "duplicate"

@@ -22,6 +22,6 @@ pub fn create_test_node(
         extension_group: None,
         app: app.map(|s| s.to_string()),
         property: None,
-        source_uri: None,
+        import_uri: None,
     }
 }

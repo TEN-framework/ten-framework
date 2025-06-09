@@ -26,7 +26,7 @@ mod tests {
                     extension_group: Some("some_group".to_string()),
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -35,7 +35,7 @@ mod tests {
                     extension_group: Some("another_group".to_string()),
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: Some(vec![GraphConnection {
