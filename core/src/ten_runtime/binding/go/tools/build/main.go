@@ -1364,7 +1364,7 @@ func (ab *AppBuilder) generateAutoImportFile() error {
 }
 
 func (ab *AppBuilder) requireExtensionAndSystemModules() error {
-	if len(ab.extensions) == 0 || len(ab.systemModules) == 0 {
+	if len(ab.extensions) == 0 && len(ab.systemModules) == 0 {
 		log.Println(
 			"No extension or system package is detected, no need to require extension and system modules.",
 		)
