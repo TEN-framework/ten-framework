@@ -29,32 +29,14 @@ ten_package("default_extension_cpp") {
     "src",
     "include",
 
-    # The build flags for in-app building
-    "//ten_packages/system/ten_runtime/include",
-
     # The build flags for standalone building.
     ".ten/app/ten_packages/system/ten_runtime/include",
   ]
 
   lib_dirs = [
-    # The build flags for in-app building
-    "//ten_packages/system/ten_runtime/lib",
-
     # The build flags for standalone building.
     ".ten/app/ten_packages/system/ten_runtime/lib",
   ]
-
-  if (is_win) {
-    libs = [
-      "ten_runtime.dll.lib",
-      "ten_utils.dll.lib",
-    ]
-  } else {
-    libs = [
-      "ten_runtime",
-      "ten_utils",
-    ]
-  }
 }
 
 if (ten_enable_standalone_test) {
