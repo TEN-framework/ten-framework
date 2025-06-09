@@ -23,8 +23,14 @@ config("ten_runtime_common_libs") {
 config("ten_runtime_common_config") {
   configs = [ ":ten_runtime_common_libs" ]
 
-  include_dirs = [ "//ten_packages/system/ten_runtime/include" ]
-  lib_dirs = [ "//ten_packages/system/ten_runtime/lib" ]
+  include_dirs = [
+    "//ten_packages/system/ten_runtime/include",
+    "//.ten/app/ten_packages/system/ten_runtime/include",
+  ]
+  lib_dirs = [
+    "//ten_packages/system/ten_runtime/lib",
+    "//.ten/app/ten_packages/system/ten_runtime/lib",
+  ]
 }
 
 config("config_for_app") {

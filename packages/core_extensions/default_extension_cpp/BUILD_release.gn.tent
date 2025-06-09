@@ -28,33 +28,7 @@ ten_package("{{package_name}}") {
   include_dirs = [
     "src",
     "include",
-
-    # The build flags for in-app building
-    "//ten_packages/system/ten_runtime/include",
-
-    # The build flags for standalone building.
-    ".ten/app/ten_packages/system/ten_runtime/include",
   ]
-
-  lib_dirs = [
-    # The build flags for in-app building
-    "//ten_packages/system/ten_runtime/lib",
-
-    # The build flags for standalone building.
-    ".ten/app/ten_packages/system/ten_runtime/lib",
-  ]
-
-  if (is_win) {
-    libs = [
-      "ten_runtime.dll.lib",
-      "ten_utils.dll.lib",
-    ]
-  } else {
-    libs = [
-      "ten_runtime",
-      "ten_utils",
-    ]
-  }
 }
 
 if (ten_enable_standalone_test) {
@@ -82,32 +56,7 @@ if (ten_enable_standalone_test) {
     include_dirs = [
       ".ten/app/ten_packages/system/googletest",
       ".ten/app/ten_packages/system/googletest/include",
-      ".ten/app/ten_packages/system/ten_runtime/include",
     ]
-
-    lib_dirs = [ ".ten/app/ten_packages/system/ten_runtime/lib" ]
-
-    if (is_win) {
-      libs = [
-        "ten_runtime.dll.lib",
-        "ten_utils.dll.lib",
-      ]
-    } else {
-      libs = [
-        "ten_runtime",
-        "ten_utils",
-      ]
-
-      if (is_mac) {
-        ldflags = [
-          "-Wl,-rpath,@loader_path/../.ten/app/ten_packages/system/ten_runtime/lib",
-        ]
-      } else if (is_linux) {
-        ldflags = [
-          "-Wl,-rpath=\$ORIGIN/../.ten/app/ten_packages/system/ten_runtime/lib",
-        ]
-      }
-    }
 
     public_deps = [ ".ten/app/ten_packages/system/googletest" ]
   }
