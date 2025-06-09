@@ -75,9 +75,18 @@ void ten_py_initialize_with_config(const char *program,
 }
 
 int ten_py_finalize(void) {
-  for (int i = 0; i < 10; i++) {
-    PyGC_Collect();
-  }
+  Py_ssize_t collected = 0;
+  int rounds = 0;
+  const int max_rounds = 10;
+
+  // Multiple rounds of collection until there are no more objects to collect or
+  // the maximum number of rounds is reached.
+  do {
+    collected = PyGC_Collect();
+    rounds++;
+  } while (collected > 0 && rounds < max_rounds);
+
+  return Py_FinalizeEx();
 
   return Py_FinalizeEx();
 }
