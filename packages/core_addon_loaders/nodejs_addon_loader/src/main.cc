@@ -210,8 +210,10 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
       // properly released.
       node::Stop(this_ptr->setup_->env());
 
-      this_ptr->notify(
-          [](ten::ten_env_t &ten_env) { ten_env.on_deinit_done(); });
+      this_ptr->notify([](ten::ten_env_t &ten_env) {
+        TEN_LOGI("[Nodejs addon loader] Nodejs de-initialized");
+        ten_env.on_deinit_done();
+      });
     });
     uv_async_send(deinit_handle);
   }
