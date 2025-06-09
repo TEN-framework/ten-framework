@@ -9,7 +9,7 @@ pub mod dependency;
 pub mod publish;
 pub mod support;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, path::Path, str::FromStr};
 
 use anyhow::{anyhow, Context, Result};
@@ -191,8 +191,25 @@ fn extract_dependencies(
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
         let mut result = Vec::new();
+        let mut seen_registry_deps = HashSet::new();
+
         for dep in deps {
-            let dep_value = serde_json::from_value(dep.clone())?;
+            let dep_value: ManifestDependency =
+                serde_json::from_value(dep.clone())?;
+
+            // Check for duplicate registry dependencies (type + name)
+            if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
+                let key = (pkg_type, name.to_string());
+                if seen_registry_deps.contains(&key) {
+                    return Err(anyhow!(
+                        "Duplicate dependency found: type '{}' and name '{}'",
+                        pkg_type,
+                        name
+                    ));
+                }
+                seen_registry_deps.insert(key);
+            }
+
             result.push(dep_value);
         }
         Ok(Some(result))
