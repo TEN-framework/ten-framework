@@ -1,5 +1,5 @@
 {
-  "name": "default_extension_nodejs",
+  "name": "{{package_name}}",
   "version": "1.0.0",
   "type": "module",
   "main": "./build/index.js",

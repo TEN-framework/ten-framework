@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "default_extension_nodejs",
+  "name": "{{package_name}}",
   "version": "0.10.11",
   "tags": [
     "nodejs"

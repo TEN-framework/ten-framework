@@ -22,7 +22,7 @@ def test_standalone_test_async_tmpl_async_python():
 
     # Step 1:
     #
-    # Create ollama_python package directly.
+    # Create example_async_extension_python package directly.
     tman_create_cmd = [
         os.path.join(root_dir, "ten_manager/bin/tman"),
         "--config-file",
@@ -33,6 +33,8 @@ def test_standalone_test_async_tmpl_async_python():
         extension_name,
         "--template",
         "default_async_extension_python",
+        "--template-data",
+        "class_name_prefix=Example",
     ]
 
     tman_create_process = subprocess.Popen(
