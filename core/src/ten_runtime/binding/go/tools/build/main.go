@@ -528,7 +528,7 @@ func Generate(location string, envs []string, verbose bool) error {
 	return nil
 }
 
-func ModAddLocalModule(module *ExtensionModule, target string) error {
+func ModAddLocalModule(module *ExtensionModule, target string, moduleType string) error {
 	// go mod edit -replace <mod>=<full path>
 	//
 	// Note that the module must be replaced with the full path, as the module
@@ -540,8 +540,9 @@ func ModAddLocalModule(module *ExtensionModule, target string) error {
 			"edit",
 			"-replace",
 			fmt.Sprintf(
-				"%s=./ten_packages/extension/%s",
+				"%s=./ten_packages/%s/%s",
 				module.module,
+				moduleType,
 				path.Base(module.location),
 			),
 		},
@@ -618,6 +619,7 @@ type AppBuilder struct {
 	options           *BuildOption
 	cachedEnv         map[string]string
 	extensions        []*ExtensionModule
+	systemModules     []*ExtensionModule
 }
 
 func NewAppBuilder(
@@ -631,6 +633,7 @@ func NewAppBuilder(
 		options:           options,
 		cachedEnv:         make(map[string]string),
 		extensions:        make([]*ExtensionModule, 0),
+		systemModules:     make([]*ExtensionModule, 0),
 	}
 }
 
@@ -697,6 +700,13 @@ func (ab *AppBuilder) Build() error {
 		)
 	}
 
+	if err := ab.autoDetectSystemPackages(); err != nil {
+		return fmt.Errorf(
+			"auto detect system packages failed. Root cause: \n\t%w",
+			err,
+		)
+	}
+
 	// Prepare the execution environments.
 	ab.addPrivateRepo()
 	ab.addRuntimeLdflags()
@@ -713,7 +723,7 @@ func (ab *AppBuilder) Build() error {
 		return err
 	}
 
-	if err := ab.requireExtensionModules(); err != nil {
+	if err := ab.requireExtensionAndSystemModules(); err != nil {
 		return err
 	}
 
@@ -978,6 +988,47 @@ func (em *ExtensionModule) String() string {
 	return fmt.Sprintf("%s @ %s", em.module, em.location)
 }
 
+func LoadSystemModule(
+	location string,
+	verbose bool,
+) (*ExtensionModule, error) {
+	// Check if the folder contains a manifest.json to determine if it is a
+	// system package.
+	if !IsFilePresent(path.Join(location, "manifest.json")) {
+		if verbose {
+			log.Printf("%s is not a system package, no manifest.json.\n", location)
+		}
+
+		return nil, nil
+	}
+
+	// Check if the folder contains a go.mod to determine if it is a GO system
+	// package.
+	modFile := path.Join(location, "go.mod")
+	if !IsFilePresent(modFile) {
+		if verbose {
+			log.Printf("%s is not a GO system package, no go.mod", location)
+		}
+
+		return nil, nil
+	}
+
+	bytes, err := os.ReadFile(modFile)
+	if err != nil {
+		return nil, fmt.Errorf("%s system package is invalid. \n\t%w", location, err)
+	}
+
+	module := ModulePath(bytes)
+	if len(module) == 0 {
+		return nil, fmt.Errorf("no mod is detected in %s/go.mod", location)
+	}
+
+	return &ExtensionModule{
+		module:   module,
+		location: location,
+	}, nil
+}
+
 func LoadExtensionModule(
 	location string,
 	verbose bool,
@@ -1028,6 +1079,48 @@ func LoadExtensionModule(
 		module:   module,
 		location: location,
 	}, nil
+}
+
+func (ab *AppBuilder) autoDetectSystemPackages() error {
+	sysBaseDir := path.Join(ab.options.AppDir, "ten_packages/system")
+	if !IsDirPresent(sysBaseDir) {
+		if ab.options.Verbose {
+			log.Println(
+				"The base directory [ten_packages/system] is absent, no system packages.",
+			)
+		}
+
+		return nil
+	}
+
+	entries, err := os.ReadDir(sysBaseDir)
+	if err != nil {
+		return err
+	}
+
+	// Check if the system package is a GO module.
+	for _, entry := range entries {
+		if entry.IsDir() {
+			sysModFile := path.Join(sysBaseDir, entry.Name(), "go.mod")
+			if !IsFilePresent(sysModFile) {
+				continue
+			}
+
+			sysModDir := path.Join(sysBaseDir, entry.Name())
+			sysMod, err := LoadSystemModule(sysModDir, ab.options.Verbose)
+			if err != nil {
+				return err
+			}
+
+			if sysMod == nil {
+				continue
+			}
+
+			ab.systemModules = append(ab.systemModules, sysMod)
+		}
+	}
+
+	return nil
 }
 
 func (ab *AppBuilder) autoDetectExtensions() error {
@@ -1270,10 +1363,10 @@ func (ab *AppBuilder) generateAutoImportFile() error {
 	return nil
 }
 
-func (ab *AppBuilder) requireExtensionModules() error {
-	if len(ab.extensions) == 0 {
+func (ab *AppBuilder) requireExtensionAndSystemModules() error {
+	if len(ab.extensions) == 0 || len(ab.systemModules) == 0 {
 		log.Println(
-			"No extension is detected, no need to require extension modules.",
+			"No extension or system package is detected, no need to require extension and system modules.",
 		)
 
 		return nil
@@ -1301,10 +1394,21 @@ func (ab *AppBuilder) requireExtensionModules() error {
 
 	// Add GO extensions as the module of the app.
 	for _, ext := range ab.extensions {
-		if err := ModAddLocalModule(ext, ab.options.AppDir); err != nil {
+		if err := ModAddLocalModule(ext, ab.options.AppDir, "extension"); err != nil {
 			return fmt.Errorf(
 				"Failed to add %s as go module of the app. \n\t%w",
 				ext.location,
+				err,
+			)
+		}
+	}
+
+	// Add GO system packages as the module of the app.
+	for _, sys := range ab.systemModules {
+		if err := ModAddLocalModule(sys, ab.options.AppDir, "system"); err != nil {
+			return fmt.Errorf(
+				"Failed to add %s as go module of the app. \n\t%w",
+				sys.location,
 				err,
 			)
 		}
