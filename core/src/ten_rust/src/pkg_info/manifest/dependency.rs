@@ -33,6 +33,20 @@ pub enum ManifestDependency {
     },
 }
 
+impl ManifestDependency {
+    /// Returns the type and name of the dependency if it's a
+    /// RegistryDependency. Returns None for LocalDependency as it doesn't
+    /// have type and name.
+    pub fn get_type_and_name(&self) -> Option<(PkgType, &str)> {
+        match self {
+            ManifestDependency::RegistryDependency {
+                pkg_type, name, ..
+            } => Some((*pkg_type, name.as_str())),
+            ManifestDependency::LocalDependency { .. } => None,
+        }
+    }
+}
+
 impl From<&PkgInfo> for ManifestDependency {
     fn from(pkg_info: &PkgInfo) -> Self {
         ManifestDependency::RegistryDependency {

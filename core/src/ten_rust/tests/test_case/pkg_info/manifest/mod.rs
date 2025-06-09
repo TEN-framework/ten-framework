@@ -28,4 +28,85 @@ mod tests {
         assert!(required.is_some());
         assert_eq!(required.unwrap().len(), 1);
     }
+
+    #[test]
+    fn test_manifest_duplicate_dependencies_should_fail() {
+        let manifest_str = r#"
+        {
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "dependencies": [
+                {
+                    "type": "extension",
+                    "name": "duplicate_ext",
+                    "version": "^1.0.0"
+                },
+                {
+                    "type": "extension",
+                    "name": "duplicate_ext",
+                    "version": "^2.0.0"
+                }
+            ]
+        }"#;
+
+        let result: Result<Manifest> = manifest_str.parse();
+        assert!(result.is_err());
+
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Duplicate dependency found"));
+        assert!(error_msg.contains("extension"));
+        assert!(error_msg.contains("duplicate_ext"));
+    }
+
+    #[test]
+    fn test_manifest_different_type_same_name_should_pass() {
+        let manifest_str = r#"
+        {
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "dependencies": [
+                {
+                    "type": "extension",
+                    "name": "same_name",
+                    "version": "^1.0.0"
+                },
+                {
+                    "type": "protocol",
+                    "name": "same_name",
+                    "version": "^1.0.0"
+                }
+            ]
+        }"#;
+
+        let result: Result<Manifest> = manifest_str.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_manifest_local_dependencies_should_not_conflict() {
+        let manifest_str = r#"
+        {
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "dependencies": [
+                {
+                    "path": "../path1"
+                },
+                {
+                    "path": "../path2"
+                },
+                {
+                    "type": "extension",
+                    "name": "registry_ext",
+                    "version": "^1.0.0"
+                }
+            ]
+        }"#;
+
+        let result: Result<Manifest> = manifest_str.parse();
+        assert!(result.is_ok());
+    }
 }
