@@ -6,7 +6,7 @@ import subprocess
 import os
 import sys
 from sys import stdout
-from .utils import build_config, build_pkg, fs_utils
+from .utils import build_config, fs_utils
 
 
 def test_standalone_test_async_tmpl_async_python():
