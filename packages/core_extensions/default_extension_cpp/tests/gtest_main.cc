@@ -1,8 +1,7 @@
 //
-// Copyright © 2025 Agora
 // This file is part of TEN Framework, an open source project.
-// Licensed under the Apache License, Version 2.0, with certain conditions.
-// Refer to the "LICENSE" file in the root directory for more information.
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file for more information.
 //
 #include <cstdio>
 
@@ -11,6 +10,7 @@
 #include "ten_utils/lib/thread.h"
 
 namespace {
+
 class fake_app_t : public ten::app_t {
  public:
   void set_configured_callback(std::function<void()> cb) {
@@ -21,15 +21,13 @@ class fake_app_t : public ten::app_t {
     ten_env.on_configure_done();
   }
 
-  // In the case of a fake app, we use `on_init` to allow the blocked testing
-  // fixture to continue execution, rather than using `on_configure`. The reason
-  // is that in the TEN runtime C core, the relationship between the addon
-  // manager and the (fake) app is bound after `on_configure_done` is called. So
-  // we only need to let the testing fixture continue execution after this
-  // action in the TEN runtime C core, and at the upper layer timing, the
-  // earliest point is within the `on_init()` function of the upper TEN app.
-  // Therefore, we release the testing fixture lock within the user layer's
-  // `on_init()` of the TEN app.
+  // For fake apps, we use `on_init` instead of `on_configure` to unblock the
+  // testing fixture. This is because in the TEN runtime C core, the binding
+  // between the addon manager and the fake app occurs after `on_configure_done`
+  // is called. We only need to unblock the testing fixture after this binding
+  // is complete. The earliest point where we can do this in the upper layer is
+  // within the TEN app's `on_init()` function. Therefore, we release the
+  // testing fixture lock in the user layer's `on_init()` implementation.
   void on_init(ten::ten_env_t &ten_env) override {
     TEN_ASSERT(configured_cb_, "Configured callback is not set.");
     configured_cb_();
@@ -93,8 +91,8 @@ class GlobalTestEnvironment : public ::testing::Environment {
   }
 
  private:
-  ten::app_t *fake_app_;
-  ten_thread_t *fake_app_thread_;
+  ten::app_t *fake_app_{};
+  ten_thread_t *fake_app_thread_{};
 };
 
 GTEST_API_ int main(int argc, char **argv) {
