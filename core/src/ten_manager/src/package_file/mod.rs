@@ -83,9 +83,13 @@ pub async fn create_package_tar_gz_file(
     }
 
     let mut globset_builder = GlobSetBuilder::new();
-    // For hidden files/folders specified in manifest.json, we add them to the
-    // hidden_globset_builder. And we will not ignore them when packing the
-    // package.
+    // By default, hidden files and folders are ignored, but if the user
+    // explicitly specifies hidden files and folders in the include field, this
+    // setting should take effect. Since we will uniformly ignore hidden files
+    // and folders in the later code, we search for hidden files and folders
+    // explicitly specified by the user here, so they can be added back later.
+    // We add hidden files and folders specified in manifest.json to the
+    // hidden_globset_builder so they won't be ignored during package creation.
     let mut hidden_globset_builder = GlobSetBuilder::new();
 
     // manifest.json is needed for all TEN packages.
@@ -101,6 +105,8 @@ pub async fn create_package_tar_gz_file(
             .add(GlobBuilder::new("*").literal_separator(false).build()?);
     } else {
         for pattern in &include_patterns.unwrap() {
+            // Check if pattern starts with '.' or contains '/.' to identify
+            // hidden files/folders
             if pattern.starts_with('.') || pattern.contains("/.") {
                 hidden_globset_builder.add(GlobBuilder::new(pattern).build()?);
             } else {
@@ -157,8 +163,8 @@ pub async fn create_package_tar_gz_file(
         }
     }
 
-    // For hidden files/folders specified in manifest.json, we will not ignore
-    // them when packing the package.
+    // For hidden files/folders explicitly specified in manifest.json, we will
+    // not ignore them when packing the package.
     ignore_builder.hidden(false);
     for result in ignore_builder.build() {
         match result {
