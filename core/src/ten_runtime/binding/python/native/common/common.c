@@ -74,7 +74,13 @@ void ten_py_initialize_with_config(const char *program,
   PyConfig_Clear(&config);
 }
 
-int ten_py_finalize(void) { return Py_FinalizeEx(); }
+int ten_py_finalize(void) {
+  for (int i = 0; i < 10; i++) {
+    PyGC_Collect();
+  }
+
+  return Py_FinalizeEx();
+}
 
 void ten_py_add_paths_to_sys(ten_list_t *paths) {
   PyObject *sys_module = PyImport_ImportModule("sys");
