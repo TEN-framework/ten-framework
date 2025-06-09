@@ -99,9 +99,7 @@ if (ten_enable_standalone_test) {
       ]
 
       if (is_mac) {
-        ldflags = [
-          "-Wl,-rpath,@loader_path/../.ten/app/ten_packages/system/ten_runtime/lib",
-        ]
+        ldflags = [ "-Wl,-rpath,@loader_path/../.ten/app/ten_packages/system/ten_runtime/lib" ]
       } else if (is_linux) {
         ldflags = [
           "-Wl,-rpath=\$ORIGIN/../.ten/app/ten_packages/system/ten_runtime/lib",

@@ -49,8 +49,10 @@ def detect_arch() -> str:
     raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
-def run_cmd(cmd: str, env: dict[str, str] = os.environ.copy()) -> int:
+def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
     """Run a shell command."""
+    if env is None:
+        env = os.environ.copy()
     print(f"Running: {cmd}")
     result = subprocess.run(cmd, shell=True, check=True, env=env)
     return result.returncode
@@ -74,9 +76,15 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
     if os == "win":
-        command = f"tgn.bat gen {os} {arch} {BUILD_TYPE} -- ten_enable_standalone_test=true"
+        command = (
+            f"tgn.bat gen {os} {arch} {BUILD_TYPE} "
+            "-- ten_enable_standalone_test=true"
+        )
     else:
-        command = f"tgn gen {os} {arch} {BUILD_TYPE} -- ten_enable_standalone_test=true"
+        command = (
+            f"tgn gen {os} {arch} {BUILD_TYPE} "
+            "-- ten_enable_standalone_test=true"
+        )
 
     rc = run_cmd(command)
     if rc != 0:
