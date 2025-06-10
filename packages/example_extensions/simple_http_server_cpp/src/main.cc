@@ -666,9 +666,15 @@ void send_ten_msg_with_req_body(
               if (!ext->is_stopping) {
                 // When stopping, do not push more data into libws thread.
                 // Libws world would clean up itself.
-                prepare_response_data_from_ten_world(
-                    http_session_data,
-                    cmd_result->get_property_to_json("detail"));
+                ten::error_t err;
+                auto detail_json_str =
+                    cmd_result->get_property_to_json("detail", &err);
+                if (!err.is_success()) {
+                  detail_json_str = "{}";
+                }
+
+                prepare_response_data_from_ten_world(http_session_data,
+                                                     detail_json_str);
               }
             });
       });
@@ -705,11 +711,16 @@ void send_ten_msg_without_req_body(
               assert(ext && "Failed to get the attached extension.");
 
               if (!ext->is_stopping) {
+                ten::error_t err;
+                auto detail_json_str =
+                    cmd_result->get_property_to_json("detail", &err);
+                if (!err.is_success()) {
+                  detail_json_str = "{}";
+                }
                 // When stopping, do not push more data into libws thread. Libws
                 // world would clean up itself.
-                prepare_response_data_from_ten_world(
-                    http_session_data,
-                    cmd_result->get_property_to_json("detail"));
+                prepare_response_data_from_ten_world(http_session_data,
+                                                     detail_json_str);
               }
             });
       });
