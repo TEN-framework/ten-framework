@@ -174,22 +174,26 @@ def test_go_app_cythonize():
     compile_pyx(app_root_path)
 
     if sys.platform == "linux":
-        if (
-            build_config_args.enable_sanitizer
-            and not build_config_args.is_clang
-        ):
-            libasan_path = os.path.join(
+        if build_config_args.enable_sanitizer:
+            if not build_config_args.is_clang:
+                libasan_path = os.path.join(
+                    base_path,
+                    (
+                        "go_app_cythonize_app/ten_packages/system/"
+                        "ten_runtime/lib/libasan.so"
+                    ),
+                )
+
+                if os.path.exists(libasan_path):
+                    print("Using AddressSanitizer library.")
+                    my_env["LD_PRELOAD"] = libasan_path
+
+            lsan_suppressions_path = os.path.join(
                 base_path,
-                (
-                    "go_app_cythonize_app/ten_packages/system/"
-                    "ten_runtime/lib/libasan.so"
-                ),
+                "lsan.suppressions",
             )
 
-            if os.path.exists(libasan_path):
-                print("Using AddressSanitizer library.")
-                my_env["LD_PRELOAD"] = libasan_path
-                my_env["LSAN_OPTIONS"] = "suppressions=lsan.suppressions"
+            my_env["LSAN_OPTIONS"] = f"suppressions={lsan_suppressions_path}"
 
     server_cmd = os.path.join(base_path, "go_app_cythonize_app/bin/start")
 
