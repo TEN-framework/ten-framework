@@ -22,7 +22,10 @@ group("cpp") {
   if (ten_enable_ten_manager) {
     # The standalone testing for the C++ extension depends on the Googletest
     # system package.
-    deps += [ "standalone_test_cpp" ]
+    deps += [
+      "standalone_test_cpp",
+      "standalone_test_tmpl_cpp",
+    ]
 
     if (target_os == "linux" && target_cpu == "x64") {
       deps += [ "standalone_vosk_asr_cpp" ]

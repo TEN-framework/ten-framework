@@ -14,13 +14,7 @@
   ],
   "package": {
     "include": [
-      "manifest.json",
-      "property.json",
-      "BUILD.gn",
-      "src/**",
-      "tsconfig.json",
-      "package.json",
-      "tests/**"
+      "**"
     ]
   },
   "api": {},

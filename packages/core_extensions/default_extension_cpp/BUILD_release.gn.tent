@@ -11,10 +11,23 @@ ten_package("{{package_name}}") {
   package_kind = "extension"
   enable_build = true
 
-  sources = [ "src/main.cc" ]
+  sources = []
+  source_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                             [
+                               "--dir",
+                               rebase_path("src/**/*.h"),
+                               "--dir",
+                               rebase_path("src/**/*.cc"),
+                               "--recursive",
+                             ],
+                             "json")
+  foreach(source_file, source_files) {
+    sources += [ source_file.path ]
+  }
+
   include_dirs = [
+    "src",
     "include",
-    "include/nlohmann_json",
   ]
 }
 
@@ -28,15 +41,18 @@ if (ten_enable_standalone_test) {
   ten_package_test("{{package_name}}_test") {
     package_kind = "extension"
 
-    sources = [
-      ".ten/app/ten_packages/system/googletest/src/gtest-all.cc",
-      ".ten/app/ten_packages/system/googletest/src/gtest_main.cc",
-      "tests/basic.cc",
-    ]
+    sources = []
+    source_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                               [
+                                 "--dir",
+                                 rebase_path("tests/**/*.cc"),
+                                 "--recursive",
+                               ],
+                               "json")
+    foreach(source_file, source_files) {
+      sources += [ source_file.path ]
+    }
 
-    include_dirs = [
-      ".ten/app/ten_packages/system/googletest",
-      ".ten/app/ten_packages/system/googletest/include",
-    ]
+    public_deps = [ ".ten/app/ten_packages/system/googletest" ]
   }
 }

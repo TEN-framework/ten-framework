@@ -187,6 +187,8 @@ class python_addon_loader_t : public ten::addon_loader_t {
       }
     }
 
+    TEN_LOGI("[Python addon loader] python de-initialized");
+
     ten_env.on_deinit_done();
   }
 
