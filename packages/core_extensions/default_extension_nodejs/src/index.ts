@@ -8,6 +8,9 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  Cmd,
+  CmdResult,
+  StatusCode,
 } from "ten-runtime-nodejs";
 
 class DefaultExtension extends Extension {
@@ -27,6 +30,14 @@ class DefaultExtension extends Extension {
     console.log("DefaultExtension onStart");
   }
 
+  async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
+    console.log("DefaultExtension onCmd", cmd.getName());
+
+    const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
+    cmdResult.setPropertyString("detail", "This is a demo");
+    tenEnv.returnResult(cmdResult);
+  }
+
   async onStop(_tenEnv: TenEnv): Promise<void> {
     console.log("DefaultExtension onStop");
   }
@@ -40,7 +51,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

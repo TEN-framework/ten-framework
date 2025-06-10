@@ -1,5 +1,5 @@
 {
-  "name": "ten-default-app",
+  "name": "ten-test",
   "version": "1.0.0",
   "main": "./bin/start.js",
   "type": "module",

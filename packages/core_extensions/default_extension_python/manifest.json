@@ -23,7 +23,8 @@
       "tests/**.py",
       "tests/**.tent",
       "tests/bin/*",
-      "requirements.txt"
+      "requirements.txt",
+      ".vscode/**"
     ]
   },
   "api": {},

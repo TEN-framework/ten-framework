@@ -1,0 +1,24 @@
+{
+  "type": "extension",
+  "name": "{{package_name}}",
+  "version": "0.10.11",
+  "tags": [
+    "nodejs"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.10.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
