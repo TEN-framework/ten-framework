@@ -52,7 +52,5 @@ if (ten_enable_standalone_test) {
     foreach(source_file, source_files) {
       sources += [ source_file.path ]
     }
-
-    public_deps = [ ".ten/app/ten_packages/system/googletest" ]
   }
 }
