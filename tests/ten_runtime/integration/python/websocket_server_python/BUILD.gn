@@ -30,6 +30,7 @@ ten_package_test_prepare_auxiliary_resources(
     "websocket_server_python_test_files") {
   resources = [
     "__init__.py",
+    "lsan.suppressions",
     "test_case.py",
   ]
 

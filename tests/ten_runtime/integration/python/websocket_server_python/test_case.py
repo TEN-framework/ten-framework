@@ -139,9 +139,15 @@ def test_websocket_server_python():
                 ),
             )
 
+            lsan_suppressions_path = os.path.join(
+                base_path,
+                "lsan.suppressions",
+            )
+
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
+                my_env["LSAN_OPTIONS"] = f"suppressions={lsan_suppressions_path}"
 
     server_cmd = os.path.join(
         base_path, "websocket_server_python_app/bin/start"
