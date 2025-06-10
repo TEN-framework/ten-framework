@@ -36,5 +36,8 @@ config("config_for_ten_packages") {
 }
 
 config("config_for_standalone_ten_packages") {
-  include_dirs = [ "//.ten/app/ten_packages/system/googletest/include" ]
+  include_dirs = [
+    "//.ten/app/ten_packages/system/googletest",
+    "//.ten/app/ten_packages/system/googletest/include",
+  ]
 }

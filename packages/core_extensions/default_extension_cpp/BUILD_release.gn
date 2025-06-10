@@ -53,11 +53,6 @@ if (ten_enable_standalone_test) {
       sources += [ source_file.path ]
     }
 
-    include_dirs = [
-      ".ten/app/ten_packages/system/googletest",
-      ".ten/app/ten_packages/system/googletest/include",
-    ]
-
     public_deps = [ ".ten/app/ten_packages/system/googletest" ]
   }
 }

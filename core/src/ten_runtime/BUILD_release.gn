@@ -23,6 +23,8 @@ config("ten_runtime_common_libs") {
 config("ten_runtime_common_config") {
   configs = [ ":ten_runtime_common_libs" ]
 
+  # These paths only take effect during compilation and will not modify or write
+  # to the shared library search path during runtime.
   include_dirs = [
     "//ten_packages/system/ten_runtime/include",
     "//.ten/app/ten_packages/system/ten_runtime/include",
