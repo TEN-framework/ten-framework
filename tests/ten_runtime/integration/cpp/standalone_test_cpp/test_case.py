@@ -122,7 +122,7 @@ def test_standalone_test_cpp():
         ),
     ]
 
-    my_env["TEN_ENABLE_MEMORY_TRACKING"] = "true"
+    my_env["TEN_ENABLE_MEMORY_TRACKING"] = "true" + ";" + my_env["PATH"]
 
     if build_config_args.target_os == "win":
         my_env["PATH"] = (
