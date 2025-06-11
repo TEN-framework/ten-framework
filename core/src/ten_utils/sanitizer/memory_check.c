@@ -386,8 +386,12 @@ void ten_sanitizer_memory_record_dump(void) {
     __lsan_enable();
 #endif
 
+    // The exit code 123 is used to indicate that the memory leak is detected.
+    // This is a magic number that is not used by any other system. Note that
+    // the exit code should be less than 256, if it is greater than 256, the
+    // exit code will be the remainder of the division by 256.
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    exit(EXIT_FAILURE);
+    exit(123);
   }
 
 #if defined(TEN_USE_ASAN)
