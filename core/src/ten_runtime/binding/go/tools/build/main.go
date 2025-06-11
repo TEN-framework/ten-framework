@@ -108,6 +108,13 @@ func main() {
 		"",
 		"Extra flags to pass to the internal 'go build' command.",
 	)
+	flag.StringVar(
+		&options.Tags,
+		"tags",
+		"",
+		"Extra tags to pass to the internal 'go build' command.",
+	)
+
 	flag.Parse()
 
 	// Trim surrounding quotes from BuildFlags.
@@ -607,6 +614,7 @@ type BuildOption struct {
 	KeepAutoGen       bool
 	CleanAutoGen      bool
 	BuildFlags        string
+	Tags              string
 }
 
 func (b *BuildOption) Valid() error {
@@ -677,6 +685,10 @@ func (ab *AppBuilder) buildGoApp(envs []string) error {
 	if ab.options.BuildFlags != "" {
 		extraFlags := strings.Fields(ab.options.BuildFlags)
 		cmdline = append(cmdline, extraFlags...)
+	}
+
+	if ab.options.Tags != "" {
+		cmdline = append(cmdline, "-tags", ab.options.Tags)
 	}
 
 	if ab.options.Verbose {
