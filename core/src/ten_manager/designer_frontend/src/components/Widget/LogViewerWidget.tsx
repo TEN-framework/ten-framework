@@ -23,6 +23,7 @@ import {
   LogSchema,
   LegacyLogSchema,
   LogLineInfoSchema,
+  ETenLogLevel,
 } from "@/types/apps";
 
 export function LogViewerBackstageWidget(props: ILogViewerWidget) {
@@ -292,25 +293,6 @@ const parseLogLine = (
   };
 };
 
-const inferLogType = (
-  logStr: string,
-  raw: z.infer<typeof LogLineInfoSchema>
-): "error" | "warning" | "info" => {
-  if (
-    raw.type === EWSMessageType.STANDARD_ERROR ||
-    raw.type === EWSMessageType.STANDARD_ERROR_LOG ||
-    ["error", "exception", "failed", "error"].some((s) =>
-      logStr.toLowerCase().includes(s)
-    )
-  ) {
-    return "error";
-  }
-  if (["warning", "warn"].some((s) => logStr.includes(s))) {
-    return "warning";
-  }
-  return "info";
-};
-
 const LogViewerLogItem = React.forwardRef<
   HTMLDivElement,
   ILogViewerLogItemProps & { search?: string; className?: string }
@@ -327,11 +309,6 @@ const LogViewerLogItem = React.forwardRef<
     className,
   } = props;
 
-  const logType = React.useMemo(() => {
-    if (!raw) return "info";
-    return inferLogType(message, raw);
-  }, [message, raw]);
-
   return (
     <div
       ref={ref}
@@ -339,8 +316,13 @@ const LogViewerLogItem = React.forwardRef<
         "font-mono text-xs py-0.5",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
         {
-          "bg-red-50 dark:bg-red-900": logType === "error",
-          "bg-orange-50 dark:bg-orange-900": logType === "warning",
+          "bg-red-50 dark:bg-red-900":
+            raw?.metadata?.log_level &&
+            [ETenLogLevel.ERROR, ETenLogLevel.FATAL].includes(
+              raw.metadata.log_level
+            ),
+          "bg-orange-50 dark:bg-orange-900":
+            raw?.metadata?.log_level === ETenLogLevel.WARN,
         },
         className
       )}
