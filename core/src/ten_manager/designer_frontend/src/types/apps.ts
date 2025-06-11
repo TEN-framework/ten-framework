@@ -96,6 +96,17 @@ export enum ETemplateType {
   // ADDON_LOADER = "addon_loader",
 }
 
+export enum ETenLogLevel {
+  INVALID = "INVALID",
+  VERBOSE = "VERBOSE",
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
+  FATAL = "FATAL",
+  MANDATORY = "MANDATORY",
+}
+
 export const TemplatePkgsReqSchema = z.object({
   pkg_type: z.nativeEnum(ETemplateType),
   language: z.nativeEnum(ETemplateLanguage),
@@ -112,6 +123,7 @@ export const LogLineMetadataSchema = z.object({
   graph_id: z.string().optional(),
   graph_name: z.string().optional(),
   extension: z.string().optional(),
+  log_level: z.nativeEnum(ETenLogLevel).optional(),
 });
 
 export const LogLineInfoSchema = z.object({
