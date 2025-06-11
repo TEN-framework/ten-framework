@@ -67,6 +67,10 @@ group("python") {
           "unused_addon_python",
         ]
       }
+
+      if (is_debug) {
+        deps += [ "leak_check_python" ]
+      }
     }
   }
 
