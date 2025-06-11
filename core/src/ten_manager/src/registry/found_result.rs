@@ -32,6 +32,9 @@ pub struct PkgRegistryInfo {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+
+    #[serde(with = "dependencies_conversion")]
+    pub dev_dependencies: Vec<ManifestDependency>,
 }
 
 mod dependencies_conversion {
@@ -76,9 +79,15 @@ impl From<&PkgInfo> for PkgRegistryInfo {
             None => vec![],
         };
 
+        let dev_dependencies = match &pkg_info.manifest.dev_dependencies {
+            Some(deps) => deps.clone(),
+            None => vec![],
+        };
+
         PkgRegistryInfo {
             basic_info: PkgBasicInfo::from(pkg_info),
             dependencies,
+            dev_dependencies,
             hash: pkg_info.hash.clone(),
             download_url: String::new(),
             content_format: None,
@@ -101,6 +110,9 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     .clone(),
                 version: pkg_registry_info.basic_info.version.clone(),
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
+                dev_dependencies: Some(
+                    pkg_registry_info.dev_dependencies.clone(),
+                ),
                 tags: pkg_registry_info.tags.clone(),
                 supports: Some(pkg_registry_info.basic_info.supports.clone()),
                 api: None,
@@ -136,6 +148,13 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                         serde_json::to_value(&pkg_registry_info.dependencies)
                             .unwrap_or(serde_json::Value::Array(vec![]));
                     map.insert("dependencies".to_string(), deps_json);
+
+                    // Add dev dependencies.
+                    let dev_deps_json = serde_json::to_value(
+                        &pkg_registry_info.dev_dependencies,
+                    )
+                    .unwrap_or(serde_json::Value::Array(vec![]));
+                    map.insert("dev_dependencies".to_string(), dev_deps_json);
 
                     // Add supports.
                     let supports_json = serde_json::to_value(

@@ -134,6 +134,11 @@ async fn get_package_upload_info(
                         Some(deps) => deps.clone(),
                         None => vec![],
                     },
+                    dev_dependencies: match &pkg_info.manifest.dev_dependencies
+                    {
+                        Some(deps) => deps.clone(),
+                        None => vec![],
+                    },
                     hash: pkg_info.hash.clone(),
                     download_url: String::new(),
                     content_format: Some("gzip".to_string()),

@@ -11,7 +11,9 @@
       "type": "system",
       "name": "ten_runtime",
       "version": "0.10.12"
-    },
+    }
+  ],
+  "dev_dependencies": [
     {
       "type": "system",
       "name": "googletest",

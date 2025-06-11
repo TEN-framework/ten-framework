@@ -127,6 +127,45 @@
         ]
       }
     },
+    "dev_dependencies": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "name",
+              "version"
+            ],
+            "properties": {
+              "type": {
+                "$ref": "#/$defs/packageType"
+              },
+              "name": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "version": {
+                "$ref": "#/$defs/versionRequirement"
+              }
+            }
+          }
+        ]
+      }
+    },
     "valueType": {
       "type": "object",
       "additionalProperties": false,
