@@ -46,5 +46,9 @@ group("go") {
       # only meaningful in a POSIX system.
       deps += [ "exit_signal_go" ]
     }
+
+    if (is_debug) {
+      deps += [ "leak_check_go" ]
+    }
   }
 }
