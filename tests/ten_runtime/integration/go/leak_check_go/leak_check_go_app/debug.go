@@ -37,8 +37,10 @@ func CleanUpAndCheckMemoryLeak() {
 	// To detect memory leaks with ASan, need to enable the following cgo code.
 	C.__lsan_do_leak_check()
 
-	// If asan is enabled, it means that -race is not specified in go build,
-	// so the destructor of the ten_runtime may not be executed, so we need to
-	// call the exit method manually.
+	// According to
+	// https://github.com/golang/go/issues/20713#issuecomment-1518197679, if
+	// asan is enabled, it means that -race is not specified in go build, so the
+	// destructor of the ten_runtime may not be executed, so we need to call the
+	// exit method manually.
 	C.exit(0)
 }

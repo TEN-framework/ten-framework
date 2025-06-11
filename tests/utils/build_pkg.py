@@ -182,7 +182,7 @@ def _build_go_app(args: ArgumentInfo) -> int:
     if not is_mac_arm64():
         if args.enable_sanitizer:
             cmd += ['--build_flags="-asan"']
-            cmd += ['--tags=debug']
+            cmd += ["--tags=debug"]
         else:
             cmd += ['--build_flags="-race"']
 

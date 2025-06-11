@@ -117,8 +117,7 @@ def test_leak_check_nodejs():
         print("The exit code of leak_check_nodejs: ", exit_code)
 
         # The exit code 123 is used to indicate that the memory leak is
-        # detected. This is a magic number that is not used by any other
-        # system.
+        # detected. This is a magic number that is not used by any other system.
         assert exit_code == 123
 
         if build_config_args.ten_enable_tests_cleanup is True:
