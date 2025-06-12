@@ -309,7 +309,6 @@ fn prepare_cpp_standalone_app_dir(dot_ten_app_dir: &Path) -> Result<()> {
     if !build_gn_file.exists() {
         // Create a basic `BUILD.gn` for the C++ app.
         let content = r#"import("//build/feature/ten_package.gni")
-
 ten_package("app_for_standalone") {
   package_kind = "app"
 }
@@ -420,6 +419,100 @@ async fn determine_app_dir_to_work_with(
     }
 }
 
+/// Filter packages for production mode by recursively traversing only
+/// production dependencies. In production mode, dev_dependencies should be
+/// excluded from installation.
+async fn filter_packages_for_production_mode<'a>(
+    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    is_production: bool,
+    app_pkg_dependencies: &[ManifestDependency],
+    app_pkg_dev_dependencies: &[ManifestDependency],
+    remaining_solver_results: Vec<&'a PkgInfo>,
+    out: Arc<Box<dyn TmanOutput>>,
+) -> Vec<&'a PkgInfo> {
+    if !is_production || app_pkg_dev_dependencies.is_empty() {
+        return remaining_solver_results;
+    }
+
+    // Convert remaining_solver_results to a HashMap with
+    // PkgTypeAndName as the key and PkgInfo as the value.
+    let remaining_solver_results_map = remaining_solver_results
+        .iter()
+        .map(|pkg| (pkg.manifest.type_and_name.clone(), *pkg))
+        .collect::<HashMap<PkgTypeAndName, &PkgInfo>>();
+
+    let mut pkgs_to_be_installed: Vec<&PkgInfo> = vec![];
+    let mut visited: std::collections::HashSet<PkgTypeAndName> =
+        std::collections::HashSet::new();
+
+    // Add all the dependencies of the app to the list of packages to be
+    // installed.
+    app_pkg_dependencies.iter().for_each(|dep| {
+        if let Some((pkg_type, name)) = dep.get_type_and_name() {
+            let type_and_name = PkgTypeAndName { pkg_type, name };
+            if let Some(pkg) = remaining_solver_results_map.get(&type_and_name)
+            {
+                if !visited.contains(&type_and_name) {
+                    pkgs_to_be_installed.push(pkg);
+                    visited.insert(type_and_name);
+                }
+            }
+        }
+    });
+
+    // Recursively traverse all dependencies to collect packages that
+    // need to be installed
+    while let Some(pkg) = pkgs_to_be_installed.pop() {
+        // Process the dependencies of the current package
+        if let Some(dependencies) = &pkg.manifest.dependencies {
+            for dep in dependencies {
+                if let Some((pkg_type, name)) = dep.get_type_and_name() {
+                    let type_and_name = PkgTypeAndName { pkg_type, name };
+                    if let Some(dep_pkg) =
+                        remaining_solver_results_map.get(&type_and_name)
+                    {
+                        if !visited.contains(&type_and_name) {
+                            pkgs_to_be_installed.push(dep_pkg);
+                            visited.insert(type_and_name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // In verbose mode, print packages that were filtered out due to production
+    // mode
+    if is_verbose(tman_config.clone()).await {
+        let filtered_out_packages: Vec<_> = remaining_solver_results
+            .iter()
+            .filter(|pkg| !visited.contains(&pkg.manifest.type_and_name))
+            .collect();
+
+        if !filtered_out_packages.is_empty() {
+            out.normal_line(&format!(
+                "{}  Packages skipped installing in production mode:",
+                Emoji("🚫", "")
+            ));
+            for pkg in filtered_out_packages {
+                out.normal_line(&format!(
+                    "  - [{}]{} @{}",
+                    pkg.manifest.type_and_name.pkg_type,
+                    pkg.manifest.type_and_name.name,
+                    pkg.manifest.version
+                ));
+            }
+        }
+    }
+
+    // Filter remaining_solver_results to only include packages that
+    // need to be installed
+    remaining_solver_results
+        .into_iter()
+        .filter(|pkg| visited.contains(&pkg.manifest.type_and_name))
+        .collect::<Vec<&PkgInfo>>()
+}
+
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
@@ -492,21 +585,23 @@ pub async fn execute_cmd(
         None,
     )?;
 
-    // To simplify dependency tree calculation logic, if not in production mode,
-    // we treat the `dev_dependencies` of the app as regular dependencies, so
-    // that when calculating the dependency tree, we don't need to distinguish
-    // between regular dependencies and dev_dependencies.
-    if !command_data.production {
-        let mut dependencies = app_pkg_to_work_with
-            .manifest
-            .dependencies
-            .clone()
-            .unwrap_or_default();
-        if let Some(dev_dependencies) =
-            app_pkg_to_work_with.manifest.dev_dependencies.clone()
-        {
-            dependencies.extend(dev_dependencies);
-        }
+    let app_pkg_dependencies =
+        app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
+    let app_pkg_dev_dependencies = app_pkg_to_work_with
+        .manifest
+        .dev_dependencies
+        .clone()
+        .unwrap_or_default();
+
+    // We will include the `dev_dependencies` of the app in the dependency
+    // calculation (even in production mode), but when actually installing, we
+    // will determine whether to install only for dev packages based on whether
+    // it is in production mode.
+    if let Some(dev_dependencies) =
+        app_pkg_to_work_with.manifest.dev_dependencies.clone()
+    {
+        let mut dependencies = app_pkg_dependencies.clone();
+        dependencies.extend(dev_dependencies);
         app_pkg_to_work_with.manifest.dependencies = Some(dependencies);
     }
 
@@ -787,16 +882,30 @@ pub async fn execute_cmd(
             }
         }
 
+        // Write the full dependency tree to the manifest-lock.json file
+        // including the dev dependencies which will not be installed in
+        // production mode.
         write_pkgs_into_manifest_lock_file(
             &remaining_solver_results,
             &app_dir_to_work_with,
             out.clone(),
         )?;
 
+        // Filter packages for production mode if needed
+        let final_solver_results = filter_packages_for_production_mode(
+            tman_config.clone(),
+            command_data.production,
+            &app_pkg_dependencies,
+            &app_pkg_dev_dependencies,
+            remaining_solver_results,
+            out.clone(),
+        )
+        .await;
+
         install_solver_results_in_app_folder(
             tman_config.clone(),
             &command_data,
-            &remaining_solver_results,
+            &final_solver_results,
             &app_dir_to_work_with,
             out.clone(),
         )
