@@ -50,8 +50,9 @@ mod tests {
         // Write the test graph to the file.
         fs::write(&graph_file_path, test_graph_str).unwrap();
 
-        // Create a GraphInfo with import_uri pointing to the test graph file.
-        let import_uri = graph_file_path.to_str().unwrap().to_string();
+        // Create a GraphInfo with import_uri pointing to the test graph file
+        // using file:// URI.
+        let import_uri = format!("file://{}", graph_file_path.display());
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
@@ -258,7 +259,7 @@ mod tests {
 
         // Create a GraphInfo with only import_uri and empty graph fields - this
         // should succeed
-        let import_uri = graph_file_path.to_str().unwrap().to_string();
+        let import_uri = format!("file://{}", graph_file_path.display());
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
