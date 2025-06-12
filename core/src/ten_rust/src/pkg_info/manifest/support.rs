@@ -24,19 +24,31 @@ pub struct ManifestSupport {
     pub arch: Option<Arch>,
 }
 
+// Helper function to write a field if it exists.
+fn write_field<T: fmt::Display>(
+    f: &mut fmt::Formatter,
+    value: &Option<T>,
+    first: &mut bool,
+) -> fmt::Result {
+    if let Some(v) = value {
+        if !*first {
+            write!(f, ", ")?;
+        }
+        write!(f, "{}", v)?;
+        *first = false;
+    }
+    Ok(())
+}
+
 impl fmt::Display for ManifestSupport {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let os_str = match &self.os {
-            Some(os) => os.to_string(),
-            None => "".to_string(),
-        };
+        let mut first = true;
 
-        let arch_str = match &self.arch {
-            Some(arch) => arch.to_string(),
-            None => "".to_string(),
-        };
+        // Write each field in sequence.
+        write_field(f, &self.os, &mut first)?;
+        write_field(f, &self.arch, &mut first)?;
 
-        write!(f, "{os_str}, {arch_str}")
+        Ok(())
     }
 }
 

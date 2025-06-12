@@ -428,28 +428,28 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
           ten_value_get_bool(predefined_graph_info_singleton_value, &err);
     }
 
-    // Check if source_uri is specified.
-    ten_value_t *predefined_graph_info_source_uri_value =
-        ten_value_object_peek(predefined_graph_info_value, "source_uri");
-    if (predefined_graph_info_source_uri_value &&
-        ten_value_is_string(predefined_graph_info_source_uri_value)) {
-      const char *source_uri =
-          ten_value_peek_raw_str(predefined_graph_info_source_uri_value, &err);
+    // Check if import_uri is specified.
+    ten_value_t *predefined_graph_info_import_uri_value =
+        ten_value_object_peek(predefined_graph_info_value, TEN_STR_IMPORT_URI);
+    if (predefined_graph_info_import_uri_value &&
+        ten_value_is_string(predefined_graph_info_import_uri_value)) {
+      const char *import_uri =
+          ten_value_peek_raw_str(predefined_graph_info_import_uri_value, &err);
 
-      if (source_uri) {
+      if (import_uri) {
         // Determine if this is a relative or absolute path.
-        const char *graph_file_path = source_uri;
+        const char *graph_file_path = import_uri;
         char *resolved_path = NULL;
 
         // If it's a relative path and we have the app base directory, resolve
         // it relative to the app's base directory.
         ten_string_t path_str;
-        ten_string_init_formatted(&path_str, "%s", source_uri);
+        ten_string_init_formatted(&path_str, "%s", import_uri);
 
         if (!ten_path_is_absolute(&path_str) &&
             ten_string_get_raw_str(&self->base_dir) != NULL) {
           ten_string_t *full_path = ten_string_create_formatted(
-              "%s/%s", ten_string_get_raw_str(&self->base_dir), source_uri);
+              "%s/%s", ten_string_get_raw_str(&self->base_dir), import_uri);
 
           resolved_path = strdup(ten_string_get_raw_str(full_path));
           ten_string_destroy(full_path);

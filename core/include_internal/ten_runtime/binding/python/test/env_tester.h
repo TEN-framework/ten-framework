@@ -41,6 +41,9 @@ TEN_RUNTIME_PRIVATE_API void ten_py_ten_env_tester_invalidate(
 
 TEN_RUNTIME_PRIVATE_API PyTypeObject *ten_py_ten_env_tester_type(void);
 
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_tester_on_init_done(
+    PyObject *self, PyObject *args);
+
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_tester_on_start_done(
     PyObject *self, PyObject *args);
 

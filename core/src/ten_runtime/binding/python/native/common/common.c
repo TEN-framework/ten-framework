@@ -74,7 +74,18 @@ void ten_py_initialize_with_config(const char *program,
   PyConfig_Clear(&config);
 }
 
-int ten_py_finalize(void) { return Py_FinalizeEx(); }
+int ten_py_finalize(void) {
+  // Multiple rounds of collection until there are no more objects to collect or
+  // the maximum number of rounds is reached.
+  for (int i = 0; i < 10; i++) {
+    Py_ssize_t collected = PyGC_Collect();
+    if (collected == 0) {
+      break;  // No more objects to collect.
+    }
+  }
+
+  return Py_FinalizeEx();
+}
 
 void ten_py_add_paths_to_sys(ten_list_t *paths) {
   PyObject *sys_module = PyImport_ImportModule("sys");

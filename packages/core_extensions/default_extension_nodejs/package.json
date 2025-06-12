@@ -1,5 +1,5 @@
 {
-  "name": "ten-default-extension",
+  "name": "default_extension_nodejs",
   "version": "1.0.0",
   "type": "module",
   "main": "./build/index.js",

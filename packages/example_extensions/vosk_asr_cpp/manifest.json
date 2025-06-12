@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "vosk_asr_cpp",
-  "version": "0.10.11",
+  "version": "0.10.12",
   "tags": [
     "cpp"
   ],
@@ -9,12 +9,12 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.11"
+      "version": "0.10.12"
     },
     {
       "type": "system",
       "name": "googletest",
-      "version": "0.1.0"
+      "version": "1.7.0-rc2"
     }
   ],
   "package": {

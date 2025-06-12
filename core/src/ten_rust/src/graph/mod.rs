@@ -12,7 +12,6 @@ pub mod node;
 pub mod subgraph;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use anyhow::Result;
 use node::GraphNode;
@@ -181,20 +180,34 @@ pub struct Graph {
     pub exposed_properties: Option<Vec<GraphExposedProperty>>,
 }
 
-impl FromStr for Graph {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Graph {
+    /// Parses a JSON string into a Graph with validation, completion, and
+    /// flattening.
+    ///
+    /// This function takes a JSON string representation of a graph and an
+    /// optional current_base_dir parameter, parses it into a Graph structure,
+    /// then validates, completes, and flattens the graph.
+    ///
+    /// # Parameters
+    /// - `s`: A string slice containing the JSON representation of the graph
+    /// - `current_base_dir`: An optional base directory path used for resolving
+    ///   relative paths during graph flattening
+    ///
+    /// # Returns
+    /// - `Ok(Graph)`: Successfully parsed and processed graph
+    /// - `Err(anyhow::Error)`: Parsing, validation, or processing error
+    pub fn from_str_with_base_dir(
+        s: &str,
+        current_base_dir: Option<&str>,
+    ) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete_and_flatten(None)?;
+        graph.validate_and_complete_and_flatten(current_base_dir)?;
 
         // Return the parsed data.
         Ok(graph)
     }
-}
 
-impl Graph {
     /// Determines how app URIs are declared across all nodes in the graph.
     ///
     /// This method analyzes all nodes in the graph to determine the app

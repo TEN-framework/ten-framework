@@ -192,7 +192,7 @@ pub fn update_graph_node_in_property_all_fields(
             extension_group: extension_group_name.clone(),
             app: app_uri.clone(),
             property: property.clone(),
-            source_uri: None,
+            import_uri: None,
         };
 
         // Update property.json file with the graph node.

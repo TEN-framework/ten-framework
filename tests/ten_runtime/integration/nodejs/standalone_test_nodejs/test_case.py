@@ -36,6 +36,8 @@ def test_standalone_test_nodejs():
         "default_extension_nodejs",
         "--template",
         "default_extension_nodejs",
+        "--template-data",
+        "class_name_prefix=Example",
     ]
 
     tman_create_process = subprocess.Popen(

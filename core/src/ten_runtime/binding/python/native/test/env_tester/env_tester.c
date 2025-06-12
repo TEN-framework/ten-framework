@@ -139,6 +139,7 @@ static void ten_py_ten_env_tester_destroy(PyObject *self) {
 
 PyTypeObject *ten_py_ten_env_tester_type(void) {
   static PyMethodDef ten_methods[] = {
+      {"on_init_done", ten_py_ten_env_tester_on_init_done, METH_VARARGS, NULL},
       {"on_start_done", ten_py_ten_env_tester_on_start_done, METH_VARARGS,
        NULL},
       {"on_stop_done", ten_py_ten_env_tester_on_stop_done, METH_VARARGS, NULL},

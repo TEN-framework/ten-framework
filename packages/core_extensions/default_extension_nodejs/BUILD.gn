@@ -13,9 +13,12 @@ ten_package("default_extension_nodejs") {
 
   resources = [
     "manifest.json",
+    "manifest.json.tent",
     "package.json",
+    "package.json.tent",
     "property.json",
     "src/index.ts",
+    "src/index.ts.tent",
     "tsconfig.json",
   ]
 

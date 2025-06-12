@@ -195,8 +195,8 @@ class AsyncExtensionTester(_ExtensionTester):
             ten_env_tester, self._ten_loop, self._ten_thread
         )
 
-        await self._wrapper_on_start(self._async_ten_env_tester)
-        ten_env_tester.on_start_done()
+        await self._wrapper_on_init(self._async_ten_env_tester)
+        ten_env_tester.on_init_done()
 
         # Suspend the thread until stopEvent is set.
         await self._ten_stop_event.wait()
@@ -206,11 +206,33 @@ class AsyncExtensionTester(_ExtensionTester):
         self._ten_stop_event.set()
 
     @final
-    def _proxy_on_start(self, ten_env_tester: TenEnvTester) -> None:
+    def _proxy_on_init(self, ten_env_tester: TenEnvTester) -> None:
         self._ten_thread = threading.Thread(
             target=asyncio.run, args=(self._thread_routine(ten_env_tester),)
         )
         self._ten_thread.start()
+
+    @final
+    def _proxy_on_start(self, ten_env_tester: TenEnvTester) -> None:
+        assert self._ten_loop is not None
+        asyncio.run_coroutine_threadsafe(
+            self._proxy_async_on_start(ten_env_tester), self._ten_loop
+        )
+
+    @final
+    async def _proxy_async_on_start(self, ten_env_tester: TenEnvTester) -> None:
+        assert self._async_ten_env_tester is not None
+
+        await self._wrapper_on_start(self._async_ten_env_tester)
+        # pylint: disable=protected-access
+        ten_env_tester.on_start_done()
+        # pylint: enable=protected-access
+
+    async def _wrapper_on_init(self, ten_env_tester: AsyncTenEnvTester) -> None:
+        try:
+            await self.on_init(ten_env_tester)
+        except Exception as e:
+            self._exit_on_exception(ten_env_tester, e)
 
     async def _wrapper_on_start(
         self, ten_env_tester: AsyncTenEnvTester
@@ -237,7 +259,9 @@ class AsyncExtensionTester(_ExtensionTester):
 
     @final
     def _proxy_on_stop(self, ten_env_tester: TenEnvTester) -> None:
-        assert self._ten_loop is not None
+        if self._ten_loop is None:
+            ten_env_tester.on_stop_done()
+            return
 
         asyncio.run_coroutine_threadsafe(
             self._proxy_async_on_stop(ten_env_tester), self._ten_loop
@@ -263,11 +287,13 @@ class AsyncExtensionTester(_ExtensionTester):
         # pylint: enable=protected-access
 
     @final
-    def _proxy_on_deinit(self, _ten_env_tester: TenEnvTester) -> None:
-        assert self._ten_loop is not None
+    def _proxy_on_deinit(self, ten_env_tester: TenEnvTester) -> None:
+        if self._ten_loop is None:
+            ten_env_tester.on_deinit_done()
+            return
 
         asyncio.run_coroutine_threadsafe(
-            self._proxy_async_on_deinit(_ten_env_tester),
+            self._proxy_async_on_deinit(ten_env_tester),
             self._ten_loop,
         )
 
@@ -403,6 +429,9 @@ class AsyncExtensionTester(_ExtensionTester):
             self._ten_thread.join()
 
         return err
+
+    async def on_init(self, ten_env: AsyncTenEnvTester) -> None:
+        pass
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         pass

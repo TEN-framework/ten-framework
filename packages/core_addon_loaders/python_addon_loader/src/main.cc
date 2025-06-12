@@ -182,8 +182,12 @@ class python_addon_loader_t : public ten::addon_loader_t {
             rc);
 
         TEN_ASSERT(0, "Should not happen.");
+      } else {
+        TEN_LOGI("[Python addon loader] python de-initialized");
       }
     }
+
+    TEN_LOGI("[Python addon loader] python de-initialized");
 
     ten_env.on_deinit_done();
   }
