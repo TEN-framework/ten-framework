@@ -45,20 +45,23 @@ def analyze_resolve_result(
             package_folder = os.path.join(ten_packages_root, check_package_type)
 
             if has_expected_packages and not has_actual_folder:
-                assert (
-                    False
-                ), f"Expected {check_package_type} packages but folder {package_folder} does not exist"
+                assert False, (
+                    f"Expected {check_package_type} packages but folder "
+                    f"{package_folder} does not exist"
+                )
 
             if not has_expected_packages and has_actual_folder:
-                assert (
-                    False
-                ), f"Found unexpected {check_package_type} folder {package_folder} but no packages expected in JSON"
+                assert False, (
+                    f"Found unexpected {check_package_type} folder "
+                    f"{package_folder} but no packages expected in JSON"
+                )
 
             # Skip if neither expected packages nor actual folder exists
             if not has_expected_packages and not has_actual_folder:
                 continue
 
-            # At this point, both has_expected_packages and has_actual_folder are True
+            # At this point, both has_expected_packages and has_actual_folder
+            # are True
             expected_packages = expected_json[check_package_type]
 
             # @{
@@ -119,12 +122,14 @@ def analyze_resolve_result(
                             )
                             break
 
-                assert (
-                    found_in_folder is True
-                ), f"Package {expected_dep_in_app_json['name']} not found in folder {package_folder}"
-                assert (
-                    found_in_manifest_deps is True
-                ), f"Package {expected_dep_in_app_json['name']} not found in manifest dependencies"
+                assert found_in_folder is True, (
+                    f"Package {expected_dep_in_app_json['name']} not found in "
+                    f"folder {package_folder}"
+                )
+                assert found_in_manifest_deps is True, (
+                    f"Package {expected_dep_in_app_json['name']} not found in "
+                    f"manifest dependencies"
+                )
             # @}
 
             # @{
@@ -133,9 +138,10 @@ def analyze_resolve_result(
             for dir_item in os.listdir(package_folder):
                 installed_package_cnt += 1
 
-            assert (
-                len(expected_packages) == installed_package_cnt
-            ), f"Expected {len(expected_packages)} {check_package_type} packages, but found {installed_package_cnt}"
+            assert len(expected_packages) == installed_package_cnt, (
+                f"Expected {len(expected_packages)} {check_package_type} "
+                f"packages, but found {installed_package_cnt}"
+            )
             # @}
 
 

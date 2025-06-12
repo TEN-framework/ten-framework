@@ -492,8 +492,10 @@ pub async fn execute_cmd(
         None,
     )?;
 
-    // If it is not in production mode, we treat the `dev_dependencies` of the
-    // app as ordinary dependencies.
+    // To simplify dependency tree calculation logic, if not in production mode,
+    // we treat the `dev_dependencies` of the app as regular dependencies, so
+    // that when calculating the dependency tree, we don't need to distinguish
+    // between regular dependencies and dev_dependencies.
     if !command_data.production {
         let mut dependencies = app_pkg_to_work_with
             .manifest
