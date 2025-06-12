@@ -74,22 +74,6 @@ pub fn check_is_valid_dir(path: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Check if the directory specified by `path` is an extension directory.
-pub fn check_is_addon_folder(path: &Path) -> Result<()> {
-    let manifest =
-        ten_rust::pkg_info::manifest::parse_manifest_in_folder(path)?;
-
-    let pkg_type = manifest.type_and_name.pkg_type;
-    if !pkg_type.is_addon() {
-        return Err(anyhow!(
-            "The `type` in manifest.json does not belong to an addon type: {}",
-            pkg_type
-        ));
-    }
-
-    Ok(())
-}
-
 /// Search upwards for the nearest app directory.
 pub fn find_nearest_app_dir(mut start_dir: PathBuf) -> Result<PathBuf> {
     loop {

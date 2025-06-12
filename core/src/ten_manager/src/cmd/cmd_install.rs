@@ -397,10 +397,10 @@ async fn determine_app_dir_to_work_with(
 ) -> Result<PathBuf> {
     if standalone {
         let manifest = parse_manifest_in_folder(specified_cwd)?;
-        if !manifest.type_and_name.pkg_type.is_addon() {
+        if manifest.type_and_name.pkg_type != PkgType::Extension {
             return Err(anyhow!(
-                "Standalone mode can only be executed in an addon folder. The \
-                 `type` in manifest.json is not an addon type: {}",
+                "Standalone mode can only be executed in an extension folder. \
+                 The `type` in manifest.json is not an extension type: {}",
                 manifest.type_and_name.pkg_type
             ));
         }
