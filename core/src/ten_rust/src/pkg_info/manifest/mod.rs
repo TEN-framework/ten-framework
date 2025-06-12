@@ -206,7 +206,7 @@ fn extract_dependencies(
 
             // Check for duplicate registry dependencies (type + name)
             if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
-                let key = (pkg_type, name.to_string());
+                let key = (pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
@@ -240,7 +240,7 @@ fn extract_dev_dependencies(
 
             // Check for duplicate registry dependencies (type + name)
             if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
-                let key = (pkg_type, name.to_string());
+                let key = (pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
