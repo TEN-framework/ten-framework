@@ -3138,11 +3138,14 @@ dependencies = [
  "once_cell",
  "prometheus",
  "regex",
+ "reqwest",
  "semver",
  "serde",
  "serde_json",
  "sha2",
  "tempfile",
+ "tokio",
+ "url",
  "uuid",
 ]
 
