@@ -33,6 +33,7 @@ impl WsBuiltinFunction {
             support: ManifestSupport { os: None, arch: None },
             local_install_mode: LocalInstallMode::Link,
             standalone: false,
+            production: false,
             local_path: None,
             cwd: base_dir.clone(),
             max_latest_versions:

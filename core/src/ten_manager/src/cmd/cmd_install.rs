@@ -21,8 +21,10 @@ use inquire::Confirm;
 use semver::VersionReq;
 use ten_rust::pkg_info::{
     constants::{BUILD_GN_FILENAME, MANIFEST_JSON_FILENAME},
-    manifest::dependency::ManifestDependency,
     manifest::support::ManifestSupport,
+    manifest::{
+        dependency::ManifestDependency, parse_manifest_in_folder, Manifest,
+    },
     pkg_basic_info::PkgBasicInfo,
 };
 use ten_rust::pkg_info::{
@@ -40,7 +42,7 @@ use crate::{
     },
     dep_and_candidate::get_all_candidates_from_deps,
     designer::storage::in_memory::TmanStorageInMemory,
-    fs::{check_is_addon_folder, find_nearest_app_dir},
+    fs::find_nearest_app_dir,
     home::config::{is_verbose, TmanConfig},
     install::{
         compare_solver_results_with_installed_pkgs,
@@ -90,6 +92,7 @@ pub struct InstallCommand {
     pub support: ManifestSupport,
     pub local_install_mode: LocalInstallMode,
     pub standalone: bool,
+    pub production: bool,
     pub cwd: String,
     pub max_latest_versions: i32,
 
@@ -144,6 +147,14 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .required(false),
         )
         .arg(
+            Arg::new("PRODUCTION")
+                .long("production")
+                .help("Install in production mode, dev_dependencies will be \
+                      ignored")
+                .action(clap::ArgAction::SetTrue)
+                .required(false),
+        )
+        .arg(
             Arg::new("CWD")
                 .long("cwd")
                 .short('C')
@@ -176,6 +187,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         },
         local_install_mode: LocalInstallMode::Invalid,
         standalone: false,
+        production: false,
         cwd: String::new(),
         max_latest_versions: DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         local_path: None,
@@ -260,6 +272,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
     }
 
     cmd.standalone = sub_cmd_args.get_flag("STANDALONE");
+    cmd.production = sub_cmd_args.get_flag("PRODUCTION");
 
     Ok(cmd)
 }
@@ -310,6 +323,7 @@ ten_package("app_for_standalone") {
 fn prepare_basic_standalone_app_dir(
     _tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     extension_dir: &Path,
+    extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
     let dot_ten_app_dir =
         extension_dir.join(DOT_TEN_DIR).join(APP_DIR_IN_DOT_TEN_DIR);
@@ -318,22 +332,39 @@ fn prepare_basic_standalone_app_dir(
     }
 
     let manifest_json = dot_ten_app_dir.join(MANIFEST_JSON_FILENAME);
-    if !manifest_json.exists() {
-        // Create a basic `manifest.json`, and in that manifest.json, there will
-        // be a local dependency pointing to the current extension folder.
-        let content = r#"{
-  "type": "app",
-  "name": "app_for_standalone",
-  "version": "0.1.0",
-  "dependencies": [
-    {
-      "path": "../../"
-    }
-  ]
-}
-"#;
-        fs::write(&manifest_json, content)?;
-    }
+
+    // If the manifest.json does not exist, create a basic one, and in that
+    // manifest.json, there will be a local dependency pointing to the current
+    // extension folder. Besides, the `dev_dependencies` field in the
+    // extension's manifest.json will be added to the manifest.json of the new
+    // created standalone app.
+    //
+    // If the manifest.json already exists, it will be overwritten.
+
+    // Serialize dev_dependencies from extension_manifest
+    let dev_dependencies_json =
+        if let Some(dev_deps) = &extension_manifest.dev_dependencies {
+            serde_json::to_value(dev_deps)
+                .unwrap_or(serde_json::Value::Array(vec![]))
+        } else {
+            serde_json::Value::Array(vec![])
+        };
+
+    // Create the manifest JSON structure
+    let manifest_content = serde_json::json!({
+        "type": "app",
+        "name": "app_for_standalone",
+        "version": "0.1.0",
+        "dependencies": [
+            {
+                "path": "../../"
+            }
+        ],
+        "dev_dependencies": dev_dependencies_json
+    });
+
+    let content = serde_json::to_string_pretty(&manifest_content)?;
+    fs::write(&manifest_json, content)?;
 
     Ok(dot_ten_app_dir)
 }
@@ -342,9 +373,13 @@ fn prepare_basic_standalone_app_dir(
 async fn prepare_standalone_app_dir(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     extension_dir: &Path,
+    extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
-    let dot_ten_app_dir =
-        prepare_basic_standalone_app_dir(tman_config.clone(), extension_dir)?;
+    let dot_ten_app_dir = prepare_basic_standalone_app_dir(
+        tman_config.clone(),
+        extension_dir,
+        extension_manifest,
+    )?;
 
     let build_gn_path = extension_dir.join("BUILD.gn");
     if build_gn_path.exists() {
@@ -361,14 +396,18 @@ async fn determine_app_dir_to_work_with(
     specified_cwd: &Path,
 ) -> Result<PathBuf> {
     if standalone {
-        // If it is standalone mode, it can only be executed in the extension
-        // directory.
-        check_is_addon_folder(specified_cwd).with_context(|| {
-            "Standalone mode can only be executed in an addon folder."
-        })?;
+        let manifest = parse_manifest_in_folder(specified_cwd)?;
+        if !manifest.type_and_name.pkg_type.is_addon() {
+            return Err(anyhow!(
+                "Standalone mode can only be executed in an addon folder. The \
+                 `type` in manifest.json is not an addon type: {}",
+                manifest.type_and_name.pkg_type
+            ));
+        }
 
         let dot_ten_app_dir_path =
-            prepare_standalone_app_dir(tman_config, specified_cwd).await?;
+            prepare_standalone_app_dir(tman_config, specified_cwd, &manifest)
+                .await?;
 
         Ok(dot_ten_app_dir_path)
     } else {
@@ -445,13 +484,31 @@ pub async fn execute_cmd(
     let mut installing_pkg_type: Option<PkgType> = None;
     let mut installing_pkg_name: Option<String> = None;
 
-    let app_pkg_to_work_with = get_pkg_info_from_path(
+    let mut app_pkg_to_work_with = get_pkg_info_from_path(
         &app_dir_to_work_with,
         true,
         false,
         &mut None,
         None,
     )?;
+
+    // To simplify dependency tree calculation logic, if not in production mode,
+    // we treat the `dev_dependencies` of the app as regular dependencies, so
+    // that when calculating the dependency tree, we don't need to distinguish
+    // between regular dependencies and dev_dependencies.
+    if !command_data.production {
+        let mut dependencies = app_pkg_to_work_with
+            .manifest
+            .dependencies
+            .clone()
+            .unwrap_or_default();
+        if let Some(dev_dependencies) =
+            app_pkg_to_work_with.manifest.dev_dependencies.clone()
+        {
+            dependencies.extend(dev_dependencies);
+        }
+        app_pkg_to_work_with.manifest.dependencies = Some(dependencies);
+    }
 
     // We need to start looking for dependencies outward from the cwd package,
     // and the cwd package itself is considered a candidate.

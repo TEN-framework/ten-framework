@@ -37,6 +37,7 @@ pub struct Manifest {
     pub type_and_name: PkgTypeAndName,
     pub version: Version,
     pub dependencies: Option<Vec<ManifestDependency>>,
+    pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
 
     // Note: For future extensions, use the 'features' field to describe the
@@ -73,6 +74,8 @@ impl<'de> Deserialize<'de> for Manifest {
             extract_version(&all_fields).map_err(serde::de::Error::custom)?;
         let dependencies = extract_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
+        let dev_dependencies = extract_dev_dependencies(&all_fields)
+            .map_err(serde::de::Error::custom)?;
         let tags =
             extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
         let supports =
@@ -87,6 +90,7 @@ impl<'de> Deserialize<'de> for Manifest {
             type_and_name,
             version,
             dependencies,
+            dev_dependencies,
             tags,
             supports,
             api,
@@ -113,6 +117,7 @@ impl Default for Manifest {
             },
             version: Version::new(0, 0, 0),
             dependencies: None,
+            dev_dependencies: None,
             tags: None,
             supports: None,
             api: None,
@@ -139,6 +144,7 @@ impl FromStr for Manifest {
         let type_and_name = extract_type_and_name(&all_fields)?;
         let version = extract_version(&all_fields)?;
         let dependencies = extract_dependencies(&all_fields)?;
+        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
         let tags = extract_tags(&all_fields)?;
         let supports = extract_supports(&all_fields)?;
         let api = extract_api(&all_fields)?;
@@ -150,6 +156,7 @@ impl FromStr for Manifest {
             type_and_name,
             version,
             dependencies,
+            dev_dependencies,
             tags,
             supports,
             api,
@@ -215,6 +222,40 @@ fn extract_dependencies(
         Ok(Some(result))
     } else if map.contains_key("dependencies") {
         Err(anyhow!("'dependencies' field is not an array"))
+    } else {
+        Ok(None)
+    }
+}
+
+fn extract_dev_dependencies(
+    map: &Map<String, Value>,
+) -> Result<Option<Vec<ManifestDependency>>> {
+    if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
+        let mut result = Vec::new();
+        let mut seen_registry_deps = HashSet::new();
+
+        for dep in deps {
+            let dep_value: ManifestDependency =
+                serde_json::from_value(dep.clone())?;
+
+            // Check for duplicate registry dependencies (type + name)
+            if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
+                let key = (pkg_type, name.to_string());
+                if seen_registry_deps.contains(&key) {
+                    return Err(anyhow!(
+                        "Duplicate dependency found: type '{}' and name '{}'",
+                        pkg_type,
+                        name
+                    ));
+                }
+                seen_registry_deps.insert(key);
+            }
+
+            result.push(dep_value);
+        }
+        Ok(Some(result))
+    } else if map.contains_key("dev_dependencies") {
+        Err(anyhow!("'dev_dependencies' field is not an array"))
     } else {
         Ok(None)
     }
@@ -356,6 +397,18 @@ impl Manifest {
         }
 
         Ok(())
+    }
+
+    pub fn get_all_dependencies(&self) -> Vec<&ManifestDependency> {
+        // Return all dependencies, including dev dependencies.
+        let mut dependencies = Vec::new();
+        if let Some(deps) = &self.dependencies {
+            dependencies.extend(deps.iter());
+        }
+        if let Some(dev_deps) = &self.dev_dependencies {
+            dependencies.extend(dev_deps.iter());
+        }
+        dependencies
     }
 }
 
