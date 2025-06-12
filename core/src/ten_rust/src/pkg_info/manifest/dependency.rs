@@ -4,11 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use semver::VersionReq;
-use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use anyhow::Context;
+use semver::VersionReq;
+use serde::{Deserialize, Serialize};
 
 use crate::pkg_info::{get_pkg_info_from_path, pkg_type::PkgType, PkgInfo};
 

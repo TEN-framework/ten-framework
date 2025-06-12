@@ -449,8 +449,7 @@ async fn filter_packages_for_production_mode<'a>(
     // installed.
     app_pkg_dependencies.iter().for_each(|dep| {
         if let Some((pkg_type, name)) = dep.get_type_and_name() {
-            let type_and_name =
-                PkgTypeAndName { pkg_type, name };
+            let type_and_name = PkgTypeAndName { pkg_type, name };
             if let Some(pkg) = remaining_solver_results_map.get(&type_and_name)
             {
                 if !visited.contains(&type_and_name) {
@@ -468,8 +467,7 @@ async fn filter_packages_for_production_mode<'a>(
         if let Some(dependencies) = &pkg.manifest.dependencies {
             for dep in dependencies {
                 if let Some((pkg_type, name)) = dep.get_type_and_name() {
-                    let type_and_name =
-                        PkgTypeAndName { pkg_type, name };
+                    let type_and_name = PkgTypeAndName { pkg_type, name };
                     if let Some(dep_pkg) =
                         remaining_solver_results_map.get(&type_and_name)
                     {
