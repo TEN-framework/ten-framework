@@ -335,8 +335,9 @@ fn prepare_basic_standalone_app_dir(
 
     // If the manifest.json does not exist, create a basic one, and in that
     // manifest.json, there will be a local dependency pointing to the current
-    // extension folder. Besides, the `dev_dependencies` field will be added to
-    // the manifest.json.
+    // extension folder. Besides, the `dev_dependencies` field in the
+    // extension's manifest.json will be added to the manifest.json of the new
+    // created standalone app.
     //
     // If the manifest.json already exists, it will be overwritten.
 
