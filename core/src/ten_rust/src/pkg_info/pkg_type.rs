@@ -70,3 +70,17 @@ impl fmt::Display for PkgType {
         }
     }
 }
+
+impl PkgType {
+    /// Check if the package type is an addon type. Addon types include
+    /// Extension, AddonLoader, Protocol, and System.
+    pub fn is_addon(&self) -> bool {
+        matches!(
+            self,
+            PkgType::Extension
+                | PkgType::AddonLoader
+                | PkgType::Protocol
+                | PkgType::System
+        )
+    }
+}
