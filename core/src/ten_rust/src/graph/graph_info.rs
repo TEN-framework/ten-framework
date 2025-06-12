@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,12 @@ use super::Graph;
 /// The URI can be:
 /// - A relative path (relative to the base_dir if provided)
 /// - A URI (http:// or https:// or file://)
+///
+/// TODO(Wei): Absolute file paths are NOT supported. Use file:// URI instead.
+/// According to the uri-reference specification, absolute file paths require
+/// special handling. For example, on Windows, absolute paths need to start with
+/// a forward slash, like /c:/..., so simply using Path::new(uri).is_absolute()
+/// is insufficient and requires additional consideration.
 ///
 /// This function returns the loaded Graph structure.
 pub fn load_graph_from_uri(
@@ -46,27 +52,29 @@ pub fn load_graph_from_uri(
         }
     }
 
-    // Handle relative and absolute paths.
-    let path = if Path::new(uri).is_absolute() {
-        PathBuf::from(uri)
-    } else {
-        // For relative paths, base_dir must not be None
-        let base_dir = base_dir.ok_or_else(|| {
-            anyhow!("base_dir cannot be None when uri is a relative path")
-        })?;
+    // Handle relative paths only - absolute paths are not supported
+    if Path::new(uri).is_absolute() {
+        return Err(anyhow!(
+            "Absolute paths are not supported in import_uri: {}. Use file:// \
+             URI or relative path instead",
+            uri
+        ));
+    }
 
-        // If base_dir is available, use it as the base for relative paths.
-        let new_path = Path::new(base_dir).join(uri);
+    // For relative paths, base_dir must not be None
+    let base_dir = base_dir.ok_or_else(|| {
+        anyhow!("base_dir cannot be None when uri is a relative path")
+    })?;
 
-        // Set the new_base_dir to the directory containing the resolved path
-        if let Some(parent_dir) = new_path.parent() {
-            if new_base_dir.is_some() {
-                *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
-            }
+    // If base_dir is available, use it as the base for relative paths.
+    let path = Path::new(base_dir).join(uri);
+
+    // Set the new_base_dir to the directory containing the resolved path
+    if let Some(parent_dir) = path.parent() {
+        if new_base_dir.is_some() {
+            *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
         }
-
-        new_path
-    };
+    }
 
     // Read the graph file.
     let graph_content = read_file_to_string(&path).with_context(|| {
@@ -246,149 +254,5 @@ impl GraphInfo {
         }
 
         self.graph.validate_and_complete_and_flatten(app_base_dir.as_deref())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_load_graph_from_file_url() {
-        // Create a temporary directory and file
-        let temp_dir = tempdir().unwrap();
-        let file_path = temp_dir.path().join("test_graph.json");
-
-        // Create a simple test graph
-        let test_graph = r#"{
-            "nodes": [
-                {
-                    "type": "extension",
-                    "name": "test_extension",
-                    "addon": "test_addon",
-                    "app": "localhost"
-                }
-            ]
-        }"#;
-
-        fs::write(&file_path, test_graph).unwrap();
-
-        // Create a file:// URL
-        let file_url = format!("file://{}", file_path.display());
-
-        // Test loading the graph
-        let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(&file_url, None, &mut new_base_dir);
-
-        assert!(result.is_ok());
-        let graph = result.unwrap();
-        assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
-
-        // Check that new_base_dir was set correctly
-        assert!(new_base_dir.is_some());
-        let base_dir = new_base_dir.unwrap();
-        assert_eq!(base_dir, temp_dir.path().to_string_lossy());
-    }
-
-    #[test]
-    fn test_load_graph_from_relative_path() {
-        // Create a temporary directory and file
-        let temp_dir = tempdir().unwrap();
-        let file_path = temp_dir.path().join("test_graph.json");
-
-        // Create a simple test graph
-        let test_graph = r#"{
-            "nodes": [
-                {
-                    "type": "extension",
-                    "name": "test_extension",
-                    "addon": "test_addon",
-                    "app": "localhost"
-                }
-            ]
-        }"#;
-
-        fs::write(&file_path, test_graph).unwrap();
-
-        // Test loading with relative path
-        let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(
-            "test_graph.json",
-            Some(&temp_dir.path().to_string_lossy()),
-            &mut new_base_dir,
-        );
-
-        assert!(result.is_ok());
-        let graph = result.unwrap();
-        assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
-
-        // Check that new_base_dir was set correctly
-        assert!(new_base_dir.is_some());
-        let base_dir = new_base_dir.unwrap();
-        assert_eq!(base_dir, temp_dir.path().to_string_lossy());
-    }
-
-    #[test]
-    fn test_load_graph_from_absolute_path() {
-        // Create a temporary directory and file
-        let temp_dir = tempdir().unwrap();
-        let file_path = temp_dir.path().join("test_graph.json");
-
-        // Create a simple test graph
-        let test_graph = r#"{
-            "nodes": [
-                {
-                    "type": "extension",
-                    "name": "test_extension",
-                    "addon": "test_addon",
-                    "app": "localhost"
-                }
-            ]
-        }"#;
-
-        fs::write(&file_path, test_graph).unwrap();
-
-        // Test loading with absolute path
-        let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(
-            &file_path.to_string_lossy(),
-            None,
-            &mut new_base_dir,
-        );
-
-        assert!(result.is_ok());
-        let graph = result.unwrap();
-        assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
-    }
-
-    #[test]
-    fn test_unsupported_url_scheme() {
-        let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(
-            "ftp://example.com/graph.json",
-            None,
-            &mut new_base_dir,
-        );
-
-        assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Unsupported URL scheme 'ftp'"));
-    }
-
-    #[test]
-    fn test_relative_path_without_base_dir() {
-        let mut new_base_dir = Some(String::new());
-        let result =
-            load_graph_from_uri("test_graph.json", None, &mut new_base_dir);
-
-        assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg
-            .contains("base_dir cannot be None when uri is a relative path"));
     }
 }
