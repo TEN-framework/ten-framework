@@ -1454,9 +1454,10 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    import_uri: Some(
-                        subgraph_file_path.to_str().unwrap().to_string(),
-                    ),
+                    import_uri: Some(format!(
+                        "file://{}",
+                        subgraph_file_path.display()
+                    )),
                 },
             ],
             connections: Some(vec![GraphConnection {
