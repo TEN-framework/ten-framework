@@ -91,11 +91,15 @@ mod tests {
     fn test_absolute_path_not_supported() {
         // Test that absolute paths are rejected
         let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(
-            "/absolute/path/to/graph.json",
-            None,
-            &mut new_base_dir,
-        );
+
+        // Use platform-appropriate absolute path
+        #[cfg(unix)]
+        let absolute_path = "/absolute/path/to/graph.json";
+        #[cfg(windows)]
+        let absolute_path = "C:\\absolute\\path\\to\\graph.json";
+
+        let result =
+            load_graph_from_uri(absolute_path, None, &mut new_base_dir);
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
