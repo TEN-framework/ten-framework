@@ -318,8 +318,17 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName === "va_azure_v2v") {
+        return {
+            "v2v": {
+                "model": "gpt-4o",
+                "voice_name": voiceNameMap[language]["azure"][voiceType],
+                "language": voiceNameMap[language]["azure"]["langCode"] || language,
+                "prompt": prompt,
+                "greeting": combined_greeting,
+            }
+        }
     }
-
 
     return {}
 }
