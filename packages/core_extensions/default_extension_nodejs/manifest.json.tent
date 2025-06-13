@@ -14,11 +14,13 @@
   ],
   "package": {
     "include": [
-      "**"
+      "**",
+      ".vscode/**"
     ]
   },
   "api": {},
   "scripts": {
-    "test": "tests/bin/start"
+    "test": "tests/bin/start",
+    "build": "python3 tools/run_script.py build"
   }
 }
