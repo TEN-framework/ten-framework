@@ -63,6 +63,10 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
+    label: "Voice Agent with Azure Voice AI API",
+    value: "va_azure_v2v"
+  },
+  {
     label: "Voice Agent with Llama4",
     value: "va_llama4",
   },
