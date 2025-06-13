@@ -9,6 +9,7 @@ import subprocess
 import sys
 import os
 
+
 def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
     """Run a shell command."""
     if env is None:
@@ -17,19 +18,20 @@ def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
     result = subprocess.run(cmd, shell=True, check=True, env=env)
     return result.returncode
 
+
 def run_cmd_build() -> int:
     """Build the application."""
     cmd = "npm install"
-    
+
     rc = run_cmd(cmd)
     if rc != 0:
         return rc
-    
+
     cmd = "npm run standalone-install"
     rc = run_cmd(cmd)
     if rc != 0:
         return rc
-    
+
     cmd = "npm run build"
     rc = run_cmd(cmd)
     return rc
@@ -39,9 +41,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Run scripts based on manifest.json"
     )
-    parser.add_argument(
-        "cmd", choices=["build"], help="Command to execute"
-    )
+    parser.add_argument("cmd", choices=["build"], help="Command to execute")
 
     args = parser.parse_args()
 
