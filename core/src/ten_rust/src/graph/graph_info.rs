@@ -33,7 +33,16 @@ pub fn load_graph_from_uri(
     base_dir: Option<&str>,
     new_base_dir: &mut Option<String>,
 ) -> Result<Graph> {
-    // Try to parse as URL first
+    // First check if it's an absolute path - these are not supported
+    if Path::new(uri).is_absolute() {
+        return Err(anyhow!(
+            "Absolute paths are not supported in import_uri: {}. Use file:// \
+             URI or relative path instead",
+            uri
+        ));
+    }
+
+    // Try to parse as URL
     if let Ok(url) = Url::parse(uri) {
         match url.scheme() {
             "http" | "https" => {
@@ -50,15 +59,6 @@ pub fn load_graph_from_uri(
                 ));
             }
         }
-    }
-
-    // Handle relative paths only - absolute paths are not supported
-    if Path::new(uri).is_absolute() {
-        return Err(anyhow!(
-            "Absolute paths are not supported in import_uri: {}. Use file:// \
-             URI or relative path instead",
-            uri
-        ));
     }
 
     // For relative paths, base_dir must not be None
