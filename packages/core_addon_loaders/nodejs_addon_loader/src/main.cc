@@ -195,27 +195,45 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
           v8::Script::Compile(this_ptr->setup_->context(), source)
               .ToLocalChecked();
 
+      TEN_LOGI("[Nodejs addon loader] Nodejs gc script compiled");
+
       // Run the JS codes.
       script->Run(this_ptr->setup_->context()).ToLocalChecked();
+
+      TEN_LOGI("[Nodejs addon loader] Nodejs gc script completed");
 
       // Close the `uv_async_t` event to ensure that the libuv event loop no
       // longer executes it.
       uv_close(reinterpret_cast<uv_handle_t *>(handle),
                [](uv_handle_t *handle) {
+                 TEN_LOGI("[Nodejs addon loader] async handle closed");
+
                  auto *async_handle = reinterpret_cast<uv_async_t *>(handle);
                  delete async_handle;
+
+                 TEN_LOGI("[Nodejs addon loader] async handle deleted");
                });
+
+      TEN_LOGI("[Nodejs addon loader] async handle is closing");
 
       // Stop the Node.js runtime environment to ensure that all resources are
       // properly released.
       node::Stop(this_ptr->setup_->env());
 
+      TEN_LOGI("[Nodejs addon loader] Nodejs runtime environment stopped");
+
       this_ptr->notify([](ten::ten_env_t &ten_env) {
         TEN_LOGI("[Nodejs addon loader] Nodejs de-initialized");
+
         ten_env.on_deinit_done();
       });
+
+      TEN_LOGI("[Nodejs addon loader] notify deinit done");
     });
+
     uv_async_send(deinit_handle);
+
+    TEN_LOGI("[Nodejs addon loader] deinit handle sent");
   }
 
   // Note: This function, used to dynamically load other addons, may be called
