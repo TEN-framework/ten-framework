@@ -30,7 +30,7 @@ mod tests {
                     extension_group: None,
                     app: Some("http://test-app-uri.com".to_string()),
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -39,7 +39,7 @@ mod tests {
                     extension_group: None,
                     app: Some("http://test-app-uri.com".to_string()),
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -129,7 +129,7 @@ mod tests {
                     extension_group: None,
                     app: Some("http://test-app-uri.com".to_string()),
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -138,7 +138,7 @@ mod tests {
                     extension_group: None,
                     app: Some("http://test-app-uri.com".to_string()),
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: None,
@@ -189,7 +189,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
                 GraphNode {
                     type_: GraphNodeType::Extension,
@@ -198,7 +198,7 @@ mod tests {
                     extension_group: None,
                     app: None,
                     property: None,
-                    source_uri: None,
+                    import_uri: None,
                 },
             ],
             connections: Some(vec![GraphConnection {

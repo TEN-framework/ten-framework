@@ -20,7 +20,9 @@ def test_standalone_test_1_go():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
-    extension_root_path = os.path.join(base_path, "default_extension_go")
+    extension_name = "example_extension_go"
+
+    extension_root_path = os.path.join(base_path, extension_name)
     fs_utils.remove_tree(extension_root_path)
 
     my_env = os.environ.copy()
@@ -35,7 +37,7 @@ def test_standalone_test_1_go():
         "--yes",
         "create",
         "extension",
-        "default_extension_go",
+        extension_name,
         "--template",
         "default_extension_go",
     ]

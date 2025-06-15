@@ -274,6 +274,11 @@
         "extension_group": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
+        "import_uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1
+        },
         "property": {
           "type": "object",
           "propertyNames": { // The property name should be alphanumericCharacters.
@@ -740,8 +745,9 @@
                 "type": "boolean",
                 "default": false
               },
-              "source_uri": {
+              "import_uri": {
                 "type": "string",
+                "format": "uri-reference",
                 "minLength": 1
               },
               "nodes": {
@@ -860,7 +866,7 @@
             "oneOf": [
               {
                 "required": [
-                  "source_uri"
+                  "import_uri"
                 ],
                 "not": {
                   "anyOf": [
@@ -890,7 +896,7 @@
               {
                 "not": {
                   "required": [
-                    "source_uri"
+                    "import_uri"
                   ]
                 }
               }

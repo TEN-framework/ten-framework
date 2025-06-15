@@ -28,9 +28,10 @@ mod tests {
         let temp_path = temp_dir.path().to_string_lossy().to_string();
 
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig {
+                verbose: true,
+                ..Default::default()
+            })),
             storage_in_memory: Arc::new(tokio::sync::RwLock::new(
                 TmanStorageInMemory::default(),
             )),

@@ -24,6 +24,7 @@
 #include "ten_runtime/ten_env_proxy/ten_env_proxy.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/mark.h"
+#include "ten_utils/macro/memory.h"
 
 static bool ten_py_extension_check_integrity(ten_py_extension_t *self,
                                              bool check_thread) {
@@ -366,6 +367,19 @@ static void proxy_on_video_frame(ten_extension_t *extension, ten_env_t *ten_env,
 
 static PyObject *ten_py_extension_create(PyTypeObject *type, PyObject *py_name,
                                          TEN_UNUSED PyObject *kwds) {
+#if defined(_DEBUG)
+  const char *enable_intentional_memory_leak =
+      // NOLINTNEXTLINE(concurrency-mt-unsafe)
+      getenv("TEN_ENABLE_INTENTIONAL_MEMORY_LEAK");
+  if (enable_intentional_memory_leak &&
+      !strcmp(enable_intentional_memory_leak, "true")) {
+    TEN_LOGD(
+        "TEN_ENABLE_INTENTIONAL_MEMORY_LEAK is defined. Memory leak is "
+        "happening in python extension creation.");
+    TEN_MALLOC(10);
+  }
+#endif
+
   ten_py_extension_t *py_extension =
       (ten_py_extension_t *)type->tp_alloc(type, 0);
   if (!py_extension) {

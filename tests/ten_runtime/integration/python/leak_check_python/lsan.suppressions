@@ -1,0 +1,2 @@
+leak:_PyObject_GC_Malloc
+leak:_PyObject_GC_NewVar

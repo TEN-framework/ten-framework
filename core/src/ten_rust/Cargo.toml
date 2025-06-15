@@ -39,7 +39,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 sha2 = { version = "0.10" }
 tempfile = { version = "3.10" }
+url = { version = "2.5" }
 uuid = { version = "1.16.0", features = ["serde", "v4"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "rustls-tls",
+] }
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread"] }
 
 [build-dependencies]
 bindgen = { version = "0.70", optional = true }

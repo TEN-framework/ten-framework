@@ -48,6 +48,7 @@ ten_package_test_prepare_app("go_app_cythonize_app") {
 ten_package_test_prepare_auxiliary_resources("go_app_cythonize_test_files") {
   resources = [
     "__init__.py",
+    "lsan.suppressions",
     "test_case.py",
   ]
 

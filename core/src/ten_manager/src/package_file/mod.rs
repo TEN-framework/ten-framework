@@ -83,6 +83,14 @@ pub async fn create_package_tar_gz_file(
     }
 
     let mut globset_builder = GlobSetBuilder::new();
+    // By default, hidden files and folders are ignored, but if the user
+    // explicitly specifies hidden files and folders in the include field, this
+    // setting should take effect. Since we will uniformly ignore hidden files
+    // and folders in the later code, we search for hidden files and folders
+    // explicitly specified by the user here, so they can be added back later.
+    // We add hidden files and folders specified in manifest.json to the
+    // hidden_globset_builder so they won't be ignored during package creation.
+    let mut hidden_globset_builder = GlobSetBuilder::new();
 
     // manifest.json is needed for all TEN packages.
     globset_builder.add(
@@ -97,12 +105,21 @@ pub async fn create_package_tar_gz_file(
             .add(GlobBuilder::new("*").literal_separator(false).build()?);
     } else {
         for pattern in &include_patterns.unwrap() {
-            globset_builder.add(
-                GlobBuilder::new(pattern).literal_separator(true).build()?,
-            );
+            // Check if pattern starts with '.' or contains '/.' to identify
+            // hidden files/folders
+            if pattern.starts_with('.') || pattern.contains("/.") {
+                hidden_globset_builder.add(GlobBuilder::new(pattern).build()?);
+            } else {
+                globset_builder.add(
+                    GlobBuilder::new(pattern)
+                        .literal_separator(true)
+                        .build()?,
+                );
+            }
         }
     }
     let include_globset = globset_builder.build()?;
+    let hidden_globset = hidden_globset_builder.build()?;
 
     let mut ignore_builder = WalkBuilder::new(folder_to_tar_gz);
 
@@ -139,6 +156,23 @@ pub async fn create_package_tar_gz_file(
                 let name = path.strip_prefix(folder_to_tar_gz)?;
 
                 if include_globset.is_match(name) {
+                    files_to_include.push(path.to_path_buf());
+                }
+            }
+            Err(err) => println!("Error: {err:?}"),
+        }
+    }
+
+    // For hidden files/folders explicitly specified in manifest.json, we will
+    // not ignore them when packing the package.
+    ignore_builder.hidden(false);
+    for result in ignore_builder.build() {
+        match result {
+            Ok(entry) => {
+                let path = entry.path();
+                let name = path.strip_prefix(folder_to_tar_gz)?;
+
+                if hidden_globset.is_match(name) {
                     files_to_include.push(path.to_path_buf());
                 }
             }

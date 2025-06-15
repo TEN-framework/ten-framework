@@ -322,6 +322,19 @@ ten_go_error_t ten_go_extension_create(ten_go_handle_t go_extension,
   TEN_ASSERT(go_extension > 0 && name && name_len > 0 && bridge_addr,
              "Invalid argument.");
 
+#if defined(_DEBUG)
+  const char *enable_intentional_memory_leak =
+      // NOLINTNEXTLINE(concurrency-mt-unsafe)
+      getenv("TEN_ENABLE_INTENTIONAL_MEMORY_LEAK");
+  if (enable_intentional_memory_leak &&
+      !strcmp(enable_intentional_memory_leak, "true")) {
+    TEN_LOGD(
+        "TEN_ENABLE_INTENTIONAL_MEMORY_LEAK is defined. Memory leak is "
+        "happening in go extension creation.");
+    TEN_MALLOC(10);
+  }
+#endif
+
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 

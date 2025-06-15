@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_nodejs",
-  "version": "0.10.11",
+  "version": "0.10.13",
   "tags": [
     "nodejs"
   ],
@@ -9,22 +9,18 @@
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.10.11"
+      "version": "0.10.13"
     }
   ],
   "package": {
     "include": [
-      "manifest.json",
-      "property.json",
-      "BUILD.gn",
-      "src/**",
-      "tsconfig.json",
-      "package.json",
-      "tests/**"
+      "**",
+      ".vscode/**"
     ]
   },
   "api": {},
   "scripts": {
-    "test": "tests/bin/start"
+    "test": "tests/bin/start",
+    "build": "python3 tools/run_script.py build"
   }
 }

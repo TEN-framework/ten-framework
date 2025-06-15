@@ -12,6 +12,8 @@ ten_package("default_async_extension_python") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
+    ".vscode/settings.json",
     "README.md",
     "README.md.tent",
     "__init__.py",

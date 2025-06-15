@@ -979,6 +979,19 @@ static napi_value ten_nodejs_extension_create(napi_env env,
                                               napi_callback_info info) {
   TEN_ASSERT(env, "Should not happen.");
 
+#if defined(_DEBUG)
+  const char *enable_intentional_memory_leak =
+      // NOLINTNEXTLINE(concurrency-mt-unsafe)
+      getenv("TEN_ENABLE_INTENTIONAL_MEMORY_LEAK");
+  if (enable_intentional_memory_leak &&
+      !strcmp(enable_intentional_memory_leak, "true")) {
+    TEN_LOGD(
+        "TEN_ENABLE_INTENTIONAL_MEMORY_LEAK is defined. Memory leak is "
+        "happening in nodejs extension creation.");
+    TEN_MALLOC(10);
+  }
+#endif
+
   ten_string_t name;
   TEN_STRING_INIT(name);
 

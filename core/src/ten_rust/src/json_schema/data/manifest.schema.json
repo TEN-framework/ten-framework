@@ -377,6 +377,9 @@
     "dependencies": {
       "$ref": "#/$defs/dependencies"
     },
+    "dev_dependencies": {
+      "$ref": "#/$defs/dependencies"
+    },
     "api": {
       "type": "object",
       "additionalProperties": false,
