@@ -6,14 +6,13 @@
 #
 #
 import asyncio
-import base64
 from enum import Enum
 import json
 import traceback
 import time
 from google import genai
 import numpy as np
-from typing import Iterable, cast
+from typing import Iterable, cast, Optional
 
 import websockets
 
@@ -58,8 +57,18 @@ from google.genai.types import (
     SpeechConfig,
     VoiceConfig,
     PrebuiltVoiceConfig,
+    StartSensitivity,
+    EndSensitivity,
+    AutomaticActivityDetection,
+    RealtimeInputConfig,
+    AudioTranscriptionConfig,
+    ProactivityConfig,
+    LiveServerContent,
+    Modality,
+    MediaResolution,
 )
 from google.genai.live import AsyncSession
+from google.genai import types
 from PIL import Image
 from io import BytesIO
 from base64 import b64encode
@@ -154,7 +163,24 @@ class GeminiRealtimeConfig(BaseConfig):
     sample_rate: int = 24000
     stream_id: int = 0
     dump: bool = False
-    greeting: str = ""
+    greeting: str = "hello"
+    # Audio optimization settings
+    audio_chunk_size: int = 1024
+    # Transcription settings
+    transcribe_agent: bool = False
+    transcribe_user: bool = False
+    # Dialog features settings
+    affective_dialog: bool = False
+    proactive_audio: bool = False
+    # VAD settings
+    start_of_speech_sensitivity: Optional[str] = None
+    end_of_speech_sensitivity: Optional[str] = None
+    prefix_padding_ms: Optional[int] = None
+    silence_duration_ms: Optional[int] = None
+
+    media_resolution: MediaResolution = MediaResolution.MEDIA_RESOLUTION_MEDIUM
+    context_window_trigger_tokens: int = 25600
+    context_window_sliding_window_target_tokens: int = 12800
 
     def build_ctx(self) -> dict:
         return {
@@ -169,7 +195,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.config: GeminiRealtimeConfig = None
         self.stopped: bool = False
         self.connected: bool = False
-        self.buffer: bytearray = b""
+        self.buffer: bytearray = bytearray()
         self.memory: ChatMemory = None
         self.total_usage: LLMUsage = LLMUsage()
         self.users_count = 0
@@ -183,7 +209,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.connect_times = []
         self.first_token_times = []
 
-        self.buff: bytearray = b""
+        self.buff: bytearray = bytearray()
         self.transcript: str = ""
         self.ctx: dict = {}
         self.input_end = time.time()
@@ -191,10 +217,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.session: AsyncSession = None
         self.leftover_bytes = b""
         self.video_task = None
-        self.image_queue = asyncio.Queue()
+        self.image_queue = asyncio.Queue(maxsize=5)
         self.video_buff: str = ""
         self.loop = None
         self.ten_env = None
+
+        # Cache for session configuration to reduce cold start time
+        self._cached_session_config = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -277,6 +306,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                             response.server_content.turn_complete
                                         ):
                                             ten_env.log_info("Turn complete")
+                                        self._handle_transcriptions(
+                                            response.server_content
+                                        )
                                     elif response.setup_complete:
                                         ten_env.log_info("Setup complete")
                                     elif response.tool_call:
@@ -297,6 +329,33 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                             break
             except Exception as e:
                 self.ten_env.log_error(f"Failed to handle loop {e}")
+
+    def _handle_transcriptions(self, server_content: LiveServerContent) -> None:
+        """Handle transcription responses with lower priority."""
+        # Process input transcription
+        if (
+            server_content.input_transcription
+            and server_content.input_transcription.text
+        ):
+            self._send_transcript(
+                server_content.input_transcription.text,
+                Role.User,
+                is_final=server_content.turn_complete or False,
+                end_of_segment=True,
+            )
+
+        # Process output transcription
+        if (
+            server_content.output_transcription
+            and server_content.output_transcription.text
+        ):
+
+            self._send_transcript(
+                server_content.output_transcription.text,
+                Role.Assistant,
+                is_final=server_content.turn_complete or False,
+                end_of_segment=True,
+            )
 
     async def send_audio_out(
         self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions
@@ -409,7 +468,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         image_data = video_frame.get_buf()
         image_width = video_frame.get_width()
         image_height = video_frame.get_height()
-        await self.image_queue.put([image_data, image_width, image_height])
+
+        # Use non-blocking put to avoid memory buildup
+        try:
+            self.image_queue.put_nowait([image_data, image_width, image_height])
+        except asyncio.QueueFull:
+            # Drop frames if queue is full to maintain performance
+            pass
 
     async def _on_video(self, _: AsyncTenEnv):
         while True:
@@ -450,22 +515,88 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
     # Direction: IN
     async def _on_audio(self, buff: bytearray):
         self.buff += buff
-        # Buffer audio
+        # Buffer audio with optimized threshold for better performance
         if self.connected and len(self.buff) >= self.audio_len_threshold:
-            # await self.conn.send_audio_data(self.buff)
             try:
-                # await self.session.send(LiveClientRealtimeInput(media_chunks=media_chunks))
-                msg = {
-                    "data": base64.b64encode(self.buff).decode(),
-                    "mime_type": "audio/pcm",
-                }
-                await self.session.send_realtime_input(audio=msg)
-                self.buff = b""
+                # Process in larger chunks for efficiency
+                chunk_size = min(len(self.buff), self.audio_len_threshold * 2)
+                audio_data = self.buff[:chunk_size]
+                self.buff = self.buff[chunk_size:]
+
+                audio_blob = types.Blob(
+                    data=audio_data,
+                    mime_type="audio/pcm;rate=16000",
+                )
+                await self.session.send_realtime_input(audio=audio_blob)
             except Exception as e:
-                # pass
                 self.ten_env.log_error(f"Failed to send audio {e}")
+                # Reset buffer on error to prevent accumulation
+                self.buff = bytearray()
+
+    def _get_realtime_input_config(self) -> RealtimeInputConfig:
+        """Extract and return configured speech sensitivities."""
+        start_of_speech_sensitivity = (
+            StartSensitivity.START_SENSITIVITY_UNSPECIFIED
+        )
+        end_of_speech_sensitivity = EndSensitivity.END_SENSITIVITY_UNSPECIFIED
+
+        # Configure start of speech sensitivity
+        if (
+            (
+                isinstance(self.config.start_of_speech_sensitivity, str)
+                and self.config.start_of_speech_sensitivity.lower() == "high"
+            )
+            or self.config.start_of_speech_sensitivity
+            == StartSensitivity.START_SENSITIVITY_HIGH
+        ):
+            start_of_speech_sensitivity = (
+                StartSensitivity.START_SENSITIVITY_HIGH
+            )
+        elif (
+            (
+                isinstance(self.config.start_of_speech_sensitivity, str)
+                and self.config.start_of_speech_sensitivity.lower() == "low"
+            )
+            or self.config.start_of_speech_sensitivity
+            == StartSensitivity.START_SENSITIVITY_LOW
+        ):
+            start_of_speech_sensitivity = StartSensitivity.START_SENSITIVITY_LOW
+
+        # Configure end of speech sensitivity
+        if (
+            (
+                isinstance(self.config.end_of_speech_sensitivity, str)
+                and self.config.end_of_speech_sensitivity.lower() == "high"
+            )
+            or self.config.end_of_speech_sensitivity
+            == EndSensitivity.END_SENSITIVITY_HIGH
+        ):
+            end_of_speech_sensitivity = EndSensitivity.END_SENSITIVITY_HIGH
+        elif (
+            (
+                isinstance(self.config.end_of_speech_sensitivity, str)
+                and self.config.end_of_speech_sensitivity.lower() == "low"
+            )
+            or self.config.end_of_speech_sensitivity
+            == EndSensitivity.END_SENSITIVITY_LOW
+        ):
+            end_of_speech_sensitivity = EndSensitivity.END_SENSITIVITY_LOW
+
+        return RealtimeInputConfig(
+            automatic_activity_detection=AutomaticActivityDetection(
+                disabled=not self.config.server_vad,
+                start_of_speech_sensitivity=start_of_speech_sensitivity,
+                end_of_speech_sensitivity=end_of_speech_sensitivity,
+                prefix_padding_ms=self.config.prefix_padding_ms,
+                silence_duration_ms=self.config.silence_duration_ms,
+            ),
+        )
 
     def _get_session_config(self) -> LiveConnectConfigDict:
+        # Return cached config if available to reduce cold start time
+        if self._cached_session_config is not None:
+            return self._cached_session_config
+
         def tool_dict(tool: LLMToolMetadata):
             required = []
             properties: dict[str, "Schema"] = {}
@@ -503,7 +634,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         tools.append(Tool(code_execution={}))
 
         config = LiveConnectConfig(
-            response_modalities=["AUDIO"],
+            response_modalities=[Modality.AUDIO],
+            # Add media resolution for optimized video processing performance
+            media_resolution=self.config.media_resolution,
             system_instruction=Content(parts=[Part(text=self.config.prompt)]),
             tools=tools,
             # voice is currently not working
@@ -519,8 +652,36 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_tokens,
             ),
+            # Add context window compression for better performance with long conversations
+            context_window_compression=types.ContextWindowCompressionConfig(
+                trigger_tokens=self.config.context_window_trigger_tokens,
+                sliding_window=types.SlidingWindow(
+                    target_tokens=self.config.context_window_sliding_window_target_tokens
+                ),
+            ),
+            realtime_input_config=self._get_realtime_input_config(),
+            output_audio_transcription=(
+                AudioTranscriptionConfig()
+                if self.config and self.config.transcribe_agent
+                else None
+            ),
+            input_audio_transcription=(
+                AudioTranscriptionConfig()
+                if self.config and self.config.transcribe_user
+                else None
+            ),
+            enable_affective_dialog=(
+                True if self.config.affective_dialog else None
+            ),
+            proactivity=(
+                ProactivityConfig(proactive_audio=True)
+                if self.config.proactive_audio
+                else None
+            ),
         )
 
+        # Cache the configuration for future use
+        self._cached_session_config = config
         return config
 
     async def on_tools_update(
@@ -537,7 +698,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         return result
 
     def _send_transcript(
-        self, content: str, role: Role, is_final: bool
+        self, content: str, role: Role, is_final: bool, end_of_segment: bool
     ) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
@@ -569,12 +730,18 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             try:
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
-                d.set_property_bool("end_of_segment", is_final)
+                d.set_property_bool("end_of_segment", end_of_segment)
                 d.set_property_string("role", role)
                 d.set_property_int("stream_id", stream_id)
-                ten_env.log_info(
-                    f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}"
-                )
+                d.set_property_bool("is_final", is_final)
+                if is_final:
+                    ten_env.log_info(
+                        f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}"
+                    )
+                else:
+                    ten_env.log_debug(
+                        f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}"
+                    )
                 asyncio.create_task(ten_env.send_data(d))
             except Exception as e:
                 ten_env.log_error(
@@ -696,13 +863,14 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         return content_parts
 
     async def _greeting(self) -> None:
-        pass
-        # if self.connected and self.users_count == 1:
-        #     text = self._greeting_text()
-        #     if self.config.greeting:
-        #         text = "Say '" + self.config.greeting + "' to me."
-        #     self.ten_env.log_info(f"send greeting {text}")
-        #     await self.session.send(text, end_of_turn=True)
+        if self.connected and self.users_count == 1:
+            text = self._greeting_text()
+            if self.config.greeting:
+                text = "Say '" + self.config.greeting + "' to me."
+            self.ten_env.log_info(f"send greeting {text}")
+            await self.session.send_client_content(
+                turns=Content(role=Role.User, parts=[Part(text=text)])
+            )
 
     async def _flush(self) -> None:
         try:
