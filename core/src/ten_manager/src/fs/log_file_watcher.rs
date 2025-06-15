@@ -177,10 +177,12 @@ async fn watch_log_file_task(
     // Instead of reading the entire file at once, read it line by line.
     let mut reader = BufReader::new(&file);
     let mut line = String::new();
+    let mut last_pos: u64 = 0;
     while let Ok(bytes_read) = reader.read_line(&mut line) {
         if bytes_read == 0 {
             break; // End of file.
         }
+        last_pos += bytes_read as u64;
 
         // Process each line.
         let metadata = process_log_line(&line, &mut graph_resources_log);
@@ -190,16 +192,6 @@ async fn watch_log_file_task(
         let _ = content_tx.send(Ok(log_line_info)).await;
         line.clear(); // Clear for the next line.
     }
-
-    // Reset last_pos to the current EOF.
-    let mut last_pos = match file.seek(SeekFrom::End(0)) {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("({}) Error seeking to end: {e}", path.display());
-            let _ = content_tx.send(Err(anyhow!(e))).await;
-            return;
-        }
-    };
 
     let mut last_activity = Instant::now();
 
