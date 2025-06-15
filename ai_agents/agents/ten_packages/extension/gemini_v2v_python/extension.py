@@ -6,7 +6,6 @@
 #
 #
 import asyncio
-import base64
 from enum import Enum
 import json
 import traceback
