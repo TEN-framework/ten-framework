@@ -94,6 +94,14 @@ def test_import_graph_app():
         print(f"Server command '{server_cmd}' does not exist.")
         assert False
 
+    # Test the property_including_subgraph.json
+    # cp property_including_subgraph.json to property.json
+    fs_utils.copy(
+        os.path.join(app_root_path, "property_including_subgraph.json"),
+        os.path.join(app_root_path, "property.json"),
+        True,
+    )
+
     server = subprocess.Popen(
         server_cmd,
         stdout=stdout,
@@ -117,7 +125,49 @@ def test_import_graph_app():
 
     try:
         run_test_post()
+    finally:
+        is_stopped = http.stop_app("127.0.0.1", 8001, 30)
 
+        if not is_stopped:
+            print("The import_graph_app can not stop after 30 seconds.")
+            server.kill()
+
+        exit_code = server.wait()
+        print("The exit code of import_graph_app: ", exit_code)
+
+        assert exit_code == 0
+
+    # Test the property_import_graph.json
+    # cp property_import_graph.json to property.json
+    fs_utils.copy(
+        os.path.join(app_root_path, "property_import_graph.json"),
+        os.path.join(app_root_path, "property.json"),
+        True,
+    )
+
+    server = subprocess.Popen(
+        server_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=app_root_path,
+    )
+
+    is_started = http.is_app_started("127.0.0.1", 8001, 30)
+    if not is_started:
+        print("The import_graph_app is not started after 30 seconds.")
+
+        server.kill()
+        exit_code = server.wait()
+        print("The exit code of import_graph_app: ", exit_code)
+
+        assert exit_code == 0
+        assert False
+
+        return
+
+    try:
+        run_test_post()
     finally:
         is_stopped = http.stop_app("127.0.0.1", 8001, 30)
 

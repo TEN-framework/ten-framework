@@ -14,8 +14,9 @@ ten_package_test_prepare_app("import_graph_app") {
 
   replace_paths_after_install_app = [
     "import_graph_app/manifest.json",
-    "import_graph_app/property.json",
     "import_graph_app/graphs/test_graph.json",
+    "import_graph_app/property_including_subgraph.json",
+    "import_graph_app/property_import_graph.json",
   ]
 
   if (ten_enable_ten_manager) {
