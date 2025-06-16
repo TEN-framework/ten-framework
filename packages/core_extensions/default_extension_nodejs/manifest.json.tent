@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "{{package_name}}",
-  "version": "0.10.12",
+  "version": "0.10.13",
   "tags": [
     "nodejs"
   ],
@@ -9,16 +9,18 @@
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.10.12"
+      "version": "0.10.13"
     }
   ],
   "package": {
     "include": [
-      "**"
+      "**",
+      ".vscode/**"
     ]
   },
   "api": {},
   "scripts": {
-    "test": "tests/bin/start"
+    "test": "tests/bin/start",
+    "build": "python3 tools/run_script.py build"
   }
 }

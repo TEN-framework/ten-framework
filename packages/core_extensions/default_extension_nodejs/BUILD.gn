@@ -12,6 +12,7 @@ ten_package("default_extension_nodejs") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
     "manifest.json",
     "manifest.json.tent",
     "package.json",
@@ -19,6 +20,7 @@ ten_package("default_extension_nodejs") {
     "property.json",
     "src/index.ts",
     "src/index.ts.tent",
+    "tools/run_script.py",
     "tsconfig.json",
   ]
 
