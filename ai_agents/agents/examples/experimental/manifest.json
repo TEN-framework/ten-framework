@@ -1,12 +1,12 @@
 {
   "type": "app",
   "name": "agent_experimental",
-  "version": "0.8.0",
+  "version": "0.10.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.8"
+      "version": "0.10"
     },
     {
       "type": "extension",
