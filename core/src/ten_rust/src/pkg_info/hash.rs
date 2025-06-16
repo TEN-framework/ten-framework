@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use semver::Version;
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
 use super::{manifest::support::ManifestSupport, pkg_type::PkgType, PkgInfo};
@@ -28,29 +29,33 @@ impl PkgInfo {
 
 fn gen_hash_hex(
     pkg_type: &PkgType,
-    name: &String,
+    name: &str,
     version: &Version,
     supports: &[ManifestSupport],
 ) -> String {
-    let mut hasher = Sha256::new();
+    // Create JSON object
+    let mut json_obj = json!({
+        "type": pkg_type.to_string(),
+        "name": name.to_owned(),
+        "version": version.to_string(),
+    });
 
-    // Hash type.
-    let type_string = format!("{pkg_type}");
-    hasher.update(type_string);
-
-    // Hash name.
-    hasher.update(name);
-
-    // Hash version.
-    let version_string = version.to_string();
-    hasher.update(version_string);
-
-    // Hash supports.
-    for support in supports {
-        let support_string = format!("{support}");
-        hasher.update(support_string);
+    // Add supports field only if it's not empty
+    if !supports.is_empty() {
+        let supports_array: Vec<String> =
+            supports.iter().map(|support| support.to_string()).collect();
+        json_obj["supports"] = Value::Array(
+            supports_array.into_iter().map(Value::String).collect(),
+        );
     }
 
+    // Serialize JSON to string
+    let json_string = serde_json::to_string(&json_obj)
+        .expect("Failed to serialize JSON for hash generation");
+
+    // Calculate hash from JSON string
+    let mut hasher = Sha256::new();
+    hasher.update(json_string);
     let hash_result = hasher.finalize();
     let hash_hex = format!("{hash_result:x}");
 
