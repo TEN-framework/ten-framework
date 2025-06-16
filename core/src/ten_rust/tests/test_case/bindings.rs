@@ -94,8 +94,9 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(result_str).unwrap();
         assert!(parsed.is_object());
-        assert!(parsed["nodes"].is_array());
-        assert_eq!(parsed["nodes"].as_array().unwrap().len(), 0);
+
+        // As the 'nodes' is empty, it will not be serialized.
+        assert_eq!(parsed.as_object().unwrap().len(), 0);
 
         // Free the allocated string
         ten_rust_free_cstring(result_ptr);
