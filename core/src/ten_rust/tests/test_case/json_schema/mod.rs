@@ -45,6 +45,48 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_dev_dependencies_normal() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dev_dependencies": [{
+            "type": "system",
+            "name": "googletest",
+            "version": "1.7.0-rc2"
+          }],
+          "api": {}
+        }
+        "#;
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_mixed_dependencies_normal() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dev_dependencies": [{
+            "type": "system",
+            "name": "ten_runtime",
+            "version": "0.6.0"
+          },{
+            "type": "system",
+            "name": "googletest",
+            "version": "1.7.0-rc2"
+          }],
+          "api": {}
+        }
+        "#;
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_validate_dependencies_with_path() {
         let manifest = r#"
         {

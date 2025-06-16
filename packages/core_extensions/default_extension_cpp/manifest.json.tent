@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "{{package_name}}",
-  "version": "0.10.12",
+  "version": "0.10.13",
   "tags": [
     "cpp",
     "template"
@@ -10,8 +10,10 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.12"
-    },
+      "version": "0.10.13"
+    }
+  ],
+  "dev_dependencies": [
     {
       "type": "system",
       "name": "googletest",

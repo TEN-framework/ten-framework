@@ -21,8 +21,10 @@ use inquire::Confirm;
 use semver::VersionReq;
 use ten_rust::pkg_info::{
     constants::{BUILD_GN_FILENAME, MANIFEST_JSON_FILENAME},
-    manifest::dependency::ManifestDependency,
     manifest::support::ManifestSupport,
+    manifest::{
+        dependency::ManifestDependency, parse_manifest_in_folder, Manifest,
+    },
     pkg_basic_info::PkgBasicInfo,
 };
 use ten_rust::pkg_info::{
@@ -40,7 +42,7 @@ use crate::{
     },
     dep_and_candidate::get_all_candidates_from_deps,
     designer::storage::in_memory::TmanStorageInMemory,
-    fs::{check_is_addon_folder, find_nearest_app_dir},
+    fs::find_nearest_app_dir,
     home::config::{is_verbose, TmanConfig},
     install::{
         compare_solver_results_with_installed_pkgs,
@@ -90,6 +92,7 @@ pub struct InstallCommand {
     pub support: ManifestSupport,
     pub local_install_mode: LocalInstallMode,
     pub standalone: bool,
+    pub production: bool,
     pub cwd: String,
     pub max_latest_versions: i32,
 
@@ -144,6 +147,14 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .required(false),
         )
         .arg(
+            Arg::new("PRODUCTION")
+                .long("production")
+                .help("Install in production mode, dev_dependencies will be \
+                      ignored")
+                .action(clap::ArgAction::SetTrue)
+                .required(false),
+        )
+        .arg(
             Arg::new("CWD")
                 .long("cwd")
                 .short('C')
@@ -176,6 +187,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         },
         local_install_mode: LocalInstallMode::Invalid,
         standalone: false,
+        production: false,
         cwd: String::new(),
         max_latest_versions: DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         local_path: None,
@@ -260,6 +272,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
     }
 
     cmd.standalone = sub_cmd_args.get_flag("STANDALONE");
+    cmd.production = sub_cmd_args.get_flag("PRODUCTION");
 
     Ok(cmd)
 }
@@ -296,7 +309,6 @@ fn prepare_cpp_standalone_app_dir(dot_ten_app_dir: &Path) -> Result<()> {
     if !build_gn_file.exists() {
         // Create a basic `BUILD.gn` for the C++ app.
         let content = r#"import("//build/feature/ten_package.gni")
-
 ten_package("app_for_standalone") {
   package_kind = "app"
 }
@@ -310,6 +322,7 @@ ten_package("app_for_standalone") {
 fn prepare_basic_standalone_app_dir(
     _tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     extension_dir: &Path,
+    extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
     let dot_ten_app_dir =
         extension_dir.join(DOT_TEN_DIR).join(APP_DIR_IN_DOT_TEN_DIR);
@@ -318,22 +331,39 @@ fn prepare_basic_standalone_app_dir(
     }
 
     let manifest_json = dot_ten_app_dir.join(MANIFEST_JSON_FILENAME);
-    if !manifest_json.exists() {
-        // Create a basic `manifest.json`, and in that manifest.json, there will
-        // be a local dependency pointing to the current extension folder.
-        let content = r#"{
-  "type": "app",
-  "name": "app_for_standalone",
-  "version": "0.1.0",
-  "dependencies": [
-    {
-      "path": "../../"
-    }
-  ]
-}
-"#;
-        fs::write(&manifest_json, content)?;
-    }
+
+    // If the manifest.json does not exist, create a basic one, and in that
+    // manifest.json, there will be a local dependency pointing to the current
+    // extension folder. Besides, the `dev_dependencies` field in the
+    // extension's manifest.json will be added to the manifest.json of the new
+    // created standalone app.
+    //
+    // If the manifest.json already exists, it will be overwritten.
+
+    // Serialize dev_dependencies from extension_manifest
+    let dev_dependencies_json =
+        if let Some(dev_deps) = &extension_manifest.dev_dependencies {
+            serde_json::to_value(dev_deps)
+                .unwrap_or(serde_json::Value::Array(vec![]))
+        } else {
+            serde_json::Value::Array(vec![])
+        };
+
+    // Create the manifest JSON structure
+    let manifest_content = serde_json::json!({
+        "type": "app",
+        "name": "app_for_standalone",
+        "version": "0.1.0",
+        "dependencies": [
+            {
+                "path": "../../"
+            }
+        ],
+        "dev_dependencies": dev_dependencies_json
+    });
+
+    let content = serde_json::to_string_pretty(&manifest_content)?;
+    fs::write(&manifest_json, content)?;
 
     Ok(dot_ten_app_dir)
 }
@@ -342,9 +372,13 @@ fn prepare_basic_standalone_app_dir(
 async fn prepare_standalone_app_dir(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     extension_dir: &Path,
+    extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
-    let dot_ten_app_dir =
-        prepare_basic_standalone_app_dir(tman_config.clone(), extension_dir)?;
+    let dot_ten_app_dir = prepare_basic_standalone_app_dir(
+        tman_config.clone(),
+        extension_dir,
+        extension_manifest,
+    )?;
 
     let build_gn_path = extension_dir.join("BUILD.gn");
     if build_gn_path.exists() {
@@ -361,14 +395,18 @@ async fn determine_app_dir_to_work_with(
     specified_cwd: &Path,
 ) -> Result<PathBuf> {
     if standalone {
-        // If it is standalone mode, it can only be executed in the extension
-        // directory.
-        check_is_addon_folder(specified_cwd).with_context(|| {
-            "Standalone mode can only be executed in an addon folder."
-        })?;
+        let manifest = parse_manifest_in_folder(specified_cwd)?;
+        if manifest.type_and_name.pkg_type != PkgType::Extension {
+            return Err(anyhow!(
+                "Standalone mode can only be executed in an extension folder. \
+                 The `type` in manifest.json is not an extension type: {}",
+                manifest.type_and_name.pkg_type
+            ));
+        }
 
         let dot_ten_app_dir_path =
-            prepare_standalone_app_dir(tman_config, specified_cwd).await?;
+            prepare_standalone_app_dir(tman_config, specified_cwd, &manifest)
+                .await?;
 
         Ok(dot_ten_app_dir_path)
     } else {
@@ -379,6 +417,100 @@ async fn determine_app_dir_to_work_with(
 
         Ok(app_dir)
     }
+}
+
+/// Filter packages for production mode by recursively traversing only
+/// production dependencies. In production mode, dev_dependencies should be
+/// excluded from installation.
+async fn filter_packages_for_production_mode<'a>(
+    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    is_production: bool,
+    app_pkg_dependencies: &[ManifestDependency],
+    app_pkg_dev_dependencies: &[ManifestDependency],
+    remaining_solver_results: Vec<&'a PkgInfo>,
+    out: Arc<Box<dyn TmanOutput>>,
+) -> Vec<&'a PkgInfo> {
+    if !is_production || app_pkg_dev_dependencies.is_empty() {
+        return remaining_solver_results;
+    }
+
+    // Convert remaining_solver_results to a HashMap with
+    // PkgTypeAndName as the key and PkgInfo as the value.
+    let remaining_solver_results_map = remaining_solver_results
+        .iter()
+        .map(|pkg| (pkg.manifest.type_and_name.clone(), *pkg))
+        .collect::<HashMap<PkgTypeAndName, &PkgInfo>>();
+
+    let mut pkgs_to_be_installed: Vec<&PkgInfo> = vec![];
+    let mut visited: std::collections::HashSet<PkgTypeAndName> =
+        std::collections::HashSet::new();
+
+    // Add all the dependencies of the app to the list of packages to be
+    // installed.
+    app_pkg_dependencies.iter().for_each(|dep| {
+        if let Some((pkg_type, name)) = dep.get_type_and_name() {
+            let type_and_name = PkgTypeAndName { pkg_type, name };
+            if let Some(pkg) = remaining_solver_results_map.get(&type_and_name)
+            {
+                if !visited.contains(&type_and_name) {
+                    pkgs_to_be_installed.push(pkg);
+                    visited.insert(type_and_name);
+                }
+            }
+        }
+    });
+
+    // Recursively traverse all dependencies to collect packages that
+    // need to be installed
+    while let Some(pkg) = pkgs_to_be_installed.pop() {
+        // Process the dependencies of the current package
+        if let Some(dependencies) = &pkg.manifest.dependencies {
+            for dep in dependencies {
+                if let Some((pkg_type, name)) = dep.get_type_and_name() {
+                    let type_and_name = PkgTypeAndName { pkg_type, name };
+                    if let Some(dep_pkg) =
+                        remaining_solver_results_map.get(&type_and_name)
+                    {
+                        if !visited.contains(&type_and_name) {
+                            pkgs_to_be_installed.push(dep_pkg);
+                            visited.insert(type_and_name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // In verbose mode, print packages that were filtered out due to production
+    // mode
+    if is_verbose(tman_config.clone()).await {
+        let filtered_out_packages: Vec<_> = remaining_solver_results
+            .iter()
+            .filter(|pkg| !visited.contains(&pkg.manifest.type_and_name))
+            .collect();
+
+        if !filtered_out_packages.is_empty() {
+            out.normal_line(&format!(
+                "{}  Packages skipped installing in production mode:",
+                Emoji("🚫", "")
+            ));
+            for pkg in filtered_out_packages {
+                out.normal_line(&format!(
+                    "  - [{}]{} @{}",
+                    pkg.manifest.type_and_name.pkg_type,
+                    pkg.manifest.type_and_name.name,
+                    pkg.manifest.version
+                ));
+            }
+        }
+    }
+
+    // Filter remaining_solver_results to only include packages that
+    // need to be installed
+    remaining_solver_results
+        .into_iter()
+        .filter(|pkg| visited.contains(&pkg.manifest.type_and_name))
+        .collect::<Vec<&PkgInfo>>()
 }
 
 pub async fn execute_cmd(
@@ -445,13 +577,33 @@ pub async fn execute_cmd(
     let mut installing_pkg_type: Option<PkgType> = None;
     let mut installing_pkg_name: Option<String> = None;
 
-    let app_pkg_to_work_with = get_pkg_info_from_path(
+    let mut app_pkg_to_work_with = get_pkg_info_from_path(
         &app_dir_to_work_with,
         true,
         false,
         &mut None,
         None,
     )?;
+
+    let app_pkg_dependencies =
+        app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
+    let app_pkg_dev_dependencies = app_pkg_to_work_with
+        .manifest
+        .dev_dependencies
+        .clone()
+        .unwrap_or_default();
+
+    // We will include the `dev_dependencies` of the app in the dependency
+    // calculation (even in production mode), but when actually installing, we
+    // will determine whether to install only for dev packages based on whether
+    // it is in production mode.
+    if let Some(dev_dependencies) =
+        app_pkg_to_work_with.manifest.dev_dependencies.clone()
+    {
+        let mut dependencies = app_pkg_dependencies.clone();
+        dependencies.extend(dev_dependencies);
+        app_pkg_to_work_with.manifest.dependencies = Some(dependencies);
+    }
 
     // We need to start looking for dependencies outward from the cwd package,
     // and the cwd package itself is considered a candidate.
@@ -730,16 +882,30 @@ pub async fn execute_cmd(
             }
         }
 
+        // Write the full dependency tree to the manifest-lock.json file
+        // including the dev dependencies which will not be installed in
+        // production mode.
         write_pkgs_into_manifest_lock_file(
             &remaining_solver_results,
             &app_dir_to_work_with,
             out.clone(),
         )?;
 
+        // Filter packages for production mode if needed
+        let final_solver_results = filter_packages_for_production_mode(
+            tman_config.clone(),
+            command_data.production,
+            &app_pkg_dependencies,
+            &app_pkg_dev_dependencies,
+            remaining_solver_results,
+            out.clone(),
+        )
+        .await;
+
         install_solver_results_in_app_folder(
             tman_config.clone(),
             &command_data,
-            &remaining_solver_results,
+            &final_solver_results,
             &app_dir_to_work_with,
             out.clone(),
         )
