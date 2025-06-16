@@ -45,35 +45,3 @@ where
         }
     })
 }
-
-pub fn get_pkg_predefined_graph_from_nodes_and_connections(
-    graph_name: &str,
-    auto_start: bool,
-    nodes: &[GraphNode],
-    connections: &[GraphConnection],
-    exposed_messages: &[GraphExposedMessage],
-    exposed_properties: &[GraphExposedProperty],
-) -> Result<GraphInfo> {
-    Ok(GraphInfo {
-        name: Some(graph_name.to_string()),
-        auto_start: Some(auto_start),
-        graph: Graph {
-            nodes: nodes.to_vec(),
-            connections: Some(connections.to_vec()),
-            exposed_messages: if exposed_messages.is_empty() {
-                None
-            } else {
-                Some(exposed_messages.to_vec())
-            },
-            exposed_properties: if exposed_properties.is_empty() {
-                None
-            } else {
-                Some(exposed_properties.to_vec())
-            },
-        },
-        import_uri: None,
-        app_base_dir: None,
-        belonging_pkg_type: None,
-        belonging_pkg_name: None,
-    })
-}
