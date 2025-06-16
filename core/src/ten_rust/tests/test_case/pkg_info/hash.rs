@@ -7,7 +7,7 @@
 #[cfg(test)]
 mod tests {
     use semver::Version;
-    use serde_json::json;
+    use serde_json::{json, Value};
     use ten_rust::pkg_info::{
         hash::gen_hash_hex,
         manifest::{support::ManifestSupport, Manifest},
@@ -31,8 +31,9 @@ mod tests {
             "name": name.to_owned(),
             "version": version.to_string(),
         });
-        let json_string = serde_json::to_string(&json_obj).unwrap();
-        println!("JSON without supports: {}", json_string);
+        let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
+        println!("JSON without supports:");
+        println!("{}", json_string);
         println!("Generated hash: {}", hash);
 
         assert!(!hash.is_empty());
@@ -57,13 +58,31 @@ mod tests {
             "name": name.to_owned(),
             "version": version.to_string(),
         });
-        let supports_array: Vec<String> =
-            supports.iter().map(|support| support.to_string()).collect();
-        json_obj["supports"] = serde_json::Value::Array(
-            supports_array.into_iter().map(serde_json::Value::String).collect(),
-        );
-        let json_string = serde_json::to_string(&json_obj).unwrap();
-        println!("JSON with supports: {}", json_string);
+
+        let supports_array: Vec<Value> = supports
+            .iter()
+            .map(|support| {
+                let mut support_obj = serde_json::Map::new();
+                if let Some(os) = &support.os {
+                    support_obj.insert(
+                        "os".to_string(),
+                        Value::String(os.to_string()),
+                    );
+                }
+                if let Some(arch) = &support.arch {
+                    support_obj.insert(
+                        "arch".to_string(),
+                        Value::String(arch.to_string()),
+                    );
+                }
+                Value::Object(support_obj)
+            })
+            .collect();
+        json_obj["supports"] = Value::Array(supports_array);
+
+        let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
+        println!("JSON with supports:");
+        println!("{}", json_string);
         println!("Generated hash: {}", hash);
 
         assert!(!hash.is_empty());
@@ -114,14 +133,87 @@ mod tests {
             "name": pkg_info.manifest.type_and_name.name.clone(),
             "version": pkg_info.manifest.version.to_string(),
         });
-        let supports_array: Vec<String> =
-            supports.iter().map(|support| support.to_string()).collect();
-        json_obj["supports"] = serde_json::Value::Array(
-            supports_array.into_iter().map(serde_json::Value::String).collect(),
-        );
-        let json_string = serde_json::to_string(&json_obj).unwrap();
-        println!("PkgInfo JSON: {}", json_string);
+
+        let supports_array: Vec<Value> = supports
+            .iter()
+            .map(|support| {
+                let mut support_obj = serde_json::Map::new();
+                if let Some(os) = &support.os {
+                    support_obj.insert(
+                        "os".to_string(),
+                        Value::String(os.to_string()),
+                    );
+                }
+                if let Some(arch) = &support.arch {
+                    support_obj.insert(
+                        "arch".to_string(),
+                        Value::String(arch.to_string()),
+                    );
+                }
+                Value::Object(support_obj)
+            })
+            .collect();
+        json_obj["supports"] = Value::Array(supports_array);
+
+        let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
+        println!("PkgInfo JSON:");
+        println!("{}", json_string);
         println!("PkgInfo generated hash: {}", hash);
+
+        assert!(!hash.is_empty());
+        assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters
+    }
+
+    #[test]
+    fn test_gen_hash_hex_with_partial_supports() {
+        let pkg_type = PkgType::Extension;
+        let name = "test_extension";
+        let version = Version::parse("1.0.0").unwrap();
+        let supports = vec![
+            ManifestSupport {
+                os: Some(Os::Linux),
+                arch: None, // Test with missing arch
+            },
+            ManifestSupport {
+                os: None, // Test with missing os
+                arch: Some(Arch::X64),
+            },
+        ];
+
+        let hash = gen_hash_hex(&pkg_type, name, &version, &supports);
+
+        // Print the JSON content for verification
+        let mut json_obj = json!({
+            "type": pkg_type.to_string(),
+            "name": name.to_owned(),
+            "version": version.to_string(),
+        });
+
+        let supports_array: Vec<Value> = supports
+            .iter()
+            .map(|support| {
+                let mut support_obj = serde_json::Map::new();
+                if let Some(os) = &support.os {
+                    support_obj.insert(
+                        "os".to_string(),
+                        Value::String(os.to_string()),
+                    );
+                }
+                if let Some(arch) = &support.arch {
+                    support_obj.insert(
+                        "arch".to_string(),
+                        Value::String(arch.to_string()),
+                    );
+                }
+                Value::Object(support_obj)
+            })
+            .collect();
+        json_obj["supports"] = Value::Array(supports_array);
+
+        let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
+        println!("JSON with partial supports:");
+        println!("{}", json_string);
+        println!("Generated hash: {}", hash);
 
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters

@@ -42,11 +42,29 @@ pub fn gen_hash_hex(
 
     // Add supports field only if it's not empty
     if !supports.is_empty() {
-        let supports_array: Vec<String> =
-            supports.iter().map(|support| support.to_string()).collect();
-        json_obj["supports"] = Value::Array(
-            supports_array.into_iter().map(Value::String).collect(),
-        );
+        let supports_array: Vec<Value> = supports
+            .iter()
+            .map(|support| {
+                let mut support_obj = serde_json::Map::new();
+
+                if let Some(os) = &support.os {
+                    support_obj.insert(
+                        "os".to_string(),
+                        Value::String(os.to_string()),
+                    );
+                }
+
+                if let Some(arch) = &support.arch {
+                    support_obj.insert(
+                        "arch".to_string(),
+                        Value::String(arch.to_string()),
+                    );
+                }
+
+                Value::Object(support_obj)
+            })
+            .collect();
+        json_obj["supports"] = Value::Array(supports_array);
     }
 
     // Serialize JSON to string
