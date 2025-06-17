@@ -31,42 +31,6 @@ typedef struct ten_app_t ten_app_t;
 TEN_RUST_PRIVATE_API void ten_rust_free_cstring(const char *ptr);
 
 /**
- * @brief Parses a JSON string into a Graph and returns it as a JSON string.
- *
- * This function takes a C string containing JSON, validates and processes it,
- * then serializes it back to JSON.
- *
- * @param json_str A null-terminated C string containing the JSON representation
- *                 of a graph. Must not be NULL.
- *
- * @return On success: A pointer to a newly allocated C string containing the
- *         processed graph JSON. On failure: NULL pointer.
- *
- * @note The caller must ensure that:
- *       - json_str is a valid null-terminated C string
- *       - The returned pointer (if not null) is freed using
- *         ten_rust_free_cstring()
- *       - The input string contains valid UTF-8 encoded JSON
- *
- * @note Memory Management: The returned string is allocated by Rust and must be
- *       freed by calling ten_rust_free_cstring() when no longer needed.
- *
- * @example
- * ```c
- * const char* input_json = "{\"nodes\": []}";
- * const char* result = ten_rust_graph_validate_complete_flatten(input_json);
- * if (result != NULL) {
- *     printf("Processed graph: %s\n", result);
- *     ten_rust_free_cstring(result);
- * } else {
- *     printf("Failed to process graph\n");
- * }
- * ```
- */
-TEN_RUST_PRIVATE_API const char *ten_rust_graph_validate_complete_flatten(
-    const char *json_str);
-
-/**
  * @brief Parses a JSON string into a GraphInfo and returns it as a JSON string.
  *
  * This function takes a C string containing JSON, parses it into a GraphInfo
