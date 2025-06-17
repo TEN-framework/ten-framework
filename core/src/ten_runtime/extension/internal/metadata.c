@@ -198,10 +198,12 @@ static bool ten_extension_graph_property_resolve_placeholders(
       ten_placeholder_init(&placeholder);
 
       if (!ten_placeholder_parse(&placeholder, str_value, err)) {
+        ten_placeholder_deinit(&placeholder);
         return false;
       }
 
       if (!ten_placeholder_resolve(&placeholder, curr_value, err)) {
+        ten_placeholder_deinit(&placeholder);
         return false;
       }
 

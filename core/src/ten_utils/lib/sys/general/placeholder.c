@@ -223,7 +223,6 @@ bool ten_placeholder_resolve(ten_placeholder_t *self,
       ten_error_set(err, TEN_ERROR_CODE_GENERIC,
                     "Unsupported placeholder scope: %d", self->scope);
     }
-    TEN_ASSERT(0, "Should not happen.");
     return false;
   }
 

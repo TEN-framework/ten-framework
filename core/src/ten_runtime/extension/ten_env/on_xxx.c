@@ -136,7 +136,12 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   }
 
   rc = ten_extension_resolve_properties_in_graph(extension, &err);
-  TEN_ASSERT(rc, "Failed to resolve properties in graph.");
+  if (!rc) {
+    TEN_LOGW(
+        "Failed to resolve properties in graph: %s, use the raw property data "
+        "instead.",
+        ten_error_message(&err));
+  }
 
   ten_extension_merge_properties_from_graph(extension);
 
