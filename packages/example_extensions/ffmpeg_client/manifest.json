@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_client",
-  "version": "0.10.14",
+  "version": "0.10.15",
   "tags": [
     "cpp"
   ],
@@ -9,7 +9,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.14"
+      "version": "0.10.15"
     }
   ]
 }
