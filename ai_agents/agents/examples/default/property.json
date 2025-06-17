@@ -1,9 +1,9 @@
 {
-  "_ten": {
+  "ten": {
     "predefined_graphs": [
       {
         "name": "voice_assistant",
-        "auto_start": false,
+        "auto_start": true,
         "nodes": [
           {
             "type": "extension",
