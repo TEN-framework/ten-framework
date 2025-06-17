@@ -30,17 +30,18 @@ pub extern "C" fn ten_rust_free_cstring(ptr: *const c_char) {
 
 /// Parses a JSON string into a Graph and returns it as a JSON string.
 ///
-/// This function takes a C string containing JSON, validates and processes it,
-/// then serializes it back to JSON.
+/// This function wraps the Graph::from_str_with_base_dir() functionality for C
+/// code. It takes a C string containing JSON, parses it into a Graph structure,
+/// validates and processes it, then serializes it back to JSON.
 ///
 /// # Parameters
 /// - `json_str`: A null-terminated C string containing the JSON representation
-///   of a graph. Must not be NULL.
+///   of a graph
 ///
 /// # Returns
 /// - On success: A pointer to a newly allocated C string containing the
 ///   processed graph JSON
-/// - On failure: NULL pointer
+/// - On failure: A null pointer
 ///
 /// # Safety
 ///

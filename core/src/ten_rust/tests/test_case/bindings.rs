@@ -95,7 +95,7 @@ mod tests {
             serde_json::from_str(result_str).unwrap();
         assert!(parsed.is_object());
 
-        // As the 'nodes' is empty, it will not be serialized.
+        // As the 'nodes' array is empty, it will not be serialized.
         assert_eq!(parsed.as_object().unwrap().len(), 0);
 
         // Free the allocated string

@@ -362,8 +362,9 @@ ten_engine_t *ten_app_get_singleton_predefined_graph_engine_by_name(
 
 // This function is used to validate the predefined graph info, flatten the
 // 'import_uri' and 'subgraph' syntax sugar.
-// Note that the return value is a new value, and the caller should destroy it
-// after using.
+// If the predefined graph info is invalid, the return value is NULL.
+// Note that if the return value is not NULL, it means the return value is a new
+// value, and the caller should destroy it after using.
 static ten_value_t *ten_app_predefined_graph_validate_complete_flatten(
     ten_app_t *app, ten_value_t *predefined_graph_info_value,
     ten_error_t *err) {
