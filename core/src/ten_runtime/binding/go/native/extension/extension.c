@@ -98,8 +98,8 @@ static void ten_go_extension_bridge_destroy(ten_go_extension_t *self) {
 }
 
 static void proxy_on_configure(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -117,8 +117,8 @@ static void proxy_on_configure(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void proxy_on_init(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -135,8 +135,8 @@ static void proxy_on_init(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void proxy_on_start(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -153,8 +153,8 @@ static void proxy_on_start(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void proxy_on_stop(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -171,8 +171,8 @@ static void proxy_on_stop(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void proxy_on_deinit(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -190,8 +190,8 @@ static void proxy_on_deinit(ten_extension_t *self, ten_env_t *ten_env) {
 
 static void proxy_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
                          ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -217,8 +217,8 @@ static void proxy_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
 
 static void proxy_on_data(ten_extension_t *self, ten_env_t *ten_env,
                           ten_shared_ptr_t *data) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -239,8 +239,8 @@ static void proxy_on_data(ten_extension_t *self, ten_env_t *ten_env,
 
 static void proxy_on_video_frame(ten_extension_t *self, ten_env_t *ten_env,
                                  ten_shared_ptr_t *video_frame) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");
@@ -266,8 +266,8 @@ static void proxy_on_video_frame(ten_extension_t *self, ten_env_t *ten_env,
 
 static void proxy_on_audio_frame(ten_extension_t *self, ten_env_t *ten_env,
                                  ten_shared_ptr_t *audio_frame) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(ten_extension_get_ten_env(self) == ten_env, "Should not happen.");

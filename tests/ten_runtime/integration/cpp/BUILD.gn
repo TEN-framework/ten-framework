@@ -12,6 +12,7 @@ group("cpp") {
     "graph_env_var_1",
     "graph_env_var_2",
     "graph_env_var_3",
+    "graph_env_var_4",
     "hello_world",
     "import_graph",
     "large_result",
