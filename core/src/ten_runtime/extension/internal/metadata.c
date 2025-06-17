@@ -16,6 +16,7 @@
 #include "include_internal/ten_runtime/extension/ten_env/metadata.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_utils/lib/placeholder.h"
+#include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
@@ -175,6 +176,10 @@ static bool ten_extension_graph_property_resolve_placeholders(
              "Should not happen.");
 
   if (!curr_value || !ten_value_is_valid(curr_value)) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "The property in graph is invalid.");
+    }
     return false;
   }
 
@@ -262,6 +267,10 @@ bool ten_extension_resolve_properties_in_graph(ten_extension_t *self,
   }
 
   if (!ten_value_is_valid(graph_property)) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "The property in graph is invalid.");
+    }
     return false;
   }
 
