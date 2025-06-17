@@ -20,7 +20,8 @@
 bool ten_value_convert_to_int8(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_INT8)) {
     if (err) {
@@ -105,7 +106,8 @@ bool ten_value_convert_to_int8(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_int16(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_INT16)) {
     if (err) {
@@ -180,7 +182,8 @@ bool ten_value_convert_to_int16(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_int32(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_INT32)) {
     if (err) {
@@ -245,7 +248,8 @@ bool ten_value_convert_to_int32(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_int64(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_INT64)) {
     if (err) {
@@ -300,7 +304,8 @@ bool ten_value_convert_to_int64(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_uint8(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_UINT8)) {
     if (err) {
@@ -385,7 +390,8 @@ bool ten_value_convert_to_uint8(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_uint16(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_UINT16)) {
     if (err) {
@@ -465,7 +471,8 @@ bool ten_value_convert_to_uint16(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_uint32(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_UINT32)) {
     if (err) {
@@ -540,7 +547,8 @@ bool ten_value_convert_to_uint32(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_uint64(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_UINT64)) {
     if (err) {
@@ -610,7 +618,8 @@ bool ten_value_convert_to_uint64(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_float32(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_FLOAT32)) {
     if (err) {
@@ -691,7 +700,8 @@ bool ten_value_convert_to_float32(ten_value_t *self, ten_error_t *err) {
 bool ten_value_convert_to_float64(ten_value_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_type_is_compatible(self->type, TEN_TYPE_FLOAT64)) {
     if (err) {
