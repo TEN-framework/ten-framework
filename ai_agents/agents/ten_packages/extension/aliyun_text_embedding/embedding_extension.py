@@ -69,8 +69,8 @@ class EmbeddingExtension(Extension):
             ten.log_info(f"async_handler {index} processing cmd {cmd_name}")
 
             if cmd_name == CMD_EMBED:
-                input, _ = cmd.get_property_string("input")
-                cmd_result = self.call_with_str(input, ten)
+                input_str, _ = cmd.get_property_string("input")
+                cmd_result = self.call_with_str(input_str, ten)
                 ten.return_result(cmd_result)
             elif cmd_name == CMD_EMBED_BATCH:
                 inputs, _ = cmd.get_property_to_json("inputs")
