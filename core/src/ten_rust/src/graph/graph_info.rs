@@ -185,6 +185,9 @@ pub struct GraphInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_start: Option<bool>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub singleton: Option<bool>,
+
     #[serde(flatten)]
     pub graph: Graph,
 
@@ -200,6 +203,19 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
+    pub fn from_str_with_base_dir(
+        s: &str,
+        current_base_dir: Option<&str>,
+    ) -> Result<Self> {
+        let mut graph_info: GraphInfo = serde_json::from_str(s)?;
+
+        graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
+        graph_info.validate_and_complete_and_flatten()?;
+
+        // Return the parsed data.
+        Ok(graph_info)
+    }
+
     pub fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         // Validate mutual exclusion between import_uri and graph fields
         if self.import_uri.is_some() {

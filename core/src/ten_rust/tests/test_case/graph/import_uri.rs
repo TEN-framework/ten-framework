@@ -56,6 +56,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: Vec::new(),
                 connections: None,
@@ -92,6 +93,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: vec![GraphNode {
                     type_: GraphNodeType::Extension,
@@ -131,6 +133,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: Vec::new(),
                 connections: Some(vec![GraphConnection {
@@ -174,6 +177,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: Vec::new(),
                 connections: None,
@@ -209,6 +213,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: Vec::new(),
                 connections: None,
@@ -263,6 +268,7 @@ mod tests {
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
+            singleton: None,
             graph: Graph {
                 nodes: Vec::new(),
                 connections: None,
