@@ -117,7 +117,7 @@ class QWenLLMExtension(Extension):
             else:
                 cmd_result.set_is_final(False)  # keep streaming return
             ten.log_info(f"call_chat cmd return_result {cmd_result.to_json()}")
-            ten.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result)
 
         messages_str = cmd.get_property_string("messages")
         messages = json.loads(messages_str)
@@ -281,4 +281,4 @@ class QWenLLMExtension(Extension):
             ten.log_info(f"unknown cmd {cmd_name}")
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)

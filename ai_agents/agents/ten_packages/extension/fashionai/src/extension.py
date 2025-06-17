@@ -100,7 +100,7 @@ class FashionAIExtension(AsyncExtension):
 
         ten_env.log_info("FASHION_AI on_cmd done")
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         input_text = data.get_property_string("text")

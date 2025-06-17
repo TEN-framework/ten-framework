@@ -72,11 +72,11 @@ class EmbeddingExtension(Extension):
                 cmd_result = self.call_with_str(
                     cmd.get_property_string("input"), ten
                 )
-                ten.return_result(cmd_result, cmd)
+                ten.return_result(cmd_result)
             elif cmd_name == CMD_EMBED_BATCH:
                 inputs_list = json.loads(cmd.get_property_to_json("inputs"))
                 cmd_result = self.call_with_strs(inputs_list, ten, cmd)
-                ten.return_result(cmd_result, cmd)
+                ten.return_result(cmd_result)
             else:
                 ten.log_warn("unknown cmd {cmd_name}")
 
@@ -189,7 +189,7 @@ class EmbeddingExtension(Extension):
         else:
             ten.log_warn(f"unknown cmd {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
-            ten.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result)
 
     def get_property_string(self, ten: TenEnv, key, default):
         try:

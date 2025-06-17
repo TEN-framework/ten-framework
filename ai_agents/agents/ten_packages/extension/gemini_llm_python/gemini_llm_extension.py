@@ -142,12 +142,12 @@ class GeminiLLMExtension(Extension):
             ten.log_info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string("detail", "unknown cmd")
-            ten.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result)
             return
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "success")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         """

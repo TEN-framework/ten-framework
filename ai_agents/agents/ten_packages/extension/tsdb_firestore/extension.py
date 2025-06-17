@@ -245,7 +245,7 @@ class TSDBFirestoreExtension(Extension):
             else:
                 ten_env.log_info(f"unknown cmd name {cmd_name}")
                 cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
-                ten_env.return_result(cmd_result, cmd)
+                ten_env.return_result(cmd_result)
         except Exception:
             ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
@@ -261,7 +261,7 @@ class TSDBFirestoreExtension(Extension):
                 ret.set_property_string(
                     CMD_OUT_PROPERTY_RESPONSE, json.dumps(order_by_ts(contents))
                 )
-                ten_env.return_result(ret, cmd)
+                ten_env.return_result(ret)
             else:
                 ten_env.log_info(
                     f"no contents for the channel {self.channel_name} yet"

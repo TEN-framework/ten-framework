@@ -205,7 +205,7 @@ class AliPGDBExtension(Extension):
             body = self.model.parse_collection_data(response.body)
             ret = CmdResult.create(StatusCode.OK, cmd)
             ret.set_property_from_json("response", body)
-            ten.return_result(ret, cmd)
+            ten.return_result(ret)
 
     async def async_delete_collection(self, ten: TenEnv, cmd: Cmd):
         collection = cmd.get_property_string("collection_name")

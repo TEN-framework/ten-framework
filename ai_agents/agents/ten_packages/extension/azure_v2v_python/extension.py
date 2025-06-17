@@ -276,7 +276,7 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:

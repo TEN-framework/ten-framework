@@ -171,7 +171,7 @@ class FileChunkerExtension(Extension):
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "ok")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def async_handler(self, ten: TenEnv) -> None:
         while not self.stop:

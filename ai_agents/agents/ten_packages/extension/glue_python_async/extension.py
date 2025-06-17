@@ -217,7 +217,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_call_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs

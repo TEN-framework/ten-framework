@@ -144,7 +144,7 @@ class MessageCollectorExtension(Extension):
         # TODO: process cmd
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        ten_env.return_result(cmd_result, cmd)
+        ten_env.return_result(cmd_result)
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         """

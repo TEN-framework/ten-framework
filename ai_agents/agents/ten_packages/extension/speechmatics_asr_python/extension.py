@@ -52,4 +52,4 @@ class SpeechmaticsASRExtension(AsyncExtension):
         ten_env.log_debug(f"on_cmd: {cmd_name}")
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)

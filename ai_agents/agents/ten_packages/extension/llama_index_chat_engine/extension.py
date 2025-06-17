@@ -159,7 +159,7 @@ class LlamaIndexExtension(Extension):
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "ok")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         is_final = data.get_property_bool("is_final")

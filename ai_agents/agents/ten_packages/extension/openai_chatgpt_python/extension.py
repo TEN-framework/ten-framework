@@ -112,7 +112,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code, cmd)
             cmd_result.set_property_string("detail", detail)
-            await async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result)
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
@@ -122,13 +122,13 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code, cmd)
             cmd_result.set_property_string("detail", detail)
-            await async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result)
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code, cmd)
             cmd_result.set_property_string("detail", detail)
-            await async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result)
         else:
             await super().on_cmd(async_ten_env, cmd)
 

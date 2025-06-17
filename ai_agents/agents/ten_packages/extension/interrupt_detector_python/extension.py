@@ -56,7 +56,7 @@ class InterruptDetectorExtension(Extension):
         )
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         """
