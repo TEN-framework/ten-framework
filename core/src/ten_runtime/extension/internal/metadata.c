@@ -131,8 +131,8 @@ static bool ten_extension_determine_ten_namespace_properties(
 // In this case, developers should set the timeout value for 'in_path' by
 // themselves.
 static void ten_extension_adjust_in_path_timeout(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_path_timeout_info *path_timeout_info = &self->path_timeout_info;
   TEN_ASSERT(path_timeout_info, "Should not happen.");
@@ -164,16 +164,16 @@ static void ten_extension_adjust_in_path_timeout(ten_extension_t *self) {
 // the 'ten' namespace.
 static ten_value_t *ten_extension_get_ten_namespace_properties(
     ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   return ten_value_object_peek(&self->property, TEN_STR_TEN);
 }
 
 static bool ten_extension_graph_property_resolve_placeholders(
     ten_extension_t *self, ten_value_t *curr_value, ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   if (!curr_value || !ten_value_is_valid(curr_value)) {
     if (err) {
@@ -254,8 +254,8 @@ static bool ten_extension_graph_property_resolve_placeholders(
 
 bool ten_extension_resolve_properties_in_graph(ten_extension_t *self,
                                                ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   if (!self->extension_info) {
     return true;
@@ -281,8 +281,8 @@ bool ten_extension_resolve_properties_in_graph(ten_extension_t *self,
 }
 
 void ten_extension_merge_properties_from_graph(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   // Merge properties in graph into the extension's property store.
   if (self->extension_info && self->extension_info->property) {
@@ -304,9 +304,9 @@ void ten_extension_merge_properties_from_graph(ten_extension_t *self) {
 // }
 bool ten_extension_handle_ten_namespace_properties(
     ten_extension_t *self, ten_extension_context_t *extension_context) {
-  TEN_ASSERT(
-      self && ten_extension_check_integrity(self, true) && extension_context,
-      "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(extension_context, "Should not happen.");
 
   // This function is safe to be called from the extension main threads,
   // because all the resources it accesses are the

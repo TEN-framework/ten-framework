@@ -28,8 +28,8 @@
 
 static void ten_extension_adjust_and_validate_property_on_configure_done(
     ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
