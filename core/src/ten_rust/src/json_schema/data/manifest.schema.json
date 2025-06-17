@@ -283,6 +283,20 @@
         }
       ]
     },
+    "interfaceLikeApi": {
+      "type": "object",
+      "required": [
+        "import_uri"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "import_uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1
+        }
+      }
+    },
     "cmdLikeApi": {
       "type": "object",
       "required": [
@@ -405,6 +419,12 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "interface": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceLikeApi"
+          }
+        },
         "property": {
           "type": "object",
           "propertyNames": { // The property name should be alphanumericCharacters.
