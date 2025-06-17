@@ -355,9 +355,11 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
     ) -> None:
         await super().on_audio_frame(ten_env, audio_frame)
         try:
-            stream_id = audio_frame.get_property_int("stream_id")
+            stream_id, _ = audio_frame.get_property_int("stream_id")
             if self.channel_name == "":
-                self.channel_name = audio_frame.get_property_string("channel")
+                self.channel_name, _ = audio_frame.get_property_string(
+                    "channel"
+                )
 
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
@@ -629,9 +631,8 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 response={"error": "Failed to call tool"},
             )
             if result.get_status_code() == StatusCode.OK:
-                tool_result: LLMToolResult = json.loads(
-                    result.get_property_to_json(CMD_PROPERTY_RESULT)
-                )
+                r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
+                tool_result: LLMToolResult = json.loads(r)
 
                 result_content = tool_result["content"]
                 func_response = FunctionResponse(

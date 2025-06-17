@@ -12,7 +12,7 @@ EMBED_CMD = "embed"
 
 
 def embed_from_resp(cmd_result: CmdResult) -> List[float]:
-    embedding_output_json = cmd_result.get_property_to_json("embedding")
+    embedding_output_json, _ = cmd_result.get_property_to_json("embedding")
     return json.loads(embedding_output_json)
 
 

@@ -48,7 +48,7 @@ class TENVADPythonExtension(AsyncExtension):
         self.silence_window_size: int = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        config_json = await ten_env.get_property_to_json("")
+        config_json, _ = await ten_env.get_property_to_json("")
         self.config = TENVADConfig.model_validate_json(config_json)
         ten_env.log_debug(f"config: {self.config}")
 

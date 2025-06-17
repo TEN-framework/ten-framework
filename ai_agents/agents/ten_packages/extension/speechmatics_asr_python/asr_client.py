@@ -159,8 +159,8 @@ class SpeechmaticsASRClient:
             self.ten_env.log_warn("send_frame: empty audio_frame detected.")
             return
 
-        self.stream_id = frame.get_property_int("stream_id")
-        self.user_id = frame.get_property_string("remote_user_id")
+        self.stream_id, _ = frame.get_property_int("stream_id")
+        self.user_id, _ = frame.get_property_string("remote_user_id")
 
         try:
             await self.audio_queue.put(frame_buf)

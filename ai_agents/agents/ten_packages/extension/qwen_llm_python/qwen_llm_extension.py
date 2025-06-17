@@ -119,11 +119,11 @@ class QWenLLMExtension(Extension):
             ten.log_info(f"call_chat cmd return_result {cmd_result.to_json()}")
             ten.return_result(cmd_result)
 
-        messages_str = cmd.get_property_string("messages")
+        messages_str, _ = cmd.get_property_string("messages")
         messages = json.loads(messages_str)
         stream = False
         try:
-            stream = cmd.get_property_bool("stream")
+            stream, _ = cmd.get_property_bool("stream")
         except Exception:
             ten.log_warn("stream property not found, default to False")
 
@@ -185,11 +185,11 @@ class QWenLLMExtension(Extension):
 
     def on_start(self, ten: TenEnv) -> None:
         ten.log_info("on_start")
-        self.api_key = ten.get_property_string("api_key")
-        self.model = ten.get_property_string("model")
-        self.prompt = ten.get_property_string("prompt")
-        self.max_history = ten.get_property_int("max_memory_length")
-        greeting = ten.get_property_string("greeting")
+        self.api_key, _ = ten.get_property_string("api_key")
+        self.model, _ = ten.get_property_string("model")
+        self.prompt, _ = ten.get_property_string("prompt")
+        self.max_history, _ = ten.get_property_int("max_memory_length")
+        greeting, _ = ten.get_property_string("greeting")
 
         if greeting:
             try:
@@ -229,12 +229,12 @@ class QWenLLMExtension(Extension):
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         ten.log_info("on_data")
-        is_final = data.get_property_bool("is_final")
+        is_final, _ = data.get_property_bool("is_final")
         if not is_final:
             ten.log_info("ignore non final")
             return
 
-        input_text = data.get_property_string("text")
+        input_text, _ = data.get_property_string("text")
         if len(input_text) == 0:
             ten.log_info("ignore empty text")
             return

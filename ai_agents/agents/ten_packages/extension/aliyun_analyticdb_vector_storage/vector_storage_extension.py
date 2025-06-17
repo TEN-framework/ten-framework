@@ -141,10 +141,10 @@ class AliPGDBExtension(Extension):
             ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def async_create_collection(self, ten: TenEnv, cmd: Cmd):
-        collection = cmd.get_property_string("collection_name")
+        collection, _ = cmd.get_property_string("collection_name")
         dimension = 1024
         try:
-            dimension = cmd.get_property_int("dimension")
+            dimension, _ = cmd.get_property_int("dimension")
         except Exception as e:
             ten.log_warn(f"Error: {e}")
 
@@ -165,9 +165,9 @@ class AliPGDBExtension(Extension):
 
     async def async_upsert_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
-        collection = cmd.get_property_string("collection_name")
-        file = cmd.get_property_string("file_name")
-        content = cmd.get_property_string("content")
+        collection, _ = cmd.get_property_string("collection_name")
+        file, _ = cmd.get_property_string("file_name")
+        content, _ = cmd.get_property_string("content")
         obj = json.loads(content)
         rows = [(file, item["text"], item["embedding"]) for item in obj]
 
@@ -184,9 +184,9 @@ class AliPGDBExtension(Extension):
 
     async def async_query_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
-        collection = cmd.get_property_string("collection_name")
-        embedding = cmd.get_property_to_json("embedding")
-        top_k = cmd.get_property_int("top_k")
+        collection, _ = cmd.get_property_string("collection_name")
+        embedding, _ = cmd.get_property_to_json("embedding")
+        top_k, _ = cmd.get_property_int("top_k")
         vector = json.loads(embedding)
         response, error = await self.model.query_collection_data_async(
             collection,
@@ -208,7 +208,7 @@ class AliPGDBExtension(Extension):
             ten.return_result(ret)
 
     async def async_delete_collection(self, ten: TenEnv, cmd: Cmd):
-        collection = cmd.get_property_string("collection_name")
+        collection, _ = cmd.get_property_string("collection_name")
         # pylint: disable=too-many-function-args
         err = await self.model.delete_collection_async(
             self.account, self.account_password, self.namespace, collection
@@ -220,7 +220,8 @@ class AliPGDBExtension(Extension):
 
     def get_property_string(self, ten: TenEnv, key: str, default: str) -> str:
         try:
-            return ten.get_property_string(key.lower())
+            ret, _ = ten.get_property_string(key.lower())
+            return ret
         except Exception as e:
             ten.log_error(f"Error: {e}")
             return default

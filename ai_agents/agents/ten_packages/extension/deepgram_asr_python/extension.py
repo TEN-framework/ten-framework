@@ -81,7 +81,7 @@ class DeepgramASRExtension(AsyncExtension):
             self.ten_env.log_debug("send_frame: deepgram not connected.")
             return
 
-        self.stream_id = frame.get_property_int("stream_id")
+        self.stream_id, _ = frame.get_property_int("stream_id")
         if self.client:
             await self.client.send(frame_buf)
 

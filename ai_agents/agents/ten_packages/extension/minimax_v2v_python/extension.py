@@ -51,16 +51,16 @@ class MinimaxV2VConfig:
             try:
                 match field.type:
                     case builtins.str:
-                        val = await ten_env.get_property_string(field.name)
+                        val, _ = await ten_env.get_property_string(field.name)
                         if val:
                             setattr(self, field.name, val)
                             ten_env.log_info(f"{field.name}={val}")
                     case builtins.int:
-                        val = await ten_env.get_property_int(field.name)
+                        val, _ = await ten_env.get_property_int(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case builtins.bool:
-                        val = await ten_env.get_property_bool(field.name)
+                        val, _ = await ten_env.get_property_bool(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case _:
@@ -152,7 +152,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
         try:
             ts = datetime.now()
-            stream_id = audio_frame.get_property_int("stream_id")
+            stream_id, _ = audio_frame.get_property_int("stream_id")
             if not self.remote_stream_id:
                 self.remote_stream_id = stream_id
 

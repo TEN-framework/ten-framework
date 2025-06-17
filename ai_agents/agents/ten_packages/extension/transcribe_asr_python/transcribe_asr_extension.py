@@ -46,7 +46,7 @@ class TranscribeAsrExtension(Extension):
             PROPERTY_SECRET_KEY,
         ]:
             try:
-                value = ten.get_property_string(optional_param).strip()
+                value, _ = ten.get_property_string(optional_param).strip()
                 if value:
                     transcribe_config.__setattr__(optional_param, value)
             except Exception as err:

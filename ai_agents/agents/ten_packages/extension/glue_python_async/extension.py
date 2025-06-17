@@ -169,7 +169,8 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
             if result.get_status_code() == StatusCode.OK:
                 try:
-                    history = json.loads(result.get_property_string("response"))
+                    response, _ = result.get_property_string("response")
+                    history = json.loads(response)
                     for i in history:
                         self.memory.put(i)
                     ten_env.log_info(f"on retrieve context {history}")
@@ -402,9 +403,8 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         # Send the command and handle the result through the future
         [result, _] = await self.ten_env.send_cmd(cmd)
         if result.get_status_code() == StatusCode.OK:
-            tool_result: LLMToolResult = json.loads(
-                result.get_property_to_json(CMD_PROPERTY_RESULT)
-            )
+            r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
+            tool_result: LLMToolResult = json.loads(r)
 
             self.ten_env.log_info(f"tool_result: {call} {tool_result}")
             return ToolCallResponse(id=call.id, response=tool_result)
@@ -422,7 +422,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         is_final = False
         input_text = ""
         try:
-            is_final = data.get_property_bool(
+            is_final, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
             )
         except Exception as err:
@@ -431,7 +431,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             )
 
         try:
-            input_text = data.get_property_string(
+            input_text, _ = data.get_property_string(
                 DATA_IN_TEXT_DATA_PROPERTY_TEXT
             )
         except Exception as err:

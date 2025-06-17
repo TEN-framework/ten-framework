@@ -60,7 +60,7 @@ class EmbeddingExtension(Extension):
         ten.log_info(f"async_handler {index} statend")
 
         while not self.stop:
-            cmd = self.queue.get()
+            cmd: Cmd = self.queue.get()
             if cmd is None:
                 break
 
@@ -69,12 +69,12 @@ class EmbeddingExtension(Extension):
             ten.log_info(f"async_handler {index} processing cmd {cmd_name}")
 
             if cmd_name == CMD_EMBED:
-                cmd_result = self.call_with_str(
-                    cmd.get_property_string("input"), ten
-                )
+                input, _ = cmd.get_property_string("input")
+                cmd_result = self.call_with_str(input, ten)
                 ten.return_result(cmd_result)
             elif cmd_name == CMD_EMBED_BATCH:
-                inputs_list = json.loads(cmd.get_property_to_json("inputs"))
+                inputs, _ = cmd.get_property_to_json("inputs")
+                inputs_list = json.loads(inputs)
                 cmd_result = self.call_with_strs(inputs_list, ten, cmd)
                 ten.return_result(cmd_result)
             else:
@@ -113,7 +113,9 @@ class EmbeddingExtension(Extension):
         for i in range(0, len(inputs), batch_size):
             yield inputs[i : i + batch_size]
 
-    def call_with_strs(self, messages: List[str], ten: TenEnv, cmd: Cmd) -> CmdResult:
+    def call_with_strs(
+        self, messages: List[str], ten: TenEnv, cmd: Cmd
+    ) -> CmdResult:
         start_time = datetime.now()
         result = None  # merge the results.
         batch_counter = 0
@@ -193,7 +195,8 @@ class EmbeddingExtension(Extension):
 
     def get_property_string(self, ten: TenEnv, key, default):
         try:
-            return ten.get_property_string(key)
+            ret, _ = ten.get_property_string(key)
+            return ret
         except Exception as e:
             ten.log_warn(f"err: {e}")
             return default

@@ -157,10 +157,10 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"on_data name {data_name}")
 
         try:
-            is_final = data.get_property_bool(
+            is_final, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
             )
-            input_text = data.get_property_string(
+            input_text, _ = data.get_property_string(
                 DATA_IN_TEXT_DATA_PROPERTY_TEXT
             )
 
