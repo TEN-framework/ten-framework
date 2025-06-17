@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 from cozepy import ChatEventType, Message, TokenAuth, AsyncCoze, ChatEvent, Chat
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,
@@ -159,7 +159,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result, cmd)
 

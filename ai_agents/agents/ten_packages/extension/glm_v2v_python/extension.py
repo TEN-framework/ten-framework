@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Iterable
 from pydub import AudioSegment
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
     Cmd,
@@ -25,7 +25,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten.audio_frame import AudioFrameDataFmt
+from ten_runtime.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
@@ -252,7 +252,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result, cmd)
 

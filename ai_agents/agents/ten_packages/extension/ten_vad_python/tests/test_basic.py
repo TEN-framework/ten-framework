@@ -9,7 +9,7 @@ import os
 import aiofiles
 import asyncio
 import json
-from ten import (
+from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
     Cmd,

@@ -5,7 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -157,7 +157,7 @@ class LlamaIndexExtension(Extension):
             self.flush()
             ten.send_cmd(Cmd.create("flush"), None)
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "ok")
         ten.return_result(cmd_result, cmd)
 

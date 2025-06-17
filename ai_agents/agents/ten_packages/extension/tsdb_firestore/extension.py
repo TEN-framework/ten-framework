@@ -6,7 +6,7 @@
 #
 #
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     Extension,
@@ -244,10 +244,10 @@ class TSDBFirestoreExtension(Extension):
                 )
             else:
                 ten_env.log_info(f"unknown cmd name {cmd_name}")
-                cmd_result = CmdResult.create(StatusCode.ERROR)
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
                 ten_env.return_result(cmd_result, cmd)
         except Exception:
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def retrieve(self, ten_env: TenEnv, cmd: Cmd):
         try:
@@ -257,7 +257,7 @@ class TSDBFirestoreExtension(Extension):
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ten_env.log_info(f"after retrieve {contents}")
-                ret = CmdResult.create(StatusCode.OK)
+                ret = CmdResult.create(StatusCode.OK, cmd)
                 ret.set_property_string(
                     CMD_OUT_PROPERTY_RESPONSE, json.dumps(order_by_ts(contents))
                 )
@@ -266,12 +266,12 @@ class TSDBFirestoreExtension(Extension):
                 ten_env.log_info(
                     f"no contents for the channel {self.channel_name} yet"
                 )
-                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
         except Exception:
             ten_env.log_error(
                 f"Failed to read the document for the channel {self.channel_name}"
             )
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         ten_env.log_info("TSDBFirestoreExtension on_data")

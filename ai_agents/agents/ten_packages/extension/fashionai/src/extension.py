@@ -6,7 +6,7 @@
 #
 #
 import traceback
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,
@@ -15,7 +15,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten.async_extension import AsyncExtension
+from ten_runtime.async_extension import AsyncExtension
 
 import asyncio
 from .fashionai_client import FashionAIClient
@@ -99,7 +99,7 @@ class FashionAIExtension(AsyncExtension):
             ten_env.log_info(f"unknown cmd {cmd_name}")
 
         ten_env.log_info("FASHION_AI on_cmd done")
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:

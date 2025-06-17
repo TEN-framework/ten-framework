@@ -5,7 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -110,7 +110,7 @@ class QWenLLMExtension(Extension):
                     f"TTFS {int(curr_ttfs.total_seconds() * 1000)}ms, sentence {text} end_of_segment {end_of_segment}"
                 )
 
-            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
             cmd_result.set_property_string("text", text)
             if end_of_segment:
                 cmd_result.set_is_final(True)  # end of streaming return
@@ -280,5 +280,5 @@ class QWenLLMExtension(Extension):
         else:
             ten.log_info(f"unknown cmd {cmd_name}")
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         ten.return_result(cmd_result, cmd)

@@ -1,4 +1,4 @@
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -75,7 +75,7 @@ class EmbeddingExtension(Extension):
                 ten.return_result(cmd_result, cmd)
             elif cmd_name == CMD_EMBED_BATCH:
                 inputs_list = json.loads(cmd.get_property_to_json("inputs"))
-                cmd_result = self.call_with_strs(inputs_list, ten)
+                cmd_result = self.call_with_strs(inputs_list, ten, cmd)
                 ten.return_result(cmd_result, cmd)
             else:
                 ten.log_warn("unknown cmd {cmd_name}")
@@ -95,14 +95,14 @@ class EmbeddingExtension(Extension):
         )
 
         if response.status_code == HTTPStatus.OK:
-            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
             cmd_result.set_property_from_json(
                 FIELD_KEY_EMBEDDING,
                 json.dumps(response.output["embeddings"][0]["embedding"]),
             )
             return cmd_result
         else:
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string(FIELD_KEY_CODE, response.status_code)
             cmd_result.set_property_string(FIELD_KEY_MESSAGE, response.message)
             return cmd_result
@@ -113,7 +113,7 @@ class EmbeddingExtension(Extension):
         for i in range(0, len(inputs), batch_size):
             yield inputs[i : i + batch_size]
 
-    def call_with_strs(self, messages: List[str], ten: TenEnv) -> CmdResult:
+    def call_with_strs(self, messages: List[str], ten: TenEnv, cmd: Cmd) -> CmdResult:
         start_time = datetime.now()
         result = None  # merge the results.
         batch_counter = 0
@@ -138,7 +138,7 @@ class EmbeddingExtension(Extension):
             f"embedding call finished for inputs len {len(messages)}, batch_counter {batch_counter}, results len {len(result['embeddings'])}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms "
         )
         if result is not None:
-            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
 
             # too slow `set_property_to_json`, so use `set_property_string` at the moment as workaround
             # will be replaced once `set_property_to_json` improved
@@ -147,7 +147,7 @@ class EmbeddingExtension(Extension):
             )
             return cmd_result
         else:
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string(
                 FIELD_KEY_MESSAGE, "All batch failed"
             )
@@ -188,7 +188,7 @@ class EmbeddingExtension(Extension):
             self.queue.put(cmd)
         else:
             ten.log_warn(f"unknown cmd {cmd_name}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             ten.return_result(cmd_result, cmd)
 
     def get_property_string(self, ten: TenEnv, key, default):

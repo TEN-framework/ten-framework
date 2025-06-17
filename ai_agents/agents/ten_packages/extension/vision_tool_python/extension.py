@@ -10,7 +10,7 @@ from ten_ai_base.types import (
     LLMToolResultRequery,
 )
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,

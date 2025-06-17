@@ -4,7 +4,7 @@
 import asyncio
 import os
 import json
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -136,9 +136,9 @@ class AliPGDBExtension(Extension):
                     self.async_query_vector(ten, cmd), self.loop
                 )
             else:
-                ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
         except Exception:
-            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def async_create_collection(self, ten: TenEnv, cmd: Cmd):
         collection = cmd.get_property_string("collection_name")
@@ -159,9 +159,9 @@ class AliPGDBExtension(Extension):
                 collection,
                 dimension,
             )
-            ten.return_result(CmdResult.create(StatusCode.OK), cmd)
+            ten.return_result(CmdResult.create(StatusCode.OK, cmd))
         else:
-            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def async_upsert_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
@@ -178,9 +178,9 @@ class AliPGDBExtension(Extension):
             f"upsert_vector finished for file {file}, collection {collection}, rows len {len(rows)}, err {err}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
         if err is None:
-            ten.return_result(CmdResult.create(StatusCode.OK), cmd)
+            ten.return_result(CmdResult.create(StatusCode.OK, cmd))
         else:
-            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def async_query_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
@@ -200,10 +200,10 @@ class AliPGDBExtension(Extension):
         )
 
         if error:
-            return ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
         else:
             body = self.model.parse_collection_data(response.body)
-            ret = CmdResult.create(StatusCode.OK)
+            ret = CmdResult.create(StatusCode.OK, cmd)
             ret.set_property_from_json("response", body)
             ten.return_result(ret, cmd)
 
@@ -214,9 +214,9 @@ class AliPGDBExtension(Extension):
             self.account, self.account_password, self.namespace, collection
         )
         if err is None:
-            return ten.return_result(CmdResult.create(StatusCode.OK), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.OK, cmd))
         else:
-            return ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     def get_property_string(self, ten: TenEnv, key: str, default: str) -> str:
         try:

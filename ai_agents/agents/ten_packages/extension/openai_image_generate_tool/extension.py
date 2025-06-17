@@ -5,7 +5,7 @@
 #
 import asyncio
 import json
-from ten import (
+from ten_runtime import (
     Data,
     TenEnv,
     AsyncTenEnv,

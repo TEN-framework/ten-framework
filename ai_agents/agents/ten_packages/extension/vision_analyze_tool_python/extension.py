@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import json
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,

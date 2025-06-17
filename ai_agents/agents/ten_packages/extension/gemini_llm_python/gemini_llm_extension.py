@@ -6,7 +6,7 @@
 #
 #
 from threading import Thread
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -140,12 +140,12 @@ class GeminiLLMExtension(Extension):
             ten.log_info("GeminiLLMExtension on_cmd sent flush")
         else:
             ten.log_info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string("detail", "unknown cmd")
             ten.return_result(cmd_result, cmd)
             return
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "success")
         ten.return_result(cmd_result, cmd)
 

@@ -15,7 +15,7 @@ from typing import List, Any, AsyncGenerator
 from dataclasses import dataclass, field
 from pydantic import BaseModel
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,
@@ -215,7 +215,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result, cmd)
 

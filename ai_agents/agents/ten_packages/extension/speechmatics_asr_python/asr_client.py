@@ -14,7 +14,7 @@ from speechmatics.models import (
     ServerMessageType,
     TranscriptionConfig,
 )
-from ten import AsyncTenEnv, AudioFrame, Data
+from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from .audio_stream import AudioStream, AudioStreamEventType
 from .config import SpeechmaticsASRConfig
 from .word import (

@@ -18,7 +18,7 @@ from llama_index.core.llms.callbacks import (
 )
 
 from llama_index.core.llms.custom import CustomLLM
-from ten import Cmd, StatusCode, CmdResult, TenEnv
+from ten_runtime import Cmd, StatusCode, CmdResult, TenEnv
 
 
 def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse | None:

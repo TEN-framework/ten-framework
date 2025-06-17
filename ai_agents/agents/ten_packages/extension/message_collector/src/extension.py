@@ -10,7 +10,7 @@ import json
 import threading
 import time
 import uuid
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     Extension,
@@ -143,7 +143,7 @@ class MessageCollectorExtension(Extension):
 
         # TODO: process cmd
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         ten_env.return_result(cmd_result, cmd)
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:

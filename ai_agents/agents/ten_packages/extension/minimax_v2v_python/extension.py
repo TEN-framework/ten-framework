@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AudioFrameDataFmt,
@@ -133,10 +133,10 @@ class MinimaxV2VExtension(AsyncExtension):
                     ten_env.log_debug("flush done")
                 case _:
                     pass
-            await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.OK, cmd))
         except asyncio.CancelledError:
             ten_env.log_warn(f"cmd {cmd_name} cancelled")
-            await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
             raise
         except Exception as e:
             ten_env.log_warn(f"cmd {cmd_name} failed, err {e}")

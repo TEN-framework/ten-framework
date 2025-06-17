@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from typing import AsyncIterator
 
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 
 

@@ -10,7 +10,7 @@ import time
 import uuid
 import asyncio
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncExtension,
@@ -63,11 +63,11 @@ class MessageCollectorRTMExtension(AsyncExtension):
             else:
                 ten_env.log_warn(f"unsupported cmd {cmd_name}")
 
-            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
             await ten_env.return_result(cmd_result, cmd)
         except Exception as e:
             ten_env.log_error(f"on_cmd error: {e}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             await ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:

@@ -7,7 +7,7 @@
 import pytest
 import sys
 import os
-from ten import (
+from ten_runtime import (
     unregister_all_addons_and_cleanup,
 )
 

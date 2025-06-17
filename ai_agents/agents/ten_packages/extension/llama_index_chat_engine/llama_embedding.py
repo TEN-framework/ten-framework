@@ -2,7 +2,7 @@ from typing import Any, List
 import threading
 from llama_index.core.embeddings import BaseEmbedding
 import json
-from ten import (
+from ten_runtime import (
     Cmd,
     CmdResult,
     TenEnv,

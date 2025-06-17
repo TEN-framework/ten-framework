@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import AsyncGenerator
 
 import aiohttp
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
     Cmd,
@@ -133,7 +133,7 @@ class DifyExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result, cmd)
 

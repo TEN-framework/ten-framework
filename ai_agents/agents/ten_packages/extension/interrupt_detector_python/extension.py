@@ -6,7 +6,7 @@
 #
 #
 
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -55,7 +55,7 @@ class InterruptDetectorExtension(Extension):
             lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         ten.return_result(cmd_result, cmd)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:

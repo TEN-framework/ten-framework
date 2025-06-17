@@ -5,7 +5,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.retrievers import BaseRetriever
 
 from .llama_embedding import LlamaEmbedding
-from ten import (
+from ten_runtime import (
     TenEnv,
     Cmd,
     StatusCode,

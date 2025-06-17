@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Optional, List, Dict
 
 import boto3
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
     Cmd,
     StatusCode,
@@ -235,14 +235,14 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
                 await super().on_cmd(ten_env, cmd)
                 return
 
-            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
             cmd_result.set_property_string("detail", "success")
             await ten_env.return_result(cmd_result, cmd)
 
         except Exception as e:
             traceback.print_exc()
             ten_env.log_error(f"Error handling command {cmd_name}: {e}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string("detail", str(e))
             await ten_env.return_result(cmd_result, cmd)
 

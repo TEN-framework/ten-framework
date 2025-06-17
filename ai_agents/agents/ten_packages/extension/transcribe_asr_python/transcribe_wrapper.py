@@ -1,6 +1,6 @@
 import asyncio
 
-from ten import TenEnv, Data
+from ten_runtime import TenEnv, Data
 
 from amazon_transcribe.auth import StaticCredentialResolver
 from amazon_transcribe.client import TranscribeStreamingClient
