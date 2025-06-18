@@ -21,6 +21,9 @@ pub struct ManifestApi {
     pub required: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface: Option<Vec<ManifestApiInterface>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd_in: Option<Vec<ManifestApiMsg>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd_out: Option<Vec<ManifestApiMsg>>,
@@ -83,6 +86,17 @@ pub struct ManifestApiMsg {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<ManifestApiCmdResult>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ManifestApiInterface {
+    pub import_uri: String,
+
+    // Used to record the folder path where the `manifest.json` containing
+    // this interface is located. It is primarily used to parse the
+    // `import_uri` field when it contains a relative path.
+    #[serde(skip)]
+    pub base_dir: String,
 }
 
 fn validate_msg_name<'de, D>(deserializer: D) -> Result<String, D::Error>

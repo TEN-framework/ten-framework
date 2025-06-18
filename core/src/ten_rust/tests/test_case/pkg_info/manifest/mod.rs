@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 mod description;
+mod interface;
 
 #[cfg(test)]
 mod tests {

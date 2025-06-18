@@ -8,6 +8,7 @@ pub mod api;
 pub mod dependency;
 pub mod publish;
 pub mod support;
+pub mod interface;
 
 use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, path::Path, str::FromStr};
@@ -409,10 +410,6 @@ impl fmt::Display for Manifest {
 }
 
 impl Manifest {
-    pub fn validate_and_complete(&mut self) -> Result<()> {
-        Ok(())
-    }
-
     pub fn check_fs_location(
         &self,
         addon_type_folder_name: Option<&str>,
@@ -533,6 +530,23 @@ pub fn parse_manifest_from_file<P: AsRef<Path>>(
                     .to_string();
 
                 *base_dir = base_dir_str;
+            }
+        }
+    }
+
+    // Update the base_dir for all interface references to be the manifest's
+    // parent directory.
+    if let Some(api) = &mut manifest.api {
+        if let Some(interface) = &mut api.interface {
+            for interface in interface.iter_mut() {
+                interface.base_dir = manifest_folder_path
+                    .to_str()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Failed to convert folder path to string"
+                        )
+                    })?
+                    .to_string();
             }
         }
     }

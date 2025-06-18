@@ -31,6 +31,7 @@ pub enum ManifestDependency {
         // Used to record the folder path where the `manifest.json` containing
         // this dependency is located. It is primarily used to parse the `path`
         // field when it contains a relative path.
+        // TODO(xilin): Make it optional.
         #[serde(skip)]
         base_dir: String,
     },
