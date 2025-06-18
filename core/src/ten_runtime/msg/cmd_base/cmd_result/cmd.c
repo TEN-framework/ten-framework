@@ -344,7 +344,8 @@ bool ten_raw_cmd_result_validate_schema(ten_msg_t *status_msg,
              "Invalid argument.");
   TEN_ASSERT(schema_store && ten_schema_store_check_integrity(schema_store),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_cmd_result_t *cmd_result = (ten_cmd_result_t *)status_msg;
   TEN_ASSERT(cmd_result && ten_raw_cmd_result_check_integrity(cmd_result),

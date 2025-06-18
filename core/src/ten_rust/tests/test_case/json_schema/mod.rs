@@ -1765,4 +1765,56 @@ mod tests {
         let result = ten_validate_property_json_string(property);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_validate_graph_with_subgraph_specified_addon() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [
+                  {
+                    "type": "subgraph",
+                    "name": "subgraph_1",
+                    "addon": "subgraph_1",
+                    "import_uri": "graphs/test_graph.json"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        // The subgraph with specified addon is invalid.
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_graph_with_extension_node_without_addon() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [
+                  {
+                    "type": "extension",
+                    "name": "ext_a",
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        // The extension node without addon is invalid.
+        assert!(result.is_err());
+    }
 }
