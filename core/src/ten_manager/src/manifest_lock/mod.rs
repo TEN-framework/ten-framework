@@ -420,6 +420,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
 
                 map
             },
+            flattened_api: None,
         };
 
         PkgInfo {

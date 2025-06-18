@@ -16,10 +16,6 @@ pub struct ManifestApi {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property: Option<HashMap<String, ManifestApiPropertyAttributes>>,
 
-    // Only manifest.json of extension has this field.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub required: Option<Vec<String>>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interface: Option<Vec<ManifestApiInterface>>,
 
@@ -44,7 +40,7 @@ pub struct ManifestApi {
     pub video_frame_out: Option<Vec<ManifestApiMsg>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiPropertyAttributes {
     #[serde(rename = "type")]
     pub prop_type: ValueType,
@@ -62,7 +58,7 @@ pub struct ManifestApiPropertyAttributes {
     pub required: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiCmdResult {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -72,7 +68,7 @@ pub struct ManifestApiCmdResult {
     pub required: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiMsg {
     #[serde(deserialize_with = "validate_msg_name")]
     pub name: String,

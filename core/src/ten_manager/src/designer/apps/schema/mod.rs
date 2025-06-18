@@ -39,7 +39,7 @@ pub async fn get_app_schema_endpoint(
             let response = ApiResponse {
                 status: Status::Ok,
                 data: GetAppSchemaResponseData {
-                    schema: app_pkg_info.manifest.api.clone(),
+                    schema: app_pkg_info.manifest.get_flattened_api().cloned(),
                 },
                 meta: None,
             };

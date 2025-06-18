@@ -6,9 +6,9 @@
 //
 pub mod api;
 pub mod dependency;
+pub mod interface;
 pub mod publish;
 pub mod support;
-pub mod interface;
 
 use std::collections::{HashMap, HashSet};
 use std::{fmt, fs, path::Path, str::FromStr};
@@ -22,6 +22,7 @@ use serde_json::{Map, Value};
 
 use crate::fs::read_file_to_string;
 use crate::json_schema::ten_validate_manifest_json_string;
+use crate::pkg_info::manifest::interface::flatten_manifest_api;
 use crate::pkg_info::pkg_type::PkgType;
 use crate::{json_schema, pkg_info::constants::MANIFEST_JSON_FILENAME};
 use api::ManifestApi;
@@ -51,6 +52,9 @@ pub struct Manifest {
 
     /// All fields from manifest.json, stored with order preserved.
     pub all_fields: Map<String, Value>,
+
+    /// The flattened API.
+    pub flattened_api: Option<ManifestApi>,
 }
 
 impl Serialize for Manifest {
@@ -102,6 +106,7 @@ impl<'de> Deserialize<'de> for Manifest {
             package,
             scripts,
             all_fields,
+            flattened_api: None,
         })
     }
 }
@@ -130,6 +135,7 @@ impl Default for Manifest {
             scripts: None,
             all_fields,
             description: None,
+            flattened_api: None,
         }
     }
 }
@@ -171,6 +177,7 @@ impl FromStr for Manifest {
             package,
             scripts,
             all_fields,
+            flattened_api: None,
         };
 
         Ok(manifest)
@@ -458,6 +465,12 @@ impl Manifest {
         }
         dependencies
     }
+
+    pub fn get_flattened_api(&self) -> Option<&ManifestApi> {
+        // If the api cannot be flattened or does not need to be flattened,
+        // return the original api.
+        self.flattened_api.as_ref().or(self.api.as_ref())
+    }
 }
 
 pub fn dump_manifest_str_to_file<P: AsRef<Path>>(
@@ -550,6 +563,9 @@ pub fn parse_manifest_from_file<P: AsRef<Path>>(
             }
         }
     }
+
+    // Flatten the API.
+    let _ = flatten_manifest_api(&manifest.api, &mut manifest.flattened_api);
 
     Ok(manifest)
 }

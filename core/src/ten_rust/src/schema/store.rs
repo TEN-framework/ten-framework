@@ -66,7 +66,7 @@ impl SchemaStore {
     /// SchemaStore containing all the command, data, and frame schemas
     /// defined in the manifest.
     pub fn from_manifest(manifest: &Manifest) -> Result<Option<Self>> {
-        if let Some(api) = &manifest.api {
+        if let Some(api) = manifest.get_flattened_api() {
             let mut schema_store = SchemaStore::default();
             schema_store.parse_schemas_from_manifest(api)?;
             Ok(Some(schema_store))

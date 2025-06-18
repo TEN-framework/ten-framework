@@ -165,6 +165,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
 
                     map
                 },
+                flattened_api: None,
             },
             property: None,
             schema_store: None,

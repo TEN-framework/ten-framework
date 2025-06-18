@@ -132,5 +132,93 @@ mod tests {
         // since that's handled by the implementation
     }
 
+    #[actix_web::test]
+    async fn test_get_addons_with_interface() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(
+                TmanConfig::default(),
+            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
+            )),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        let all_pkgs_json_str = vec![
+            (
+                TEST_DIR.to_string(),
+                include_str!("../../../test_data/app_manifest.json")
+                    .to_string(),
+                include_str!(
+                    "../../../test_data/app_property_without_uri.json"
+                )
+                .to_string(),
+            ),
+            (
+                format!(
+                    "{}{}",
+                    TEST_DIR, "/ten_packages/extension/extension_5"
+                ),
+                include_str!(
+                    "../../../test_data/extension_addon_5_manifest.json"
+                )
+                .to_string(),
+                "{}".to_string(),
+            ),
+        ];
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            let inject_ret = inject_all_pkgs_for_mock(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                all_pkgs_json_str,
+            );
+            assert!(inject_ret.is_ok());
+
+            // TODO(xilin): Add the interface file to the mock app.
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(
+            App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/addons",
+                web::post().to(get_app_addons_endpoint),
+            ),
+        )
+        .await;
+
+        let request_payload = GetAppAddonsRequestPayload {
+            base_dir: TEST_DIR.to_string(),
+            addon_name: None,
+            addon_type: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/addons")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        // Parse the response but don't store it in a variable that will trigger
+        // a warning
+        let response: ApiResponse<Vec<GetAppAddonsSingleResponseData>> =
+            serde_json::from_str(body_str).unwrap();
+        println!("response: {response:?}");
+
+        // TODO(xilin): Verify the response.
+    }
+
     // Additional test functions would go here...
 }

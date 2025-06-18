@@ -5,13 +5,17 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-use std::{collections::HashSet, path::Path};
-
 use crate::{
     fs::read_file_to_string,
     path::get_real_path_from_import_uri,
     pkg_info::manifest::api::{ManifestApi, ManifestApiInterface},
 };
+
+use crate::pkg_info::manifest::api::{
+    ManifestApiMsg, ManifestApiPropertyAttributes,
+};
+use std::collections::HashMap;
+use std::{collections::HashSet, path::Path};
 
 use anyhow::{anyhow, Context, Result};
 use url::Url;
@@ -175,6 +179,179 @@ pub fn load_interface(
     Ok(interface_api)
 }
 
+fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
+    if apis.len() < 2 {
+        return Err(anyhow::anyhow!(
+            "At least 2 ManifestApi instances are required to merge"
+        ));
+    }
+
+    let mut merged_property: HashMap<String, ManifestApiPropertyAttributes> =
+        HashMap::new();
+    let mut merged_cmd_in: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_cmd_out: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_data_in: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_data_out: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_audio_frame_in: HashMap<String, ManifestApiMsg> =
+        HashMap::new();
+    let mut merged_audio_frame_out: HashMap<String, ManifestApiMsg> =
+        HashMap::new();
+    let mut merged_video_frame_in: HashMap<String, ManifestApiMsg> =
+        HashMap::new();
+    let mut merged_video_frame_out: HashMap<String, ManifestApiMsg> =
+        HashMap::new();
+
+    // Helper function to merge message maps
+    fn merge_msg_map(
+        target: &mut HashMap<String, ManifestApiMsg>,
+        source: Option<Vec<ManifestApiMsg>>,
+        msg_type: &str,
+    ) -> Result<()> {
+        if let Some(msgs) = source {
+            for msg in msgs {
+                if let Some(existing_msg) = target.get(&msg.name) {
+                    if existing_msg != &msg {
+                        return Err(anyhow!(
+                            "Conflicting {} message '{}': properties, \
+                             required fields, or result do not match",
+                            msg_type,
+                            msg.name
+                        ));
+                    }
+                } else {
+                    target.insert(msg.name.clone(), msg);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    // Process each API
+    for api in apis {
+        // Merge property
+        if let Some(properties) = api.property {
+            for (key, value) in properties {
+                if let Some(existing_value) = merged_property.get(&key) {
+                    if existing_value != &value {
+                        return Err(anyhow!(
+                            "Conflicting property '{}': values do not match",
+                            key
+                        ));
+                    }
+                } else {
+                    merged_property.insert(key, value);
+                }
+            }
+        }
+
+        // Merge various message types
+        merge_msg_map(&mut merged_cmd_in, api.cmd_in, "cmd_in")?;
+        merge_msg_map(&mut merged_cmd_out, api.cmd_out, "cmd_out")?;
+        merge_msg_map(&mut merged_data_in, api.data_in, "data_in")?;
+        merge_msg_map(&mut merged_data_out, api.data_out, "data_out")?;
+        merge_msg_map(
+            &mut merged_audio_frame_in,
+            api.audio_frame_in,
+            "audio_frame_in",
+        )?;
+        merge_msg_map(
+            &mut merged_audio_frame_out,
+            api.audio_frame_out,
+            "audio_frame_out",
+        )?;
+        merge_msg_map(
+            &mut merged_video_frame_in,
+            api.video_frame_in,
+            "video_frame_in",
+        )?;
+        merge_msg_map(
+            &mut merged_video_frame_out,
+            api.video_frame_out,
+            "video_frame_out",
+        )?;
+    }
+
+    // Build the merged result
+    Ok(ManifestApi {
+        property: if merged_property.is_empty() {
+            None
+        } else {
+            Some(merged_property)
+        },
+        interface: None, // 3. No need to merge interface
+        cmd_in: if merged_cmd_in.is_empty() {
+            None
+        } else {
+            Some(merged_cmd_in.into_values().collect())
+        },
+        cmd_out: if merged_cmd_out.is_empty() {
+            None
+        } else {
+            Some(merged_cmd_out.into_values().collect())
+        },
+        data_in: if merged_data_in.is_empty() {
+            None
+        } else {
+            Some(merged_data_in.into_values().collect())
+        },
+        data_out: if merged_data_out.is_empty() {
+            None
+        } else {
+            Some(merged_data_out.into_values().collect())
+        },
+        audio_frame_in: if merged_audio_frame_in.is_empty() {
+            None
+        } else {
+            Some(merged_audio_frame_in.into_values().collect())
+        },
+        audio_frame_out: if merged_audio_frame_out.is_empty() {
+            None
+        } else {
+            Some(merged_audio_frame_out.into_values().collect())
+        },
+        video_frame_in: if merged_video_frame_in.is_empty() {
+            None
+        } else {
+            Some(merged_video_frame_in.into_values().collect())
+        },
+        video_frame_out: if merged_video_frame_out.is_empty() {
+            None
+        } else {
+            Some(merged_video_frame_out.into_values().collect())
+        },
+    })
+}
+
+/// Flatten a ManifestApi instance.
+/// If the ManifestApi contains any interface, it will be flattened. If some
+/// error occurs during flattening, the original ManifestApi will be returned.
+pub fn flatten_manifest_api(
+    manifest_api: &Option<ManifestApi>,
+    flattened_api: &mut Option<ManifestApi>,
+) -> Result<()> {
+    // Try to flatten the manifest api if it contains any interface references.
+    let maybe_flattened_api = if let Some(api) = manifest_api {
+        match api.flatten(&load_interface) {
+            Ok(Some(flattened_api)) => Some(flattened_api),
+            Ok(None) => None, // No interfaces to flatten, use original
+            Err(e) => {
+                println!(
+                    "Error flattening manifest api: {e} , using original api"
+                );
+                None // Error occurred, use original
+            }
+        }
+    } else {
+        None
+    };
+
+    if let Some(api) = maybe_flattened_api {
+        *flattened_api = Some(api);
+    }
+
+    Ok(())
+}
+
 impl ManifestApi {
     /// Helper function that contains the common logic for flattening a
     /// ManifestApi instance.
@@ -225,10 +402,7 @@ impl ManifestApi {
     /// Returns `Ok(None)` if the ManifestApi contains no interface and doesn't
     /// need flattening. Returns `Ok(Some(flattened_manifest_api))` if the
     /// ManifestApi was successfully flattened.
-    pub fn flatten<F>(
-        &self,
-        interface_loader: &F,
-    ) -> Result<Option<ManifestApi>>
+    fn flatten<F>(&self, interface_loader: &F) -> Result<Option<ManifestApi>>
     where
         F: Fn(
             &ManifestApiInterface,
@@ -253,6 +427,8 @@ impl ManifestApi {
         )?;
 
         // Merge the flattened apis into a single ManifestApi.
-        Err(anyhow::anyhow!("Not implemented"))
+        let merged_api = merge_manifest_api(flattened_apis)?;
+
+        Ok(Some(merged_api))
     }
 }

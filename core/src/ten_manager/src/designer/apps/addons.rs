@@ -50,11 +50,13 @@ pub struct GetAppAddonsSingleResponseData {
 fn convert_pkg_info_to_addon(
     pkg_info_with_src: &PkgInfo,
 ) -> GetAppAddonsSingleResponseData {
+    let manifest_api = pkg_info_with_src.manifest.get_flattened_api();
+
     GetAppAddonsSingleResponseData {
         addon_type: pkg_info_with_src.manifest.type_and_name.pkg_type,
         addon_name: pkg_info_with_src.manifest.type_and_name.name.clone(),
         url: pkg_info_with_src.url.clone(),
-        api: pkg_info_with_src.manifest.api.as_ref().map(|api| DesignerApi {
+        api: manifest_api.map(|api| DesignerApi {
             property: api.property.as_ref().map(|prop| {
                 get_designer_property_hashmap_from_pkg(prop.clone())
             }),

@@ -484,7 +484,7 @@ fn get_msg_schema<'a>(
         ) {
         extension_pkg_info
             .manifest
-            .api
+            .get_flattened_api()
             .as_ref()
             .and_then(|api| match msg_direction {
                 MsgDirection::Out => match msg_type {
