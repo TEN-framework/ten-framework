@@ -93,5 +93,8 @@
       "name": "openai_image_generate_tool",
       "version": "=0.1.0"
     }
-  ]
+  ],
+  "scripts": {
+    "start": "bin/start"
+  }
 }
