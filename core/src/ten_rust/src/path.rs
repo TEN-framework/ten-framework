@@ -5,82 +5,37 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 
 use anyhow::Result;
 use url::Url;
 
-/// Normalize a path by resolving '.' and '..' components.
-/// This function manually processes path components without requiring the path
-/// to exist on disk.
-fn normalize_path_components(path: &Path) -> Result<String> {
-    let mut components = Vec::new();
-
-    // Handle absolute vs relative paths
-    if path.is_absolute() {
-        // For absolute paths, we need to preserve the root
-        components.push("".to_string()); // This represents the root "/"
-    }
-
-    // Process each component
-    for component in path.components() {
-        match component {
-            std::path::Component::Prefix(_) => {
-                // Windows drive letters, etc. - preserve as-is
-                components
-                    .push(component.as_os_str().to_string_lossy().to_string());
-            }
-            std::path::Component::RootDir => {
-                // Root directory - already handled above for absolute paths
-                continue;
-            }
-            std::path::Component::CurDir => {
-                // Current directory "." - skip it
-                continue;
-            }
-            std::path::Component::ParentDir => {
-                // Parent directory ".."
-                if components.len() > 1
-                    || (components.len() == 1 && components[0] != "")
-                {
-                    // We can go up one level
-                    components.pop();
-                } else if components.is_empty() {
-                    // Relative path, add ".."
-                    components.push("..".to_string());
-                }
-                // If we're already at root (components has single empty
-                // element), ignore ".."
-            }
-            std::path::Component::Normal(name) => {
-                // Normal path component
-                components.push(name.to_string_lossy().to_string());
-            }
-        }
-    }
-
-    if components.is_empty() {
-        return Ok(".".to_string());
-    }
-
-    // Reconstruct the path
-    if path.is_absolute() {
-        if components.len() == 1 && components[0] == "" {
-            // Root directory only
-            Ok("/".to_string())
+pub fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret =
+        if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
+            components.next();
+            PathBuf::from(c.as_os_str())
         } else {
-            // Remove the empty root component and join with "/"
-            let path_components: Vec<&str> =
-                components.iter().skip(1).map(|s| s.as_str()).collect();
-            if path_components.is_empty() {
-                Ok("/".to_string())
-            } else {
-                Ok(format!("/{}", path_components.join("/")))
+            PathBuf::new()
+        };
+
+    for component in components {
+        match component {
+            Component::Prefix(..) => unreachable!(),
+            Component::RootDir => {
+                ret.push(component.as_os_str());
+            }
+            Component::CurDir => {}
+            Component::ParentDir => {
+                ret.pop();
+            }
+            Component::Normal(c) => {
+                ret.push(c);
             }
         }
-    } else {
-        Ok(components.join("/"))
     }
+    ret
 }
 
 /// Get the real path of the interface according to the import_uri and base_dir.
@@ -93,14 +48,7 @@ pub fn get_real_path_from_import_uri(
     import_uri: &str,
     base_dir: &str,
 ) -> Result<String> {
-    // First check if the import_uri is an absolute path - these are not
-    // supported. We need to check for both Unix and Windows absolute paths.
-    let is_absolute = Path::new(import_uri).is_absolute()
-        || (import_uri.len() >= 3
-            && import_uri.chars().nth(1) == Some(':')
-            && import_uri.chars().nth(2) == Some('\\'));
-
-    if is_absolute {
+    if Path::new(import_uri).is_absolute() {
         return Err(anyhow::anyhow!(
             "Absolute paths are not supported in import_uri: {}. Use file:// \
              URI or relative path instead",
@@ -179,5 +127,5 @@ pub fn get_real_path_from_import_uri(
     let path = Path::new(base_dir).join(import_uri);
 
     // Normalize the path to resolve '.' and '..' components
-    normalize_path_components(&path)
+    Ok(normalize_path(&path).to_string_lossy().to_string())
 }
