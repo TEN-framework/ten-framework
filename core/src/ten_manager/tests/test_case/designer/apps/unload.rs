@@ -54,7 +54,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json_str,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
 
             // Verify that the app is in the pkgs_cache.

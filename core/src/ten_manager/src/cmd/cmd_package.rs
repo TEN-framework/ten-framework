@@ -79,7 +79,7 @@ pub async fn execute_cmd(
     if command_data.get_identity {
         // Get the package info and output identity information.
         let pkg_info =
-            get_pkg_info_from_path(&cwd, true, false, &mut None, None)?;
+            get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
         let hash = pkg_info.gen_hash_hex();
 
         let pkg_type = &pkg_info.manifest.type_and_name.pkg_type;
@@ -101,7 +101,7 @@ pub async fn execute_cmd(
         // directory, ensuring that under normal circumstances, it will not be
         // uploaded to the git repository.
         let pkg_info =
-            get_pkg_info_from_path(&cwd, true, false, &mut None, None)?;
+            get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
         let output_pkg_file_name = get_tpkg_file_name(&pkg_info)?;
 
         // Create the output directory.

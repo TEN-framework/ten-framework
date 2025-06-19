@@ -121,7 +121,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -321,7 +321,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -446,7 +446,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json_str,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let designer_state = Arc::new(designer_state);
@@ -570,7 +570,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -755,7 +755,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -926,7 +926,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -1085,7 +1085,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -1269,7 +1269,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
