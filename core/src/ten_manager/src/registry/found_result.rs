@@ -100,6 +100,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     .type_and_name
                     .clone(),
                 version: pkg_registry_info.basic_info.version.clone(),
+                description: None,
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
                 dev_dependencies: None,
                 tags: pkg_registry_info.tags.clone(),
