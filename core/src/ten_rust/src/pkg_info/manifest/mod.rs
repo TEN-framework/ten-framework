@@ -489,12 +489,17 @@ impl Manifest {
                 return Ok(Some(api.clone()));
             } else {
                 // If the api contains interfaces, try to flatten it.
-                if self.flattened_api.read().await.is_none() {
-                    let mut flattened_api = self.flattened_api.write().await;
-                    let _ = flatten_manifest_api(&self.api, &mut flattened_api);
+                let read_guard = self.flattened_api.read().await;
+                if let Some(api) = read_guard.as_ref() {
+                    return Ok(Some(api.clone()));
                 }
+                drop(read_guard);
 
-                return Ok(self.flattened_api.read().await.clone());
+                let mut write_guard = self.flattened_api.write().await;
+                let _ = flatten_manifest_api(&self.api, &mut write_guard);
+                let flattened = write_guard.as_ref().map(|api| api.clone());
+                drop(write_guard);
+                return Ok(flattened);
             }
         }
 

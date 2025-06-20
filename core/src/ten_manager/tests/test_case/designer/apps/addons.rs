@@ -21,6 +21,9 @@ mod tests {
     use ten_manager::designer::DesignerState;
     use ten_manager::home::config::TmanConfig;
     use ten_manager::output::cli::TmanOutputCli;
+    use ten_manager::pkg_info::get_all_pkgs::get_all_pkgs_in_app;
+    use ten_rust::pkg_info::pkg_type::PkgType;
+    use ten_rust::pkg_info::value_type::ValueType;
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 
@@ -148,45 +151,20 @@ mod tests {
             persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
-        let all_pkgs_json_str = vec![
-            (
-                TEST_DIR.to_string(),
-                include_str!("../../../test_data/app_manifest.json")
-                    .to_string(),
-                include_str!(
-                    "../../../test_data/app_property_without_uri.json"
-                )
-                .to_string(),
-            ),
-            (
-                format!(
-                    "{}{}",
-                    TEST_DIR, "/ten_packages/extension/extension_5"
-                ),
-                include_str!(
-                    "../../../test_data/extension_addon_5_manifest.json"
-                )
-                .to_string(),
-                "{}".to_string(),
-            ),
-        ];
+        let designer_state = Arc::new(designer_state);
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
+            let _ = get_all_pkgs_in_app(
                 &mut pkgs_cache,
                 &mut graphs_cache,
-                all_pkgs_json_str,
+                &"tests/test_data/extension_interface_reference_to_sys_pkg"
+                    .to_string(),
             )
             .await;
-            assert!(inject_ret.is_ok());
-
-            // TODO(xilin): Add the interface file to the mock app.
         }
-
-        let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
             App::new().app_data(web::Data::new(designer_state)).route(
@@ -197,7 +175,9 @@ mod tests {
         .await;
 
         let request_payload = GetAppAddonsRequestPayload {
-            base_dir: TEST_DIR.to_string(),
+            base_dir: "tests/test_data/\
+                       extension_interface_reference_to_sys_pkg"
+                .to_string(),
             addon_name: None,
             addon_type: None,
         };
@@ -217,9 +197,73 @@ mod tests {
         // a warning
         let response: ApiResponse<Vec<GetAppAddonsSingleResponseData>> =
             serde_json::from_str(body_str).unwrap();
-        println!("response: {response:?}");
 
-        // TODO(xilin): Verify the response.
+        // The vector should contain 2 items.
+        // One is the extension 'ext_a' and the other is the system 'sys_a'.
+        assert_eq!(response.data.len(), 2);
+
+        // Find the extension 'ext_a' in the response.
+        let ext_a =
+            response.data.iter().find(|addon| addon.addon_name == "ext_a");
+        assert!(ext_a.is_some());
+
+        // Find the system 'sys_a' in the response.
+        let sys_a =
+            response.data.iter().find(|addon| addon.addon_name == "sys_a");
+        assert!(sys_a.is_some());
+
+        // Verify the extension 'ext_a'.
+        assert_eq!(ext_a.unwrap().addon_type, PkgType::Extension);
+        assert!(ext_a.unwrap().api.is_some());
+
+        // Verify the property of the extension 'ext_a'.
+        // It should contain the properties which are defined in its manifest
+        // ("foo") and the properties which are imported by the
+        // interface("a", "b").
+        let ext_a_api = ext_a.unwrap().api.as_ref().unwrap();
+        assert_eq!(ext_a_api.property.as_ref().unwrap().len(), 3);
+        assert_eq!(
+            ext_a_api.property.as_ref().unwrap().get("foo").unwrap().prop_type,
+            ValueType::Bool
+        );
+        assert_eq!(
+            ext_a_api.property.as_ref().unwrap().get("a").unwrap().prop_type,
+            ValueType::String
+        );
+        assert_eq!(
+            ext_a_api.property.as_ref().unwrap().get("b").unwrap().prop_type,
+            ValueType::Int64
+        );
+
+        // Verify the cmd_in of the extension 'ext_a'.
+        // It should contain the cmd_in which are defined in its manifest
+        // ("hello") and the cmd_in which are imported by the
+        // interface("cmd_in_a", "cmd_in_b").
+        assert_eq!(ext_a_api.cmd_in.as_ref().unwrap().len(), 3);
+
+        // Verify the cmd_out of the extension 'ext_a'.
+        // It should contain the cmd_out which are defined in its manifest
+        // ("cmd_out_a", "cmd_out_b").
+        assert_eq!(ext_a_api.cmd_out.as_ref().unwrap().len(), 2);
+
+        // Verify the data_in of the extension 'ext_a'.
+        // It should contain the data_in which are defined in its manifest
+        // ("data").
+        assert_eq!(ext_a_api.data_in.as_ref().unwrap().len(), 1);
+
+        // Verify the audio_frame_in of the extension 'ext_a'.
+        // It should contain the audio_frame_in which are defined in its
+        // manifest ("audio_frame_in_a").
+        assert_eq!(ext_a_api.audio_frame_in.as_ref().unwrap().len(), 1);
+
+        // Verify the audio_frame_out of the extension 'ext_a'.
+        // It should contain the audio_frame_out which are defined in its
+        // manifest ("audio_frame_out_a").
+        assert_eq!(ext_a_api.audio_frame_out.as_ref().unwrap().len(), 1);
+
+        // Verify the system 'sys_a'.
+        assert_eq!(sys_a.unwrap().addon_type, PkgType::System);
+        assert!(sys_a.unwrap().api.is_none());
     }
 
     // Additional test functions would go here...
