@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "api": {
     "property": {
-      "test_property": {
-        "type": "string"
+      "properties": {
+        "test_property": {
+          "type": "string"
+        }
       }
     }
   }

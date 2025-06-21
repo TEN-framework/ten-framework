@@ -360,34 +360,38 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "int8"
-                  },
-                  "b": {
-                    "type": "uint8"
-                  },
-                  "c": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "d": {
-                    "type": "object",
-                    "properties": {
-                      "e": {
-                        "type": "float32"
+                  "properties": {
+                    "a": {
+                      "type": "int8"
+                    },
+                    "b": {
+                      "type": "uint8"
+                    },
+                    "c": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "d": {
+                      "type": "object",
+                      "properties": {
+                        "e": {
+                          "type": "float32"
+                        }
                       }
                     }
                   }
                 },
                 "result": {
                   "property": {
-                    "a": {
-                      "type": "buf"
-                    },
-                    "detail": {
-                      "type": "buf"
+                    "properties": {
+                      "a": {
+                        "type": "buf"
+                      },
+                      "detail": {
+                        "type": "buf"
+                      }
                     }
                   }
                 }
@@ -415,35 +419,39 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "int8"
-                  },
-                  "b": {
-                    "type": "uint8"
-                  },
-                  "c": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "d": {
-                    "type": "object",
-                    "properties": {
-                      "e": {
-                        "type": "float32"
+                  "properties": {
+                    "a": {
+                      "type": "int8"
+                    },
+                    "b": {
+                      "type": "uint8"
+                    },
+                    "c": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "d": {
+                      "type": "object",
+                      "properties": {
+                        "e": {
+                          "type": "float32"
+                        }
                       }
                     }
-                  }
+                  },
+                  "required": ["a","b"]
                 },
-                "required": ["a","b"],
                 "result": {
                   "property": {
-                    "a": {
-                      "type": "buf"
-                    },
-                    "detail": {
-                      "type": "buf"
+                    "properties": {
+                      "a": {
+                        "type": "buf"
+                      },
+                      "detail": {
+                        "type": "buf"
+                      }
                     }
                   }
                 }
@@ -470,38 +478,42 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "int8"
-                  },
-                  "b": {
-                    "type": "uint8"
-                  },
-                  "c": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "d": {
-                    "type": "object",
-                    "properties": {
-                      "e": {
-                        "type": "float32"
+                  "properties": {
+                    "a": {
+                      "type": "int8"
+                    },
+                    "b": {
+                      "type": "uint8"
+                    },
+                    "c": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "d": {
+                      "type": "object",
+                      "properties": {
+                        "e": {
+                          "type": "float32"
+                        }
                       }
                     }
-                  }
+                  },
+                  "required": ["a","b"]
                 },
-                "required": ["a","b"],
                 "result": {
                   "property": {
-                    "a": {
-                      "type": "buf"
+                    "properties": {
+                      "a": {
+                        "type": "buf"
+                      },
+                      "detail": {
+                        "type": "buf"
+                      }
                     },
-                    "detail": {
-                      "type": "buf"
-                    }
-                  },
-                  "required": ["a"]
+                    "required": ["a"]
+                  }
                 }
               }
             ]
@@ -526,39 +538,43 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "int8"
-                  },
-                  "b": {
-                    "type": "uint8"
-                  },
-                  "c": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "d": {
-                    "type": "object",
-                    "properties": {
-                      "e": {
-                        "type": "float32"
-                      },
-                      "f": {
+                  "properties": {
+                    "a": {
+                      "type": "int8"
+                    },
+                    "b": {
+                      "type": "uint8"
+                    },
+                    "c": {
+                      "type": "array",
+                      "items": {
                         "type": "string"
                       }
                     },
-                    "required": ["e"]
-                  }
+                    "d": {
+                      "type": "object",
+                      "properties": {
+                        "e": {
+                          "type": "float32"
+                        },
+                        "f": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["e"]
+                    }
+                  },
+                  "required": ["a","b"]
                 },
-                "required": ["a","b"],
                 "result": {
                   "property": {
-                    "a": {
-                      "type": "buf"
-                    },
-                    "detail": {
-                      "type": "buf"
+                    "properties": {
+                      "a": {
+                        "type": "buf"
+                      },
+                      "detail": {
+                        "type": "buf"
+                      }
                     }
                   }
                 }
@@ -878,10 +894,12 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "int8",
-                    "items": {
-                      "type": "string"
+                  "properties": {
+                    "a": {
+                      "type": "int8",
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -913,11 +931,13 @@ mod tests {
               {
                 "name": "foo",
                 "property": {
-                  "a": {
-                    "type": "string",
-                    "properties": {
-                      "a": {
-                        "type": "string"
+                  "properties": {
+                    "a": {
+                      "type": "string",
+                      "properties": {
+                        "a": {
+                          "type": "string"
+                        }
                       }
                     }
                   }

@@ -126,8 +126,8 @@ void ten_metadata_load(ten_object_on_configure_func_t on_configure,
 
 ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
                                             ten_schema_store_t *schema_store) {
-  TEN_ASSERT(manifest && ten_value_check_integrity(manifest),
-             "Invalid argument.");
+  TEN_ASSERT(manifest, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(manifest), "Invalid argument.");
   TEN_ASSERT(ten_value_is_object(manifest), "Should not happen.");
   TEN_ASSERT(schema_store, "Invalid argument.");
 

@@ -14,25 +14,31 @@
 TEST(SchemaTest, SchemaStoreValidateProperty) {  // NOLINT
   const std::string schema_str = R"({
     "property": {
-      "name": {
-        "type": "string"
-      },
-      "age": {
-        "type": "int64"
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "int64"
+        }
       }
     },
     "cmd_in": [
       {
         "name": "hello",
         "property": {
-          "count": {
-            "type": "int32"
+          "properties": {
+            "count": {
+              "type": "int32"
+            }
           }
         },
         "result": {
-          "ten": {
-            "detail": {
-              "type": "string"
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "string"
+              }
             }
           }
         }
@@ -42,8 +48,10 @@ TEST(SchemaTest, SchemaStoreValidateProperty) {  // NOLINT
       {
         "name": "data",
         "property": {
-          "fps": {
-            "type": "int16"
+          "properties": {
+            "fps": {
+              "type": "int16"
+            }
           }
         }
       }

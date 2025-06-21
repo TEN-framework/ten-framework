@@ -100,8 +100,10 @@ mod tests {
 
         let expected_schema = serde_json::json!({
           "property": {
-            "test_property": {
-                "type": "int8"
+            "properties": {
+              "test_property": {
+                  "type": "int8"
+              }
             }
           }
         });

@@ -11,21 +11,25 @@
   ],
   "api": {
     "property": {
-      "foo": {
-        "type": "string"
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
       }
     },
     "cmd_in": [
       {
         "name": "hello",
         "property": {
-          "foo": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       }
     ]
   }

@@ -34,8 +34,10 @@ class test_extension_1 : public ten::extension_t {
                           {
                             "name": "hello_world",
                             "property": {
-                              "foo": {
-                                "type": "ptr"
+                              "properties": {
+                                "foo": {
+                                  "type": "ptr"
+                                }
                               }
                             }
                           }

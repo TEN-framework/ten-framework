@@ -114,32 +114,38 @@ async fn test_validate_manifest_with_api() {
             {
               "name": "test_cmd",
               "property": {
-                "test_property": {
-                  "type": "int8"
+                "properties": {
+                  "test_property": {
+                    "type": "int8"
+                  }
                 }
               }
             },
             {
               "name": "has_required",
               "property": {
-                "foo": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "foo"
-              ]
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
             },
             {
               "name": "has_required_mismatch",
               "property": {
-                "foo": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "foo"
-              ]
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
             }
           ]
         }
@@ -206,32 +212,38 @@ async fn test_validate_app_manifest_with_incorrect_api() {
             {
               "name": "test_cmd",
               "property": {
-                "test_property": {
-                  "type": "int8"
+                "properties": {
+                  "test_property": {
+                    "type": "int8"
+                  }
                 }
               }
             },
             {
               "name": "has_required",
               "property": {
-                "foo": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "foo"
-              ]
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
             },
             {
               "name": "has_required_mismatch",
               "property": {
-                "foo": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "foo"
-              ]
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
             }
           ]
         }
@@ -297,8 +309,10 @@ async fn test_validate_app_manifest_with_correct_api() {
         "dependencies": [],
         "api": {
           "property": {
-            "test_property": {
-              "type": "int8"
+            "properties": {
+              "test_property": {
+                "type": "int8"
+              }
             }
           }
         }

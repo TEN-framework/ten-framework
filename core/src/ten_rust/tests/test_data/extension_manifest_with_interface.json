@@ -10,27 +10,31 @@
     }
   ],
   "api": {
+    "property": {
+      "properties": {
+        "foo": {
+          "type": "bool"
+        }
+      }
+    },
     "interface": [
       {
         "import_uri": "./interface/foo_1.json"
       }
     ],
-    "property": {
-      "foo": {
-        "type": "bool"
-      }
-    },
     "cmd_in": [
       {
         "name": "hello",
         "property": {
-          "foo": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       }
     ]
   }

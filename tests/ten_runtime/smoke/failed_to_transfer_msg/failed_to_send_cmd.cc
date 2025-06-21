@@ -40,8 +40,10 @@ class test_extension_1 : public ten::extension_t {
                           {
                             "name": "test",
                             "property": {
-                              "test_data": {
-                                "type": "int32"
+                              "properties": {
+                                "test_data": {
+                                  "type": "int32"
+                                }
                               }
                             }
                           }

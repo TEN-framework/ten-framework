@@ -30,20 +30,22 @@ class test_extension_1 : public ten::extension_t {
                           {
                             "name": "internal_cmd",
                             "property": {
-                              "tool": {
-                                "type": "object",
-                                "properties": {
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "description": {
-                                    "type": "string"
-                                  },
-                                  "parameters": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {}
+                              "properties": {
+                                "tool": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "parameters": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                      }
                                     }
                                   }
                                 }

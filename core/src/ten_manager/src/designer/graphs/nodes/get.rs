@@ -15,7 +15,7 @@ use uuid::Uuid;
 use ten_rust::graph::node::{GraphNode, GraphNodeType};
 
 use crate::designer::common::{
-    get_designer_api_msg_from_pkg, get_designer_property_hashmap_from_pkg,
+    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
 };
 use crate::designer::response::{ApiResponse, ErrorResponse, Status};
 use crate::designer::DesignerState;
@@ -148,9 +148,7 @@ pub async fn get_graph_nodes_endpoint(
                         .property
                         .as_ref()
                         .filter(|p| !p.is_empty())
-                        .map(|p| {
-                            get_designer_property_hashmap_from_pkg(p.clone())
-                        }),
+                        .map(|p| get_designer_api_property_from_pkg(p.clone())),
 
                     cmd_in: api
                         .cmd_in

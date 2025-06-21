@@ -31,20 +31,22 @@ class test_extension : public ten::extension_t {
                           {
                             "name": "hello_world",
                             "property": {
-                              "tool": {
-                                "type": "object",
-                                "properties": {
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "description": {
-                                    "type": "string"
-                                  },
-                                  "parameters": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {}
+                              "properties": {
+                                "tool": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "description": {
+                                      "type": "string"
+                                    },
+                                    "parameters": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                      }
                                     }
                                   }
                                 }

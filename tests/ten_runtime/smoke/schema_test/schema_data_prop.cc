@@ -41,8 +41,10 @@ class test_extension_1 : public ten::extension_t {
                           {
                             "name": "data",
                             "property": {
-                              "foo": {
-                                "type": "int32"
+                              "properties": {
+                                "foo": {
+                                  "type": "int32"
+                                }
                               }
                             }
                           }
@@ -111,8 +113,10 @@ class test_extension_2 : public ten::extension_t {
                           {
                             "name": "data",
                             "property": {
-                              "foo": {
-                                "type": "int8"
+                              "properties": {
+                                "foo": {
+                                  "type": "int8"
+                                }
                               }
                             }
                           }

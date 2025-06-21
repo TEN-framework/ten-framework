@@ -14,11 +14,13 @@
       {
         "name": "cmd_1",
         "property": {
-          "a": {
-            "type": "string"
-          },
-          "b": {
-            "type": "uint8"
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "uint8"
+            }
           }
         }
       }
@@ -27,18 +29,10 @@
       {
         "name": "data_1",
         "property": {
-          "a": {
-            "type": "string"
-          }
-        }
-      }
-    ],
-    "video_frame_out": [
-      {
-        "name": "video_frame_1",
-        "property": {
-          "width": {
-            "type": "uint32"
+          "properties": {
+            "a": {
+              "type": "string"
+            }
           }
         }
       }
@@ -47,11 +41,25 @@
       {
         "name": "audio_frame_1",
         "property": {
-          "sample_rate": {
-            "type": "string"
-          },
-          "c": {
-            "type": "string"
+          "properties": {
+            "sample_rate": {
+              "type": "string"
+            },
+            "c": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "video_frame_out": [
+      {
+        "name": "video_frame_1",
+        "property": {
+          "properties": {
+            "width": {
+              "type": "uint32"
+            }
           }
         }
       }

@@ -7,8 +7,10 @@
       {
         "name": "test_cmd_for_update",
         "property": {
-          "original_source": {
-            "type": "string"
+          "properties": {
+            "original_source": {
+              "type": "string"
+            }
           }
         }
       }

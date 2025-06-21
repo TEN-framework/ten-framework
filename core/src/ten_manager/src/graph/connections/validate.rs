@@ -13,7 +13,7 @@ use ten_rust::{
     graph::{msg_conversion::MsgAndResultConversion, Graph},
     pkg_info::{
         find_pkgs_cache_entry_by_app_uri, get_pkg_info_for_extension_addon,
-        manifest::api::ManifestApiPropertyAttributes,
+        manifest::api::{ManifestApiProperty, ManifestApiPropertyAttributes},
         message::{MsgDirection, MsgType},
         pkg_type::PkgType,
         PkgInfo,
@@ -56,10 +56,22 @@ fn validate_msg_conversion_c_schema_oneway(
     target_msg_name: &str,
     msg_direction: MsgDirection,
 ) -> Result<()> {
-    if let Ok(compared_c_schema) = create_c_schema_from_properties_and_required(
-        compared_schema_properties,
-        compared_schema_required,
-    ) {
+    // Create a temporary ManifestApiProperty from the separate properties and
+    // required
+    let temp_property = if compared_schema_properties.is_some()
+        || compared_schema_required.is_some()
+    {
+        Some(ManifestApiProperty {
+            properties: compared_schema_properties.clone(),
+            required: compared_schema_required.clone(),
+        })
+    } else {
+        None
+    };
+
+    if let Ok(compared_c_schema) =
+        create_c_schema_from_properties_and_required(&temp_property)
+    {
         if let Some(target_extension_pkg_info) =
             get_pkg_info_for_extension_addon(
                 pkgs_cache,
@@ -148,8 +160,14 @@ async fn validate_msg_conversion_schema<'a>(
             graph_app_base_dir,
             msg_conversion_validate_info,
             pkgs_cache,
-            &converted_schema.property,
-            &converted_schema.required,
+            &converted_schema
+                .property
+                .as_ref()
+                .and_then(|p| p.properties().cloned()),
+            &converted_schema
+                .property
+                .as_ref()
+                .and_then(|p| p.required.clone()),
             msg_conversion_validate_info.dest_app,
             dest_extension_addon_name,
             &converted_schema.name,
@@ -170,8 +188,14 @@ async fn validate_msg_conversion_schema<'a>(
             graph_app_base_dir,
             msg_conversion_validate_info,
             pkgs_cache,
-            &converted_result_schema.property,
-            &converted_result_schema.required,
+            &converted_result_schema
+                .property
+                .as_ref()
+                .and_then(|p| p.properties().cloned()),
+            &converted_result_schema
+                .property
+                .as_ref()
+                .and_then(|p| p.required.clone()),
             msg_conversion_validate_info.src_app,
             src_extension_addon_name,
             msg_conversion_validate_info.msg_name,

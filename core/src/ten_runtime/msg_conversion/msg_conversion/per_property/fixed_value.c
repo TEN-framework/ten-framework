@@ -198,7 +198,8 @@ void ten_msg_conversion_per_property_rule_fixed_value_to_value(
     ten_msg_conversion_per_property_rule_fixed_value_t *self,
     ten_value_t *value) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(value && ten_value_is_object(value), "Invalid argument.");
+  TEN_ASSERT(value, "Invalid argument.");
+  TEN_ASSERT(ten_value_is_object(value), "Invalid argument.");
 
   ten_value_t *result = ten_value_clone(self->value);
   ten_value_kv_t *kv = ten_value_kv_create(TEN_STR_VALUE, result);

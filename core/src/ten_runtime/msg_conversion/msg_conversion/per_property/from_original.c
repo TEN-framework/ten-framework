@@ -108,7 +108,8 @@ void ten_msg_conversion_per_property_rule_from_original_to_value(
     ten_msg_conversion_per_property_rule_from_original_t *self,
     ten_value_t *value) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(value && ten_value_is_object(value), "Invalid argument.");
+  TEN_ASSERT(value, "Invalid argument.");
+  TEN_ASSERT(ten_value_is_object(value), "Invalid argument.");
 
   ten_value_t *result =
       ten_value_create_string(ten_string_get_raw_str(&self->original_path));

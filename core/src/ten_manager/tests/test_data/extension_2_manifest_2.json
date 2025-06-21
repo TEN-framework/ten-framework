@@ -7,22 +7,26 @@
       {
         "name": "test_cmd_for_update",
         "property": {
-          "initial_property": {
-            "type": "string"
-          },
-          "updated_property": {
-            "type": "string"
-          },
-          "original_source": {
-            "type": "uint32"
+          "properties": {
+            "initial_property": {
+              "type": "string"
+            },
+            "updated_property": {
+              "type": "string"
+            },
+            "original_source": {
+              "type": "uint32"
+            }
           }
         }
       },
       {
         "name": "change_name",
         "property": {
-          "aaa": {
-            "type": "string"
+          "properties": {
+            "aaa": {
+              "type": "string"
+            }
           }
         }
       }

@@ -10,15 +10,19 @@
     }
   ],
   "package": {
-    "include": ["**"]
+    "include": [
+      "**"
+    ]
   },
   "api": {
     "cmd_in": [
       {
         "name": "cmd_1",
         "property": {
-          "foo": {
-            "type": "string"
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
           }
         }
       }

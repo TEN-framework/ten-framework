@@ -14,43 +14,53 @@
       {
         "name": "test_cmd",
         "property": {
-          "test_property": {
-            "type": "string"
+          "properties": {
+            "test_property": {
+              "type": "string"
+            }
           }
         }
       },
       {
         "name": "test_cmd_2",
         "property": {
-          "test_property": {
-            "type": "int64"
+          "properties": {
+            "test_property": {
+              "type": "int64"
+            }
           }
         }
       },
       {
         "name": "cmd_incompatible",
         "property": {
-          "param1": {
-            "type": "int32"
+          "properties": {
+            "param1": {
+              "type": "int32"
+            }
           }
         }
       },
       {
         "name": "cmd1",
         "property": {
-          "param1": {
-            "type": "int8"
+          "properties": {
+            "param1": {
+              "type": "int8"
+            }
           }
         },
         "result": {
           "property": {
-            "detail": {
-              "type": "bool"
-            }
-          },
-          "required": [
-            "detail"
-          ]
+            "properties": {
+              "detail": {
+                "type": "bool"
+              }
+            },
+            "required": [
+              "detail"
+            ]
+          }
         }
       }
     ],
@@ -58,27 +68,33 @@
       {
         "name": "data_has_required",
         "property": {
-          "foo": {
-            "type": "int8"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "int8"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       },
       {
         "name": "data_incompatible",
         "property": {
-          "value": {
-            "type": "int64"
+          "properties": {
+            "value": {
+              "type": "int64"
+            }
           }
         }
       },
       {
         "name": "data1",
         "property": {
-          "text_data": {
-            "type": "buf"
+          "properties": {
+            "text_data": {
+              "type": "buf"
+            }
           }
         }
       }

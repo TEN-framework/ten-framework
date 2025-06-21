@@ -7,8 +7,10 @@
       {
         "name": "change_name",
         "property": {
-          "aaa": {
-            "type": "string"
+          "properties": {
+            "aaa": {
+              "type": "string"
+            }
           }
         }
       }

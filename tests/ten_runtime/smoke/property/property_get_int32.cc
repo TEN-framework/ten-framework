@@ -87,8 +87,10 @@ class test_app : public ten::app_t {
                     \"version\": \"1.0.0\",\
                     \"api\": {\
                       \"property\": {\
-                        \"" PROP_NAME "\": {\
-                          \"type\": \"int32\"\
+                        \"properties\": {\
+                          \"" PROP_NAME "\": {\
+                            \"type\": \"int32\"\
+                          }\
                         }\
                       }\
                     }\

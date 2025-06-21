@@ -59,11 +59,13 @@ class test_extension_2 : public ten::extension_t {
                           {
                             "name": "hello_world",
                             "property": {
-                              "foo": {
-                                "type": "string"
-                              },
-                              "bar": {
-                                "type": "int8"
+                              "properties": {
+                                "foo": {
+                                  "type": "string"
+                                },
+                                "bar": {
+                                  "type": "int8"
+                                }
                               }
                             }
                           }

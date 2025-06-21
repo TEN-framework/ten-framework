@@ -167,7 +167,8 @@ ten_schema_t *ten_schema_create_from_json(ten_json_t *json) {
 }
 
 ten_schema_t *ten_schema_create_from_value(ten_value_t *value) {
-  TEN_ASSERT(value && ten_value_is_object(value), "Invalid argument.");
+  TEN_ASSERT(value, "Invalid argument.");
+  TEN_ASSERT(ten_value_is_object(value), "Invalid argument.");
 
   const char *schema_type =
       ten_value_object_peek_string(value, TEN_SCHEMA_KEYWORD_STR_TYPE);
