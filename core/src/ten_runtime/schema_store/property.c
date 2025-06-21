@@ -48,6 +48,14 @@ ten_schema_t *ten_schemas_parse_schema_object_for_property(
     return NULL;
   }
 
+  if (!ten_value_is_object(property_schema_content)) {
+    TEN_ASSERT(0, "The property schema should be an object.");
+    return NULL;
+  }
+
+  ten_value_t *properties_schema_content = ten_value_object_peek(
+      property_schema_content, TEN_SCHEMA_KEYWORD_STR_PROPERTIES);
+
   // The structure of the `schemas_content` is not a standard `object` schema,
   // create a new object schema for the property schema.
   ten_list_t object_schema_fields = TEN_LIST_INIT_VAL;
@@ -58,20 +66,28 @@ ten_schema_t *ten_schemas_parse_schema_object_for_property(
                           ten_value_create_string(TEN_STR_OBJECT)),
       (ten_ptr_listnode_destroy_func_t)ten_value_kv_destroy);
 
-  ten_list_push_ptr_back(
-      &object_schema_fields,
-      ten_value_kv_create(TEN_SCHEMA_KEYWORD_STR_PROPERTIES,
-                          property_schema_content),
-      (ten_ptr_listnode_destroy_func_t)ten_schema_object_kv_destroy_key_only);
-
-  ten_value_t *required_schema_content =
-      ten_value_object_peek(schemas_content, TEN_SCHEMA_KEYWORD_STR_REQUIRED);
-  if (required_schema_content) {
+  if (properties_schema_content) {
+    // property.properties contains the actual properties
     ten_list_push_ptr_back(
         &object_schema_fields,
-        ten_value_kv_create(TEN_SCHEMA_KEYWORD_STR_REQUIRED,
-                            required_schema_content),
+        ten_value_kv_create(TEN_SCHEMA_KEYWORD_STR_PROPERTIES,
+                            properties_schema_content),
         (ten_ptr_listnode_destroy_func_t)ten_schema_object_kv_destroy_key_only);
+
+    // Check for required field
+    ten_value_t *required_schema_content = ten_value_object_peek(
+        property_schema_content, TEN_SCHEMA_KEYWORD_STR_REQUIRED);
+    if (required_schema_content) {
+      ten_list_push_ptr_back(
+          &object_schema_fields,
+          ten_value_kv_create(TEN_SCHEMA_KEYWORD_STR_REQUIRED,
+                              required_schema_content),
+          (ten_ptr_listnode_destroy_func_t)
+              ten_schema_object_kv_destroy_key_only);
+    }
+  } else {
+    TEN_ASSERT(0, "The property schema should contain `properties`.");
+    return NULL;
   }
 
   ten_value_t *object_schema_content =
