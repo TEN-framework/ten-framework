@@ -466,15 +466,15 @@ fn convert_rules_to_schema_properties(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn get_msg_schema<'a>(
+async fn get_msg_schema(
     graph_app_base_dir: &Option<String>,
     app: &Option<String>,
     extension_addon: &String,
-    pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
+    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     msg_direction: &MsgDirection,
     msg_type: &MsgType,
     msg_name: &str,
-) -> Result<Option<&'a ManifestApiMsg>> {
+) -> Result<Option<ManifestApiMsg>> {
     let msg_schema = if let Some(extension_pkg_info) =
         get_pkg_info_for_extension_addon(
             pkgs_cache,
@@ -484,7 +484,9 @@ fn get_msg_schema<'a>(
         ) {
         extension_pkg_info
             .manifest
-            .api
+            .get_flattened_api()
+            .await
+            .unwrap()
             .as_ref()
             .and_then(|api| match msg_direction {
                 MsgDirection::Out => match msg_type {
@@ -501,7 +503,7 @@ fn get_msg_schema<'a>(
                 },
             })
             .and_then(|msg_out| {
-                msg_out.iter().find(|msg| msg.name == *msg_name)
+                msg_out.iter().find(|msg| msg.name == *msg_name).cloned()
             })
     } else {
         None
@@ -511,7 +513,7 @@ fn get_msg_schema<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn msg_conversion_get_final_target_schema(
+pub async fn msg_conversion_get_final_target_schema(
     graph_app_base_dir: &Option<String>,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     src_app: &Option<String>,
@@ -533,7 +535,8 @@ pub fn msg_conversion_get_final_target_schema(
         &MsgDirection::Out,
         msg_type,
         src_msg_name,
-    )?;
+    )
+    .await?;
 
     eprintln!(
         "src_msg_schema: {}",
@@ -554,10 +557,10 @@ pub fn msg_conversion_get_final_target_schema(
         // If keep_original flag is true, start with the source message schema.
         if let Some(keep_original) = msg_conversion.rules.keep_original {
             if keep_original {
-                if let Some(src_msg_schema) = src_msg_schema {
-                    converted_schema_real = src_msg_schema.clone();
+                if let Some(ref src_msg_schema_ref) = src_msg_schema {
+                    converted_schema_real = src_msg_schema_ref.clone();
                     converted_schema_real.required =
-                        src_msg_schema.required.clone();
+                        src_msg_schema_ref.required.clone();
 
                     // Update the name to the destination message name.
                     converted_schema_real.name = dest_msg_name.to_string();
@@ -627,7 +630,8 @@ pub fn msg_conversion_get_final_target_schema(
             &MsgDirection::In,
             msg_type,
             dest_msg_name,
-        )?;
+        )
+        .await?;
 
         eprintln!(
             "dest_msg_schema: {}",

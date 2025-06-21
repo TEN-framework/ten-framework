@@ -48,7 +48,7 @@ pub async fn create_package_tar_gz_file(
 ) -> Result<String> {
     out.normal_line(&format!("{}  Creating package", Emoji("🚚", ":-)")));
 
-    let manifest = parse_manifest_in_folder(folder_to_tar_gz)?;
+    let manifest = parse_manifest_in_folder(folder_to_tar_gz).await?;
 
     // Before packing the package, first check if the content of property.json
     // is correct.

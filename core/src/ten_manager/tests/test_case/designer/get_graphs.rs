@@ -87,7 +87,8 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -180,7 +181,8 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
