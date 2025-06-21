@@ -4,8 +4,10 @@
 # See the LICENSE file for more information.
 #
 import traceback
+
+from ten_ai_base.transcription import AssistantTranscription
 from .elevenlabs_tts import ElevenLabsTTS, ElevenLabsTTSConfig
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
@@ -45,13 +47,13 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
-        audio_stream = await self.client.text_to_speech_stream(input_text)
-        ten_env.log_info(f"on_request_tts: {input_text}")
+        audio_stream = await self.client.text_to_speech_stream(t.text)
+        ten_env.log_info(f"on_request_tts: {t.text}")
         async for audio_data in audio_stream:
             await self.send_audio_out(ten_env, audio_data)
-        ten_env.log_info(f"on_request_tts: {input_text} done")
+        ten_env.log_info(f"on_request_tts: {t.text} done")
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)

@@ -1,12 +1,12 @@
 {
   "type": "app",
   "name": "agent_huggingface",
-  "version": "0.8.0",
+  "version": "0.10.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.8"
+      "version": "0.10"
     },
     {
       "type": "extension",
@@ -21,7 +21,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.4.1"
+      "version": "0.6.1"
     },
     {
       "type": "extension",

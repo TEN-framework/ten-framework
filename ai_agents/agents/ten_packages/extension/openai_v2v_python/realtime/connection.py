@@ -4,7 +4,7 @@ import json
 import os
 import aiohttp
 
-from ten import AsyncTenEnv
+from ten_runtime import AsyncTenEnv
 
 from typing import Any, AsyncGenerator
 from .struct import (

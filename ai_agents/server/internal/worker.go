@@ -39,7 +39,7 @@ type WorkerUpdateReq struct {
 	Collection  string              `form:"collection,omitempty" json:"collection"`
 	FileName    string              `form:"filename,omitempty" json:"filename"`
 	Path        string              `form:"path,omitempty" json:"path,omitempty"`
-	Ten         *WorkerUpdateReqTen `form:"_ten,omitempty" json:"_ten,omitempty"`
+	Ten         *WorkerUpdateReqTen `form:"ten,omitempty" json:"ten,omitempty"`
 }
 
 type WorkerUpdateReqTen struct {

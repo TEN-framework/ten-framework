@@ -1,7 +1,8 @@
+from ten_ai_base.transcription import AssistantTranscription
 from ten_ai_base.tts import AsyncTTSBaseExtension
 from .polly_tts import PollyTTS, PollyTTSConfig
 import traceback
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 
@@ -48,12 +49,10 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
         try:
-            data = self.client.text_to_speech_stream(
-                ten_env, input_text, end_of_segment
-            )
+            data = self.client.text_to_speech_stream(ten_env, t.text)
             async for frame in data:
                 await self.send_audio_out(
                     ten_env, frame, sample_rate=self.client.config.sample_rate

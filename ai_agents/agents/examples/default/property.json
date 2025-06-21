@@ -1,5 +1,5 @@
 {
-  "_ten": {
+  "ten": {
     "predefined_graphs": [
       {
         "name": "voice_assistant",
@@ -506,7 +506,7 @@
       },
       {
         "name": "voice_assistant_realtime",
-        "auto_start": false,
+        "auto_start": true,
         "nodes": [
           {
             "type": "extension",
@@ -528,18 +528,17 @@
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "openai_v2v_python",
+            "addon": "azure_v2v_python",
             "extension_group": "llm",
             "property": {
-              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "enable_storage": false,
-              "history": 10,
-              "language": "en-US",
               "max_tokens": 2048,
-              "model": "gpt-4o-realtime-preview",
-              "server_vad": true,
+              "base_uri": "${env:AZURE_AI_FOUNDRY_BASE_URI}",
+              "api_key": "${env:AZURE_AI_FOUNDRY_API_KEY}",
               "temperature": 0.9,
-              "voice": "alloy"
+              "server_vad": true,
+              "language": "en-US",
+              "model": "gpt-4o",
+              "enable_storage": false
             }
           },
           {

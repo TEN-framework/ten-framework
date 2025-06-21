@@ -1,5 +1,5 @@
 {
-  "_ten": {
+  "ten": {
     "predefined_graphs": [
       {
         "name": "with_ten_turn_detection",
@@ -640,7 +640,7 @@
                       "keep_original": true,
                       "rules": [
                         {
-                          "path": "_ten.name",
+                          "path": "ten.name",
                           "conversion_mode": "fixed_value",
                           "value": "flush"
                         }
