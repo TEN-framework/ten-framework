@@ -205,7 +205,7 @@ fn extract_description(
 ) -> Result<Option<HashMap<String, String>>> {
     // Lazy static initialization of regex that validates the locale format.
     static LOCALE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"^[a-z]{2}(_[A-Z]{2})?$").unwrap());
+        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
 
     if let Some(Value::Object(desc_map)) = map.get("description") {
         let mut result = HashMap::new();
@@ -214,7 +214,7 @@ fn extract_description(
             if !LOCALE_REGEX.is_match(locale) {
                 return Err(anyhow!(
                     "Invalid locale format: '{}'. Locales must be in format \
-                     'xx' or 'xx_YY'",
+                     'xx' or 'xx-YY' (BCP47 format)",
                     locale
                 ));
             }

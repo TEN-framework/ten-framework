@@ -49,7 +49,7 @@
     },
     "localeString": {
       "type": "string",
-      "pattern": "^[a-z]{2}(_[A-Z]{2})?$"
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
     },
     "description": {
       "type": "object",
@@ -57,7 +57,7 @@
         "$ref": "#/$defs/localeString"
       },
       "patternProperties": {
-        "^[a-z]{2}(_[A-Z]{2})?$": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
           "type": "string",
           "minLength": 1
         }
