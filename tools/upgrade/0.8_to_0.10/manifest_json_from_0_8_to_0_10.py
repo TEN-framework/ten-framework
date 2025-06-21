@@ -245,8 +245,10 @@ def main():
         if upgrade_manifest_file(file_path, args.dry_run):
             changed_files += 1
 
+    dry_run_text = "would be " if args.dry_run else ""
     print(
-        f"\nCompleted: {changed_files}/{total_files} files were {'would be ' if args.dry_run else ''}modified"
+        f"\nCompleted: {changed_files}/{total_files} files were "
+        f"{dry_run_text}modified"
     )
 
     return 0
