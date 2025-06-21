@@ -32,14 +32,16 @@ class test_extension_1 : public ten::extension_t {
                           {
                             "name": "hello_world",
                             "property": {
-                              "foo": {
-                                "type": "string"
+                              "properties": {
+                                "foo": {
+                                  "type": "string"
+                                },
+                                "bar": {
+                                  "type": "int8"
+                                }
                               },
-                              "bar": {
-                                "type": "int8"
-                              }
-                            },
-                            "required": ["foo"]
+                              "required": ["foo"]
+                            }
                           }
                         ]
                       }
@@ -97,33 +99,37 @@ class test_extension_2 : public ten::extension_t {
                           {
                             "name": "hello_world",
                             "property": {
-                              "foo": {
-                                "type": "string"
-                              },
-                              "bar": {
-                                "type": "uint8"
-                              }
-                            },
-                            "required": ["foo"],
-                            "result": {
-                              "property": {
-                                "detail": {
-                                  "type": "object",
-                                  "properties": {
-                                    "a": {
-                                      "type": "string"
-                                    },
-                                    "b": {
-                                      "type": "int8"
-                                    }
-                                  },
-                                  "required": ["a"]
+                              "properties": {
+                                "foo": {
+                                  "type": "string"
                                 },
-                                "extra": {
-                                  "type": "uint16"
+                                "bar": {
+                                  "type": "uint8"
                                 }
                               },
-                              "required": ["detail"]
+                              "required": ["foo"]
+                            },
+                            "result": {
+                              "property": {
+                                "properties": {
+                                  "detail": {
+                                    "type": "object",
+                                    "properties": {
+                                      "a": {
+                                        "type": "string"
+                                      },
+                                      "b": {
+                                        "type": "int8"
+                                      }
+                                    },
+                                    "required": ["a"]
+                                  },
+                                  "extra": {
+                                    "type": "uint16"
+                                  }
+                                },
+                                "required": ["detail"]
+                              }
                             }
                           }
                         ]

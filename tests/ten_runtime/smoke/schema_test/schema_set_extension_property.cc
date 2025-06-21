@@ -31,38 +31,40 @@ class test_extension : public ten::extension_t {
              "version": "0.1.0",
              "api": {
                "property": {
-                 "hello": {
-                   "type": "string"
-                 },
-                 "a": {
-                   "type": "int8"
-                 },
-                 "b": {
-                   "type": "int16"
-                 },
-                 "c": {
-                   "type": "int32"
-                 },
-                 "d": {
-                   "type": "int64"
-                 },
-                 "e": {
-                   "type": "uint8"
-                 },
-                 "f": {
-                   "type": "uint16"
-                 },
-                 "g": {
-                   "type": "uint32"
-                 },
-                 "h": {
-                   "type": "uint64"
-                 },
-                 "i": {
-                   "type": "float32"
-                 },
-                 "j": {
-                   "type": "float64"
+                 "properties": {
+                   "hello": {
+                     "type": "string"
+                   },
+                   "a": {
+                     "type": "int8"
+                   },
+                   "b": {
+                     "type": "int16"
+                   },
+                   "c": {
+                     "type": "int32"
+                   },
+                   "d": {
+                     "type": "int64"
+                   },
+                   "e": {
+                     "type": "uint8"
+                   },
+                   "f": {
+                     "type": "uint16"
+                   },
+                   "g": {
+                     "type": "uint32"
+                   },
+                   "h": {
+                     "type": "uint64"
+                   },
+                   "i": {
+                     "type": "float32"
+                   },
+                   "j": {
+                     "type": "float64"
+                   }
                  }
                }
              }
