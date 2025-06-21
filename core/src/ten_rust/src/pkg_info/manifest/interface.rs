@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-
 use crate::{
     fs::read_file_to_string,
     path::get_real_path_from_import_uri,
@@ -55,6 +54,7 @@ async fn load_interface_from_http_url_async(url: &Url) -> Result<ManifestApi> {
     // Set the base_dir of the interface.
     if let Some(interface) = &mut interface_api.interface.as_mut() {
         let mut base_url = url.clone();
+
         // Remove the file part from the URL to get the base directory
         if let Ok(mut segments) = base_url.path_segments_mut() {
             segments.pop();

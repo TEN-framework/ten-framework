@@ -88,9 +88,9 @@ pub struct ManifestApiMsg {
 pub struct ManifestApiInterface {
     pub import_uri: String,
 
-    // Used to record the folder path where the `manifest.json` containing
-    // this interface is located. It is primarily used to parse the
-    // `import_uri` field when it contains a relative path.
+    // Used to record the folder path where the `manifest.json` containing this
+    // interface is located. It is primarily used to parse the `import_uri`
+    // field when it contains a relative path.
     #[serde(skip)]
     pub base_dir: String,
 }
