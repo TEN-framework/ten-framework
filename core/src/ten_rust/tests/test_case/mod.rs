@@ -8,9 +8,9 @@ mod crypto_test;
 mod graph;
 mod graph_check;
 mod json_schema;
+mod path;
 mod pkg_info;
 mod schema;
-mod path;
 
 // Include mock implementations for external functions.
 mod test_mock;
