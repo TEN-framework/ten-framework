@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "vosk_asr_cpp",
   "version": "0.10.15",
+  "description": {
+    "en-US": "Vosk automatic speech recognition (ASR) extension example written in C++ for TEN Framework",
+    "zh-CN": "使用 C++ 语言编写的 TEN Framework Vosk 自动语音识别（ASR）扩展示例",
+    "zh-TW": "使用 C++ 語言編寫的 TEN Framework Vosk 自動語音識別（ASR）擴充範例",
+    "ja-JP": "TEN Framework用のC++で書かれたVosk自動音声認識（ASR）拡張サンプル",
+    "ko-KR": "TEN Framework용 C++로 작성된 Vosk 자동 음성 인식(ASR) 확장 예제"
+  },
   "tags": [
     "cpp"
   ],
