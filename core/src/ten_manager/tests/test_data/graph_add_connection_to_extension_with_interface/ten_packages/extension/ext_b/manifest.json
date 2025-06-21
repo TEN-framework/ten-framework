@@ -4,29 +4,35 @@
   "version": "1.2.3",
   "api": {
     "property": {
-      "test": {
-        "type": "string"
+      "properties": {
+        "test": {
+          "type": "string"
+        }
       }
     },
     "cmd_out": [
       {
         "name": "hello",
         "property": {
-          "foo": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       }
     ],
     "cmd_in": [
       {
         "name": "cmd_out_b",
         "property": {
-          "message": {
-            "type": "buf"
+          "properties": {
+            "message": {
+              "type": "buf"
+            }
           }
         }
       }
