@@ -4,22 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-
 use ten_rust::pkg_info::manifest::api::{ManifestApiMsg, ManifestApiProperty};
 
-use super::graphs::nodes::{DesignerApiMsg, DesignerPropertyAttributes};
+use super::graphs::nodes::{DesignerApiMsg, DesignerApiProperty};
 
-pub fn get_designer_property_hashmap_from_pkg(
+pub fn get_designer_api_property_from_pkg(
     items: ManifestApiProperty,
-) -> HashMap<String, DesignerPropertyAttributes> {
-    match items.properties() {
-        Some(properties) => properties
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone().into()))
-            .collect(),
-        None => HashMap::new(),
-    }
+) -> DesignerApiProperty {
+    items.into()
 }
 
 pub fn get_designer_api_msg_from_pkg(
