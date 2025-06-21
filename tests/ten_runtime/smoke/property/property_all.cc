@@ -50,8 +50,10 @@ class test_extension : public ten::extension_t {
                     \"version\": \"1.0.0\",\
                     \"api\": {\
                       \"property\": {\
-                        \"" EXTENSION_PROP_NAME_INT64 "\": {\
-                          \"type\": \"int64\"\
+                        \"properties\": {\
+                          \"" EXTENSION_PROP_NAME_INT64 "\": {\
+                            \"type\": \"int64\"\
+                          }\
                         }\
                       }\
                     }\
