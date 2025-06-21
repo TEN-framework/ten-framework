@@ -97,16 +97,20 @@ pub struct DesignerCmdResult {
 
 impl From<ManifestApiCmdResult> for DesignerCmdResult {
     fn from(cmd_result: ManifestApiCmdResult) -> Self {
-        DesignerCmdResult {
-            property: cmd_result.property.map(|prop| {
-                prop.into_iter().map(|(k, v)| (k, v.into())).collect()
-            }),
-            required: cmd_result
-                .required
-                .as_ref()
-                .filter(|req| !req.is_empty())
-                .cloned(),
-        }
+        let property_map = cmd_result.property.as_ref().and_then(|prop| {
+            prop.properties().map(|properties| {
+                properties
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone().into()))
+                    .collect()
+            })
+        });
+
+        let required_vec = cmd_result.property.as_ref().and_then(|prop| {
+            prop.required.as_ref().filter(|req| !req.is_empty()).cloned()
+        });
+
+        DesignerCmdResult { property: property_map, required: required_vec }
     }
 }
 
@@ -132,14 +136,18 @@ impl From<ManifestApiMsg> for DesignerApiMsg {
                 .property
                 .as_ref()
                 .filter(|p| !p.is_empty())
-                .map(|p| {
-                    p.iter()
-                        .map(|(k, v)| (k.clone(), v.clone().into()))
-                        .collect()
+                .and_then(|p| {
+                    p.properties().map(|properties| {
+                        properties
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.clone().into()))
+                            .collect()
+                    })
                 }),
             required: api_cmd_like
-                .required
+                .property
                 .as_ref()
+                .and_then(|p| p.required.as_ref())
                 .filter(|req| !req.is_empty())
                 .cloned(),
             result: api_cmd_like.result.as_ref().cloned().map(Into::into),

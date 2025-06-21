@@ -309,33 +309,10 @@
         },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
-            }
-          },
-          "additionalProperties": false
-        },
-        "required": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
-        },
-        "result": {
-          "type": "object",
-          "required": [
-            "property"
-          ],
           "additionalProperties": false,
           "properties": {
-            "property": {
+            "properties": {
               "type": "object",
-              "minProperties": 1,
               "propertyNames": { // The property name should be alphanumericCharacters.
                 "$ref": "#/$defs/alphanumericCharacters"
               },
@@ -354,6 +331,41 @@
               "minItems": 1
             }
           }
+        },
+        "result": {
+          "type": "object",
+          "required": [
+            "property"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "property": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "propertyNames": { // The property name should be alphanumericCharacters.
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -368,22 +380,28 @@
         },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": { // The property name should be alphanumericCharacters.
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
             }
-          },
-          "additionalProperties": false
-        },
-        "required": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
+          }
         }
       }
     }
@@ -417,7 +435,6 @@
     },
     "api": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "interface": {
           "type": "array",
@@ -427,15 +444,28 @@
         },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
             }
-          },
-          "additionalProperties": false
+          }
         },
         "cmd_in": {
           "type": "array",
@@ -485,7 +515,8 @@
             "$ref": "#/$defs/dataLikeApi"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "supports": {
       "type": "array",
@@ -570,15 +601,28 @@
           "properties": {
             "property": {
               "type": "object",
-              "propertyNames": {
-                "$ref": "#/$defs/alphanumericCharacters"
-              },
-              "patternProperties": {
-                "^[A-Za-z_][A-Za-z0-9_]*$": {
-                  "$ref": "#/$defs/valueType"
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
                 }
-              },
-              "additionalProperties": false
+              }
             }
           },
           "additionalProperties": false

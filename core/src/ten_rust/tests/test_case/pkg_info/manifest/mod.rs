@@ -28,7 +28,8 @@ mod tests {
         let cmd_in = manifest.api.unwrap().cmd_in.unwrap();
         assert_eq!(cmd_in.len(), 1);
 
-        let required = cmd_in[0].required.as_ref();
+        let property = cmd_in[0].property.as_ref().unwrap();
+        let required = property.required.as_ref();
         assert!(required.is_some());
         assert_eq!(required.unwrap().len(), 1);
     }

@@ -6,16 +6,20 @@
 //
 use std::collections::HashMap;
 
-use ten_rust::pkg_info::manifest::api::{
-    ManifestApiMsg, ManifestApiPropertyAttributes,
-};
+use ten_rust::pkg_info::manifest::api::{ManifestApiMsg, ManifestApiProperty};
 
 use super::graphs::nodes::{DesignerApiMsg, DesignerPropertyAttributes};
 
 pub fn get_designer_property_hashmap_from_pkg(
-    items: HashMap<String, ManifestApiPropertyAttributes>,
+    items: ManifestApiProperty,
 ) -> HashMap<String, DesignerPropertyAttributes> {
-    items.into_iter().map(|(k, v)| (k, v.into())).collect()
+    match items.properties() {
+        Some(properties) => properties
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone().into()))
+            .collect(),
+        None => HashMap::new(),
+    }
 }
 
 pub fn get_designer_api_msg_from_pkg(
