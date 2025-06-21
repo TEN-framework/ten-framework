@@ -1,0 +1,37 @@
+{
+  "type": "extension",
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "./interface/foo_1.json"
+      }
+    ],
+    "property": {
+      "foo": {
+        "type": "bool"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "hello",
+        "property": {
+          "foo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      }
+    ]
+  }
+}

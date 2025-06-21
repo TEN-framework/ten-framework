@@ -107,7 +107,9 @@ pub async fn create_extension_endpoint(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &extension_path_str,
-            ) {
+            )
+            .await
+            {
                 // Don't delete the extension directory on cache update failure.
                 let error_response = ErrorResponse::from_error(
                     &err,

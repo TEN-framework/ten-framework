@@ -23,7 +23,7 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
 
         assert_eq!(manifest.type_and_name.name, "test_extension");
         assert_eq!(manifest.version.to_string(), "1.0.0");
@@ -42,7 +42,7 @@ mod tests {
             "version": "1.0.0"
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
 
         assert_eq!(manifest.type_and_name.name, "test_extension");
         assert_eq!(manifest.version.to_string(), "1.0.0");
@@ -60,7 +60,7 @@ mod tests {
             }
         }"#;
 
-        let result: Result<Manifest, _> = manifest_json.parse();
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         println!("Actual error: {}", error_msg);
@@ -83,11 +83,11 @@ mod tests {
             }
         }"#;
 
-        let result: Result<Manifest, _> = manifest_json.parse();
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         println!("Actual error: {}", error_msg);
-        assert!(error_msg.contains("shorter than 1 character"));
+        assert!(error_msg.contains("cannot be empty"));
     }
 
     #[test]
@@ -103,7 +103,7 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
 
         assert_eq!(manifest.type_and_name.name, "test_extension");
         assert_eq!(manifest.version.to_string(), "1.0.0");
@@ -128,7 +128,7 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
 
         let description = manifest.description.unwrap();
         assert_eq!(description.get("en").unwrap(), "English description");
@@ -149,7 +149,7 @@ mod tests {
             }
         }"#;
 
-        let result: Result<Manifest, _> = manifest_json.parse();
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
 
         // Test with lowercase region code
@@ -162,7 +162,7 @@ mod tests {
             }
         }"#;
 
-        let result: Result<Manifest, _> = manifest_json.parse();
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
 
         // Test with three-letter language code
@@ -175,7 +175,7 @@ mod tests {
             }
         }"#;
 
-        let result: Result<Manifest, _> = manifest_json.parse();
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
     }
 }

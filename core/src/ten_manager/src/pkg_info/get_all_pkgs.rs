@@ -19,7 +19,7 @@ use ten_rust::{
 /// This function checks if package information for the specified base directory
 /// already exists in the cache. If it does, it returns immediately. Otherwise,
 /// it fetches the package information and stores it in the cache.
-pub fn get_all_pkgs_in_app(
+pub async fn get_all_pkgs_in_app(
     pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     base_dir: &String,
@@ -36,7 +36,7 @@ pub fn get_all_pkgs_in_app(
 
     // Fetch package information.
     let result_pkgs =
-        get_app_installed_pkgs(&app_path, true, &mut Some(graphs_cache));
+        get_app_installed_pkgs(&app_path, true, &mut Some(graphs_cache)).await;
 
     match result_pkgs {
         Ok(pkgs) => {

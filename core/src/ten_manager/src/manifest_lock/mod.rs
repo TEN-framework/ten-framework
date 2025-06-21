@@ -52,18 +52,18 @@ pub struct ManifestLock {
 
 type LockedPkgsInfo<'a> = &'a Vec<&'a PkgInfo>;
 
-impl From<LockedPkgsInfo<'_>> for ManifestLock {
+impl ManifestLock {
     // Convert a complete `Resolve` to a ManifestLock which can be serialized to
     // a `manifest-lock.json` file.
-    fn from(resolve: LockedPkgsInfo) -> Self {
+    pub async fn from_locked_pkgs_info(resolve: LockedPkgsInfo<'_>) -> Self {
+        let mut packages = Vec::new();
+        for pkg_info in resolve {
+            packages.push(ManifestLockItem::from_pkg_info(pkg_info).await);
+        }
+
         ManifestLock {
             version: Some(1), // Not used for now.
-            packages: Some(
-                resolve
-                    .iter()
-                    .map(|pkg_info| ManifestLockItem::from(pkg_info.to_owned()))
-                    .collect(),
-            ),
+            packages: Some(packages),
         }
     }
 }
@@ -268,54 +268,65 @@ impl TryFrom<&ManifestLockItem> for PkgBasicInfo {
     }
 }
 
-fn get_encodable_deps_from_pkg_deps(
+async fn get_encodable_deps_from_pkg_deps(
     manifest_deps: Vec<ManifestDependency>,
 ) -> Vec<ManifestLockItemDependencyItem> {
-    manifest_deps
-        .into_iter()
-        .map(|dep| match dep {
-            ManifestDependency::RegistryDependency {
-                pkg_type, name, ..
-            } => ManifestLockItemDependencyItem {
-                pkg_type: pkg_type.to_string(),
-                name,
-            },
-            ManifestDependency::LocalDependency { path, base_dir } => {
-                // For local dependencies, we need to extract info from the
-                // manifest.
-                let abs_path = std::path::Path::new(&base_dir).join(&path);
-                let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
+    {
+        let mut result = Vec::new();
 
-                let manifest_result =
-                    ten_rust::pkg_info::manifest::parse_manifest_from_file(
-                        &dep_manifest_path,
-                    );
+        for dep in manifest_deps {
+            let item = match dep {
+                ManifestDependency::RegistryDependency {
+                    pkg_type,
+                    name,
+                    ..
+                } => ManifestLockItemDependencyItem {
+                    pkg_type: pkg_type.to_string(),
+                    name,
+                },
+                ManifestDependency::LocalDependency { path, base_dir } => {
+                    // For local dependencies, we need to extract info from the
+                    // manifest.
+                    let abs_path = std::path::Path::new(&base_dir).join(&path);
+                    let dep_manifest_path =
+                        abs_path.join(MANIFEST_JSON_FILENAME);
 
-                match manifest_result {
-                    Ok(local_manifest) => ManifestLockItemDependencyItem {
-                        pkg_type: local_manifest
-                            .type_and_name
-                            .pkg_type
-                            .to_string(),
-                        name: local_manifest.type_and_name.name,
-                    },
-                    Err(_) => {
-                        // If we can't parse the manifest, use a placeholder.
-                        ManifestLockItemDependencyItem {
-                            pkg_type: "unknown".to_string(),
-                            name: path,
+                    let manifest_result =
+                        ten_rust::pkg_info::manifest::parse_manifest_from_file(
+                            &dep_manifest_path,
+                        )
+                        .await;
+
+                    match manifest_result {
+                        Ok(local_manifest) => ManifestLockItemDependencyItem {
+                            pkg_type: local_manifest
+                                .type_and_name
+                                .pkg_type
+                                .to_string(),
+                            name: local_manifest.type_and_name.name,
+                        },
+                        Err(_) => {
+                            // If we can't parse the manifest, use a
+                            // placeholder.
+                            ManifestLockItemDependencyItem {
+                                pkg_type: "unknown".to_string(),
+                                name: path,
+                            }
                         }
                     }
                 }
-            }
-        })
-        .collect()
+            };
+            result.push(item);
+        }
+
+        result
+    }
 }
 
-impl<'a> From<&'a PkgInfo> for ManifestLockItem {
-    fn from(pkg_info: &'a PkgInfo) -> Self {
+impl ManifestLockItem {
+    pub async fn from_pkg_info(pkg_info: &PkgInfo) -> Self {
         let dependencies = match &pkg_info.manifest.dependencies {
-            Some(deps) => get_encodable_deps_from_pkg_deps(deps.clone()),
+            Some(deps) => get_encodable_deps_from_pkg_deps(deps.clone()).await,
             None => vec![],
         };
 
@@ -420,6 +431,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
 
                 map
             },
+            flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         PkgInfo {

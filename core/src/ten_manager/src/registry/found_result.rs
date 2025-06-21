@@ -8,6 +8,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::manifest::Manifest;
@@ -65,11 +66,12 @@ mod dependencies_conversion {
     }
 }
 
-pub fn get_pkg_registry_info_from_manifest(
+pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let pkg_info = PkgInfo::from_metadata(download_url, manifest, &None)?;
+    let pkg_info =
+        PkgInfo::from_metadata(download_url, manifest, &None).await?;
     Ok((&pkg_info).into())
 }
 
@@ -165,6 +167,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
 
                     map
                 },
+                flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
             },
             property: None,
             schema_store: None,

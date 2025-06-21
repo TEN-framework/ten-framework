@@ -114,7 +114,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -367,7 +368,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -567,7 +569,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -772,7 +775,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -990,7 +994,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -1216,7 +1221,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -1395,7 +1401,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 

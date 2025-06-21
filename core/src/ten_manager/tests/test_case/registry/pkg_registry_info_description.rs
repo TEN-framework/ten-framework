@@ -15,8 +15,8 @@ mod tests {
     use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
     use ten_rust::pkg_info::PkgInfo;
 
-    #[test]
-    fn test_pkg_registry_info_with_description() {
+    #[tokio::test]
+    async fn test_pkg_registry_info_with_description() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
@@ -28,11 +28,13 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest =
+            Manifest::create_from_str(manifest_json).await.unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
         )
+        .await
         .unwrap();
 
         assert!(pkg_registry_info.description.is_some());
@@ -43,19 +45,21 @@ mod tests {
         assert_eq!(description.get("es-ES").unwrap(), "Descripción en español");
     }
 
-    #[test]
-    fn test_pkg_registry_info_without_description() {
+    #[tokio::test]
+    async fn test_pkg_registry_info_without_description() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
             "version": "1.0.0"
         }"#;
 
-        let manifest: Manifest = manifest_json.parse().unwrap();
+        let manifest: Manifest =
+            Manifest::create_from_str(manifest_json).await.unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
         )
+        .await
         .unwrap();
 
         assert!(pkg_registry_info.description.is_none());

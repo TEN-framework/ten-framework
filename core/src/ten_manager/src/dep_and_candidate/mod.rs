@@ -60,7 +60,7 @@ impl MergedVersionReq {
 /// Otherwise, it means there has been a change, so return true. This allows the
 /// caller to know that there may be new content and that some actions may need
 /// to be taken.
-fn merge_dependency_to_dependencies(
+async fn merge_dependency_to_dependencies(
     merged_dependencies: &mut HashMap<PkgTypeAndName, MergedVersionReq>,
     dependency: &ManifestDependency,
 ) -> Result<bool> {
@@ -79,7 +79,8 @@ fn merge_dependency_to_dependencies(
             let abs_path = Path::new(base_dir).join(path);
             let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
 
-            let local_manifest = parse_manifest_from_file(&dep_manifest_path)?;
+            let local_manifest =
+                parse_manifest_from_file(&dep_manifest_path).await?;
             (
                 local_manifest.type_and_name.clone(),
                 &VersionReq::parse(&local_manifest.version.to_string())?,
@@ -102,7 +103,7 @@ fn merge_dependency_to_dependencies(
     Ok(changed)
 }
 
-fn process_local_dependency_to_get_candidate(
+async fn process_local_dependency_to_get_candidate(
     dependency: &ManifestDependency,
     all_candidates: &mut HashMap<
         PkgTypeAndName,
@@ -127,7 +128,8 @@ fn process_local_dependency_to_get_candidate(
             })?;
 
         let mut pkg_info =
-            get_pkg_info_from_path(&abs_path, false, false, &mut None, None)?;
+            get_pkg_info_from_path(&abs_path, false, false, &mut None, None)
+                .await?;
 
         pkg_info.is_local_dependency = true;
         pkg_info.local_dependency_path = Some(path.clone());
@@ -314,14 +316,16 @@ async fn process_dependencies_to_get_candidates(
                     manifest_dep,
                     ctx.all_candidates,
                     ctx.new_pkgs_to_be_searched,
-                )?;
+                )
+                .await?;
             }
             ManifestDependency::RegistryDependency { .. } => {
                 // Check if we need to get the package info from the slow path.
                 let changed = merge_dependency_to_dependencies(
                     ctx.merged_dependencies,
                     manifest_dep,
-                )?;
+                )
+                .await?;
                 if !changed {
                     // There is no new information, so we won't proceed further.
                     continue;

@@ -255,7 +255,7 @@ pub async fn get_package(
     Ok(())
 }
 
-fn find_file_with_criteria(
+async fn find_file_with_criteria(
     base_url: &Path,
     pkg_type: Option<PkgType>,
     name: Option<&String>,
@@ -272,7 +272,8 @@ fn find_file_with_criteria(
             let search_path = base_url.join(pkg_type.to_string());
             if search_path.exists() {
                 let mut path_results =
-                    search_versions(&search_path, name_str, version_req, tags)?;
+                    search_versions(&search_path, name_str, version_req, tags)
+                        .await?;
                 results.append(&mut path_results);
             }
         }
@@ -289,7 +290,8 @@ fn find_file_with_criteria(
                             &name_str,
                             version_req,
                             tags,
-                        )?;
+                        )
+                        .await?;
                         results.append(&mut name_results);
                     }
                 }
@@ -302,12 +304,9 @@ fn find_file_with_criteria(
                     let type_dir = entry.path();
                     let name_dir = type_dir.join(name);
                     if name_dir.exists() {
-                        let mut type_results = search_versions(
-                            &type_dir,
-                            name,
-                            version_req,
-                            tags,
-                        )?;
+                        let mut type_results =
+                            search_versions(&type_dir, name, version_req, tags)
+                                .await?;
                         results.append(&mut type_results);
                     }
                 }
@@ -330,7 +329,8 @@ fn find_file_with_criteria(
                                     .as_ref(),
                                 version_req,
                                 tags,
-                            )?;
+                            )
+                            .await?;
                             results.append(&mut name_results);
                         }
                     }
@@ -343,7 +343,7 @@ fn find_file_with_criteria(
 }
 
 // Helper function to search for versions.
-fn search_versions(
+async fn search_versions(
     base_dir: &Path,
     name: &str,
     version_req: Option<&VersionReq>,
@@ -408,7 +408,8 @@ fn search_versions(
                                     })?;
 
                             let manifest =
-                                Manifest::from_str(&manifest_content)?;
+                                Manifest::create_from_str(&manifest_content)
+                                    .await?;
 
                             // Check if the manifest meets the tags
                             // requirements.
@@ -448,7 +449,8 @@ fn search_versions(
                                 get_pkg_registry_info_from_manifest(
                                     &download_url,
                                     &manifest,
-                                )?;
+                                )
+                                .await?;
 
                             pkg_registry_info.download_url = download_url;
 
@@ -499,7 +501,8 @@ pub async fn get_package_list(
         name_ref,
         version_req_ref,
         tags.as_ref(),
-    )?;
+    )
+    .await?;
 
     // If page is specified, paginate the results.
     if let Some(page_num) = page {

@@ -132,6 +132,9 @@ pub async fn get_graph_nodes_endpoint(
                 .expect("Extension node must have an addon"),
         );
         if let Some(pkg_info) = pkg_info {
+            let manifest_api =
+                pkg_info.manifest.get_flattened_api().await.unwrap();
+
             resp_extensions.push(GraphNodesSingleResponseData {
                 addon: extension_graph_node
                     .addon
@@ -140,7 +143,7 @@ pub async fn get_graph_nodes_endpoint(
                 name: extension_graph_node.name.clone(),
                 extension_group: extension_graph_node.extension_group.clone(),
                 app: extension_graph_node.app.clone(),
-                api: pkg_info.manifest.api.as_ref().map(|api| DesignerApi {
+                api: manifest_api.map(|api| DesignerApi {
                     property: api
                         .property
                         .as_ref()
