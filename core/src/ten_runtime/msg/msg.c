@@ -1325,7 +1325,8 @@ bool ten_raw_msg_validate_schema(ten_msg_t *self,
   TEN_ASSERT(self && ten_raw_msg_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(schema_store && ten_schema_store_check_integrity(schema_store),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   const char *msg_name = ten_raw_msg_get_name(self);
   if (ten_raw_msg_is_cmd_and_result(self)) {
@@ -1356,7 +1357,8 @@ bool ten_msg_validate_schema(ten_shared_ptr_t *self,
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(schema_store && ten_schema_store_check_integrity(schema_store),
              "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_msg_t *msg = ten_shared_ptr_get_data(self);
   ten_raw_msg_validate_schema_func_t validate_schema =

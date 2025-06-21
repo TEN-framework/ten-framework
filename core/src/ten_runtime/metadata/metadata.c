@@ -151,7 +151,8 @@ ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
 bool ten_manifest_json_string_is_valid(const char *json_string,
                                        ten_error_t *err) {
   TEN_ASSERT(json_string, "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   const char *err_msg = NULL;
@@ -169,7 +170,8 @@ bool ten_manifest_json_string_is_valid(const char *json_string,
 
 bool ten_manifest_json_file_is_valid(const char *json_file, ten_error_t *err) {
   TEN_ASSERT(json_file, "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   const char *err_msg = NULL;
@@ -188,7 +190,8 @@ bool ten_manifest_json_file_is_valid(const char *json_file, ten_error_t *err) {
 bool ten_property_json_string_is_valid(const char *json_string,
                                        ten_error_t *err) {
   TEN_ASSERT(json_string, "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   const char *err_msg = NULL;
@@ -206,7 +209,8 @@ bool ten_property_json_string_is_valid(const char *json_string,
 
 bool ten_property_json_file_is_valid(const char *json_file, ten_error_t *err) {
   TEN_ASSERT(json_file, "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   const char *err_msg = NULL;

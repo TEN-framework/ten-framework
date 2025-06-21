@@ -108,7 +108,8 @@ bool ten_cmd_schema_validate_cmd_result_properties(
   TEN_ASSERT(self && ten_cmd_schema_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(cmd_result_props && ten_value_check_integrity(cmd_result_props),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->cmd_result_schema) {
     // No `result` schema is defined, which is permitted in TEN runtime.
@@ -125,7 +126,8 @@ bool ten_cmd_schema_adjust_cmd_result_properties(ten_cmd_schema_t *self,
   TEN_ASSERT(self && ten_cmd_schema_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(cmd_result_props && ten_value_check_integrity(cmd_result_props),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->cmd_result_schema) {
     // No `result` schema is defined, which is permitted in TEN runtime.

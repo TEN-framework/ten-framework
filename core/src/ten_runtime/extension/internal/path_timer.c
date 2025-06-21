@@ -114,8 +114,8 @@ static void ten_extension_out_path_timer_on_triggered(ten_timer_t *self,
 }
 
 ten_timer_t *ten_extension_create_timer_for_in_path(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");
@@ -134,8 +134,8 @@ ten_timer_t *ten_extension_create_timer_for_in_path(ten_extension_t *self) {
 }
 
 ten_timer_t *ten_extension_create_timer_for_out_path(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");

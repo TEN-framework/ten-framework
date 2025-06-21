@@ -79,7 +79,11 @@ pub async fn get_extension_schema_endpoint(
     let response = ApiResponse {
         status: Status::Ok,
         data: GetExtensionSchemaResponseData {
-            schema: extension_pkg_info.manifest.api.clone(),
+            schema: extension_pkg_info
+                .manifest
+                .get_flattened_api()
+                .await
+                .unwrap(),
         },
         meta: None,
     };

@@ -4,18 +4,22 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+mod description;
+mod interface;
+
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
 
     use ten_rust::pkg_info::{manifest::Manifest, pkg_type::PkgType};
 
-    #[test]
-    fn test_extension_manifest_from_str() {
+    #[tokio::test]
+    async fn test_extension_manifest_from_str() {
         let manifest_str =
             include_str!("../../../test_data/test_extension_manifest.json");
 
-        let result: Result<Manifest> = manifest_str.parse();
+        let result: Result<Manifest> =
+            Manifest::create_from_str(manifest_str).await;
         assert!(result.is_ok());
 
         let manifest = result.unwrap();
@@ -29,8 +33,8 @@ mod tests {
         assert_eq!(required.unwrap().len(), 1);
     }
 
-    #[test]
-    fn test_manifest_duplicate_dependencies_should_fail() {
+    #[tokio::test]
+    async fn test_manifest_duplicate_dependencies_should_fail() {
         let manifest_str = r#"
         {
             "type": "extension",
@@ -50,7 +54,8 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> = manifest_str.parse();
+        let result: Result<Manifest> =
+            Manifest::create_from_str(manifest_str).await;
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();
@@ -59,8 +64,8 @@ mod tests {
         assert!(error_msg.contains("duplicate_ext"));
     }
 
-    #[test]
-    fn test_manifest_different_type_same_name_should_pass() {
+    #[tokio::test]
+    async fn test_manifest_different_type_same_name_should_pass() {
         let manifest_str = r#"
         {
             "type": "extension",
@@ -80,12 +85,13 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> = manifest_str.parse();
+        let result: Result<Manifest> =
+            Manifest::create_from_str(manifest_str).await;
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_manifest_local_dependencies_should_not_conflict() {
+    #[tokio::test]
+    async fn test_manifest_local_dependencies_should_not_conflict() {
         let manifest_str = r#"
         {
             "type": "extension",
@@ -106,7 +112,8 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> = manifest_str.parse();
+        let result: Result<Manifest> =
+            Manifest::create_from_str(manifest_str).await;
         assert!(result.is_ok());
     }
 }

@@ -14,6 +14,7 @@ pub mod fs;
 pub mod graph;
 pub mod json;
 pub mod json_schema;
+pub mod path;
 pub mod pkg_info;
 
 #[cfg(feature = "service-hub")]

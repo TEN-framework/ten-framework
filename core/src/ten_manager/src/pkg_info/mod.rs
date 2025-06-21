@@ -29,7 +29,8 @@ pub async fn tman_get_all_installed_pkgs_info_of_app(
     app_path: &Path,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<Vec<PkgInfo>> {
-    let pkg_info_struct = get_app_installed_pkgs(app_path, false, &mut None)?;
+    let pkg_info_struct =
+        get_app_installed_pkgs(app_path, false, &mut None).await?;
 
     // Use the to_vec method to combine all package types into a single vector.
     let all_pkgs = pkg_info_struct.to_vec();

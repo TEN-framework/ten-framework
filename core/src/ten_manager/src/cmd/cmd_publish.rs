@@ -55,7 +55,8 @@ pub async fn execute_cmd(
 
     let cwd = crate::fs::get_cwd()?;
 
-    let pkg_info = get_pkg_info_from_path(&cwd, true, false, &mut None, None)?;
+    let pkg_info =
+        get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
     let output_pkg_file_name = get_tpkg_file_name(&pkg_info)?;
 
     // Use the default output path, which is located in the `.ten/`

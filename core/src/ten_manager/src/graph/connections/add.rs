@@ -173,7 +173,7 @@ fn check_nodes_exist(
 
 /// Adds a new connection between two extension nodes in the graph.
 #[allow(clippy::too_many_arguments)]
-pub fn graph_add_connection(
+pub async fn graph_add_connection(
     graph: &mut Graph,
     graph_app_base_dir: &Option<String>,
     src_app: Option<String>,
@@ -222,7 +222,8 @@ pub fn graph_add_connection(
             dest_extension: &dest_extension,
             msg_conversion: &msg_conversion,
         },
-    )?;
+    )
+    .await?;
 
     // Create destination object.
     let destination = GraphDestination {

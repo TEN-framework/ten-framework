@@ -5,3 +5,4 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 mod local;
+mod pkg_registry_info_description;

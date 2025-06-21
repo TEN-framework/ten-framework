@@ -93,11 +93,11 @@ fn validate_msg_conversion_c_schema_oneway(
     Ok(())
 }
 
-fn validate_msg_conversion_schema(
-    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
-    graph_app_base_dir: &Option<String>,
-    msg_conversion_validate_info: &MsgConversionValidateInfo,
+async fn validate_msg_conversion_schema<'a>(
+    pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
+    graph: &'a mut Graph,
+    graph_app_base_dir: &'a Option<String>,
+    msg_conversion_validate_info: &'a MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
     assert!(msg_conversion_validate_info.msg_conversion.is_some());
 
@@ -132,7 +132,8 @@ fn validate_msg_conversion_schema(
             &dest_msg_name,
             ten_name_rule_index,
             msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
-        )?;
+        )
+        .await?;
 
     if let Some(converted_schema) = converted_schema {
         #[cfg(test)]
@@ -448,11 +449,11 @@ fn check_schema_compatibility(
     Ok(())
 }
 
-pub fn validate_connection_schema(
+pub async fn validate_connection_schema(
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     graph: &mut Graph,
     graph_app_base_dir: &Option<String>,
-    msg_conversion_validate_info: &MsgConversionValidateInfo,
+    msg_conversion_validate_info: &MsgConversionValidateInfo<'_>,
 ) -> Result<()> {
     if msg_conversion_validate_info.msg_conversion.is_some() {
         validate_msg_conversion_schema(
@@ -460,7 +461,8 @@ pub fn validate_connection_schema(
             graph,
             graph_app_base_dir,
             msg_conversion_validate_info,
-        )?;
+        )
+        .await?;
     } else {
         check_schema_compatibility(
             pkgs_cache,

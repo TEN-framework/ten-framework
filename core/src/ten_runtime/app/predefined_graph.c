@@ -35,9 +35,7 @@
 #include "ten_utils/container/list_node.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
-#include "ten_utils/lib/file.h"
 #include "ten_utils/lib/json.h"
-#include "ten_utils/lib/path.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
@@ -45,6 +43,10 @@
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value_get.h"
 #include "ten_utils/value/value_object.h"
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_rust/ten_rust.h"
+#endif
 
 ten_predefined_graph_info_t *ten_predefined_graph_info_create(void) {
   ten_predefined_graph_info_t *self =
@@ -356,6 +358,67 @@ ten_engine_t *ten_app_get_singleton_predefined_graph_engine_by_name(
   return NULL;
 }
 
+// This function is used to validate the predefined graph info, flatten the
+// 'import_uri' and 'subgraph' syntax sugar.
+// If the predefined graph info is invalid, the return value is NULL.
+// Note that if the return value is not NULL, it means the return value is a new
+// value, and the caller should destroy it after using.
+static ten_value_t *ten_app_predefined_graph_validate_complete_flatten(
+    ten_app_t *app, ten_value_t *predefined_graph_info_value,
+    ten_error_t *err) {
+  TEN_ASSERT(app, "Invalid argument.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Invalid argument.");
+  TEN_ASSERT(predefined_graph_info_value, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(predefined_graph_info_value),
+             "Invalid argument.");
+
+  ten_value_t *result = NULL;
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_json_t json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
+  bool success = ten_value_to_json(predefined_graph_info_value, &json);
+  if (!success) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Failed to convert predefined graph info to JSON.");
+    }
+    return NULL;
+  }
+
+  bool must_free = false;
+  const char *json_str = ten_json_to_string(&json, NULL, &must_free);
+  TEN_ASSERT(json_str, "Should not happen.");
+
+  char *err_msg = NULL;
+
+  const char *flattened_json_str =
+      ten_rust_predefined_graph_validate_complete_flatten(
+          json_str, ten_string_get_raw_str(&app->base_dir), &err_msg);
+
+  ten_json_deinit(&json);
+  if (must_free) {
+    TEN_FREE(json_str);
+  }
+
+  if (!flattened_json_str) {
+    if (err && err_msg) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_GRAPH, err_msg);
+    }
+
+    if (err_msg) {
+      ten_rust_free_cstring(err_msg);
+    }
+
+    return NULL;
+  }
+
+  result = ten_value_from_json_str(flattened_json_str);
+  ten_rust_free_cstring(flattened_json_str);
+#endif
+
+  return result;
+}
+
 bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
@@ -397,6 +460,26 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
       goto done;
     }
 
+    bool value_need_free = false;
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    predefined_graph_info_value =
+        ten_app_predefined_graph_validate_complete_flatten(
+            self, predefined_graph_info_value, &err);
+    if (!predefined_graph_info_value) {
+      TEN_LOGE("[%s] Failed to validate predefined graph info: %s",
+               ten_app_get_uri(self), ten_error_message(&err));
+      result = false;
+      goto done;
+    }
+
+    TEN_ASSERT(ten_value_is_object(predefined_graph_info_value),
+               "Should not happen.");
+    // The return value is a new value, and the caller should destroy it after
+    // using.
+    value_need_free = true;
+#endif
+
     ten_predefined_graph_info_t *predefined_graph_info =
         ten_predefined_graph_info_create();
 
@@ -404,9 +487,7 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
         ten_value_object_peek(predefined_graph_info_value, TEN_STR_NAME);
     if (!predefined_graph_info_name_value ||
         !ten_value_is_string(predefined_graph_info_name_value)) {
-      ten_predefined_graph_info_destroy(predefined_graph_info);
-      result = false;
-      goto done;
+      goto invalid_graph;
     }
     ten_string_set_from_c_str(
         &predefined_graph_info->name,
@@ -428,94 +509,6 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
           ten_value_get_bool(predefined_graph_info_singleton_value, &err);
     }
 
-    // Check if import_uri is specified.
-    ten_value_t *predefined_graph_info_import_uri_value =
-        ten_value_object_peek(predefined_graph_info_value, TEN_STR_IMPORT_URI);
-    if (predefined_graph_info_import_uri_value &&
-        ten_value_is_string(predefined_graph_info_import_uri_value)) {
-      const char *import_uri =
-          ten_value_peek_raw_str(predefined_graph_info_import_uri_value, &err);
-
-      if (import_uri) {
-        // Determine if this is a relative or absolute path.
-        const char *graph_file_path = import_uri;
-        char *resolved_path = NULL;
-
-        // If it's a relative path and we have the app base directory, resolve
-        // it relative to the app's base directory.
-        ten_string_t path_str;
-        ten_string_init_formatted(&path_str, "%s", import_uri);
-
-        if (!ten_path_is_absolute(&path_str) &&
-            ten_string_get_raw_str(&self->base_dir) != NULL) {
-          ten_string_t *full_path = ten_string_create_formatted(
-              "%s/%s", ten_string_get_raw_str(&self->base_dir), import_uri);
-
-          resolved_path = strdup(ten_string_get_raw_str(full_path));
-          ten_string_destroy(full_path);
-          graph_file_path = resolved_path;
-        }
-
-        ten_string_deinit(&path_str);
-
-        // Read the graph file.
-        char *graph_json_content = ten_file_read(graph_file_path);
-        if (graph_json_content) {
-          // Parse the graph JSON content.
-          ten_json_t *graph_json =
-              ten_json_from_string(graph_json_content, &err);
-
-          if (graph_json) {
-            // Check for nodes field.
-            ten_json_t nodes_json = TEN_JSON_INIT_VAL(graph_json->ctx, false);
-            if (ten_json_object_peek(graph_json, TEN_STR_NODES, &nodes_json)) {
-              // Extract the nodes from the external file
-              ten_value_t *nodes_value = ten_value_from_json(&nodes_json);
-              if (nodes_value && ten_value_is_array(nodes_value)) {
-                // Replace nodes in the predefined_graph_info_value
-                ten_value_object_move(predefined_graph_info_value,
-                                      TEN_STR_NODES, nodes_value);
-              } else if (nodes_value) {
-                ten_value_destroy(nodes_value);
-              }
-            }
-
-            // Check for connections field.
-            ten_json_t connections_json =
-                TEN_JSON_INIT_VAL(graph_json->ctx, false);
-            if (ten_json_object_peek(graph_json, TEN_STR_CONNECTIONS,
-                                     &connections_json)) {
-              // Extract the connections from the external file.
-              ten_value_t *connections_value =
-                  ten_value_from_json(&connections_json);
-              if (connections_value && ten_value_is_array(connections_value)) {
-                // Replace connections in the predefined_graph_info_value.
-                ten_value_object_move(predefined_graph_info_value,
-                                      TEN_STR_CONNECTIONS, connections_value);
-              } else if (connections_value) {
-                ten_value_destroy(connections_value);
-              }
-            }
-
-            ten_json_destroy(graph_json);
-          } else {
-            TEN_LOGE("[%s] Failed to parse graph JSON from file %s: %s",
-                     ten_app_get_uri(self), graph_file_path,
-                     ten_error_message(&err));
-          }
-
-          TEN_FREE(graph_json_content);
-        } else {
-          TEN_LOGE("[%s] Failed to read graph file at %s",
-                   ten_app_get_uri(self), graph_file_path);
-        }
-
-        if (resolved_path) {
-          TEN_FREE(resolved_path);
-        }
-      }
-    }
-
     // Parse 'nodes'.
     ten_value_t *predefined_graph_info_nodes_value =
         ten_value_object_peek(predefined_graph_info_value, TEN_STR_NODES);
@@ -532,17 +525,13 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
 
         if (!predefined_graph_info_node_item_value ||
             !ten_value_is_object(predefined_graph_info_node_item_value)) {
-          ten_predefined_graph_info_destroy(predefined_graph_info);
-          result = false;
-          goto done;
+          goto invalid_graph;
         }
 
         ten_value_t *type_value = ten_value_object_peek(
             predefined_graph_info_node_item_value, TEN_STR_TYPE);
         if (!type_value || !ten_value_is_string(type_value)) {
-          ten_predefined_graph_info_destroy(predefined_graph_info);
-          result = false;
-          goto done;
+          goto invalid_graph;
         }
 
         const char *type = ten_value_peek_raw_str(type_value, &err);
@@ -559,8 +548,7 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
         }
 
         if (!result) {
-          ten_predefined_graph_info_destroy(predefined_graph_info);
-          goto done;
+          goto invalid_graph;
         }
       }
     }
@@ -593,12 +581,25 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
         }
 
         if (!result) {
-          ten_predefined_graph_info_destroy(predefined_graph_info);
-          goto done;
+          goto invalid_graph;
         }
       }
     }
 
+    goto valid_graph;
+
+  invalid_graph:
+    if (value_need_free) {
+      ten_value_destroy(predefined_graph_info_value);
+    }
+    ten_predefined_graph_info_destroy(predefined_graph_info);
+    result = false;
+    goto done;
+
+  valid_graph:
+    if (value_need_free) {
+      ten_value_destroy(predefined_graph_info_value);
+    }
     ten_list_push_ptr_back(
         &self->predefined_graph_infos, predefined_graph_info,
         (ten_ptr_listnode_destroy_func_t)ten_predefined_graph_info_destroy);

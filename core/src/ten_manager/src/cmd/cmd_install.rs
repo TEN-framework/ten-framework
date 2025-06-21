@@ -395,12 +395,10 @@ async fn determine_app_dir_to_work_with(
     specified_cwd: &Path,
 ) -> Result<PathBuf> {
     if standalone {
-        let manifest = parse_manifest_in_folder(specified_cwd)?;
-        if manifest.type_and_name.pkg_type != PkgType::Extension {
+        let manifest = parse_manifest_in_folder(specified_cwd).await?;
+        if manifest.type_and_name.pkg_type == PkgType::App {
             return Err(anyhow!(
-                "Standalone mode can only be executed in an extension folder. \
-                 The `type` in manifest.json is not an extension type: {}",
-                manifest.type_and_name.pkg_type
+                "App does not support standalone install mode."
             ));
         }
 
@@ -413,7 +411,7 @@ async fn determine_app_dir_to_work_with(
         // Non-standalone mode can only be executed in the extension directory.
         // If it is an extension, it should search upwards for the nearest app;
         // if it is an app, it can be used directly.
-        let app_dir = find_nearest_app_dir(specified_cwd.to_path_buf())?;
+        let app_dir = find_nearest_app_dir(specified_cwd.to_path_buf()).await?;
 
         Ok(app_dir)
     }
@@ -447,8 +445,9 @@ async fn filter_packages_for_production_mode<'a>(
 
     // Add all the dependencies of the app to the list of packages to be
     // installed.
-    app_pkg_dependencies.iter().for_each(|dep| {
-        if let Some((pkg_type, name)) = dep.get_type_and_name() {
+    // Note: This needs to be converted to async iteration
+    for dep in app_pkg_dependencies.iter() {
+        if let Some((pkg_type, name)) = dep.get_type_and_name().await {
             let type_and_name = PkgTypeAndName { pkg_type, name };
             if let Some(pkg) = remaining_solver_results_map.get(&type_and_name)
             {
@@ -458,7 +457,7 @@ async fn filter_packages_for_production_mode<'a>(
                 }
             }
         }
-    });
+    }
 
     // Recursively traverse all dependencies to collect packages that
     // need to be installed
@@ -466,7 +465,7 @@ async fn filter_packages_for_production_mode<'a>(
         // Process the dependencies of the current package
         if let Some(dependencies) = &pkg.manifest.dependencies {
             for dep in dependencies {
-                if let Some((pkg_type, name)) = dep.get_type_and_name() {
+                if let Some((pkg_type, name)) = dep.get_type_and_name().await {
                     let type_and_name = PkgTypeAndName { pkg_type, name };
                     if let Some(dep_pkg) =
                         remaining_solver_results_map.get(&type_and_name)
@@ -583,7 +582,8 @@ pub async fn execute_cmd(
         false,
         &mut None,
         None,
-    )?;
+    )
+    .await?;
 
     let app_pkg_dependencies =
         app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
@@ -675,7 +675,8 @@ pub async fn execute_cmd(
             false,
             &mut None,
             None,
-        )?;
+        )
+        .await?;
 
         installing_pkg_type =
             Some(local_pkg_info.manifest.type_and_name.pkg_type);
@@ -889,7 +890,8 @@ pub async fn execute_cmd(
             &remaining_solver_results,
             &app_dir_to_work_with,
             out.clone(),
-        )?;
+        )
+        .await?;
 
         // Filter packages for production mode if needed
         let final_solver_results = filter_packages_for_production_mode(
@@ -926,7 +928,8 @@ pub async fn execute_cmd(
                     false,
                     &mut None,
                     None,
-                )?;
+                )
+                .await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
@@ -934,7 +937,8 @@ pub async fn execute_cmd(
                     &installing_pkg_type.unwrap(),
                     &installing_pkg_name.unwrap(),
                     Some(command_data.local_path.clone().unwrap()),
-                )?;
+                )
+                .await?;
             }
         } else {
             // tman install <package_type> <package_name>
@@ -946,7 +950,8 @@ pub async fn execute_cmd(
                     false,
                     &mut None,
                     None,
-                )?;
+                )
+                .await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
@@ -954,7 +959,8 @@ pub async fn execute_cmd(
                     &installing_pkg_type.unwrap(),
                     &installing_pkg_name.unwrap(),
                     None,
-                )?;
+                )
+                .await?;
             }
         }
 

@@ -1,0 +1,30 @@
+{
+  "property": {
+    "key": {
+      "type": "string"
+    }
+  },
+  "cmd_in": [
+    {
+      "name": "set_key",
+      "property": {
+        "key": {
+          "type": "int64"
+        }
+      },
+      "required": [
+        "key"
+      ]
+    }
+  ],
+  "cmd_out": [
+    {
+      "name": "set_presence_state"
+    }
+  ],
+  "data_in": [
+    {
+      "name": "data"
+    }
+  ]
+}

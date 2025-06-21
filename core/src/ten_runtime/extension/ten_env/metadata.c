@@ -66,8 +66,8 @@ static void set_property_context_destroy(
 
 static void ten_extension_set_property_task(void *self_, void *arg) {
   ten_extension_t *self = self_;
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Invalid argument.");
@@ -169,8 +169,8 @@ static void ten_extension_peek_property_context_destroy(
 
 static void ten_extension_peek_property_task(void *self_, void *arg) {
   ten_extension_t *self = (ten_extension_t *)self_;
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_peek_property_context_t *context =
       (ten_extension_peek_property_context_t *)arg;
@@ -269,8 +269,8 @@ static void ten_extension_peek_manifest_context_destroy(
 
 static void ten_extension_peek_manifest_task(void *self_, void *arg) {
   ten_extension_t *self = (ten_extension_t *)self_;
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_peek_manifest_context_t *context =
       (ten_extension_peek_manifest_context_t *)arg;
@@ -295,13 +295,10 @@ bool ten_extension_peek_manifest_async(
     ten_extension_t *self, const char *path,
     ten_extension_peek_manifest_async_cb_t cb, void *cb_data,
     TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(
-      self && ten_extension_check_integrity(
-                  self,
-                  // TEN_NOLINTNEXTLINE(thread-check)
-                  // thread-check: This function maybe called from any thread.
-                  false),
-      "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function maybe called from any thread.
+  TEN_ASSERT(ten_extension_check_integrity(self, false), "Invalid argument.");
 
   ten_extension_peek_manifest_context_t *context =
       ten_extension_peek_manifest_context_create(path, cb, cb_data);

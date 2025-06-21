@@ -46,13 +46,15 @@ pub async fn load_app_endpoint(
         }));
     }
 
-    match check_is_app_folder(Path::new(&request_payload.base_dir)) {
+    match check_is_app_folder(Path::new(&request_payload.base_dir)).await {
         Ok(_) => {
             if let Err(err) = get_all_pkgs_in_app(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &request_payload.base_dir,
-            ) {
+            )
+            .await
+            {
                 let error_response =
                     ErrorResponse::from_error(&err, "Error fetching packages:");
                 return Ok(HttpResponse::NotFound().json(error_response));

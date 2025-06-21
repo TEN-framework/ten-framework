@@ -27,7 +27,8 @@
 
 static ten_env_set_property_sync_context_t *
 ten_env_set_property_sync_context_create(ten_error_t *err) {
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_env_set_property_sync_context_t *context =
       TEN_MALLOC(sizeof(ten_env_set_property_sync_context_t));
@@ -52,7 +53,8 @@ static void ten_app_set_property_sync_cb(ten_app_t *app, ten_error_t *err,
                                          void *cb_data) {
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_env_set_property_sync_context_t *context = cb_data;
   TEN_ASSERT(context, "Should not happen.");
@@ -120,7 +122,8 @@ static void ten_app_set_property_async_cb_go_back_to_extension(ten_app_t *app,
                                                                void *cb_data) {
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_env_set_property_async_context_t *context = cb_data;
   TEN_ASSERT(context, "Should not happen.");
@@ -141,7 +144,8 @@ static void ten_app_set_property_async_cb(ten_app_t *app, ten_error_t *err,
                                           void *cb_data) {
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   ten_env_set_property_async_context_t *context = cb_data;
   TEN_ASSERT(context, "Should not happen.");

@@ -51,7 +51,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 TEST_DIR,
-            );
+            )
+            .await;
         }
 
         // Find the UUID for the graph with name "default"

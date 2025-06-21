@@ -60,7 +60,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 TEST_DIR,
-            );
+            )
+            .await;
         }
 
         let designer_state = Arc::new(designer_state);
@@ -123,7 +124,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 TEST_DIR,
-            );
+            )
+            .await;
         }
 
         let graph_id_clone;
@@ -228,7 +230,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 

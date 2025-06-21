@@ -168,6 +168,7 @@ pub struct GraphExposedProperty {
 /// other.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Graph {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub nodes: Vec<GraphNode>,
 
     #[serde(skip_serializing_if = "Option::is_none")]

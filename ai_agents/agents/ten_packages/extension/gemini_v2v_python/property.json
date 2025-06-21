@@ -5,5 +5,9 @@
     "max_tokens": 2048,
     "voice": "Puck",
     "language": "en-US",
-    "server_vad": true
+    "server_vad": true,
+    "transcribe_user": false,
+    "transcribe_agent": false,
+    "affective_dialog": false,
+    "proactive_audio": false
 }

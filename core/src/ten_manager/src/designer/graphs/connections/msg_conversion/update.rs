@@ -245,7 +245,9 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
             dest_extension: &request_payload.dest_extension,
             msg_conversion: &request_payload.msg_conversion,
         },
-    ) {
+    )
+    .await
+    {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to validate connection schema: {e}"),

@@ -46,7 +46,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &"tests/test_data/app_with_uri".to_string(),
-            );
+            )
+            .await;
 
             assert_eq!(
                 pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),
@@ -121,7 +122,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &"tests/test_data/app_with_uri".to_string(),
-            );
+            )
+            .await;
 
             assert_eq!(
                 pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),

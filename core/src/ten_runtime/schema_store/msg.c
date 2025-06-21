@@ -85,7 +85,8 @@ bool ten_msg_schema_adjust_properties(ten_msg_schema_t *self,
   TEN_ASSERT(self && ten_msg_schema_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(msg_props && ten_value_check_integrity(msg_props),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->property) {
     // No `property` schema is defined, which is permitted in TEN runtime.
@@ -101,7 +102,8 @@ bool ten_msg_schema_validate_properties(ten_msg_schema_t *self,
   TEN_ASSERT(self && ten_msg_schema_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(msg_props && ten_value_check_integrity(msg_props),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->property) {
     // No `property` schema is defined, which is permitted in TEN runtime.

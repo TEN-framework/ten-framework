@@ -28,8 +28,8 @@
 
 static void ten_extension_adjust_and_validate_property_on_configure_done(
     ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -136,7 +136,12 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   }
 
   rc = ten_extension_resolve_properties_in_graph(extension, &err);
-  TEN_ASSERT(rc, "Failed to resolve properties in graph.");
+  if (!rc) {
+    TEN_LOGW(
+        "Failed to resolve properties in graph: %s, use the raw property data "
+        "instead.",
+        ten_error_message(&err));
+  }
 
   ten_extension_merge_properties_from_graph(extension);
 

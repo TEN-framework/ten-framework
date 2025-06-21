@@ -153,7 +153,8 @@ bool ten_extension_convert_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
   TEN_ASSERT(result, "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   bool something_wrong = false;
 

@@ -65,10 +65,10 @@ impl SchemaStore {
     /// This function extracts API schemas from the manifest and constructs a
     /// SchemaStore containing all the command, data, and frame schemas
     /// defined in the manifest.
-    pub fn from_manifest(manifest: &Manifest) -> Result<Option<Self>> {
-        if let Some(api) = &manifest.api {
+    pub async fn from_manifest(manifest: &Manifest) -> Result<Option<Self>> {
+        if let Some(api) = manifest.get_flattened_api().await? {
             let mut schema_store = SchemaStore::default();
-            schema_store.parse_schemas_from_manifest(api)?;
+            schema_store.parse_schemas_from_manifest(&api)?;
             Ok(Some(schema_store))
         } else {
             Ok(None)

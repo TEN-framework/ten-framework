@@ -20,8 +20,8 @@
 #include "ten_utils/log/log.h"
 
 static bool ten_extension_could_be_closed(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   // Check if all the path timers are closed.
   return ten_list_is_empty(&self->path_timers);
@@ -90,8 +90,8 @@ void ten_extension_flush_remaining_paths(ten_extension_t *extension) {
 
 // After all the path timers are closed, the closing flow could be proceed.
 static void ten_extension_do_close(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");

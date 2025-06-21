@@ -47,6 +47,24 @@
       "type": "string",
       "minLength": 1
     },
+    "localeString": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "description": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/localeString"
+      },
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
     "alphanumericCharacters": {
       "type": "string",
       "minLength": 1,
@@ -265,6 +283,20 @@
         }
       ]
     },
+    "interfaceLikeApi": {
+      "type": "object",
+      "required": [
+        "import_uri"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "import_uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1
+        }
+      }
+    },
     "cmdLikeApi": {
       "type": "object",
       "required": [
@@ -367,6 +399,9 @@
     "version": {
       "$ref": "#/$defs/version"
     },
+    "description": {
+      "$ref": "#/$defs/description"
+    },
     "tags": {
       "type": "array",
       "items": {
@@ -384,6 +419,12 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "interface": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceLikeApi"
+          }
+        },
         "property": {
           "type": "object",
           "propertyNames": { // The property name should be alphanumericCharacters.

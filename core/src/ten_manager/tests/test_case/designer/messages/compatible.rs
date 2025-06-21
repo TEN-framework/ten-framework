@@ -76,7 +76,8 @@ async fn test_get_compatible_messages_success() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -199,7 +200,8 @@ async fn test_get_compatible_messages_fail() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -303,7 +305,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -430,7 +433,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -557,7 +561,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 
@@ -684,7 +689,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
             &mut pkgs_cache,
             &mut graphs_cache,
             all_pkgs_json_str,
-        );
+        )
+        .await;
         assert!(inject_ret.is_ok());
     }
 

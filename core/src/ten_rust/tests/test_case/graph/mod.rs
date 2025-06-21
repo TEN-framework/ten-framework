@@ -422,4 +422,100 @@ mod tests {
         assert_eq!(rules[1].value.as_ref().unwrap().as_str().unwrap(), "hello");
         assert!(rules[2].value.as_ref().unwrap().as_bool().unwrap());
     }
+
+    #[test]
+    fn test_graph_from_str_with_base_dir_valid_json() {
+        let input_json = r#"{
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "test_extension",
+                    "addon": "test_addon"
+                }
+            ]
+        }"#;
+
+        let result = Graph::from_str_with_base_dir(input_json, None);
+        assert!(result.is_ok());
+
+        let graph = result.unwrap();
+        assert_eq!(graph.nodes.len(), 1);
+        assert_eq!(graph.nodes[0].name, "test_extension");
+
+        // Verify the graph can be serialized back to JSON
+        let serialized = serde_json::to_string(&graph);
+        assert!(serialized.is_ok());
+
+        let parsed: serde_json::Value =
+            serde_json::from_str(&serialized.unwrap()).unwrap();
+        assert!(parsed.is_object());
+        assert!(parsed["nodes"].is_array());
+    }
+
+    #[test]
+    fn test_graph_from_str_with_base_dir_invalid_json() {
+        let input_json = "invalid json";
+
+        let result = Graph::from_str_with_base_dir(input_json, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_graph_from_str_with_base_dir_empty_graph() {
+        let input_json = r#"{
+            "nodes": []
+        }"#;
+
+        let result = Graph::from_str_with_base_dir(input_json, None);
+        assert!(result.is_ok());
+
+        let graph = result.unwrap();
+        assert_eq!(graph.nodes.len(), 0);
+
+        // Verify the graph can be serialized back to JSON
+        let serialized = serde_json::to_string(&graph).unwrap();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&serialized).unwrap();
+        assert!(parsed.is_object());
+
+        // As the 'nodes' array is empty, it will not be serialized.
+        assert_eq!(parsed.as_object().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_graph_from_str_with_base_dir_with_base_dir() {
+        let input_json = r#"{
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "test_extension",
+                    "addon": "test_addon"
+                }
+            ]
+        }"#;
+
+        let result =
+            Graph::from_str_with_base_dir(input_json, Some("/some/base/dir"));
+        assert!(result.is_ok());
+
+        let graph = result.unwrap();
+        assert_eq!(graph.nodes.len(), 1);
+        assert_eq!(graph.nodes[0].name, "test_extension");
+    }
+
+    #[test]
+    fn test_graph_from_str_with_base_dir_malformed_structure() {
+        let input_json = r#"{
+            "nodes": [
+                {
+                    "type": "extension",
+                    "name": "test_extension"
+                }
+            ]
+        }"#;
+
+        let result = Graph::from_str_with_base_dir(input_json, None);
+        // This should fail during validation because addon field is missing
+        assert!(result.is_err());
+    }
 }

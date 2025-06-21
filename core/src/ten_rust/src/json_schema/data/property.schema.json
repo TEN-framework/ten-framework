@@ -251,8 +251,7 @@
       "additionalProperties": false,
       "required": [
         "type",
-        "name",
-        "addon"
+        "name"
       ],
       "properties": {
         "type": {
@@ -311,7 +310,45 @@
           },
           "additionalProperties": false
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "extension"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "addon"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "subgraph"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "addon"
+              ]
+            }
+          }
+        }
+      ]
     },
     "graphConnection": {
       "type": "object",

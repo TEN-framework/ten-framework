@@ -31,40 +31,59 @@ typedef struct ten_app_t ten_app_t;
 TEN_RUST_PRIVATE_API void ten_rust_free_cstring(const char *ptr);
 
 /**
- * @brief Parses a JSON string into a Graph and returns it as a JSON string.
+ * @brief Parses a JSON string into a GraphInfo and returns it as a JSON string.
  *
- * This function takes a C string containing JSON, validates and processes it,
- * then serializes it back to JSON.
+ * This function takes a C string containing JSON, parses it into a GraphInfo
+ * structure, validates and processes it, then serializes it back to JSON.
  *
  * @param json_str A null-terminated C string containing the JSON representation
  *                 of a graph. Must not be NULL.
+ * @param current_base_dir A null-terminated C string containing the current
+ *                        base directory. Can be NULL if the current base
+ *                        directory is not known.
+ * @param err_msg Pointer to a char* that will be set to an error message if
+ *                the function fails. Can be NULL if error details are not
+ *                needed. If set, the error message must be freed using
+ *                ten_rust_free_cstring().
  *
  * @return On success: A pointer to a newly allocated C string containing the
  *         processed graph JSON. On failure: NULL pointer.
  *
  * @note The caller must ensure that:
  *       - json_str is a valid null-terminated C string
+ *       - current_base_dir is a valid null-terminated C string, or NULL
  *       - The returned pointer (if not null) is freed using
  *         ten_rust_free_cstring()
+ *       - If err_msg is not NULL, the error message (if set) must be freed
+ *         using ten_rust_free_cstring()
  *       - The input string contains valid UTF-8 encoded JSON
  *
- * @note Memory Management: The returned string is allocated by Rust and must be
- *       freed by calling ten_rust_free_cstring() when no longer needed.
+ * @note Memory Management: Both the returned string and error message (if set)
+ *       are allocated by Rust and must be freed by calling
+ * ten_rust_free_cstring() when no longer needed.
  *
  * @example
  * ```c
  * const char* input_json = "{\"nodes\": []}";
- * const char* result = ten_rust_graph_validate_complete_flatten(input_json);
+ * const char* current_base_dir = "/path/to/current/base/dir";
+ * char* err_msg = NULL;
+ * const char* result =
+ *     ten_rust_predefined_graph_validate_complete_flatten(
+ *         input_json, current_base_dir, &err_msg);
  * if (result != NULL) {
  *     printf("Processed graph: %s\n", result);
  *     ten_rust_free_cstring(result);
+ * } else if (err_msg != NULL) {
+ *     printf("Failed to process graph: %s\n", err_msg);
+ *     ten_rust_free_cstring(err_msg);
  * } else {
  *     printf("Failed to process graph\n");
  * }
  * ```
  */
-TEN_RUST_PRIVATE_API const char *ten_rust_graph_validate_complete_flatten(
-    const char *json_str);
+TEN_RUST_PRIVATE_API const char *
+ten_rust_predefined_graph_validate_complete_flatten(
+    const char *json_str, const char *current_base_dir, char **err_msg);
 
 TEN_RUST_PRIVATE_API Cipher *ten_cipher_create(const char *algorithm,
                                                const char *params);

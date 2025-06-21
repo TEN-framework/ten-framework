@@ -204,7 +204,7 @@ pub async fn install_pkg_info(
     Ok(())
 }
 
-fn update_package_manifest(
+async fn update_package_manifest(
     base_pkg_info: &mut PkgInfo,
     added_dependency: &PkgInfo,
     // If `Some(...)` is passed in, it indicates `local_path` mode.
@@ -253,7 +253,9 @@ fn update_package_manifest(
                             false,
                             &mut None,
                             None,
-                        ) {
+                        )
+                        .await
+                        {
                             Ok(info) => info,
                             Err(_) => {
                                 panic!(
@@ -350,7 +352,7 @@ fn update_package_manifest(
     Ok(())
 }
 
-pub fn write_pkgs_into_manifest_lock_file(
+pub async fn write_pkgs_into_manifest_lock_file(
     pkgs: &Vec<&PkgInfo>,
     app_dir: &Path,
     out: Arc<Box<dyn TmanOutput>>,
@@ -364,7 +366,7 @@ pub fn write_pkgs_into_manifest_lock_file(
         ));
     }
 
-    let new_manifest_lock = ManifestLock::from(pkgs);
+    let new_manifest_lock = ManifestLock::from_locked_pkgs_info(pkgs).await;
 
     let changed = write_pkg_lockfile(&new_manifest_lock, app_dir)?;
 
@@ -381,7 +383,7 @@ pub fn write_pkgs_into_manifest_lock_file(
     Ok(())
 }
 
-pub fn write_installing_pkg_into_manifest_file(
+pub async fn write_installing_pkg_into_manifest_file(
     pkg_info: &mut PkgInfo,
     solver_results: &[PkgInfo],
     pkg_type: &PkgType,
@@ -412,7 +414,8 @@ pub fn write_installing_pkg_into_manifest_file(
         ));
     }
 
-    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any)?;
+    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any)
+        .await?;
 
     Ok(())
 }

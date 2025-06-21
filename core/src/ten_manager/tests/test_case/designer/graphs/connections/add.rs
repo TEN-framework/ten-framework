@@ -20,9 +20,11 @@ mod tests {
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
+        fs::copy_folder_recursively,
         graph::graphs_cache_find_by_name,
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
+        pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
     use ten_rust::pkg_info::{
         constants::PROPERTY_JSON_FILENAME, message::MsgType,
@@ -121,7 +123,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -321,7 +323,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -446,7 +448,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json_str,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let designer_state = Arc::new(designer_state);
@@ -570,7 +572,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -755,7 +757,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -926,7 +928,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -1085,7 +1087,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -1269,7 +1271,7 @@ mod tests {
                 &mut graphs_cache,
                 all_pkgs_json,
             );
-            assert!(inject_ret.is_ok());
+            assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
@@ -1384,5 +1386,156 @@ mod tests {
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
+    }
+
+    #[actix_web::test]
+    async fn test_add_graph_connection_to_extension_with_interface() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(
+                TmanConfig::default(),
+            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
+            )),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Create a temporary directory for our test to store the generated
+        // property.json.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+
+        // Copy the test directory to the temporary directory.
+        let test_data_dir = std::path::Path::new(
+            "tests/test_data/graph_add_connection_to_extension_with_interface/",
+        );
+
+        copy_folder_recursively(
+            &test_data_dir.to_str().unwrap().to_string(),
+            &test_dir,
+        )
+        .unwrap();
+
+        // Get the new created test directory.
+        let test_data_dir = std::path::Path::new(&test_dir)
+            .join("graph_add_connection_to_extension_with_interface");
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            let _ = get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &test_data_dir.to_str().unwrap().to_string(),
+            )
+            .await;
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(
+            App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
+        )
+        .await;
+
+        // Add connections between existing nodes in the default graph.
+
+        // Add a connection between "ext_b" and "ext_a" with "hello" cmd.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: None,
+            src_extension: "ext_b".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "hello".to_string(),
+            dest_app: None,
+            dest_extension: "ext_a".to_string(),
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Add a connection between "ext_a" and "ext_b" with "cmd_out_b" cmd.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: None,
+            src_extension: "ext_a".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "cmd_out_b".to_string(),
+            dest_app: None,
+            dest_extension: "ext_b".to_string(),
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Add a connection between "ext_b" and "ext_a" with "data" data.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: None,
+            src_extension: "ext_b".to_string(),
+            msg_type: MsgType::Data,
+            msg_name: "data".to_string(),
+            dest_app: None,
+            dest_extension: "ext_a".to_string(),
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
     }
 }
