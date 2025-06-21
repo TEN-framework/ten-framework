@@ -16,21 +16,25 @@
       }
     ],
     "property": {
-      "foo": {
-        "type": "bool"
+      "properties": {
+        "foo": {
+          "type": "bool"
+        }
       }
     },
     "cmd_in": [
       {
         "name": "hello",
         "property": {
-          "foo": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       }
     ]
   }
