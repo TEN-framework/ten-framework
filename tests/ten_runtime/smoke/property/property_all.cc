@@ -107,8 +107,10 @@ class test_app : public ten::app_t {
                     \"version\": \"1.0.0\",\
                     \"api\": {\
                       \"property\": {\
-                        \"" APP_PROP_NAME "\": {\
-                          \"type\": \"string\"\
+                        \"properties\": {\
+                          \"" APP_PROP_NAME "\": {\
+                            \"type\": \"string\"\
+                          }\
                         }\
                       }\
                     }\
