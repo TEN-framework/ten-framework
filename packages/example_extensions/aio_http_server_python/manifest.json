@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "aio_http_server_python",
   "version": "0.10.15",
+  "description": {
+    "en-US": "Asynchronous HTTP server extension example written in Python for TEN Framework",
+    "zh-CN": "使用 Python 语言编写的 TEN Framework 异步 HTTP 服务器扩展示例",
+    "zh-TW": "使用 Python 語言編寫的 TEN Framework 異步 HTTP 伺服器擴充範例",
+    "ja-JP": "TEN Framework用のPythonで書かれた非同期HTTPサーバー拡張サンプル",
+    "ko-KR": "TEN Framework용 Python으로 작성된 비동기 HTTP 서버 확장 예제"
+  },
   "tags": [
     "python"
   ],

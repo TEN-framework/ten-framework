@@ -47,6 +47,24 @@
       "type": "string",
       "minLength": 1
     },
+    "localeString": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "description": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/localeString"
+      },
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
     "alphanumericCharacters": {
       "type": "string",
       "minLength": 1,
@@ -366,6 +384,9 @@
     },
     "version": {
       "$ref": "#/$defs/version"
+    },
+    "description": {
+      "$ref": "#/$defs/description"
     },
     "tags": {
       "type": "array",

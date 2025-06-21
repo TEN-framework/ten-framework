@@ -36,6 +36,7 @@ use super::pkg_type_and_name::PkgTypeAndName;
 pub struct Manifest {
     pub type_and_name: PkgTypeAndName,
     pub version: Version,
+    pub description: Option<HashMap<String, String>>,
     pub dependencies: Option<Vec<ManifestDependency>>,
     pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
@@ -72,6 +73,8 @@ impl<'de> Deserialize<'de> for Manifest {
             .map_err(serde::de::Error::custom)?;
         let version =
             extract_version(&all_fields).map_err(serde::de::Error::custom)?;
+        let description = extract_description(&all_fields)
+            .map_err(serde::de::Error::custom)?;
         let dependencies = extract_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
         let dev_dependencies = extract_dev_dependencies(&all_fields)
@@ -89,6 +92,7 @@ impl<'de> Deserialize<'de> for Manifest {
         Ok(Manifest {
             type_and_name,
             version,
+            description,
             dependencies,
             dev_dependencies,
             tags,
@@ -124,6 +128,7 @@ impl Default for Manifest {
             package: None,
             scripts: None,
             all_fields,
+            description: None,
         }
     }
 }
@@ -143,6 +148,7 @@ impl FromStr for Manifest {
         // Extract key fields into the struct fields for easier access.
         let type_and_name = extract_type_and_name(&all_fields)?;
         let version = extract_version(&all_fields)?;
+        let description = extract_description(&all_fields)?;
         let dependencies = extract_dependencies(&all_fields)?;
         let dev_dependencies = extract_dev_dependencies(&all_fields)?;
         let tags = extract_tags(&all_fields)?;
@@ -155,6 +161,7 @@ impl FromStr for Manifest {
         let manifest = Manifest {
             type_and_name,
             version,
+            description,
             dependencies,
             dev_dependencies,
             tags,
@@ -190,6 +197,50 @@ fn extract_version(map: &Map<String, Value>) -> Result<Version> {
         Version::parse(v).map_err(|e| anyhow!("Invalid version: {}", e))
     } else {
         Err(anyhow!("Missing or invalid 'version' field"))
+    }
+}
+
+fn extract_description(
+    map: &Map<String, Value>,
+) -> Result<Option<HashMap<String, String>>> {
+    // Lazy static initialization of regex that validates the locale format.
+    static LOCALE_REGEX: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+
+    if let Some(Value::Object(desc_map)) = map.get("description") {
+        let mut result = HashMap::new();
+        for (locale, description) in desc_map {
+            // Validate locale string format.
+            if !LOCALE_REGEX.is_match(locale) {
+                return Err(anyhow!(
+                    "Invalid locale format: '{}'. Locales must be in format \
+                     'xx' or 'xx-YY' (BCP47 format)",
+                    locale
+                ));
+            }
+
+            if let Value::String(desc_str) = description {
+                if desc_str.is_empty() {
+                    return Err(anyhow!(
+                        "Description for locale '{}' cannot be empty",
+                        locale
+                    ));
+                }
+                result.insert(locale.clone(), desc_str.clone());
+            } else {
+                return Err(anyhow!("Description value must be a string"));
+            }
+        }
+
+        if result.is_empty() {
+            return Err(anyhow!("Description object cannot be empty"));
+        }
+
+        Ok(Some(result))
+    } else if map.contains_key("description") {
+        Err(anyhow!("'description' field is not an object"))
+    } else {
+        Ok(None)
     }
 }
 
