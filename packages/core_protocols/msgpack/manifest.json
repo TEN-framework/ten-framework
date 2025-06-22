@@ -2,6 +2,13 @@
   "type": "protocol",
   "name": "msgpack",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "MessagePack Protocol",
+    "zh-CN": "MessagePack 协议",
+    "zh-TW": "MessagePack 協定",
+    "ja-JP": "MessagePack プロトコル",
+    "ko-KR": "MessagePack 프로토콜"
+  },
   "description": {
     "en-US": "MessagePack protocol implementation for efficient binary serialization",
     "zh-CN": "用于高效二进制序列化的 MessagePack 协议实现",

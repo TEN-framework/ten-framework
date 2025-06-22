@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "default_extension_nodejs",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Default Node.js Extension",
+    "zh-CN": "默认 Node.js 扩展",
+    "zh-TW": "預設 Node.js 擴充",
+    "ja-JP": "デフォルト Node.js 拡張",
+    "ko-KR": "기본 Node.js 확장"
+  },
   "description": {
     "en-US": "Default TEN Framework extension template written in Node.js",
     "zh-CN": "使用 Node.js 语言编写的默认 TEN Framework 扩展模板",
@@ -25,9 +32,9 @@
       ".vscode/**"
     ]
   },
-  "api": {},
   "scripts": {
     "test": "tests/bin/start",
     "build": "python3 tools/run_script.py build"
-  }
+  },
+  "api": {}
 }

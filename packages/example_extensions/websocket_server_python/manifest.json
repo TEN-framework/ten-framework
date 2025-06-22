@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "websocket_server_python",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "WebSocket Server Python Extension",
+    "zh-CN": "WebSocket 服务器 Python 扩展",
+    "zh-TW": "WebSocket 伺服器 Python 擴充",
+    "ja-JP": "WebSocket サーバー Python 拡張",
+    "ko-KR": "WebSocket 서버 Python 확장"
+  },
   "description": {
     "en-US": "WebSocket server extension example written in Python for TEN Framework",
     "zh-CN": "使用 Python 语言编写的 TEN Framework WebSocket 服务器扩展示例",

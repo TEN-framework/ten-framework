@@ -2,12 +2,19 @@
   "type": "extension",
   "name": "ffmpeg_muxer",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "FFmpeg Muxer Extension",
+    "zh-CN": "FFmpeg 复用器扩展",
+    "zh-TW": "FFmpeg 多工器擴充",
+    "ja-JP": "FFmpeg マルチプレクサ拡張",
+    "ko-KR": "FFmpeg 먹서 확장"
+  },
   "description": {
-    "en-US": "FFmpeg muxer extension example written in C++ for TEN Framework",
-    "zh-CN": "使用 C++ 语言编写的 TEN Framework FFmpeg 复用器扩展示例",
-    "zh-TW": "使用 C++ 語言編寫的 TEN Framework FFmpeg 多工器擴充範例",
-    "ja-JP": "TEN Framework用のC++で書かれたFFmpegマルチプレクサー拡張サンプル",
-    "ko-KR": "TEN Framework용 C++로 작성된 FFmpeg 먹서 확장 예제"
+    "en-US": "FFmpeg muxer extension for media stream combination in TEN Framework",
+    "zh-CN": "TEN Framework 中用于媒体流合并的 FFmpeg 复用器扩展",
+    "zh-TW": "TEN Framework 中用於媒體串流合併的 FFmpeg 多工器擴充",
+    "ja-JP": "TEN Frameworkでのメディアストリーム結合用FFmpegマルチプレクサ拡張",
+    "ko-KR": "TEN Framework의 미디어 스트림 결합을 위한 FFmpeg 먹서 확장"
   },
   "tags": [
     "cpp"

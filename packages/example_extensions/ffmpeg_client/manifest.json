@@ -2,12 +2,19 @@
   "type": "extension",
   "name": "ffmpeg_client",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "FFmpeg Client Extension",
+    "zh-CN": "FFmpeg 客户端扩展",
+    "zh-TW": "FFmpeg 客戶端擴充",
+    "ja-JP": "FFmpeg クライアント拡張",
+    "ko-KR": "FFmpeg 클라이언트 확장"
+  },
   "description": {
-    "en-US": "FFmpeg client extension example written in C++ for TEN Framework",
-    "zh-CN": "使用 C++ 语言编写的 TEN Framework FFmpeg 客户端扩展示例",
-    "zh-TW": "使用 C++ 語言編寫的 TEN Framework FFmpeg 客戶端擴充範例",
-    "ja-JP": "TEN Framework用のC++で書かれたFFmpegクライアント拡張サンプル",
-    "ko-KR": "TEN Framework용 C++로 작성된 FFmpeg 클라이언트 확장 예제"
+    "en-US": "FFmpeg client extension for media processing in TEN Framework",
+    "zh-CN": "TEN Framework 中用于媒体处理的 FFmpeg 客户端扩展",
+    "zh-TW": "TEN Framework 中用於媒體處理的 FFmpeg 客戶端擴充",
+    "ja-JP": "TEN Frameworkでのメディア処理用FFmpegクライアント拡張",
+    "ko-KR": "TEN Framework의 미디어 처리를 위한 FFmpeg 클라이언트 확장"
   },
   "tags": [
     "cpp"

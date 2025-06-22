@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "default_extension_python",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Default Python Extension",
+    "zh-CN": "默认 Python 扩展",
+    "zh-TW": "預設 Python 擴充",
+    "ja-JP": "デフォルト Python 拡張",
+    "ko-KR": "기본 Python 확장"
+  },
   "description": {
     "en-US": "Default TEN Framework extension template written in Python",
     "zh-CN": "使用 Python 语言编写的默认 TEN Framework 扩展模板",
@@ -34,8 +41,8 @@
       ".vscode/**"
     ]
   },
-  "api": {},
   "scripts": {
     "test": "tests/bin/start"
-  }
+  },
+  "api": {}
 }

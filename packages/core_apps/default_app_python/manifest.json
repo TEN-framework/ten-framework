@@ -2,6 +2,13 @@
   "type": "app",
   "name": "default_app_python",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Default Python App",
+    "zh-CN": "默认 Python 应用",
+    "zh-TW": "預設 Python 應用程式",
+    "ja-JP": "デフォルト Python アプリ",
+    "ko-KR": "기본 Python 앱"
+  },
   "description": {
     "en-US": "Default TEN Framework application template written in Python",
     "zh-CN": "使用 Python 语言编写的默认 TEN Framework 应用模板",
