@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "websocket_server_nodejs",
   "version": "0.10.15",
+  "description": {
+    "en-US": "WebSocket server extension example written in Node.js for TEN Framework",
+    "zh-CN": "使用 Node.js 语言编写的 TEN Framework WebSocket 服务器扩展示例",
+    "zh-TW": "使用 Node.js 語言編寫的 TEN Framework WebSocket 伺服器擴充範例",
+    "ja-JP": "TEN Framework用のNode.jsで書かれたWebSocketサーバー拡張サンプル",
+    "ko-KR": "TEN Framework용 Node.js로 작성된 WebSocket 서버 확장 예제"
+  },
   "tags": [
     "nodejs"
   ],

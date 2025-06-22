@@ -938,6 +938,171 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_interface_empty() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": []
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_with_relative_path_import_uri() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {
+                "import_uri": "interface.json"
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_with_absolute_path_import_uri() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {
+                "import_uri": "file:///tmp/interface.json"
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_with_remote_url() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {
+                "import_uri": "https://example.com/interface.json"
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_combined_with_cmd_in() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {
+                "import_uri": "https://example.com/interface.json"
+              }
+            ],
+            "cmd_in": [
+              {
+                "name": "foo",
+                "property": {}
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_with_extra_fields() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {
+                "import_uri": "https://example.com/interface.json",
+                "extra": "extra"
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Additional properties are not allowed"));
+    }
+
+    #[test]
+    fn test_validate_interface_without_import_uri() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": [
+              {}
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is a required property"));
+    }
+
+    #[test]
     fn test_graph_msg_conversions() {
         let property = r#"
         {

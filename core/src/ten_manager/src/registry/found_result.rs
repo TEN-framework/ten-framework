@@ -7,6 +7,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::manifest::Manifest;
@@ -32,6 +34,9 @@ pub struct PkgRegistryInfo {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<HashMap<String, String>>,
 }
 
 mod dependencies_conversion {
@@ -61,11 +66,12 @@ mod dependencies_conversion {
     }
 }
 
-pub fn get_pkg_registry_info_from_manifest(
+pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let pkg_info = PkgInfo::from_metadata(download_url, manifest, &None)?;
+    let pkg_info =
+        PkgInfo::from_metadata(download_url, manifest, &None).await?;
     Ok((&pkg_info).into())
 }
 
@@ -83,6 +89,7 @@ impl From<&PkgInfo> for PkgRegistryInfo {
             download_url: String::new(),
             content_format: None,
             tags: pkg_info.manifest.tags.clone(),
+            description: pkg_info.manifest.description.clone(),
         }
     }
 }
@@ -100,6 +107,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     .type_and_name
                     .clone(),
                 version: pkg_registry_info.basic_info.version.clone(),
+                description: pkg_registry_info.description.clone(),
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
                 dev_dependencies: None,
                 tags: pkg_registry_info.tags.clone(),
@@ -145,8 +153,21 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     .unwrap_or(serde_json::Value::Array(vec![]));
                     map.insert("supports".to_string(), supports_json);
 
+                    // Add description if available.
+                    if let Some(ref description) = pkg_registry_info.description
+                    {
+                        let description_json = serde_json::to_value(
+                            description,
+                        )
+                        .unwrap_or(serde_json::Value::Object(
+                            serde_json::Map::new(),
+                        ));
+                        map.insert("description".to_string(), description_json);
+                    }
+
                     map
                 },
+                flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
             },
             property: None,
             schema_store: None,

@@ -75,21 +75,21 @@ pub struct PkgInfo {
 }
 
 impl PkgInfo {
-    pub fn from_metadata(
+    pub async fn from_metadata(
         url: &str,
         manifest: &Manifest,
         property: &Option<Property>,
     ) -> Result<Self> {
         let mut pkg_info = PkgInfo {
-            compatible_score: -1,
+            manifest: manifest.clone(),
+            property: property.clone(),
+            compatible_score: 0,
 
             is_installed: false,
             url: url.to_string(),
             hash: String::new(),
 
-            manifest: manifest.clone(),
-            property: property.clone(),
-            schema_store: SchemaStore::from_manifest(manifest)?,
+            schema_store: SchemaStore::from_manifest(manifest).await?,
 
             is_local_dependency: false,
             local_dependency_path: None,
@@ -132,14 +132,14 @@ impl PkgInfo {
 ///
 /// This function reads and parses the manifest.json and property.json files
 /// from the given path, then constructs a PkgInfo object with the parsed data.
-pub fn get_pkg_info_from_path(
+pub async fn get_pkg_info_from_path(
     path: &Path,
     is_installed: bool,
     parse_property: bool,
     graphs_cache: &mut Option<&mut HashMap<Uuid, GraphInfo>>,
     app_base_dir: Option<String>,
 ) -> Result<PkgInfo> {
-    let manifest = parse_manifest_in_folder(path)?;
+    let manifest = parse_manifest_in_folder(path).await?;
 
     let property = if parse_property {
         assert!(graphs_cache.is_some());
@@ -159,7 +159,8 @@ pub fn get_pkg_info_from_path(
         path.to_string_lossy().as_ref(),
         &manifest,
         &property,
-    )?;
+    )
+    .await?;
 
     pkg_info.is_installed = is_installed;
 
@@ -173,7 +174,7 @@ pub fn get_pkg_info_from_path(
 /// Collect the corresponding package from the information within the specified
 /// path, add it to the collection provided as a parameter, and return the newly
 /// collected package.
-fn collect_pkg_info_from_path(
+async fn collect_pkg_info_from_path(
     path: &Path,
     pkgs_info: &mut PkgsInfoInApp,
     parse_property: bool,
@@ -186,7 +187,8 @@ fn collect_pkg_info_from_path(
         parse_property,
         graphs_cache,
         app_base_dir,
-    )?;
+    )
+    .await?;
 
     match pkg_info.manifest.type_and_name.pkg_type {
         PkgType::App => {
@@ -227,7 +229,7 @@ fn collect_pkg_info_from_path(
 
 /// Retrieves information about all installed packages related to a specific
 /// application and stores this information in a PkgsInfoInApp struct.
-pub fn get_app_installed_pkgs(
+pub async fn get_app_installed_pkgs(
     app_path: &Path,
     parse_property: bool,
     graphs_cache: &mut Option<&mut HashMap<Uuid, GraphInfo>>,
@@ -247,7 +249,8 @@ pub fn get_app_installed_pkgs(
         parse_property,
         graphs_cache,
         Some(app_path.to_string_lossy().to_string()),
-    )?;
+    )
+    .await?;
 
     let app_pkg_info = pkgs_info.app_pkg_info.as_ref().unwrap();
     if app_pkg_info.manifest.type_and_name.pkg_type != PkgType::App {
@@ -275,7 +278,7 @@ pub fn get_app_installed_pkgs(
 
                     if manifest_path.exists() && manifest_path.is_file() {
                         let manifest =
-                            parse_manifest_from_file(&manifest_path)?;
+                            parse_manifest_from_file(&manifest_path).await?;
 
                         manifest.check_fs_location(
                             Some(addon_type_dir),
@@ -294,7 +297,8 @@ pub fn get_app_installed_pkgs(
                             parse_property,
                             graphs_cache,
                             Some(app_path.to_string_lossy().to_string()),
-                        )?;
+                        )
+                        .await?;
                     }
                 }
             }

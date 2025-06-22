@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "simple_http_server_go",
   "version": "0.10.15",
+  "description": {
+    "en-US": "Simple HTTP server extension example written in Go for TEN Framework",
+    "zh-CN": "使用 Go 语言编写的 TEN Framework 简单 HTTP 服务器扩展示例",
+    "zh-TW": "使用 Go 語言編寫的 TEN Framework 簡單 HTTP 伺服器擴充範例",
+    "ja-JP": "TEN Framework用のGoで書かれたシンプルなHTTPサーバー拡張サンプル",
+    "ko-KR": "TEN Framework용 Go로 작성된 간단한 HTTP 서버 확장 예제"
+  },
   "tags": [
     "go"
   ],

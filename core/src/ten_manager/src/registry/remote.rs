@@ -138,6 +138,7 @@ async fn get_package_upload_info(
                     download_url: String::new(),
                     content_format: Some("gzip".to_string()),
                     tags: pkg_info.manifest.tags.clone(),
+                    description: pkg_info.manifest.description.clone(),
                 });
 
                 if is_verbose(tman_config.clone()).await {

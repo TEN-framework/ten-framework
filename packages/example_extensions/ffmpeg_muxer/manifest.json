@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "ffmpeg_muxer",
   "version": "0.10.15",
+  "description": {
+    "en-US": "FFmpeg muxer extension example written in C++ for TEN Framework",
+    "zh-CN": "使用 C++ 语言编写的 TEN Framework FFmpeg 复用器扩展示例",
+    "zh-TW": "使用 C++ 語言編寫的 TEN Framework FFmpeg 多工器擴充範例",
+    "ja-JP": "TEN Framework用のC++で書かれたFFmpegマルチプレクサー拡張サンプル",
+    "ko-KR": "TEN Framework용 C++로 작성된 FFmpeg 먹서 확장 예제"
+  },
   "tags": [
     "cpp"
   ],

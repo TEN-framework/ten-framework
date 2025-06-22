@@ -106,7 +106,9 @@ pub async fn create_app_endpoint(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &app_path_str,
-            ) {
+            )
+            .await
+            {
                 // Don't delete the app directory on cache update failure.
                 let error_response = ErrorResponse::from_error(
                     &err,

@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "simple_echo_python",
   "version": "0.10.15",
+  "description": {
+    "en-US": "Simple echo extension example written in Python for TEN Framework",
+    "zh-CN": "使用 Python 语言编写的 TEN Framework 简单回音扩展示例",
+    "zh-TW": "使用 Python 語言編寫的 TEN Framework 簡單回音擴充範例",
+    "ja-JP": "TEN Framework用のPythonで書かれたシンプルなエコー拡張サンプル",
+    "ko-KR": "TEN Framework용 Python으로 작성된 간단한 에코 확장 예제"
+  },
   "tags": [
     "python"
   ],
