@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "default_extension_go",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Default Go Extension",
-    "zh-CN": "默认 Go 扩展",
-    "zh-TW": "預設 Go 擴充",
-    "ja-JP": "デフォルト Go 拡張",
-    "ko-KR": "기본 Go 확장"
+    "zh-CN": "\u9ed8\u8ba4 Go \u6269\u5c55",
+    "zh-TW": "\u9810\u8a2d Go \u64f4\u5145",
+    "ja-JP": "\u30c7\u30d5\u30a9\u30eb\u30c8 Go \u62e1\u5f35",
+    "ko-KR": "\uae30\ubcf8 Go \ud655\uc7a5"
   },
   "description": {
     "en-US": "Default TEN Framework extension template written in Go",
-    "zh-CN": "使用 Go 语言编写的默认 TEN Framework 扩展模板",
-    "zh-TW": "使用 Go 語言編寫的預設 TEN Framework 擴充模板",
-    "ja-JP": "Goで書かれたデフォルトのTEN Framework拡張テンプレート",
-    "ko-KR": "Go로 작성된 기본 TEN Framework 확장 템플릿"
+    "zh-CN": "\u4f7f\u7528 Go \u8bed\u8a00\u7f16\u5199\u7684\u9ed8\u8ba4 TEN Framework \u6269\u5c55\u6a21\u677f",
+    "zh-TW": "\u4f7f\u7528 Go \u8a9e\u8a00\u7de8\u5beb\u7684\u9810\u8a2d TEN Framework \u64f4\u5145\u6a21\u677f",
+    "ja-JP": "Go\u3067\u66f8\u304b\u308c\u305f\u30c7\u30d5\u30a9\u30eb\u30c8\u306eTEN Framework\u62e1\u5f35\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8",
+    "ko-KR": "Go\ub85c \uc791\uc131\ub41c \uae30\ubcf8 TEN Framework \ud655\uc7a5 \ud15c\ud50c\ub9bf"
   },
   "tags": [
     "go",
@@ -24,7 +24,7 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "package": {

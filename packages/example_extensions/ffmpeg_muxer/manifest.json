@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "ffmpeg_muxer",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "FFmpeg Muxer Extension",
-    "zh-CN": "FFmpeg 复用器扩展",
-    "zh-TW": "FFmpeg 多工器擴充",
-    "ja-JP": "FFmpeg マルチプレクサ拡張",
-    "ko-KR": "FFmpeg 먹서 확장"
+    "zh-CN": "FFmpeg \u590d\u7528\u5668\u6269\u5c55",
+    "zh-TW": "FFmpeg \u591a\u5de5\u5668\u64f4\u5145",
+    "ja-JP": "FFmpeg \u30de\u30eb\u30c1\u30d7\u30ec\u30af\u30b5\u62e1\u5f35",
+    "ko-KR": "FFmpeg \uba39\uc11c \ud655\uc7a5"
   },
   "description": {
     "en-US": "FFmpeg muxer extension for media stream combination in TEN Framework",
-    "zh-CN": "TEN Framework 中用于媒体流合并的 FFmpeg 复用器扩展",
-    "zh-TW": "TEN Framework 中用於媒體串流合併的 FFmpeg 多工器擴充",
-    "ja-JP": "TEN Frameworkでのメディアストリーム結合用FFmpegマルチプレクサ拡張",
-    "ko-KR": "TEN Framework의 미디어 스트림 결합을 위한 FFmpeg 먹서 확장"
+    "zh-CN": "TEN Framework \u4e2d\u7528\u4e8e\u5a92\u4f53\u6d41\u5408\u5e76\u7684 FFmpeg \u590d\u7528\u5668\u6269\u5c55",
+    "zh-TW": "TEN Framework \u4e2d\u7528\u65bc\u5a92\u9ad4\u4e32\u6d41\u5408\u4f75\u7684 FFmpeg \u591a\u5de5\u5668\u64f4\u5145",
+    "ja-JP": "TEN Framework\u3067\u306e\u30e1\u30c7\u30a3\u30a2\u30b9\u30c8\u30ea\u30fc\u30e0\u7d50\u5408\u7528FFmpeg\u30de\u30eb\u30c1\u30d7\u30ec\u30af\u30b5\u62e1\u5f35",
+    "ko-KR": "TEN Framework\uc758 \ubbf8\ub514\uc5b4 \uc2a4\ud2b8\ub9bc \uacb0\ud569\uc744 \uc704\ud55c FFmpeg \uba39\uc11c \ud655\uc7a5"
   },
   "tags": [
     "cpp"

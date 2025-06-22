@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "vosk_asr_cpp",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Vosk ASR C++ Extension",
-    "zh-CN": "Vosk 语音识别 C++ 扩展",
-    "zh-TW": "Vosk 語音識別 C++ 擴充",
-    "ja-JP": "Vosk ASR C++ 拡張",
-    "ko-KR": "Vosk ASR C++ 확장"
+    "zh-CN": "Vosk \u8bed\u97f3\u8bc6\u522b C++ \u6269\u5c55",
+    "zh-TW": "Vosk \u8a9e\u97f3\u8b58\u5225 C++ \u64f4\u5145",
+    "ja-JP": "Vosk ASR C++ \u62e1\u5f35",
+    "ko-KR": "Vosk ASR C++ \ud655\uc7a5"
   },
   "description": {
     "en-US": "Vosk automatic speech recognition extension written in C++ for TEN Framework",
-    "zh-CN": "使用 C++ 语言编写的 TEN Framework Vosk 自动语音识别扩展",
-    "zh-TW": "使用 C++ 語言編寫的 TEN Framework Vosk 自動語音識別擴充",
-    "ja-JP": "TEN Framework用のC++で書かれたVosk自動音声認識拡張",
-    "ko-KR": "TEN Framework용 C++로 작성된 Vosk 자동 음성 인식 확장"
+    "zh-CN": "\u4f7f\u7528 C++ \u8bed\u8a00\u7f16\u5199\u7684 TEN Framework Vosk \u81ea\u52a8\u8bed\u97f3\u8bc6\u522b\u6269\u5c55",
+    "zh-TW": "\u4f7f\u7528 C++ \u8a9e\u8a00\u7de8\u5beb\u7684 TEN Framework Vosk \u81ea\u52d5\u8a9e\u97f3\u8b58\u5225\u64f4\u5145",
+    "ja-JP": "TEN Framework\u7528\u306eC++\u3067\u66f8\u304b\u308c\u305fVosk\u81ea\u52d5\u97f3\u58f0\u8a8d\u8b58\u62e1\u5f35",
+    "ko-KR": "TEN Framework\uc6a9 C++\ub85c \uc791\uc131\ub41c Vosk \uc790\ub3d9 \uc74c\uc131 \uc778\uc2dd \ud655\uc7a5"
   },
   "tags": [
     "cpp"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     },
     {
       "type": "system",

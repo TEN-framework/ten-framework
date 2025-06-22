@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "aio_http_server_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Async HTTP Server Python Extension",
-    "zh-CN": "异步 HTTP 服务器 Python 扩展",
-    "zh-TW": "非同步 HTTP 伺服器 Python 擴充",
-    "ja-JP": "非同期 HTTP サーバー Python 拡張",
-    "ko-KR": "비동기 HTTP 서버 Python 확장"
+    "zh-CN": "\u5f02\u6b65 HTTP \u670d\u52a1\u5668 Python \u6269\u5c55",
+    "zh-TW": "\u975e\u540c\u6b65 HTTP \u4f3a\u670d\u5668 Python \u64f4\u5145",
+    "ja-JP": "\u975e\u540c\u671f HTTP \u30b5\u30fc\u30d0\u30fc Python \u62e1\u5f35",
+    "ko-KR": "\ube44\ub3d9\uae30 HTTP \uc11c\ubc84 Python \ud655\uc7a5"
   },
   "description": {
     "en-US": "Asynchronous HTTP server extension example written in Python for TEN Framework",
-    "zh-CN": "使用 Python 语言编写的 TEN Framework 异步 HTTP 服务器扩展示例",
-    "zh-TW": "使用 Python 語言編寫的 TEN Framework 非同步 HTTP 伺服器擴充範例",
-    "ja-JP": "TEN Framework用のPythonで書かれた非同期HTTPサーバー拡張サンプル",
-    "ko-KR": "TEN Framework용 Python으로 작성된 비동기 HTTP 서버 확장 예제"
+    "zh-CN": "\u4f7f\u7528 Python \u8bed\u8a00\u7f16\u5199\u7684 TEN Framework \u5f02\u6b65 HTTP \u670d\u52a1\u5668\u6269\u5c55\u793a\u4f8b",
+    "zh-TW": "\u4f7f\u7528 Python \u8a9e\u8a00\u7de8\u5beb\u7684 TEN Framework \u975e\u540c\u6b65 HTTP \u4f3a\u670d\u5668\u64f4\u5145\u7bc4\u4f8b",
+    "ja-JP": "TEN Framework\u7528\u306ePython\u3067\u66f8\u304b\u308c\u305f\u975e\u540c\u671fHTTP\u30b5\u30fc\u30d0\u30fc\u62e1\u5f35\u30b5\u30f3\u30d7\u30eb",
+    "ko-KR": "TEN Framework\uc6a9 Python\uc73c\ub85c \uc791\uc131\ub41c \ube44\ub3d9\uae30 HTTP \uc11c\ubc84 \ud655\uc7a5 \uc608\uc81c"
   },
   "tags": [
     "python"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}

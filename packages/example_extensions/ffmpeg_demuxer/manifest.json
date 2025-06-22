@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "ffmpeg_demuxer",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "FFmpeg Demuxer Extension",
-    "zh-CN": "FFmpeg 解复用器扩展",
-    "zh-TW": "FFmpeg 解多工器擴充",
-    "ja-JP": "FFmpeg デマルチプレクサ拡張",
-    "ko-KR": "FFmpeg 디먹서 확장"
+    "zh-CN": "FFmpeg \u89e3\u590d\u7528\u5668\u6269\u5c55",
+    "zh-TW": "FFmpeg \u89e3\u591a\u5de5\u5668\u64f4\u5145",
+    "ja-JP": "FFmpeg \u30c7\u30de\u30eb\u30c1\u30d7\u30ec\u30af\u30b5\u62e1\u5f35",
+    "ko-KR": "FFmpeg \ub514\uba39\uc11c \ud655\uc7a5"
   },
   "description": {
     "en-US": "FFmpeg demuxer extension for media stream separation in TEN Framework",
-    "zh-CN": "TEN Framework 中用于媒体流分离的 FFmpeg 解复用器扩展",
-    "zh-TW": "TEN Framework 中用於媒體串流分離的 FFmpeg 解多工器擴充",
-    "ja-JP": "TEN Frameworkでのメディアストリーム分離用FFmpegデマルチプレクサ拡張",
-    "ko-KR": "TEN Framework의 미디어 스트림 분리를 위한 FFmpeg 디먹서 확장"
+    "zh-CN": "TEN Framework \u4e2d\u7528\u4e8e\u5a92\u4f53\u6d41\u5206\u79bb\u7684 FFmpeg \u89e3\u590d\u7528\u5668\u6269\u5c55",
+    "zh-TW": "TEN Framework \u4e2d\u7528\u65bc\u5a92\u9ad4\u4e32\u6d41\u5206\u96e2\u7684 FFmpeg \u89e3\u591a\u5de5\u5668\u64f4\u5145",
+    "ja-JP": "TEN Framework\u3067\u306e\u30e1\u30c7\u30a3\u30a2\u30b9\u30c8\u30ea\u30fc\u30e0\u5206\u96e2\u7528FFmpeg\u30c7\u30de\u30eb\u30c1\u30d7\u30ec\u30af\u30b5\u62e1\u5f35",
+    "ko-KR": "TEN Framework\uc758 \ubbf8\ub514\uc5b4 \uc2a4\ud2b8\ub9bc \ubd84\ub9ac\ub97c \uc704\ud55c FFmpeg \ub514\uba39\uc11c \ud655\uc7a5"
   },
   "tags": [
     "cpp"

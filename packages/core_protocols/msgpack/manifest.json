@@ -1,20 +1,20 @@
 {
   "type": "protocol",
   "name": "msgpack",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "MessagePack Protocol",
-    "zh-CN": "MessagePack 协议",
-    "zh-TW": "MessagePack 協定",
-    "ja-JP": "MessagePack プロトコル",
-    "ko-KR": "MessagePack 프로토콜"
+    "zh-CN": "MessagePack \u534f\u8bae",
+    "zh-TW": "MessagePack \u5354\u5b9a",
+    "ja-JP": "MessagePack \u30d7\u30ed\u30c8\u30b3\u30eb",
+    "ko-KR": "MessagePack \ud504\ub85c\ud1a0\ucf5c"
   },
   "description": {
     "en-US": "MessagePack protocol implementation for efficient binary serialization",
-    "zh-CN": "用于高效二进制序列化的 MessagePack 协议实现",
-    "zh-TW": "用於高效二進位序列化的 MessagePack 協定實作",
-    "ja-JP": "効率的なバイナリシリアライゼーション用のMessagePackプロトコル実装",
-    "ko-KR": "효율적인 바이너리 직렬화를 위한 MessagePack 프로토콜 구현"
+    "zh-CN": "\u7528\u4e8e\u9ad8\u6548\u4e8c\u8fdb\u5236\u5e8f\u5217\u5316\u7684 MessagePack \u534f\u8bae\u5b9e\u73b0",
+    "zh-TW": "\u7528\u65bc\u9ad8\u6548\u4e8c\u9032\u4f4d\u5e8f\u5217\u5316\u7684 MessagePack \u5354\u5b9a\u5be6\u4f5c",
+    "ja-JP": "\u52b9\u7387\u7684\u306a\u30d0\u30a4\u30ca\u30ea\u30b7\u30ea\u30a2\u30e9\u30a4\u30bc\u30fc\u30b7\u30e7\u30f3\u7528\u306eMessagePack\u30d7\u30ed\u30c8\u30b3\u30eb\u5b9f\u88c5",
+    "ko-KR": "\ud6a8\uc728\uc801\uc778 \ubc14\uc774\ub108\ub9ac \uc9c1\ub82c\ud654\ub97c \uc704\ud55c MessagePack \ud504\ub85c\ud1a0\ucf5c \uad6c\ud604"
   },
   "dependencies": []
 }

@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "simple_http_server_go",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Simple HTTP Server Go Extension",
-    "zh-CN": "简单 HTTP 服务器 Go 扩展",
-    "zh-TW": "簡單 HTTP 伺服器 Go 擴充",
-    "ja-JP": "シンプル HTTP サーバー Go 拡張",
-    "ko-KR": "간단한 HTTP 서버 Go 확장"
+    "zh-CN": "\u7b80\u5355 HTTP \u670d\u52a1\u5668 Go \u6269\u5c55",
+    "zh-TW": "\u7c21\u55ae HTTP \u4f3a\u670d\u5668 Go \u64f4\u5145",
+    "ja-JP": "\u30b7\u30f3\u30d7\u30eb HTTP \u30b5\u30fc\u30d0\u30fc Go \u62e1\u5f35",
+    "ko-KR": "\uac04\ub2e8\ud55c HTTP \uc11c\ubc84 Go \ud655\uc7a5"
   },
   "description": {
     "en-US": "Simple HTTP server extension example written in Go for TEN Framework",
-    "zh-CN": "使用 Go 语言编写的 TEN Framework 简单 HTTP 服务器扩展示例",
-    "zh-TW": "使用 Go 語言編寫的 TEN Framework 簡單 HTTP 伺服器擴充範例",
-    "ja-JP": "TEN Framework用のGoで書かれたシンプルなHTTPサーバー拡張サンプル",
-    "ko-KR": "TEN Framework용 Go로 작성된 간단한 HTTP 서버 확장 예제"
+    "zh-CN": "\u4f7f\u7528 Go \u8bed\u8a00\u7f16\u5199\u7684 TEN Framework \u7b80\u5355 HTTP \u670d\u52a1\u5668\u6269\u5c55\u793a\u4f8b",
+    "zh-TW": "\u4f7f\u7528 Go \u8a9e\u8a00\u7de8\u5beb\u7684 TEN Framework \u7c21\u55ae HTTP \u4f3a\u670d\u5668\u64f4\u5145\u7bc4\u4f8b",
+    "ja-JP": "TEN Framework\u7528\u306eGo\u3067\u66f8\u304b\u308c\u305f\u30b7\u30f3\u30d7\u30eb\u306aHTTP\u30b5\u30fc\u30d0\u30fc\u62e1\u5f35\u30b5\u30f3\u30d7\u30eb",
+    "ko-KR": "TEN Framework\uc6a9 Go\ub85c \uc791\uc131\ub41c \uac04\ub2e8\ud55c HTTP \uc11c\ubc84 \ud655\uc7a5 \uc608\uc81c"
   },
   "tags": [
     "go"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}

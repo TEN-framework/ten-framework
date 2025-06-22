@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "ffmpeg_client",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "FFmpeg Client Extension",
-    "zh-CN": "FFmpeg 客户端扩展",
-    "zh-TW": "FFmpeg 客戶端擴充",
-    "ja-JP": "FFmpeg クライアント拡張",
-    "ko-KR": "FFmpeg 클라이언트 확장"
+    "zh-CN": "FFmpeg \u5ba2\u6237\u7aef\u6269\u5c55",
+    "zh-TW": "FFmpeg \u5ba2\u6236\u7aef\u64f4\u5145",
+    "ja-JP": "FFmpeg \u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u62e1\u5f35",
+    "ko-KR": "FFmpeg \ud074\ub77c\uc774\uc5b8\ud2b8 \ud655\uc7a5"
   },
   "description": {
     "en-US": "FFmpeg client extension for media processing in TEN Framework",
-    "zh-CN": "TEN Framework 中用于媒体处理的 FFmpeg 客户端扩展",
-    "zh-TW": "TEN Framework 中用於媒體處理的 FFmpeg 客戶端擴充",
-    "ja-JP": "TEN Frameworkでのメディア処理用FFmpegクライアント拡張",
-    "ko-KR": "TEN Framework의 미디어 처리를 위한 FFmpeg 클라이언트 확장"
+    "zh-CN": "TEN Framework \u4e2d\u7528\u4e8e\u5a92\u4f53\u5904\u7406\u7684 FFmpeg \u5ba2\u6237\u7aef\u6269\u5c55",
+    "zh-TW": "TEN Framework \u4e2d\u7528\u65bc\u5a92\u9ad4\u8655\u7406\u7684 FFmpeg \u5ba2\u6236\u7aef\u64f4\u5145",
+    "ja-JP": "TEN Framework\u3067\u306e\u30e1\u30c7\u30a3\u30a2\u51e6\u7406\u7528FFmpeg\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u62e1\u5f35",
+    "ko-KR": "TEN Framework\uc758 \ubbf8\ub514\uc5b4 \ucc98\ub9ac\ub97c \uc704\ud55c FFmpeg \ud074\ub77c\uc774\uc5b8\ud2b8 \ud655\uc7a5"
   },
   "tags": [
     "cpp"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ]
 }

@@ -1,20 +1,20 @@
 {
   "type": "app",
   "name": "default_app_cpp",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Default C++ App",
-    "zh-CN": "默认 C++ 应用",
-    "zh-TW": "預設 C++ 應用程式",
-    "ja-JP": "デフォルト C++ アプリ",
-    "ko-KR": "기본 C++ 앱"
+    "zh-CN": "\u9ed8\u8ba4 C++ \u5e94\u7528",
+    "zh-TW": "\u9810\u8a2d C++ \u61c9\u7528\u7a0b\u5f0f",
+    "ja-JP": "\u30c7\u30d5\u30a9\u30eb\u30c8 C++ \u30a2\u30d7\u30ea",
+    "ko-KR": "\uae30\ubcf8 C++ \uc571"
   },
   "description": {
     "en-US": "Default TEN Framework application template written in C++",
-    "zh-CN": "使用 C++ 语言编写的默认 TEN Framework 应用模板",
-    "zh-TW": "使用 C++ 語言編寫的預設 TEN Framework 應用程式模板",
-    "ja-JP": "C++で書かれたデフォルトのTEN Frameworkアプリケーションテンプレート",
-    "ko-KR": "C++로 작성된 기본 TEN Framework 애플리케이션 템플릿"
+    "zh-CN": "\u4f7f\u7528 C++ \u8bed\u8a00\u7f16\u5199\u7684\u9ed8\u8ba4 TEN Framework \u5e94\u7528\u6a21\u677f",
+    "zh-TW": "\u4f7f\u7528 C++ \u8a9e\u8a00\u7de8\u5beb\u7684\u9810\u8a2d TEN Framework \u61c9\u7528\u7a0b\u5f0f\u6a21\u677f",
+    "ja-JP": "C++\u3067\u66f8\u304b\u308c\u305f\u30c7\u30d5\u30a9\u30eb\u30c8\u306eTEN Framework\u30a2\u30d7\u30ea\u30b1\u30fc\u30b7\u30e7\u30f3\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8",
+    "ko-KR": "C++\ub85c \uc791\uc131\ub41c \uae30\ubcf8 TEN Framework \uc560\ud50c\ub9ac\ucf00\uc774\uc158 \ud15c\ud50c\ub9bf"
   },
   "tags": [
     "cpp",
@@ -24,7 +24,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "scripts": {

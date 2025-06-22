@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "default_async_extension_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Default Async Python Extension",
-    "zh-CN": "默认异步 Python 扩展",
-    "zh-TW": "預設非同步 Python 擴充",
-    "ja-JP": "デフォルト非同期 Python 拡張",
-    "ko-KR": "기본 비동기 Python 확장"
+    "zh-CN": "\u9ed8\u8ba4\u5f02\u6b65 Python \u6269\u5c55",
+    "zh-TW": "\u9810\u8a2d\u975e\u540c\u6b65 Python \u64f4\u5145",
+    "ja-JP": "\u30c7\u30d5\u30a9\u30eb\u30c8\u975e\u540c\u671f Python \u62e1\u5f35",
+    "ko-KR": "\uae30\ubcf8 \ube44\ub3d9\uae30 Python \ud655\uc7a5"
   },
   "description": {
     "en-US": "Default TEN Framework asynchronous extension template written in Python",
-    "zh-CN": "使用 Python 语言编写的默认 TEN Framework 异步扩展模板",
-    "zh-TW": "使用 Python 語言編寫的預設 TEN Framework 非同步擴充模板",
-    "ja-JP": "Pythonで書かれたデフォルトのTEN Framework非同期拡張テンプレート",
-    "ko-KR": "Python으로 작성된 기본 TEN Framework 비동기 확장 템플릿"
+    "zh-CN": "\u4f7f\u7528 Python \u8bed\u8a00\u7f16\u5199\u7684\u9ed8\u8ba4 TEN Framework \u5f02\u6b65\u6269\u5c55\u6a21\u677f",
+    "zh-TW": "\u4f7f\u7528 Python \u8a9e\u8a00\u7de8\u5beb\u7684\u9810\u8a2d TEN Framework \u975e\u540c\u6b65\u64f4\u5145\u6a21\u677f",
+    "ja-JP": "Python\u3067\u66f8\u304b\u308c\u305f\u30c7\u30d5\u30a9\u30eb\u30c8\u306eTEN Framework\u975e\u540c\u671f\u62e1\u5f35\u30c6\u30f3\u30d7\u30ec\u30fc\u30c8",
+    "ko-KR": "Python\uc73c\ub85c \uc791\uc131\ub41c \uae30\ubcf8 TEN Framework \ube44\ub3d9\uae30 \ud655\uc7a5 \ud15c\ud50c\ub9bf"
   },
   "tags": [
     "python",
@@ -24,7 +24,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "package": {

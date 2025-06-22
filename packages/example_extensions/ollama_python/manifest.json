@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "ollama_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Ollama Python Extension",
-    "zh-CN": "Ollama Python 扩展",
-    "zh-TW": "Ollama Python 擴充",
-    "ja-JP": "Ollama Python 拡張",
-    "ko-KR": "Ollama Python 확장"
+    "zh-CN": "Ollama Python \u6269\u5c55",
+    "zh-TW": "Ollama Python \u64f4\u5145",
+    "ja-JP": "Ollama Python \u62e1\u5f35",
+    "ko-KR": "Ollama Python \ud655\uc7a5"
   },
   "description": {
     "en-US": "Ollama integration extension example written in Python for TEN Framework",
-    "zh-CN": "使用 Python 语言编写的 TEN Framework Ollama 集成扩展示例",
-    "zh-TW": "使用 Python 語言編寫的 TEN Framework Ollama 整合擴充範例",
-    "ja-JP": "TEN Framework用のPythonで書かれたOllama統合拡張サンプル",
-    "ko-KR": "TEN Framework용 Python으로 작성된 Ollama 통합 확장 예제"
+    "zh-CN": "\u4f7f\u7528 Python \u8bed\u8a00\u7f16\u5199\u7684 TEN Framework Ollama \u96c6\u6210\u6269\u5c55\u793a\u4f8b",
+    "zh-TW": "\u4f7f\u7528 Python \u8a9e\u8a00\u7de8\u5beb\u7684 TEN Framework Ollama \u6574\u5408\u64f4\u5145\u7bc4\u4f8b",
+    "ja-JP": "TEN Framework\u7528\u306ePython\u3067\u66f8\u304b\u308c\u305fOllama\u7d71\u5408\u62e1\u5f35\u30b5\u30f3\u30d7\u30eb",
+    "ko-KR": "TEN Framework\uc6a9 Python\uc73c\ub85c \uc791\uc131\ub41c Ollama \ud1b5\ud569 \ud655\uc7a5 \uc608\uc81c"
   },
   "tags": [
     "python"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "package": {

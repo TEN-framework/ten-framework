@@ -1,20 +1,20 @@
 {
   "type": "extension",
   "name": "pil_demo_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "PIL Demo Python Extension",
-    "zh-CN": "PIL 演示 Python 扩展",
-    "zh-TW": "PIL 示範 Python 擴充",
-    "ja-JP": "PIL デモ Python 拡張",
-    "ko-KR": "PIL 데모 Python 확장"
+    "zh-CN": "PIL \u6f14\u793a Python \u6269\u5c55",
+    "zh-TW": "PIL \u793a\u7bc4 Python \u64f4\u5145",
+    "ja-JP": "PIL \u30c7\u30e2 Python \u62e1\u5f35",
+    "ko-KR": "PIL \ub370\ubaa8 Python \ud655\uc7a5"
   },
   "description": {
     "en-US": "PIL (Python Imaging Library) demonstration extension written in Python for TEN Framework",
-    "zh-CN": "使用 Python 语言编写的 TEN Framework PIL（Python 图像库）演示扩展",
-    "zh-TW": "使用 Python 語言編寫的 TEN Framework PIL（Python 影像庫）示範擴充",
-    "ja-JP": "TEN Framework用のPythonで書かれたPIL（Python Imaging Library）デモ拡張",
-    "ko-KR": "TEN Framework용 Python으로 작성된 PIL(Python Imaging Library) 데모 확장"
+    "zh-CN": "\u4f7f\u7528 Python \u8bed\u8a00\u7f16\u5199\u7684 TEN Framework PIL\uff08Python \u56fe\u50cf\u5e93\uff09\u6f14\u793a\u6269\u5c55",
+    "zh-TW": "\u4f7f\u7528 Python \u8a9e\u8a00\u7de8\u5beb\u7684 TEN Framework PIL\uff08Python \u5f71\u50cf\u5eab\uff09\u793a\u7bc4\u64f4\u5145",
+    "ja-JP": "TEN Framework\u7528\u306ePython\u3067\u66f8\u304b\u308c\u305fPIL\uff08Python Imaging Library\uff09\u30c7\u30e2\u62e1\u5f35",
+    "ko-KR": "TEN Framework\uc6a9 Python\uc73c\ub85c \uc791\uc131\ub41c PIL(Python Imaging Library) \ub370\ubaa8 \ud655\uc7a5"
   },
   "tags": [
     "python"
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}

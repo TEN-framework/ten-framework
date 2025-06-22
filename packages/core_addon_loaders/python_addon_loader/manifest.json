@@ -1,31 +1,31 @@
 {
   "type": "addon_loader",
   "name": "python_addon_loader",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Python Addon Loader",
-    "zh-CN": "Python 插件加载器",
-    "zh-TW": "Python 外掛載入器",
-    "ja-JP": "Python アドオンローダー",
-    "ko-KR": "Python 애드온 로더"
+    "zh-CN": "Python \u63d2\u4ef6\u52a0\u8f7d\u5668",
+    "zh-TW": "Python \u5916\u639b\u8f09\u5165\u5668",
+    "ja-JP": "Python \u30a2\u30c9\u30aa\u30f3\u30ed\u30fc\u30c0\u30fc",
+    "ko-KR": "Python \uc560\ub4dc\uc628 \ub85c\ub354"
   },
   "description": {
     "en-US": "TEN Framework addon loader for Python runtime support",
-    "zh-CN": "TEN Framework 的 Python 运行时支持插件加载器",
-    "zh-TW": "TEN Framework 的 Python 執行時期支援外掛載入器",
-    "ja-JP": "Pythonランタイムサポート用のTEN Frameworkアドオンローダー",
-    "ko-KR": "Python 런타임 지원을 위한 TEN Framework 애드온 로더"
+    "zh-CN": "TEN Framework \u7684 Python \u8fd0\u884c\u65f6\u652f\u6301\u63d2\u4ef6\u52a0\u8f7d\u5668",
+    "zh-TW": "TEN Framework \u7684 Python \u57f7\u884c\u6642\u671f\u652f\u63f4\u5916\u639b\u8f09\u5165\u5668",
+    "ja-JP": "Python\u30e9\u30f3\u30bf\u30a4\u30e0\u30b5\u30dd\u30fc\u30c8\u7528\u306eTEN Framework\u30a2\u30c9\u30aa\u30f3\u30ed\u30fc\u30c0\u30fc",
+    "ko-KR": "Python \ub7f0\ud0c0\uc784 \uc9c0\uc6d0\uc744 \uc704\ud55c TEN Framework \uc560\ub4dc\uc628 \ub85c\ub354"
   },
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     },
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}
