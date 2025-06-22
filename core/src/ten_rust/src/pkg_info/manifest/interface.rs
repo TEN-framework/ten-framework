@@ -157,13 +157,13 @@ pub fn load_interface(
     // It's a file path, read the interface file.
     let interface_content =
         read_file_to_string(&real_path).with_context(|| {
-            format!("Failed to read interface file from {}", real_path)
+            format!("Failed to read interface file from {real_path}")
         })?;
 
     // Parse the interface file into a ManifestApi structure.
     let mut interface_api: ManifestApi =
         serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {}", real_path)
+            format!("Failed to parse interface file from {real_path}")
         })?;
 
     // Get the parent directory of the interface file.

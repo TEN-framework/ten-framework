@@ -37,6 +37,9 @@ pub struct PkgRegistryInfo {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<HashMap<String, String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<HashMap<String, String>>,
 }
 
 mod dependencies_conversion {
@@ -90,6 +93,7 @@ impl From<&PkgInfo> for PkgRegistryInfo {
             content_format: None,
             tags: pkg_info.manifest.tags.clone(),
             description: pkg_info.manifest.description.clone(),
+            display_name: pkg_info.manifest.display_name.clone(),
         }
     }
 }
@@ -108,6 +112,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     .clone(),
                 version: pkg_registry_info.basic_info.version.clone(),
                 description: pkg_registry_info.description.clone(),
+                display_name: pkg_registry_info.display_name.clone(),
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
                 dev_dependencies: None,
                 tags: pkg_registry_info.tags.clone(),
@@ -163,6 +168,22 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                             serde_json::Map::new(),
                         ));
                         map.insert("description".to_string(), description_json);
+                    }
+
+                    // Add display_name if available.
+                    if let Some(ref display_name) =
+                        pkg_registry_info.display_name
+                    {
+                        let display_name_json = serde_json::to_value(
+                            display_name,
+                        )
+                        .unwrap_or(serde_json::Value::Object(
+                            serde_json::Map::new(),
+                        ));
+                        map.insert(
+                            "display_name".to_string(),
+                            display_name_json,
+                        );
                     }
 
                     map

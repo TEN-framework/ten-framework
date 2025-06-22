@@ -6,3 +6,4 @@
 //
 mod local;
 mod pkg_registry_info_description;
+mod pkg_registry_info_display_name;
