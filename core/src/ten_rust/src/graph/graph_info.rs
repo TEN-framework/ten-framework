@@ -99,10 +99,11 @@ async fn load_graph_from_http_url_async(
     let client = reqwest::Client::new();
 
     // Make HTTP request
-    let response =
-        client.get(url.as_str()).send().await.with_context(|| {
-            format!("Failed to send HTTP request to {}", url)
-        })?;
+    let response = client
+        .get(url.as_str())
+        .send()
+        .await
+        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
 
     // Check if request was successful
     if !response.status().is_success() {
@@ -114,9 +115,10 @@ async fn load_graph_from_http_url_async(
     }
 
     // Get response body as text
-    let graph_content = response.text().await.with_context(|| {
-        format!("Failed to read response body from {}", url)
-    })?;
+    let graph_content = response
+        .text()
+        .await
+        .with_context(|| format!("Failed to read response body from {url}"))?;
 
     // Set the new_base_dir to the directory part of the URL
     if new_base_dir.is_some() {
@@ -130,7 +132,7 @@ async fn load_graph_from_http_url_async(
 
     // Parse the graph file into a Graph structure.
     let graph: Graph = serde_json::from_str(&graph_content)
-        .with_context(|| format!("Failed to parse graph JSON from {}", url))?;
+        .with_context(|| format!("Failed to parse graph JSON from {url}"))?;
 
     Ok(graph)
 }

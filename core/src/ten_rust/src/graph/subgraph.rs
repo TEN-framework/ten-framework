@@ -20,7 +20,7 @@ impl Graph {
     /// to extension names and validating that no nested subgraphs exist.
     fn flatten_graph_loc_in_subgraph(loc: &mut GraphLoc, subgraph_name: &str) {
         if let Some(ref extension) = loc.extension {
-            loc.extension = Some(format!("{}_{}", subgraph_name, extension));
+            loc.extension = Some(format!("{subgraph_name}_{extension}"));
         }
 
         if loc.subgraph.is_some() {
@@ -87,7 +87,7 @@ impl Graph {
 
             if let Some(exposed) = matching_exposed {
                 if let Some(ref extension_name) = exposed.extension {
-                    Ok(format!("{}_{}", subgraph_name, extension_name))
+                    Ok(format!("{subgraph_name}_{extension_name}"))
                 } else {
                     Err(anyhow::anyhow!(
                         "Exposed message '{}' in subgraph '{}' does not \
@@ -297,10 +297,7 @@ impl Graph {
 
             // If no message flows were found, it should not happen
             if expanded_connections.is_empty() {
-                panic!(
-                    "No message flows found for subgraph: {}",
-                    subgraph_name
-                );
+                panic!("No message flows found for subgraph: {subgraph_name}");
             }
         } else {
             expanded_connections.push(base_connection);
@@ -707,9 +704,9 @@ impl Graph {
                             .get(subgraph_name)
                             .unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{}' referenced in exposed \
-                                     message not found in subgraph mappings",
-                                    subgraph_name
+                                    "Subgraph '{subgraph_name}' referenced in \
+                                     exposed message not found in subgraph \
+                                     mappings"
                                 );
                             });
 
@@ -728,10 +725,7 @@ impl Graph {
                                         // Create a new exposed message with the
                                         // flattened extension name
                                         let mut new_exposed = exposed.clone();
-                                        new_exposed.extension = Some(format!(
-                                            "{}_{}",
-                                            subgraph_name, nested_extension
-                                        ));
+                                        new_exposed.extension = Some(format!("{subgraph_name}_{nested_extension}"));
                                         // Clear subgraph field
                                         new_exposed.subgraph = None;
                                         updated.push(new_exposed);
@@ -787,9 +781,9 @@ impl Graph {
                             .get(subgraph_name)
                             .unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{}' referenced in exposed \
-                                     property not found in subgraph mappings",
-                                    subgraph_name
+                                    "Subgraph '{subgraph_name}' referenced in \
+                                     exposed property not found in subgraph \
+                                     mappings"
                                 );
                             });
 
@@ -806,10 +800,7 @@ impl Graph {
                                         // Create a new exposed property with
                                         // the flattened extension name
                                         let mut new_exposed = exposed.clone();
-                                        new_exposed.extension = Some(format!(
-                                            "{}_{}",
-                                            subgraph_name, nested_extension
-                                        ));
+                                        new_exposed.extension = Some(format!("{subgraph_name}_{nested_extension}"));
                                         // Clear subgraph field
                                         new_exposed.subgraph = None;
                                         updated.push(new_exposed);

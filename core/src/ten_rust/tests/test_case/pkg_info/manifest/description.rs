@@ -63,7 +63,7 @@ mod tests {
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        println!("Actual error: {}", error_msg);
+        println!("Actual error: {error_msg}");
         assert!(
             error_msg.contains("Invalid locale format")
                 || error_msg.contains("locale")
@@ -86,7 +86,7 @@ mod tests {
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        println!("Actual error: {}", error_msg);
+        println!("Actual error: {error_msg}");
         assert!(error_msg.contains("cannot be empty"));
     }
 
