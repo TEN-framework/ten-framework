@@ -2,12 +2,19 @@
   "type": "extension",
   "name": "pil_demo_python",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "PIL Demo Python Extension",
+    "zh-CN": "PIL 演示 Python 扩展",
+    "zh-TW": "PIL 示範 Python 擴充",
+    "ja-JP": "PIL デモ Python 拡張",
+    "ko-KR": "PIL 데모 Python 확장"
+  },
   "description": {
-    "en-US": "PIL (Python Imaging Library) demo extension example written in Python for TEN Framework",
-    "zh-CN": "使用 Python 语言编写的 TEN Framework PIL（Python 图像库）演示扩展示例",
-    "zh-TW": "使用 Python 語言編寫的 TEN Framework PIL（Python 圖像庫）演示擴充範例",
-    "ja-JP": "TEN Framework用のPythonで書かれたPIL（Python Imaging Library）デモ拡張サンプル",
-    "ko-KR": "TEN Framework용 Python으로 작성된 PIL(Python Imaging Library) 데모 확장 예제"
+    "en-US": "PIL (Python Imaging Library) demonstration extension written in Python for TEN Framework",
+    "zh-CN": "使用 Python 语言编写的 TEN Framework PIL（Python 图像库）演示扩展",
+    "zh-TW": "使用 Python 語言編寫的 TEN Framework PIL（Python 影像庫）示範擴充",
+    "ja-JP": "TEN Framework用のPythonで書かれたPIL（Python Imaging Library）デモ拡張",
+    "ko-KR": "TEN Framework용 Python으로 작성된 PIL(Python Imaging Library) 데모 확장"
   },
   "tags": [
     "python"

@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "simple_http_server_cpp",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Simple HTTP Server C++ Extension",
+    "zh-CN": "简单 HTTP 服务器 C++ 扩展",
+    "zh-TW": "簡單 HTTP 伺服器 C++ 擴充",
+    "ja-JP": "シンプル HTTP サーバー C++ 拡張",
+    "ko-KR": "간단한 HTTP 서버 C++ 확장"
+  },
   "description": {
     "en-US": "Simple HTTP server extension example written in C++ for TEN Framework",
     "zh-CN": "使用 C++ 语言编写的 TEN Framework 简单 HTTP 服务器扩展示例",

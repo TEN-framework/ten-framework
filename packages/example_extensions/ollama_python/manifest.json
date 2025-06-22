@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "ollama_python",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Ollama Python Extension",
+    "zh-CN": "Ollama Python 扩展",
+    "zh-TW": "Ollama Python 擴充",
+    "ja-JP": "Ollama Python 拡張",
+    "ko-KR": "Ollama Python 확장"
+  },
   "description": {
     "en-US": "Ollama integration extension example written in Python for TEN Framework",
     "zh-CN": "使用 Python 语言编写的 TEN Framework Ollama 集成扩展示例",
@@ -29,8 +36,8 @@
       "LICENSE"
     ]
   },
-  "api": {},
   "scripts": {
     "test": "tests/bin/start"
-  }
+  },
+  "api": {}
 }

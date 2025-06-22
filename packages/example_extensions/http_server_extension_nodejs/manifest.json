@@ -2,6 +2,13 @@
   "type": "extension",
   "name": "http_server_extension_nodejs",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "HTTP Server Node.js Extension",
+    "zh-CN": "HTTP 服务器 Node.js 扩展",
+    "zh-TW": "HTTP 伺服器 Node.js 擴充",
+    "ja-JP": "HTTP サーバー Node.js 拡張",
+    "ko-KR": "HTTP 서버 Node.js 확장"
+  },
   "description": {
     "en-US": "HTTP server extension example written in Node.js for TEN Framework",
     "zh-CN": "使用 Node.js 语言编写的 TEN Framework HTTP 服务器扩展示例",

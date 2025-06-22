@@ -2,12 +2,19 @@
   "type": "app",
   "name": "pprof_app_go",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "PProf Go App",
+    "zh-CN": "PProf Go 应用",
+    "zh-TW": "PProf Go 應用程式",
+    "ja-JP": "PProf Go アプリ",
+    "ko-KR": "PProf Go 앱"
+  },
   "description": {
-    "en-US": "TEN Framework example application with pprof profiling support written in Go",
-    "zh-CN": "使用 Go 语言编写的带有 pprof 性能分析支持的 TEN Framework 示例应用",
-    "zh-TW": "使用 Go 語言編寫的帶有 pprof 效能分析支援的 TEN Framework 範例應用程式",
-    "ja-JP": "pprofプロファイリングサポート付きのGoで書かれたTEN Frameworkサンプルアプリケーション",
-    "ko-KR": "pprof 프로파일링 지원이 포함된 Go로 작성된 TEN Framework 예제 애플리케이션"
+    "en-US": "TEN Framework Go application with pprof profiling support for performance analysis",
+    "zh-CN": "带有 pprof 性能分析支持的 TEN Framework Go 应用",
+    "zh-TW": "具有 pprof 效能分析支援的 TEN Framework Go 應用程式",
+    "ja-JP": "パフォーマンス分析用のpprofプロファイリング対応TEN Framework Goアプリケーション",
+    "ko-KR": "성능 분석을 위한 pprof 프로파일링 지원을 갖춘 TEN Framework Go 애플리케이션"
   },
   "tags": [
     "go"
