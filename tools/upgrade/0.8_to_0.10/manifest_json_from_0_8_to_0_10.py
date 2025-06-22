@@ -11,6 +11,27 @@ import argparse
 from typing import Dict, Any, Optional, List
 
 
+def is_target_json_file(json_data: Dict[str, Any]) -> bool:
+    """
+    Check if a JSON file matches the criteria for processing:
+    - Must have top-level fields: type, name, version, api
+    - api must be a non-empty object
+    """
+    required_fields = ["type", "name", "version", "api"]
+
+    # Check if all required fields exist
+    for field in required_fields:
+        if field not in json_data:
+            return False
+
+    # Check if api is a non-empty object
+    api = json_data.get("api")
+    if not isinstance(api, dict) or len(api) == 0:
+        return False
+
+    return True
+
+
 def convert_property_format(
     old_property: Optional[Dict[str, Any]], old_required: Optional[List[str]]
 ) -> Optional[Dict[str, Any]]:
@@ -151,15 +172,19 @@ def convert_manifest_file(old_manifest: Dict[str, Any]) -> Dict[str, Any]:
     return new_manifest
 
 
-def upgrade_manifest_file(file_path: str, dry_run: bool = False) -> bool:
+def upgrade_json_file(file_path: str, dry_run: bool = False) -> bool:
     """
-    Upgrade a single manifest.json file.
+    Upgrade a single JSON file if it matches the criteria.
 
     Returns True if the file was modified, False otherwise.
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             old_manifest = json.load(f)
+
+        # Check if this JSON file should be processed
+        if not is_target_json_file(old_manifest):
+            return False
 
         new_manifest = convert_manifest_file(old_manifest)
 
@@ -189,27 +214,27 @@ def upgrade_manifest_file(file_path: str, dry_run: bool = False) -> bool:
         return False
 
 
-def find_manifest_files(root_dir: str) -> List[str]:
+def find_json_files(root_dir: str) -> List[str]:
     """
-    Find all manifest.json files recursively.
+    Find all JSON files recursively.
     """
-    manifest_files = []
+    json_files = []
 
     for root, dirs, files in os.walk(root_dir):
         for file in files:
-            if file == "manifest.json":
-                manifest_files.append(os.path.join(root, file))
+            if file.endswith(".json"):
+                json_files.append(os.path.join(root, file))
 
-    return manifest_files
+    return json_files
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Upgrade manifest.json files from 0.8 format to 0.10 format"
+        description="Upgrade JSON files with manifest-like structure from 0.8 format to 0.10 format"
     )
     parser.add_argument(
-        "path",
-        help="Path to manifest.json file or directory to search recursively",
+        "directory",
+        help="Directory to search recursively for JSON files",
     )
     parser.add_argument(
         "--dry-run",
@@ -219,36 +244,44 @@ def main():
 
     args = parser.parse_args()
 
-    if os.path.isfile(args.path):
-        # Single file
-        manifest_files = [args.path]
-    elif os.path.isdir(args.path):
-        # Directory - find all manifest.json files
-        manifest_files = find_manifest_files(args.path)
-    else:
+    if not os.path.isdir(args.directory):
         print(
-            f"Error: {args.path} is not a valid file or directory",
+            f"Error: {args.directory} is not a valid directory",
             file=sys.stderr,
         )
         return 1
 
-    if not manifest_files:
-        print("No manifest.json files found")
+    # Find all JSON files
+    json_files = find_json_files(args.directory)
+
+    if not json_files:
+        print("No JSON files found")
         return 0
 
-    total_files = len(manifest_files)
+    total_files = len(json_files)
     changed_files = 0
+    processed_files = 0
 
-    print(f"Processing {total_files} manifest.json file(s)...")
+    print(f"Found {total_files} JSON file(s), checking which ones need processing...")
 
-    for file_path in manifest_files:
-        if upgrade_manifest_file(file_path, args.dry_run):
+    for file_path in json_files:
+        if upgrade_json_file(file_path, args.dry_run):
             changed_files += 1
+            processed_files += 1
+        else:
+            # Check if it was skipped due to criteria or no changes needed
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    json_data = json.load(f)
+                if is_target_json_file(json_data):
+                    processed_files += 1
+            except:
+                pass
 
     dry_run_text = "would be " if args.dry_run else ""
     print(
-        f"\nCompleted: {changed_files}/{total_files} files were "
-        f"{dry_run_text}modified"
+        f"\nCompleted: {processed_files} files matched criteria, "
+        f"{changed_files} files were {dry_run_text}modified"
     )
 
     return 0
