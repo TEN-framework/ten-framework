@@ -33,8 +33,10 @@ class test_extension : public ten::extension_t {
              "version": "0.1.0",
              "api": {
                "property": {
-                 "hello": {
-                   "type": "string"
+                 "properties": {
+                   "hello": {
+                     "type": "string"
+                   }
                  }
                }
              }

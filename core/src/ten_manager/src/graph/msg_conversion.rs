@@ -16,7 +16,8 @@ use ten_rust::{
     pkg_info::{
         get_pkg_info_for_extension_addon,
         manifest::api::{
-            ManifestApiCmdResult, ManifestApiMsg, ManifestApiPropertyAttributes,
+            ManifestApiCmdResult, ManifestApiMsg, ManifestApiProperty,
+            ManifestApiPropertyAttributes,
         },
         message::{MsgDirection, MsgType},
         value_type::ValueType,
@@ -549,8 +550,7 @@ pub async fn msg_conversion_get_final_target_schema(
         // Create a new message schema to store the converted properties.
         let mut converted_schema_real: ManifestApiMsg = ManifestApiMsg {
             name: dest_msg_name.to_string(),
-            property: Some(HashMap::new()),
-            required: None,
+            property: Some(ManifestApiProperty::new()),
             result: None,
         };
 
@@ -559,8 +559,6 @@ pub async fn msg_conversion_get_final_target_schema(
             if keep_original {
                 if let Some(ref src_msg_schema_ref) = src_msg_schema {
                     converted_schema_real = src_msg_schema_ref.clone();
-                    converted_schema_real.required =
-                        src_msg_schema_ref.required.clone();
 
                     // Update the name to the destination message name.
                     converted_schema_real.name = dest_msg_name.to_string();
@@ -574,18 +572,33 @@ pub async fn msg_conversion_get_final_target_schema(
 
         // Ensure property map exists.
         if converted_schema_real.property.is_none() {
-            converted_schema_real.property = Some(HashMap::new());
+            converted_schema_real.property = Some(ManifestApiProperty::new());
         }
 
         // Process each conversion rule.
-        convert_rules_to_schema_properties(
-            &msg_conversion.rules.rules,
-            ten_name_rule_index,
-            src_msg_schema.as_ref().and_then(|schema| schema.property.as_ref()),
-            src_msg_schema.as_ref().and_then(|schema| schema.required.as_ref()),
-            converted_schema_real.property.as_mut().unwrap(),
-            &mut converted_schema_real.required,
-        )?;
+        let src_properties = src_msg_schema.as_ref().and_then(|schema| {
+            schema.property.as_ref().and_then(|p| p.properties())
+        });
+        let src_required = src_msg_schema.as_ref().and_then(|schema| {
+            schema.property.as_ref().and_then(|p| p.required.as_ref())
+        });
+
+        if let Some(property) = &mut converted_schema_real.property {
+            if property.properties.is_none() {
+                property.properties = Some(HashMap::new());
+            }
+
+            let ManifestApiProperty { ref mut properties, ref mut required } =
+                property;
+            convert_rules_to_schema_properties(
+                &msg_conversion.rules.rules,
+                ten_name_rule_index,
+                src_properties,
+                src_required,
+                properties.as_mut().unwrap(),
+                required,
+            )?;
+        }
 
         converted_schema = Some(converted_schema_real);
     }
@@ -594,10 +607,8 @@ pub async fn msg_conversion_get_final_target_schema(
 
     if let Some(result_conversion) = &msg_conversion.result {
         // Create a new message schema to store the converted properties.
-        let mut converted_result_schema_real = ManifestApiCmdResult {
-            property: Some(HashMap::new()),
-            required: None,
-        };
+        let mut converted_result_schema_real =
+            ManifestApiCmdResult { property: Some(ManifestApiProperty::new()) };
 
         // If keep_original flag is true, start with the source message schema.
         if let Some(keep_original) = result_conversion.rules.keep_original {
@@ -619,7 +630,8 @@ pub async fn msg_conversion_get_final_target_schema(
 
         // Ensure property map exists.
         if converted_result_schema_real.property.is_none() {
-            converted_result_schema_real.property = Some(HashMap::new());
+            converted_result_schema_real.property =
+                Some(ManifestApiProperty::new());
         }
 
         let dest_msg_schema = get_msg_schema(
@@ -638,20 +650,33 @@ pub async fn msg_conversion_get_final_target_schema(
             serde_json::to_string_pretty(&dest_msg_schema).unwrap(),
         );
 
-        convert_rules_to_schema_properties(
-            &result_conversion.rules.rules,
-            None,
-            dest_msg_schema
-                .as_ref()
-                .and_then(|schema| schema.result.as_ref())
-                .and_then(|result| result.property.as_ref()),
-            src_msg_schema
-                .as_ref()
-                .and_then(|schema| schema.result.as_ref())
-                .and_then(|result| result.required.as_ref()),
-            converted_result_schema_real.property.as_mut().unwrap(),
-            &mut converted_result_schema_real.required,
-        )?;
+        let dest_properties = dest_msg_schema
+            .as_ref()
+            .and_then(|schema| schema.result.as_ref())
+            .and_then(|result| result.property.as_ref())
+            .and_then(|prop| prop.properties());
+        let src_result_required = src_msg_schema
+            .as_ref()
+            .and_then(|schema| schema.result.as_ref())
+            .and_then(|result| result.property.as_ref())
+            .and_then(|prop| prop.required.as_ref());
+
+        if let Some(property) = &mut converted_result_schema_real.property {
+            if property.properties.is_none() {
+                property.properties = Some(HashMap::new());
+            }
+
+            let ManifestApiProperty { ref mut properties, ref mut required } =
+                property;
+            convert_rules_to_schema_properties(
+                &result_conversion.rules.rules,
+                None,
+                dest_properties,
+                src_result_required,
+                properties.as_mut().unwrap(),
+                required,
+            )?;
+        }
 
         converted_result_schema = Some(converted_result_schema_real);
     }

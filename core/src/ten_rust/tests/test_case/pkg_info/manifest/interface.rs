@@ -33,10 +33,11 @@ mod tests {
 
         // Check the properties.
         let property = flattened_manifest.property.as_ref().unwrap();
-        assert_eq!(property.len(), 3);
-        assert_eq!(property.get("foo").unwrap().prop_type, ValueType::Bool);
-        assert_eq!(property.get("bar").unwrap().prop_type, ValueType::Int64);
-        assert_eq!(property.get("key").unwrap().prop_type, ValueType::String);
+        let properties = property.properties.as_ref().unwrap();
+        assert_eq!(properties.len(), 3);
+        assert_eq!(properties.get("foo").unwrap().prop_type, ValueType::Bool);
+        assert_eq!(properties.get("bar").unwrap().prop_type, ValueType::Int64);
+        assert_eq!(properties.get("key").unwrap().prop_type, ValueType::String);
 
         // Check the cmd_in/cmd_out/data_in/data_out/audio_frame_in/
         // audio_frame_out/video_frame_in/video_frame_out.
