@@ -10,7 +10,7 @@ use anyhow::{Context, Ok, Result};
 
 use crate::pkg_info::{
     manifest::{
-        api::{ManifestApi, ManifestApiMsg, ManifestApiPropertyAttributes},
+        api::{ManifestApi, ManifestApiMsg, ManifestApiProperty},
         Manifest,
     },
     message::{MsgDirection, MsgType},
@@ -96,10 +96,20 @@ impl SchemaStore {
                 serde_json::json!({"type": "object"});
             let property_schema_object =
                 property_schema_value.as_object_mut().unwrap();
-            property_schema_object.insert(
-                "properties".to_string(),
-                serde_json::to_value(property)?,
-            );
+
+            if let Some(properties) = &property.properties {
+                property_schema_object.insert(
+                    "properties".to_string(),
+                    serde_json::to_value(properties)?,
+                );
+            }
+
+            if let Some(required) = &property.required {
+                property_schema_object.insert(
+                    "required".to_string(),
+                    serde_json::to_value(required)?,
+                );
+            }
 
             let schema = create_schema_from_json(
                 serde_json::to_value(property_schema_object).as_ref().unwrap(),
@@ -216,31 +226,31 @@ fn parse_msgs_schema_from_manifest(
 //   "required": []
 // }
 pub fn create_c_schema_from_properties_and_required(
-    property: &Option<HashMap<String, ManifestApiPropertyAttributes>>,
-    required: &Option<Vec<String>>,
+    property: &Option<ManifestApiProperty>,
 ) -> Result<Option<TenSchema>> {
-    if property.is_none() && required.is_none() {
-        Ok(None)
-    } else {
-        let mut property_json_value = serde_json::json!({});
-        let property_json_object = property_json_value.as_object_mut().unwrap();
-
-        if let Some(prop_map) = property {
-            prop_map.iter().for_each(|(key, attr)| {
-                property_json_object
-                    .insert(key.clone(), serde_json::to_value(attr).unwrap());
-            });
-        }
-
+    if let Some(property) = property {
         let mut property_schema_value: serde_json::Value =
             serde_json::json!({"type": "object"});
         let property_schema_object =
             property_schema_value.as_object_mut().unwrap();
-        property_schema_object.insert(
-            "properties".to_string(),
-            serde_json::to_value(property_json_object)?,
-        );
-        if let Some(required) = required {
+
+        if let Some(properties) = &property.properties {
+            let mut property_json_value = serde_json::json!({});
+            let property_json_object =
+                property_json_value.as_object_mut().unwrap();
+
+            properties.iter().for_each(|(key, attr)| {
+                property_json_object
+                    .insert(key.clone(), serde_json::to_value(attr).unwrap());
+            });
+
+            property_schema_object.insert(
+                "properties".to_string(),
+                serde_json::to_value(property_json_object)?,
+            );
+        }
+
+        if let Some(required) = &property.required {
             property_schema_object.insert(
                 "required".to_string(),
                 serde_json::to_value(required)?,
@@ -250,6 +260,8 @@ pub fn create_c_schema_from_properties_and_required(
         Ok(Some(create_schema_from_json(
             serde_json::to_value(property_schema_object).as_ref().unwrap(),
         )?))
+    } else {
+        Ok(None)
     }
 }
 
@@ -261,18 +273,13 @@ pub fn create_c_schema_from_manifest_api(
     if let Some(manifest_result) = &manifest_msg.result {
         let result_schema = create_c_schema_from_properties_and_required(
             &manifest_result.property,
-            &manifest_result.required,
         )?;
         schema.result = result_schema;
     }
 
-    if let Some(manifest_property) = &manifest_msg.property {
-        let property_schema = create_c_schema_from_properties_and_required(
-            &Some(manifest_property.clone()),
-            &manifest_msg.required,
-        )?;
-        schema.msg = property_schema;
-    }
+    let property_schema =
+        create_c_schema_from_properties_and_required(&manifest_msg.property)?;
+    schema.msg = property_schema;
 
     if schema.msg.is_none() && schema.result.is_none() {
         Ok(None)

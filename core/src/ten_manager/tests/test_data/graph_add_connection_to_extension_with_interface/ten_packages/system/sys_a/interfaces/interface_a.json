@@ -5,24 +5,28 @@
     }
   ],
   "property": {
-    "a": {
-      "type": "string"
+    "properties": {
+      "a": {
+        "type": "string"
+      }
     }
   },
   "cmd_in": [
     {
       "name": "cmd_in_a",
       "property": {
-        "collection_name": {
-          "type": "string"
-        },
-        "top_k": {
-          "type": "int64"
-        },
-        "embedding": {
-          "type": "array",
-          "items": {
-            "type": "float64"
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "int64"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "float64"
+            }
           }
         }
       },
@@ -33,16 +37,18 @@
       ],
       "result": {
         "property": {
-          "response": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "content": {
-                  "type": "string"
-                },
-                "score": {
-                  "type": "float64"
+          "properties": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
                 }
               }
             }
@@ -55,8 +61,10 @@
     {
       "name": "cmd_out_a",
       "property": {
-        "message": {
-          "type": "buf"
+        "properties": {
+          "message": {
+            "type": "buf"
+          }
         }
       }
     }

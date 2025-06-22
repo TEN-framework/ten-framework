@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
 use crate::designer::common::{
-    get_designer_api_msg_from_pkg, get_designer_property_hashmap_from_pkg,
+    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
 };
 use crate::designer::graphs::nodes::DesignerApi;
 use crate::designer::{
@@ -58,9 +58,10 @@ async fn convert_pkg_info_to_addon(
         addon_name: pkg_info_with_src.manifest.type_and_name.name.clone(),
         url: pkg_info_with_src.url.clone(),
         api: manifest_api.map(|api| DesignerApi {
-            property: api.property.as_ref().map(|prop| {
-                get_designer_property_hashmap_from_pkg(prop.clone())
-            }),
+            property: api
+                .property
+                .as_ref()
+                .map(|prop| get_designer_api_property_from_pkg(prop.clone())),
 
             cmd_in: api
                 .cmd_in

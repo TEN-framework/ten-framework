@@ -11,7 +11,7 @@ use crate::{
 };
 
 use crate::pkg_info::manifest::api::{
-    ManifestApiMsg, ManifestApiPropertyAttributes,
+    ManifestApiMsg, ManifestApiProperty, ManifestApiPropertyAttributes,
 };
 use std::collections::HashMap;
 use std::{collections::HashSet, path::Path};
@@ -229,17 +229,22 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
     // Process each API
     for api in apis {
         // Merge property
-        if let Some(properties) = api.property {
-            for (key, value) in properties {
-                if let Some(existing_value) = merged_property.get(&key) {
-                    if existing_value != &value {
-                        return Err(anyhow!(
-                            "Conflicting property '{}': values do not match",
-                            key
-                        ));
+        if let Some(api_property) = &api.property {
+            if let Some(properties) = &api_property.properties {
+                for (key, value) in properties {
+                    if let Some(existing_value) =
+                        merged_property.get(key.as_str())
+                    {
+                        if existing_value != value {
+                            return Err(anyhow!(
+                                "Conflicting property '{}': values do not \
+                                 match",
+                                key
+                            ));
+                        }
+                    } else {
+                        merged_property.insert(key.clone(), value.clone());
                     }
-                } else {
-                    merged_property.insert(key, value);
                 }
             }
         }
@@ -276,7 +281,10 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
         property: if merged_property.is_empty() {
             None
         } else {
-            Some(merged_property)
+            Some(ManifestApiProperty {
+                properties: Some(merged_property),
+                required: None, // TODO: Handle merging of required fields
+            })
         },
         interface: None, // 3. No need to merge interface
         cmd_in: if merged_cmd_in.is_empty() {

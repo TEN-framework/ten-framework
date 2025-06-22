@@ -1,20 +1,24 @@
 {
   "property": {
-    "key": {
-      "type": "string"
+    "properties": {
+      "key": {
+        "type": "string"
+      }
     }
   },
   "cmd_in": [
     {
       "name": "set_key",
       "property": {
-        "key": {
-          "type": "int64"
-        }
-      },
-      "required": [
-        "key"
-      ]
+        "properties": {
+          "key": {
+            "type": "int64"
+          }
+        },
+        "required": [
+          "key"
+        ]
+      }
     }
   ],
   "cmd_out": [

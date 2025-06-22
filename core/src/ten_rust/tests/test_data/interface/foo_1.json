@@ -5,44 +5,50 @@
     }
   ],
   "property": {
-    "bar": {
-      "type": "int64"
+    "properties": {
+      "bar": {
+        "type": "int64"
+      }
     }
   },
   "cmd_in": [
     {
       "name": "query_vector",
       "property": {
-        "collection_name": {
-          "type": "string"
-        },
-        "top_k": {
-          "type": "int64"
-        },
-        "embedding": {
-          "type": "array",
-          "items": {
-            "type": "float64"
-          }
-        }
-      },
-      "required": [
-        "collection_name",
-        "top_k",
-        "embedding"
-      ],
-      "result": {
-        "property": {
-          "response": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "int64"
+          },
+          "embedding": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "content": {
-                  "type": "string"
-                },
-                "score": {
-                  "type": "float64"
+              "type": "float64"
+            }
+          }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ]
+      },
+      "result": {
+        "property": {
+          "properties": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
                 }
               }
             }
@@ -55,8 +61,10 @@
     {
       "name": "publish",
       "property": {
-        "message": {
-          "type": "buf"
+        "properties": {
+          "message": {
+            "type": "buf"
+          }
         }
       }
     },

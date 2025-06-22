@@ -39,8 +39,10 @@ class test_extension : public ten::extension_t {
                    \"version\": \"1.0.0\",\
                    \"api\": {\
                      \"property\": {\
-                       \"" EXT_PROP_NAME "\": {\
-                         \"type\": \"int32\"\
+                       \"properties\": {\
+                         \"" EXT_PROP_NAME "\": {\
+                           \"type\": \"int32\"\
+                         }\
                        }\
                      }\
                    }\
@@ -86,8 +88,10 @@ class test_app : public ten::app_t {
                     \"version\": \"1.0.0\",\
                     \"api\": {\
                       \"property\": {\
-                        \"" APP_PROP_NAME "\": {\
-                          \"type\": \"int32\"\
+                        \"properties\": {\
+                          \"" APP_PROP_NAME "\": {\
+                            \"type\": \"int32\"\
+                          }\
                         }\
                       }\
                     }\

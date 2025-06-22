@@ -34,8 +34,10 @@ class test_extension_1 : public ten::extension_t {
                             "name": "hello_world",
                             "result": {
                               "property": {
-                                "detail": {
-                                  "type": "int8"
+                                "properties": {
+                                  "detail": {
+                                    "type": "int8"
+                                  }
                                 }
                               }
                             }
@@ -77,8 +79,10 @@ class test_extension_2 : public ten::extension_t {
                             "name": "hello_world",
                             "result": {
                               "property": {
-                                "detail": {
-                                  "type": "string"
+                                "properties": {
+                                  "detail": {
+                                    "type": "string"
+                                  }
                                 }
                               }
                             }
