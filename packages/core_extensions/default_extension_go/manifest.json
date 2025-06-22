@@ -2,11 +2,18 @@
   "type": "extension",
   "name": "default_extension_go",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Default Go Extension",
+    "zh-CN": "默认 Go 扩展",
+    "zh-TW": "預設 Go 擴充",
+    "ja-JP": "デフォルト Go 拡張",
+    "ko-KR": "기본 Go 확장"
+  },
   "description": {
     "en-US": "Default TEN Framework extension template written in Go",
     "zh-CN": "使用 Go 语言编写的默认 TEN Framework 扩展模板",
     "zh-TW": "使用 Go 語言編寫的預設 TEN Framework 擴充模板",
-    "ja-JP": "Go言語で書かれたデフォルトのTEN Framework拡張テンプレート",
+    "ja-JP": "Goで書かれたデフォルトのTEN Framework拡張テンプレート",
     "ko-KR": "Go로 작성된 기본 TEN Framework 확장 템플릿"
   },
   "tags": [
@@ -26,8 +33,8 @@
       ".vscode/**"
     ]
   },
-  "api": {},
   "scripts": {
     "test": "tests/bin/start"
-  }
+  },
+  "api": {}
 }

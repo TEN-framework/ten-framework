@@ -2,6 +2,13 @@
   "type": "app",
   "name": "default_app_cpp",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Default C++ App",
+    "zh-CN": "默认 C++ 应用",
+    "zh-TW": "預設 C++ 應用程式",
+    "ja-JP": "デフォルト C++ アプリ",
+    "ko-KR": "기본 C++ 앱"
+  },
   "description": {
     "en-US": "Default TEN Framework application template written in C++",
     "zh-CN": "使用 C++ 语言编写的默认 TEN Framework 应用模板",

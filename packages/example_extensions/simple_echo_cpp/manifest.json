@@ -2,10 +2,17 @@
   "type": "extension",
   "name": "simple_echo_cpp",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Simple Echo C++ Extension",
+    "zh-CN": "简单回声 C++ 扩展",
+    "zh-TW": "簡單回聲 C++ 擴充",
+    "ja-JP": "シンプルエコー C++ 拡張",
+    "ko-KR": "간단한 에코 C++ 확장"
+  },
   "description": {
     "en-US": "Simple echo extension example written in C++ for TEN Framework",
-    "zh-CN": "使用 C++ 语言编写的 TEN Framework 简单回音扩展示例",
-    "zh-TW": "使用 C++ 語言編寫的 TEN Framework 簡單回音擴充範例",
+    "zh-CN": "使用 C++ 语言编写的 TEN Framework 简单回声扩展示例",
+    "zh-TW": "使用 C++ 語言編寫的 TEN Framework 簡單回聲擴充範例",
     "ja-JP": "TEN Framework用のC++で書かれたシンプルなエコー拡張サンプル",
     "ko-KR": "TEN Framework용 C++로 작성된 간단한 에코 확장 예제"
   },

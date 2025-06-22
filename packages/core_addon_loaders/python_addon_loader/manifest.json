@@ -2,6 +2,13 @@
   "type": "addon_loader",
   "name": "python_addon_loader",
   "version": "0.10.15",
+  "display_name": {
+    "en-US": "Python Addon Loader",
+    "zh-CN": "Python 插件加载器",
+    "zh-TW": "Python 外掛載入器",
+    "ja-JP": "Python アドオンローダー",
+    "ko-KR": "Python 애드온 로더"
+  },
   "description": {
     "en-US": "TEN Framework addon loader for Python runtime support",
     "zh-CN": "TEN Framework 的 Python 运行时支持插件加载器",
