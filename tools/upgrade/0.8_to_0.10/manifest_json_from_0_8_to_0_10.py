@@ -51,9 +51,27 @@ def convert_property_format(
         "required": [...]
       }
     }
+
+    If the property field already contains a 'properties' key whose value is a
+    dict, do not modify it.
     """
     if old_property is None and old_required is None:
         return None
+
+    # If old_property is a dict and already has a 'properties' key which is a
+    # dict, do not convert it.
+    if (
+        isinstance(old_property, dict)
+        and "properties" in old_property
+        and isinstance(old_property["properties"], dict)
+    ):
+        # If required is present, merge it in (if not already present)
+        if old_required is not None:
+            new_property = dict(old_property)  # shallow copy
+            if "required" not in new_property:
+                new_property["required"] = old_required
+            return new_property
+        return old_property
 
     new_property = {}
 
@@ -220,7 +238,7 @@ def find_json_files(root_dir: str) -> List[str]:
     """
     json_files = []
 
-    for root, dirs, files in os.walk(root_dir):
+    for root, _, files in os.walk(root_dir):
         for file in files:
             if file.endswith(".json"):
                 json_files.append(os.path.join(root, file))
@@ -230,7 +248,10 @@ def find_json_files(root_dir: str) -> List[str]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Upgrade JSON files with manifest-like structure from 0.8 format to 0.10 format"
+        description=(
+            "Upgrade JSON files with manifest-like structure "
+            "from 0.8 format to 0.10 format"
+        )
     )
     parser.add_argument(
         "directory",
@@ -262,7 +283,10 @@ def main():
     changed_files = 0
     processed_files = 0
 
-    print(f"Found {total_files} JSON file(s), checking which ones need processing...")
+    print(
+        f"Found {total_files} JSON file(s), "
+        "checking which ones need processing..."
+    )
 
     for file_path in json_files:
         if upgrade_json_file(file_path, args.dry_run):
@@ -275,8 +299,8 @@ def main():
                     json_data = json.load(f)
                 if is_target_json_file(json_data):
                     processed_files += 1
-            except:
-                pass
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}", file=sys.stderr)
 
     dry_run_text = "would be " if args.dry_run else ""
     print(
