@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Default Python Extension",
     "zh-CN": "默认 Python 扩展",
@@ -24,7 +24,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "package": {

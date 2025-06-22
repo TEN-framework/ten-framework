@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_muxer",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "FFmpeg Muxer Extension",
     "zh-CN": "FFmpeg 复用器扩展",

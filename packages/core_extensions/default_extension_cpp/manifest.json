@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_cpp",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Default C++ Extension",
     "zh-CN": "默认 C++ 扩展",
@@ -24,7 +24,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "dev_dependencies": [

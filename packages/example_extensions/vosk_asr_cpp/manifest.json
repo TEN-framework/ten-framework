@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "vosk_asr_cpp",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Vosk ASR C++ Extension",
     "zh-CN": "Vosk 语音识别 C++ 扩展",
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     },
     {
       "type": "system",

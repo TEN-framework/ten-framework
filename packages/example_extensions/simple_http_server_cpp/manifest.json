@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "simple_http_server_cpp",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Simple HTTP Server C++ Extension",
     "zh-CN": "简单 HTTP 服务器 C++ 扩展",
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ]
 }

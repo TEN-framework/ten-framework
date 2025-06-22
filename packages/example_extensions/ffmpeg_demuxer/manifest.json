@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_demuxer",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "FFmpeg Demuxer Extension",
     "zh-CN": "FFmpeg 解复用器扩展",
