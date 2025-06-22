@@ -118,4 +118,125 @@ mod tests {
             Manifest::create_from_str(manifest_str).await;
         assert!(result.is_ok());
     }
+
+    #[tokio::test]
+    async fn test_bytedance_tts_manifest_from_str() {
+        let manifest_str = r#"
+        {
+          "type": "extension",
+          "name": "bytedance_tts",
+          "version": "0.1.0",
+          "dependencies": [
+            {
+              "type": "system",
+              "name": "ten_runtime_python",
+              "version": "0.10"
+            }
+          ],
+          "package": {
+            "include": [
+              "manifest.json",
+              "property.json",
+              "BUILD.gn",
+              "**.tent",
+              "**.py",
+              "README.md",
+              "tests/**"
+            ]
+          },
+          "api": {
+            "property": {
+              "properties": {
+                "appid": {
+                  "type": "string"
+                },
+                "token": {
+                  "type": "string"
+                },
+                "voice_type": {
+                  "type": "string"
+                },
+                "sample_rate": {
+                  "type": "int64"
+                },
+                "api_url": {
+                  "type": "string"
+                },
+                "cluster": {
+                  "type": "string"
+                }
+              }
+            },
+            "cmd_in": [
+              {
+                "name": "flush"
+              }
+            ],
+            "cmd_out": [
+              {
+                "name": "flush"
+              }
+            ],
+            "data_in": [
+              {
+                "name": "text_data",
+                "property": {
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ],
+            "audio_frame_out": [
+              {
+                "name": "pcm_frame"
+              }
+            ]
+          }
+        }"#;
+
+        let result: Result<Manifest> =
+            Manifest::create_from_str(manifest_str).await;
+        assert!(result.is_ok());
+
+        let manifest = result.unwrap();
+        assert_eq!(manifest.type_and_name.pkg_type, PkgType::Extension);
+        assert_eq!(manifest.type_and_name.name, "bytedance_tts");
+        assert_eq!(manifest.version.to_string(), "0.1.0");
+
+        // Test dependencies
+        let dependencies = manifest.dependencies.as_ref().unwrap();
+        assert_eq!(dependencies.len(), 1);
+
+        let dep_type_and_name = dependencies[0].get_type_and_name().await;
+        assert!(dep_type_and_name.is_some());
+        let (dep_type, dep_name) = dep_type_and_name.unwrap();
+        assert_eq!(dep_type, PkgType::System);
+        assert_eq!(dep_name, "ten_runtime_python");
+
+        // Test API
+        let api = manifest.api.as_ref().unwrap();
+
+        // Test cmd_in
+        let cmd_in = api.cmd_in.as_ref().unwrap();
+        assert_eq!(cmd_in.len(), 1);
+        assert_eq!(cmd_in[0].name, "flush");
+
+        // Test cmd_out
+        let cmd_out = api.cmd_out.as_ref().unwrap();
+        assert_eq!(cmd_out.len(), 1);
+        assert_eq!(cmd_out[0].name, "flush");
+
+        // Test data_in
+        let data_in = api.data_in.as_ref().unwrap();
+        assert_eq!(data_in.len(), 1);
+        assert_eq!(data_in[0].name, "text_data");
+
+        // Test audio_frame_out
+        let audio_frame_out = api.audio_frame_out.as_ref().unwrap();
+        assert_eq!(audio_frame_out.len(), 1);
+        assert_eq!(audio_frame_out[0].name, "pcm_frame");
+    }
 }
