@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "pil_demo_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "PIL Demo Python Extension",
     "zh-CN": "PIL 演示 Python 扩展",
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}
