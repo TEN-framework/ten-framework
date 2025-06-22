@@ -65,6 +65,20 @@
       "additionalProperties": false,
       "minProperties": 1
     },
+    "displayName": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/localeString"
+      },
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
     "alphanumericCharacters": {
       "type": "string",
       "minLength": 1,
@@ -419,6 +433,9 @@
     },
     "description": {
       "$ref": "#/$defs/description"
+    },
+    "display_name": {
+      "$ref": "#/$defs/displayName"
     },
     "tags": {
       "type": "array",

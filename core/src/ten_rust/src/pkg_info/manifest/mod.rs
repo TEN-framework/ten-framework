@@ -40,6 +40,7 @@ pub struct Manifest {
     pub type_and_name: PkgTypeAndName,
     pub version: Version,
     pub description: Option<HashMap<String, String>>,
+    pub display_name: Option<HashMap<String, String>>,
     pub dependencies: Option<Vec<ManifestDependency>>,
     pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
@@ -82,6 +83,8 @@ impl<'de> Deserialize<'de> for Manifest {
 
         let description = extract_description(&all_fields)
             .map_err(serde::de::Error::custom)?;
+        let display_name = extract_display_name(&all_fields)
+            .map_err(serde::de::Error::custom)?;
 
         // For now, we'll use sync versions in deserialize context
         // TODO(xilin): Use async version in the future.
@@ -110,6 +113,7 @@ impl<'de> Deserialize<'de> for Manifest {
             type_and_name,
             version,
             description,
+            display_name,
             dependencies,
             dev_dependencies,
             tags,
@@ -138,6 +142,8 @@ impl Default for Manifest {
                 name: String::new(),
             },
             version: Version::new(0, 0, 0),
+            description: None,
+            display_name: None,
             dependencies: None,
             dev_dependencies: None,
             tags: None,
@@ -146,7 +152,6 @@ impl Default for Manifest {
             package: None,
             scripts: None,
             all_fields,
-            description: None,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
@@ -167,6 +172,7 @@ impl Manifest {
         let version = extract_version(&all_fields)?;
 
         let description = extract_description(&all_fields)?;
+        let display_name = extract_display_name(&all_fields)?;
         let dependencies = extract_dependencies(&all_fields).await?;
         let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
 
@@ -181,6 +187,7 @@ impl Manifest {
             type_and_name,
             version,
             description,
+            display_name,
             dependencies,
             dev_dependencies,
             tags,
@@ -259,6 +266,50 @@ fn extract_description(
         Ok(Some(result))
     } else if map.contains_key("description") {
         Err(anyhow!("'description' field is not an object"))
+    } else {
+        Ok(None)
+    }
+}
+
+fn extract_display_name(
+    map: &Map<String, Value>,
+) -> Result<Option<HashMap<String, String>>> {
+    // Lazy static initialization of regex that validates the locale format.
+    static LOCALE_REGEX: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+
+    if let Some(Value::Object(display_name_map)) = map.get("display_name") {
+        let mut result = HashMap::new();
+        for (locale, display_name) in display_name_map {
+            // Validate locale string format.
+            if !LOCALE_REGEX.is_match(locale) {
+                return Err(anyhow!(
+                    "Invalid locale format: '{}'. Locales must be in format \
+                     'xx' or 'xx-YY' (BCP47 format)",
+                    locale
+                ));
+            }
+
+            if let Value::String(display_name_str) = display_name {
+                if display_name_str.is_empty() {
+                    return Err(anyhow!(
+                        "Display name for locale '{}' cannot be empty",
+                        locale
+                    ));
+                }
+                result.insert(locale.clone(), display_name_str.clone());
+            } else {
+                return Err(anyhow!("Display name value must be a string"));
+            }
+        }
+
+        if result.is_empty() {
+            return Err(anyhow!("Display name object cannot be empty"));
+        }
+
+        Ok(Some(result))
+    } else if map.contains_key("display_name") {
+        Err(anyhow!("'display_name' field is not an object"))
     } else {
         Ok(None)
     }
