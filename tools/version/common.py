@@ -93,7 +93,7 @@ def update_version_in_manifest_json_file_for_pkgs(
         # Update the version in the JSON data.
         data["version"] = version
         with open(src_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=2)
+            json.dump(data, file, indent=2, ensure_ascii=False)
             # Notify that the content of the src_path has changed.
             touch(src_path)
 
@@ -126,7 +126,7 @@ def update_version_in_manifest_json_file(
         data["version"] = version
 
         with open(src_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=2)
+            json.dump(data, file, indent=2, ensure_ascii=False)
 
             # Notify that the content of the src_path has changed.
             touch(src_path)
@@ -174,7 +174,7 @@ def update_dependency_version_in_manifest_json_file(
             print(f"Updating version in {src_path}.")
 
         with open(src_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=2)
+            json.dump(data, file, indent=2, ensure_ascii=False)
 
             # Notify that the content of the src_path has changed.
             touch(src_path)

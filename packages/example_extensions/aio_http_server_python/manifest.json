@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "aio_http_server_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Async HTTP Server Python Extension",
     "zh-CN": "异步 HTTP 服务器 Python 扩展",
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "api": {}

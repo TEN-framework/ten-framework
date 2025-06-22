@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ollama_python",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "display_name": {
     "en-US": "Ollama Python Extension",
     "zh-CN": "Ollama Python 扩展",
@@ -23,7 +23,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.15"
+      "version": "0.10.16"
     }
   ],
   "package": {
