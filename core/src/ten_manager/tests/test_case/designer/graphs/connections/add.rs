@@ -1409,9 +1409,9 @@ mod tests {
         let test_dir = temp_dir.path().to_str().unwrap().to_string();
 
         // Copy the test directory to the temporary directory.
-        let test_data_dir = std::path::Path::new(
-            "tests/test_data/graph_add_connection_to_extension_with_interface/",
-        );
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_to_extension_with_interface");
 
         copy_folder_recursively(
             &test_data_dir.to_str().unwrap().to_string(),
@@ -1422,6 +1422,16 @@ mod tests {
         // Get the new created test directory.
         let test_data_dir = std::path::Path::new(&test_dir)
             .join("graph_add_connection_to_extension_with_interface");
+
+        // Print debug information
+        println!("Test data directory: {test_data_dir:?}");
+        println!("Directory exists: {}", test_data_dir.exists());
+        if test_data_dir.exists() {
+            println!("Directory contents:");
+            for entry in std::fs::read_dir(&test_data_dir).unwrap() {
+                println!("{:?}", entry.unwrap().path());
+            }
+        }
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
