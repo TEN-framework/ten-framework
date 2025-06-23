@@ -12,7 +12,7 @@
   "api": {
     "interface": [
       {
-        "import_uri": "https://raw.githubusercontent.com/TEN-framework/ten-framework/0.10.16/core/src/ten_rust/tests/test_data/interface/foo_1.json"
+        "import_uri": "file:///tmp/interface.json"
       }
     ],
     "property": {
