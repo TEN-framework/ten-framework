@@ -1423,16 +1423,6 @@ mod tests {
         let test_data_dir = std::path::Path::new(&test_dir)
             .join("graph_add_connection_to_extension_with_interface");
 
-        // Print debug information
-        println!("Test data directory: {test_data_dir:?}");
-        println!("Directory exists: {}", test_data_dir.exists());
-        if test_data_dir.exists() {
-            println!("Directory contents:");
-            for entry in std::fs::read_dir(&test_data_dir).unwrap() {
-                println!("{:?}", entry.unwrap().path());
-            }
-        }
-
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;

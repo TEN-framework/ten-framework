@@ -52,6 +52,8 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "Temporarily disable this test as it depends on external \
+                network which may cause timeout"]
     async fn test_extension_manifest_with_interface_remote_path() {
         let manifest_file_path = Path::new(
             "tests/test_data/extension_manifest_with_remote_interface.json",
