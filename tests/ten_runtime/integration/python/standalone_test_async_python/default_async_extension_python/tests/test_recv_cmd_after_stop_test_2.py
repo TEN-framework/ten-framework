@@ -30,6 +30,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
 
             ten_env.stop_test()
         elif cmd_name == "goodbye":
+            ten_env.log_error("Should not receive goodbye cmd after stop test")
             assert False, "should not receive goodbye cmd"
 
 
@@ -40,7 +41,7 @@ def test_recv_cmd_after_stop_2():
     # the extension will receive an error, but we consider this is expected.
     properties = {
         "send_goodbye_cmd": True,
-        "sleep_ms_before_goodbye": 1000,
+        "sleep_ms_before_goodbye": 3000,
         "assert_goodbye_result_success": False,
     }
 
