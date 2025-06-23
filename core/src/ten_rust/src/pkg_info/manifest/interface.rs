@@ -107,7 +107,7 @@ fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
 /// - A URI (http:// or https:// or file://)
 ///
 /// If the interface is already loaded or cannot be loaded, return an error.
-pub async fn load_interface(
+async fn load_interface(
     interface: &ManifestApiInterface,
     interface_set: &mut HashSet<String>,
 ) -> Result<ManifestApi> {
