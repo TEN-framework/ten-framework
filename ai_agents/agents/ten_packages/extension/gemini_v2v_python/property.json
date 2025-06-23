@@ -7,7 +7,7 @@
     "language": "en-US",
     "server_vad": true,
     "transcribe_user": false,
-    "transcribe_agent": false,
+    "transcribe_agent": true,
     "affective_dialog": false,
     "proactive_audio": false
 }
