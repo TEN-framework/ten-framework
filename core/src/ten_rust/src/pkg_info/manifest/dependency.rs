@@ -5,14 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::future::Future;
-use std::path::Path;
 use std::pin::Pin;
 
-use anyhow::Context;
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 
-use crate::pkg_info::{get_pkg_info_from_path, pkg_type::PkgType, PkgInfo};
+use crate::pkg_info::{pkg_type::PkgType, PkgInfo};
 
 type TypeAndNameFuture<'a> =
     Pin<Box<dyn Future<Output = Option<(PkgType, String)>> + Send + 'a>>;
@@ -67,44 +65,20 @@ impl ManifestDependency {
                     ..
                 } => Some((*pkg_type, name.clone())),
                 ManifestDependency::LocalDependency {
-                    path,
-                    base_dir,
-                    pkg_type,
-                    name,
-                    ..
+                    pkg_type, name, ..
                 } => {
-                    // If pkg_type and name are already available (flattened),
-                    // use them
+                    // After flattening, these should always be Some
                     if let (Some(pkg_type), Some(name)) = (pkg_type, name) {
-                        return Some((*pkg_type, name.clone()));
+                        Some((*pkg_type, name.clone()))
+                    } else {
+                        // This should never happen if the manifest was properly
+                        // flattened
+                        panic!(
+                            "LocalDependency not properly flattened: pkg_type \
+                             and name must be populated after manifest \
+                             flattening"
+                        );
                     }
-
-                    // Otherwise, read from the manifest file
-                    let base_dir_str = base_dir.as_str();
-                    let path_str = path.as_str();
-
-                    let abs_path = Path::new(base_dir_str)
-                        .join(path_str)
-                        .canonicalize()
-                        .with_context(|| {
-                            format!(
-                                "Failed to canonicalize path: {base_dir_str} \
-                                 + {path_str}"
-                            )
-                        })
-                        .ok()?;
-
-                    let pkg_info = get_pkg_info_from_path(
-                        &abs_path, false, false, &mut None, None,
-                    )
-                    .await
-                    .ok()?;
-
-                    // Return owned String to avoid referencing local data
-                    Some((
-                        pkg_info.manifest.type_and_name.pkg_type,
-                        pkg_info.manifest.type_and_name.name.clone(),
-                    ))
                 }
             }
         })
