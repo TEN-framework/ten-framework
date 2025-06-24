@@ -12,25 +12,29 @@
   "api": {
     "interface": [
       {
-        "import_uri": "./interface/foo_1.json"
+        "import_uri": "https://raw.githubusercontent.com/TEN-framework/ten-framework/0.10.16/core/src/ten_rust/tests/test_data/interface/foo_1.json"
       }
     ],
     "property": {
-      "foo": {
-        "type": "bool"
+      "properties": {
+        "foo": {
+          "type": "bool"
+        }
       }
     },
     "cmd_in": [
       {
         "name": "hello",
         "property": {
-          "foo": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "foo"
-        ]
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
       }
     ]
   }

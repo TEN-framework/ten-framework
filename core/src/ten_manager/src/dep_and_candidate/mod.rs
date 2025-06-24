@@ -74,9 +74,15 @@ async fn merge_dependency_to_dependencies(
             PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
             version_req,
         ),
-        ManifestDependency::LocalDependency { path, base_dir } => {
+        ManifestDependency::LocalDependency { path, base_dir, .. } => {
             // Get type and name from manifest for local dependency.
-            let abs_path = Path::new(base_dir).join(path);
+            let base_dir_str = base_dir.as_deref().ok_or_else(|| {
+                anyhow!(
+                    "base_dir cannot be None when processing local dependency \
+                     in merge"
+                )
+            })?;
+            let abs_path = Path::new(base_dir_str).join(path);
             let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
 
             let local_manifest =
@@ -112,10 +118,14 @@ async fn process_local_dependency_to_get_candidate(
     new_pkgs_to_be_searched: &mut Vec<PkgInfo>,
 ) -> Result<()> {
     // We should only call this with a LocalDependency.
-    if let ManifestDependency::LocalDependency { path, base_dir } = dependency {
+    if let ManifestDependency::LocalDependency { path, base_dir, .. } =
+        dependency
+    {
         // Construct a `PkgInfo` to represent the package corresponding to
         // the specified path.
-        let base_dir_str = base_dir.as_str();
+        let base_dir_str = base_dir.as_deref().ok_or_else(|| {
+            anyhow!("base_dir cannot be None when processing local dependency")
+        })?;
         let path_str = path.as_str();
 
         let abs_path = Path::new(base_dir_str)
@@ -133,7 +143,7 @@ async fn process_local_dependency_to_get_candidate(
 
         pkg_info.is_local_dependency = true;
         pkg_info.local_dependency_path = Some(path.clone());
-        pkg_info.local_dependency_base_dir = Some(base_dir.clone());
+        pkg_info.local_dependency_base_dir = base_dir.clone();
 
         let candidate_map =
             all_candidates.entry((&pkg_info).into()).or_default();

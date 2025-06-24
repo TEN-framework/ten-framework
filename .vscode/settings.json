@@ -3,6 +3,9 @@
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp.formatting": "disabled",
   "C_Cpp.intelliSenseEngine": "disabled",
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
   "[markdown]": {
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
@@ -20,7 +23,9 @@
   ],
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
+    "source.fixAll": "explicit",
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
   },
   "editor.defaultFormatter": null,
   "editor.formatOnSave": true,
@@ -65,7 +70,6 @@
     "MD033": false,
     "default": true
   },
-  "prettier.configPath": "tools/prettier/.prettierrc.js",
   "pylint.args": [
     "--rcfile",
     "${workspaceFolder}/tools/pylint/.pylintrc"

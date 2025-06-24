@@ -1409,9 +1409,9 @@ mod tests {
         let test_dir = temp_dir.path().to_str().unwrap().to_string();
 
         // Copy the test directory to the temporary directory.
-        let test_data_dir = std::path::Path::new(
-            "tests/test_data/graph_add_connection_to_extension_with_interface/",
-        );
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_to_extension_with_interface");
 
         copy_folder_recursively(
             &test_data_dir.to_str().unwrap().to_string(),
@@ -1427,12 +1427,20 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let _ = get_all_pkgs_in_app(
+            get_all_pkgs_in_app(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &test_data_dir.to_str().unwrap().to_string(),
             )
-            .await;
+            .await
+            .unwrap();
+        }
+
+        {
+            let pkgs_cache = designer_state.pkgs_cache.read().await;
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            println!("Packages in cache: {pkgs_cache:?}");
+            println!("Graphs in cache: {graphs_cache:?}");
         }
 
         let graph_id_clone;
