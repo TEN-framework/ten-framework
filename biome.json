@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
-  "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-  "files": { "ignoreUnknown": false },
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": false
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
@@ -24,8 +30,12 @@
           "level": "error",
           "fix": "safe",
           "options": {
-            "attributes": ["className"],
-            "functions": ["cn"]
+            "attributes": [
+              "className"
+            ],
+            "functions": [
+              "cn"
+            ]
           }
         }
       }
@@ -44,9 +54,17 @@
       "bracketSpacing": true
     }
   },
-  "html": { "formatter": { "selfCloseVoidElements": "always" } },
+  "html": {
+    "formatter": {
+      "selfCloseVoidElements": "always"
+    }
+  },
   "assist": {
     "enabled": true,
-    "actions": { "source": { "organizeImports": "on" } }
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   }
 }
