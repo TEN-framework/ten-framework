@@ -19,7 +19,7 @@ use std::{collections::HashSet, path::Path};
 use anyhow::{anyhow, Context, Result};
 use url::Url;
 
-async fn load_interface_from_http_url_async(url: &Url) -> Result<ManifestApi> {
+async fn load_interface_from_http_url(url: &Url) -> Result<ManifestApi> {
     // Create HTTP client
     let client = reqwest::Client::new();
 
@@ -68,13 +68,6 @@ async fn load_interface_from_http_url_async(url: &Url) -> Result<ManifestApi> {
     Ok(interface_api)
 }
 
-fn load_interface_from_http_url(url: &Url) -> Result<ManifestApi> {
-    let rt = tokio::runtime::Runtime::new()
-        .context("Failed to create tokio runtime")?;
-
-    rt.block_on(load_interface_from_http_url_async(url))
-}
-
 fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
     // Convert file URL to local path
     let path =
@@ -114,7 +107,7 @@ fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
 /// - A URI (http:// or https:// or file://)
 ///
 /// If the interface is already loaded or cannot be loaded, return an error.
-pub fn load_interface(
+async fn load_interface(
     interface: &ManifestApiInterface,
     interface_set: &mut HashSet<String>,
 ) -> Result<ManifestApi> {
@@ -139,16 +132,39 @@ pub fn load_interface(
     if let Ok(url) = Url::parse(&real_path) {
         match url.scheme() {
             "http" | "https" => {
-                return load_interface_from_http_url(&url);
+                return load_interface_from_http_url(&url).await;
             }
             "file" => {
                 return load_interface_from_file_url(&url);
             }
             _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    // The import_uri may be a relative path in Windows.
+                    // Continue to parse the import_uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in import_uri real_path: \
+                         {} when load_interface",
+                        url.scheme(),
+                        real_path
+                    ));
+                }
+
+                #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    "Unsupported URL scheme '{}' in import_uri real_path: {} \
+                     when load_interface",
                     url.scheme(),
-                    import_uri
+                    real_path
                 ));
             }
         }
@@ -333,25 +349,13 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
 /// Flatten a ManifestApi instance.
 /// If the ManifestApi contains any interface, it will be flattened. If some
 /// error occurs during flattening, the original ManifestApi will be returned.
-pub fn flatten_manifest_api(
+pub async fn flatten_manifest_api(
     manifest_api: &Option<ManifestApi>,
     flattened_api: &mut Option<ManifestApi>,
 ) -> Result<()> {
     // Try to flatten the manifest api if it contains any interface references.
-    let maybe_flattened_api = if let Some(api) = manifest_api {
-        match api.flatten(&load_interface) {
-            Ok(Some(flattened_api)) => Some(flattened_api),
-            Ok(None) => None, // No interfaces to flatten, use original
-            Err(e) => {
-                println!(
-                    "Error flattening manifest api: {e} , using original api"
-                );
-                None // Error occurred, use original
-            }
-        }
-    } else {
-        None
-    };
+    let maybe_flattened_api =
+        if let Some(api) = manifest_api { api.flatten().await? } else { None };
 
     if let Some(api) = maybe_flattened_api {
         *flattened_api = Some(api);
@@ -363,18 +367,11 @@ pub fn flatten_manifest_api(
 impl ManifestApi {
     /// Helper function that contains the common logic for flattening a
     /// ManifestApi instance.
-    fn flatten_internal<F>(
+    async fn flatten_internal(
         &self,
-        interface_loader: &F,
         flattened_apis: &mut Vec<ManifestApi>,
         interface_set: &mut HashSet<String>,
-    ) -> Result<()>
-    where
-        F: Fn(
-            &ManifestApiInterface,
-            &mut HashSet<String>,
-        ) -> Result<ManifestApi>,
-    {
+    ) -> Result<()> {
         // Push the current ManifestApi to the flattened_apis.
         flattened_apis.push(self.clone());
 
@@ -392,14 +389,15 @@ impl ManifestApi {
             // Load the interface.
             // If the interface is already loaded or cannot be loaded,
             // return an error.
-            let loaded_interface = interface_loader(interface, interface_set)?;
+            let loaded_interface =
+                load_interface(interface, interface_set).await?;
 
-            // Flatten the loaded interface.
-            loaded_interface.flatten_internal(
-                interface_loader,
-                flattened_apis,
-                interface_set,
-            )?;
+            // Flatten the loaded interface using Box::pin to handle recursion
+            Box::pin(
+                loaded_interface
+                    .flatten_internal(flattened_apis, interface_set),
+            )
+            .await?;
         }
 
         Ok(())
@@ -410,13 +408,7 @@ impl ManifestApi {
     /// Returns `Ok(None)` if the ManifestApi contains no interface and doesn't
     /// need flattening. Returns `Ok(Some(flattened_manifest_api))` if the
     /// ManifestApi was successfully flattened.
-    fn flatten<F>(&self, interface_loader: &F) -> Result<Option<ManifestApi>>
-    where
-        F: Fn(
-            &ManifestApiInterface,
-            &mut HashSet<String>,
-        ) -> Result<ManifestApi>,
-    {
+    async fn flatten(&self) -> Result<Option<ManifestApi>> {
         // Check if the ManifestApi contains any interface.
         if self.interface.is_none()
             || self.interface.as_ref().unwrap().is_empty()
@@ -428,11 +420,7 @@ impl ManifestApi {
         let mut flattened_apis = Vec::new();
         let mut interface_set = HashSet::new();
 
-        self.flatten_internal(
-            interface_loader,
-            &mut flattened_apis,
-            &mut interface_set,
-        )?;
+        self.flatten_internal(&mut flattened_apis, &mut interface_set).await?;
 
         // Merge the flattened apis into a single ManifestApi.
         let merged_api = merge_manifest_api(flattened_apis)?;

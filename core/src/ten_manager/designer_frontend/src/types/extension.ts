@@ -88,7 +88,12 @@ export const ExtensionConnectionItemSchema = z.object({
 });
 
 export const ExtensionSchema = z.object({
-  property: ExtensionPropertySchema.optional(),
+  property: z
+    .object({
+      properties: ExtensionPropertySchema.optional(),
+      required: z.array(z.string()).optional(),
+    })
+    .optional(),
   required: z.array(z.string()).optional(),
   cmd_in: z.array(ExtensionConnectionItemSchema).optional(),
   cmd_out: z.array(ExtensionConnectionItemSchema).optional(),
