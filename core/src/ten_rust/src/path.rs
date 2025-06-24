@@ -65,6 +65,19 @@ pub fn get_real_path_from_import_uri(
                 return Ok(url.to_string());
             }
             _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    return Ok(url.to_string());
+                }
+
                 return Err(anyhow::anyhow!(
                     "Unsupported URL scheme '{}' in import_uri: {}",
                     url.scheme(),
