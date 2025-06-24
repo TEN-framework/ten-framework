@@ -408,8 +408,7 @@ async fn search_versions(
                                     })?;
 
                             let mut manifest =
-                                Manifest::create_from_str(&manifest_content)
-                                    .await?;
+                                Manifest::create_from_str(&manifest_content)?;
 
                             // Flatten the manifest by resolving import_uri
                             // fields

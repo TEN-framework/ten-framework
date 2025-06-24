@@ -22,7 +22,7 @@ mod tests {
             include_str!("../../../test_data/test_extension_manifest.json");
 
         let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+            Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
 
         let manifest = result.unwrap();
@@ -59,7 +59,7 @@ mod tests {
         }"#;
 
         let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+            Manifest::create_from_str(manifest_str);
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();
@@ -90,7 +90,7 @@ mod tests {
         }"#;
 
         let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+            Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
     }
 
@@ -117,7 +117,7 @@ mod tests {
         }"#;
 
         let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+            Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
     }
 
@@ -200,7 +200,7 @@ mod tests {
         }"#;
 
         let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+            Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
 
         let manifest = result.unwrap();

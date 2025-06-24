@@ -172,7 +172,7 @@ impl Default for Manifest {
 }
 
 impl Manifest {
-    pub async fn create_from_str(s: &str) -> Result<Self> {
+    pub fn create_from_str(s: &str) -> Result<Self> {
         ten_validate_manifest_json_string(s)?;
 
         let value: serde_json::Value = serde_json::from_str(s)?;
@@ -299,8 +299,7 @@ impl Manifest {
                         // Read and parse the manifest content
                         match read_file_to_string(&dep_manifest_path) {
                             Ok(content) => {
-                                match Manifest::create_from_str(&content).await
-                                {
+                                match Manifest::create_from_str(&content) {
                                     Ok(dep_manifest) => {
                                         // Update the base_dir for the
                                         // dependency
@@ -846,7 +845,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     let content = read_file_to_string(&manifest_file_path)?;
 
     // Parse the content into a Manifest.
-    let mut manifest = Manifest::create_from_str(&content).await?;
+    let mut manifest = Manifest::create_from_str(&content)?;
 
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.

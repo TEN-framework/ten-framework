@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #[cfg(test)]
+#[allow(clippy::needless_borrow)]
 mod tests {
     use std::fs;
     use tempfile::TempDir;
@@ -56,8 +57,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Before flattening, content should be None and import_uri should be
         // Some
@@ -148,8 +148,7 @@ mod tests {
         );
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(&manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Before flattening, content should be the existing content
         assert_eq!(
@@ -192,8 +191,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Create a temporary directory for testing
         let temp_dir = TempDir::new().unwrap();
@@ -238,8 +236,7 @@ mod tests {
         );
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(&manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Before flattening, content should be None and import_uri should be
         // Some
@@ -295,8 +292,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Before flattening, content should be None and import_uri should be
         // Some
@@ -372,8 +368,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
@@ -434,8 +429,7 @@ mod tests {
         );
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(&manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Before flattening, content should be the existing content
         assert_eq!(
@@ -477,8 +471,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Create a temporary directory for testing
         let temp_dir = TempDir::new().unwrap();
@@ -511,8 +504,7 @@ mod tests {
         }"#;
 
         // Parse the manifest
-        let mut manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest = Manifest::create_from_str(&manifest_json).unwrap();
 
         // Flatten the manifest without base_dir should fail for relative paths
         let result = Manifest::flatten(&mut manifest, None).await;

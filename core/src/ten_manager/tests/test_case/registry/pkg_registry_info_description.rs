@@ -39,7 +39,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -73,7 +73,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
