@@ -1435,6 +1435,13 @@ mod tests {
             .await;
         }
 
+        {
+            let pkgs_cache = designer_state.pkgs_cache.read().await;
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            println!("Packages in cache: {pkgs_cache:?}");
+            println!("Graphs in cache: {graphs_cache:?}");
+        }
+
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
