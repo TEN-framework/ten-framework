@@ -419,7 +419,7 @@ async fn search_versions(
                                 {
                                     Manifest::flatten(
                                         &mut manifest,
-                                        base_dir_str,
+                                        Some(base_dir_str),
                                     )
                                     .await?;
                                 }

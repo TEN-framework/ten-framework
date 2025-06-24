@@ -228,19 +228,26 @@ impl Manifest {
     /// Flattens the manifest by resolving import_uri fields in readme,
     /// description, and display_name.
     ///
-    /// This function reads the content from files specified in import_uri and
+    /// This function reads the content from URIs specified in import_uri and
     /// populates the corresponding content fields. If a content field
     /// already has a value, the import_uri is ignored.
+    ///
+    /// The import_uri can be:
+    /// - A relative path (relative to the base_dir if provided)
+    /// - A URI (http:// or https:// or file://)
     ///
     /// # Arguments
     /// * `manifest` - A mutable reference to the manifest to flatten
     /// * `base_dir` - The base directory to resolve relative paths in
-    ///   import_uri
-    pub async fn flatten(manifest: &mut Self, base_dir: &str) -> Result<()> {
+    ///   import_uri (None if not needed for absolute URIs)
+    pub async fn flatten(
+        manifest: &mut Self,
+        base_dir: Option<&str>,
+    ) -> Result<()> {
         // Helper function to flatten a LocalizedField
         async fn flatten_localized_field(
             field: &mut Option<LocalizedField>,
-            base_dir: &str,
+            base_dir: Option<&str>,
         ) -> Result<()> {
             if let Some(localized_field) = field {
                 for (_locale, locale_content) in
@@ -251,11 +258,8 @@ impl Manifest {
                         if let Some(import_uri) = &locale_content.import_uri {
                             // Load content from the import_uri using the
                             // universal loader
-                            match load_content_from_uri(
-                                import_uri,
-                                Some(base_dir),
-                            )
-                            .await
+                            match load_content_from_uri(import_uri, base_dir)
+                                .await
                             {
                                 Ok(content) => {
                                     locale_content.content = Some(content);
@@ -726,7 +730,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     let base_dir_str = manifest_folder_path.to_str().ok_or_else(|| {
         anyhow::anyhow!("Failed to convert folder path to string")
     })?;
-    Manifest::flatten(&mut manifest, base_dir_str).await?;
+    Manifest::flatten(&mut manifest, Some(base_dir_str)).await?;
 
     // Update the base_dir for all local dependencies to be the manifest's
     // parent directory.

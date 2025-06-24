@@ -82,7 +82,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, content should be populated with file contents
         assert_eq!(
@@ -162,7 +162,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, content should remain unchanged since it already
         // had content
@@ -201,7 +201,7 @@ mod tests {
 
         // Flatten the manifest should fail
         let base_dir = temp_path.to_str().unwrap();
-        let result = Manifest::flatten(&mut manifest, base_dir).await;
+        let result = Manifest::flatten(&mut manifest, Some(base_dir)).await;
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -252,7 +252,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, content should be populated with file contents
         assert_eq!(
@@ -309,7 +309,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, content should be populated with file contents
         assert_eq!(
@@ -377,7 +377,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, all content should be populated
         assert_eq!(
@@ -448,7 +448,7 @@ mod tests {
 
         // Flatten the manifest
         let base_dir = temp_path.to_str().unwrap();
-        Manifest::flatten(&mut manifest, base_dir).await.unwrap();
+        Manifest::flatten(&mut manifest, Some(base_dir)).await.unwrap();
 
         // After flattening, content should remain unchanged
         assert_eq!(
@@ -486,11 +486,40 @@ mod tests {
 
         // Flatten the manifest should fail
         let base_dir = temp_path.to_str().unwrap();
-        let result = Manifest::flatten(&mut manifest, base_dir).await;
+        let result = Manifest::flatten(&mut manifest, Some(base_dir)).await;
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .to_string()
             .contains("Failed to read content from import_uri"));
+    }
+
+    #[tokio::test]
+    async fn test_manifest_flatten_relative_path_without_base_dir_error() {
+        // Create a manifest JSON with relative path import_uri
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "readme": {
+                "locales": {
+                    "en": {
+                        "import_uri": "readme.md"
+                    }
+                }
+            }
+        }"#;
+
+        // Parse the manifest
+        let mut manifest =
+            Manifest::create_from_str(manifest_json).await.unwrap();
+
+        // Flatten the manifest without base_dir should fail for relative paths
+        let result = Manifest::flatten(&mut manifest, None).await;
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("base_dir cannot be None when uri is a relative path"));
     }
 }
