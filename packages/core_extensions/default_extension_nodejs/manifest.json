@@ -3,18 +3,42 @@
   "name": "default_extension_nodejs",
   "version": "0.10.16",
   "display_name": {
-    "en-US": "Default Node.js Extension",
-    "zh-CN": "默认 Node.js 扩展",
-    "zh-TW": "預設 Node.js 擴充",
-    "ja-JP": "デフォルト Node.js 拡張",
-    "ko-KR": "기본 Node.js 확장"
+    "locales": {
+      "en-US": {
+        "content": "Default Node.js Extension"
+      },
+      "zh-CN": {
+        "content": "默认 Node.js 扩展"
+      },
+      "zh-TW": {
+        "content": "預設 Node.js 擴充"
+      },
+      "ja-JP": {
+        "content": "デフォルト Node.js 拡張"
+      },
+      "ko-KR": {
+        "content": "기본 Node.js 확장"
+      }
+    }
   },
   "description": {
-    "en-US": "Default TEN Framework extension template written in Node.js",
-    "zh-CN": "使用 Node.js 语言编写的默认 TEN Framework 扩展模板",
-    "zh-TW": "使用 Node.js 語言編寫的預設 TEN Framework 擴充模板",
-    "ja-JP": "Node.jsで書かれたデフォルトのTEN Framework拡張テンプレート",
-    "ko-KR": "Node.js로 작성된 기본 TEN Framework 확장 템플릿"
+    "locales": {
+      "en-US": {
+        "content": "Default TEN Framework extension template written in Node.js"
+      },
+      "zh-CN": {
+        "content": "使用 Node.js 语言编写的默认 TEN Framework 扩展模板"
+      },
+      "zh-TW": {
+        "content": "使用 Node.js 語言編寫的預設 TEN Framework 擴充模板"
+      },
+      "ja-JP": {
+        "content": "Node.jsで書かれたデフォルトのTEN Framework拡張テンプレート"
+      },
+      "ko-KR": {
+        "content": "Node.js로 작성된 기본 TEN Framework 확장 템플릿"
+      }
+    }
   },
   "tags": [
     "nodejs"

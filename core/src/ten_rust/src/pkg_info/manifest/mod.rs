@@ -34,13 +34,28 @@ use support::ManifestSupport;
 use super::constants::TEN_STR_TAGS;
 use super::pkg_type_and_name::PkgTypeAndName;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocaleContent {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import_uri: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocalizedField {
+    pub locales: HashMap<String, LocaleContent>,
+}
+
 // Define a structure that mirrors the structure of the JSON file.
 #[derive(Debug, Clone)]
 pub struct Manifest {
     pub type_and_name: PkgTypeAndName,
     pub version: Version,
-    pub description: Option<HashMap<String, String>>,
-    pub display_name: Option<HashMap<String, String>>,
+    pub description: Option<LocalizedField>,
+    pub display_name: Option<LocalizedField>,
+    pub readme: Option<LocalizedField>,
     pub dependencies: Option<Vec<ManifestDependency>>,
     pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
@@ -85,6 +100,8 @@ impl<'de> Deserialize<'de> for Manifest {
             .map_err(serde::de::Error::custom)?;
         let display_name = extract_display_name(&all_fields)
             .map_err(serde::de::Error::custom)?;
+        let readme =
+            extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
 
         // For now, we'll use sync versions in deserialize context
         // TODO(xilin): Use async version in the future.
@@ -114,6 +131,7 @@ impl<'de> Deserialize<'de> for Manifest {
             version,
             description,
             display_name,
+            readme,
             dependencies,
             dev_dependencies,
             tags,
@@ -144,6 +162,7 @@ impl Default for Manifest {
             version: Version::new(0, 0, 0),
             description: None,
             display_name: None,
+            readme: None,
             dependencies: None,
             dev_dependencies: None,
             tags: None,
@@ -173,6 +192,7 @@ impl Manifest {
 
         let description = extract_description(&all_fields)?;
         let display_name = extract_display_name(&all_fields)?;
+        let readme = extract_readme(&all_fields)?;
         let dependencies = extract_dependencies(&all_fields).await?;
         let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
 
@@ -188,6 +208,7 @@ impl Manifest {
             version,
             description,
             display_name,
+            readme,
             dependencies,
             dev_dependencies,
             tags,
@@ -227,92 +248,118 @@ fn extract_version(map: &Map<String, Value>) -> Result<Version> {
     }
 }
 
-fn extract_description(
+/// Generic function to extract LocalizedField from a manifest field
+fn extract_localized_field(
     map: &Map<String, Value>,
-) -> Result<Option<HashMap<String, String>>> {
+    field_name: &str,
+) -> Result<Option<LocalizedField>> {
     // Lazy static initialization of regex that validates the locale format.
     static LOCALE_REGEX: Lazy<Regex> =
         Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
 
-    if let Some(Value::Object(desc_map)) = map.get("description") {
-        let mut result = HashMap::new();
-        for (locale, description) in desc_map {
-            // Validate locale string format.
-            if !LOCALE_REGEX.is_match(locale) {
-                return Err(anyhow!(
-                    "Invalid locale format: '{}'. Locales must be in format \
-                     'xx' or 'xx-YY' (BCP47 format)",
-                    locale
-                ));
-            }
-
-            if let Value::String(desc_str) = description {
-                if desc_str.is_empty() {
+    if let Some(Value::Object(field_obj)) = map.get(field_name) {
+        if let Some(Value::Object(locales_obj)) = field_obj.get("locales") {
+            let mut locales = HashMap::new();
+            for (locale, locale_content) in locales_obj {
+                // Validate locale string format.
+                if !LOCALE_REGEX.is_match(locale) {
                     return Err(anyhow!(
-                        "Description for locale '{}' cannot be empty",
+                        "Invalid locale format: '{}'. Locales must be in \
+                         format 'xx' or 'xx-YY' (BCP47 format)",
                         locale
                     ));
                 }
-                result.insert(locale.clone(), desc_str.clone());
-            } else {
-                return Err(anyhow!("Description value must be a string"));
+
+                if let Value::Object(content_obj) = locale_content {
+                    let mut locale_content =
+                        LocaleContent { content: None, import_uri: None };
+
+                    if let Some(Value::String(content_str)) =
+                        content_obj.get("content")
+                    {
+                        if content_str.is_empty() {
+                            return Err(anyhow!(
+                                "Content for locale '{}' cannot be empty",
+                                locale
+                            ));
+                        }
+                        locale_content.content = Some(content_str.clone());
+                    }
+
+                    if let Some(Value::String(import_uri_str)) =
+                        content_obj.get("import_uri")
+                    {
+                        if import_uri_str.is_empty() {
+                            return Err(anyhow!(
+                                "Import URI for locale '{}' cannot be empty",
+                                locale
+                            ));
+                        }
+                        locale_content.import_uri =
+                            Some(import_uri_str.clone());
+                    }
+
+                    if locale_content.content.is_none()
+                        && locale_content.import_uri.is_none()
+                    {
+                        return Err(anyhow!(
+                            "Locale '{}' must have either 'content' or \
+                             'import_uri'",
+                            locale
+                        ));
+                    }
+
+                    if locale_content.content.is_some()
+                        && locale_content.import_uri.is_some()
+                    {
+                        return Err(anyhow!(
+                            "Locale '{}' cannot have both 'content' and \
+                             'import_uri'",
+                            locale
+                        ));
+                    }
+
+                    locales.insert(locale.clone(), locale_content);
+                } else {
+                    return Err(anyhow!("Locale content must be an object"));
+                }
             }
-        }
 
-        if result.is_empty() {
-            return Err(anyhow!("Description object cannot be empty"));
-        }
+            if locales.is_empty() {
+                return Err(anyhow!(
+                    "{} locales object cannot be empty",
+                    field_name.replace('_', " ")
+                ));
+            }
 
-        Ok(Some(result))
-    } else if map.contains_key("description") {
-        Err(anyhow!("'description' field is not an object"))
+            Ok(Some(LocalizedField { locales }))
+        } else {
+            Err(anyhow!(
+                "'{}' field must contain a 'locales' object",
+                field_name
+            ))
+        }
+    } else if map.contains_key(field_name) {
+        Err(anyhow!("'{}' field is not an object", field_name))
     } else {
         Ok(None)
     }
 }
 
+fn extract_description(
+    map: &Map<String, Value>,
+) -> Result<Option<LocalizedField>> {
+    extract_localized_field(map, "description")
+}
+
 fn extract_display_name(
     map: &Map<String, Value>,
-) -> Result<Option<HashMap<String, String>>> {
-    // Lazy static initialization of regex that validates the locale format.
-    static LOCALE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+) -> Result<Option<LocalizedField>> {
+    extract_localized_field(map, "display_name")
+}
 
-    if let Some(Value::Object(display_name_map)) = map.get("display_name") {
-        let mut result = HashMap::new();
-        for (locale, display_name) in display_name_map {
-            // Validate locale string format.
-            if !LOCALE_REGEX.is_match(locale) {
-                return Err(anyhow!(
-                    "Invalid locale format: '{}'. Locales must be in format \
-                     'xx' or 'xx-YY' (BCP47 format)",
-                    locale
-                ));
-            }
-
-            if let Value::String(display_name_str) = display_name {
-                if display_name_str.is_empty() {
-                    return Err(anyhow!(
-                        "Display name for locale '{}' cannot be empty",
-                        locale
-                    ));
-                }
-                result.insert(locale.clone(), display_name_str.clone());
-            } else {
-                return Err(anyhow!("Display name value must be a string"));
-            }
-        }
-
-        if result.is_empty() {
-            return Err(anyhow!("Display name object cannot be empty"));
-        }
-
-        Ok(Some(result))
-    } else if map.contains_key("display_name") {
-        Err(anyhow!("'display_name' field is not an object"))
-    } else {
-        Ok(None)
-    }
+fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
+    extract_localized_field(map, "readme")
 }
 
 async fn extract_dependencies(

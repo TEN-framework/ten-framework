@@ -388,6 +388,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
             version: locked_item.version.clone(),
             description: None,
             display_name: None,
+            readme: None,
             dependencies: dependencies_option.clone(),
             dev_dependencies: None,
             tags: None,

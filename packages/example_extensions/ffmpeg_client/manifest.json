@@ -3,18 +3,42 @@
   "name": "ffmpeg_client",
   "version": "0.10.16",
   "display_name": {
-    "en-US": "FFmpeg Client Extension",
-    "zh-CN": "FFmpeg 客户端扩展",
-    "zh-TW": "FFmpeg 客戶端擴充",
-    "ja-JP": "FFmpeg クライアント拡張",
-    "ko-KR": "FFmpeg 클라이언트 확장"
+    "locales": {
+      "en-US": {
+        "content": "FFmpeg Client Extension"
+      },
+      "zh-CN": {
+        "content": "FFmpeg 客户端扩展"
+      },
+      "zh-TW": {
+        "content": "FFmpeg 客戶端擴充"
+      },
+      "ja-JP": {
+        "content": "FFmpeg クライアント拡張"
+      },
+      "ko-KR": {
+        "content": "FFmpeg 클라이언트 확장"
+      }
+    }
   },
   "description": {
-    "en-US": "FFmpeg client extension for media processing in TEN Framework",
-    "zh-CN": "TEN Framework 中用于媒体处理的 FFmpeg 客户端扩展",
-    "zh-TW": "TEN Framework 中用於媒體處理的 FFmpeg 客戶端擴充",
-    "ja-JP": "TEN Frameworkでのメディア処理用FFmpegクライアント拡張",
-    "ko-KR": "TEN Framework의 미디어 처리를 위한 FFmpeg 클라이언트 확장"
+    "locales": {
+      "en-US": {
+        "content": "FFmpeg client extension for media processing in TEN Framework"
+      },
+      "zh-CN": {
+        "content": "TEN Framework 中用于媒体处理的 FFmpeg 客户端扩展"
+      },
+      "zh-TW": {
+        "content": "TEN Framework 中用於媒體處理的 FFmpeg 客戶端擴充"
+      },
+      "ja-JP": {
+        "content": "TEN Frameworkでのメディア処理用FFmpegクライアント拡張"
+      },
+      "ko-KR": {
+        "content": "TEN Framework의 미디어 처리를 위한 FFmpeg 클라이언트 확장"
+      }
+    }
   },
   "tags": [
     "cpp"
