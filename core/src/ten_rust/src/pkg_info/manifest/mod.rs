@@ -775,33 +775,23 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
             )
         })?;
 
-    // Update the base_dir for all local dependencies to be the manifest's
-    // parent directory.
-    if let Some(dependencies) = &mut manifest.dependencies {
-        for dep in dependencies.iter_mut() {
-            if let ManifestDependency::LocalDependency { base_dir, .. } = dep {
-                let base_dir_str = manifest_folder_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Failed to convert folder path to string"
-                        )
-                    })?
-                    .to_string();
-
-                *base_dir = Some(base_dir_str);
-            }
-        }
-    }
-
-    // Update the base_dir for all localized fields (display_name, description,
-    // readme) to be the manifest's parent directory.
+    // Convert manifest_folder_path to string once for reuse
     let base_dir_str = manifest_folder_path
         .to_str()
         .ok_or_else(|| {
             anyhow::anyhow!("Failed to convert folder path to string")
         })?
         .to_string();
+
+    // Update the base_dir for all local dependencies to be the manifest's
+    // parent directory.
+    if let Some(dependencies) = &mut manifest.dependencies {
+        for dep in dependencies.iter_mut() {
+            if let ManifestDependency::LocalDependency { base_dir, .. } = dep {
+                *base_dir = Some(base_dir_str.clone());
+            }
+        }
+    }
 
     // Update base_dir for display_name
     if let Some(display_name) = &mut manifest.display_name {
@@ -829,16 +819,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     if let Some(api) = &mut manifest.api {
         if let Some(interface) = &mut api.interface {
             for interface in interface.iter_mut() {
-                interface.base_dir = Some(
-                    manifest_folder_path
-                        .to_str()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Failed to convert folder path to string"
-                            )
-                        })?
-                        .to_string(),
-                );
+                interface.base_dir = Some(base_dir_str.clone());
             }
         }
     }
