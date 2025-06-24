@@ -49,7 +49,7 @@ pub struct LocaleContent {
     // this LocaleContent is located. It is primarily used to parse the
     // `import_uri` field when it contains a relative path.
     #[serde(skip)]
-    pub base_dir: String,
+    pub base_dir: Option<String>,
 }
 
 impl LocaleContent {
@@ -77,14 +77,14 @@ impl LocaleContent {
             let base_dir = if is_absolute_uri(import_uri) {
                 None
             } else {
-                if self.base_dir.is_empty() {
+                if self.base_dir.is_none() {
                     return Err(anyhow!(
-                        "base_dir cannot be empty when import_uri is a \
+                        "base_dir cannot be None when import_uri is a \
                          relative path: {}",
                         import_uri
                     ));
                 }
-                Some(self.base_dir.as_str())
+                Some(self.base_dir.as_ref().unwrap().as_str())
             };
 
             // Load content from URI
@@ -374,7 +374,7 @@ fn extract_localized_field(
                     let mut locale_content = LocaleContent {
                         content: None,
                         import_uri: None,
-                        base_dir: String::new(),
+                        base_dir: None,
                     };
 
                     if let Some(Value::String(content_str)) =
@@ -789,7 +789,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
                     })?
                     .to_string();
 
-                *base_dir = base_dir_str;
+                *base_dir = Some(base_dir_str);
             }
         }
     }
@@ -806,21 +806,21 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Update base_dir for display_name
     if let Some(display_name) = &mut manifest.display_name {
         for (_locale, locale_content) in display_name.locales.iter_mut() {
-            locale_content.base_dir = base_dir_str.clone();
+            locale_content.base_dir = Some(base_dir_str.clone());
         }
     }
 
     // Update base_dir for description
     if let Some(description) = &mut manifest.description {
         for (_locale, locale_content) in description.locales.iter_mut() {
-            locale_content.base_dir = base_dir_str.clone();
+            locale_content.base_dir = Some(base_dir_str.clone());
         }
     }
 
     // Update base_dir for readme
     if let Some(readme) = &mut manifest.readme {
         for (_locale, locale_content) in readme.locales.iter_mut() {
-            locale_content.base_dir = base_dir_str.clone();
+            locale_content.base_dir = Some(base_dir_str.clone());
         }
     }
 
@@ -829,14 +829,16 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     if let Some(api) = &mut manifest.api {
         if let Some(interface) = &mut api.interface {
             for interface in interface.iter_mut() {
-                interface.base_dir = manifest_folder_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Failed to convert folder path to string"
-                        )
-                    })?
-                    .to_string();
+                interface.base_dir = Some(
+                    manifest_folder_path
+                        .to_str()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Failed to convert folder path to string"
+                            )
+                        })?
+                        .to_string(),
+                );
             }
         }
     }

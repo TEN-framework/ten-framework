@@ -289,7 +289,9 @@ async fn get_encodable_deps_from_pkg_deps(
                 } => {
                     // For local dependencies, we need to extract info from the
                     // manifest.
-                    let abs_path = std::path::Path::new(&base_dir).join(&path);
+                    let base_dir_str = base_dir.as_deref().unwrap_or("");
+                    let abs_path =
+                        std::path::Path::new(base_dir_str).join(&path);
                     let dep_manifest_path =
                         abs_path.join(MANIFEST_JSON_FILENAME);
 

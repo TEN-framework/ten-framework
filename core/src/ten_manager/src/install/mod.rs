@@ -322,7 +322,7 @@ async fn update_package_manifest(
         if let Some(local_path) = &local_path_if_any {
             let local_dep = ManifestDependency::LocalDependency {
                 path: local_path.clone(),
-                base_dir: "".to_string(),
+                base_dir: Some("".to_string()),
             };
             updated_dependencies.push(local_dep.clone());
             Some(vec![local_dep])

@@ -182,7 +182,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Test Extension".to_string()),
                 import_uri: None,
-                base_dir: String::new(),
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -190,7 +190,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("测试扩展".to_string()),
                 import_uri: None,
-                base_dir: String::new(),
+                base_dir: Some(String::new()),
             },
         );
 
@@ -295,7 +295,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Test Extension".to_string()),
                 import_uri: None,
-                base_dir: String::new(),
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -303,7 +303,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Extension de Test".to_string()),
                 import_uri: None,
-                base_dir: String::new(),
+                base_dir: Some(String::new()),
             },
         );
 

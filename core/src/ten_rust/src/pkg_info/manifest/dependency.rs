@@ -36,9 +36,8 @@ pub enum ManifestDependency {
         // Used to record the folder path where the `manifest.json` containing
         // this dependency is located. It is primarily used to parse the `path`
         // field when it contains a relative path.
-        // TODO(xilin): Make it optional.
         #[serde(skip)]
-        base_dir: String,
+        base_dir: Option<String>,
     },
 }
 
@@ -58,7 +57,9 @@ impl ManifestDependency {
                     path, base_dir, ..
                 } => {
                     // Construct the full path to the dependency
-                    let full_path = Path::new(base_dir).join(path);
+                    let full_path =
+                        Path::new(base_dir.as_deref().unwrap_or_default())
+                            .join(path);
 
                     // Try to canonicalize the path
                     let abs_path = match full_path.canonicalize() {
@@ -97,7 +98,7 @@ impl From<&PkgInfo> for ManifestDependency {
                 base_dir: pkg_info
                     .local_dependency_base_dir
                     .clone()
-                    .unwrap_or_default(),
+                    .map(|dir| dir.to_string()),
             }
         } else {
             ManifestDependency::RegistryDependency {
