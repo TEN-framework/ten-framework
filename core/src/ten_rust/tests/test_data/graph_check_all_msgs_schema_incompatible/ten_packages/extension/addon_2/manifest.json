@@ -14,29 +14,45 @@
       {
         "name": "cmd_1",
         "property": {
-          "a": {
-            "type": "string"
-          },
-          "b": {
-            "type": "object",
-            "properties": {
-              "c": {
-                "type": "int32"
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "object",
+              "properties": {
+                "c": {
+                  "type": "int32"
+                }
               }
             }
-          }
-        },
-        "required": [
-          "a"
-        ]
+          },
+          "required": [
+            "a"
+          ]
+        }
       }
     ],
     "data_in": [
       {
         "name": "data_1",
         "property": {
-          "a": {
-            "type": "bool"
+          "properties": {
+            "a": {
+              "type": "bool"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "audio_frame_1",
+        "property": {
+          "properties": {
+            "sample_rate": {
+              "type": "int32"
+            }
           }
         }
       }
@@ -45,22 +61,14 @@
       {
         "name": "video_frame_1",
         "property": {
-          "width": {
-            "type": "int32"
-          }
-        },
-        "required": [
-          "width"
-        ]
-      }
-    ],
-    "audio_frame_in": [
-      {
-        "name": "audio_frame_1",
-        "property": {
-          "sample_rate": {
-            "type": "int32"
-          }
+          "properties": {
+            "width": {
+              "type": "int32"
+            }
+          },
+          "required": [
+            "width"
+          ]
         }
       }
     ]

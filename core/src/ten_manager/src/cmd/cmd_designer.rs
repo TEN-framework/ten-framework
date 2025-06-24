@@ -125,7 +125,7 @@ pub async fn execute_cmd(
 
     // Check if the base_dir is an app folder.
     if let Some(actual_base_dir) = actual_base_dir_opt.as_ref() {
-        if let Err(e) = check_is_app_folder(Path::new(actual_base_dir)) {
+        if let Err(e) = check_is_app_folder(Path::new(actual_base_dir)).await {
             out.normal_line(&format!(
                 "{}  base_dir is not an app folder: {}",
                 Emoji("🚨", ":-("),
@@ -143,7 +143,8 @@ pub async fn execute_cmd(
             &mut pkgs_cache,
             &mut graphs_cache,
             actual_base_dir,
-        )?;
+        )
+        .await?;
     }
 
     let server = HttpServer::new(move || {

@@ -140,7 +140,9 @@ pub async fn add_graph_connection_endpoint(
         request_payload.dest_extension.clone(),
         &pkgs_cache,
         request_payload.msg_conversion.clone(),
-    ) {
+    )
+    .await
+    {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to add connection: {e}"),

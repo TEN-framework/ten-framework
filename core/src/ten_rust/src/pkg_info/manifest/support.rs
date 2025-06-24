@@ -34,7 +34,7 @@ fn write_field<T: fmt::Display>(
         if !*first {
             write!(f, ", ")?;
         }
-        write!(f, "{}", v)?;
+        write!(f, "{v}")?;
         *first = false;
     }
     Ok(())

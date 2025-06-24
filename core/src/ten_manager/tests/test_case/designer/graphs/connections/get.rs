@@ -55,7 +55,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 TEST_DIR,
-            );
+            )
+            .await;
         }
 
         // Find the UUID for the graph with name "default"
@@ -193,7 +194,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json_str,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 

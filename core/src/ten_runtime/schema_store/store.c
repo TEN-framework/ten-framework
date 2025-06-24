@@ -135,10 +135,11 @@ void ten_schema_store_init(ten_schema_store_t *self) {
 bool ten_schema_store_set_schema_definition(ten_schema_store_t *self,
                                             ten_value_t *schema_def,
                                             ten_error_t *err) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(schema_def), "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!ten_value_is_object(schema_def)) {
     ten_error_set(err, TEN_ERROR_CODE_GENERIC,
@@ -250,11 +251,12 @@ void ten_schema_store_deinit(ten_schema_store_t *self) {
 bool ten_schema_store_validate_properties(ten_schema_store_t *self,
                                           ten_value_t *props_value,
                                           ten_error_t *err) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(props_value && ten_value_check_integrity(props_value),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->property) {
     // No `property` schema is defined, which is permitted in TEN runtime.
@@ -268,8 +270,8 @@ bool ten_schema_store_validate_property_kv(ten_schema_store_t *self,
                                            const char *prop_name,
                                            ten_value_t *prop_value,
                                            ten_error_t *err) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(prop_name && strlen(prop_name), "Invalid argument.");
   TEN_ASSERT(prop_value && ten_value_check_integrity(prop_value),
              "Invalid argument.");
@@ -292,8 +294,8 @@ bool ten_schema_store_adjust_property_kv(ten_schema_store_t *self,
                                          const char *prop_name,
                                          ten_value_t *prop_value,
                                          ten_error_t *err) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(prop_name && strlen(prop_name), "Invalid argument.");
   TEN_ASSERT(prop_value && ten_value_check_integrity(prop_value),
              "Invalid argument.");
@@ -315,11 +317,12 @@ bool ten_schema_store_adjust_property_kv(ten_schema_store_t *self,
 bool ten_schema_store_adjust_properties(ten_schema_store_t *self,
                                         ten_value_t *props_value,
                                         ten_error_t *err) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(props_value && ten_value_check_integrity(props_value),
              "Invalid argument.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (!self->property) {
     // No `property` schema is defined, which is permitted in TEN runtime.
@@ -333,8 +336,8 @@ ten_msg_schema_t *ten_schema_store_get_msg_schema(ten_schema_store_t *self,
                                                   TEN_MSG_TYPE msg_type,
                                                   const char *msg_name,
                                                   bool is_msg_out) {
-  TEN_ASSERT(self && ten_schema_store_check_integrity(self),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_schema_store_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(msg_type != TEN_MSG_TYPE_INVALID, "Invalid argument.");
 
   ten_hashtable_t *schema_map = NULL;

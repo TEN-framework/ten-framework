@@ -52,8 +52,31 @@ pub fn load_graph_from_uri(
                 return load_graph_from_file_url(&url, new_base_dir);
             }
             _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    // The import_uri may be a relative path in Windows.
+                    // Continue to parse the import_uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in import_uri: {} when \
+                         load_graph_from_uri",
+                        url.scheme(),
+                        uri
+                    ));
+                }
+
+                #[cfg(not(windows))]
                 return Err(anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    "Unsupported URL scheme '{}' in import_uri: {} when \
+                     load_graph_from_uri",
                     url.scheme(),
                     uri
                 ));
@@ -99,10 +122,11 @@ async fn load_graph_from_http_url_async(
     let client = reqwest::Client::new();
 
     // Make HTTP request
-    let response =
-        client.get(url.as_str()).send().await.with_context(|| {
-            format!("Failed to send HTTP request to {}", url)
-        })?;
+    let response = client
+        .get(url.as_str())
+        .send()
+        .await
+        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
 
     // Check if request was successful
     if !response.status().is_success() {
@@ -114,9 +138,10 @@ async fn load_graph_from_http_url_async(
     }
 
     // Get response body as text
-    let graph_content = response.text().await.with_context(|| {
-        format!("Failed to read response body from {}", url)
-    })?;
+    let graph_content = response
+        .text()
+        .await
+        .with_context(|| format!("Failed to read response body from {url}"))?;
 
     // Set the new_base_dir to the directory part of the URL
     if new_base_dir.is_some() {
@@ -130,7 +155,7 @@ async fn load_graph_from_http_url_async(
 
     // Parse the graph file into a Graph structure.
     let graph: Graph = serde_json::from_str(&graph_content)
-        .with_context(|| format!("Failed to parse graph JSON from {}", url))?;
+        .with_context(|| format!("Failed to parse graph JSON from {url}"))?;
 
     Ok(graph)
 }
@@ -185,6 +210,9 @@ pub struct GraphInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_start: Option<bool>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub singleton: Option<bool>,
+
     #[serde(flatten)]
     pub graph: Graph,
 
@@ -200,6 +228,19 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
+    pub fn from_str_with_base_dir(
+        s: &str,
+        current_base_dir: Option<&str>,
+    ) -> Result<Self> {
+        let mut graph_info: GraphInfo = serde_json::from_str(s)?;
+
+        graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
+        graph_info.validate_and_complete_and_flatten()?;
+
+        // Return the parsed data.
+        Ok(graph_info)
+    }
+
     pub fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         // Validate mutual exclusion between import_uri and graph fields
         if self.import_uri.is_some() {

@@ -457,11 +457,12 @@ static TEN_EXTENSION_DETERMINE_OUT_MSGS_RESULT ten_extension_determine_out_msgs(
 bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
                                 TEN_RESULT_RETURN_POLICY result_return_policy,
                                 ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(msg, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
-  TEN_ASSERT(err && ten_error_check_integrity(err), "Invalid argument.");
+  TEN_ASSERT(err, "Invalid argument.");
+  TEN_ASSERT(ten_error_check_integrity(err), "Invalid argument.");
 
   if (self->state == TEN_EXTENSION_STATE_ON_DEINIT_DONE) {
     if (err) {

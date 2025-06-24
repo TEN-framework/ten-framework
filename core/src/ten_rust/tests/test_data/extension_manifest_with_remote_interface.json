@@ -1,0 +1,41 @@
+{
+  "type": "extension",
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "https://raw.githubusercontent.com/TEN-framework/ten-framework/0.10.16/core/src/ten_rust/tests/test_data/interface/foo_1.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "foo": {
+          "type": "bool"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "hello",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      }
+    ]
+  }
+}
