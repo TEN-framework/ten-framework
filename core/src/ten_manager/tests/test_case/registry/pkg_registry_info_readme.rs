@@ -160,6 +160,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test README".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
 
@@ -249,6 +250,7 @@ mod tests {
             LocaleContent {
                 content: Some("English README content".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
         locales.insert(
@@ -256,6 +258,7 @@ mod tests {
             LocaleContent {
                 content: None,
                 import_uri: Some("file://./docs/readme-zh.md".to_string()),
+                base_dir: String::new(),
             },
         );
 

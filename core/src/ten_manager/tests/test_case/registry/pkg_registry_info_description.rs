@@ -92,6 +92,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test description".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
         locales.insert(
@@ -99,6 +100,7 @@ mod tests {
             LocaleContent {
                 content: Some("测试描述".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
 
@@ -189,6 +191,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test description".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
         locales.insert(
@@ -196,6 +199,7 @@ mod tests {
             LocaleContent {
                 content: Some("Description de test".to_string()),
                 import_uri: None,
+                base_dir: String::new(),
             },
         );
 

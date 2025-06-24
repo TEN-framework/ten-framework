@@ -44,11 +44,116 @@ pub struct LocaleContent {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import_uri: Option<String>,
+
+    // Used to record the folder path where the `manifest.json` containing
+    // this LocaleContent is located. It is primarily used to parse the
+    // `import_uri` field when it contains a relative path.
+    #[serde(skip)]
+    pub base_dir: String,
+}
+
+impl LocaleContent {
+    /// Gets the content of this LocaleContent.
+    ///
+    /// If the content field is not None, returns it directly.
+    /// If the content field is None, loads the content from the import_uri
+    /// using the base_dir if needed.
+    ///
+    /// # Arguments
+    /// * `self` - The LocaleContent instance
+    ///
+    /// # Returns
+    /// * `Result<String>` - The content string on success, or an error if the
+    ///   content cannot be loaded.
+    pub async fn get_content(&self) -> Result<String> {
+        // If content is already available, return it directly
+        if let Some(content) = &self.content {
+            return Ok(content.clone());
+        }
+
+        // If content is None, try to load from import_uri
+        if let Some(import_uri) = &self.import_uri {
+            // Determine if base_dir is needed based on import_uri
+            let base_dir = if is_absolute_uri(import_uri) {
+                None
+            } else {
+                if self.base_dir.is_empty() {
+                    return Err(anyhow!(
+                        "base_dir cannot be empty when import_uri is a \
+                         relative path: {}",
+                        import_uri
+                    ));
+                }
+                Some(self.base_dir.as_str())
+            };
+
+            // Load content from URI
+            load_content_from_uri(import_uri, base_dir).await.with_context(
+                || {
+                    format!(
+                        "Failed to load content from import_uri \
+                         '{import_uri}' with base_dir '{base_dir:?}'"
+                    )
+                },
+            )
+        } else {
+            // Both content and import_uri are None, this should not happen
+            // as it's validated during parsing
+            Err(anyhow!(
+                "LocaleContent must have either 'content' or 'import_uri'"
+            ))
+        }
+    }
+}
+
+/// Checks if the given URI is an absolute URI (http://, https://, file://)
+fn is_absolute_uri(uri: &str) -> bool {
+    uri.starts_with("http://")
+        || uri.starts_with("https://")
+        || uri.starts_with("file://")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalizedField {
     pub locales: HashMap<String, LocaleContent>,
+}
+
+impl LocalizedField {
+    /// Gets the content for a specific locale.
+    ///
+    /// If the content field is not None, returns it directly.
+    /// If the content field is None, loads the content from the import_uri
+    /// using the base_dir if needed.
+    ///
+    /// # Arguments
+    /// * `locale` - The locale string (e.g., "en", "zh-CN")
+    ///
+    /// # Returns
+    /// * `Result<Option<String>>` - The content string on success, None if
+    ///   locale not found, or an error if the content cannot be loaded.
+    pub async fn get_content(&self, locale: &str) -> Result<Option<String>> {
+        if let Some(locale_content) = self.locales.get(locale) {
+            Ok(Some(locale_content.get_content().await?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Gets the content for the first available locale.
+    ///
+    /// This is useful when you want to get any available content regardless of
+    /// locale.
+    ///
+    /// # Returns
+    /// * `Result<Option<String>>` - The content string on success, None if no
+    ///   locales available, or an error if the content cannot be loaded.
+    pub async fn get_any_content(&self) -> Result<Option<String>> {
+        if let Some((_, locale_content)) = self.locales.iter().next() {
+            Ok(Some(locale_content.get_content().await?))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 // Define a structure that mirrors the structure of the JSON file.
@@ -329,8 +434,11 @@ fn extract_localized_field(
                 }
 
                 if let Value::Object(content_obj) = locale_content {
-                    let mut locale_content =
-                        LocaleContent { content: None, import_uri: None };
+                    let mut locale_content = LocaleContent {
+                        content: None,
+                        import_uri: None,
+                        base_dir: String::new(),
+                    };
 
                     if let Some(Value::String(content_str)) =
                         content_obj.get("content")
@@ -753,6 +861,36 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
 
                 *base_dir = base_dir_str;
             }
+        }
+    }
+
+    // Update the base_dir for all localized fields (display_name, description,
+    // readme) to be the manifest's parent directory.
+    let base_dir_str = manifest_folder_path
+        .to_str()
+        .ok_or_else(|| {
+            anyhow::anyhow!("Failed to convert folder path to string")
+        })?
+        .to_string();
+
+    // Update base_dir for display_name
+    if let Some(display_name) = &mut manifest.display_name {
+        for (_locale, locale_content) in display_name.locales.iter_mut() {
+            locale_content.base_dir = base_dir_str.clone();
+        }
+    }
+
+    // Update base_dir for description
+    if let Some(description) = &mut manifest.description {
+        for (_locale, locale_content) in description.locales.iter_mut() {
+            locale_content.base_dir = base_dir_str.clone();
+        }
+    }
+
+    // Update base_dir for readme
+    if let Some(readme) = &mut manifest.readme {
+        for (_locale, locale_content) in readme.locales.iter_mut() {
+            locale_content.base_dir = base_dir_str.clone();
         }
     }
 
