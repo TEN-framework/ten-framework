@@ -1427,12 +1427,13 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let _ = get_all_pkgs_in_app(
+            get_all_pkgs_in_app(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &test_data_dir.to_str().unwrap().to_string(),
             )
-            .await;
+            .await
+            .unwrap();
         }
 
         {
