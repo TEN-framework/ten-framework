@@ -52,7 +52,7 @@
       "type": "string",
       "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
     },
-    "description": {
+    "localizedText": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -98,51 +98,11 @@
         }
       }
     },
+    "description": {
+      "$ref": "#/$defs/localizedText"
+    },
     "displayName": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "locales"
-      ],
-      "properties": {
-        "locales": {
-          "type": "object",
-          "propertyNames": {
-            "$ref": "#/$defs/localeString"
-          },
-          "patternProperties": {
-            "^[a-z]{2}(-[A-Z]{2})?$": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "content": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "import_uri": {
-                  "type": "string",
-                  "format": "uri-reference",
-                  "minLength": 1
-                }
-              },
-              "oneOf": [
-                {
-                  "required": [
-                    "content"
-                  ]
-                },
-                {
-                  "required": [
-                    "import_uri"
-                  ]
-                }
-              ]
-            }
-          },
-          "additionalProperties": false,
-          "minProperties": 1
-        }
-      }
+      "$ref": "#/$defs/localizedText"
     },
     "alphanumericCharacters": {
       "type": "string",
