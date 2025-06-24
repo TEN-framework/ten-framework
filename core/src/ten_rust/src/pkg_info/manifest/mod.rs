@@ -72,22 +72,16 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
-            // Determine base_dir for relative paths
-            let base_dir = if is_absolute_uri(import_uri) {
-                None
-            } else {
-                self.base_dir.as_deref()
-            };
-
             // Load content from URI
-            load_content_from_uri(import_uri, base_dir).await.with_context(
-                || {
+            load_content_from_uri(import_uri, self.base_dir.as_deref())
+                .await
+                .with_context(|| {
                     format!(
                         "Failed to load content from import_uri \
-                         '{import_uri}' with base_dir '{base_dir:?}'"
+                         '{import_uri}' with base_dir '{:?}'",
+                        self.base_dir
                     )
-                },
-            )
+                })
         } else {
             // Both content and import_uri are None, this should not happen
             // as it's validated during parsing
@@ -96,13 +90,6 @@ impl LocaleContent {
             ))
         }
     }
-}
-
-/// Checks if the given URI is an absolute URI (http://, https://, file://)
-fn is_absolute_uri(uri: &str) -> bool {
-    uri.starts_with("http://")
-        || uri.starts_with("https://")
-        || uri.starts_with("file://")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
