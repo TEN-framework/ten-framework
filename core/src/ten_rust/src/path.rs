@@ -75,11 +75,21 @@ pub fn get_real_path_from_import_uri(
                         .unwrap()
                         .is_ascii_alphabetic()
                 {
-                    return Ok(url.to_string());
+                    // The import_uri may be a relative path in Windows.
+                    // Continue to parse the import_uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in import_uri: {} when \
+                         get_real_path_from_import_uri",
+                        url.scheme(),
+                        import_uri
+                    ));
                 }
 
+                #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    "Unsupported URL scheme '{}' in import_uri: {} when \
+                     get_real_path_from_import_uri",
                     url.scheme(),
                     import_uri
                 ));

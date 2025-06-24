@@ -138,10 +138,33 @@ async fn load_interface(
                 return load_interface_from_file_url(&url);
             }
             _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    // The import_uri may be a relative path in Windows.
+                    // Continue to parse the import_uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in import_uri real_path: \
+                         {} when load_interface",
+                        url.scheme(),
+                        real_path
+                    ));
+                }
+
+                #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    "Unsupported URL scheme '{}' in import_uri real_path: {} \
+                     when load_interface",
                     url.scheme(),
-                    import_uri
+                    real_path
                 ));
             }
         }
