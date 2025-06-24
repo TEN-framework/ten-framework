@@ -39,6 +39,18 @@ pub enum ManifestDependency {
         // TODO(xilin): Make it optional.
         #[serde(skip)]
         base_dir: String,
+
+        // Flattened fields - populated during manifest flattening
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "type")]
+        pkg_type: Option<PkgType>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "version")]
+        version_req: Option<VersionReq>,
     },
 }
 
@@ -54,9 +66,20 @@ impl ManifestDependency {
                     name,
                     ..
                 } => Some((*pkg_type, name.clone())),
-                ManifestDependency::LocalDependency { path, base_dir } => {
-                    // Construct a `PkgInfo` to represent the package
-                    // corresponding to the specified path.
+                ManifestDependency::LocalDependency {
+                    path,
+                    base_dir,
+                    pkg_type,
+                    name,
+                    ..
+                } => {
+                    // If pkg_type and name are already available (flattened),
+                    // use them
+                    if let (Some(pkg_type), Some(name)) = (pkg_type, name) {
+                        return Some((*pkg_type, name.clone()));
+                    }
+
+                    // Otherwise, read from the manifest file
                     let base_dir_str = base_dir.as_str();
                     let path_str = path.as_str();
 
@@ -90,14 +113,36 @@ impl ManifestDependency {
 
 impl From<&PkgInfo> for ManifestDependency {
     fn from(pkg_info: &PkgInfo) -> Self {
-        ManifestDependency::RegistryDependency {
-            pkg_type: pkg_info.manifest.type_and_name.pkg_type,
-            name: pkg_info.manifest.type_and_name.name.clone(),
-            version_req: VersionReq::parse(&format!(
-                "{}",
-                pkg_info.manifest.version
-            ))
-            .unwrap(),
+        if pkg_info.is_local_dependency {
+            ManifestDependency::LocalDependency {
+                path: pkg_info
+                    .local_dependency_path
+                    .clone()
+                    .unwrap_or_default(),
+                base_dir: pkg_info
+                    .local_dependency_base_dir
+                    .clone()
+                    .unwrap_or_default(),
+                pkg_type: Some(pkg_info.manifest.type_and_name.pkg_type),
+                name: Some(pkg_info.manifest.type_and_name.name.clone()),
+                version_req: Some(
+                    VersionReq::parse(&format!(
+                        "{}",
+                        pkg_info.manifest.version
+                    ))
+                    .unwrap(),
+                ),
+            }
+        } else {
+            ManifestDependency::RegistryDependency {
+                pkg_type: pkg_info.manifest.type_and_name.pkg_type,
+                name: pkg_info.manifest.type_and_name.name.clone(),
+                version_req: VersionReq::parse(&format!(
+                    "{}",
+                    pkg_info.manifest.version
+                ))
+                .unwrap(),
+            }
         }
     }
 }

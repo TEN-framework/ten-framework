@@ -74,7 +74,7 @@ async fn merge_dependency_to_dependencies(
             PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
             version_req,
         ),
-        ManifestDependency::LocalDependency { path, base_dir } => {
+        ManifestDependency::LocalDependency { path, base_dir, .. } => {
             // Get type and name from manifest for local dependency.
             let abs_path = Path::new(base_dir).join(path);
             let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
@@ -112,7 +112,9 @@ async fn process_local_dependency_to_get_candidate(
     new_pkgs_to_be_searched: &mut Vec<PkgInfo>,
 ) -> Result<()> {
     // We should only call this with a LocalDependency.
-    if let ManifestDependency::LocalDependency { path, base_dir } = dependency {
+    if let ManifestDependency::LocalDependency { path, base_dir, .. } =
+        dependency
+    {
         // Construct a `PkgInfo` to represent the package corresponding to
         // the specified path.
         let base_dir_str = base_dir.as_str();

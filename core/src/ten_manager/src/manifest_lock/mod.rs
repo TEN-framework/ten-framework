@@ -284,7 +284,9 @@ async fn get_encodable_deps_from_pkg_deps(
                     pkg_type: pkg_type.to_string(),
                     name,
                 },
-                ManifestDependency::LocalDependency { path, base_dir } => {
+                ManifestDependency::LocalDependency {
+                    path, base_dir, ..
+                } => {
                     // For local dependencies, we need to extract info from the
                     // manifest.
                     let abs_path = std::path::Path::new(&base_dir).join(&path);

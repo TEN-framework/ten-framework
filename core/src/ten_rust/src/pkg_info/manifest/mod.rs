@@ -17,15 +17,16 @@ use std::{fmt, fs, path::Path, str::FromStr};
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::fs::read_file_to_string;
+use crate::json_schema;
 use crate::json_schema::ten_validate_manifest_json_string;
+use crate::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use crate::pkg_info::manifest::interface::flatten_manifest_api;
 use crate::pkg_info::pkg_type::PkgType;
-use crate::{json_schema, pkg_info::constants::MANIFEST_JSON_FILENAME};
 use api::ManifestApi;
 use dependency::ManifestDependency;
 use publish::PackageConfig;
@@ -280,10 +281,112 @@ impl Manifest {
             Ok(())
         }
 
+        // Helper function to flatten dependencies
+        async fn flatten_dependencies(
+            dependencies: &mut Option<Vec<ManifestDependency>>,
+            base_dir: Option<&str>,
+        ) -> Result<()> {
+            if let Some(deps) = dependencies {
+                for dep in deps.iter_mut() {
+                    if let ManifestDependency::LocalDependency {
+                        path,
+                        base_dir: dep_base_dir,
+                        pkg_type,
+                        name,
+                        version_req,
+                    } = dep
+                    {
+                        // Only process if pkg_type is None (not already
+                        // flattened)
+                        if pkg_type.is_none() {
+                            // Construct the full path to the dependency
+                            let full_base_dir = base_dir.unwrap_or("");
+                            let abs_path = Path::new(full_base_dir)
+                                .join(path.clone())
+                                .canonicalize()
+                                .with_context(|| {
+                                    format!(
+                                        "Failed to canonicalize dependency \
+                                         path: {} + {}",
+                                        full_base_dir,
+                                        path.clone()
+                                    )
+                                })?;
+
+                            // Read manifest directly to avoid recursion
+                            let dep_manifest_path =
+                                abs_path.join(MANIFEST_JSON_FILENAME);
+
+                            // Check if the manifest file exists
+                            if !dep_manifest_path.exists() {
+                                return Err(anyhow!(
+                                    "Manifest file not found at: {}",
+                                    dep_manifest_path.display()
+                                ));
+                            }
+
+                            // Read and parse the manifest content
+                            match read_file_to_string(&dep_manifest_path) {
+                                Ok(content) => {
+                                    match Manifest::create_from_str(&content)
+                                        .await
+                                    {
+                                        Ok(dep_manifest) => {
+                                            // Update the base_dir for the
+                                            // dependency
+                                            *dep_base_dir =
+                                                full_base_dir.to_string();
+
+                                            // Populate the flattened fields
+                                            *pkg_type = Some(
+                                                dep_manifest
+                                                    .type_and_name
+                                                    .pkg_type,
+                                            );
+                                            *name = Some(
+                                                dep_manifest.type_and_name.name,
+                                            );
+                                            *version_req = Some(
+                                                VersionReq::parse(&format!(
+                                                    "{}",
+                                                    dep_manifest.version
+                                                ))?,
+                                            );
+                                        }
+                                        Err(e) => {
+                                            return Err(anyhow!(
+                                                "Failed to parse dependency \
+                                                 manifest from path '{}': {}",
+                                                dep_manifest_path.display(),
+                                                e
+                                            ));
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    return Err(anyhow!(
+                                        "Failed to read dependency manifest \
+                                         from path '{}': {}",
+                                        dep_manifest_path.display(),
+                                        e
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+
         // Flatten readme, description, and display_name
         flatten_localized_field(&mut manifest.readme, base_dir).await?;
         flatten_localized_field(&mut manifest.description, base_dir).await?;
         flatten_localized_field(&mut manifest.display_name, base_dir).await?;
+
+        // Flatten dependencies
+        flatten_dependencies(&mut manifest.dependencies, base_dir).await?;
+        flatten_dependencies(&mut manifest.dev_dependencies, base_dir).await?;
 
         Ok(())
     }
@@ -435,13 +538,33 @@ async fn extract_dependencies(
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
+            let mut dep_value: ManifestDependency =
                 serde_json::from_value(dep.clone())?;
 
-            // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            // Initialize LocalDependency with default None values for flattened
+            // fields
+            if let ManifestDependency::LocalDependency {
+                pkg_type,
+                name,
+                version_req,
+                ..
+            } = &mut dep_value
             {
-                let key = (pkg_type, name.clone());
+                *pkg_type = None;
+                *name = None;
+                *version_req = None;
+            }
+
+            // Check for duplicate registry dependencies (type + name)
+            // Only check for registry dependencies, skip local dependencies
+            // as they will be checked after flattening
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                ..
+            } = &dep_value
+            {
+                let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
@@ -470,13 +593,33 @@ async fn extract_dev_dependencies(
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
+            let mut dep_value: ManifestDependency =
                 serde_json::from_value(dep.clone())?;
 
-            // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            // Initialize LocalDependency with default None values for flattened
+            // fields
+            if let ManifestDependency::LocalDependency {
+                pkg_type,
+                name,
+                version_req,
+                ..
+            } = &mut dep_value
             {
-                let key = (pkg_type, name.clone());
+                *pkg_type = None;
+                *name = None;
+                *version_req = None;
+            }
+
+            // Check for duplicate registry dependencies (type + name)
+            // Only check for registry dependencies, skip local dependencies
+            // as they will be checked after flattening
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                ..
+            } = &dep_value
+            {
+                let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
