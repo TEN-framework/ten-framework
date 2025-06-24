@@ -7,12 +7,7 @@
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
   },
-  "black-formatter.args": [
-    "--line-length",
-    "80",
-    "--exclude",
-    "third_party"
-  ],
+  "black-formatter.args": ["--line-length", "80", "--exclude", "third_party"],
   "clangd.arguments": [
     "--background-index",
     "--clang-tidy",
@@ -42,10 +37,7 @@
     "**/out/*/**": true,
     "**/third_party/*/**": true
   },
-  "flake8.args": [
-    "--ignore=E302,E704,E301,W503",
-    "--max-line-length=80"
-  ],
+  "flake8.args": ["--ignore=E302,E704,E301,W503", "--max-line-length=80"],
   "git.ignoreLimitWarning": true,
   "go.inlayHints.constantValues": true,
   "go.inlayHints.parameterNames": true,
@@ -66,14 +58,8 @@
     "default": true
   },
   "prettier.configPath": "tools/prettier/.prettierrc.js",
-  "pylint.args": [
-    "--rcfile",
-    "${workspaceFolder}/tools/pylint/.pylintrc"
-  ],
-  "pylint.ignorePatterns": [
-    "*/ten_runtime_python/**/*",
-    "/usr/lib/**/*"
-  ],
+  "pylint.args": ["--rcfile", "${workspaceFolder}/tools/pylint/.pylintrc"],
+  "pylint.ignorePatterns": ["*/ten_runtime_python/**/*", "/usr/lib/**/*"],
   "python.analysis.completeFunctionParens": true,
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
@@ -98,5 +84,8 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }
