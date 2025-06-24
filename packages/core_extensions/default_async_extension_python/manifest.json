@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_async_extension_python",
-  "version": "0.10.16",
+  "version": "0.10.18",
   "display_name": {
     "locales": {
       "en-US": {
@@ -48,7 +48,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.16"
+      "version": "0.10.18"
     }
   ],
   "package": {
