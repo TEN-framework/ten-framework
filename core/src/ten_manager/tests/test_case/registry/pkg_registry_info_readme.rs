@@ -36,7 +36,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -59,6 +59,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_readme_import_uri() {
+        // Create temporary directory for test files
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_path = temp_dir.path();
+
+        // Create test content files
+        let docs_dir = temp_path.join("docs");
+        std::fs::create_dir_all(&docs_dir).unwrap();
+
+        let readme_en_path = docs_dir.join("readme-en.md");
+        let readme_zh_path = docs_dir.join("readme-zh.md");
+
+        std::fs::write(&readme_en_path, "English README content").unwrap();
+        std::fs::write(&readme_zh_path, "Chinese README content").unwrap();
+
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
@@ -66,17 +80,26 @@ mod tests {
             "readme": {
                 "locales": {
                     "en-US": {
-                        "import_uri": "file://./docs/readme-en.md"
+                        "import_uri": "docs/readme-en.md"
                     },
                     "zh-CN": {
-                        "import_uri": "file://./docs/readme-zh.md"
+                        "import_uri": "docs/readme-zh.md"
                     }
                 }
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+        let mut manifest: Manifest =
+            Manifest::create_from_str(manifest_json).unwrap();
+
+        // Set base_dir for readme locale contents
+        let base_dir_str = temp_path.to_string_lossy().to_string();
+        if let Some(ref mut readme) = manifest.readme {
+            for (_locale, locale_content) in readme.locales.iter_mut() {
+                locale_content.base_dir = Some(base_dir_str.clone());
+            }
+        }
+
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -87,13 +110,29 @@ mod tests {
         assert!(pkg_registry_info.readme.is_some());
         let readme = pkg_registry_info.readme.unwrap();
 
+        // Verify content is resolved from import_uri
+        assert!(readme.locales.get("en-US").unwrap().content.is_some());
+        assert_eq!(
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "English README content"
+        );
+
+        assert!(readme.locales.get("zh-CN").unwrap().content.is_some());
+        assert_eq!(
+            readme.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "Chinese README content"
+        );
+
+        // Verify import_uri is still preserved
+        assert!(readme.locales.get("en-US").unwrap().import_uri.is_some());
         assert_eq!(
             readme.locales.get("en-US").unwrap().import_uri.as_ref().unwrap(),
-            "file://./docs/readme-en.md"
+            "docs/readme-en.md"
         );
+        assert!(readme.locales.get("zh-CN").unwrap().import_uri.is_some());
         assert_eq!(
             readme.locales.get("zh-CN").unwrap().import_uri.as_ref().unwrap(),
-            "file://./docs/readme-zh.md"
+            "docs/readme-zh.md"
         );
     }
 
@@ -106,7 +145,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -133,7 +172,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -160,6 +199,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test README".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
 
@@ -249,6 +289,7 @@ mod tests {
             LocaleContent {
                 content: Some("English README content".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -256,6 +297,7 @@ mod tests {
             LocaleContent {
                 content: None,
                 import_uri: Some("file://./docs/readme-zh.md".to_string()),
+                base_dir: Some(String::new()),
             },
         );
 

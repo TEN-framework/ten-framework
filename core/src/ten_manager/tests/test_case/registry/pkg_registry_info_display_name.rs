@@ -37,7 +37,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -89,7 +89,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -129,7 +129,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -182,6 +182,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Test Extension".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -189,6 +190,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("测试扩展".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
 
@@ -293,6 +295,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Test Extension".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -300,6 +303,7 @@ mod tests {
             ten_rust::pkg_info::manifest::LocaleContent {
                 content: Some("Extension de Test".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
 
