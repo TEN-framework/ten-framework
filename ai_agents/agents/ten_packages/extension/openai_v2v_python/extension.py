@@ -269,10 +269,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         pass
 
     async def _loop(self):
-        def get_time_ms() -> int:
-            current_time = datetime.now()
-            return current_time.microsecond // 1000
-
         try:
             start_time = time.time()
             await self.conn.connect()
@@ -280,7 +276,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             item_id = ""  # For truncate
             response_id = ""
             content_index = 0
-            relative_start_ms = get_time_ms()
+            session_start_ms = int(
+                time.time() * 1000
+            )  # Use proper timestamp in milliseconds
             flushed = set()
 
             self.ten_env.log_info("Client loop started")
@@ -460,9 +458,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On server listening, in response {response_id}, last item {item_id}"
                             )
-                            # Tuncate the on-going audio stream
-                            end_ms = get_time_ms() - relative_start_ms
-                            if item_id:
+                            # Calculate proper truncation time - elapsed milliseconds since session start
+                            current_ms = int(time.time() * 1000)
+                            end_ms = current_ms - session_start_ms
+                            if (
+                                item_id and end_ms > 0
+                            ):  # Only truncate if we have a valid positive timestamp
                                 truncate = ItemTruncate(
                                     item_id=item_id,
                                     content_index=content_index,
@@ -483,11 +484,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                         case InputAudioBufferSpeechStopped():
                             # Only for server vad
                             self.input_end = time.time()
-                            relative_start_ms = (
-                                get_time_ms() - message.audio_end_ms
+                            # Update session start to properly track relative timing
+                            session_start_ms = (
+                                int(time.time() * 1000) - message.audio_end_ms
                             )
                             self.ten_env.log_info(
-                                f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}"
+                                f"On server stop listening, audio_end_ms: {message.audio_end_ms}, session_start_ms updated to: {session_start_ms}"
                             )
                         case ResponseFunctionCallArgumentsDone():
                             tool_call_id = message.call_id
