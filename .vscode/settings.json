@@ -15,7 +15,9 @@
   ],
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
+    "source.fixAll": "explicit",
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
   },
   "editor.defaultFormatter": null,
   "editor.formatOnSave": true,
@@ -57,7 +59,6 @@
     "MD033": false,
     "default": true
   },
-  "prettier.configPath": "tools/prettier/.prettierrc.js",
   "pylint.args": ["--rcfile", "${workspaceFolder}/tools/pylint/.pylintrc"],
   "pylint.ignorePatterns": ["*/ten_runtime_python/**/*", "/usr/lib/**/*"],
   "python.analysis.completeFunctionParens": true,
