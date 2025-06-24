@@ -407,17 +407,8 @@ async fn search_versions(
                                         )
                                     })?;
 
-                            let mut manifest =
+                            let manifest =
                                 Manifest::create_from_str(&manifest_content)?;
-
-                            // Flatten the manifest by resolving import_uri
-                            // fields
-                            let base_dir_str = manifest_path
-                                .parent()
-                                .and_then(|dir| dir.to_str());
-
-                            Manifest::flatten(&mut manifest, base_dir_str)
-                                .await?;
 
                             // Check if the manifest meets the tags
                             // requirements.
