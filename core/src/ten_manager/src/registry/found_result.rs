@@ -79,8 +79,6 @@ pub async fn get_pkg_registry_info_from_manifest(
     let mut pkg_info =
         PkgInfo::from_metadata(download_url, manifest, &None).await?;
 
-    // Ensure localized fields have content by calling get_any_content() if
-    // needed
     let mut updated_manifest = pkg_info.manifest.clone();
 
     // Check and resolve display_name content

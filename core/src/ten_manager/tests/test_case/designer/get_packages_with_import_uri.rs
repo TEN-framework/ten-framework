@@ -18,7 +18,7 @@ mod tests {
     /// This test verifies that import_uri fields are resolved to their actual
     /// content when creating PkgRegistryInfo.
     #[tokio::test]
-    async fn test_get_packages_endpoint_with_import_uri_fields() {
+    async fn test_get_pkg_registry_info_from_manifest_with_import_uri_fields() {
         // Create temporary directory for test files
         let temp_dir = TempDir::new().unwrap();
         let temp_path = temp_dir.path();

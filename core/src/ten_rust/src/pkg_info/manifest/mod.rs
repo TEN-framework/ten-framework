@@ -20,6 +20,7 @@ use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use url;
 
 use crate::fs::read_file_to_string;
 use crate::json_schema;
@@ -34,8 +35,6 @@ use support::ManifestSupport;
 
 use super::constants::TEN_STR_TAGS;
 use super::pkg_type_and_name::PkgTypeAndName;
-
-use url;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocaleContent {
@@ -73,18 +72,11 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
-            // Determine if base_dir is needed based on import_uri
+            // Determine base_dir for relative paths
             let base_dir = if is_absolute_uri(import_uri) {
                 None
             } else {
-                if self.base_dir.is_none() {
-                    return Err(anyhow!(
-                        "base_dir cannot be None when import_uri is a \
-                         relative path: {}",
-                        import_uri
-                    ));
-                }
-                Some(self.base_dir.as_ref().unwrap().as_str())
+                self.base_dir.as_deref()
             };
 
             // Load content from URI
