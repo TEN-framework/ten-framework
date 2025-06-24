@@ -57,13 +57,6 @@ impl LocaleContent {
     /// If the content field is not None, returns it directly.
     /// If the content field is None, loads the content from the import_uri
     /// using the base_dir if needed.
-    ///
-    /// # Arguments
-    /// * `self` - The LocaleContent instance
-    ///
-    /// # Returns
-    /// * `Result<String>` - The content string on success, or an error if the
-    ///   content cannot be loaded.
     pub async fn get_content(&self) -> Result<String> {
         // If content is already available, return it directly
         if let Some(content) = &self.content {
@@ -95,44 +88,6 @@ impl LocaleContent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalizedField {
     pub locales: HashMap<String, LocaleContent>,
-}
-
-impl LocalizedField {
-    /// Gets the content for a specific locale.
-    ///
-    /// If the content field is not None, returns it directly.
-    /// If the content field is None, loads the content from the import_uri
-    /// using the base_dir if needed.
-    ///
-    /// # Arguments
-    /// * `locale` - The locale string (e.g., "en", "zh-CN")
-    ///
-    /// # Returns
-    /// * `Result<Option<String>>` - The content string on success, None if
-    ///   locale not found, or an error if the content cannot be loaded.
-    pub async fn get_content(&self, locale: &str) -> Result<Option<String>> {
-        if let Some(locale_content) = self.locales.get(locale) {
-            Ok(Some(locale_content.get_content().await?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Gets the content for the first available locale.
-    ///
-    /// This is useful when you want to get any available content regardless of
-    /// locale.
-    ///
-    /// # Returns
-    /// * `Result<Option<String>>` - The content string on success, None if no
-    ///   locales available, or an error if the content cannot be loaded.
-    pub async fn get_any_content(&self) -> Result<Option<String>> {
-        if let Some((_, locale_content)) = self.locales.iter().next() {
-            Ok(Some(locale_content.get_content().await?))
-        } else {
-            Ok(None)
-        }
-    }
 }
 
 // Define a structure that mirrors the structure of the JSON file.
