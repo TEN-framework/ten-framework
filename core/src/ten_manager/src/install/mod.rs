@@ -366,7 +366,7 @@ pub async fn write_pkgs_into_manifest_lock_file(
         ));
     }
 
-    let new_manifest_lock = ManifestLock::from_locked_pkgs_info(pkgs).await;
+    let new_manifest_lock = ManifestLock::from_locked_pkgs_info(pkgs).await?;
 
     let changed = write_pkg_lockfile(&new_manifest_lock, app_dir)?;
 
