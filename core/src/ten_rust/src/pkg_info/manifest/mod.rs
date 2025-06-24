@@ -252,27 +252,6 @@ impl Manifest {
         Ok(())
     }
 
-    /// Helper function to flatten dependencies
-    async fn flatten_dependencies(
-        dependencies: &mut Option<Vec<ManifestDependency>>,
-        base_dir: Option<&str>,
-    ) -> Result<()> {
-        if let Some(deps) = dependencies {
-            for dep in deps.iter_mut() {
-                if let ManifestDependency::LocalDependency {
-                    base_dir: dep_base_dir,
-                    ..
-                } = dep
-                {
-                    // Update the base_dir for the dependency
-                    let full_base_dir = base_dir.unwrap_or("");
-                    *dep_base_dir = full_base_dir.to_string();
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// Flattens the manifest by resolving import_uri fields in readme,
     /// description, and display_name.
     ///
@@ -297,12 +276,6 @@ impl Manifest {
         Self::flatten_localized_field(&mut manifest.description, base_dir)
             .await?;
         Self::flatten_localized_field(&mut manifest.display_name, base_dir)
-            .await?;
-
-        // Flatten dependencies
-        Self::flatten_dependencies(&mut manifest.dependencies, base_dir)
-            .await?;
-        Self::flatten_dependencies(&mut manifest.dev_dependencies, base_dir)
             .await?;
 
         Ok(())
