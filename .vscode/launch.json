@@ -441,8 +441,8 @@
       "name": "tman designer (lldb)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/core/src/ten_manager/target/x86_64-unknown-linux-gnu/debug/tman",
-      "cwd": "/home/wei/MyData/MyProject/ten_framework/out/linux/x64/tests/ten_runtime/integration/cpp/ffmpeg_basic/.assemble_info/ffmpeg_basic_app/files_to_be_replaced_after_install_app/ffmpeg_basic_app/",
+      "program": "tman",
+      "cwd": "${workspaceFolder}/core/src/ten_manager/tests/test_data/cmd_check_predefined_graph_with_subgraph",
       "args": [
         "--config-file=${workspaceFolder}/out/linux/x64/tests/local_registry/config.json",
         "designer",

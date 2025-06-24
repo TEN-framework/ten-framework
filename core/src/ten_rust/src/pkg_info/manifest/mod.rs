@@ -594,7 +594,8 @@ impl Manifest {
                 drop(read_guard);
 
                 let mut write_guard = self.flattened_api.write().await;
-                let _ = flatten_manifest_api(&self.api, &mut write_guard);
+                flatten_manifest_api(&self.api, &mut write_guard).await?;
+
                 let flattened = write_guard.as_ref().map(|api| api.clone());
                 drop(write_guard);
                 return Ok(flattened);
@@ -699,7 +700,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Flatten the API.
     {
         let mut flattened_api = manifest.flattened_api.write().await;
-        let _ = flatten_manifest_api(&manifest.api, &mut flattened_api);
+        flatten_manifest_api(&manifest.api, &mut flattened_api).await?;
     }
 
     Ok(manifest)

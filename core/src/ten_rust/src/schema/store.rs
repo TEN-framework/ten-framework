@@ -228,12 +228,11 @@ fn parse_msgs_schema_from_manifest(
 pub fn create_c_schema_from_properties_and_required(
     property: &Option<ManifestApiProperty>,
 ) -> Result<Option<TenSchema>> {
-    if let Some(property) = property {
-        let mut property_schema_value: serde_json::Value =
-            serde_json::json!({"type": "object"});
-        let property_schema_object =
-            property_schema_value.as_object_mut().unwrap();
+    let mut property_schema_value: serde_json::Value =
+        serde_json::json!({"type": "object"});
+    let property_schema_object = property_schema_value.as_object_mut().unwrap();
 
+    if let Some(property) = property {
         if let Some(properties) = &property.properties {
             let mut property_json_value = serde_json::json!({});
             let property_json_object =
@@ -256,13 +255,11 @@ pub fn create_c_schema_from_properties_and_required(
                 serde_json::to_value(required)?,
             );
         }
-
-        Ok(Some(create_schema_from_json(
-            serde_json::to_value(property_schema_object).as_ref().unwrap(),
-        )?))
-    } else {
-        Ok(None)
     }
+
+    Ok(Some(create_schema_from_json(
+        serde_json::to_value(property_schema_object).as_ref().unwrap(),
+    )?))
 }
 
 pub fn create_c_schema_from_manifest_api(
