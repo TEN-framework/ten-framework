@@ -61,7 +61,7 @@ async fn load_interface_from_http_url(url: &Url) -> Result<ManifestApi> {
         }
 
         for interface in interface.iter_mut() {
-            interface.base_dir = base_url.to_string();
+            interface.base_dir = Some(base_url.to_string());
         }
     }
 
@@ -93,7 +93,7 @@ fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
         }
 
         for interface in interface.iter_mut() {
-            interface.base_dir = base_url.to_string();
+            interface.base_dir = Some(base_url.to_string());
         }
     }
 
@@ -112,7 +112,7 @@ async fn load_interface(
     interface_set: &mut HashSet<String>,
 ) -> Result<ManifestApi> {
     let import_uri = &interface.import_uri;
-    let base_dir = &interface.base_dir;
+    let base_dir = interface.base_dir.as_deref().unwrap_or("");
 
     // Get the real path according to the import_uri and base_dir.
     let real_path = get_real_path_from_import_uri(import_uri, base_dir)?;
@@ -188,7 +188,7 @@ async fn load_interface(
     // Set the base_dir of the interface.
     if let Some(interface) = &mut interface_api.interface {
         for interface in interface.iter_mut() {
-            interface.base_dir = parent_dir.to_string_lossy().to_string();
+            interface.base_dir = Some(parent_dir.to_string_lossy().to_string());
         }
     }
 

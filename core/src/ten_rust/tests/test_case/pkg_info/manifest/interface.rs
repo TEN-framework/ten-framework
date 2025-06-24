@@ -125,7 +125,7 @@ mod tests {
         );
 
         let mut manifest: Manifest =
-            Manifest::create_from_str(manifest_str).await.unwrap();
+            Manifest::create_from_str(manifest_str).unwrap();
 
         let api = manifest.api.as_mut().unwrap();
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;
@@ -172,7 +172,7 @@ mod tests {
         );
 
         let mut manifest: Manifest =
-            Manifest::create_from_str(manifest_str).await.unwrap();
+            Manifest::create_from_str(manifest_str).unwrap();
 
         let api = manifest.api.as_mut().unwrap();
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;

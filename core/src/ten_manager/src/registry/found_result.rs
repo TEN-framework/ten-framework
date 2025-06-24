@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
 
@@ -76,8 +76,53 @@ pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let pkg_info =
+    let mut pkg_info =
         PkgInfo::from_metadata(download_url, manifest, &None).await?;
+
+    let mut updated_manifest = pkg_info.manifest.clone();
+
+    // Check and resolve display_name content
+    if let Some(ref mut display_name) = updated_manifest.display_name {
+        for (_locale, locale_content) in display_name.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content =
+                    locale_content.get_content().await.with_context(|| {
+                        "Failed to get content for display_name"
+                    })?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Check and resolve description content
+    if let Some(ref mut description) = updated_manifest.description {
+        for (_locale, locale_content) in description.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content = locale_content
+                    .get_content()
+                    .await
+                    .with_context(|| "Failed to get content for description")?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Check and resolve readme content
+    if let Some(ref mut readme) = updated_manifest.readme {
+        for (_locale, locale_content) in readme.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content = locale_content
+                    .get_content()
+                    .await
+                    .with_context(|| "Failed to get content for readme")?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Update the pkg_info with the modified manifest
+    pkg_info.manifest = updated_manifest;
+
     Ok((&pkg_info).into())
 }
 

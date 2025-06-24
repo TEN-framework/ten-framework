@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "pprof_app_go",
-  "version": "0.10.16",
+  "version": "0.10.18",
   "display_name": {
     "locales": {
       "en-US": {
@@ -47,12 +47,12 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.16"
+      "version": "0.10.18"
     },
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.16"
+      "version": "0.10.18"
     }
   ]
 }

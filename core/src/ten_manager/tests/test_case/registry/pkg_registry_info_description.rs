@@ -39,7 +39,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -73,7 +73,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -92,6 +92,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test description".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -99,6 +100,7 @@ mod tests {
             LocaleContent {
                 content: Some("测试描述".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
 
@@ -189,6 +191,7 @@ mod tests {
             LocaleContent {
                 content: Some("Test description".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
         locales.insert(
@@ -196,6 +199,7 @@ mod tests {
             LocaleContent {
                 content: Some("Description de test".to_string()),
                 import_uri: None,
+                base_dir: Some(String::new()),
             },
         );
 

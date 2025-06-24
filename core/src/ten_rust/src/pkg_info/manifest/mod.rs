@@ -20,12 +20,14 @@ use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use url;
 
 use crate::fs::read_file_to_string;
+use crate::json_schema;
 use crate::json_schema::ten_validate_manifest_json_string;
+use crate::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use crate::pkg_info::manifest::interface::flatten_manifest_api;
 use crate::pkg_info::pkg_type::PkgType;
-use crate::{json_schema, pkg_info::constants::MANIFEST_JSON_FILENAME};
 use api::ManifestApi;
 use dependency::ManifestDependency;
 use publish::PackageConfig;
@@ -41,6 +43,46 @@ pub struct LocaleContent {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import_uri: Option<String>,
+
+    // Used to record the folder path where the `manifest.json` containing
+    // this LocaleContent is located. It is primarily used to parse the
+    // `import_uri` field when it contains a relative path.
+    #[serde(skip)]
+    pub base_dir: Option<String>,
+}
+
+impl LocaleContent {
+    /// Gets the content of this LocaleContent.
+    ///
+    /// If the content field is not None, returns it directly.
+    /// If the content field is None, loads the content from the import_uri
+    /// using the base_dir if needed.
+    pub async fn get_content(&self) -> Result<String> {
+        // If content is already available, return it directly
+        if let Some(content) = &self.content {
+            return Ok(content.clone());
+        }
+
+        // If content is None, try to load from import_uri
+        if let Some(import_uri) = &self.import_uri {
+            // Load content from URI
+            load_content_from_uri(import_uri, self.base_dir.as_deref())
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to load content from import_uri \
+                         '{import_uri}' with base_dir '{:?}'",
+                        self.base_dir
+                    )
+                })
+        } else {
+            // Both content and import_uri are None, this should not happen
+            // as it's validated during parsing
+            Err(anyhow!(
+                "LocaleContent must have either 'content' or 'import_uri'"
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,17 +145,9 @@ impl<'de> Deserialize<'de> for Manifest {
         let readme =
             extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
 
-        // For now, we'll use sync versions in deserialize context
-        // TODO(xilin): Use async version in the future.
-        let rt = tokio::runtime::Runtime::new()
-            .context("Failed to create tokio runtime")
-            .unwrap();
-
-        let dependencies = rt
-            .block_on(extract_dependencies(&all_fields))
+        let dependencies = extract_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = rt
-            .block_on(extract_dev_dependencies(&all_fields))
+        let dev_dependencies = extract_dev_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
 
         let tags =
@@ -177,7 +211,7 @@ impl Default for Manifest {
 }
 
 impl Manifest {
-    pub async fn create_from_str(s: &str) -> Result<Self> {
+    pub fn create_from_str(s: &str) -> Result<Self> {
         ten_validate_manifest_json_string(s)?;
 
         let value: serde_json::Value = serde_json::from_str(s)?;
@@ -193,8 +227,8 @@ impl Manifest {
         let description = extract_description(&all_fields)?;
         let display_name = extract_display_name(&all_fields)?;
         let readme = extract_readme(&all_fields)?;
-        let dependencies = extract_dependencies(&all_fields).await?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
+        let dependencies = extract_dependencies(&all_fields)?;
+        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
 
         let tags = extract_tags(&all_fields)?;
         let supports = extract_supports(&all_fields)?;
@@ -271,8 +305,11 @@ fn extract_localized_field(
                 }
 
                 if let Value::Object(content_obj) = locale_content {
-                    let mut locale_content =
-                        LocaleContent { content: None, import_uri: None };
+                    let mut locale_content = LocaleContent {
+                        content: None,
+                        import_uri: None,
+                        base_dir: None,
+                    };
 
                     if let Some(Value::String(content_str)) =
                         content_obj.get("content")
@@ -362,7 +399,7 @@ fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "readme")
 }
 
-async fn extract_dependencies(
+fn extract_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
@@ -374,9 +411,15 @@ async fn extract_dependencies(
                 serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            // Only check for registry dependencies, skip local dependencies
+            // as they will be checked after flattening
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                ..
+            } = &dep_value
             {
-                let key = (pkg_type, name.clone());
+                let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
@@ -397,7 +440,7 @@ async fn extract_dependencies(
     }
 }
 
-async fn extract_dev_dependencies(
+fn extract_dev_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
@@ -409,9 +452,15 @@ async fn extract_dev_dependencies(
                 serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            // Only check for registry dependencies, skip local dependencies
+            // as they will be checked after flattening
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                ..
+            } = &dep_value
             {
-                let key = (pkg_type, name.clone());
+                let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
                         "Duplicate dependency found: type '{}' and name '{}'",
@@ -649,7 +698,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     let content = read_file_to_string(&manifest_file_path)?;
 
     // Parse the content into a Manifest.
-    let mut manifest = Manifest::create_from_str(&content).await?;
+    let mut manifest = Manifest::create_from_str(&content)?;
 
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.
@@ -661,22 +710,42 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
             )
         })?;
 
+    // Convert manifest_folder_path to string once for reuse
+    let base_dir_str = manifest_folder_path
+        .to_str()
+        .ok_or_else(|| {
+            anyhow::anyhow!("Failed to convert folder path to string")
+        })?
+        .to_string();
+
     // Update the base_dir for all local dependencies to be the manifest's
     // parent directory.
     if let Some(dependencies) = &mut manifest.dependencies {
         for dep in dependencies.iter_mut() {
             if let ManifestDependency::LocalDependency { base_dir, .. } = dep {
-                let base_dir_str = manifest_folder_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Failed to convert folder path to string"
-                        )
-                    })?
-                    .to_string();
-
-                *base_dir = base_dir_str;
+                *base_dir = Some(base_dir_str.clone());
             }
+        }
+    }
+
+    // Update base_dir for display_name
+    if let Some(display_name) = &mut manifest.display_name {
+        for (_locale, locale_content) in display_name.locales.iter_mut() {
+            locale_content.base_dir = Some(base_dir_str.clone());
+        }
+    }
+
+    // Update base_dir for description
+    if let Some(description) = &mut manifest.description {
+        for (_locale, locale_content) in description.locales.iter_mut() {
+            locale_content.base_dir = Some(base_dir_str.clone());
+        }
+    }
+
+    // Update base_dir for readme
+    if let Some(readme) = &mut manifest.readme {
+        for (_locale, locale_content) in readme.locales.iter_mut() {
+            locale_content.base_dir = Some(base_dir_str.clone());
         }
     }
 
@@ -685,14 +754,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     if let Some(api) = &mut manifest.api {
         if let Some(interface) = &mut api.interface {
             for interface in interface.iter_mut() {
-                interface.base_dir = manifest_folder_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Failed to convert folder path to string"
-                        )
-                    })?
-                    .to_string();
+                interface.base_dir = Some(base_dir_str.clone());
             }
         }
     }
@@ -731,4 +793,98 @@ pub async fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
         })?;
 
     Ok(manifest)
+}
+
+/// Loads content from the specified URI with an optional base directory.
+///
+/// The URI can be:
+/// - A relative path (relative to the base_dir if provided)
+/// - A URI (http:// or https:// or file://)
+///
+/// This function is similar to load_graph_from_uri but for loading text
+/// content.
+async fn load_content_from_uri(
+    uri: &str,
+    base_dir: Option<&str>,
+) -> Result<String> {
+    // First check if it's an absolute path - these are not supported
+    if Path::new(uri).is_absolute() {
+        return Err(anyhow!(
+            "Absolute paths are not supported in import_uri: {}. Use file:// \
+             URI or relative path instead",
+            uri
+        ));
+    }
+
+    // Try to parse as URL
+    if let Ok(url) = url::Url::parse(uri) {
+        match url.scheme() {
+            "http" | "https" => {
+                return load_content_from_http_url(&url).await;
+            }
+            "file" => {
+                return load_content_from_file_url(&url);
+            }
+            _ => {
+                return Err(anyhow!(
+                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    url.scheme(),
+                    uri
+                ));
+            }
+        }
+    }
+
+    // For relative paths, base_dir must not be None
+    let base_dir = base_dir.ok_or_else(|| {
+        anyhow!("base_dir cannot be None when uri is a relative path")
+    })?;
+
+    // If base_dir is available, use it as the base for relative paths.
+    let path = Path::new(base_dir).join(uri);
+
+    // Read the content file.
+    read_file_to_string(&path).with_context(|| {
+        format!("Failed to read content file from {}", path.display())
+    })
+}
+
+/// Loads content from an HTTP/HTTPS URL.
+async fn load_content_from_http_url(url: &url::Url) -> Result<String> {
+    // Create HTTP client
+    let client = reqwest::Client::new();
+
+    // Make HTTP request
+    let response = client
+        .get(url.as_str())
+        .send()
+        .await
+        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
+
+    // Check if request was successful
+    if !response.status().is_success() {
+        return Err(anyhow::anyhow!(
+            "HTTP request failed with status {}: {}",
+            response.status(),
+            url
+        ));
+    }
+
+    // Get response body as text
+    response
+        .text()
+        .await
+        .with_context(|| format!("Failed to read response body from {url}"))
+}
+
+/// Loads content from a file:// URL.
+fn load_content_from_file_url(url: &url::Url) -> Result<String> {
+    // Convert file URL to local path
+    let path =
+        url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
+
+    // Read the content file.
+    read_file_to_string(&path).with_context(|| {
+        format!("Failed to read content file from {}", path.display())
+    })
 }

@@ -408,8 +408,7 @@ async fn search_versions(
                                     })?;
 
                             let manifest =
-                                Manifest::create_from_str(&manifest_content)
-                                    .await?;
+                                Manifest::create_from_str(&manifest_content)?;
 
                             // Check if the manifest meets the tags
                             // requirements.
