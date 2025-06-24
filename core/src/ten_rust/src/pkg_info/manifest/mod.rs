@@ -38,6 +38,7 @@ use super::pkg_type_and_name::PkgTypeAndName;
 pub struct LocaleContent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import_uri: Option<String>,
 }
