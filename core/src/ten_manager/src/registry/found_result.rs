@@ -40,6 +40,9 @@ pub struct PkgRegistryInfo {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<ten_rust::pkg_info::manifest::LocalizedField>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub readme: Option<ten_rust::pkg_info::manifest::LocalizedField>,
 }
 
 mod dependencies_conversion {
@@ -94,6 +97,7 @@ impl From<&PkgInfo> for PkgRegistryInfo {
             tags: pkg_info.manifest.tags.clone(),
             description: pkg_info.manifest.description.clone(),
             display_name: pkg_info.manifest.display_name.clone(),
+            readme: pkg_info.manifest.readme.clone(),
         }
     }
 }
@@ -113,6 +117,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                 version: pkg_registry_info.basic_info.version.clone(),
                 description: pkg_registry_info.description.clone(),
                 display_name: pkg_registry_info.display_name.clone(),
+                readme: pkg_registry_info.readme.clone(),
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
                 dev_dependencies: None,
                 tags: pkg_registry_info.tags.clone(),
@@ -184,6 +189,15 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                             "display_name".to_string(),
                             display_name_json,
                         );
+                    }
+
+                    // Add readme if available.
+                    if let Some(ref readme) = pkg_registry_info.readme {
+                        let readme_json = serde_json::to_value(readme)
+                            .unwrap_or(serde_json::Value::Object(
+                                serde_json::Map::new(),
+                            ));
+                        map.insert("readme".to_string(), readme_json);
                     }
 
                     map
