@@ -104,6 +104,9 @@
     "displayName": {
       "$ref": "#/$defs/localizedText"
     },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
+    },
     "alphanumericCharacters": {
       "type": "string",
       "minLength": 1,
@@ -461,6 +464,9 @@
     },
     "display_name": {
       "$ref": "#/$defs/displayName"
+    },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
     },
     "tags": {
       "type": "array",

@@ -55,6 +55,7 @@ pub struct Manifest {
     pub version: Version,
     pub description: Option<LocalizedField>,
     pub display_name: Option<LocalizedField>,
+    pub readme: Option<LocalizedField>,
     pub dependencies: Option<Vec<ManifestDependency>>,
     pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
@@ -99,6 +100,8 @@ impl<'de> Deserialize<'de> for Manifest {
             .map_err(serde::de::Error::custom)?;
         let display_name = extract_display_name(&all_fields)
             .map_err(serde::de::Error::custom)?;
+        let readme =
+            extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
 
         // For now, we'll use sync versions in deserialize context
         // TODO(xilin): Use async version in the future.
@@ -128,6 +131,7 @@ impl<'de> Deserialize<'de> for Manifest {
             version,
             description,
             display_name,
+            readme,
             dependencies,
             dev_dependencies,
             tags,
@@ -158,6 +162,7 @@ impl Default for Manifest {
             version: Version::new(0, 0, 0),
             description: None,
             display_name: None,
+            readme: None,
             dependencies: None,
             dev_dependencies: None,
             tags: None,
@@ -187,6 +192,7 @@ impl Manifest {
 
         let description = extract_description(&all_fields)?;
         let display_name = extract_display_name(&all_fields)?;
+        let readme = extract_readme(&all_fields)?;
         let dependencies = extract_dependencies(&all_fields).await?;
         let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
 
@@ -202,6 +208,7 @@ impl Manifest {
             version,
             description,
             display_name,
+            readme,
             dependencies,
             dev_dependencies,
             tags,
@@ -349,6 +356,10 @@ fn extract_display_name(
     map: &Map<String, Value>,
 ) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "display_name")
+}
+
+fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
+    extract_localized_field(map, "readme")
 }
 
 async fn extract_dependencies(

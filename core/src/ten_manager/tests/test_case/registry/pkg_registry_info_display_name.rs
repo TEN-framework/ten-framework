@@ -213,6 +213,7 @@ mod tests {
             tags: None,
             description: None,
             display_name: Some(display_name),
+            readme: None,
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -269,6 +270,7 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
+            readme: None,
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -322,6 +324,7 @@ mod tests {
             tags: None,
             description: None,
             display_name: Some(display_name.clone()),
+            readme: None,
         };
 
         let pkg_info: PkgInfo = (&pkg_registry_info).into();

@@ -7,6 +7,7 @@
 mod description;
 mod display_name;
 mod interface;
+mod readme;
 
 #[cfg(test)]
 mod tests {
