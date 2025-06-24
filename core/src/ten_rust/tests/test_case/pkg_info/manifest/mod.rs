@@ -6,6 +6,7 @@
 //
 mod description;
 mod display_name;
+mod flatten;
 mod interface;
 mod readme;
 
