@@ -310,7 +310,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 if self.session:
                     try:
                         await self.session.close()
-                    except:
+                    except Exception:
                         pass
                     self.session = None
 
@@ -477,6 +477,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
     ) -> None:
         """Handle transcription responses with lower priority."""
         # Process input transcription
+        ten_env.log_debug(
+            f"input_transcription: {server_content.input_transcription}"
+        )
         if (
             server_content.input_transcription
             and server_content.input_transcription.text
@@ -565,7 +568,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         if self.session:
             try:
                 await self.session.close()
-            except:
+            except Exception:
                 pass
 
     async def on_audio_frame(
@@ -692,7 +695,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 try:
                     self.audio_queue.get_nowait()
                     self.audio_queue.put_nowait(current_buff)
-                except:
+                except Exception:
                     pass
 
     async def _flush_audio_buffer(self):
@@ -706,7 +709,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 try:
                     self.audio_queue.get_nowait()
                     self.audio_queue.put_nowait(current_buff)
-                except:
+                except Exception:
                     pass
 
     async def _process_audio_queue(self, ten_env: AsyncTenEnv):
