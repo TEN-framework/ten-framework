@@ -3,18 +3,42 @@
   "name": "vosk_asr_cpp",
   "version": "0.10.16",
   "display_name": {
-    "en-US": "Vosk ASR C++ Extension",
-    "zh-CN": "Vosk 语音识别 C++ 扩展",
-    "zh-TW": "Vosk 語音識別 C++ 擴充",
-    "ja-JP": "Vosk ASR C++ 拡張",
-    "ko-KR": "Vosk ASR C++ 확장"
+    "locales": {
+      "en-US": {
+        "content": "Vosk ASR C++ Extension"
+      },
+      "zh-CN": {
+        "content": "Vosk 语音识别 C++ 扩展"
+      },
+      "zh-TW": {
+        "content": "Vosk 語音識別 C++ 擴充"
+      },
+      "ja-JP": {
+        "content": "Vosk ASR C++ 拡張"
+      },
+      "ko-KR": {
+        "content": "Vosk ASR C++ 확장"
+      }
+    }
   },
   "description": {
-    "en-US": "Vosk automatic speech recognition extension written in C++ for TEN Framework",
-    "zh-CN": "使用 C++ 语言编写的 TEN Framework Vosk 自动语音识别扩展",
-    "zh-TW": "使用 C++ 語言編寫的 TEN Framework Vosk 自動語音識別擴充",
-    "ja-JP": "TEN Framework用のC++で書かれたVosk自動音声認識拡張",
-    "ko-KR": "TEN Framework용 C++로 작성된 Vosk 자동 음성 인식 확장"
+    "locales": {
+      "en-US": {
+        "content": "Vosk automatic speech recognition extension written in C++ for TEN Framework"
+      },
+      "zh-CN": {
+        "content": "使用 C++ 语言编写的 TEN Framework Vosk 自动语音识别扩展"
+      },
+      "zh-TW": {
+        "content": "使用 C++ 語言編寫的 TEN Framework Vosk 自動語音識別擴充"
+      },
+      "ja-JP": {
+        "content": "TEN Framework用のC++で書かれたVosk自動音声認識拡張"
+      },
+      "ko-KR": {
+        "content": "TEN Framework용 C++로 작성된 Vosk 자동 음성 인식 확장"
+      }
+    }
   },
   "tags": [
     "cpp"

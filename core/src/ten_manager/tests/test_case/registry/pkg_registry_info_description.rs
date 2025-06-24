@@ -11,7 +11,9 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::Manifest;
+    use ten_rust::pkg_info::manifest::{
+        LocaleContent, LocalizedField, Manifest,
+    };
     use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
     use ten_rust::pkg_info::PkgInfo;
 
@@ -22,9 +24,17 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en-US": "English description",
-                "zh-CN": "中文描述",
-                "es-ES": "Descripción en español"
+                "locales": {
+                    "en-US": {
+                        "content": "English description"
+                    },
+                    "zh-CN": {
+                        "content": "中文描述"
+                    },
+                    "es-ES": {
+                        "content": "Descripción en español"
+                    }
+                }
             }
         }"#;
 
@@ -40,9 +50,18 @@ mod tests {
         assert!(pkg_registry_info.description.is_some());
         let description = pkg_registry_info.description.unwrap();
 
-        assert_eq!(description.get("en-US").unwrap(), "English description");
-        assert_eq!(description.get("zh-CN").unwrap(), "中文描述");
-        assert_eq!(description.get("es-ES").unwrap(), "Descripción en español");
+        assert_eq!(
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "English description"
+        );
+        assert_eq!(
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "中文描述"
+        );
+        assert_eq!(
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
+            "Descripción en español"
+        );
     }
 
     #[tokio::test]
@@ -67,9 +86,23 @@ mod tests {
 
     #[test]
     fn test_pkg_registry_info_serialization_with_description() {
-        let mut description = HashMap::new();
-        description.insert("en-US".to_string(), "Test description".to_string());
-        description.insert("zh-CN".to_string(), "测试描述".to_string());
+        let mut locales = HashMap::new();
+        locales.insert(
+            "en-US".to_string(),
+            LocaleContent {
+                content: Some("Test description".to_string()),
+                import_uri: None,
+            },
+        );
+        locales.insert(
+            "zh-CN".to_string(),
+            LocaleContent {
+                content: Some("测试描述".to_string()),
+                import_uri: None,
+            },
+        );
+
+        let description = LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -102,8 +135,14 @@ mod tests {
             serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.description.is_some());
         let desc = deserialized.description.unwrap();
-        assert_eq!(desc.get("en-US").unwrap(), "Test description");
-        assert_eq!(desc.get("zh-CN").unwrap(), "测试描述");
+        assert_eq!(
+            desc.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "Test description"
+        );
+        assert_eq!(
+            desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "测试描述"
+        );
     }
 
     #[test]
@@ -142,9 +181,23 @@ mod tests {
 
     #[test]
     fn test_pkg_registry_info_to_pkg_info_conversion() {
-        let mut description = HashMap::new();
-        description.insert("en-US".to_string(), "Test description".to_string());
-        description.insert("fr".to_string(), "Description de test".to_string());
+        let mut locales = HashMap::new();
+        locales.insert(
+            "en-US".to_string(),
+            LocaleContent {
+                content: Some("Test description".to_string()),
+                import_uri: None,
+            },
+        );
+        locales.insert(
+            "fr".to_string(),
+            LocaleContent {
+                content: Some("Description de test".to_string()),
+                import_uri: None,
+            },
+        );
+
+        let description = LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -170,7 +223,26 @@ mod tests {
 
         assert!(pkg_info.manifest.description.is_some());
         let converted_description = pkg_info.manifest.description.unwrap();
-        assert_eq!(converted_description, description);
+        assert_eq!(
+            converted_description
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test description"
+        );
+        assert_eq!(
+            converted_description
+                .locales
+                .get("fr")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Description de test"
+        );
 
         // Check that description is properly added to all_fields
         let all_fields = &pkg_info.manifest.all_fields;
@@ -179,12 +251,16 @@ mod tests {
         let desc_value = &all_fields["description"];
         assert!(desc_value.is_object());
         let desc_obj = desc_value.as_object().unwrap();
+        assert!(desc_obj.contains_key("locales"));
+        let locales_obj = desc_obj.get("locales").unwrap().as_object().unwrap();
+        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
         assert_eq!(
-            desc_obj.get("en-US").unwrap().as_str().unwrap(),
+            en_obj.get("content").unwrap().as_str().unwrap(),
             "Test description"
         );
+        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
         assert_eq!(
-            desc_obj.get("fr").unwrap().as_str().unwrap(),
+            fr_obj.get("content").unwrap().as_str().unwrap(),
             "Description de test"
         );
     }

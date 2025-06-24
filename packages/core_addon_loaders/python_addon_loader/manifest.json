@@ -3,18 +3,42 @@
   "name": "python_addon_loader",
   "version": "0.10.16",
   "display_name": {
-    "en-US": "Python Addon Loader",
-    "zh-CN": "Python 插件加载器",
-    "zh-TW": "Python 外掛載入器",
-    "ja-JP": "Python アドオンローダー",
-    "ko-KR": "Python 애드온 로더"
+    "locales": {
+      "en-US": {
+        "content": "Python Addon Loader"
+      },
+      "zh-CN": {
+        "content": "Python 插件加载器"
+      },
+      "zh-TW": {
+        "content": "Python 外掛載入器"
+      },
+      "ja-JP": {
+        "content": "Python アドオンローダー"
+      },
+      "ko-KR": {
+        "content": "Python 애드온 로더"
+      }
+    }
   },
   "description": {
-    "en-US": "TEN Framework addon loader for Python runtime support",
-    "zh-CN": "TEN Framework 的 Python 运行时支持插件加载器",
-    "zh-TW": "TEN Framework 的 Python 執行時期支援外掛載入器",
-    "ja-JP": "Pythonランタイムサポート用のTEN Frameworkアドオンローダー",
-    "ko-KR": "Python 런타임 지원을 위한 TEN Framework 애드온 로더"
+    "locales": {
+      "en-US": {
+        "content": "TEN Framework addon loader for Python runtime support"
+      },
+      "zh-CN": {
+        "content": "TEN Framework 的 Python 运行时支持插件加载器"
+      },
+      "zh-TW": {
+        "content": "TEN Framework 的 Python 執行時期支援外掛載入器"
+      },
+      "ja-JP": {
+        "content": "Pythonランタイムサポート用のTEN Frameworkアドオンローダー"
+      },
+      "ko-KR": {
+        "content": "Python 런타임 지원을 위한 TEN Framework 애드온 로더"
+      }
+    }
   },
   "dependencies": [
     {

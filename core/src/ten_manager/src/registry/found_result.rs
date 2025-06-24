@@ -7,7 +7,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::HashMap;
+
 use std::sync::Arc;
 
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
@@ -36,10 +36,10 @@ pub struct PkgRegistryInfo {
     pub tags: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<HashMap<String, String>>,
+    pub description: Option<ten_rust::pkg_info::manifest::LocalizedField>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub display_name: Option<HashMap<String, String>>,
+    pub display_name: Option<ten_rust::pkg_info::manifest::LocalizedField>,
 }
 
 mod dependencies_conversion {
