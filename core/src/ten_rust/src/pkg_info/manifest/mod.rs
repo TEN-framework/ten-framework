@@ -106,17 +106,9 @@ impl<'de> Deserialize<'de> for Manifest {
         let readme =
             extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
 
-        // For now, we'll use sync versions in deserialize context
-        // TODO(xilin): Use async version in the future.
-        let rt = tokio::runtime::Runtime::new()
-            .context("Failed to create tokio runtime")
-            .unwrap();
-
-        let dependencies = rt
-            .block_on(extract_dependencies(&all_fields))
+        let dependencies = extract_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = rt
-            .block_on(extract_dev_dependencies(&all_fields))
+        let dev_dependencies = extract_dev_dependencies(&all_fields)
             .map_err(serde::de::Error::custom)?;
 
         let tags =
@@ -196,8 +188,8 @@ impl Manifest {
         let description = extract_description(&all_fields)?;
         let display_name = extract_display_name(&all_fields)?;
         let readme = extract_readme(&all_fields)?;
-        let dependencies = extract_dependencies(&all_fields).await?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
+        let dependencies = extract_dependencies(&all_fields)?;
+        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
 
         let tags = extract_tags(&all_fields)?;
         let supports = extract_supports(&all_fields)?;
@@ -528,7 +520,7 @@ fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "readme")
 }
 
-async fn extract_dependencies(
+fn extract_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
@@ -583,7 +575,7 @@ async fn extract_dependencies(
     }
 }
 
-async fn extract_dev_dependencies(
+fn extract_dev_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
