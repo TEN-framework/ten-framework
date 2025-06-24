@@ -131,7 +131,7 @@ pub struct ManifestApiInterface {
     // interface is located. It is primarily used to parse the `import_uri`
     // field when it contains a relative path.
     #[serde(skip)]
-    pub base_dir: String,
+    pub base_dir: Option<String>,
 }
 
 fn validate_msg_name<'de, D>(deserializer: D) -> Result<String, D::Error>

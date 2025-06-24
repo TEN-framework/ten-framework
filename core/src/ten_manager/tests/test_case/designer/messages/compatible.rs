@@ -23,6 +23,7 @@ use ten_manager::{
     },
     home::config::TmanConfig,
     output::cli::TmanOutputCli,
+    pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };
 use ten_rust::pkg_info::message::{MsgDirection, MsgType};
 
@@ -754,4 +755,194 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
 
     // Should have 1 compatible messages.
     assert_eq!(compatibles.data.len(), 0);
+}
+
+#[actix_web::test]
+async fn test_get_compatible_messages_with_interface() {
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
+        )),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+
+    let designer_state = Arc::new(designer_state);
+
+    {
+        let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+        let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+        let _ = get_all_pkgs_in_app(
+            &mut pkgs_cache,
+            &mut graphs_cache,
+            &"tests/test_data/graph_add_connection_to_extension_with_interface"
+                .to_string(),
+        )
+        .await;
+    }
+
+    // Find the uuid of the "default" graph.
+    let graph_id = {
+        let graphs_cache = &designer_state.graphs_cache.read().await;
+        graphs_cache
+            .iter()
+            .find_map(|(uuid, info)| {
+                if info
+                    .name
+                    .as_ref()
+                    .map(|name| name == "default")
+                    .unwrap_or(false)
+                {
+                    Some(*uuid)
+                } else {
+                    None
+                }
+            })
+            .expect("Default graph should exist")
+    };
+
+    let app = test::init_service(
+        App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/messages/compatible",
+            web::post().to(get_compatible_messages_endpoint),
+        ),
+    )
+    .await;
+
+    // Define input data. This time we check cmd msg with required_fields.
+    let input_data = json!({
+      "graph_id": graph_id,
+      "extension_group": "some_group",
+      "extension": "ext_b",
+      "msg_type": "cmd",
+      "msg_direction": "in",
+      "msg_name": "cmd_out_b"
+    });
+
+    // Send request to the test server.
+    let req = test::TestRequest::post()
+        .uri("/api/designer/v1/messages/compatible")
+        .set_json(&input_data)
+        .to_request();
+
+    // Call the service and get the response
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
+
+    let body = test::read_body(resp).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+
+    let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
+        serde_json::from_str(body_str).unwrap();
+
+    println!("compatibles: {compatibles:?}");
+
+    // Should have 1 compatible messages.
+    assert_eq!(compatibles.data.len(), 1);
+
+    // Check the compatible message is correct.
+    let compatible = compatibles.data.first().unwrap();
+    assert_eq!(compatible.extension, "ext_a");
+    assert_eq!(compatible.msg_name, "cmd_out_b");
+    assert_eq!(compatible.msg_type, MsgType::Cmd);
+    assert_eq!(compatible.msg_direction, MsgDirection::Out);
+}
+
+#[actix_web::test]
+async fn test_get_compatible_messages_with_interface_2() {
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+            TmanStorageInMemory::default(),
+        )),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+
+    let designer_state = Arc::new(designer_state);
+
+    {
+        let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+        let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+        let _ = get_all_pkgs_in_app(
+            &mut pkgs_cache,
+            &mut graphs_cache,
+            &"tests/test_data/graph_add_connection_to_extension_with_interface"
+                .to_string(),
+        )
+        .await;
+    }
+
+    // Find the uuid of the "default" graph.
+    let graph_id = {
+        let graphs_cache = &designer_state.graphs_cache.read().await;
+        graphs_cache
+            .iter()
+            .find_map(|(uuid, info)| {
+                if info
+                    .name
+                    .as_ref()
+                    .map(|name| name == "default")
+                    .unwrap_or(false)
+                {
+                    Some(*uuid)
+                } else {
+                    None
+                }
+            })
+            .expect("Default graph should exist")
+    };
+
+    let app = test::init_service(
+        App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/messages/compatible",
+            web::post().to(get_compatible_messages_endpoint),
+        ),
+    )
+    .await;
+
+    // Define input data. This time we check cmd msg with required_fields.
+    let input_data = json!({
+      "graph_id": graph_id,
+      "extension_group": "some_group",
+      "extension": "ext_b",
+      "msg_type": "data",
+      "msg_direction": "out",
+      "msg_name": "data"
+    });
+
+    // Send request to the test server.
+    let req = test::TestRequest::post()
+        .uri("/api/designer/v1/messages/compatible")
+        .set_json(&input_data)
+        .to_request();
+
+    // Call the service and get the response
+    let resp = test::call_service(&app, req).await;
+    assert!(resp.status().is_success());
+
+    let body = test::read_body(resp).await;
+    let body_str = std::str::from_utf8(&body).unwrap();
+
+    let compatibles: ApiResponse<Vec<GetCompatibleMsgsSingleResponseData>> =
+        serde_json::from_str(body_str).unwrap();
+
+    println!("compatibles: {compatibles:?}");
+
+    // Should have 1 compatible messages.
+    assert_eq!(compatibles.data.len(), 1);
+
+    // Check the compatible message is correct.
+    let compatible = compatibles.data.first().unwrap();
+    assert_eq!(compatible.extension, "ext_a");
+    assert_eq!(compatible.msg_name, "data");
+    assert_eq!(compatible.msg_type, MsgType::Data);
+    assert_eq!(compatible.msg_direction, MsgDirection::In);
 }

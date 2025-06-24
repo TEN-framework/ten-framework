@@ -27,7 +27,7 @@ mod tests {
             }
         }"#;
 
-        let manifest = Manifest::create_from_str(manifest_json).await.unwrap();
+        let manifest = Manifest::create_from_str(manifest_json).unwrap();
 
         assert!(manifest.readme.is_some());
         let readme = manifest.readme.unwrap();
@@ -69,7 +69,7 @@ mod tests {
             }
         }"#;
 
-        let manifest = Manifest::create_from_str(manifest_json).await.unwrap();
+        let manifest = Manifest::create_from_str(manifest_json).unwrap();
 
         assert!(manifest.readme.is_some());
         let readme = manifest.readme.unwrap();
@@ -99,7 +99,7 @@ mod tests {
             "version": "1.0.0"
         }"#;
 
-        let manifest = Manifest::create_from_str(manifest_json).await.unwrap();
+        let manifest = Manifest::create_from_str(manifest_json).unwrap();
         assert!(manifest.readme.is_none());
     }
 
