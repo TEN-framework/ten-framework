@@ -255,6 +255,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
             self.client = genai.Client(
                 api_key=self.config.api_key,
+                http_options={"api_version": "v1alpha"},
             )
 
             self.tasks = []
