@@ -3,18 +3,42 @@
   "name": "nodejs_addon_loader",
   "version": "0.10.16",
   "display_name": {
-    "en-US": "Node.js Addon Loader",
-    "zh-CN": "Node.js 插件加载器",
-    "zh-TW": "Node.js 外掛載入器",
-    "ja-JP": "Node.js アドオンローダー",
-    "ko-KR": "Node.js 애드온 로더"
+    "locales": {
+      "en-US": {
+        "content": "Node.js Addon Loader"
+      },
+      "zh-CN": {
+        "content": "Node.js 插件加载器"
+      },
+      "zh-TW": {
+        "content": "Node.js 外掛載入器"
+      },
+      "ja-JP": {
+        "content": "Node.js アドオンローダー"
+      },
+      "ko-KR": {
+        "content": "Node.js 애드온 로더"
+      }
+    }
   },
   "description": {
-    "en-US": "TEN Framework addon loader for Node.js runtime support",
-    "zh-CN": "TEN Framework 的 Node.js 运行时支持插件加载器",
-    "zh-TW": "TEN Framework 的 Node.js 執行時期支援外掛載入器",
-    "ja-JP": "Node.jsランタイムサポート用のTEN Frameworkアドオンローダー",
-    "ko-KR": "Node.js 런타임 지원을 위한 TEN Framework 애드온 로더"
+    "locales": {
+      "en-US": {
+        "content": "TEN Framework addon loader for Node.js runtime support"
+      },
+      "zh-CN": {
+        "content": "TEN Framework 的 Node.js 运行时支持插件加载器"
+      },
+      "zh-TW": {
+        "content": "TEN Framework 的 Node.js 執行時期支援外掛載入器"
+      },
+      "ja-JP": {
+        "content": "Node.jsランタイムサポート用のTEN Frameworkアドオンローダー"
+      },
+      "ko-KR": {
+        "content": "Node.js 런타임 지원을 위한 TEN Framework 애드온 로더"
+      }
+    }
   },
   "dependencies": [
     {

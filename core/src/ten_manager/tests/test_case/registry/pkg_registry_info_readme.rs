@@ -18,21 +18,18 @@ mod tests {
     use ten_rust::pkg_info::PkgInfo;
 
     #[tokio::test]
-    async fn test_pkg_registry_info_with_description() {
+    async fn test_pkg_registry_info_with_readme() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
             "version": "1.0.0",
-            "description": {
+            "readme": {
                 "locales": {
                     "en-US": {
-                        "content": "English description"
+                        "content": "This is a comprehensive README for the test extension."
                     },
                     "zh-CN": {
-                        "content": "中文描述"
-                    },
-                    "es-ES": {
-                        "content": "Descripción en español"
+                        "content": "这是测试扩展的完整说明文档。"
                     }
                 }
             }
@@ -47,25 +44,61 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(pkg_registry_info.description.is_some());
-        let description = pkg_registry_info.description.unwrap();
+        assert!(pkg_registry_info.readme.is_some());
+        let readme = pkg_registry_info.readme.unwrap();
 
         assert_eq!(
-            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
-            "English description"
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "This is a comprehensive README for the test extension."
         );
         assert_eq!(
-            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
-            "中文描述"
-        );
-        assert_eq!(
-            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
-            "Descripción en español"
+            readme.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "这是测试扩展的完整说明文档。"
         );
     }
 
     #[tokio::test]
-    async fn test_pkg_registry_info_without_description() {
+    async fn test_pkg_registry_info_with_readme_import_uri() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "readme": {
+                "locales": {
+                    "en-US": {
+                        "import_uri": "file://./docs/readme-en.md"
+                    },
+                    "zh-CN": {
+                        "import_uri": "file://./docs/readme-zh.md"
+                    }
+                }
+            }
+        }"#;
+
+        let manifest: Manifest =
+            Manifest::create_from_str(manifest_json).await.unwrap();
+        let pkg_registry_info = get_pkg_registry_info_from_manifest(
+            "https://example.com/test.tar.gz",
+            &manifest,
+        )
+        .await
+        .unwrap();
+
+        assert!(pkg_registry_info.readme.is_some());
+        let readme = pkg_registry_info.readme.unwrap();
+
+        assert_eq!(
+            readme.locales.get("en-US").unwrap().import_uri.as_ref().unwrap(),
+            "file://./docs/readme-en.md"
+        );
+        assert_eq!(
+            readme.locales.get("zh-CN").unwrap().import_uri.as_ref().unwrap(),
+            "file://./docs/readme-zh.md"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pkg_registry_info_without_readme() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
@@ -81,28 +114,54 @@ mod tests {
         .await
         .unwrap();
 
-        assert!(pkg_registry_info.description.is_none());
+        assert!(pkg_registry_info.readme.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_pkg_registry_info_readme_conversion_to_pkg_info() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "readme": {
+                "locales": {
+                    "en-US": {
+                        "content": "Test README content"
+                    }
+                }
+            }
+        }"#;
+
+        let manifest: Manifest =
+            Manifest::create_from_str(manifest_json).await.unwrap();
+        let pkg_registry_info = get_pkg_registry_info_from_manifest(
+            "https://example.com/test.tar.gz",
+            &manifest,
+        )
+        .await
+        .unwrap();
+
+        // Convert back to PkgInfo
+        let pkg_info: PkgInfo = (&pkg_registry_info).into();
+
+        assert!(pkg_info.manifest.readme.is_some());
+        let readme = pkg_info.manifest.readme.unwrap();
+        assert_eq!(
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "Test README content"
+        );
     }
 
     #[test]
-    fn test_pkg_registry_info_serialization_with_description() {
+    fn test_pkg_registry_info_serialization_with_readme() {
         let mut locales = HashMap::new();
         locales.insert(
             "en-US".to_string(),
             LocaleContent {
-                content: Some("Test description".to_string()),
+                content: Some("Test README".to_string()),
                 import_uri: None,
             },
         );
-        locales.insert(
-            "zh-CN".to_string(),
-            LocaleContent {
-                content: Some("测试描述".to_string()),
-                import_uri: None,
-            },
-        );
-
-        let description = LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -120,34 +179,35 @@ mod tests {
             download_url: "https://example.com/test.tar.gz".to_string(),
             content_format: None,
             tags: None,
-            description: Some(description),
+            description: None,
             display_name: None,
-            readme: None,
+            readme: Some(LocalizedField { locales }),
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
-        assert!(serialized.contains("en-US"));
-        assert!(serialized.contains("Test description"));
-        assert!(serialized.contains("zh-CN"));
-        assert!(serialized.contains("测试描述"));
+        assert!(serialized.contains("readme"));
+        assert!(serialized.contains("Test README"));
 
         // Test deserialization
         let deserialized: PkgRegistryInfo =
             serde_json::from_str(&serialized).unwrap();
-        assert!(deserialized.description.is_some());
-        let desc = deserialized.description.unwrap();
+        assert!(deserialized.readme.is_some());
         assert_eq!(
-            desc.locales.get("en-US").unwrap().content.as_ref().unwrap(),
-            "Test description"
-        );
-        assert_eq!(
-            desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
-            "测试描述"
+            deserialized
+                .readme
+                .unwrap()
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test README"
         );
     }
 
     #[test]
-    fn test_pkg_registry_info_serialization_without_description() {
+    fn test_pkg_registry_info_serialization_without_readme() {
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
                 type_and_name:
@@ -170,36 +230,34 @@ mod tests {
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
-        // Since description is None and we use skip_serializing_if =
-        // "Option::is_none", the description field should not appear in
+        // Since readme is None and we use skip_serializing_if =
+        // "Option::is_none", the readme field should not appear in
         // the serialized JSON
-        assert!(!serialized.contains("description"));
+        assert!(!serialized.contains("readme"));
 
         // Test deserialization
         let deserialized: PkgRegistryInfo =
             serde_json::from_str(&serialized).unwrap();
-        assert!(deserialized.description.is_none());
+        assert!(deserialized.readme.is_none());
     }
 
     #[test]
-    fn test_pkg_registry_info_to_pkg_info_conversion() {
+    fn test_pkg_registry_info_readme_mixed_content_and_import_uri() {
         let mut locales = HashMap::new();
         locales.insert(
             "en-US".to_string(),
             LocaleContent {
-                content: Some("Test description".to_string()),
+                content: Some("English README content".to_string()),
                 import_uri: None,
             },
         );
         locales.insert(
-            "fr".to_string(),
+            "zh-CN".to_string(),
             LocaleContent {
-                content: Some("Description de test".to_string()),
-                import_uri: None,
+                content: None,
+                import_uri: Some("file://./docs/readme-zh.md".to_string()),
             },
         );
-
-        let description = LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -217,54 +275,23 @@ mod tests {
             download_url: "https://example.com/test.tar.gz".to_string(),
             content_format: None,
             tags: None,
-            description: Some(description.clone()),
+            description: None,
             display_name: None,
-            readme: None,
+            readme: Some(LocalizedField { locales }),
         };
 
-        let pkg_info: PkgInfo = (&pkg_registry_info).into();
+        let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
+        let deserialized: PkgRegistryInfo =
+            serde_json::from_str(&serialized).unwrap();
 
-        assert!(pkg_info.manifest.description.is_some());
-        let converted_description = pkg_info.manifest.description.unwrap();
+        let readme = deserialized.readme.unwrap();
         assert_eq!(
-            converted_description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "Test description"
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "English README content"
         );
         assert_eq!(
-            converted_description
-                .locales
-                .get("fr")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "Description de test"
-        );
-
-        // Check that description is properly added to all_fields
-        let all_fields = &pkg_info.manifest.all_fields;
-        assert!(all_fields.contains_key("description"));
-
-        let desc_value = &all_fields["description"];
-        assert!(desc_value.is_object());
-        let desc_obj = desc_value.as_object().unwrap();
-        assert!(desc_obj.contains_key("locales"));
-        let locales_obj = desc_obj.get("locales").unwrap().as_object().unwrap();
-        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
-        assert_eq!(
-            en_obj.get("content").unwrap().as_str().unwrap(),
-            "Test description"
-        );
-        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
-        assert_eq!(
-            fr_obj.get("content").unwrap().as_str().unwrap(),
-            "Description de test"
+            readme.locales.get("zh-CN").unwrap().import_uri.as_ref().unwrap(),
+            "file://./docs/readme-zh.md"
         );
     }
 }
