@@ -47,6 +47,38 @@
       "type": "string",
       "minLength": 1
     },
+    "localeString": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "description": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/localeString"
+      },
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "displayName": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/localeString"
+      },
+      "patternProperties": {
+        "^[a-z]{2}(-[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
     "alphanumericCharacters": {
       "type": "string",
       "minLength": 1,
@@ -265,6 +297,20 @@
         }
       ]
     },
+    "interfaceLikeApi": {
+      "type": "object",
+      "required": [
+        "import_uri"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "import_uri": {
+          "type": "string",
+          "format": "uri-reference",
+          "minLength": 1
+        }
+      }
+    },
     "cmdLikeApi": {
       "type": "object",
       "required": [
@@ -277,22 +323,28 @@
         },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": { // The property name should be alphanumericCharacters.
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
             }
-          },
-          "additionalProperties": false
-        },
-        "required": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
+          }
         },
         "result": {
           "type": "object",
@@ -303,7 +355,49 @@
           "properties": {
             "property": {
               "type": "object",
-              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "propertyNames": { // The property name should be alphanumericCharacters.
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dataLikeApi": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": { // The api name should be alphanumericCharacters.
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "property": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
               "propertyNames": { // The property name should be alphanumericCharacters.
                 "$ref": "#/$defs/alphanumericCharacters"
               },
@@ -324,36 +418,6 @@
           }
         }
       }
-    },
-    "dataLikeApi": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": { // The api name should be alphanumericCharacters.
-          "$ref": "#/$defs/alphanumericCharacters"
-        },
-        "property": {
-          "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
-            }
-          },
-          "additionalProperties": false
-        },
-        "required": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
-        }
-      }
     }
   },
   "type": "object",
@@ -366,6 +430,12 @@
     },
     "version": {
       "$ref": "#/$defs/version"
+    },
+    "description": {
+      "$ref": "#/$defs/description"
+    },
+    "display_name": {
+      "$ref": "#/$defs/displayName"
     },
     "tags": {
       "type": "array",
@@ -382,19 +452,37 @@
     },
     "api": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
+        "interface": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceLikeApi"
+          }
+        },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "$ref": "#/$defs/valueType"
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
             }
-          },
-          "additionalProperties": false
+          }
         },
         "cmd_in": {
           "type": "array",
@@ -444,7 +532,8 @@
             "$ref": "#/$defs/dataLikeApi"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "supports": {
       "type": "array",
@@ -529,15 +618,28 @@
           "properties": {
             "property": {
               "type": "object",
-              "propertyNames": {
-                "$ref": "#/$defs/alphanumericCharacters"
-              },
-              "patternProperties": {
-                "^[A-Za-z_][A-Za-z0-9_]*$": {
-                  "$ref": "#/$defs/valueType"
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
                 }
-              },
-              "additionalProperties": false
+              }
             }
           },
           "additionalProperties": false

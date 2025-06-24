@@ -55,6 +55,7 @@ pub async fn reload_app_endpoint(
         // Reload packages for this base_dir.
         if let Err(err) =
             get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, base_dir)
+                .await
         {
             return Ok(HttpResponse::InternalServerError().json(
                 ErrorResponse::from_error(&err, "Failed to reload packages:"),
@@ -87,7 +88,9 @@ pub async fn reload_app_endpoint(
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 &base_dir,
-            ) {
+            )
+            .await
+            {
                 return Ok(HttpResponse::InternalServerError().json(
                     ErrorResponse::from_error(
                         &err,

@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use anyhow::Result;
 use uuid::Uuid;
@@ -17,7 +16,7 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::property::parse_property_from_str;
 use ten_rust::pkg_info::PkgInfo;
 
-pub fn inject_all_pkgs_for_mock(
+pub async fn inject_all_pkgs_for_mock(
     pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     all_pkgs_json: Vec<(String, String, String)>,
@@ -35,7 +34,7 @@ pub fn inject_all_pkgs_for_mock(
     let mut system_pkg_info = Vec::new();
 
     for metadata_json in all_pkgs_json {
-        let manifest = Manifest::from_str(&metadata_json.1)?;
+        let manifest = Manifest::create_from_str(&metadata_json.1).await?;
 
         let property = parse_property_from_str(
             &metadata_json.2,
@@ -49,7 +48,8 @@ pub fn inject_all_pkgs_for_mock(
             &metadata_json.0,
             &manifest,
             &Some(property),
-        )?;
+        )
+        .await?;
 
         // Sort package by type.
         match manifest.type_and_name.pkg_type {
@@ -101,7 +101,7 @@ pub fn inject_all_pkgs_for_mock(
     Ok(())
 }
 
-pub fn inject_all_standard_pkgs_for_mock(
+pub async fn inject_all_standard_pkgs_for_mock(
     pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: &str,
@@ -151,6 +151,7 @@ pub fn inject_all_standard_pkgs_for_mock(
     ];
 
     let inject_ret =
-        inject_all_pkgs_for_mock(pkgs_cache, graphs_cache, all_pkgs_json_str);
+        inject_all_pkgs_for_mock(pkgs_cache, graphs_cache, all_pkgs_json_str)
+            .await;
     assert!(inject_ret.is_ok());
 }

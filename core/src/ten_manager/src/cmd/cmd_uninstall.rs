@@ -157,7 +157,7 @@ pub async fn execute_cmd(
     let started = Instant::now();
 
     let cwd = crate::fs::get_cwd()?;
-    check_is_app_folder(&cwd)?;
+    check_is_app_folder(&cwd).await?;
 
     remove_installed_paths(&cwd, &command_data, out.clone()).await?;
 

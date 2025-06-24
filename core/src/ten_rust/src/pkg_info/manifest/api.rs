@@ -14,11 +14,10 @@ use crate::pkg_info::value_type::ValueType;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManifestApi {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub property: Option<HashMap<String, ManifestApiPropertyAttributes>>,
+    pub property: Option<ManifestApiProperty>,
 
-    // Only manifest.json of extension has this field.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub required: Option<Vec<String>>,
+    pub interface: Option<Vec<ManifestApiInterface>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cmd_in: Option<Vec<ManifestApiMsg>>,
@@ -41,7 +40,52 @@ pub struct ManifestApi {
     pub video_frame_out: Option<Vec<ManifestApiMsg>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct ManifestApiProperty {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub properties: Option<HashMap<String, ManifestApiPropertyAttributes>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<Vec<String>>,
+}
+
+impl ManifestApiProperty {
+    /// Check if the property is empty (no properties and no required fields)
+    pub fn is_empty(&self) -> bool {
+        (self.properties.is_none()
+            || self.properties.as_ref().unwrap().is_empty())
+            && (self.required.is_none()
+                || self.required.as_ref().unwrap().is_empty())
+    }
+
+    /// Get a reference to the properties HashMap, if it exists
+    pub fn properties(
+        &self,
+    ) -> Option<&HashMap<String, ManifestApiPropertyAttributes>> {
+        self.properties.as_ref()
+    }
+
+    /// Get a mutable reference to the properties HashMap, creating it if it
+    /// doesn't exist
+    pub fn properties_mut(
+        &mut self,
+    ) -> &mut HashMap<String, ManifestApiPropertyAttributes> {
+        self.properties.get_or_insert_with(HashMap::new)
+    }
+
+    /// Create a new empty ManifestApiProperty
+    pub fn new() -> Self {
+        Self { properties: Some(HashMap::new()), required: None }
+    }
+}
+
+impl Default for ManifestApiProperty {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiPropertyAttributes {
     #[serde(rename = "type")]
     pub prop_type: ValueType,
@@ -59,30 +103,35 @@ pub struct ManifestApiPropertyAttributes {
     pub required: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiCmdResult {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub property: Option<HashMap<String, ManifestApiPropertyAttributes>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub required: Option<Vec<String>>,
+    pub property: Option<ManifestApiProperty>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ManifestApiMsg {
     #[serde(deserialize_with = "validate_msg_name")]
     pub name: String,
 
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub property: Option<HashMap<String, ManifestApiPropertyAttributes>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub required: Option<Vec<String>>,
+    pub property: Option<ManifestApiProperty>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<ManifestApiCmdResult>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ManifestApiInterface {
+    pub import_uri: String,
+
+    // Used to record the folder path where the `manifest.json` containing this
+    // interface is located. It is primarily used to parse the `import_uri`
+    // field when it contains a relative path.
+    #[serde(skip)]
+    pub base_dir: String,
 }
 
 fn validate_msg_name<'de, D>(deserializer: D) -> Result<String, D::Error>

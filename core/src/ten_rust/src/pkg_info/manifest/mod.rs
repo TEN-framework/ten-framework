@@ -6,10 +6,12 @@
 //
 pub mod api;
 pub mod dependency;
+pub mod interface;
 pub mod publish;
 pub mod support;
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::{fmt, fs, path::Path, str::FromStr};
 
 use anyhow::{anyhow, Context, Result};
@@ -21,6 +23,7 @@ use serde_json::{Map, Value};
 
 use crate::fs::read_file_to_string;
 use crate::json_schema::ten_validate_manifest_json_string;
+use crate::pkg_info::manifest::interface::flatten_manifest_api;
 use crate::pkg_info::pkg_type::PkgType;
 use crate::{json_schema, pkg_info::constants::MANIFEST_JSON_FILENAME};
 use api::ManifestApi;
@@ -36,6 +39,8 @@ use super::pkg_type_and_name::PkgTypeAndName;
 pub struct Manifest {
     pub type_and_name: PkgTypeAndName,
     pub version: Version,
+    pub description: Option<HashMap<String, String>>,
+    pub display_name: Option<HashMap<String, String>>,
     pub dependencies: Option<Vec<ManifestDependency>>,
     pub dev_dependencies: Option<Vec<ManifestDependency>>,
     pub tags: Option<Vec<String>>,
@@ -49,6 +54,9 @@ pub struct Manifest {
 
     /// All fields from manifest.json, stored with order preserved.
     pub all_fields: Map<String, Value>,
+
+    /// The flattened API.
+    pub flattened_api: Arc<tokio::sync::RwLock<Option<ManifestApi>>>,
 }
 
 impl Serialize for Manifest {
@@ -72,10 +80,25 @@ impl<'de> Deserialize<'de> for Manifest {
             .map_err(serde::de::Error::custom)?;
         let version =
             extract_version(&all_fields).map_err(serde::de::Error::custom)?;
-        let dependencies = extract_dependencies(&all_fields)
+
+        let description = extract_description(&all_fields)
             .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)
+        let display_name = extract_display_name(&all_fields)
             .map_err(serde::de::Error::custom)?;
+
+        // For now, we'll use sync versions in deserialize context
+        // TODO(xilin): Use async version in the future.
+        let rt = tokio::runtime::Runtime::new()
+            .context("Failed to create tokio runtime")
+            .unwrap();
+
+        let dependencies = rt
+            .block_on(extract_dependencies(&all_fields))
+            .map_err(serde::de::Error::custom)?;
+        let dev_dependencies = rt
+            .block_on(extract_dev_dependencies(&all_fields))
+            .map_err(serde::de::Error::custom)?;
+
         let tags =
             extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
         let supports =
@@ -89,6 +112,8 @@ impl<'de> Deserialize<'de> for Manifest {
         Ok(Manifest {
             type_and_name,
             version,
+            description,
+            display_name,
             dependencies,
             dev_dependencies,
             tags,
@@ -97,6 +122,7 @@ impl<'de> Deserialize<'de> for Manifest {
             package,
             scripts,
             all_fields,
+            flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         })
     }
 }
@@ -116,6 +142,8 @@ impl Default for Manifest {
                 name: String::new(),
             },
             version: Version::new(0, 0, 0),
+            description: None,
+            display_name: None,
             dependencies: None,
             dev_dependencies: None,
             tags: None,
@@ -124,14 +152,13 @@ impl Default for Manifest {
             package: None,
             scripts: None,
             all_fields,
+            flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
 }
 
-impl FromStr for Manifest {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Manifest {
+    pub async fn create_from_str(s: &str) -> Result<Self> {
         ten_validate_manifest_json_string(s)?;
 
         let value: serde_json::Value = serde_json::from_str(s)?;
@@ -143,8 +170,12 @@ impl FromStr for Manifest {
         // Extract key fields into the struct fields for easier access.
         let type_and_name = extract_type_and_name(&all_fields)?;
         let version = extract_version(&all_fields)?;
-        let dependencies = extract_dependencies(&all_fields)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
+
+        let description = extract_description(&all_fields)?;
+        let display_name = extract_display_name(&all_fields)?;
+        let dependencies = extract_dependencies(&all_fields).await?;
+        let dev_dependencies = extract_dev_dependencies(&all_fields).await?;
+
         let tags = extract_tags(&all_fields)?;
         let supports = extract_supports(&all_fields)?;
         let api = extract_api(&all_fields)?;
@@ -155,6 +186,8 @@ impl FromStr for Manifest {
         let manifest = Manifest {
             type_and_name,
             version,
+            description,
+            display_name,
             dependencies,
             dev_dependencies,
             tags,
@@ -163,6 +196,7 @@ impl FromStr for Manifest {
             package,
             scripts,
             all_fields,
+            flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
         Ok(manifest)
@@ -193,7 +227,95 @@ fn extract_version(map: &Map<String, Value>) -> Result<Version> {
     }
 }
 
-fn extract_dependencies(
+fn extract_description(
+    map: &Map<String, Value>,
+) -> Result<Option<HashMap<String, String>>> {
+    // Lazy static initialization of regex that validates the locale format.
+    static LOCALE_REGEX: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+
+    if let Some(Value::Object(desc_map)) = map.get("description") {
+        let mut result = HashMap::new();
+        for (locale, description) in desc_map {
+            // Validate locale string format.
+            if !LOCALE_REGEX.is_match(locale) {
+                return Err(anyhow!(
+                    "Invalid locale format: '{}'. Locales must be in format \
+                     'xx' or 'xx-YY' (BCP47 format)",
+                    locale
+                ));
+            }
+
+            if let Value::String(desc_str) = description {
+                if desc_str.is_empty() {
+                    return Err(anyhow!(
+                        "Description for locale '{}' cannot be empty",
+                        locale
+                    ));
+                }
+                result.insert(locale.clone(), desc_str.clone());
+            } else {
+                return Err(anyhow!("Description value must be a string"));
+            }
+        }
+
+        if result.is_empty() {
+            return Err(anyhow!("Description object cannot be empty"));
+        }
+
+        Ok(Some(result))
+    } else if map.contains_key("description") {
+        Err(anyhow!("'description' field is not an object"))
+    } else {
+        Ok(None)
+    }
+}
+
+fn extract_display_name(
+    map: &Map<String, Value>,
+) -> Result<Option<HashMap<String, String>>> {
+    // Lazy static initialization of regex that validates the locale format.
+    static LOCALE_REGEX: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+
+    if let Some(Value::Object(display_name_map)) = map.get("display_name") {
+        let mut result = HashMap::new();
+        for (locale, display_name) in display_name_map {
+            // Validate locale string format.
+            if !LOCALE_REGEX.is_match(locale) {
+                return Err(anyhow!(
+                    "Invalid locale format: '{}'. Locales must be in format \
+                     'xx' or 'xx-YY' (BCP47 format)",
+                    locale
+                ));
+            }
+
+            if let Value::String(display_name_str) = display_name {
+                if display_name_str.is_empty() {
+                    return Err(anyhow!(
+                        "Display name for locale '{}' cannot be empty",
+                        locale
+                    ));
+                }
+                result.insert(locale.clone(), display_name_str.clone());
+            } else {
+                return Err(anyhow!("Display name value must be a string"));
+            }
+        }
+
+        if result.is_empty() {
+            return Err(anyhow!("Display name object cannot be empty"));
+        }
+
+        Ok(Some(result))
+    } else if map.contains_key("display_name") {
+        Err(anyhow!("'display_name' field is not an object"))
+    } else {
+        Ok(None)
+    }
+}
+
+async fn extract_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
@@ -205,7 +327,8 @@ fn extract_dependencies(
                 serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
+            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            {
                 let key = (pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
@@ -227,7 +350,7 @@ fn extract_dependencies(
     }
 }
 
-fn extract_dev_dependencies(
+async fn extract_dev_dependencies(
     map: &Map<String, Value>,
 ) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
@@ -239,7 +362,8 @@ fn extract_dev_dependencies(
                 serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
-            if let Some((pkg_type, name)) = dep_value.get_type_and_name() {
+            if let Some((pkg_type, name)) = dep_value.get_type_and_name().await
+            {
                 let key = (pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
@@ -358,10 +482,6 @@ impl fmt::Display for Manifest {
 }
 
 impl Manifest {
-    pub fn validate_and_complete(&mut self) -> Result<()> {
-        Ok(())
-    }
-
     pub fn check_fs_location(
         &self,
         addon_type_folder_name: Option<&str>,
@@ -410,6 +530,32 @@ impl Manifest {
         }
         dependencies
     }
+
+    pub async fn get_flattened_api(&self) -> Result<Option<ManifestApi>> {
+        // If the api contains no interfaces, return api directly.
+        if let Some(api) = &self.api {
+            if api.interface.is_none()
+                || api.interface.as_ref().unwrap().is_empty()
+            {
+                return Ok(Some(api.clone()));
+            } else {
+                // If the api contains interfaces, try to flatten it.
+                let read_guard = self.flattened_api.read().await;
+                if let Some(api) = read_guard.as_ref() {
+                    return Ok(Some(api.clone()));
+                }
+                drop(read_guard);
+
+                let mut write_guard = self.flattened_api.write().await;
+                let _ = flatten_manifest_api(&self.api, &mut write_guard);
+                let flattened = write_guard.as_ref().map(|api| api.clone());
+                drop(write_guard);
+                return Ok(flattened);
+            }
+        }
+
+        Ok(None)
+    }
 }
 
 pub fn dump_manifest_str_to_file<P: AsRef<Path>>(
@@ -425,7 +571,7 @@ pub fn dump_manifest_str_to_file<P: AsRef<Path>>(
 /// This function reads the contents of the specified manifest file,
 /// deserializes it into a Manifest struct, and updates any local dependency
 /// paths to use the manifest file's parent directory as the base directory.
-pub fn parse_manifest_from_file<P: AsRef<Path>>(
+pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     manifest_file_path: P,
 ) -> Result<Manifest> {
     // Check if the manifest file exists.
@@ -455,7 +601,7 @@ pub fn parse_manifest_from_file<P: AsRef<Path>>(
     let content = read_file_to_string(&manifest_file_path)?;
 
     // Parse the content into a Manifest.
-    let mut manifest: Manifest = content.parse()?;
+    let mut manifest = Manifest::create_from_str(&content).await?;
 
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.
@@ -486,6 +632,29 @@ pub fn parse_manifest_from_file<P: AsRef<Path>>(
         }
     }
 
+    // Update the base_dir for all interface references to be the manifest's
+    // parent directory.
+    if let Some(api) = &mut manifest.api {
+        if let Some(interface) = &mut api.interface {
+            for interface in interface.iter_mut() {
+                interface.base_dir = manifest_folder_path
+                    .to_str()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Failed to convert folder path to string"
+                        )
+                    })?
+                    .to_string();
+            }
+        }
+    }
+
+    // Flatten the API.
+    {
+        let mut flattened_api = manifest.flattened_api.write().await;
+        let _ = flatten_manifest_api(&manifest.api, &mut flattened_api);
+    }
+
     Ok(manifest)
 }
 
@@ -502,14 +671,14 @@ pub fn parse_manifest_from_file<P: AsRef<Path>>(
 /// # Returns
 /// * `Result<Manifest>` - The parsed and validated Manifest struct on success,
 ///   or an error if the file cannot be read, parsed, or validated.
-pub fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
+pub async fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
     // Construct the path to the manifest.json file.
     let manifest_path = folder_path.join(MANIFEST_JSON_FILENAME);
 
     // Read and parse the manifest.json file.
     // This also handles setting the base_dir for local dependencies.
     let manifest =
-        parse_manifest_from_file(&manifest_path).with_context(|| {
+        parse_manifest_from_file(&manifest_path).await.with_context(|| {
             format!("Failed to load {}.", manifest_path.display())
         })?;
 

@@ -352,7 +352,7 @@ async fn solve(
     Ok((usable_model, non_usable_models))
 }
 
-fn create_input_str_for_dependency_relationship(
+async fn create_input_str_for_dependency_relationship(
     input_str: &mut String,
     dep_relationship: Option<&DependencyRelationship>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
@@ -371,7 +371,8 @@ fn create_input_str_for_dependency_relationship(
                 let manifest =
                     ten_rust::pkg_info::manifest::parse_manifest_from_file(
                         &dep_manifest_path,
-                    )?;
+                    )
+                    .await?;
                 manifest.type_and_name
             }
         };
@@ -428,7 +429,7 @@ fn create_input_str_for_dependency_relationship(
     Ok(())
 }
 
-fn create_input_str_for_pkg_info_dependencies(
+async fn create_input_str_for_pkg_info_dependencies(
     input_str: &mut String,
     pkg_info: &PkgInfo,
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
@@ -461,7 +462,8 @@ fn create_input_str_for_pkg_info_dependencies(
                     let manifest =
                         ten_rust::pkg_info::manifest::parse_manifest_from_file(
                             &dep_manifest_path,
-                        )?;
+                        )
+                        .await?;
                     manifest.type_and_name
                 }
             };
@@ -517,13 +519,14 @@ fn create_input_str_for_pkg_info_dependencies(
                             candidate.manifest.version,
                         ));
 
-                        create_input_str_for_pkg_info_dependencies(
+                        Box::pin(create_input_str_for_pkg_info_dependencies(
                             input_str,
                             candidate,
                             dumped_pkgs_info,
                             all_candidates,
                             max_latest_versions,
-                        )?;
+                        ))
+                        .await?;
 
                         found_matched = true;
                     }
@@ -537,10 +540,7 @@ fn create_input_str_for_pkg_info_dependencies(
                                 pkg_type,
                                 name,
                                 version_req,
-                            } => format!(
-                                "[{pkg_type}]{name}
-                ({version_req})"
-                            ),
+                            } => format!("[{pkg_type}]{name} ({version_req})"),
                             ManifestDependency::LocalDependency {
                                 path,
                                 ..
@@ -666,7 +666,8 @@ async fn create_input_str(
         &mut input_str,
         extra_dep_relationship,
         all_candidates,
-    )?;
+    )
+    .await?;
 
     let mut dumped_pkgs_info = HashSet::new();
 
@@ -678,7 +679,8 @@ async fn create_input_str(
                 &mut dumped_pkgs_info,
                 all_candidates,
                 max_latest_versions,
-            )?;
+            )
+            .await?;
         }
     }
 

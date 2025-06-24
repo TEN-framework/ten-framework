@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
 use crate::designer::common::{
-    get_designer_api_msg_from_pkg, get_designer_property_hashmap_from_pkg,
+    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
 };
 use crate::designer::graphs::nodes::DesignerApi;
 use crate::designer::{
@@ -47,17 +47,21 @@ pub struct GetAppAddonsSingleResponseData {
     pub api: Option<DesignerApi>,
 }
 
-fn convert_pkg_info_to_addon(
+async fn convert_pkg_info_to_addon(
     pkg_info_with_src: &PkgInfo,
 ) -> GetAppAddonsSingleResponseData {
+    let manifest_api =
+        pkg_info_with_src.manifest.get_flattened_api().await.unwrap();
+
     GetAppAddonsSingleResponseData {
         addon_type: pkg_info_with_src.manifest.type_and_name.pkg_type,
         addon_name: pkg_info_with_src.manifest.type_and_name.name.clone(),
         url: pkg_info_with_src.url.clone(),
-        api: pkg_info_with_src.manifest.api.as_ref().map(|api| DesignerApi {
-            property: api.property.as_ref().map(|prop| {
-                get_designer_property_hashmap_from_pkg(prop.clone())
-            }),
+        api: manifest_api.map(|api| DesignerApi {
+            property: api
+                .property
+                .as_ref()
+                .map(|prop| get_designer_api_property_from_pkg(prop.clone())),
 
             cmd_in: api
                 .cmd_in
@@ -135,7 +139,7 @@ pub async fn get_app_addons_endpoint(
             // Extract extension packages if they exist.
             if let Some(extensions) = &base_dir_pkg_info.extension_pkgs_info {
                 for ext in extensions {
-                    all_addons.push(convert_pkg_info_to_addon(ext));
+                    all_addons.push(convert_pkg_info_to_addon(ext).await);
                 }
             }
         }
@@ -148,7 +152,7 @@ pub async fn get_app_addons_endpoint(
             // Extract protocol packages if they exist.
             if let Some(protocols) = &base_dir_pkg_info.protocol_pkgs_info {
                 for protocol in protocols {
-                    all_addons.push(convert_pkg_info_to_addon(protocol));
+                    all_addons.push(convert_pkg_info_to_addon(protocol).await);
                 }
             }
         }
@@ -163,7 +167,7 @@ pub async fn get_app_addons_endpoint(
                 &base_dir_pkg_info.addon_loader_pkgs_info
             {
                 for loader in addon_loaders {
-                    all_addons.push(convert_pkg_info_to_addon(loader));
+                    all_addons.push(convert_pkg_info_to_addon(loader).await);
                 }
             }
         }
@@ -176,7 +180,7 @@ pub async fn get_app_addons_endpoint(
             // Extract system packages if they exist.
             if let Some(systems) = &base_dir_pkg_info.system_pkgs_info {
                 for system in systems {
-                    all_addons.push(convert_pkg_info_to_addon(system));
+                    all_addons.push(convert_pkg_info_to_addon(system).await);
                 }
             }
         }

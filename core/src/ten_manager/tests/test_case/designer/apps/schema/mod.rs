@@ -56,7 +56,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json_str,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -99,8 +100,10 @@ mod tests {
 
         let expected_schema = serde_json::json!({
           "property": {
-            "test_property": {
-                "type": "int8"
+            "properties": {
+              "test_property": {
+                  "type": "int8"
+              }
             }
           }
         });
@@ -141,7 +144,8 @@ mod tests {
                 &mut pkgs_cache,
                 &mut graphs_cache,
                 all_pkgs_json_str,
-            );
+            )
+            .await;
             assert!(inject_ret.is_ok());
         }
 

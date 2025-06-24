@@ -33,8 +33,8 @@ mod tests {
         });
         let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
         println!("JSON without supports:");
-        println!("{}", json_string);
-        println!("Generated hash: {}", hash);
+        println!("{json_string}");
+        println!("Generated hash: {hash}");
 
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters
@@ -82,8 +82,8 @@ mod tests {
 
         let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
         println!("JSON with supports:");
-        println!("{}", json_string);
-        println!("Generated hash: {}", hash);
+        println!("{json_string}");
+        println!("Generated hash: {hash}");
 
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters
@@ -157,8 +157,8 @@ mod tests {
 
         let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
         println!("PkgInfo JSON:");
-        println!("{}", json_string);
-        println!("PkgInfo generated hash: {}", hash);
+        println!("{json_string}");
+        println!("PkgInfo generated hash: {hash}");
 
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters
@@ -212,8 +212,8 @@ mod tests {
 
         let json_string = serde_json::to_string_pretty(&json_obj).unwrap();
         println!("JSON with partial supports:");
-        println!("{}", json_string);
-        println!("Generated hash: {}", hash);
+        println!("{json_string}");
+        println!("Generated hash: {hash}");
 
         assert!(!hash.is_empty());
         assert_eq!(hash.len(), 64); // SHA256 hash is 64 hex characters
