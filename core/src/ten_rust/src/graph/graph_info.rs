@@ -52,8 +52,31 @@ pub fn load_graph_from_uri(
                 return load_graph_from_file_url(&url, new_base_dir);
             }
             _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    // The import_uri may be a relative path in Windows.
+                    // Continue to parse the import_uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in import_uri: {} when \
+                         load_graph_from_uri",
+                        url.scheme(),
+                        uri
+                    ));
+                }
+
+                #[cfg(not(windows))]
                 return Err(anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
+                    "Unsupported URL scheme '{}' in import_uri: {} when \
+                     load_graph_from_uri",
                     url.scheme(),
                     uri
                 ));

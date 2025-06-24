@@ -422,6 +422,16 @@ pub fn find_pkgs_cache_entry_by_app_uri<'a>(
         if let Some(app_pkg) = &pkg_info.app_pkg_info {
             if let Some(property) = &app_pkg.property {
                 if let Some(ten) = &property.ten {
+                    // If the app_uri is None, it means the app is a local app.
+                    // In this case, we should return the entry whose app_uri
+                    // is None or empty.
+                    if app_uri.is_none() {
+                        return ten
+                            .uri
+                            .as_ref()
+                            .is_none_or(|uri| uri.is_empty());
+                    }
+
                     return ten.uri == *app_uri;
                 }
             }
