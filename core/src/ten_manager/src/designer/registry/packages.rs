@@ -43,7 +43,7 @@ pub struct GetPackagesRequestPayload {
     pub tags: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetPackagesResponseData {
     pub packages: Vec<PkgRegistryInfo>,
 }

@@ -44,6 +44,8 @@ pub struct ManifestApi {
 }
 
 impl ManifestApi {
+    /// Return the flattened API.
+    /// If the api has no interface, return None.
     pub async fn get_flattened_api(
         &mut self,
         base_dir: &str,

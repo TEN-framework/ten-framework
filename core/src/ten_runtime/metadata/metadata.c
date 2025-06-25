@@ -124,8 +124,69 @@ void ten_metadata_load(ten_object_on_configure_func_t on_configure,
   on_configure(ten_env);
 }
 
-ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
-                                            ten_schema_store_t *schema_store) {
+// This function is used to flatten the manifest api definition.
+// If the manifest api definition is invalid, the return value is NULL.
+// Note that if the return value is not NULL, it means the return value is a new
+// value, and the caller should destroy it after using.
+static ten_value_t *ten_metadata_flatten_manifest_api_definition(
+    ten_value_t *api_definition, const char *base_dir) {
+  TEN_ASSERT(api_definition, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(api_definition), "Invalid argument.");
+  TEN_ASSERT(base_dir, "Invalid argument.");
+
+  ten_value_t *result = NULL;
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_json_t original_api_json =
+      TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
+  bool success = ten_value_to_json(api_definition, &original_api_json);
+  if (!success) {
+    TEN_LOGW("Failed to jsonify api definition.");
+    ten_json_deinit(&original_api_json);
+    return NULL;
+  }
+
+  bool must_free_original_json_str = false;
+  const char *original_api_json_str = ten_json_to_string(
+      &original_api_json, NULL, &must_free_original_json_str);
+  TEN_ASSERT(original_api_json_str, "Should not happen.");
+
+  char *err_msg = NULL;
+  const char *flattened_api_json_str =
+      ten_rust_manifest_api_flatten(original_api_json_str, base_dir, &err_msg);
+
+  if (must_free_original_json_str) {
+    TEN_FREE(original_api_json_str);
+  }
+
+  ten_json_deinit(&original_api_json);
+
+  if (!flattened_api_json_str) {
+    TEN_LOGW("Failed to flatten manifest api definition: %s", err_msg);
+    ten_rust_free_cstring(err_msg);
+    return NULL;
+  }
+
+  ten_value_t *flattened_api_definition =
+      ten_value_from_json_str(flattened_api_json_str);
+  if (!flattened_api_definition) {
+    TEN_LOGE(
+        "Failed to create value from flattened api definition json string.");
+    ten_rust_free_cstring(flattened_api_json_str);
+    return NULL;
+  }
+
+  ten_rust_free_cstring(flattened_api_json_str);
+
+  result = flattened_api_definition;
+#endif
+
+  return result;
+}
+
+bool ten_metadata_init_schema_store(ten_value_t *manifest,
+                                    ten_schema_store_t *schema_store,
+                                    const char *base_dir) {
   TEN_ASSERT(manifest, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(manifest), "Invalid argument.");
   TEN_ASSERT(ten_value_is_object(manifest), "Should not happen.");
@@ -133,8 +194,22 @@ ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
 
   ten_value_t *api_definition = ten_value_object_peek(manifest, TEN_STR_API);
   if (!api_definition) {
-    return NULL;
+    return false;
   }
+
+  bool value_need_free = false;
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  api_definition =
+      ten_metadata_flatten_manifest_api_definition(api_definition, base_dir);
+  if (!api_definition) {
+    TEN_LOGE("Failed to flatten manifest api definition. base_dir: %s",
+             base_dir);
+    return false;
+  }
+
+  value_need_free = true;
+#endif
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -145,7 +220,11 @@ ten_value_t *ten_metadata_init_schema_store(ten_value_t *manifest,
 
   ten_error_deinit(&err);
 
-  return api_definition;
+  if (value_need_free) {
+    ten_value_destroy(api_definition);
+  }
+
+  return true;
 }
 
 bool ten_manifest_json_string_is_valid(const char *json_string,
