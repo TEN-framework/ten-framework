@@ -81,6 +81,7 @@
       "tests/**.tent",
       "tests/bin/*",
       "requirements.txt",
+      "docs/**",
       ".vscode/**"
     ]
   },

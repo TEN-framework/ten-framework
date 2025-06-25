@@ -1,30 +1,29 @@
-# Default Async Python Extension
+# デフォルト非同期 Python 拡張
 
-## 概要
-
-Default TEN Framework asynchronous extension template written in Python
+<!-- extensionの簡単な紹介 -->
 
 ## 機能
 
-- TEN Framework で構築
-- バージョン 0.10.18
-- クロスプラットフォーム対応
+<!-- 主要機能の紹介 -->
 
-## はじめに
+- xxx 機能
 
-### 前提条件
+## API
 
-- TEN Runtime（バージョン 0.10.18 または互換バージョン）
-- manifest.json で指定された必要な依存関係
+`api` の定義については [manifest.json] を、デフォルト値については [property.json] を参照してください。
 
-### インストール
+<!-- 追加の紹介が必要な場合は、API.md も参照できます -->
 
-TEN Framework パッケージインストールガイドに従ってください。
+## 開発
 
-## 使用方法
+### ビルド
 
-このパッケージは、フレームワーク仕様に従って TEN アプリケーションに統合できます。
+<!-- ビルドの依存関係と手順 -->
 
-## ライセンス
+### 単体テスト
 
-このパッケージは TEN Framework プロジェクトの一部です。
+<!-- extensionの単体テストの実行方法 -->
+
+## その他
+
+<!-- 該当する場合のその他の項目 -->

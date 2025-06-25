@@ -1,30 +1,29 @@
-# Default Node.js Extension
+# Default Extension Node.js Extension
 
-## Overview
-
-Default TEN Framework extension template written in Node.js
+<!-- Brief introduction for the extension -->
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+<!-- Main features introduction -->
 
-## Getting Started
+- xxx features
 
-### Prerequisites
+## API
 
-- TEN Runtime (version 0.10.18 or compatible)
-- Required dependencies as specified in manifest.json
+Refer to `api` definition in [manifest.json] and default values in [property.json].
 
-### Installation
+<!-- Additional API.md can be referred to if extra introduction needed -->
 
-Follow the TEN Framework package installation guidelines.
+## Development
 
-## Usage
+### Build
 
-This package can be integrated into TEN applications according to the framework specifications.
+<!-- Build dependencies and steps -->
 
-## License
+### Unit test
 
-This package is part of the TEN Framework project.
+<!-- How to do unit test for the extension -->
+
+## Misc
+
+<!-- Others if applicable -->

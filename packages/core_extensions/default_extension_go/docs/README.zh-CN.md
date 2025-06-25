@@ -1,30 +1,29 @@
-# Default Go Extension
+# 默认 Extension Go 扩展
 
-## 概述
+<!-- extension的简要介绍 -->
 
-Default TEN Framework extension template written in Go
+## 功能
 
-## 特性
+<!-- 主要功能介绍 -->
 
-- 基于 TEN Framework 构建
-- 版本 0.10.18
-- 跨平台支持
+- xxx 功能
 
-## 快速开始
+## API
 
-### 前置条件
+请参考 [manifest.json] 中的 `api` 定义和 [property.json] 中的默认值。
 
-- TEN Runtime（版本 0.10.18 或兼容版本）
-- manifest.json 中指定的必需依赖项
+<!-- 如需额外介绍，可参考 API.md -->
 
-### 安装
+## 开发
 
-遵循 TEN Framework 包安装指南。
+### 构建
 
-## 使用方法
+<!-- 构建依赖和步骤 -->
 
-此包可以根据框架规范集成到 TEN 应用程序中。
+### 单元测试
 
-## 许可证
+<!-- 如何对extension进行单元测试 -->
 
-此包是 TEN Framework 项目的一部分。
+## 其他
+
+<!-- 其他相关信息 -->
