@@ -663,43 +663,20 @@ pub fn dump_manifest_str_to_file<P: AsRef<Path>>(
     Ok(())
 }
 
-/// Parses a manifest.json file into a Manifest struct.
+/// Updates the base_dir for all components in the manifest that need it.
 ///
-/// This function reads the contents of the specified manifest file,
-/// deserializes it into a Manifest struct, and updates any local dependency
-/// paths to use the manifest file's parent directory as the base directory.
-pub async fn parse_manifest_from_file<P: AsRef<Path>>(
+/// This function sets the base_dir for:
+/// - Local dependencies
+/// - Display name locale content
+/// - Description locale content
+/// - Readme locale content
+/// - Interface references in the API
+///
+/// The base_dir is set to the parent directory of the manifest file.
+fn update_manifest_base_dirs<P: AsRef<Path>>(
     manifest_file_path: P,
-) -> Result<Manifest> {
-    // Check if the manifest file exists.
-    if !manifest_file_path.as_ref().exists() {
-        return Err(anyhow::anyhow!(
-            "Manifest file not found at: {}",
-            manifest_file_path.as_ref().display()
-        ));
-    }
-
-    // Validate the manifest schema first.
-    // This ensures the file conforms to the TEN manifest schema before
-    // attempting to parse it.
-    json_schema::ten_validate_manifest_json_file(
-        manifest_file_path.as_ref().to_str().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Failed to convert path to string: {}",
-                manifest_file_path.as_ref().display()
-            )
-        })?,
-    )
-    .with_context(|| {
-        format!("Failed to validate {}.", manifest_file_path.as_ref().display())
-    })?;
-
-    // Read the contents of the manifest.json file.
-    let content = read_file_to_string(&manifest_file_path)?;
-
-    // Parse the content into a Manifest.
-    let mut manifest = Manifest::create_from_str(&content)?;
-
+    manifest: &mut Manifest,
+) -> Result<()> {
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.
     let manifest_folder_path =
@@ -758,6 +735,49 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
             }
         }
     }
+
+    Ok(())
+}
+
+/// Parses a manifest.json file into a Manifest struct.
+///
+/// This function reads the contents of the specified manifest file,
+/// deserializes it into a Manifest struct, and updates any local dependency
+/// paths to use the manifest file's parent directory as the base directory.
+pub async fn parse_manifest_from_file<P: AsRef<Path>>(
+    manifest_file_path: P,
+) -> Result<Manifest> {
+    // Check if the manifest file exists.
+    if !manifest_file_path.as_ref().exists() {
+        return Err(anyhow::anyhow!(
+            "Manifest file not found at: {}",
+            manifest_file_path.as_ref().display()
+        ));
+    }
+
+    // Validate the manifest schema first.
+    // This ensures the file conforms to the TEN manifest schema before
+    // attempting to parse it.
+    json_schema::ten_validate_manifest_json_file(
+        manifest_file_path.as_ref().to_str().ok_or_else(|| {
+            anyhow::anyhow!(
+                "Failed to convert path to string: {}",
+                manifest_file_path.as_ref().display()
+            )
+        })?,
+    )
+    .with_context(|| {
+        format!("Failed to validate {}.", manifest_file_path.as_ref().display())
+    })?;
+
+    // Read the contents of the manifest.json file.
+    let content = read_file_to_string(&manifest_file_path)?;
+
+    // Parse the content into a Manifest.
+    let mut manifest = Manifest::create_from_str(&content)?;
+
+    // Update all base_dir fields in the manifest.
+    update_manifest_base_dirs(&manifest_file_path, &mut manifest)?;
 
     // Flatten the API.
     {
