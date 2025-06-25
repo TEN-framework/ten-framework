@@ -1,18 +1,24 @@
-# Vosk ASR C++ Extension
+# Vosk ASR C++ 擴展
 
 ## 概述
 
-Vosk automatic speech recognition extension written in C++ for TEN Framework
+為 TEN Framework 編寫的基於 C++ 的 Vosk 自動語音識別擴展
 
 ## 特性
 
-- 用於 TEN Framework 的軟體套件組件
+- 使用 Vosk 為 TEN Framework 提供的 C++ ASR 擴展
 
 ## 快速開始
 
 ### 前置條件
 
-- manifest.json 中指定的必需相依性
+#### 安裝 VOSK SDK
+
+由於 vosk SDK（包括標頭檔案和函式庫檔案）相對較大，預設情況下不包含在此擴展中。您需要從 [https://github.com/alphacep/vosk-api/releases](https://github.com/alphacep/vosk-api/releases) 手動下載 vosk SDK，將標頭檔案（`vosk_api.h`）放置在 `include/` 目錄中，將函式庫檔案（`libvosk.so`）放置在 `lib_private/` 目錄中。
+
+#### 安裝 VOSK 模型
+
+從 [https://alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) 下載所需的模型，解壓後放置在 `models/` 目錄中。
 
 ### 安裝
 
