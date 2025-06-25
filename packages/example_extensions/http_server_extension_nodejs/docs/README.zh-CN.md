@@ -8,7 +8,6 @@ HTTP server extension example written in Node.js for TEN Framework
 
 - 用于 TEN Framework 的软件包组件
 
-
 ## 快速开始
 
 ### 前置条件

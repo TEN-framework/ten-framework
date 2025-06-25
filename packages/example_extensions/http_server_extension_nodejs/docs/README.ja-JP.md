@@ -8,7 +8,6 @@ HTTP server extension example written in Node.js for TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件

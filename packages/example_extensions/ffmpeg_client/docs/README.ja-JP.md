@@ -8,7 +8,6 @@ FFmpeg client extension for media processing in TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件

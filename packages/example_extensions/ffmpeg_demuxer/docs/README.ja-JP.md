@@ -8,7 +8,6 @@ FFmpeg demuxer extension for media stream separation in TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件

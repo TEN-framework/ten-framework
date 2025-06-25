@@ -8,7 +8,6 @@ FFmpeg muxer extension for media stream combination in TEN Framework
 
 - 用於 TEN Framework 的軟體套件組件
 
-
 ## 快速開始
 
 ### 前置條件
