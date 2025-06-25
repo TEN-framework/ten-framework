@@ -8,3 +8,4 @@ mod local;
 mod pkg_registry_info_description;
 mod pkg_registry_info_display_name;
 mod pkg_registry_info_readme;
+mod found_result;
