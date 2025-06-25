@@ -1,0 +1,30 @@
+# WebSocket Server Node.js Extension
+
+## 개요
+
+WebSocket server extension example written in Node.js for TEN Framework
+
+## 기능
+
+- TEN Framework로 구축
+- 버전 0.10.18
+- 크로스 플랫폼 지원
+
+## 시작하기
+
+### 전제 조건
+
+- TEN Runtime (버전 0.10.18 또는 호환 버전)
+- manifest.json에 지정된 필수 종속성
+
+### 설치
+
+TEN Framework 패키지 설치 가이드를 따르세요.
+
+## 사용법
+
+이 패키지는 프레임워크 사양에 따라 TEN 애플리케이션에 통합될 수 있습니다.
+
+## 라이선스
+
+이 패키지는 TEN Framework 프로젝트의 일부입니다.
