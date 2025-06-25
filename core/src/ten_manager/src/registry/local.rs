@@ -13,7 +13,6 @@ use std::sync::Arc;
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use semver::{Version, VersionReq};
-use serde_json;
 use sha2::{Digest, Sha256};
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
@@ -95,7 +94,9 @@ pub async fn upload_package(
     })?;
 
     // Serialize and write the manifest to a JSON file.
-    let manifest_json = serde_json::to_string_pretty(&pkg_info.manifest)
+    let manifest_json = pkg_info
+        .serialize_manifest_with_resolved_content()
+        .await
         .with_context(|| "Failed to serialize manifest to JSON")?;
 
     let manifest_file_name =

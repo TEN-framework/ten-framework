@@ -14,8 +14,6 @@ ten_package("default_async_extension_python") {
   resources = [
     ".vscode/launch.json",
     ".vscode/settings.json",
-    "README.md",
-    "README.md.tent",
     "__init__.py",
     "__init__.py.tent",
     "addon.py",
@@ -27,6 +25,22 @@ ten_package("default_async_extension_python") {
     "property.json",
     "requirements.txt",
   ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
 
   tests_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                             [
