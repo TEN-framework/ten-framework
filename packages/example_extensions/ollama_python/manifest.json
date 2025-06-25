@@ -76,7 +76,8 @@
       "tests/**",
       "**.py",
       "requirements.txt",
-      "LICENSE"
+      "LICENSE",
+      "docs/**"
     ]
   },
   "scripts": {

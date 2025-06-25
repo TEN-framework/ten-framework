@@ -8,7 +8,6 @@ Simple echo extension example written in C++ for TEN Framework
 
 - 用于 TEN Framework 的软件包组件
 
-
 ## 快速开始
 
 ### 前置条件

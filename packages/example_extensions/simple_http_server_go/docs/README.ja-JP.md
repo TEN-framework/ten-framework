@@ -8,7 +8,6 @@ Simple HTTP server extension example written in Go for TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件

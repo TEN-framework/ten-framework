@@ -8,7 +8,6 @@ PIL (Python Imaging Library) demonstration extension written in Python for TEN F
 
 - 用于 TEN Framework 的软件包组件
 
-
 ## 快速开始
 
 ### 前置条件

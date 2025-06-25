@@ -8,7 +8,6 @@ Vosk automatic speech recognition extension written in C++ for TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件

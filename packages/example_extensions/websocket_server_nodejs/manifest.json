@@ -77,7 +77,8 @@
       "src/**",
       "tsconfig.json",
       "package.json",
-      "LICENSE"
+      "LICENSE",
+      "docs/**"
     ]
   },
   "api": {}

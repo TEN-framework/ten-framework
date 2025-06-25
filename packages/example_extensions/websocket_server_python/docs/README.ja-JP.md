@@ -8,7 +8,6 @@ WebSocket server extension example written in Python for TEN Framework
 
 - TEN Framework のソフトウェアパッケージコンポーネント
 
-
 ## はじめに
 
 ### 前提条件
