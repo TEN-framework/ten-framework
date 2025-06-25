@@ -12,14 +12,14 @@ use std::{
 use anyhow::{anyhow, Result};
 use clap::{Arg, ArgMatches, Command};
 use ten_rust::{
-    fs::read_file_to_string, pkg_info::constants::MANIFEST_JSON_FILENAME,
+    pkg_info::constants::MANIFEST_JSON_FILENAME, utils::fs::read_file_to_string,
 };
 use tokio::io::AsyncBufReadExt;
 
 use crate::{
-    home::config::{is_verbose, TmanConfig},
     constants::SCRIPTS,
     designer::storage::in_memory::TmanStorageInMemory,
+    home::config::{is_verbose, TmanConfig},
     output::TmanOutput,
 };
 

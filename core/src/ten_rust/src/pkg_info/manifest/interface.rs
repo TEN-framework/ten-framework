@@ -5,100 +5,20 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use crate::{
-    fs::read_file_to_string,
-    path::get_real_path_from_import_uri,
     pkg_info::manifest::api::{ManifestApi, ManifestApiInterface},
+    utils::{
+        path::{get_base_dir_of_uri, get_real_path_from_import_uri},
+        uri::load_content_from_uri,
+    },
 };
 
 use crate::pkg_info::manifest::api::{
     ManifestApiMsg, ManifestApiProperty, ManifestApiPropertyAttributes,
 };
 use std::collections::HashMap;
-use std::{collections::HashSet, path::Path};
+use std::collections::HashSet;
 
 use anyhow::{anyhow, Context, Result};
-use url::Url;
-
-async fn load_interface_from_http_url(url: &Url) -> Result<ManifestApi> {
-    // Create HTTP client
-    let client = reqwest::Client::new();
-
-    // Make HTTP request
-    let response = client
-        .get(url.as_str())
-        .send()
-        .await
-        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
-
-    // Check if request was successful
-    if !response.status().is_success() {
-        return Err(anyhow::anyhow!(
-            "HTTP request failed with status {}: {}",
-            response.status(),
-            url
-        ));
-    }
-
-    // Get response body as text
-    let interface_content = response
-        .text()
-        .await
-        .with_context(|| format!("Failed to read response body from {url}"))?;
-
-    // Parse the interface file into a ManifestApi structure.
-    let mut interface_api: ManifestApi =
-        serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {url}")
-        })?;
-
-    // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface.as_mut() {
-        let mut base_url = url.clone();
-
-        // Remove the file part from the URL to get the base directory
-        if let Ok(mut segments) = base_url.path_segments_mut() {
-            segments.pop();
-        }
-
-        for interface in interface.iter_mut() {
-            interface.base_dir = Some(base_url.to_string());
-        }
-    }
-
-    Ok(interface_api)
-}
-
-fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
-    // Convert file URL to local path
-    let path =
-        url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
-
-    // Read the interface file.
-    let interface_content = read_file_to_string(&path).with_context(|| {
-        format!("Failed to read interface file from {}", path.display())
-    })?;
-
-    // Parse the interface file into a ManifestApi structure.
-    let mut interface_api: ManifestApi =
-        serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {}", path.display())
-        })?;
-
-    // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface.as_mut() {
-        let mut base_url = url.clone();
-        // Remove the file part from the URL to get the base directory
-        if let Ok(mut segments) = base_url.path_segments_mut() {
-            segments.pop();
-        }
-
-        for interface in interface.iter_mut() {
-            interface.base_dir = Some(base_url.to_string());
-        }
-    }
-
-    Ok(interface_api)
-}
 
 /// Loads interface from the specified URI with an optional base directory.
 ///
@@ -112,7 +32,7 @@ async fn load_interface(
     interface_set: &mut HashSet<String>,
 ) -> Result<ManifestApi> {
     let import_uri = &interface.import_uri;
-    let base_dir = interface.base_dir.as_deref().unwrap_or("");
+    let base_dir = interface.base_dir.as_deref();
 
     // Get the real path according to the import_uri and base_dir.
     let real_path = get_real_path_from_import_uri(import_uri, base_dir)?;
@@ -128,53 +48,8 @@ async fn load_interface(
     // Add the interface to the interface_set.
     interface_set.insert(real_path.clone());
 
-    // Try to parse as URL
-    if let Ok(url) = Url::parse(&real_path) {
-        match url.scheme() {
-            "http" | "https" => {
-                return load_interface_from_http_url(&url).await;
-            }
-            "file" => {
-                return load_interface_from_file_url(&url);
-            }
-            _ => {
-                #[cfg(windows)]
-                // Windows drive letter
-                if url.scheme().len() == 1
-                    && url
-                        .scheme()
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .is_ascii_alphabetic()
-                {
-                    // The import_uri may be a relative path in Windows.
-                    // Continue to parse the import_uri as a relative path.
-                } else {
-                    return Err(anyhow::anyhow!(
-                        "Unsupported URL scheme '{}' in import_uri real_path: \
-                         {} when load_interface",
-                        url.scheme(),
-                        real_path
-                    ));
-                }
-
-                #[cfg(not(windows))]
-                return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri real_path: {} \
-                     when load_interface",
-                    url.scheme(),
-                    real_path
-                ));
-            }
-        }
-    }
-
-    // It's a file path, read the interface file.
-    let interface_content =
-        read_file_to_string(&real_path).with_context(|| {
-            format!("Failed to read interface file from {real_path}")
-        })?;
+    // Load the content from the uri.
+    let interface_content = load_content_from_uri(&real_path).await?;
 
     // Parse the interface file into a ManifestApi structure.
     let mut interface_api: ManifestApi =
@@ -182,13 +57,12 @@ async fn load_interface(
             format!("Failed to parse interface file from {real_path}")
         })?;
 
-    // Get the parent directory of the interface file.
-    let parent_dir = Path::new(&real_path).parent().unwrap();
+    let base_dir = get_base_dir_of_uri(&real_path)?;
 
     // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface {
+    if let Some(interface) = &mut interface_api.interface.as_mut() {
         for interface in interface.iter_mut() {
-            interface.base_dir = Some(parent_dir.to_string_lossy().to_string());
+            interface.base_dir = Some(base_dir.clone());
         }
     }
 

@@ -45,7 +45,10 @@ mod tests {
         // Check that new_base_dir was set correctly
         assert!(new_base_dir.is_some());
         let base_dir = new_base_dir.unwrap();
-        assert_eq!(base_dir, temp_dir.path().to_string_lossy());
+        assert_eq!(
+            base_dir,
+            "file://".to_string() + &temp_dir.path().to_string_lossy()
+        );
     }
 
     #[test]
@@ -72,7 +75,7 @@ mod tests {
         let mut new_base_dir = Some(String::new());
         let result = load_graph_from_uri(
             "test_graph.json",
-            Some(&temp_dir.path().to_string_lossy()),
+            Some(&format!("file://{}", temp_dir.path().to_string_lossy())),
             &mut new_base_dir,
         );
 
@@ -84,7 +87,10 @@ mod tests {
         // Check that new_base_dir was set correctly
         assert!(new_base_dir.is_some());
         let base_dir = new_base_dir.unwrap();
-        assert_eq!(base_dir, temp_dir.path().to_string_lossy());
+        assert_eq!(
+            base_dir,
+            "file://".to_string() + &temp_dir.path().to_string_lossy()
+        );
     }
 
     #[test]
