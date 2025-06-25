@@ -96,8 +96,8 @@ pub async fn load_content_from_uri(uri: &str) -> Result<String> {
     }
 
     // It's a file path, read the content file.
-    let content = read_file_to_string(&uri)
+    let content = read_file_to_string(uri)
         .with_context(|| format!("Failed to read content file from {uri}"))?;
 
-    return Ok(content);
+    Ok(content)
 }
