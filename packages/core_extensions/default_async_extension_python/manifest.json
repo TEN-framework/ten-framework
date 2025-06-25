@@ -76,7 +76,6 @@
       "property.json",
       "**.tent",
       "**.py",
-      "README.md",
       "tests/**.py",
       "tests/**.tent",
       "tests/bin/*",

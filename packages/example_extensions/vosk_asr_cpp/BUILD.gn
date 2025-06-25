@@ -14,11 +14,26 @@ ten_package("vosk_asr_cpp") {
   resources = [
     "BUILD_release.gn=>BUILD.gn",
     "LICENSE",
-    "README.md",
     "manifest.json",
     "property.json",
     "src/main.cc",
   ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
 
   header_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                              [

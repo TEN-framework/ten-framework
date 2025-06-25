@@ -74,8 +74,6 @@
     "include": [
       "manifest.json",
       "property.json",
-      "**.py",
-      "README.md",
       "tests/**.py",
       "tests/bin/*",
       "requirements.txt",
