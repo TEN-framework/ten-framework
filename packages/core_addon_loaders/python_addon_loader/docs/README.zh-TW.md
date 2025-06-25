@@ -6,15 +6,12 @@ TEN Framework addon loader for Python runtime support
 
 ## 特性
 
-- 基於 TEN Framework 建構
-- 版本 0.10.18
-- 跨平台支援
+- 用於 Python 執行時支援的 TEN Framework 插件載入器
 
 ## 快速開始
 
 ### 前置條件
 
-- TEN Runtime（版本 0.10.18 或相容版本）
 - manifest.json 中指定的必需相依性
 
 ### 安裝

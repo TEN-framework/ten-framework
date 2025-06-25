@@ -6,15 +6,12 @@ Default TEN Framework application template written in Go
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+- Default Go application for TEN Framework
 
 ## Getting Started
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or compatible)
 - Required dependencies as specified in manifest.json
 
 ### Installation

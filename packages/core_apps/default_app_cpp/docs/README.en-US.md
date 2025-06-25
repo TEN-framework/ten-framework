@@ -14,7 +14,6 @@ This is the default TEN Framework application template written in C++. It provid
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or later)
 - C++ compiler with C++11 support
 - Python 3 for build scripts
 

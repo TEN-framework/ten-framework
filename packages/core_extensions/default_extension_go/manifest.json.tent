@@ -2,10 +2,44 @@
   "type": "extension",
   "name": "{{package_name}}",
   "version": "0.10.18",
-  "tags": [
-    "go",
-    "template"
-  ],
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Default Go Extension"
+      },
+      "zh-CN": {
+        "content": "默认 Go 扩展"
+      },
+      "zh-TW": {
+        "content": "預設 Go 擴充"
+      },
+      "ja-JP": {
+        "content": "デフォルト Go 拡張"
+      },
+      "ko-KR": {
+        "content": "기본 Go 확장"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Default TEN Framework extension template written in Go"
+      },
+      "zh-CN": {
+        "content": "使用 Go 语言编写的默认 TEN Framework 扩展模板"
+      },
+      "zh-TW": {
+        "content": "使用 Go 語言編寫的預設 TEN Framework 擴充模板"
+      },
+      "ja-JP": {
+        "content": "Goで書かれたデフォルトのTEN Framework拡張テンプレート"
+      },
+      "ko-KR": {
+        "content": "Go로 작성된 기본 TEN Framework 확장 템플릿"
+      }
+    }
+  },
   "readme": {
     "locales": {
       "en-US": {
@@ -25,6 +59,10 @@
       }
     }
   },
+  "tags": [
+    "go",
+    "template"
+  ],
   "dependencies": [
     {
       "type": "system",
@@ -35,7 +73,8 @@
   "package": {
     "include": [
       "**",
-      ".vscode/**"
+      ".vscode/**",
+      "docs/**"
     ]
   },
   "api": {},

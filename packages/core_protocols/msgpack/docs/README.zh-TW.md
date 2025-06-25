@@ -6,15 +6,12 @@ MessagePack protocol implementation for efficient binary serialization
 
 ## 特性
 
-- 基於 TEN Framework 建構
-- 版本 0.10.18
-- 跨平台支援
+- 用於 TEN Framework 的軟體套件組件
 
 ## 快速開始
 
 ### 前置條件
 
-- TEN Runtime（版本 0.10.18 或相容版本）
 - manifest.json 中指定的必需相依性
 
 ### 安裝

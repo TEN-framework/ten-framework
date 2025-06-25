@@ -6,15 +6,12 @@ TEN Framework addon loader for Node.js runtime support
 
 ## 特性
 
-- 基于 TEN Framework 构建
-- 版本 0.10.18
-- 跨平台支持
+- 用于 Node.js 运行时支持的 TEN Framework 插件加载器
 
 ## 快速开始
 
 ### 前置条件
 
-- TEN Runtime（版本 0.10.18 或兼容版本）
 - manifest.json 中指定的必需依赖项
 
 ### 安装

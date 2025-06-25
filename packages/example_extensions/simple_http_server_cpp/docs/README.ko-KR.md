@@ -6,15 +6,13 @@ Simple HTTP server extension example written in C++ for TEN Framework
 
 ## 기능
 
-- TEN Framework로 구축
-- 버전 0.10.18
-- 크로스 플랫폼 지원
+- TEN Framework용 소프트웨어 패키지 구성 요소
+
 
 ## 시작하기
 
 ### 전제 조건
 
-- TEN Runtime (버전 0.10.18 또는 호환 버전)
 - manifest.json에 지정된 필수 종속성
 
 ### 설치

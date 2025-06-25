@@ -6,15 +6,12 @@ TEN Framework addon loader for Node.js runtime support
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+- TEN Framework addon loader for Node.js runtime support
 
 ## Getting Started
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or compatible)
 - Required dependencies as specified in manifest.json
 
 ### Installation

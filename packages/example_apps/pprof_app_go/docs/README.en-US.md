@@ -6,15 +6,12 @@ TEN Framework Go application with pprof profiling support for performance analys
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+- Go application with profiling support for TEN Framework
 
 ## Getting Started
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or compatible)
 - Required dependencies as specified in manifest.json
 
 ### Installation

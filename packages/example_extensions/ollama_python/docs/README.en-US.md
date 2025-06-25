@@ -6,15 +6,12 @@ Ollama integration extension example written in Python for TEN Framework
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+- Python extension for Ollama integration with TEN Framework
 
 ## Getting Started
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or compatible)
 - Required dependencies as specified in manifest.json
 
 ### Installation

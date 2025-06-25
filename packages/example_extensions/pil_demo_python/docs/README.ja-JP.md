@@ -6,15 +6,13 @@ PIL (Python Imaging Library) demonstration extension written in Python for TEN F
 
 ## 機能
 
-- TEN Framework で構築
-- バージョン 0.10.18
-- クロスプラットフォーム対応
+- TEN Framework のソフトウェアパッケージコンポーネント
+
 
 ## はじめに
 
 ### 前提条件
 
-- TEN Runtime（バージョン 0.10.18 または互換バージョン）
 - manifest.json で指定された必要な依存関係
 
 ### インストール

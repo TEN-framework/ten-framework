@@ -72,7 +72,8 @@
   "package": {
     "include": [
       "**",
-      ".vscode/**"
+      ".vscode/**",
+      "docs/**"
     ]
   },
   "scripts": {

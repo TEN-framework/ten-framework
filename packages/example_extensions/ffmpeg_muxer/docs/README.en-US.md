@@ -6,15 +6,12 @@ FFmpeg muxer extension for media stream combination in TEN Framework
 
 ## Features
 
-- Built with TEN Framework
-- Version 0.10.18
-- Cross-platform support
+- FFmpeg muxer extension for TEN Framework
 
 ## Getting Started
 
 ### Prerequisites
 
-- TEN Runtime (version 0.10.18 or compatible)
 - Required dependencies as specified in manifest.json
 
 ### Installation
