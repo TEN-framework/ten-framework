@@ -18,7 +18,7 @@ use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use semver::Version;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use url;
 
@@ -36,7 +36,7 @@ use support::ManifestSupport;
 use super::constants::TEN_STR_TAGS;
 use super::pkg_type_and_name::PkgTypeAndName;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct LocaleContent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -49,6 +49,35 @@ pub struct LocaleContent {
     // `import_uri` field when it contains a relative path.
     #[serde(skip)]
     pub base_dir: Option<String>,
+}
+
+impl Serialize for LocaleContent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+
+        // Try to get content using the async method
+        // Since we can't call async method in serialize, we need to handle this
+        // differently If content is available, serialize it; otherwise
+        // serialize import_uri
+        if self.content.is_some() {
+            let mut state = serializer.serialize_struct("LocaleContent", 1)?;
+            state.serialize_field("content", &self.content)?;
+            state.end()
+        } else if self.import_uri.is_some() {
+            let mut state = serializer.serialize_struct("LocaleContent", 1)?;
+            state.serialize_field("import_uri", &self.import_uri)?;
+            state.end()
+        } else {
+            // This should not happen based on validation, but handle it
+            // gracefully
+            Err(serde::ser::Error::custom(
+                "LocaleContent must have either content or import_uri",
+            ))
+        }
+    }
 }
 
 impl LocaleContent {
@@ -255,6 +284,72 @@ impl Manifest {
         };
 
         Ok(manifest)
+    }
+
+    /// Async serialization method that resolves LocaleContent fields
+    pub async fn serialize_with_resolved_content(&self) -> Result<String> {
+        let mut serialized_fields = self.all_fields.clone();
+
+        // Resolve description field
+        if let Some(description) = &self.description {
+            let mut resolved_locales = Map::new();
+            for (locale, locale_content) in &description.locales {
+                let content = locale_content.get_content().await?;
+                let mut locale_obj = Map::new();
+                locale_obj
+                    .insert("content".to_string(), Value::String(content));
+                resolved_locales
+                    .insert(locale.clone(), Value::Object(locale_obj));
+            }
+            let mut description_obj = Map::new();
+            description_obj
+                .insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert(
+                "description".to_string(),
+                Value::Object(description_obj),
+            );
+        }
+
+        // Resolve display_name field
+        if let Some(display_name) = &self.display_name {
+            let mut resolved_locales = Map::new();
+            for (locale, locale_content) in &display_name.locales {
+                let content = locale_content.get_content().await?;
+                let mut locale_obj = Map::new();
+                locale_obj
+                    .insert("content".to_string(), Value::String(content));
+                resolved_locales
+                    .insert(locale.clone(), Value::Object(locale_obj));
+            }
+            let mut display_name_obj = Map::new();
+            display_name_obj
+                .insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert(
+                "display_name".to_string(),
+                Value::Object(display_name_obj),
+            );
+        }
+
+        // Resolve readme field
+        if let Some(readme) = &self.readme {
+            let mut resolved_locales = Map::new();
+            for (locale, locale_content) in &readme.locales {
+                let content = locale_content.get_content().await?;
+                let mut locale_obj = Map::new();
+                locale_obj
+                    .insert("content".to_string(), Value::String(content));
+                resolved_locales
+                    .insert(locale.clone(), Value::Object(locale_obj));
+            }
+            let mut readme_obj = Map::new();
+            readme_obj
+                .insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields
+                .insert("readme".to_string(), Value::Object(readme_obj));
+        }
+
+        serde_json::to_string_pretty(&serialized_fields)
+            .context("Failed to serialize manifest with resolved content")
     }
 }
 
