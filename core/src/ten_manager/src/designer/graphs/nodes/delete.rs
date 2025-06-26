@@ -183,7 +183,9 @@ pub async fn delete_graph_node_endpoint(
         request_payload.addon.clone(),
         request_payload.app.clone(),
         request_payload.extension_group.clone(),
-    ).await {
+    )
+    .await
+    {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to delete node: {err}"),

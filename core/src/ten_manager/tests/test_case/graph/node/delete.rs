@@ -122,7 +122,8 @@ mod tests {
             "addon1".to_string(),
             Some("app1".to_string()),
             None,
-        ).await;
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 3);
         assert_eq!(graph.connections.as_ref().unwrap().len(), 3);
@@ -135,7 +136,8 @@ mod tests {
             "addon1".to_string(),
             Some("app1".to_string()),
             Some("group1".to_string()),
-        ).await;
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 2);
 
@@ -159,7 +161,8 @@ mod tests {
             "addon3".to_string(),
             Some("app2".to_string()),
             Some("group3".to_string()),
-        ).await;
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
 
@@ -177,7 +180,8 @@ mod tests {
             "addon2".to_string(),
             Some("app1".to_string()),
             Some("group2".to_string()),
-        ).await;
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 0);
         assert!(graph.connections.is_none());
@@ -261,7 +265,8 @@ mod tests {
             "addon2".to_string(),
             Some("app1".to_string()),
             None,
-        ).await;
+        )
+        .await;
 
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
