@@ -4,14 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
-use url::Url;
 
-use crate::fs::read_file_to_string;
 use crate::pkg_info::pkg_type::PkgType;
+use crate::utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri};
+use crate::utils::uri::load_content_from_uri;
 
 use super::Graph;
 
@@ -33,170 +32,22 @@ pub fn load_graph_from_uri(
     base_dir: Option<&str>,
     new_base_dir: &mut Option<String>,
 ) -> Result<Graph> {
-    // First check if it's an absolute path - these are not supported
-    if Path::new(uri).is_absolute() {
-        return Err(anyhow!(
-            "Absolute paths are not supported in import_uri: {}. Use file:// \
-             URI or relative path instead",
-            uri
-        ));
-    }
-
-    // Try to parse as URL
-    if let Ok(url) = Url::parse(uri) {
-        match url.scheme() {
-            "http" | "https" => {
-                return load_graph_from_http_url(&url, new_base_dir);
-            }
-            "file" => {
-                return load_graph_from_file_url(&url, new_base_dir);
-            }
-            _ => {
-                #[cfg(windows)]
-                // Windows drive letter
-                if url.scheme().len() == 1
-                    && url
-                        .scheme()
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .is_ascii_alphabetic()
-                {
-                    // The import_uri may be a relative path in Windows.
-                    // Continue to parse the import_uri as a relative path.
-                } else {
-                    return Err(anyhow::anyhow!(
-                        "Unsupported URL scheme '{}' in import_uri: {} when \
-                         load_graph_from_uri",
-                        url.scheme(),
-                        uri
-                    ));
-                }
-
-                #[cfg(not(windows))]
-                return Err(anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {} when \
-                     load_graph_from_uri",
-                    url.scheme(),
-                    uri
-                ));
-            }
-        }
-    }
-
-    // For relative paths, base_dir must not be None
-    let base_dir = base_dir.ok_or_else(|| {
-        anyhow!("base_dir cannot be None when uri is a relative path")
-    })?;
-
-    // If base_dir is available, use it as the base for relative paths.
-    let path = Path::new(base_dir).join(uri);
-
-    // Set the new_base_dir to the directory containing the resolved path
-    if let Some(parent_dir) = path.parent() {
-        if new_base_dir.is_some() {
-            *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
-        }
-    }
+    // Get the real path of the import_uri based on the base_dir.
+    let real_path = get_real_path_from_import_uri(uri, base_dir)?;
 
     // Read the graph file.
-    let graph_content = read_file_to_string(&path).with_context(|| {
-        format!("Failed to read graph file from {}", path.display())
-    })?;
-
-    // Parse the graph file into a Graph structure.
-    let graph: Graph =
-        serde_json::from_str(&graph_content).with_context(|| {
-            format!("Failed to parse graph file from {}", path.display())
-        })?;
-
-    Ok(graph)
-}
-
-/// Loads graph data from an HTTP/HTTPS URL.
-async fn load_graph_from_http_url_async(
-    url: &Url,
-    new_base_dir: &mut Option<String>,
-) -> Result<Graph> {
-    // Create HTTP client
-    let client = reqwest::Client::new();
-
-    // Make HTTP request
-    let response = client
-        .get(url.as_str())
-        .send()
-        .await
-        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
-
-    // Check if request was successful
-    if !response.status().is_success() {
-        return Err(anyhow!(
-            "HTTP request failed with status {}: {}",
-            response.status(),
-            url
-        ));
-    }
-
-    // Get response body as text
-    let graph_content = response
-        .text()
-        .await
-        .with_context(|| format!("Failed to read response body from {url}"))?;
-
-    // Set the new_base_dir to the directory part of the URL
-    if new_base_dir.is_some() {
-        let mut base_url = url.clone();
-        // Remove the file part from the URL to get the base directory
-        if let Ok(mut segments) = base_url.path_segments_mut() {
-            segments.pop();
-        }
-        *new_base_dir = Some(base_url.to_string());
-    }
-
-    // Parse the graph file into a Graph structure.
-    let graph: Graph = serde_json::from_str(&graph_content)
-        .with_context(|| format!("Failed to parse graph JSON from {url}"))?;
-
-    Ok(graph)
-}
-
-/// Synchronous wrapper for HTTP URL loading.
-fn load_graph_from_http_url(
-    url: &Url,
-    new_base_dir: &mut Option<String>,
-) -> Result<Graph> {
-    // Use tokio runtime to execute async HTTP request
+    // TODO(xilin): Change the implementation to use the async version of
+    // load_content_from_uri.
     let rt = tokio::runtime::Runtime::new()
         .context("Failed to create tokio runtime")?;
+    let graph_content = rt.block_on(load_content_from_uri(&real_path))?;
 
-    rt.block_on(load_graph_from_http_url_async(url, new_base_dir))
-}
-
-/// Loads graph data from a file:// URL.
-fn load_graph_from_file_url(
-    url: &Url,
-    new_base_dir: &mut Option<String>,
-) -> Result<Graph> {
-    // Convert file URL to local path
-    let path =
-        url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
-
-    // Set the new_base_dir to the directory containing the file
-    if let Some(parent_dir) = path.parent() {
-        if new_base_dir.is_some() {
-            *new_base_dir = Some(parent_dir.to_string_lossy().to_string());
-        }
-    }
-
-    // Read the graph file.
-    let graph_content = read_file_to_string(&path).with_context(|| {
-        format!("Failed to read graph file from {}", path.display())
-    })?;
+    *new_base_dir = Some(get_base_dir_of_uri(&real_path)?);
 
     // Parse the graph file into a Graph structure.
     let graph: Graph =
         serde_json::from_str(&graph_content).with_context(|| {
-            format!("Failed to parse graph file from {}", path.display())
+            format!("Failed to parse graph file from {real_path}")
         })?;
 
     Ok(graph)

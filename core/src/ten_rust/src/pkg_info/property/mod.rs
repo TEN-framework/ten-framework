@@ -20,7 +20,8 @@ use super::{
     pkg_type::PkgType,
 };
 use crate::{
-    _0_8_compatible::get_ten_field_string, fs::read_file_to_string, json_schema,
+    _0_8_compatible::get_ten_field_string, json_schema,
+    utils::fs::read_file_to_string,
 };
 use crate::{
     graph::{graph_info::GraphInfo, is_app_default_loc_or_none},

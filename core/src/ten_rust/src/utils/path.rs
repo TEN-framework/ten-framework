@@ -37,16 +37,70 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     ret
 }
 
-/// Get the real path of the interface according to the import_uri and base_dir.
-///
-/// The real path is the path of the interface file.
+pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
+    if let Ok(url) = Url::parse(uri) {
+        match url.scheme() {
+            "http" | "https" | "file" => {
+                let mut base_url = url.clone();
+
+                // Remove the file part from the URL to get the base directory
+                if let Ok(mut segments) = base_url.path_segments_mut() {
+                    segments.pop();
+                }
+
+                return Ok(base_url.to_string());
+            }
+            _ => {
+                #[cfg(windows)]
+                // Windows drive letter
+                if url.scheme().len() == 1
+                    && url
+                        .scheme()
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .is_ascii_alphabetic()
+                {
+                    // The uri may be a relative path in Windows.
+                    // Continue to parse the uri as a relative path.
+                } else {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported URL scheme '{}' in uri: {} when \
+                         get_base_dir_of_uri",
+                        url.scheme(),
+                        uri
+                    ));
+                }
+
+                #[cfg(not(windows))]
+                return Err(anyhow::anyhow!(
+                    "Unsupported URL scheme '{}' in uri: {} when \
+                     get_base_dir_of_uri",
+                    url.scheme(),
+                    uri
+                ));
+            }
+        }
+    }
+
+    // It's a relative path, return the parent directory.
+    let parent_dir = Path::new(uri).parent().unwrap();
+
+    // It's a file path, return the parent directory.
+    Ok(parent_dir.to_string_lossy().to_string())
+}
+
+/// Get the real path of the import_uri based on the base_dir.
 ///
 /// The import_uri can be a relative path or a URL.
-/// The base_dir is the base directory of the interface file.
+/// The base_dir is the base directory of the import_uri if it's a relative
+/// path.
 pub fn get_real_path_from_import_uri(
     import_uri: &str,
-    base_dir: &str,
+    base_dir: Option<&str>,
 ) -> Result<String> {
+    // If the import_uri is an absolute path, return an error because if it's
+    // an absolute path, it should be start with file://
     if Path::new(import_uri).is_absolute() {
         return Err(anyhow::anyhow!(
             "Absolute paths are not supported in import_uri: {}. Use file:// \
@@ -100,10 +154,10 @@ pub fn get_real_path_from_import_uri(
     // If it's not a URL, it's a relative path based on the base_dir.
 
     // If the base_dir is not provided, return an error.
-    if base_dir.is_empty() {
+    if base_dir.is_none() || base_dir.unwrap().is_empty() {
         return Err(anyhow::anyhow!(
-            "Base directory is not provided in import_uri: {}",
-            import_uri
+            "base_dir cannot be None when uri is a relative path, import_uri: \
+             {import_uri}"
         ));
     }
 
@@ -113,7 +167,7 @@ pub fn get_real_path_from_import_uri(
     // "http://localhost:8080/api/v1/interface.json".
     // If the base_dir is "file:///home/user/tmp" and the import_uri is
     // "../interface.json", the real path is "file:///home/user/interface.json".
-    if let Ok(mut base_url) = Url::parse(base_dir) {
+    if let Ok(mut base_url) = Url::parse(base_dir.unwrap()) {
         // Check if it's a real URL scheme (not just a Windows path with a
         // colon)
         if base_url.scheme().len() > 1
@@ -137,7 +191,7 @@ pub fn get_real_path_from_import_uri(
                         "Failed to resolve relative path '{}' against base \
                          URL '{}': {}",
                         import_uri,
-                        base_dir,
+                        base_dir.unwrap(),
                         e
                     ));
                 }
@@ -146,7 +200,7 @@ pub fn get_real_path_from_import_uri(
     }
 
     // If the base_dir is not a URL, it's a relative path.
-    let path = Path::new(base_dir).join(import_uri);
+    let path = Path::new(base_dir.unwrap()).join(import_uri);
 
     // Normalize the path to resolve '.' and '..' components
     Ok(normalize_path(&path).to_string_lossy().to_string())

@@ -20,14 +20,15 @@ use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
-use url;
 
-use crate::fs::read_file_to_string;
 use crate::json_schema;
 use crate::json_schema::ten_validate_manifest_json_string;
 use crate::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use crate::pkg_info::manifest::interface::flatten_manifest_api;
 use crate::pkg_info::pkg_type::PkgType;
+use crate::utils::fs::read_file_to_string;
+use crate::utils::path::get_real_path_from_import_uri;
+use crate::utils::uri::load_content_from_uri;
 use api::ManifestApi;
 use dependency::ManifestDependency;
 use publish::PackageConfig;
@@ -94,16 +95,19 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
+            let real_path = get_real_path_from_import_uri(
+                import_uri,
+                self.base_dir.as_deref(),
+            )?;
+
             // Load content from URI
-            load_content_from_uri(import_uri, self.base_dir.as_deref())
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed to load content from import_uri \
-                         '{import_uri}' with base_dir '{:?}'",
-                        self.base_dir
-                    )
-                })
+            load_content_from_uri(&real_path).await.with_context(|| {
+                format!(
+                    "Failed to load content from import_uri '{import_uri}' \
+                     with base_dir '{:?}'",
+                    self.base_dir
+                )
+            })
         } else {
             // Both content and import_uri are None, this should not happen
             // as it's validated during parsing
@@ -908,98 +912,4 @@ pub async fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
         })?;
 
     Ok(manifest)
-}
-
-/// Loads content from the specified URI with an optional base directory.
-///
-/// The URI can be:
-/// - A relative path (relative to the base_dir if provided)
-/// - A URI (http:// or https:// or file://)
-///
-/// This function is similar to load_graph_from_uri but for loading text
-/// content.
-async fn load_content_from_uri(
-    uri: &str,
-    base_dir: Option<&str>,
-) -> Result<String> {
-    // First check if it's an absolute path - these are not supported
-    if Path::new(uri).is_absolute() {
-        return Err(anyhow!(
-            "Absolute paths are not supported in import_uri: {}. Use file:// \
-             URI or relative path instead",
-            uri
-        ));
-    }
-
-    // Try to parse as URL
-    if let Ok(url) = url::Url::parse(uri) {
-        match url.scheme() {
-            "http" | "https" => {
-                return load_content_from_http_url(&url).await;
-            }
-            "file" => {
-                return load_content_from_file_url(&url);
-            }
-            _ => {
-                return Err(anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
-                    url.scheme(),
-                    uri
-                ));
-            }
-        }
-    }
-
-    // For relative paths, base_dir must not be None
-    let base_dir = base_dir.ok_or_else(|| {
-        anyhow!("base_dir cannot be None when uri is a relative path")
-    })?;
-
-    // If base_dir is available, use it as the base for relative paths.
-    let path = Path::new(base_dir).join(uri);
-
-    // Read the content file.
-    read_file_to_string(&path).with_context(|| {
-        format!("Failed to read content file from {}", path.display())
-    })
-}
-
-/// Loads content from an HTTP/HTTPS URL.
-async fn load_content_from_http_url(url: &url::Url) -> Result<String> {
-    // Create HTTP client
-    let client = reqwest::Client::new();
-
-    // Make HTTP request
-    let response = client
-        .get(url.as_str())
-        .send()
-        .await
-        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
-
-    // Check if request was successful
-    if !response.status().is_success() {
-        return Err(anyhow::anyhow!(
-            "HTTP request failed with status {}: {}",
-            response.status(),
-            url
-        ));
-    }
-
-    // Get response body as text
-    response
-        .text()
-        .await
-        .with_context(|| format!("Failed to read response body from {url}"))
-}
-
-/// Loads content from a file:// URL.
-fn load_content_from_file_url(url: &url::Url) -> Result<String> {
-    // Convert file URL to local path
-    let path =
-        url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
-
-    // Read the content file.
-    read_file_to_string(&path).with_context(|| {
-        format!("Failed to read content file from {}", path.display())
-    })
 }
