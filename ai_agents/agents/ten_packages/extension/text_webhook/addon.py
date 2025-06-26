@@ -8,7 +8,6 @@ from ten import (
     register_addon_as_extension,
     TenEnv,
 )
-from .extension import textWebhookExtension
 
 
 @register_addon_as_extension("text_webhook")
