@@ -14,5 +14,7 @@ from .extension import textWebhookExtension
 @register_addon_as_extension("text_webhook")
 class textWebhookExtensionAddon(Addon):
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        ten_env.log_info("on_create_instance")
+        from .extension import textWebhookExtension
+
+        ten_env.log_info("textWebhookExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(textWebhookExtension(name), context)
