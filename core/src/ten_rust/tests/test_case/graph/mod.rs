@@ -34,8 +34,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_predefined_graph_has_no_extensions() {
+    #[tokio::test]
+    async fn test_predefined_graph_has_no_extensions() {
         let property_json_str =
             include_str!("../../test_data/predefined_graph_no_extensions.json");
 
@@ -48,17 +48,18 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
-
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
         let result = check_extension_existence_and_uniqueness(graph);
+
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
 
-    #[test]
-    fn test_predefined_graph_has_extension_duplicated() {
+    #[tokio::test]
+    async fn test_predefined_graph_has_extension_duplicated() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_has_duplicated_extension.json"
         );
@@ -72,11 +73,12 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
-
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let result =
-            check_extension_existence_and_uniqueness(&graph_info.graph);
+        let graph = &graph_info.graph;
+        let result = check_extension_existence_and_uniqueness(graph);
+
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -94,8 +96,8 @@ mod tests {
         println!("Error: {:?}", result.err().unwrap());
     }
 
-    #[test]
-    fn test_predefined_graph_connection_src_not_found() {
+    #[tokio::test]
+    async fn test_predefined_graph_connection_src_not_found() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_connection_src_not_found.json"
         );
@@ -109,17 +111,17 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
-
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let graph = &graph_info.graph;
-        let result = graph.check_connection_extensions_exist();
+        let result = graph_info.graph.check_connection_extensions_exist();
+
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
 
-    #[test]
-    fn test_predefined_graph_connection_dest_not_found() {
+    #[tokio::test]
+    async fn test_predefined_graph_connection_dest_not_found() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_connection_dest_not_found.json"
         );
@@ -133,17 +135,17 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
-
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let graph = &graph_info.graph;
-        let result = graph.check_connection_extensions_exist();
+        let result = graph_info.graph.check_connection_extensions_exist();
+
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
 
-    #[test]
-    fn test_predefined_graph_node_app_localhost() {
+    #[tokio::test]
+    async fn test_predefined_graph_node_app_localhost() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_connection_app_localhost.json"
         );
@@ -156,7 +158,8 @@ mod tests {
             None,
             None,
             None,
-        );
+        )
+        .await;
 
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
@@ -205,19 +208,20 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_predefined_graph_connection_app_localhost() {
+    #[tokio::test]
+    async fn test_predefined_graph_connection_app_localhost() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_connection_app_localhost.json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
-
+        )
+        .await;
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -228,20 +232,21 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_predefined_graph_app_in_nodes_not_all_declared() {
+    #[tokio::test]
+    async fn test_predefined_graph_app_in_nodes_not_all_declared() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_app_in_nodes_not_all_declared.\
              json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
-
+        )
+        .await;
         // Either all nodes should have 'app' declared, or none should, but not
         // a mix of both.
         assert!(property.is_err());
@@ -254,20 +259,21 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_predefined_graph_app_in_connections_not_all_declared() {
+    #[tokio::test]
+    async fn test_predefined_graph_app_in_connections_not_all_declared() {
         let property_str = include_str!(
             "../../test_data/\
              predefined_graph_app_in_connections_not_all_declared.json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
-
+        )
+        .await;
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -276,20 +282,21 @@ mod tests {
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED));
     }
 
-    #[test]
-    fn test_predefined_graph_app_in_connections_should_not_declared() {
+    #[tokio::test]
+    async fn test_predefined_graph_app_in_connections_should_not_declared() {
         let property_str = include_str!(
             "../../test_data/\
              predefined_graph_app_in_connections_should_not_declared.json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
-
+        )
+        .await;
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -298,20 +305,21 @@ mod tests {
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED));
     }
 
-    #[test]
-    fn test_predefined_graph_app_in_dest_not_all_declared() {
+    #[tokio::test]
+    async fn test_predefined_graph_app_in_dest_not_all_declared() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_app_in_dest_not_all_declared.\
              json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
-
+        )
+        .await;
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -320,19 +328,21 @@ mod tests {
         assert!(msg.contains(ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED));
     }
 
-    #[test]
-    fn test_predefined_graph_app_in_dest_should_not_declared() {
+    #[tokio::test]
+    async fn test_predefined_graph_app_in_dest_should_not_declared() {
         let property_str = include_str!(
             "../../test_data/predefined_graph_app_in_dest_should_not_declared.\
              json"
         );
+        let mut graphs_cache = HashMap::new();
         let property = parse_property_from_str(
             property_str,
-            &mut HashMap::new(),
+            &mut graphs_cache,
             None,
             None,
             None,
-        );
+        )
+        .await;
 
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());

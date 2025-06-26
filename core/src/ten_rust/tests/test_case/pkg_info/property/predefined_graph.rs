@@ -10,8 +10,8 @@ mod tests {
 
     use ten_rust::pkg_info::property::parse_property_from_str;
 
-    #[test]
-    fn test_property_predefined_graph_deserialize() {
+    #[tokio::test]
+    async fn test_property_predefined_graph_deserialize() {
         let mut graphs_cache = HashMap::new();
 
         let property_json_str =
@@ -23,6 +23,7 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
         assert!(property.ten.is_some());
 
