@@ -473,6 +473,7 @@ pub async fn get_package_list(
     name: Option<String>,
     version_req: Option<VersionReq>,
     tags: Option<Vec<String>>,
+    _scope: Option<Vec<String>>,
     page_size: Option<u32>,
     page: Option<u32>,
     _out: &Arc<Box<dyn TmanOutput>>,

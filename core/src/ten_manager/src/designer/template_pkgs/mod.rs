@@ -83,6 +83,7 @@ pub async fn get_template_endpoint(
         None,               // name: None
         None,               // version_req: None
         tags,               // tags based on language
+        None,               // scope: None
         None,               // page_size: None
         None,               // page: None
         &state.out.clone(), // output
@@ -126,7 +127,8 @@ pub async fn get_template_endpoint(
         }
         Err(err) => {
             let error_message = format!(
-                "Failed to fetch templates: pkg_type={pkg_type}, language={language_clone}, error={err}"
+                "Failed to fetch templates: pkg_type={pkg_type}, \
+                 language={language_clone}, error={err}"
             );
 
             let error = anyhow!(error_message);

@@ -27,6 +27,7 @@ use super::home::config::TmanConfig;
 use super::registry::get_package_list;
 use crate::home::config::is_verbose;
 use crate::output::TmanOutput;
+use crate::registry::found_result::BASIC_SCOPE;
 use crate::registry::pkg_list_cache::{is_superset_of, PackageListCache};
 
 // TODO(Wei): Should use the union of the semantic versioning rather than the
@@ -213,6 +214,7 @@ async fn process_non_local_dependency_to_get_candidate(
         // wrong, but the efficiency might be somewhat lower.
         Some(version_req.clone()),
         None, // No tag filtering.
+        Some(BASIC_SCOPE.iter().map(|s| s.to_string()).collect()),
         None,
         None, // Retrieve all packages.
         out,
