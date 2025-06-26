@@ -92,7 +92,9 @@ pub async fn add_graph_node_endpoint(
         &request_payload.app,
         &request_payload.extension_group,
         &request_payload.property,
-    ) {
+    )
+    .await
+    {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to add extension node: {e}"),

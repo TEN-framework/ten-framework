@@ -103,7 +103,7 @@ pub async fn parse_property_from_str(
                     graph_info.belonging_pkg_name = belonging_pkg_name.clone();
                     graph_info.app_base_dir = app_base_dir.clone();
 
-                    graph_info.validate_and_complete_and_flatten()?;
+                    graph_info.validate_and_complete_and_flatten().await?;
 
                     let uuid = Uuid::new_v4();
                     temp_graphs_cache.insert(uuid, graph_info);

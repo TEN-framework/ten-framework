@@ -35,7 +35,7 @@ fn check_node_exist(
     Ok(())
 }
 
-pub fn graph_add_extension_node(
+pub async fn graph_add_extension_node(
     graph: &mut Graph,
     pkg_name: &str,
     addon: &str,
@@ -63,7 +63,7 @@ pub fn graph_add_extension_node(
     graph.nodes.push(node);
 
     // Validate the graph.
-    match graph.validate_and_complete_and_flatten(None) {
+    match graph.validate_and_complete_and_flatten(None).await {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.
