@@ -30,4 +30,8 @@ ten_package_test_prepare_auxiliary_resources("fetch_extension") {
   }
 
   deps = [ "//core/src/ten_manager" ]
+
+  if (ten_enable_ten_manager) {
+    deps += [ "//packages/core_extensions/default_extension_cpp:upload_default_extension_cpp_to_server" ]
+  }
 }

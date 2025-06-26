@@ -16,7 +16,6 @@ use console::Emoji;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 
-use ten_rust::fs::read_file_to_string;
 use ten_rust::json_schema::validate_manifest_lock_json_string;
 use ten_rust::pkg_info::constants::{
     MANIFEST_JSON_FILENAME, MANIFEST_LOCK_JSON_FILENAME,
@@ -28,6 +27,7 @@ use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
 use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
 use ten_rust::pkg_info::PkgInfo;
+use ten_rust::utils::fs::read_file_to_string;
 
 use crate::constants::BUF_WRITER_BUF_SIZE;
 use crate::output::TmanOutput;

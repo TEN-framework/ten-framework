@@ -101,6 +101,13 @@ impl PkgInfo {
         Ok(pkg_info)
     }
 
+    /// Async serialization method that resolves LocaleContent fields
+    pub async fn serialize_manifest_with_resolved_content(
+        &self,
+    ) -> Result<String> {
+        self.manifest.serialize_with_resolved_content().await
+    }
+
     pub fn get_dependency_by_type_and_name(
         &self,
         pkg_type: &str,
