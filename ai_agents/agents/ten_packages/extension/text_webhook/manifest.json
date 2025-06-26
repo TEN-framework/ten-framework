@@ -13,7 +13,11 @@
     "include": [
       "manifest.json",
       "property.json",
+      "BUILD.gn",
+      "**.tent",
       "**.py",
+      "src/**.tent",
+      "src/**.py",
       "README.md"
     ]
   },
