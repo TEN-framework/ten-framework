@@ -6,7 +6,7 @@
     "build": "tsc --listEmittedFiles"
   },
   "devDependencies": {
-    "@types/node": "^18.19.97",
+    "@types/node": "^18.19.112",
     "source-map-support": "^0.5.21",
     "typescript": "^5.8.3"
   },

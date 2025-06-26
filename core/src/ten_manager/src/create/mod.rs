@@ -19,7 +19,7 @@ use crate::{
     home::config::TmanConfig,
     output::TmanOutput,
     package_file::unpackage::extract_and_process_tpkg_file,
-    registry::{get_package, get_package_list},
+    registry::{found_result::BASIC_SCOPE, get_package, get_package_list},
 };
 
 fn can_package_be_created_in_path(
@@ -68,6 +68,7 @@ pub async fn create_pkg_in_path(
         Some(template_pkg_name.clone()),
         Some(template_pkg_version.clone()),
         None, // No tag filtering.
+        Some(BASIC_SCOPE.iter().map(|s| s.to_string()).collect()),
         None,
         None, // Retrieve all packages.
         out,

@@ -58,7 +58,7 @@ pub struct UpdateGraphConnectionMsgConversionResponsePayload {
 }
 
 // Update the GraphInfo structure.
-fn update_graph_info(
+async fn update_graph_info(
     graph_info: &mut GraphInfo,
     request_payload: &web::Json<
         UpdateGraphConnectionMsgConversionRequestPayload,
@@ -114,7 +114,7 @@ fn update_graph_info(
     }
 
     // Validate the updated graph.
-    match graph_info.graph.validate_and_complete_and_flatten(None) {
+    match graph_info.graph.validate_and_complete_and_flatten(None).await {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.
@@ -256,7 +256,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_graph_info(graph_info, &request_payload) {
+    if let Err(e) = update_graph_info(graph_info, &request_payload).await {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to update graph info: {e}"),
