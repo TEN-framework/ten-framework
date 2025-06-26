@@ -13,8 +13,6 @@ use crate::{
     graph::graph_info::GraphInfo, pkg_info::manifest::api::ManifestApi,
 };
 
-static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
-
 /// Frees a C string that was allocated by Rust.
 ///
 /// # Safety
@@ -282,7 +280,8 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
             }
         };
 
-    let flattened_api = RUNTIME
+    let runtime = Runtime::new().unwrap();
+    let flattened_api = runtime
         .block_on(manifest_api.get_flattened_api(current_base_dir_rust_str));
 
     if flattened_api.is_err() {
