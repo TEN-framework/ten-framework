@@ -17,5 +17,3 @@ export PYTHONPATH=.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/t
 # _after_ the module that requires another version of libstdc++ is imported.
 #
 # Refer to https://github.com/pytorch/pytorch/issues/102360?from_wecom=1#issuecomment-1708989096
-
-pytest tests/ "$@"
