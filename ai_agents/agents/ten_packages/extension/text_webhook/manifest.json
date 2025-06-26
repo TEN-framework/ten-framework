@@ -16,6 +16,7 @@
       "BUILD.gn",
       "**.tent",
       "**.py",
+      "requirements.txt",
       "src/**.tent",
       "src/**.py",
       "README.md"
