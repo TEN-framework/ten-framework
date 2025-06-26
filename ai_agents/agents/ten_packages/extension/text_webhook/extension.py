@@ -764,7 +764,10 @@ class textWebhookExtension(AsyncExtension):
 
                                         # Check if we should send based on configuration (same logic as standard path)
                                         should_send = True
-                                        if self.config.send_final_only and not is_final:
+                                        if (
+                                            self.config.send_final_only
+                                            and not is_final
+                                        ):
                                             ten_env.log_info(
                                                 "Skipping non-final message collector text due to send_final_only=true"
                                             )
