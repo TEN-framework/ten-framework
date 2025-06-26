@@ -85,6 +85,44 @@ TEN_RUST_PRIVATE_API const char *
 ten_rust_predefined_graph_validate_complete_flatten(
     const char *json_str, const char *current_base_dir, char **err_msg);
 
+/**
+ * @brief Validates a manifest API and returns it as a JSON string.
+ *
+ * This function takes a C string containing JSON, parses it into a ManifestApi
+ * structure, validates and flattens it, then serializes it back to JSON. If
+ * flattening is not needed, it will still return a new copy of the input JSON.
+ *
+ * @param manifest_api_json_str A null-terminated C string containing the JSON
+ *                             representation of a manifest API. Must not be
+ *                             NULL.
+ * @param current_base_dir A null-terminated C string containing the current
+ *                         base directory. Must not be NULL.
+ * @param err_msg Pointer to a char* that will be set to an error message if
+ *                the function fails. Can be NULL if error details are not
+ *                needed. If set, the error message must be freed using
+ *                ten_rust_free_cstring().
+ *
+ * @return On success: A pointer to a newly allocated C string containing either
+ *         the flattened manifest API JSON or a copy of the input JSON. The
+ *         caller is responsible for freeing this string using
+ *         ten_rust_free_cstring().
+ *         On failure: NULL pointer.
+ *
+ * @note The caller must ensure that:
+ *       - manifest_api_json_str is a valid null-terminated C string
+ *       - current_base_dir is a valid null-terminated C string
+ *       - If err_msg is not NULL, the error message (if set) must be freed
+ *         using ten_rust_free_cstring()
+ *       - The input string contains valid UTF-8 encoded JSON
+ *
+ * @note Memory Management: Both the returned string (if not NULL) and error
+ *       message (if set) are allocated by Rust and must be freed by calling
+ *       ten_rust_free_cstring() when no longer needed.
+ */
+TEN_RUST_PRIVATE_API const char *ten_rust_manifest_api_flatten(
+    const char *manifest_api_json_str, const char *current_base_dir,
+    char **err_msg);
+
 TEN_RUST_PRIVATE_API Cipher *ten_cipher_create(const char *algorithm,
                                                const char *params);
 

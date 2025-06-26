@@ -150,8 +150,8 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   TEN_ASSERT(rc, "[%s] Failed to handle 'ten' properties.",
              ten_string_get_raw_str(&extension->name));
 
-  ten_metadata_init_schema_store(&extension->manifest,
-                                 &extension->schema_store);
+  ten_metadata_init_schema_store(&extension->manifest, &extension->schema_store,
+                                 ten_extension_get_base_dir(extension));
 
   ten_extension_adjust_and_validate_property_on_configure_done(extension);
 
