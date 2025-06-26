@@ -29,7 +29,7 @@ def create_tman_config_json(
     }
 
     with open(tman_config_file_path, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+        json.dump(data, file, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
