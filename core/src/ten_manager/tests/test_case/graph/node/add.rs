@@ -9,8 +9,8 @@ mod tests {
     use ten_manager::graph::nodes::add::graph_add_extension_node;
     use ten_rust::{graph::Graph, pkg_info::localhost};
 
-    #[test]
-    fn test_add_extension_node() {
+    #[tokio::test]
+    async fn test_add_extension_node() {
         // Create an empty graph.
         let mut graph = Graph {
             nodes: Vec::new(),
@@ -27,7 +27,8 @@ mod tests {
             &Some("http://test-app-uri.com".to_string()),
             &None,
             &None,
-        );
+        )
+        .await;
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
@@ -46,7 +47,8 @@ mod tests {
             &Some("http://test-app-uri.com".to_string()), // Same app URI.
             &Some("custom_group".to_string()),
             &None,
-        );
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 2);
         assert_eq!(graph.nodes[1].name, "test_extension2");
@@ -64,7 +66,8 @@ mod tests {
             &Some(localhost().to_string()), // This is not allowed.
             &None,
             &None,
-        );
+        )
+        .await;
         assert!(result.is_err());
         // Verify rollback worked.
         assert_eq!(graph.nodes.len(), original_len);
@@ -78,7 +81,8 @@ mod tests {
             &Some("http://different-uri.com".to_string()), // Different URI.
             &None,
             &None,
-        );
+        )
+        .await;
         // This should be ok as mixed URIs are valid.
         assert!(result.is_ok());
         // Node should be added.
@@ -93,7 +97,8 @@ mod tests {
             &Some("http://different-uri.com".to_string()),
             &None,
             &None,
-        );
+        )
+        .await;
         // This should fail because the node already exists.
         assert!(result.is_err());
         assert_eq!(graph.nodes.len(), original_len);
@@ -109,7 +114,8 @@ mod tests {
             &None, // No app URI.
             &None,
             &None,
-        );
+        )
+        .await;
         assert!(result.is_err());
         // Verify rollback worked.
         assert_eq!(graph.nodes.len(), original_len);

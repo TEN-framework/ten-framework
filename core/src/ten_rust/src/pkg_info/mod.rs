@@ -101,6 +101,13 @@ impl PkgInfo {
         Ok(pkg_info)
     }
 
+    /// Async serialization method that resolves LocaleContent fields
+    pub async fn serialize_manifest_with_resolved_content(
+        &self,
+    ) -> Result<String> {
+        self.manifest.serialize_with_resolved_content().await
+    }
+
     pub fn get_dependency_by_type_and_name(
         &self,
         pkg_type: &str,
@@ -144,13 +151,14 @@ pub async fn get_pkg_info_from_path(
     let property = if parse_property {
         assert!(graphs_cache.is_some());
 
-        parse_property_in_folder(
+        (parse_property_in_folder(
             path,
             graphs_cache.as_mut().unwrap(),
             app_base_dir,
             Some(manifest.type_and_name.pkg_type),
             Some(manifest.type_and_name.name.clone()),
-        )?
+        )
+        .await)?
     } else {
         None
     };
@@ -422,6 +430,16 @@ pub fn find_pkgs_cache_entry_by_app_uri<'a>(
         if let Some(app_pkg) = &pkg_info.app_pkg_info {
             if let Some(property) = &app_pkg.property {
                 if let Some(ten) = &property.ten {
+                    // If the app_uri is None, it means the app is a local app.
+                    // In this case, we should return the entry whose app_uri
+                    // is None or empty.
+                    if app_uri.is_none() {
+                        return ten
+                            .uri
+                            .as_ref()
+                            .is_none_or(|uri| uri.is_empty());
+                    }
+
                     return ten.uri == *app_uri;
                 }
             }

@@ -10,12 +10,11 @@ pub mod bindings;
 pub mod constants;
 pub mod crypto;
 pub mod env;
-pub mod fs;
 pub mod graph;
 pub mod json;
 pub mod json_schema;
-pub mod path;
 pub mod pkg_info;
+pub mod utils;
 
 #[cfg(feature = "service-hub")]
 pub mod service_hub;

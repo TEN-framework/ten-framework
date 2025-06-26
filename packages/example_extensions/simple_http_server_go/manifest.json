@@ -1,20 +1,63 @@
 {
   "type": "extension",
   "name": "simple_http_server_go",
-  "version": "0.10.16",
+  "version": "0.10.20",
   "display_name": {
-    "en-US": "Simple HTTP Server Go Extension",
-    "zh-CN": "简单 HTTP 服务器 Go 扩展",
-    "zh-TW": "簡單 HTTP 伺服器 Go 擴充",
-    "ja-JP": "シンプル HTTP サーバー Go 拡張",
-    "ko-KR": "간단한 HTTP 서버 Go 확장"
+    "locales": {
+      "en-US": {
+        "content": "Simple HTTP Server Go Extension"
+      },
+      "zh-CN": {
+        "content": "简单 HTTP 服务器 Go 扩展"
+      },
+      "zh-TW": {
+        "content": "簡單 HTTP 伺服器 Go 擴充"
+      },
+      "ja-JP": {
+        "content": "シンプル HTTP サーバー Go 拡張"
+      },
+      "ko-KR": {
+        "content": "간단한 HTTP 서버 Go 확장"
+      }
+    }
   },
   "description": {
-    "en-US": "Simple HTTP server extension example written in Go for TEN Framework",
-    "zh-CN": "使用 Go 语言编写的 TEN Framework 简单 HTTP 服务器扩展示例",
-    "zh-TW": "使用 Go 語言編寫的 TEN Framework 簡單 HTTP 伺服器擴充範例",
-    "ja-JP": "TEN Framework用のGoで書かれたシンプルなHTTPサーバー拡張サンプル",
-    "ko-KR": "TEN Framework용 Go로 작성된 간단한 HTTP 서버 확장 예제"
+    "locales": {
+      "en-US": {
+        "content": "Simple HTTP server extension example written in Go for TEN Framework"
+      },
+      "zh-CN": {
+        "content": "使用 Go 语言编写的 TEN Framework 简单 HTTP 服务器扩展示例"
+      },
+      "zh-TW": {
+        "content": "使用 Go 語言編寫的 TEN Framework 簡單 HTTP 伺服器擴充範例"
+      },
+      "ja-JP": {
+        "content": "TEN Framework用のGoで書かれたシンプルなHTTPサーバー拡張サンプル"
+      },
+      "ko-KR": {
+        "content": "TEN Framework용 Go로 작성된 간단한 HTTP 서버 확장 예제"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      },
+      "zh-TW": {
+        "import_uri": "docs/README.zh-TW.md"
+      },
+      "ja-JP": {
+        "import_uri": "docs/README.ja-JP.md"
+      },
+      "ko-KR": {
+        "import_uri": "docs/README.ko-KR.md"
+      }
+    }
   },
   "tags": [
     "go"
@@ -23,7 +66,7 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.16"
+      "version": "0.10.20"
     }
   ],
   "api": {}

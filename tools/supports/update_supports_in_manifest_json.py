@@ -35,7 +35,7 @@ def update_supports(
     data["supports"] = supports
 
     with open(output_file, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+        json.dump(data, file, indent=2, ensure_ascii=False)
 
     if log_level > 0:
         print(f"Updated {output_file} with new 'supports' field.")

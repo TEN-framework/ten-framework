@@ -250,7 +250,8 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
     TEN_LOGW("Failed to determine app default property");
   }
 
-  ten_metadata_init_schema_store(&self->manifest, &self->schema_store);
+  ten_metadata_init_schema_store(&self->manifest, &self->schema_store,
+                                 ten_app_get_base_dir(self));
   ten_app_adjust_and_validate_property_on_configure_done(self);
 
   ten_addon_manager_t *manager = ten_addon_manager_get_instance();

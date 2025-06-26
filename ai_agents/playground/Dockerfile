@@ -1,6 +1,6 @@
-FROM node:22-alpine AS base
+# syntax=docker.io/docker/dockerfile:1
 
-ARG EDIT_GRAPH_MODE=false
+FROM oven/bun:alpine AS base
 
 # 1. Install dependencies only when needed
 FROM base AS deps
@@ -10,13 +10,15 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json .yarnrc* yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+COPY package.json bun.lock ./
 RUN \
-    if [ -f yarn.lock ]; then corepack enable yarn && yarn --immutable; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm i; \
-    else echo "Lockfile not found." && exit 1; \
-    fi
+  if [ -f yarn.lock ]; then corepack enable yarn && yarn --immutable; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm i; \
+  elif [ -f bun.lockb ]; then bun i --frozen-lockfile; \
+  elif [ -f bun.lock ]; then bun i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
 # 2. Rebuild the source code only when needed
 FROM base AS builder
@@ -29,14 +31,14 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-ENV NEXT_PUBLIC_EDIT_GRAPH_MODE=${EDIT_GRAPH_MODE}
-
 RUN \
-    if [ -f yarn.lock ]; then corepack enable yarn && yarn run build; \
-    elif [ -f package-lock.json ]; then npm run build; \
-    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm run build; \
-    else echo "Lockfile not found." && exit 1; \
-    fi
+  if [ -f yarn.lock ]; then corepack enable yarn && yarn run build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm run build; \
+  elif [ -f bun.lockb ]; then bun run build; \
+  elif [ -f bun.lock ]; then bun run build; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner

@@ -5,107 +5,20 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use crate::{
-    fs::read_file_to_string,
-    path::get_real_path_from_import_uri,
     pkg_info::manifest::api::{ManifestApi, ManifestApiInterface},
+    utils::{
+        path::{get_base_dir_of_uri, get_real_path_from_import_uri},
+        uri::load_content_from_uri,
+    },
 };
 
 use crate::pkg_info::manifest::api::{
     ManifestApiMsg, ManifestApiProperty, ManifestApiPropertyAttributes,
 };
 use std::collections::HashMap;
-use std::{collections::HashSet, path::Path};
+use std::collections::HashSet;
 
 use anyhow::{anyhow, Context, Result};
-use url::Url;
-
-async fn load_interface_from_http_url_async(url: &Url) -> Result<ManifestApi> {
-    // Create HTTP client
-    let client = reqwest::Client::new();
-
-    // Make HTTP request
-    let response = client
-        .get(url.as_str())
-        .send()
-        .await
-        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
-
-    // Check if request was successful
-    if !response.status().is_success() {
-        return Err(anyhow::anyhow!(
-            "HTTP request failed with status {}: {}",
-            response.status(),
-            url
-        ));
-    }
-
-    // Get response body as text
-    let interface_content = response
-        .text()
-        .await
-        .with_context(|| format!("Failed to read response body from {url}"))?;
-
-    // Parse the interface file into a ManifestApi structure.
-    let mut interface_api: ManifestApi =
-        serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {url}")
-        })?;
-
-    // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface.as_mut() {
-        let mut base_url = url.clone();
-
-        // Remove the file part from the URL to get the base directory
-        if let Ok(mut segments) = base_url.path_segments_mut() {
-            segments.pop();
-        }
-
-        for interface in interface.iter_mut() {
-            interface.base_dir = base_url.to_string();
-        }
-    }
-
-    Ok(interface_api)
-}
-
-fn load_interface_from_http_url(url: &Url) -> Result<ManifestApi> {
-    let rt = tokio::runtime::Runtime::new()
-        .context("Failed to create tokio runtime")?;
-
-    rt.block_on(load_interface_from_http_url_async(url))
-}
-
-fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
-    // Convert file URL to local path
-    let path =
-        url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
-
-    // Read the interface file.
-    let interface_content = read_file_to_string(&path).with_context(|| {
-        format!("Failed to read interface file from {}", path.display())
-    })?;
-
-    // Parse the interface file into a ManifestApi structure.
-    let mut interface_api: ManifestApi =
-        serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {}", path.display())
-        })?;
-
-    // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface.as_mut() {
-        let mut base_url = url.clone();
-        // Remove the file part from the URL to get the base directory
-        if let Ok(mut segments) = base_url.path_segments_mut() {
-            segments.pop();
-        }
-
-        for interface in interface.iter_mut() {
-            interface.base_dir = base_url.to_string();
-        }
-    }
-
-    Ok(interface_api)
-}
 
 /// Loads interface from the specified URI with an optional base directory.
 ///
@@ -114,12 +27,12 @@ fn load_interface_from_file_url(url: &Url) -> Result<ManifestApi> {
 /// - A URI (http:// or https:// or file://)
 ///
 /// If the interface is already loaded or cannot be loaded, return an error.
-pub fn load_interface(
+async fn load_interface(
     interface: &ManifestApiInterface,
     interface_set: &mut HashSet<String>,
 ) -> Result<ManifestApi> {
     let import_uri = &interface.import_uri;
-    let base_dir = &interface.base_dir;
+    let base_dir = interface.base_dir.as_deref();
 
     // Get the real path according to the import_uri and base_dir.
     let real_path = get_real_path_from_import_uri(import_uri, base_dir)?;
@@ -135,30 +48,8 @@ pub fn load_interface(
     // Add the interface to the interface_set.
     interface_set.insert(real_path.clone());
 
-    // Try to parse as URL
-    if let Ok(url) = Url::parse(&real_path) {
-        match url.scheme() {
-            "http" | "https" => {
-                return load_interface_from_http_url(&url);
-            }
-            "file" => {
-                return load_interface_from_file_url(&url);
-            }
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in import_uri: {}",
-                    url.scheme(),
-                    import_uri
-                ));
-            }
-        }
-    }
-
-    // It's a file path, read the interface file.
-    let interface_content =
-        read_file_to_string(&real_path).with_context(|| {
-            format!("Failed to read interface file from {real_path}")
-        })?;
+    // Load the content from the uri.
+    let interface_content = load_content_from_uri(&real_path).await?;
 
     // Parse the interface file into a ManifestApi structure.
     let mut interface_api: ManifestApi =
@@ -166,13 +57,12 @@ pub fn load_interface(
             format!("Failed to parse interface file from {real_path}")
         })?;
 
-    // Get the parent directory of the interface file.
-    let parent_dir = Path::new(&real_path).parent().unwrap();
+    let base_dir = get_base_dir_of_uri(&real_path)?;
 
     // Set the base_dir of the interface.
-    if let Some(interface) = &mut interface_api.interface {
+    if let Some(interface) = &mut interface_api.interface.as_mut() {
         for interface in interface.iter_mut() {
-            interface.base_dir = parent_dir.to_string_lossy().to_string();
+            interface.base_dir = Some(base_dir.clone());
         }
     }
 
@@ -333,25 +223,13 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
 /// Flatten a ManifestApi instance.
 /// If the ManifestApi contains any interface, it will be flattened. If some
 /// error occurs during flattening, the original ManifestApi will be returned.
-pub fn flatten_manifest_api(
+pub async fn flatten_manifest_api(
     manifest_api: &Option<ManifestApi>,
     flattened_api: &mut Option<ManifestApi>,
 ) -> Result<()> {
     // Try to flatten the manifest api if it contains any interface references.
-    let maybe_flattened_api = if let Some(api) = manifest_api {
-        match api.flatten(&load_interface) {
-            Ok(Some(flattened_api)) => Some(flattened_api),
-            Ok(None) => None, // No interfaces to flatten, use original
-            Err(e) => {
-                println!(
-                    "Error flattening manifest api: {e} , using original api"
-                );
-                None // Error occurred, use original
-            }
-        }
-    } else {
-        None
-    };
+    let maybe_flattened_api =
+        if let Some(api) = manifest_api { api.flatten().await? } else { None };
 
     if let Some(api) = maybe_flattened_api {
         *flattened_api = Some(api);
@@ -363,18 +241,11 @@ pub fn flatten_manifest_api(
 impl ManifestApi {
     /// Helper function that contains the common logic for flattening a
     /// ManifestApi instance.
-    fn flatten_internal<F>(
+    async fn flatten_internal(
         &self,
-        interface_loader: &F,
         flattened_apis: &mut Vec<ManifestApi>,
         interface_set: &mut HashSet<String>,
-    ) -> Result<()>
-    where
-        F: Fn(
-            &ManifestApiInterface,
-            &mut HashSet<String>,
-        ) -> Result<ManifestApi>,
-    {
+    ) -> Result<()> {
         // Push the current ManifestApi to the flattened_apis.
         flattened_apis.push(self.clone());
 
@@ -392,14 +263,15 @@ impl ManifestApi {
             // Load the interface.
             // If the interface is already loaded or cannot be loaded,
             // return an error.
-            let loaded_interface = interface_loader(interface, interface_set)?;
+            let loaded_interface =
+                load_interface(interface, interface_set).await?;
 
-            // Flatten the loaded interface.
-            loaded_interface.flatten_internal(
-                interface_loader,
-                flattened_apis,
-                interface_set,
-            )?;
+            // Flatten the loaded interface using Box::pin to handle recursion
+            Box::pin(
+                loaded_interface
+                    .flatten_internal(flattened_apis, interface_set),
+            )
+            .await?;
         }
 
         Ok(())
@@ -410,13 +282,7 @@ impl ManifestApi {
     /// Returns `Ok(None)` if the ManifestApi contains no interface and doesn't
     /// need flattening. Returns `Ok(Some(flattened_manifest_api))` if the
     /// ManifestApi was successfully flattened.
-    fn flatten<F>(&self, interface_loader: &F) -> Result<Option<ManifestApi>>
-    where
-        F: Fn(
-            &ManifestApiInterface,
-            &mut HashSet<String>,
-        ) -> Result<ManifestApi>,
-    {
+    async fn flatten(&self) -> Result<Option<ManifestApi>> {
         // Check if the ManifestApi contains any interface.
         if self.interface.is_none()
             || self.interface.as_ref().unwrap().is_empty()
@@ -428,11 +294,7 @@ impl ManifestApi {
         let mut flattened_apis = Vec::new();
         let mut interface_set = HashSet::new();
 
-        self.flatten_internal(
-            interface_loader,
-            &mut flattened_apis,
-            &mut interface_set,
-        )?;
+        self.flatten_internal(&mut flattened_apis, &mut interface_set).await?;
 
         // Merge the flattened apis into a single ManifestApi.
         let merged_api = merge_manifest_api(flattened_apis)?;

@@ -35,7 +35,7 @@ static void test_app_on_configure(TEN_UNUSED ten_app_t *app,
                                          "{\
                                                \"ten\": {\
                                                  \"log\": {\
-                                                   \"level\": 1\
+                                                   \"level\": 2\
                                                  }\
                                                }\
                                              }",

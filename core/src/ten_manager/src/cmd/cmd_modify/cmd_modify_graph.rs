@@ -11,7 +11,7 @@ use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use serde_json::Value;
 use ten_rust::{
-    fs::read_file_to_string, pkg_info::constants::PROPERTY_JSON_FILENAME,
+    pkg_info::constants::PROPERTY_JSON_FILENAME, utils::fs::read_file_to_string,
 };
 
 use crate::{
