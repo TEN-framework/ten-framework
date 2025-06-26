@@ -79,15 +79,13 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
-    pub fn from_str_with_base_dir(
+    pub async fn from_str_with_base_dir(
         s: &str,
         current_base_dir: Option<&str>,
     ) -> Result<Self> {
         let mut graph_info: GraphInfo = serde_json::from_str(s)?;
-
         graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
         graph_info.validate_and_complete_and_flatten()?;
-
         // Return the parsed data.
         Ok(graph_info)
     }
