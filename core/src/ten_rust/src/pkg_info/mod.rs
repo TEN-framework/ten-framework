@@ -151,13 +151,14 @@ pub async fn get_pkg_info_from_path(
     let property = if parse_property {
         assert!(graphs_cache.is_some());
 
-        parse_property_in_folder(
+        (parse_property_in_folder(
             path,
             graphs_cache.as_mut().unwrap(),
             app_base_dir,
             Some(manifest.type_and_name.pkg_type),
             Some(manifest.type_and_name.name.clone()),
-        )?
+        )
+        .await)?
     } else {
         None
     };

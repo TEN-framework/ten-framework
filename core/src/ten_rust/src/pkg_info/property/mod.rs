@@ -218,7 +218,7 @@ pub fn check_property_json_of_pkg(pkg_dir: &str) -> Result<()> {
 /// # Returns
 /// * `Result<Property>` - The parsed and validated Property struct on success,
 ///   or an error if the file cannot be read or the content is invalid.
-fn parse_property_from_file<P: AsRef<Path>>(
+async fn parse_property_from_file<P: AsRef<Path>>(
     property_file_path: P,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: Option<String>,
@@ -252,7 +252,7 @@ fn parse_property_from_file<P: AsRef<Path>>(
     .map(Some)
 }
 
-pub fn parse_property_in_folder(
+pub async fn parse_property_in_folder(
     folder_path: &Path,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: Option<String>,
@@ -270,6 +270,7 @@ pub fn parse_property_in_folder(
         belonging_pkg_type,
         belonging_pkg_name,
     )
+    .await
     .with_context(|| format!("Failed to load {}.", property_path.display()))?;
 
     Ok(property)
