@@ -12,8 +12,8 @@ mod tests {
 
     use ten_rust::graph::{graph_info::GraphInfo, node::GraphNodeType, Graph};
 
-    #[test]
-    fn test_graph_import_uri() {
+    #[tokio::test]
+    async fn test_graph_import_uri() {
         // Create a temporary graph file.
         let temp_dir = tempdir().unwrap();
         let graph_file_path = temp_dir.path().join("test_graph.json");
@@ -70,7 +70,7 @@ mod tests {
         };
 
         // Validate and complete (this should load the graph from import_uri).
-        graph_info.validate_and_complete_and_flatten().unwrap();
+        graph_info.validate_and_complete_and_flatten().await.unwrap();
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes.len(), 1);
@@ -85,8 +85,8 @@ mod tests {
         assert_eq!(connections[0].loc.extension, Some("test_ext".to_string()));
     }
 
-    #[test]
-    fn test_import_uri_mutual_exclusion_with_nodes() {
+    #[tokio::test]
+    async fn test_import_uri_mutual_exclusion_with_nodes() {
         use ten_rust::graph::node::{GraphNode, GraphNodeType};
 
         // Create a GraphInfo with both import_uri and nodes - this should fail
@@ -115,15 +115,15 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete_and_flatten();
+        let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'import_uri' is specified, 'nodes' field must not be present"
         ));
     }
 
-    #[test]
-    fn test_import_uri_mutual_exclusion_with_connections() {
+    #[tokio::test]
+    async fn test_import_uri_mutual_exclusion_with_connections() {
         use ten_rust::graph::connection::{
             GraphConnection, GraphLoc, GraphMessageFlow,
         };
@@ -160,7 +160,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete_and_flatten();
+        let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'import_uri' is specified, 'connections' field must not be \
@@ -168,8 +168,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_import_uri_mutual_exclusion_with_exposed_messages() {
+    #[tokio::test]
+    async fn test_import_uri_mutual_exclusion_with_exposed_messages() {
         use ten_rust::graph::{GraphExposedMessage, GraphExposedMessageType};
 
         // Create a GraphInfo with both import_uri and exposed_messages - this
@@ -196,7 +196,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete_and_flatten();
+        let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'import_uri' is specified, 'exposed_messages' field must \
@@ -204,8 +204,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_import_uri_mutual_exclusion_with_exposed_properties() {
+    #[tokio::test]
+    async fn test_import_uri_mutual_exclusion_with_exposed_properties() {
         use ten_rust::graph::GraphExposedProperty;
 
         // Create a GraphInfo with both import_uri and exposed_properties - this
@@ -231,7 +231,7 @@ mod tests {
         };
 
         // This should fail due to mutual exclusion
-        let result = graph_info.validate_and_complete_and_flatten();
+        let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
             "When 'import_uri' is specified, 'exposed_properties' field must \
@@ -239,8 +239,8 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn test_import_uri_without_conflicting_fields_succeeds() {
+    #[tokio::test]
+    async fn test_import_uri_without_conflicting_fields_succeeds() {
         // Create a temporary graph file.
         let temp_dir = tempdir().unwrap();
         let graph_file_path = temp_dir.path().join("test_graph.json");
@@ -282,7 +282,7 @@ mod tests {
         };
 
         // This should succeed
-        let result = graph_info.validate_and_complete_and_flatten();
+        let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_ok());
 
         // Verify that the graph was loaded from import_uri

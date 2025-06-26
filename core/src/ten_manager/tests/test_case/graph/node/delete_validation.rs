@@ -18,8 +18,8 @@ mod tests {
         pkg_info::localhost,
     };
 
-    #[test]
-    fn test_delete_extension_node_with_validation_success() {
+    #[tokio::test]
+    async fn test_delete_extension_node_with_validation_success() {
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
@@ -54,7 +54,8 @@ mod tests {
             "test_addon_1".to_string(),
             Some("http://test-app-uri.com".to_string()),
             None,
-        );
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
         assert_eq!(graph.nodes[0].name, "test_extension_2");
@@ -68,16 +69,17 @@ mod tests {
             "test_addon_2".to_string(),
             Some("http://test-app-uri.com".to_string()),
             None,
-        );
+        )
+        .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 0);
     }
 
-    #[test]
-    fn test_delete_extension_node_validation_failure_restores_graph() {
+    #[tokio::test]
+    async fn test_delete_extension_node_validation_failure_restores_graph() {
         // Create a custom delete function that will cause validation to fail
         // by modifying the remaining node to have an invalid state.
-        fn graph_delete_extension_node_with_corruption(
+        async fn graph_delete_extension_node_with_corruption(
             graph: &mut Graph,
             pkg_name: String,
             addon: String,
@@ -110,7 +112,7 @@ mod tests {
             }
 
             // Validate the graph.
-            match graph.validate_and_complete_and_flatten(None) {
+            match graph.validate_and_complete_and_flatten(None).await {
                 Ok(_) => Ok(()),
                 Err(e) => {
                     // Restore the original graph if validation fails.
@@ -157,7 +159,8 @@ mod tests {
             "test_addon_1".to_string(),
             Some("http://test-app-uri.com".to_string()),
             None,
-        );
+        )
+        .await;
 
         // The operation should fail due to validation.
         assert!(result.is_err());
@@ -177,8 +180,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_delete_extension_node_with_connections_cleanup() {
+    #[tokio::test]
+    async fn test_delete_extension_node_with_connections_cleanup() {
         // Create a graph with connections that should be cleaned up.
         let mut graph = Graph {
             nodes: vec![
@@ -233,7 +236,8 @@ mod tests {
             "target_addon".to_string(),
             None,
             None,
-        );
+        )
+        .await;
 
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);

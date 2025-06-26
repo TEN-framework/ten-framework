@@ -41,9 +41,13 @@ pub struct GetPackagesRequestPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub tags: Option<Vec<String>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub scope: Option<String>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GetPackagesResponseData {
     pub packages: Vec<PkgRegistryInfo>,
 }
@@ -69,6 +73,12 @@ pub async fn get_packages_endpoint(
         None
     };
 
+    // Parse scope if provided.
+    let scope = request_query
+        .scope
+        .as_ref()
+        .map(|scope_str| scope_str.split(',').map(|s| s.to_string()).collect());
+
     // Call the registry function to get package list with optional parameters.
     match registry::get_package_list(
         state.tman_config.clone(),
@@ -76,6 +86,7 @@ pub async fn get_packages_endpoint(
         request_query.name.clone(),
         version_req,
         request_query.tags.clone(),
+        scope,
         request_query.page_size,
         request_query.page,
         &state.out,

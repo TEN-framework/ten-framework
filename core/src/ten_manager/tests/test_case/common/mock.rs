@@ -42,7 +42,8 @@ pub async fn inject_all_pkgs_for_mock(
             Some(metadata_json.0.clone()),
             Some(manifest.type_and_name.pkg_type),
             Some(manifest.type_and_name.name.clone()),
-        )?;
+        )
+        .await?;
 
         let pkg_info = PkgInfo::from_metadata(
             &metadata_json.0,
