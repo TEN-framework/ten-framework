@@ -17,7 +17,7 @@ from ten import (
 
 from ten_ai_base.config import BaseConfig
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 import json
 import asyncio
 import aiohttp
@@ -143,7 +143,7 @@ class textWebhookExtension(AsyncExtension):
                         try:
                             prop_value = data.get_property_string(prop_name)
                             payload[f"original_{prop_name}"] = prop_value
-                        except:
+                        except Exception:
                             pass
             except Exception as e:
                 ten_env.log_warn(
@@ -271,7 +271,6 @@ class textWebhookExtension(AsyncExtension):
                     self.session = None
                 except Exception as e:
                     ten_env.log_error(f"Error closing session: {e}")
-                    pass
 
     async def send_conversation_end_message(self, ten_env: AsyncTenEnv) -> bool:
         """
@@ -371,7 +370,6 @@ class textWebhookExtension(AsyncExtension):
                     ten_env.log_error(
                         f"END WEBHOOK - Error closing session: {e}"
                     )
-                    pass
 
     async def send_user_event_message(
         self, ten_env: AsyncTenEnv, event_type: str, user_id: str = ""
