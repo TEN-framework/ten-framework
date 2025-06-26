@@ -7,8 +7,6 @@
 use std::ffi::{c_char, CStr, CString};
 use tokio::runtime::Runtime;
 
-use tokio::runtime::Runtime;
-
 use crate::{
     graph::graph_info::GraphInfo, pkg_info::manifest::api::ManifestApi,
 };
