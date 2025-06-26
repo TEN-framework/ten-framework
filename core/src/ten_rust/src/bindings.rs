@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::ffi::{c_char, CStr, CString};
-
 use tokio::runtime::Runtime;
 
 use crate::{
@@ -131,17 +130,20 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
     };
 
     // Parse the JSON string into a Graph
-    let graph_info = match GraphInfo::from_str_with_base_dir(
-        json_str_rust_str,
-        current_base_dir_rust_str,
-    ) {
-        Ok(g) => g,
-        Err(e) => {
-            if !err_msg.is_null() {
-                let err_msg_c_str = CString::new(e.to_string()).unwrap();
-                *err_msg = err_msg_c_str.into_raw();
+    let graph_info = {
+        let rt = Runtime::new().unwrap();
+        match rt.block_on(GraphInfo::from_str_with_base_dir(
+            json_str_rust_str,
+            current_base_dir_rust_str,
+        )) {
+            Ok(g) => g,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Parsing failed
             }
-            return std::ptr::null(); // Parsing failed
         }
     };
 

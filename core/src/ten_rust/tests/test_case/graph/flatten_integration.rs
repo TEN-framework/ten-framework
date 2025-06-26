@@ -14,10 +14,14 @@ use ten_rust::graph::{
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
     use super::*;
 
-    #[test]
-    fn test_validate_and_complete_and_flatten_with_subgraphs() {
+    #[tokio::test]
+    async fn test_validate_and_complete_and_flatten_with_subgraphs() {
         // Create a main graph with subgraph nodes
         let mut main_graph = Graph {
             nodes: vec![
@@ -67,7 +71,7 @@ mod tests {
 
         // Test with current_base_dir as None - should fail because subgraph has
         // relative path
-        let result = main_graph.validate_and_complete_and_flatten(None);
+        let result = main_graph.validate_and_complete_and_flatten(None).await;
         assert!(result.is_err());
 
         // Verify the error message contains information about base_dir being
@@ -77,8 +81,8 @@ mod tests {
             .contains("base_dir cannot be None when uri is a relative path"));
     }
 
-    #[test]
-    fn test_validate_and_complete_and_flatten_without_subgraphs() {
+    #[tokio::test]
+    async fn test_validate_and_complete_and_flatten_without_subgraphs() {
         // Create a graph without subgraph nodes
         let mut graph = Graph {
             nodes: vec![
@@ -128,7 +132,7 @@ mod tests {
 
         // Test with current_base_dir as None - should work fine since no
         // subgraphs
-        let result = graph.validate_and_complete_and_flatten(None);
+        let result = graph.validate_and_complete_and_flatten(None).await;
         assert!(result.is_ok());
 
         // The graph should remain unchanged
@@ -139,8 +143,8 @@ mod tests {
             .all(|node| node.type_ == GraphNodeType::Extension));
     }
 
-    #[test]
-    fn test_flatten_graph_returns_none_for_no_subgraphs() {
+    #[tokio::test]
+    async fn test_flatten_graph_returns_none_for_no_subgraphs() {
         // Create a graph without subgraph nodes
         let graph = Graph {
             nodes: vec![GraphNode {
@@ -157,24 +161,17 @@ mod tests {
             exposed_properties: None,
         };
 
-        // Mock subgraph loader (should not be called)
-        let subgraph_loader = |_uri: &str,
-                               _base_dir: Option<&str>,
-                               _new_base_dir: &mut Option<String>|
-         -> anyhow::Result<Graph> {
-            panic!(
-                "Subgraph loader should not be called for graphs without \
-                 subgraphs"
-            );
-        };
-
         // flatten_graph should return None since there are no subgraphs
-        let result = graph.flatten_graph(&subgraph_loader, None).unwrap();
+        let result = graph.flatten_graph(None).await.unwrap();
         assert!(result.is_none());
     }
 
-    #[test]
-    fn test_flatten_graph_returns_some_for_subgraphs() {
+    #[tokio::test]
+    async fn test_flatten_graph_returns_some_for_subgraphs() {
+        // Create a temporary directory for the subgraph
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("test_subgraph.json");
+
         // Create a graph with subgraph nodes
         let graph = Graph {
             nodes: vec![
@@ -218,16 +215,15 @@ mod tests {
             exposed_properties: None,
         };
 
-        // Mock subgraph loader
-        let subgraph_loader =
-            |_uri: &str,
-             _base_dir: Option<&str>,
-             _new_base_dir: &mut Option<String>|
-             -> anyhow::Result<Graph> { Ok(subgraph.clone()) };
+        // Write the subgraph to a file
+        let subgraph_json = serde_json::to_string(&subgraph).unwrap();
+        fs::write(subgraph_file_path, subgraph_json).unwrap();
 
         // flatten_graph should return Some since there are subgraphs
-        let result =
-            graph.flatten_graph(&subgraph_loader, Some("/tmp")).unwrap();
+        let result = graph
+            .flatten_graph(Some(temp_dir.path().to_str().unwrap()))
+            .await
+            .unwrap();
         assert!(result.is_some());
 
         let flattened = result.unwrap();
