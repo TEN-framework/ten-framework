@@ -732,6 +732,7 @@ pub async fn get_package_list(
     name: Option<String>,
     version_req: Option<VersionReq>,
     tags: Option<Vec<String>>,
+    scope: Option<Vec<String>>,
     page_size: Option<u32>,
     page: Option<u32>,
     out: &Arc<Box<dyn TmanOutput>>,
@@ -754,6 +755,7 @@ pub async fn get_package_list(
             let version_req = version_req.clone();
             let name = name.clone();
             let tags = tags.clone();
+            let scope = scope.clone();
             let tman_config = tman_config.clone();
 
             Box::pin(async move {
@@ -796,6 +798,13 @@ pub async fn get_package_list(
                             }
                         }
 
+                        // Add scope parameter if provided.
+                        if let Some(s) = &scope {
+                            if !s.is_empty() {
+                                query.append_pair("scope", &s.join(","));
+                            }
+                        }
+
                         // Pagination parameters.
                         query
                             .append_pair(
@@ -807,7 +816,7 @@ pub async fn get_package_list(
 
                     if is_verbose(tman_config.clone()).await {
                         let query_info = format!(
-                            "{}{}{}{}",
+                            "{}{}{}{}{}",
                             pkg_type
                                 .as_ref()
                                 .map_or("".to_string(), |pt| format!(
@@ -826,6 +835,13 @@ pub async fn get_package_list(
                                     "".to_string()
                                 } else {
                                     format!("tags={}", t.join(","))
+                                }
+                            }),
+                            scope.as_ref().map_or("".to_string(), |s| {
+                                if s.is_empty() {
+                                    "".to_string()
+                                } else {
+                                    format!("scope={}", s.join(","))
                                 }
                             })
                         );

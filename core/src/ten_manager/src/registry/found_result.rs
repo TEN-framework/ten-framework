@@ -15,6 +15,18 @@ use ten_rust::pkg_info::manifest::Manifest;
 use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
 use ten_rust::pkg_info::PkgInfo;
 
+pub const BASIC_SCOPE: [&str; 9] = [
+    "type",
+    "name",
+    "version",
+    "supports",
+    "dependencies",
+    "hash",
+    "downloadUrl",
+    "contentFormat",
+    "tags",
+];
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgRegistryInfo {
     #[serde(flatten)]

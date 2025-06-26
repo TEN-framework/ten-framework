@@ -121,4 +121,60 @@ mod tests {
             5
         );
     }
+
+    #[actix_rt::test]
+    async fn test_get_packages_from_remote_registry_with_scope() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig {
+                verbose: true,
+                ..TmanConfig::default()
+            })),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
+            )),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(
+            App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/registry/packages",
+                web::get().to(get_packages_endpoint),
+            ),
+        )
+        .await;
+
+        // Create query parameters
+        let pkg_type = PkgType::Extension;
+        let name = "pil_demo_python";
+        let version_req = "0.10.18";
+        let scope = "type,name,version,downloadUrl,dependencies,hash";
+
+        let req = test::TestRequest::get()
+            .uri(&format!(
+                "/api/designer/v1/registry/packages?pkg_type={pkg_type}&\
+                 name={name}&version_req={version_req}&scope={scope}"
+            ))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        // Verify the response.
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        let api_response: ApiResponse<GetPackagesResponseData> =
+            serde_json::from_str(body_str).unwrap();
+        assert_eq!(api_response.status, Status::Ok);
+        assert_eq!(api_response.data.packages.len(), 1);
+
+        // The display_name should be None because 'display_name' is not
+        // included in the scope.
+        assert!(api_response.data.packages[0].display_name.is_none());
+    }
 }

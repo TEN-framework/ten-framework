@@ -6,7 +6,6 @@
 //
 use std::ffi::{c_char, CStr, CString};
 
-use once_cell::sync::Lazy;
 use tokio::runtime::Runtime;
 
 use crate::{
