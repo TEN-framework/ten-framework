@@ -71,7 +71,7 @@ export { ENDPOINT_GRAPHS, ENDPOINT_GRAPH_UI } from "@/api/endpoints/graphs";
 export {
   ENDPOINT_FILE_SYSTEM,
   ENDPOINT_FILE_VALIDATE,
-} from "@/api/endpoints/fileSystem";
+} from "@/api/endpoints/file-system";
 export {
   ENDPOINT_APPS,
   ENDPOINT_ADDONS,

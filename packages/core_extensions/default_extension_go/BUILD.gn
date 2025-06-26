@@ -14,10 +14,6 @@ ten_package("default_extension_go") {
   resources = [
     ".vscode/launch.json",
     ".vscode/settings.json",
-    "README-CN.md",
-    "README-CN.md.tent",
-    "README.md",
-    "README.md.tent",
     "extension.go",
     "extension.go.tent",
     "go_release.mod.tent=>go.mod.tent",
@@ -26,6 +22,22 @@ ten_package("default_extension_go") {
     "manifest.json.tent",
     "property.json",
   ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
 
   tests_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                             [

@@ -54,6 +54,7 @@ group("python") {
         "standalone_ollama_python",
         "standalone_test_async_tmpl_python",
         "standalone_test_tmpl_python",
+        "subgraph_python",
         "two_async_exts_one_group_python",
         "two_async_exts_python",
         "websocket_server_python",

@@ -7,6 +7,7 @@
 mod description;
 mod display_name;
 mod interface;
+mod readme;
 
 #[cfg(test)]
 mod tests {
@@ -19,8 +20,7 @@ mod tests {
         let manifest_str =
             include_str!("../../../test_data/test_extension_manifest.json");
 
-        let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+        let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
 
         let manifest = result.unwrap();
@@ -56,8 +56,7 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+        let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();
@@ -87,8 +86,7 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+        let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
     }
 
@@ -114,8 +112,7 @@ mod tests {
             ]
         }"#;
 
-        let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+        let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
     }
 
@@ -197,8 +194,7 @@ mod tests {
           }
         }"#;
 
-        let result: Result<Manifest> =
-            Manifest::create_from_str(manifest_str).await;
+        let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());
 
         let manifest = result.unwrap();

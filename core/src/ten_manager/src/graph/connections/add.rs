@@ -278,7 +278,7 @@ pub async fn graph_add_connection(
     }
 
     // Validate the updated graph.
-    match graph.validate_and_complete_and_flatten(None) {
+    match graph.validate_and_complete_and_flatten(None).await {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.

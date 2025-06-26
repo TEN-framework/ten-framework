@@ -1,0 +1,32 @@
+{
+  "type": "extension",
+  "name": "default_extension_cpp",
+  "version": "0.10.20",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.10.20"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "./interfaces/test_interface.json"
+      }
+    ],
+    "cmd_in": [],
+    "cmd_out": [],
+    "data_in": [],
+    "data_out": [],
+    "video_frame_in": [],
+    "video_frame_out": [],
+    "audio_frame_in": [],
+    "audio_frame_out": []
+  }
+}

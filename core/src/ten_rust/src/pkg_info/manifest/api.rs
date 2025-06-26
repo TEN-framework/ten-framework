@@ -6,10 +6,13 @@
 //
 use std::collections::HashMap;
 
+use anyhow::Result;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::pkg_info::value_type::ValueType;
+use crate::pkg_info::{
+    manifest::interface::flatten_manifest_api, value_type::ValueType,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManifestApi {
@@ -38,6 +41,30 @@ pub struct ManifestApi {
     pub video_frame_in: Option<Vec<ManifestApiMsg>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video_frame_out: Option<Vec<ManifestApiMsg>>,
+}
+
+impl ManifestApi {
+    /// Return the flattened API.
+    /// If the api has no interface, return None.
+    pub async fn get_flattened_api(
+        &mut self,
+        base_dir: &str,
+    ) -> Result<Option<ManifestApi>> {
+        if let Some(interface) = &mut self.interface {
+            // Set the base_dir for each interface.
+            for interface in interface.iter_mut() {
+                interface.base_dir = Some(base_dir.to_string());
+            }
+
+            // Flatten the api.
+            let mut flattened_api = None;
+            flatten_manifest_api(&Some(self.clone()), &mut flattened_api)
+                .await?;
+            Ok(flattened_api)
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -131,7 +158,7 @@ pub struct ManifestApiInterface {
     // interface is located. It is primarily used to parse the `import_uri`
     // field when it contains a relative path.
     #[serde(skip)]
-    pub base_dir: String,
+    pub base_dir: Option<String>,
 }
 
 fn validate_msg_name<'de, D>(deserializer: D) -> Result<String, D::Error>

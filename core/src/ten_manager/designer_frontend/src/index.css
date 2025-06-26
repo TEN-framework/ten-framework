@@ -362,7 +362,7 @@
 
 :root {
   --background: var(--ten-fill-2);
-  --foreground: var(--ten-icontext-1);;
+  --foreground: var(--ten-icontext-1);
   --card: var(--ten-fill-2);
   --card-foreground: var(--ten-icontext-1);
   --popover: var(--ten-fill-2);

@@ -197,13 +197,13 @@ impl Graph {
     /// # Returns
     /// - `Ok(Graph)`: Successfully parsed and processed graph
     /// - `Err(anyhow::Error)`: Parsing, validation, or processing error
-    pub fn from_str_with_base_dir(
+    pub async fn from_str_with_base_dir(
         s: &str,
         current_base_dir: Option<&str>,
     ) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete_and_flatten(current_base_dir)?;
+        graph.validate_and_complete_and_flatten(current_base_dir).await?;
 
         // Return the parsed data.
         Ok(graph)
@@ -331,7 +331,7 @@ impl Graph {
         Ok(())
     }
 
-    pub fn validate_and_complete_and_flatten(
+    pub async fn validate_and_complete_and_flatten(
         &mut self,
         current_base_dir: Option<&str>,
     ) -> Result<()> {
@@ -340,10 +340,7 @@ impl Graph {
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
         // the flatten_graph method will return an appropriate error.
-        if let Some(flattened) = self.flatten_graph(
-            &crate::graph::graph_info::load_graph_from_uri,
-            current_base_dir,
-        )? {
+        if let Some(flattened) = self.flatten_graph(current_base_dir).await? {
             // Replace current graph with flattened version
             *self = flattened;
         }

@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::collections::HashMap;
 use std::fs;
 use std::sync::Arc;
 use std::{io::Write, time::Duration};
@@ -128,6 +129,92 @@ async fn get_package_upload_info(
             let tman_config = tman_config.clone();
 
             Box::pin(async move {
+                // Resolve LocaleContent fields before creating payload
+                let mut description = None;
+                if let Some(desc) = &pkg_info.manifest.description {
+                    let mut resolved_locales = HashMap::new();
+                    for (locale, locale_content) in &desc.locales {
+                        let content = locale_content
+                            .get_content()
+                            .await
+                            .map_err(|e| {
+                                anyhow!(
+                                    "Failed to resolve description content: {}",
+                                    e
+                                )
+                            })?;
+                        let resolved_content =
+                            ten_rust::pkg_info::manifest::LocaleContent {
+                                content: Some(content),
+                                import_uri: None,
+                                base_dir: None,
+                            };
+                        resolved_locales
+                            .insert(locale.clone(), resolved_content);
+                    }
+                    description =
+                        Some(ten_rust::pkg_info::manifest::LocalizedField {
+                            locales: resolved_locales,
+                        });
+                }
+
+                let mut display_name = None;
+                if let Some(name) = &pkg_info.manifest.display_name {
+                    let mut resolved_locales = HashMap::new();
+                    for (locale, locale_content) in &name.locales {
+                        let content = locale_content
+                            .get_content()
+                            .await
+                            .map_err(|e| {
+                                anyhow!(
+                                    "Failed to resolve display_name content: \
+                                     {}",
+                                    e
+                                )
+                            })?;
+                        let resolved_content =
+                            ten_rust::pkg_info::manifest::LocaleContent {
+                                content: Some(content),
+                                import_uri: None,
+                                base_dir: None,
+                            };
+                        resolved_locales
+                            .insert(locale.clone(), resolved_content);
+                    }
+                    display_name =
+                        Some(ten_rust::pkg_info::manifest::LocalizedField {
+                            locales: resolved_locales,
+                        });
+                }
+
+                let mut readme = None;
+                if let Some(rm) = &pkg_info.manifest.readme {
+                    let mut resolved_locales = HashMap::new();
+                    for (locale, locale_content) in &rm.locales {
+                        let content = locale_content
+                            .get_content()
+                            .await
+                            .map_err(|e| {
+                                anyhow!(
+                                    "Failed to resolve readme content: {}",
+                                    e
+                                )
+                            })?;
+                        let resolved_content =
+                            ten_rust::pkg_info::manifest::LocaleContent {
+                                content: Some(content),
+                                import_uri: None,
+                                base_dir: None,
+                            };
+                        resolved_locales
+                            .insert(locale.clone(), resolved_content);
+                    }
+                    readme =
+                        Some(ten_rust::pkg_info::manifest::LocalizedField {
+                            locales: resolved_locales,
+                        });
+                }
+
                 let payload = json!(PkgRegistryInfo {
                     basic_info: PkgBasicInfo::from(&pkg_info),
                     dependencies: match &pkg_info.manifest.dependencies {
@@ -138,8 +225,9 @@ async fn get_package_upload_info(
                     download_url: String::new(),
                     content_format: Some("gzip".to_string()),
                     tags: pkg_info.manifest.tags.clone(),
-                    description: pkg_info.manifest.description.clone(),
-                    display_name: pkg_info.manifest.display_name.clone(),
+                    description,
+                    display_name,
+                    readme,
                 });
 
                 if is_verbose(tman_config.clone()).await {
@@ -644,6 +732,7 @@ pub async fn get_package_list(
     name: Option<String>,
     version_req: Option<VersionReq>,
     tags: Option<Vec<String>>,
+    scope: Option<Vec<String>>,
     page_size: Option<u32>,
     page: Option<u32>,
     out: &Arc<Box<dyn TmanOutput>>,
@@ -666,6 +755,7 @@ pub async fn get_package_list(
             let version_req = version_req.clone();
             let name = name.clone();
             let tags = tags.clone();
+            let scope = scope.clone();
             let tman_config = tman_config.clone();
 
             Box::pin(async move {
@@ -708,6 +798,13 @@ pub async fn get_package_list(
                             }
                         }
 
+                        // Add scope parameter if provided.
+                        if let Some(s) = &scope {
+                            if !s.is_empty() {
+                                query.append_pair("scope", &s.join(","));
+                            }
+                        }
+
                         // Pagination parameters.
                         query
                             .append_pair(
@@ -719,7 +816,7 @@ pub async fn get_package_list(
 
                     if is_verbose(tman_config.clone()).await {
                         let query_info = format!(
-                            "{}{}{}{}",
+                            "{}{}{}{}{}",
                             pkg_type
                                 .as_ref()
                                 .map_or("".to_string(), |pt| format!(
@@ -738,6 +835,13 @@ pub async fn get_package_list(
                                     "".to_string()
                                 } else {
                                     format!("tags={}", t.join(","))
+                                }
+                            }),
+                            scope.as_ref().map_or("".to_string(), |s| {
+                                if s.is_empty() {
+                                    "".to_string()
+                                } else {
+                                    format!("scope={}", s.join(","))
                                 }
                             })
                         );
