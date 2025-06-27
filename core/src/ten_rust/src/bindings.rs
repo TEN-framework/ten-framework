@@ -5,8 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::ffi::{c_char, CStr, CString};
+use tokio::runtime::Runtime;
 
-use crate::graph::graph_info::GraphInfo;
+use crate::{
+    graph::graph_info::GraphInfo, pkg_info::manifest::api::ManifestApi,
+};
 
 /// Frees a C string that was allocated by Rust.
 ///
@@ -127,17 +130,20 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
     };
 
     // Parse the JSON string into a Graph
-    let graph_info = match GraphInfo::from_str_with_base_dir(
-        json_str_rust_str,
-        current_base_dir_rust_str,
-    ) {
-        Ok(g) => g,
-        Err(e) => {
-            if !err_msg.is_null() {
-                let err_msg_c_str = CString::new(e.to_string()).unwrap();
-                *err_msg = err_msg_c_str.into_raw();
+    let graph_info = {
+        let rt = Runtime::new().unwrap();
+        match rt.block_on(GraphInfo::from_str_with_base_dir(
+            json_str_rust_str,
+            current_base_dir_rust_str,
+        )) {
+            Ok(g) => g,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Parsing failed
             }
-            return std::ptr::null(); // Parsing failed
         }
     };
 
@@ -155,6 +161,162 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
 
     // Convert to C string
     match CString::new(json_output) {
+        Ok(c_string) => c_string.into_raw(),
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            std::ptr::null() // Contains null bytes
+        }
+    }
+}
+
+/// Validates a manifest API and returns it as a JSON string.
+///
+/// This function takes a C string containing JSON, parses it into a ManifestApi
+/// structure, validates and flattens it, then serializes it back to JSON. If
+/// flattening is not needed, it will still return a new copy of the input JSON.
+///
+/// # Parameters
+/// - `manifest_api_json_str`: A null-terminated C string containing the JSON
+///   representation of a manifest API. Must not be NULL.
+/// - `current_base_dir`: A null-terminated C string containing the current base
+///   directory. Must not be NULL.
+/// - `err_msg`: Pointer to a char* that will be set to an error message if the
+///   function fails. Can be NULL if error details are not needed. If set, the
+///   error message must be freed using `ten_rust_free_cstring()`.
+///
+/// # Returns
+/// - On success: A pointer to a newly allocated C string containing either the
+///   flattened manifest API JSON or a copy of the input JSON. The caller is
+///   responsible for freeing this string using `ten_rust_free_cstring()`.
+/// - On failure: NULL pointer
+///
+/// # Safety
+///
+/// The caller must ensure that:
+/// - `manifest_api_json_str` is a valid null-terminated C string
+/// - `current_base_dir` is a valid null-terminated C string
+/// - If err_msg is not NULL, the error message (if set) must be freed using
+///   `ten_rust_free_cstring()`
+/// - The input string contains valid UTF-8 encoded JSON
+///
+/// # Memory Management
+///
+/// Both the returned string (if not NULL) and error message (if set) are
+/// allocated by Rust and must be freed by calling `ten_rust_free_cstring()`
+/// when no longer needed.
+///
+/// # Example
+/// ```c
+/// const char* manifest_api_json_str = "{\"interface\": []}";
+/// const char* current_base_dir = "/path/to/current/base/dir";
+/// char* err_msg = NULL;
+/// const char* result =
+///     ten_rust_manifest_api_flatten(
+///         manifest_api_json_str, current_base_dir, &err_msg);
+/// if (result != NULL) {
+///     printf("Processed manifest API: %s\n", result);
+///     ten_rust_free_cstring(result);
+/// } else if (err_msg != NULL) {
+///     printf("Failed to process manifest API: %s\n", err_msg);
+///     ten_rust_free_cstring(err_msg);
+/// } else {
+///     printf("Failed to process manifest API\n");
+/// }
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
+    manifest_api_json_str: *const c_char,
+    current_base_dir: *const c_char,
+    err_msg: *mut *mut c_char,
+) -> *const c_char {
+    if manifest_api_json_str.is_null() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new("manifest_api_json_str is null").unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return std::ptr::null();
+    }
+
+    // Convert C string to Rust string
+    let manifest_api_json_str_c_str = CStr::from_ptr(manifest_api_json_str);
+    let manifest_api_json_str_rust_str =
+        match manifest_api_json_str_c_str.to_str() {
+            Ok(s) => s,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Invalid UTF-8
+            }
+        };
+
+    // current_base_dir should be a valid null-terminated C string.
+    let current_base_dir_rust_str = CStr::from_ptr(current_base_dir);
+    let current_base_dir_rust_str = match current_base_dir_rust_str.to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            return std::ptr::null(); // Invalid UTF-8
+        }
+    };
+
+    // Parse the JSON string into a ManifestApi
+    let mut manifest_api: ManifestApi =
+        match serde_json::from_str(manifest_api_json_str_rust_str) {
+            Ok(m) => m,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Parsing failed
+            }
+        };
+
+    let runtime = Runtime::new().unwrap();
+    let flattened_api = runtime
+        .block_on(manifest_api.get_flattened_api(current_base_dir_rust_str));
+
+    if flattened_api.is_err() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new(flattened_api.err().unwrap().to_string()).unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return std::ptr::null(); // Parsing failed
+    }
+
+    // If the flattened API is None, return the original manifest API.
+    if flattened_api.as_ref().unwrap().is_none() {
+        // Clone the manifest_api_json_str_rust_str and return the C string.
+        let manifest_api_json_str_c_str =
+            CString::new(manifest_api_json_str_rust_str).unwrap();
+        return manifest_api_json_str_c_str.into_raw();
+    }
+
+    // Serialize the flattened API back to JSON
+    let flattened_api_json_str =
+        match serde_json::to_string(&flattened_api.unwrap()) {
+            Ok(json) => json,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Serialization failed
+            }
+        };
+
+    // Convert to C string
+    match CString::new(flattened_api_json_str) {
         Ok(c_string) => c_string.into_raw(),
         Err(e) => {
             if !err_msg.is_null() {

@@ -17,9 +17,17 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en-US": "English description",
-                "zh-CN": "中文描述",
-                "es-ES": "Descripción en español"
+                "locales": {
+                    "en-US": {
+                        "content": "English description"
+                    },
+                    "zh-CN": {
+                        "content": "中文描述"
+                    },
+                    "es-ES": {
+                        "content": "Descripción en español"
+                    }
+                }
             }
         }"#;
 
@@ -29,9 +37,18 @@ mod tests {
         assert_eq!(manifest.version.to_string(), "1.0.0");
 
         let description = manifest.description.unwrap();
-        assert_eq!(description.get("en-US").unwrap(), "English description");
-        assert_eq!(description.get("zh-CN").unwrap(), "中文描述");
-        assert_eq!(description.get("es-ES").unwrap(), "Descripción en español");
+        assert_eq!(
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "English description"
+        );
+        assert_eq!(
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "中文描述"
+        );
+        assert_eq!(
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
+            "Descripción en español"
+        );
     }
 
     #[test]
@@ -56,7 +73,11 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en_US": "Should fail - using underscore instead of hyphen"
+                "locales": {
+                    "en_US": {
+                        "content": "Should fail - using underscore instead of hyphen"
+                    }
+                }
             }
         }"#;
 
@@ -73,13 +94,17 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_with_empty_description() {
+    fn test_manifest_with_empty_description_content() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en-US": ""
+                "locales": {
+                    "en-US": {
+                        "content": ""
+                    }
+                }
             }
         }"#;
 
@@ -91,15 +116,20 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_with_simple_language_codes() {
+    fn test_manifest_with_import_uri_description() {
         let manifest_json = r#"{
             "type": "extension",
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en": "English description",
-                "zh": "中文描述",
-                "es": "Descripción en español"
+                "locales": {
+                    "en-US": {
+                        "import_uri": "http://example.com/desc_en.md"
+                    },
+                    "zh-CN": {
+                        "content": "中文描述"
+                    }
+                }
             }
         }"#;
 
@@ -109,9 +139,61 @@ mod tests {
         assert_eq!(manifest.version.to_string(), "1.0.0");
 
         let description = manifest.description.unwrap();
-        assert_eq!(description.get("en").unwrap(), "English description");
-        assert_eq!(description.get("zh").unwrap(), "中文描述");
-        assert_eq!(description.get("es").unwrap(), "Descripción en español");
+        assert_eq!(
+            description
+                .locales
+                .get("en-US")
+                .unwrap()
+                .import_uri
+                .as_ref()
+                .unwrap(),
+            "http://example.com/desc_en.md"
+        );
+        assert_eq!(
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "中文描述"
+        );
+    }
+
+    #[test]
+    fn test_manifest_with_simple_language_codes() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "description": {
+                "locales": {
+                    "en": {
+                        "content": "English description"
+                    },
+                    "zh": {
+                        "content": "中文描述"
+                    },
+                    "es": {
+                        "content": "Descripción en español"
+                    }
+                }
+            }
+        }"#;
+
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
+
+        assert_eq!(manifest.type_and_name.name, "test_extension");
+        assert_eq!(manifest.version.to_string(), "1.0.0");
+
+        let description = manifest.description.unwrap();
+        assert_eq!(
+            description.locales.get("en").unwrap().content.as_ref().unwrap(),
+            "English description"
+        );
+        assert_eq!(
+            description.locales.get("zh").unwrap().content.as_ref().unwrap(),
+            "中文描述"
+        );
+        assert_eq!(
+            description.locales.get("es").unwrap().content.as_ref().unwrap(),
+            "Descripción en español"
+        );
     }
 
     #[test]
@@ -121,20 +203,42 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en": "English description",
-                "zh-CN": "简体中文描述",
-                "zh-TW": "繁體中文描述",
-                "es-ES": "Descripción en español"
+                "locales": {
+                    "en": {
+                        "content": "English description"
+                    },
+                    "zh-CN": {
+                        "content": "简体中文描述"
+                    },
+                    "zh-TW": {
+                        "content": "繁體中文描述"
+                    },
+                    "es-ES": {
+                        "content": "Descripción en español"
+                    }
+                }
             }
         }"#;
 
         let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
 
         let description = manifest.description.unwrap();
-        assert_eq!(description.get("en").unwrap(), "English description");
-        assert_eq!(description.get("zh-CN").unwrap(), "简体中文描述");
-        assert_eq!(description.get("zh-TW").unwrap(), "繁體中文描述");
-        assert_eq!(description.get("es-ES").unwrap(), "Descripción en español");
+        assert_eq!(
+            description.locales.get("en").unwrap().content.as_ref().unwrap(),
+            "English description"
+        );
+        assert_eq!(
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "简体中文描述"
+        );
+        assert_eq!(
+            description.locales.get("zh-TW").unwrap().content.as_ref().unwrap(),
+            "繁體中文描述"
+        );
+        assert_eq!(
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
+            "Descripción en español"
+        );
     }
 
     #[test]
@@ -145,7 +249,11 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "EN-US": "Should fail - uppercase language code"
+                "locales": {
+                    "EN-US": {
+                        "content": "Should fail - uppercase language code"
+                    }
+                }
             }
         }"#;
 
@@ -158,7 +266,11 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en-us": "Should fail - lowercase region code"
+                "locales": {
+                    "en-us": {
+                        "content": "Should fail - lowercase region code"
+                    }
+                }
             }
         }"#;
 
@@ -171,11 +283,58 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "eng-US": "Should fail - three-letter language code"
+                "locales": {
+                    "eng-US": {
+                        "content": "Should fail - three-letter language code"
+                    }
+                }
             }
         }"#;
 
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_manifest_with_both_content_and_import_uri() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "description": {
+                "locales": {
+                    "en-US": {
+                        "content": "Test Description",
+                        "import_uri": "http://example.com/desc_en.md"
+                    }
+                }
+            }
+        }"#;
+
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        println!("Actual error: {error_msg}");
+        assert!(error_msg.contains("cannot have both"));
+    }
+
+    #[test]
+    fn test_manifest_with_neither_content_nor_import_uri() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "description": {
+                "locales": {
+                    "en-US": {}
+                }
+            }
+        }"#;
+
+        let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        println!("Actual error: {error_msg}");
+        assert!(error_msg.contains("must have either"));
     }
 }

@@ -4,16 +4,28 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::HashMap;
+
 use std::sync::Arc;
 
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::manifest::Manifest;
 use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
 use ten_rust::pkg_info::PkgInfo;
+
+pub const BASIC_SCOPE: [&str; 9] = [
+    "type",
+    "name",
+    "version",
+    "supports",
+    "dependencies",
+    "hash",
+    "downloadUrl",
+    "contentFormat",
+    "tags",
+];
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgRegistryInfo {
@@ -36,10 +48,13 @@ pub struct PkgRegistryInfo {
     pub tags: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<HashMap<String, String>>,
+    pub description: Option<ten_rust::pkg_info::manifest::LocalizedField>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub display_name: Option<HashMap<String, String>>,
+    pub display_name: Option<ten_rust::pkg_info::manifest::LocalizedField>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub readme: Option<ten_rust::pkg_info::manifest::LocalizedField>,
 }
 
 mod dependencies_conversion {
@@ -73,8 +88,53 @@ pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let pkg_info =
+    let mut pkg_info =
         PkgInfo::from_metadata(download_url, manifest, &None).await?;
+
+    let mut updated_manifest = pkg_info.manifest.clone();
+
+    // Check and resolve display_name content
+    if let Some(ref mut display_name) = updated_manifest.display_name {
+        for (_locale, locale_content) in display_name.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content =
+                    locale_content.get_content().await.with_context(|| {
+                        "Failed to get content for display_name"
+                    })?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Check and resolve description content
+    if let Some(ref mut description) = updated_manifest.description {
+        for (_locale, locale_content) in description.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content = locale_content
+                    .get_content()
+                    .await
+                    .with_context(|| "Failed to get content for description")?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Check and resolve readme content
+    if let Some(ref mut readme) = updated_manifest.readme {
+        for (_locale, locale_content) in readme.locales.iter_mut() {
+            if locale_content.content.is_none() {
+                let content = locale_content
+                    .get_content()
+                    .await
+                    .with_context(|| "Failed to get content for readme")?;
+                locale_content.content = Some(content);
+            }
+        }
+    }
+
+    // Update the pkg_info with the modified manifest
+    pkg_info.manifest = updated_manifest;
+
     Ok((&pkg_info).into())
 }
 
@@ -94,6 +154,7 @@ impl From<&PkgInfo> for PkgRegistryInfo {
             tags: pkg_info.manifest.tags.clone(),
             description: pkg_info.manifest.description.clone(),
             display_name: pkg_info.manifest.display_name.clone(),
+            readme: pkg_info.manifest.readme.clone(),
         }
     }
 }
@@ -113,6 +174,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                 version: pkg_registry_info.basic_info.version.clone(),
                 description: pkg_registry_info.description.clone(),
                 display_name: pkg_registry_info.display_name.clone(),
+                readme: pkg_registry_info.readme.clone(),
                 dependencies: Some(pkg_registry_info.dependencies.clone()),
                 dev_dependencies: None,
                 tags: pkg_registry_info.tags.clone(),
@@ -184,6 +246,15 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                             "display_name".to_string(),
                             display_name_json,
                         );
+                    }
+
+                    // Add readme if available.
+                    if let Some(ref readme) = pkg_registry_info.readme {
+                        let readme_json = serde_json::to_value(readme)
+                            .unwrap_or(serde_json::Value::Object(
+                                serde_json::Map::new(),
+                            ));
+                        map.insert("readme".to_string(), readme_json);
                     }
 
                     map

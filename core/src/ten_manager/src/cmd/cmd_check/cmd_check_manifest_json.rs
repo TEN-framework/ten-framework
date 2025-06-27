@@ -10,7 +10,8 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use ten_rust::{
-    fs::read_file_to_string, json_schema::ten_validate_manifest_json_string,
+    json_schema::ten_validate_manifest_json_string,
+    utils::fs::read_file_to_string,
 };
 
 use crate::{

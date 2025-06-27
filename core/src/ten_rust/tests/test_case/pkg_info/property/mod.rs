@@ -19,8 +19,8 @@ mod tests {
         pkg_info::{localhost, property::parse_property_from_str},
     };
 
-    #[test]
-    fn test_parse_property_with_known_fields() {
+    #[tokio::test]
+    async fn test_parse_property_with_known_fields() {
         let json_data = r#"
         {
             "ten": {
@@ -39,6 +39,7 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
 
         assert!(property.ten.is_some());
@@ -50,8 +51,8 @@ mod tests {
         assert!(property.all_fields.contains_key("ten"));
     }
 
-    #[test]
-    fn test_parse_property_with_additional_fields() {
+    #[tokio::test]
+    async fn test_parse_property_with_additional_fields() {
         let json_data = r#"
         {
             "ten": {
@@ -71,6 +72,7 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
 
         assert!(property.ten.is_some());
@@ -86,8 +88,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_dump_property_without_localhost_app_in_graph() {
+    #[tokio::test]
+    async fn test_dump_property_without_localhost_app_in_graph() {
         let mut graphs_cache = HashMap::new();
 
         let json_str = include_str!("../../../test_data/property.json");
@@ -99,6 +101,7 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
         assert!(property.ten.is_some());
 
@@ -117,8 +120,8 @@ mod tests {
         assert_eq!(saved_content.find(localhost()), None);
     }
 
-    #[test]
-    fn test_dump_property_with_msg_conversion() {
+    #[tokio::test]
+    async fn test_dump_property_with_msg_conversion() {
         let prop_str = include_str!(
             "../../../test_data/dump_property_with_msg_conversion.json"
         );
@@ -132,6 +135,7 @@ mod tests {
             None,
             None,
         )
+        .await
         .unwrap();
         assert!(property.ten.is_some());
 

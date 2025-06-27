@@ -34,7 +34,7 @@ pub async fn inject_all_pkgs_for_mock(
     let mut system_pkg_info = Vec::new();
 
     for metadata_json in all_pkgs_json {
-        let manifest = Manifest::create_from_str(&metadata_json.1).await?;
+        let manifest = Manifest::create_from_str(&metadata_json.1)?;
 
         let property = parse_property_from_str(
             &metadata_json.2,
@@ -42,7 +42,8 @@ pub async fn inject_all_pkgs_for_mock(
             Some(metadata_json.0.clone()),
             Some(manifest.type_and_name.pkg_type),
             Some(manifest.type_and_name.name.clone()),
-        )?;
+        )
+        .await?;
 
         let pkg_info = PkgInfo::from_metadata(
             &metadata_json.0,

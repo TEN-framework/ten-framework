@@ -48,36 +48,64 @@
       "minLength": 1
     },
     "localeString": {
+      // Adhere to the BCP47 standard.
       "type": "string",
       "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
     },
-    "description": {
+    "localizedText": {
       "type": "object",
-      "propertyNames": {
-        "$ref": "#/$defs/localeString"
-      },
-      "patternProperties": {
-        "^[a-z]{2}(-[A-Z]{2})?$": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
       "additionalProperties": false,
-      "minProperties": 1
+      "required": [
+        "locales"
+      ],
+      "properties": {
+        "locales": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/localeString"
+          },
+          "patternProperties": {
+            "^[a-z]{2}(-[A-Z]{2})?$": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "import_uri": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "minLength": 1
+                }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "required": [
+                    "import_uri"
+                  ]
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      }
+    },
+    "description": {
+      "$ref": "#/$defs/localizedText"
     },
     "displayName": {
-      "type": "object",
-      "propertyNames": {
-        "$ref": "#/$defs/localeString"
-      },
-      "patternProperties": {
-        "^[a-z]{2}(-[A-Z]{2})?$": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false,
-      "minProperties": 1
+      "$ref": "#/$defs/localizedText"
+    },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
     },
     "alphanumericCharacters": {
       "type": "string",
@@ -436,6 +464,9 @@
     },
     "display_name": {
       "$ref": "#/$defs/displayName"
+    },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
     },
     "tags": {
       "type": "array",

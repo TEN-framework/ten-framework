@@ -4,25 +4,36 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { z } from "zod";
+
+import { ZodProvider } from "@autoform/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowBigRightIcon, EditIcon } from "lucide-react";
+import * as React from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ZodProvider } from "@autoform/zod";
-import { EditIcon, ArrowBigRightIcon } from "lucide-react";
-
+import { z } from "zod";
+import { useFetchAddons } from "@/api/services/addons";
 import {
-  AddNodePayloadSchema,
-  AddConnectionPayloadSchema,
-  EConnectionType,
-  UpdateNodePropertyPayloadSchema,
-  IGraph,
-  EMsgDirection,
-} from "@/types/graphs";
-import { Button } from "@/components/ui/Button";
+  retrieveExtensionDefaultProperty,
+  retrieveExtensionSchema,
+  useFetchExtSchema,
+} from "@/api/services/extension";
+import {
+  postAddConnection,
+  postAddNode,
+  postReplaceNode,
+  postUpdateNodeProperty,
+  retrieveGraphConnections,
+  retrieveGraphNodes,
+  useGraphs,
+} from "@/api/services/graphs";
+import { useCompatibleMessages } from "@/api/services/messages";
+import { SpinnerLoading } from "@/components/Status/Loading";
+import { AutoForm } from "@/components/ui/autoform";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Combobox } from "@/components/ui/Combobox";
 import {
   Form,
   FormControl,
@@ -32,6 +43,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/Form";
+import { Input } from "@/components/ui/Input";
 import {
   Select,
   SelectContent,
@@ -41,39 +53,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Input } from "@/components/ui/Input";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import { Combobox } from "@/components/ui/Combobox";
-import {
-  useGraphs,
-  postAddNode,
-  retrieveGraphNodes,
-  retrieveGraphConnections,
-  postAddConnection,
-  postUpdateNodeProperty,
-  postReplaceNode,
-} from "@/api/services/graphs";
-import {
-  retrieveExtensionSchema,
-  useFetchExtSchema,
-  retrieveExtensionDefaultProperty,
-} from "@/api/services/extension";
-import { useFetchAddons } from "@/api/services/addons";
-import { useCompatibleMessages } from "@/api/services/messages";
-import {
-  generateRawNodes,
-  generateRawEdges,
-  updateNodesWithConnections,
-  updateNodesWithAddonInfo,
-  generateNodesAndEdges,
-  syncGraphNodeGeometry,
-} from "@/flow/graph";
-import { useAppStore, useDialogStore, useFlowStore } from "@/store";
-import type { TCustomNode } from "@/types/flow";
-import { AutoForm } from "@/components/ui/autoform";
 // eslint-disable-next-line max-len
 import { convertExtensionPropertySchema2ZodSchema } from "@/components/Widget/utils";
+import {
+  generateNodesAndEdges,
+  generateRawEdges,
+  generateRawNodes,
+  syncGraphNodeGeometry,
+  updateNodesWithAddonInfo,
+  updateNodesWithConnections,
+} from "@/flow/graph";
 import { cn } from "@/lib/utils";
+import { useAppStore, useDialogStore, useFlowStore } from "@/store";
+import type { TCustomNode } from "@/types/flow";
+import {
+  AddConnectionPayloadSchema,
+  AddNodePayloadSchema,
+  EConnectionType,
+  EMsgDirection,
+  type IGraph,
+  UpdateNodePropertyPayloadSchema,
+} from "@/types/graphs";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const resetNodesAndEdgesByGraph = async (graph: IGraph) => {
@@ -135,7 +135,7 @@ const GraphAddNodePropertyField = (props: {
           appBaseDir: currentWorkspace?.app?.base_dir ?? "",
           addonName: addon,
         });
-        const propertySchema = addonSchema.property;
+        const propertySchema = addonSchema.property?.properties;
         if (!propertySchema) {
           // toast.error(t("popup.graph.noPropertySchema"));
           return;
@@ -188,7 +188,7 @@ const GraphAddNodePropertyField = (props: {
               )
             }
           >
-            <div className="flex flex-row gap-2 w-full justify-end">
+            <div className="flex w-full flex-row justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -207,7 +207,7 @@ const GraphAddNodePropertyField = (props: {
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full h-fit">
+    <div className="flex h-fit w-full flex-col gap-2">
       <Button
         variant="outline"
         disabled={isSchemaEmptyMemo || isLoading}
@@ -339,7 +339,7 @@ export const GraphAddNodeWidget = (props: {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 w-full h-full overflow-y-auto px-2"
+        className="h-full w-full space-y-4 overflow-y-auto px-2"
       >
         <FormField
           control={form.control}
@@ -445,7 +445,7 @@ export const GraphAddNodeWidget = (props: {
         )}
 
         {remoteCheckErrorMessage && (
-          <div className="text-red-500 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 text-red-500">
             <p>
               {isReplaceNode
                 ? t("popup.graph.replaceNodeFailed")
@@ -627,7 +627,7 @@ export const GraphAddConnectionWidget = (props: {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 w-full h-full overflow-y-auto px-2"
+        className="h-full w-full space-y-4 overflow-y-auto px-2"
       >
         <FormField
           control={form.control}
@@ -831,7 +831,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
           addonName: node.data.addon,
         });
         const propertySchemaEntries = convertExtensionPropertySchema2ZodSchema(
-          schema.property ?? {}
+          schema.property?.properties ?? {}
         );
         setPropertySchemaEntries(propertySchemaEntries);
       } catch (error) {
@@ -891,13 +891,13 @@ export const GraphUpdateNodePropertyWidget = (props: {
           withSubmit
           formProps={{
             className: cn(
-              "flex flex-col gap-4 overflow-y-auto px-1 h-full",
+              "flex h-full flex-col gap-4 overflow-y-auto px-1",
               isSubmitting && "disabled"
             ),
           }}
         />
       ) : (
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-gray-500 text-sm">
           {t("popup.graph.noPropertySchema")}
         </div>
       )}
@@ -1163,7 +1163,7 @@ export const GraphConnectionCreationWidget = (props: {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4 w-full h-full overflow-y-auto px-2"
+          className="h-full w-full space-y-4 overflow-y-auto px-2"
         >
           <FormField
             control={form.control}
@@ -1206,7 +1206,7 @@ export const GraphConnectionCreationWidget = (props: {
             )}
           />
           <div className="flex items-center justify-between gap-4">
-            <div className="bg-muted/50 rounded-md p-4 space-y-4  flex-1">
+            <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
               <FormField
                 control={form.control}
                 name="src_extension"
@@ -1286,8 +1286,8 @@ export const GraphConnectionCreationWidget = (props: {
               />
               {!!src_node && <Inner />}
             </div>
-            <ArrowBigRightIcon className="size-4 mx-auto" />
-            <div className="bg-muted/50 rounded-md p-4 space-y-4 flex-1">
+            <ArrowBigRightIcon className="mx-auto size-4" />
+            <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
               <FormField
                 control={form.control}
                 name="dest_extension"
@@ -1368,7 +1368,7 @@ export const GraphConnectionCreationWidget = (props: {
               {!!dest_node && <Inner />}
             </div>
           </div>
-          <div className="w-full flex">
+          <div className="flex w-full">
             <Button type="submit" disabled={isSubmitting} className="ml-auto">
               {isSubmitting && <SpinnerLoading className="size-4" />}
               {t("popup.graph.addConnection")}
