@@ -92,6 +92,9 @@ static bool ten_raw_cmd_start_graph_as_msg_get_graph_from_json(
       field->field_value && ten_value_check_integrity(field->field_value),
       "Should not happen.");
 
+  // TODO(xilin): We should also read the 'exposed_messages' and
+  // 'exposed_properties' fields, so that we can support sending messages
+  // directly to the graph later.
   if (ten_c_string_is_equal(field->field_name, TEN_STR_NODES) ||
       ten_c_string_is_equal(field->field_name, TEN_STR_CONNECTIONS)) {
     ten_json_t *json = (ten_json_t *)user_data;

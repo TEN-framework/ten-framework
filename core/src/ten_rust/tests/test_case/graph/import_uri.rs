@@ -142,10 +142,10 @@ mod tests {
                         extension: Some("test_ext".to_string()),
                         subgraph: None,
                     },
-                    cmd: Some(vec![GraphMessageFlow {
-                        name: "test_cmd".to_string(),
-                        dest: vec![],
-                    }]),
+                    cmd: Some(vec![GraphMessageFlow::new(
+                        "test_cmd".to_string(),
+                        vec![],
+                    )]),
                     data: None,
                     audio_frame: None,
                     video_frame: None,

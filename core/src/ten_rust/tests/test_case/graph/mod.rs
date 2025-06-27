@@ -533,4 +533,21 @@ mod tests {
         // This should fail during validation because addon field is missing
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_graph_connection_with_source() {
+        let graph_str =
+            include_str!("../../test_data/graph_connection_with_source.json");
+
+        let graph = Graph::from_str_with_base_dir(graph_str, None).await;
+
+        assert!(graph.is_ok());
+
+        let connections = graph.unwrap().connections.unwrap();
+        let cmd =
+            connections.first().unwrap().cmd.as_ref().unwrap().first().unwrap();
+        let source = &cmd.source;
+        assert_eq!(source.len(), 1);
+        assert_eq!(source[0].loc.extension, Some("another_ext".to_string()));
+    }
 }

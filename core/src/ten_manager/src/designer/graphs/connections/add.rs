@@ -69,10 +69,10 @@ fn create_graph_connection(
     };
 
     // Create message flow
-    let message_flow = GraphMessageFlow {
-        name: request_payload.msg_name.clone(),
-        dest: vec![destination],
-    };
+    let message_flow = GraphMessageFlow::new(
+        request_payload.msg_name.clone(),
+        vec![destination],
+    );
 
     // Create connection
     let mut connection = GraphConnection {

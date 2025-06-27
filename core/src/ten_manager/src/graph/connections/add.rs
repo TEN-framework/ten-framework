@@ -241,8 +241,7 @@ pub async fn graph_add_connection(
     }
 
     // Create a message flow.
-    let message_flow =
-        GraphMessageFlow { name: msg_name, dest: vec![destination] };
+    let message_flow = GraphMessageFlow::new(msg_name, vec![destination]);
 
     // Get or create a connection for the source node and add the message
     // flow.
