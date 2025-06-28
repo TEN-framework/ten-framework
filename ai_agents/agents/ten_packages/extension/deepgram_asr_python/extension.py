@@ -110,30 +110,33 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
     async def _on_message(self, _, result):
-        sentence = result.channel.alternatives[0].transcript
+        try:
+            sentence = result.channel.alternatives[0].transcript
 
-        if not sentence:
-            return
+            if not sentence:
+                return
 
-        start_ms = int(result.start * 1000)  # convert seconds to milliseconds
-        duration_ms = int(
-            result.duration * 1000
-        )  # convert seconds to milliseconds
+            start_ms = int(result.start * 1000)  # convert seconds to milliseconds
+            duration_ms = int(
+                result.duration * 1000
+            )  # convert seconds to milliseconds
 
-        is_final = result.is_final
-        self.ten_env.log_info(
-            f"deepgram got sentence: [{sentence}], is_final: {is_final}"
-        )
+            is_final = result.is_final
+            self.ten_env.log_info(
+                f"deepgram got sentence: [{sentence}], is_final: {is_final}"
+            )
 
-        transcription = UserTranscription(
-            text=sentence,
-            final=is_final,
-            start_ms=start_ms,
-            duration_ms=duration_ms,
-            language=self.config.language,
-            words=[],
-        )
-        await self.send_asr_transcription(transcription)
+            transcription = UserTranscription(
+                text=sentence,
+                final=is_final,
+                start_ms=start_ms,
+                duration_ms=duration_ms,
+                language=self.config.language,
+                words=[],
+            )
+            await self.send_asr_transcription(transcription)
+        except Exception as e:
+            self.ten_env.log_error(f"Error processing message: {e}")
 
     async def start_connection(self) -> None:
         self.ten_env.log_info("start and listen deepgram")
@@ -189,11 +192,14 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_info("successfully connected to deepgram")
 
     async def stop_connection(self) -> None:
-        if self.client:
-            await self.client.finish()
-            self.client = None
-            self.connected = False
-            self.ten_env.log_info("deepgram connection stopped")
+        try:
+            if self.client:
+                await self.client.finish()
+                self.client = None
+                self.connected = False
+                self.ten_env.log_info("deepgram connection stopped")
+        except Exception as e:
+            self.ten_env.log_error(f"Error stopping deepgram connection: {e}")
 
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
