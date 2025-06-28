@@ -1,6 +1,8 @@
 {
-  "_ten": {
-    "log_level": 3,
+  "ten": {
+    "log": {
+      "level": 3
+    },
     "predefined_graphs": [
       {
         "name": "va_openai_azure_fashionai",
@@ -798,7 +800,7 @@
                       "keep_original": true,
                       "rules": [
                         {
-                          "path": "_ten.name",
+                          "path": "ten.name",
                           "conversion_mode": "fixed_value",
                           "value": "flush"
                         }

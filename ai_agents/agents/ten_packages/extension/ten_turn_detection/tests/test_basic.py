@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import Optional
-from ten import (
+from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Cmd,

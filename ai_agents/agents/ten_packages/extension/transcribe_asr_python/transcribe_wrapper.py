@@ -1,6 +1,6 @@
 import asyncio
 
-from ten import TenEnv, Data
+from ten_runtime import TenEnv, Data
 
 from amazon_transcribe.auth import StaticCredentialResolver
 from amazon_transcribe.client import TranscribeStreamingClient
@@ -124,7 +124,7 @@ class AsyncTranscribeWrapper:
                 if not frame_buf:
                     self.ten.log_warn("send_frame: empty pcm_frame detected.")
                     continue
-                stream_id = pcm_frame.get_property_int("stream_id")
+                stream_id, _ = pcm_frame.get_property_int("stream_id")
                 if not self.stream:
                     self.ten.log_info("lazy init stream.")
                     if not await self.create_stream(stream_id):

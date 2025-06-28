@@ -1,9 +1,12 @@
-from ten import (
-    AsyncExtension,
+from typing import Any, Dict, List
+from pydantic import BaseModel
+from ten_ai_base.asr import AsyncASRBaseExtension
+from ten_ai_base.message import ErrorMessage, ErrorMessageVendorInfo, ModuleType
+from ten_ai_base.transcription import UserTranscription
+from ten_runtime import (
     AsyncTenEnv,
-    Cmd,
-    Data,
     AudioFrame,
+    Cmd,
     StatusCode,
     CmdResult,
 )
@@ -16,18 +19,11 @@ from deepgram import (
     LiveTranscriptionEvents,
     LiveOptions,
 )
-from dataclasses import dataclass
-
-from ten_ai_base.config import BaseConfig
-
-DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
-DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
-DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
-DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
+from dataclasses import dataclass, field
 
 
 @dataclass
-class DeepgramASRConfig(BaseConfig):
+class DeepgramASRConfig(BaseModel):
     api_key: str = ""
     language: str = "en-US"
     model: str = "nova-2"
@@ -37,72 +33,121 @@ class DeepgramASRConfig(BaseConfig):
     encoding: str = "linear16"
     interim_results: bool = True
     punctuate: bool = True
+    params: Dict[str, Any] = field(default_factory=dict)
+    black_list_params: List[str] = field(
+        default_factory=lambda: [
+            "channels",
+            "encoding",
+            "multichannel",
+            "sample_rate",
+            "callback_method",
+            "callback",
+        ]
+    )
+
+    def is_black_list_params(self, key: str) -> bool:
+        return key in self.black_list_params
 
 
-class DeepgramASRExtension(AsyncExtension):
+class DeepgramASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
 
-        self.stopped = False
         self.connected = False
         self.client: AsyncListenWebSocketClient = None
         self.config: DeepgramASRConfig = None
-        self.ten_env: AsyncTenEnv = None
-        self.loop = None
-        self.stream_id = -1
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("DeepgramASRExtension on_init")
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_start")
-        self.loop = asyncio.get_event_loop()
-        self.ten_env = ten_env
-
-        self.config = await DeepgramASRConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"config: {self.config}")
-
-        if not self.config.api_key:
-            ten_env.log_error("get property api_key")
-            return
-
-        self.loop.create_task(self._start_listen())
-
-        ten_env.log_info("starting async_deepgram_wrapper thread")
-
-    async def on_audio_frame(self, _: AsyncTenEnv, frame: AudioFrame) -> None:
-        frame_buf = frame.get_buf()
-
-        if not frame_buf:
-            self.ten_env.log_warn("send_frame: empty pcm_frame detected.")
-            return
-
-        if not self.connected:
-            self.ten_env.log_debug("send_frame: deepgram not connected.")
-            return
-
-        self.stream_id = frame.get_property_int("stream_id")
-        if self.client:
-            await self.client.send(frame_buf)
-
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_stop")
-
-        self.stopped = True
-
-        if self.client:
-            await self.client.finish()
-
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_json = cmd.to_json()
+        cmd_json, _ = cmd.get_property_to_json()
         ten_env.log_info(f"on_cmd json: {cmd_json}")
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
-    async def _start_listen(self) -> None:
+    async def _handle_reconnect(self):
+        await asyncio.sleep(0.2)
+        await self.start_connection()
+
+    def _on_close(self, *args, **kwargs):
+        self.ten_env.log_info(
+            f"deepgram event callback on_close: {args}, {kwargs}"
+        )
+        self.connected = False
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Deepgram connection closed unexpectedly. Reconnecting..."
+            )
+            asyncio.create_task(self._handle_reconnect())
+
+    async def _on_open(self, _, event):
+        self.ten_env.log_info(f"deepgram event callback on_open: {event}")
+        self.connected = True
+
+    async def _on_error(self, _, error):
+        self.ten_env.log_error(
+            f"deepgram event callback on_error: {error.to_json()}"
+        )
+
+        if self.on_error:
+            error_message = ErrorMessage(
+                code=-1,
+                message=error.to_json(),
+                turn_id=0,
+                module=ModuleType.STT,
+            )
+
+            await self.send_asr_error(
+                error_message,
+                ErrorMessageVendorInfo(
+                    vendor="deepgram",
+                    code=error.code,
+                    message=error.message,
+                ),
+            )
+
+    async def _on_message(self, _, result):
+        sentence = result.channel.alternatives[0].transcript
+
+        if not sentence:
+            return
+
+        start_ms = int(result.start * 1000)  # convert seconds to milliseconds
+        duration_ms = int(
+            result.duration * 1000
+        )  # convert seconds to milliseconds
+
+        is_final = result.is_final
+        self.ten_env.log_info(
+            f"deepgram got sentence: [{sentence}], is_final: {is_final}"
+        )
+
+        transcription = UserTranscription(
+            text=sentence,
+            final=is_final,
+            start_ms=start_ms,
+            duration_ms=duration_ms,
+            language=self.config.language,
+            words=[],
+        )
+        await self.send_asr_transcription(transcription)
+
+    async def start_connection(self) -> None:
         self.ten_env.log_info("start and listen deepgram")
+
+        if self.config is None:
+            config_json, _ = await self.ten_env.get_property_to_json("")
+            self.config = DeepgramASRConfig.model_validate_json(config_json)
+            self.ten_env.log_debug(f"config: {self.config}")
+
+            if not self.config.api_key:
+                self.ten_env.log_error("get property api_key")
+                return
+
+        await self.stop_connection()
 
         self.client = AsyncListenWebSocketClient(
             config=DeepgramClientOptions(
@@ -110,42 +155,10 @@ class DeepgramASRExtension(AsyncExtension):
             )
         )
 
-        async def on_open(_, event):
-            self.ten_env.log_info(f"deepgram event callback on_open: {event}")
-            self.connected = True
-
-        async def on_close(_, event):
-            self.ten_env.log_info(f"deepgram event callback on_close: {event}")
-            self.connected = False
-            if not self.stopped:
-                self.ten_env.log_warn(
-                    "Deepgram connection closed unexpectedly. Reconnecting..."
-                )
-                await asyncio.sleep(0.2)
-                self.loop.create_task(self._start_listen())
-
-        async def on_message(_, result):
-            sentence = result.channel.alternatives[0].transcript
-
-            if len(sentence) == 0:
-                return
-
-            is_final = result.is_final
-            self.ten_env.log_info(
-                f"deepgram got sentence: [{sentence}], is_final: {is_final}, stream_id: {self.stream_id}"
-            )
-
-            await self._send_text(
-                text=sentence, is_final=is_final, stream_id=self.stream_id
-            )
-
-        async def on_error(_, error):
-            self.ten_env.log_error(f"deepgram event callback on_error: {error}")
-
-        self.client.on(LiveTranscriptionEvents.Open, on_open)
-        self.client.on(LiveTranscriptionEvents.Close, on_close)
-        self.client.on(LiveTranscriptionEvents.Transcript, on_message)
-        self.client.on(LiveTranscriptionEvents.Error, on_error)
+        self.client.on(LiveTranscriptionEvents.Open, self._on_open)
+        self.client.on(LiveTranscriptionEvents.Close, self._on_close)
+        self.client.on(LiveTranscriptionEvents.Transcript, self._on_message)
+        self.client.on(LiveTranscriptionEvents.Error, self._on_error)
 
         options = LiveOptions(
             language=self.config.language,
@@ -157,28 +170,42 @@ class DeepgramASRExtension(AsyncExtension):
             punctuate=self.config.punctuate,
         )
 
+        # Update options with params
+        if self.config.params:
+            for key, value in self.config.params.items():
+                # Check if it's a valid option and not in black list
+                if hasattr(
+                    options, key
+                ) and not self.config.is_black_list_params(key):
+                    setattr(self.options, key, value)
+
         self.ten_env.log_info(f"deepgram options: {options}")
         # connect to websocket
         result = await self.client.start(options)
         if not result:
             self.ten_env.log_error("failed to connect to deepgram")
-            await asyncio.sleep(0.2)
-            self.loop.create_task(self._start_listen())
+            await self._handle_reconnect()
         else:
             self.ten_env.log_info("successfully connected to deepgram")
 
-    async def _send_text(
-        self, text: str, is_final: bool, stream_id: str
+    async def stop_connection(self) -> None:
+        if self.client:
+            await self.client.finish()
+            self.client = None
+            self.connected = False
+            self.ten_env.log_info("deepgram connection stopped")
+
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
     ) -> None:
-        stable_data = Data.create("text_data")
-        stable_data.set_property_bool(
-            DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final
-        )
-        stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        stable_data.set_property_int(
-            DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id
-        )
-        stable_data.set_property_bool(
-            DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final
-        )
-        asyncio.create_task(self.ten_env.send_data(stable_data))
+        frame_buf = frame.get_buf()
+        return await self.client.send(frame_buf)
+
+    def is_connected(self) -> bool:
+        return self.connected and self.client is not None
+
+    async def finalize(self, session_id: str | None) -> None:
+        pass
+
+    def input_audio_sample_rate(self) -> int:
+        return self.config.sample_rate

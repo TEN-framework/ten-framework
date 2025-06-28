@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"ten_framework/ten"
+	ten "ten_framework/ten_runtime"
 )
 
 // Message colllector represents the text output result
@@ -109,12 +109,12 @@ func (p *agoraRtmWrapperExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 		if r := recover(); r != nil {
 			tenEnv.LogError(fmt.Sprintf("OnCmd panic: %v", r))
 		}
-		cmdResult, err := ten.NewCmdResult(ten.StatusCodeOk)
+		cmdResult, err := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 		if err != nil {
 			tenEnv.LogError(fmt.Sprintf("failed to create cmd result: %v", err))
 			return
 		}
-		tenEnv.ReturnResult(cmdResult, cmd, nil)
+		tenEnv.ReturnResult(cmdResult, nil)
 	}()
 	cmdName, err := cmd.GetName()
 	if err != nil {
