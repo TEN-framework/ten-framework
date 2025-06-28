@@ -44,9 +44,9 @@ mod tests {
                     app: None,
                     subgraph: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "B".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "B".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             extension: Some("ext_d".to_string()),
                             subgraph: None,
@@ -54,7 +54,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 video_frame: None,
                 audio_frame: None,

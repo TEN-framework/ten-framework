@@ -55,9 +55,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "B".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "B".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: Some("subgraph_1_ext_d".to_string()),
@@ -65,7 +65,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -102,9 +103,9 @@ mod tests {
                     extension: Some("ext_c".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "B".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "B".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: Some("ext_d".to_string()),
@@ -112,7 +113,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -232,9 +234,9 @@ mod tests {
                         extension: Some("ext_a".to_string()),
                         subgraph: None,
                     },
-                    cmd: Some(vec![connection::GraphMessageFlow {
-                        name: "B".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    cmd: Some(vec![connection::GraphMessageFlow::new(
+                        "B".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: None,
@@ -242,7 +244,8 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
+                    vec![],
+                    )]),
                     data: None,
                     audio_frame: None,
                     video_frame: None,
@@ -255,9 +258,9 @@ mod tests {
                         extension: None,
                         subgraph: Some("subgraph_2".to_string()),
                     },
-                    cmd: Some(vec![connection::GraphMessageFlow {
-                        name: "H".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    cmd: Some(vec![connection::GraphMessageFlow::new(
+                        "H".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: Some("ext_a".to_string()),
@@ -265,7 +268,8 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
+                    vec![],
+                    )]),
                     data: None,
                     audio_frame: None,
                     video_frame: None,
@@ -395,9 +399,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "NonExistentCmd".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "NonExistentCmd".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: None,
@@ -405,7 +409,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -486,9 +491,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "B".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "B".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: None,
@@ -496,7 +501,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -571,9 +577,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "TestCmd".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "TestCmd".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: Some(
@@ -583,7 +589,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -623,9 +630,9 @@ mod tests {
                     extension: Some("ext_x".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "InternalCmd".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "InternalCmd".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: Some("subgraph_2_ext_z".to_string()),
@@ -633,7 +640,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -670,9 +678,9 @@ mod tests {
                     extension: Some("ext_y".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "DeepCmd".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "DeepCmd".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: Some("ext_z".to_string()),
@@ -680,7 +688,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -806,9 +815,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![connection::GraphMessageFlow {
-                    name: "TestCmd".to_string(),
-                    dest: vec![connection::GraphDestination {
+                cmd: Some(vec![connection::GraphMessageFlow::new(
+                    "TestCmd".to_string(),
+                    vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
                             extension: None,
@@ -816,7 +825,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -1005,9 +1015,9 @@ mod tests {
                         extension: Some("ext_a".to_string()),
                         subgraph: None,
                     },
-                    cmd: Some(vec![connection::GraphMessageFlow {
-                        name: "TestCmd".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    cmd: Some(vec![connection::GraphMessageFlow::new(
+                        "TestCmd".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: None,
@@ -1015,10 +1025,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    data: Some(vec![connection::GraphMessageFlow {
-                        name: "TestData".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    data: Some(vec![connection::GraphMessageFlow::new(
+                        "TestData".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: None,
@@ -1026,10 +1037,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    audio_frame: Some(vec![connection::GraphMessageFlow {
-                        name: "TestAudio".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    audio_frame: Some(vec![connection::GraphMessageFlow::new(
+                        "TestAudio".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: None,
@@ -1037,10 +1049,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    video_frame: Some(vec![connection::GraphMessageFlow {
-                        name: "TestVideo".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    video_frame: Some(vec![connection::GraphMessageFlow::new(
+                        "TestVideo".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: None,
@@ -1048,7 +1061,8 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
+                    vec![],
+                    )]),
                 },
                 // subgraph_3 sends various message types to ext_a
                 GraphConnection {
@@ -1057,9 +1071,9 @@ mod tests {
                         extension: None,
                         subgraph: Some("subgraph_3".to_string()),
                     },
-                    cmd: Some(vec![connection::GraphMessageFlow {
-                        name: "ResponseCmd".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    cmd: Some(vec![connection::GraphMessageFlow::new(
+                        "ResponseCmd".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: Some("ext_a".to_string()),
@@ -1067,10 +1081,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    data: Some(vec![connection::GraphMessageFlow {
-                        name: "ResponseData".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    data: Some(vec![connection::GraphMessageFlow::new(
+                        "ResponseData".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: Some("ext_a".to_string()),
@@ -1078,10 +1093,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    audio_frame: Some(vec![connection::GraphMessageFlow {
-                        name: "ResponseAudio".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    audio_frame: Some(vec![connection::GraphMessageFlow::new(
+                        "ResponseAudio".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: Some("ext_a".to_string()),
@@ -1089,10 +1105,11 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
-                    video_frame: Some(vec![connection::GraphMessageFlow {
-                        name: "ResponseVideo".to_string(),
-                        dest: vec![connection::GraphDestination {
+                    vec![],
+                    )]),
+                    video_frame: Some(vec![connection::GraphMessageFlow::new(
+                        "ResponseVideo".to_string(),
+                        vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
                                 extension: Some("ext_a".to_string()),
@@ -1100,7 +1117,8 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    }]),
+                    vec![],
+                    )]),
                 },
             ]),
             exposed_messages: None,

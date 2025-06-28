@@ -65,7 +65,7 @@
         "object"
       ]
     },
-    "cmdDest": {
+    "msgDest": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -79,108 +79,7 @@
           "$ref": "#/$defs/alphanumericCharacters"
         },
         "msg_conversion": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "type",
-            "rules"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": [
-                "per_property"
-              ]
-            },
-            "keep_original": {
-              "type": "boolean"
-            },
-            "rules": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "path": {
-                    "$ref": "#/$defs/path_in_msg_conversion"
-                  },
-                  "conversion_mode": {
-                    "type": "string",
-                    "enum": [
-                      "fixed_value",
-                      "from_original"
-                    ]
-                  },
-                  "value": {
-                    "oneOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "number"
-                      }
-                    ]
-                  },
-                  "original_path": {
-                    "$ref": "#/$defs/notEmptyString"
-                  }
-                },
-                "allOf": [
-                  {
-                    "if": {
-                      "properties": {
-                        "conversion_mode": {
-                          "const": "fixed_value"
-                        }
-                      },
-                      "required": [
-                        "conversion_mode"
-                      ]
-                    },
-                    "then": {
-                      "required": [
-                        "value"
-                      ],
-                      "not": {
-                        "required": [
-                          "original_path"
-                        ]
-                      }
-                    },
-                    "else": {
-                      "if": {
-                        "properties": {
-                          "conversion_mode": {
-                            "const": "from_original"
-                          }
-                        },
-                        "required": [
-                          "conversion_mode"
-                        ]
-                      },
-                      "then": {
-                        "required": [
-                          "original_path"
-                        ],
-                        "not": {
-                          "required": [
-                            "value"
-                          ]
-                        }
-                      }
-                    }
-                  }
-                ]
-              }
-            },
-            "result": {
-              "$ref": "#/$defs/msgConversion"
-            }
-          }
+          "$ref": "#/$defs/msgConversion"
         }
       },
       "oneOf": [
@@ -206,7 +105,7 @@
         }
       ]
     },
-    "dataDest": {
+    "msgSource": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -218,9 +117,6 @@
         },
         "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
-        },
-        "msg_conversion": {
-          "$ref": "#/$defs/msgConversion"
         }
       },
       "oneOf": [
@@ -497,6 +393,9 @@
               }
             ]
           }
+        },
+        "result": {
+          "$ref": "#/$defs/msgConversion"
         }
       }
     },
@@ -505,17 +404,30 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "dest"
-        ],
+        "required": [],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
           },
           "dest": {
-            "$ref": "#/$defs/dataDests"
+            "$ref": "#/$defs/msgDests"
+          },
+          "source": {
+            "$ref": "#/$defs/msgSources"
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "dest"
+            ]
+          },
+          {
+            "required": [
+              "source"
+            ]
+          }
+        ]
       }
     },
     "extensionCmdsInGraph": {
@@ -524,31 +436,45 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "name",
-          "dest"
+          "name"
         ],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
           },
           "dest": {
-            "$ref": "#/$defs/cmdDests"
+            "$ref": "#/$defs/msgDests"
+          },
+          "source": {
+            "$ref": "#/$defs/msgSources"
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "dest"
+            ]
+          },
+          {
+            "required": [
+              "source"
+            ]
+          }
+        ]
       }
     },
-    "cmdDests": {
+    "msgDests": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/cmdDest"
+        "$ref": "#/$defs/msgDest"
       }
     },
-    "dataDests": {
+    "msgSources": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/$defs/dataDest"
+        "$ref": "#/$defs/msgSource"
       }
     },
     "validPropertyObject": {

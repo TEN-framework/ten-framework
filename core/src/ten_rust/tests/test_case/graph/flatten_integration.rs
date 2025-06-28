@@ -50,9 +50,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "test_cmd".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "test_cmd".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             app: None,
                             extension: Some("subgraph_1:ext_b".to_string()),
@@ -60,7 +60,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -111,9 +112,9 @@ mod tests {
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "test_cmd".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "test_cmd".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             app: None,
                             extension: Some("ext_b".to_string()),
@@ -121,7 +122,8 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
