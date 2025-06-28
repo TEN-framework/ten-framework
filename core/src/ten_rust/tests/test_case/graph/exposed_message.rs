@@ -54,6 +54,7 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
+                    vec![],
                 )]),
                 data: None,
                 video_frame: None,

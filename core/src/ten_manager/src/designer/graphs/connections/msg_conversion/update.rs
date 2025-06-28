@@ -164,6 +164,7 @@ fn update_property_all_fields(
             let message_flow = GraphMessageFlow::new(
                 request_payload.msg_name.clone(),
                 vec![destination],
+                vec![],
             );
 
             // Set the appropriate message type field.

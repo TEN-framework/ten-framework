@@ -225,6 +225,7 @@ pub async fn delete_graph_connection_endpoint(
             let message_flow = GraphMessageFlow::new(
                 request_payload.msg_name.clone(),
                 vec![dest_to_remove],
+                vec![],
             );
 
             // Set the appropriate message type field.

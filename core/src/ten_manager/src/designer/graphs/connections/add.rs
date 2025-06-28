@@ -72,6 +72,7 @@ fn create_graph_connection(
     let message_flow = GraphMessageFlow::new(
         request_payload.msg_name.clone(),
         vec![destination],
+        vec![],
     );
 
     // Create connection

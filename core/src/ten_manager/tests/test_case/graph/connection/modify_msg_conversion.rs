@@ -103,6 +103,7 @@ mod tests {
                         }),
                     }),
                 }],
+                vec![],
             )]),
             data: None,
             audio_frame: None,

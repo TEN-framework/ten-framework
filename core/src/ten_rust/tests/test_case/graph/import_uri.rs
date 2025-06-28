@@ -145,6 +145,7 @@ mod tests {
                     cmd: Some(vec![GraphMessageFlow::new(
                         "test_cmd".to_string(),
                         vec![],
+                        vec![],
                     )]),
                     data: None,
                     audio_frame: None,

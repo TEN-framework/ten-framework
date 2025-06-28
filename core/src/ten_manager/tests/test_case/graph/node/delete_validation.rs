@@ -220,6 +220,7 @@ mod tests {
                         },
                         msg_conversion: None,
                     }],
+                    vec![],
                 )]),
                 data: None,
                 audio_frame: None,

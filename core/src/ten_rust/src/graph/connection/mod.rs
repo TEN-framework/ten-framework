@@ -215,8 +215,12 @@ impl GraphMessageFlow {
         Ok(())
     }
 
-    pub fn new(name: String, dest: Vec<GraphDestination>) -> Self {
-        Self { name, dest, source: vec![] }
+    pub fn new(
+        name: String,
+        dest: Vec<GraphDestination>,
+        source: Vec<GraphSource>,
+    ) -> Self {
+        Self { name, dest, source }
     }
 }
 

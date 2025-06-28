@@ -49,7 +49,7 @@ mod tests {
         };
 
         let message_flow =
-            GraphMessageFlow::new(cmd_name.to_string(), vec![dest]);
+            GraphMessageFlow::new(cmd_name.to_string(), vec![dest], vec![]);
 
         GraphConnection {
             loc: GraphLoc {
@@ -217,6 +217,7 @@ mod tests {
                     },
                     msg_conversion: None,
                 }],
+                vec![],
             )]),
             data: Some(vec![GraphMessageFlow::new(
                 "data1".to_string(),
@@ -228,6 +229,7 @@ mod tests {
                     },
                     msg_conversion: None,
                 }],
+                vec![],
             )]),
             audio_frame: Some(vec![GraphMessageFlow::new(
                 "audio1".to_string(),
@@ -239,6 +241,7 @@ mod tests {
                     },
                     msg_conversion: None,
                 }],
+                vec![],
             )]),
             video_frame: Some(vec![GraphMessageFlow::new(
                 "video1".to_string(),
@@ -250,6 +253,7 @@ mod tests {
                     },
                     msg_conversion: None,
                 }],
+                vec![],
             )]),
         };
 

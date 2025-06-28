@@ -21,6 +21,7 @@ impl From<DesignerMessageFlow> for GraphMessageFlow {
         GraphMessageFlow::new(
             designer_msg_flow.name,
             designer_msg_flow.dest.into_iter().map(|d| d.into()).collect(),
+            vec![],
         )
     }
 }
