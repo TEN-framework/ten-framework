@@ -13,7 +13,7 @@ import traceback
 import time
 import numpy as np
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Literal
 
 from ten import (
     AudioFrame,
@@ -74,6 +74,7 @@ from .realtime.struct import (
     ContentType,
     FunctionCallOutputItemParam,
     ResponseCreate,
+    ServerVADUpdateParams,
 )
 
 CMD_IN_FLUSH = "flush"
@@ -102,7 +103,11 @@ class OpenAIRealtimeConfig(BaseConfig):
     audio_out: bool = True
     input_transcript: bool = True
     sample_rate: int = 24000
-
+    vad_type: Literal["server_vad", "semantic_vad"] = "server_vad"
+    vad_eagerness: Literal["low", "medium", "high", "auto"] = "auto"
+    vad_threshold: float = 0.5
+    vad_prefix_padding_ms: int = 300
+    vad_silence_duration_ms: int = 500
     vendor: str = ""
     stream_id: int = 0
     dump: bool = False
@@ -611,6 +616,13 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 model=self.config.model,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
+                turn_detection=ServerVADUpdateParams(
+                    type=self.config.vad_type,
+                    eagerness=self.config.vad_eagerness,
+                    threshold=self.config.vad_threshold,
+                    prefix_padding_ms=self.config.vad_prefix_padding_ms,
+                    silence_duration_ms=self.config.vad_silence_duration_ms,
+                ),
             )
         )
         if self.config.audio_out:

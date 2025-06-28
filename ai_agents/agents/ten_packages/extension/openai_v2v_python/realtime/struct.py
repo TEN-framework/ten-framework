@@ -84,7 +84,12 @@ class ServerVADUpdateParams:
     silence_duration_ms: Optional[int] = (
         None  # Duration of silence before considering speech stopped (in milliseconds)
     )
-    type: str = "server_vad"  # Fixed value for VAD type
+    type: Literal["server_vad", "semantic_vad"] = "server_vad"
+    eagerness: Literal["low", "medium", "high", "auto"] = (
+        "auto"  # will let the user take their time to speak. high -  will chunk the audio as soon as possible.
+    )
+    create_response: bool = True  # only in conversation mode
+    interrupt_response: bool = True  # only in conversation mode
 
 
 @dataclass
