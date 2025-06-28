@@ -13,7 +13,7 @@ import traceback
 import time
 import numpy as np
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Literal
 
 from ten import (
     AudioFrame,
@@ -74,6 +74,8 @@ from .realtime.struct import (
     ContentType,
     FunctionCallOutputItemParam,
     ResponseCreate,
+    ServerVADUpdateParams,
+    SemanticVADUpdateParams,
 )
 
 CMD_IN_FLUSH = "flush"
@@ -102,7 +104,11 @@ class OpenAIRealtimeConfig(BaseConfig):
     audio_out: bool = True
     input_transcript: bool = True
     sample_rate: int = 24000
-
+    vad_type: Literal["server_vad", "semantic_vad"] = "server_vad"
+    vad_eagerness: Literal["low", "medium", "high", "auto"] = "auto"
+    vad_threshold: float = 0.5
+    vad_prefix_padding_ms: int = 300
+    vad_silence_duration_ms: int = 500
     vendor: str = ""
     stream_id: int = 0
     dump: bool = False
@@ -605,12 +611,23 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         prompt = self._replace(self.config.prompt)
 
         self.ten_env.log_info(f"update session {prompt} {tools}")
+        if self.config.vad_type == "server_vad":
+            vad_params = ServerVADUpdateParams(
+                threshold=self.config.vad_threshold,
+                prefix_padding_ms=self.config.vad_prefix_padding_ms,
+                silence_duration_ms=self.config.vad_silence_duration_ms,
+            )
+        else:  # semantic vad
+            vad_params = SemanticVADUpdateParams(
+                eagerness=self.config.vad_eagerness,
+            )
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
+                turn_detection=vad_params,
             )
         )
         if self.config.audio_out:
