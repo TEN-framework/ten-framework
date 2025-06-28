@@ -340,7 +340,16 @@ void ten_log_set_output_to_file(ten_log_t *self, const char *log_path) {
                      ten_log_close_file, ten_log_output_to_file_reload,
                      ten_log_output_to_file_deinit, ctx);
 
-  ten_log_set_formatter(self, ten_log_default_formatter, NULL);
+  // Check for LOG_JSON environment variable for file output
+  ten_log_formatter_on_format_func_t file_formatter_func = ten_log_default_formatter;
+
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  const char *log_json_env = getenv("LOG_JSON");
+  if (log_json_env && (strcmp(log_json_env, "true") == 0 || strcmp(log_json_env, "1") == 0)) {
+    file_formatter_func = ten_log_json_formatter;
+  }
+
+  ten_log_set_formatter(self, file_formatter_func, NULL);
 }
 
 const char *ten_log_get_output_file_path(ten_log_t *self) {
@@ -393,11 +402,19 @@ void ten_log_set_output_to_stderr(ten_log_t *self) {
 
   ten_log_formatter_on_format_func_t formatter_func = NULL;
 
+  // Check for LOG_JSON environment variable first
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  const char *log_json_env = getenv("LOG_JSON");
+  if (log_json_env && (strcmp(log_json_env, "true") == 0 || strcmp(log_json_env, "1") == 0)) {
+    formatter_func = ten_log_json_formatter;
+  } else {
+    // Use default behavior
 #if defined(OS_LINUX) || defined(OS_MACOS)
-  formatter_func = ten_log_colored_formatter;
+    formatter_func = ten_log_colored_formatter;
 #else
-  formatter_func = ten_log_default_formatter;
+    formatter_func = ten_log_default_formatter;
 #endif
+  }
 
   // The default formatter for `stderr` can be overridden using the below
   // environment variable.
