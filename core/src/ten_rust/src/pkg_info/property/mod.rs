@@ -20,7 +20,8 @@ use super::{
     pkg_type::PkgType,
 };
 use crate::{
-    _0_8_compatible::get_ten_field_string, fs::read_file_to_string, json_schema,
+    _0_8_compatible::get_ten_field_string, json_schema,
+    utils::fs::read_file_to_string,
 };
 use crate::{
     graph::{graph_info::GraphInfo, is_app_default_loc_or_none},
@@ -57,7 +58,7 @@ pub struct Property {
 /// string, which is useful for loading property configurations from files or
 /// string literals. After parsing the JSON, it automatically validates and
 /// completes the property configuration to ensure it meets all requirements.
-pub fn parse_property_from_str(
+pub async fn parse_property_from_str(
     s: &str,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: Option<String>,
@@ -98,11 +99,11 @@ pub fn parse_property_from_str(
                 let mut graph_uuids = Vec::new();
 
                 for mut graph_info in graph_infos {
-                    graph_info.validate_and_complete_and_flatten()?;
-
                     graph_info.belonging_pkg_type = belonging_pkg_type;
                     graph_info.belonging_pkg_name = belonging_pkg_name.clone();
                     graph_info.app_base_dir = app_base_dir.clone();
+
+                    graph_info.validate_and_complete_and_flatten().await?;
 
                     let uuid = Uuid::new_v4();
                     temp_graphs_cache.insert(uuid, graph_info);
@@ -217,7 +218,7 @@ pub fn check_property_json_of_pkg(pkg_dir: &str) -> Result<()> {
 /// # Returns
 /// * `Result<Property>` - The parsed and validated Property struct on success,
 ///   or an error if the file cannot be read or the content is invalid.
-fn parse_property_from_file<P: AsRef<Path>>(
+async fn parse_property_from_file<P: AsRef<Path>>(
     property_file_path: P,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: Option<String>,
@@ -241,17 +242,18 @@ fn parse_property_from_file<P: AsRef<Path>>(
     let content = read_file_to_string(property_file_path)?;
 
     // Parse the content and validate the property structure.
-    parse_property_from_str(
+    let property = parse_property_from_str(
         &content,
         graphs_cache,
         app_base_dir,
         belonging_pkg_type,
         belonging_pkg_name,
     )
-    .map(Some)
+    .await?;
+    Ok(Some(property))
 }
 
-pub fn parse_property_in_folder(
+pub async fn parse_property_in_folder(
     folder_path: &Path,
     graphs_cache: &mut HashMap<Uuid, GraphInfo>,
     app_base_dir: Option<String>,
@@ -269,6 +271,7 @@ pub fn parse_property_in_folder(
         belonging_pkg_type,
         belonging_pkg_name,
     )
+    .await
     .with_context(|| format!("Failed to load {}.", property_path.display()))?;
 
     Ok(property)

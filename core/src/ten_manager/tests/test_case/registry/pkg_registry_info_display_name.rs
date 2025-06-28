@@ -22,14 +22,22 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "display_name": {
-                "en-US": "Test Extension",
-                "zh-CN": "测试扩展",
-                "es-ES": "Extensión de Prueba"
+                "locales": {
+                    "en-US": {
+                        "content": "Test Extension"
+                    },
+                    "zh-CN": {
+                        "content": "测试扩展"
+                    },
+                    "es-ES": {
+                        "content": "Extensión de Prueba"
+                    }
+                }
             }
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -40,9 +48,36 @@ mod tests {
         assert!(pkg_registry_info.display_name.is_some());
         let display_name = pkg_registry_info.display_name.unwrap();
 
-        assert_eq!(display_name.get("en-US").unwrap(), "Test Extension");
-        assert_eq!(display_name.get("zh-CN").unwrap(), "测试扩展");
-        assert_eq!(display_name.get("es-ES").unwrap(), "Extensión de Prueba");
+        assert_eq!(
+            display_name
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test Extension"
+        );
+        assert_eq!(
+            display_name
+                .locales
+                .get("zh-CN")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "测试扩展"
+        );
+        assert_eq!(
+            display_name
+                .locales
+                .get("es-ES")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Extensión de Prueba"
+        );
     }
 
     #[tokio::test]
@@ -54,7 +89,7 @@ mod tests {
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -72,17 +107,29 @@ mod tests {
             "name": "test_extension",
             "version": "1.0.0",
             "description": {
-                "en-US": "This is a test extension for demonstration purposes",
-                "zh-CN": "这是用于演示目的的测试扩展"
+                "locales": {
+                    "en-US": {
+                        "content": "This is a test extension for demonstration purposes"
+                    },
+                    "zh-CN": {
+                        "content": "这是用于演示目的的测试扩展"
+                    }
+                }
             },
             "display_name": {
-                "en-US": "Test Extension",
-                "zh-CN": "测试扩展"
+                "locales": {
+                    "en-US": {
+                        "content": "Test Extension"
+                    },
+                    "zh-CN": {
+                        "content": "测试扩展"
+                    }
+                }
             }
         }"#;
 
         let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).await.unwrap();
+            Manifest::create_from_str(manifest_json).unwrap();
         let pkg_registry_info = get_pkg_registry_info_from_manifest(
             "https://example.com/test.tar.gz",
             &manifest,
@@ -97,23 +144,58 @@ mod tests {
         let display_name = pkg_registry_info.display_name.unwrap();
 
         assert_eq!(
-            description.get("en-US").unwrap(),
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "This is a test extension for demonstration purposes"
         );
         assert_eq!(
-            description.get("zh-CN").unwrap(),
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "这是用于演示目的的测试扩展"
         );
 
-        assert_eq!(display_name.get("en-US").unwrap(), "Test Extension");
-        assert_eq!(display_name.get("zh-CN").unwrap(), "测试扩展");
+        assert_eq!(
+            display_name
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test Extension"
+        );
+        assert_eq!(
+            display_name
+                .locales
+                .get("zh-CN")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "测试扩展"
+        );
     }
 
     #[test]
     fn test_pkg_registry_info_serialization_with_display_name() {
-        let mut display_name = HashMap::new();
-        display_name.insert("en-US".to_string(), "Test Extension".to_string());
-        display_name.insert("zh-CN".to_string(), "测试扩展".to_string());
+        let mut locales = HashMap::new();
+        locales.insert(
+            "en-US".to_string(),
+            ten_rust::pkg_info::manifest::LocaleContent {
+                content: Some("Test Extension".to_string()),
+                import_uri: None,
+                base_dir: Some(String::new()),
+            },
+        );
+        locales.insert(
+            "zh-CN".to_string(),
+            ten_rust::pkg_info::manifest::LocaleContent {
+                content: Some("测试扩展".to_string()),
+                import_uri: None,
+                base_dir: Some(String::new()),
+            },
+        );
+
+        let display_name =
+            ten_rust::pkg_info::manifest::LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -133,6 +215,7 @@ mod tests {
             tags: None,
             description: None,
             display_name: Some(display_name),
+            readme: None,
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -147,8 +230,26 @@ mod tests {
             serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.display_name.is_some());
         let display_name = deserialized.display_name.unwrap();
-        assert_eq!(display_name.get("en-US").unwrap(), "Test Extension");
-        assert_eq!(display_name.get("zh-CN").unwrap(), "测试扩展");
+        assert_eq!(
+            display_name
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test Extension"
+        );
+        assert_eq!(
+            display_name
+                .locales
+                .get("zh-CN")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "测试扩展"
+        );
     }
 
     #[test]
@@ -171,6 +272,7 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
+            readme: None,
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -187,9 +289,26 @@ mod tests {
 
     #[test]
     fn test_pkg_registry_info_to_pkg_info_conversion() {
-        let mut display_name = HashMap::new();
-        display_name.insert("en-US".to_string(), "Test Extension".to_string());
-        display_name.insert("fr".to_string(), "Extension de Test".to_string());
+        let mut locales = HashMap::new();
+        locales.insert(
+            "en-US".to_string(),
+            ten_rust::pkg_info::manifest::LocaleContent {
+                content: Some("Test Extension".to_string()),
+                import_uri: None,
+                base_dir: Some(String::new()),
+            },
+        );
+        locales.insert(
+            "fr".to_string(),
+            ten_rust::pkg_info::manifest::LocaleContent {
+                content: Some("Extension de Test".to_string()),
+                import_uri: None,
+                base_dir: Some(String::new()),
+            },
+        );
+
+        let display_name =
+            ten_rust::pkg_info::manifest::LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -209,13 +328,33 @@ mod tests {
             tags: None,
             description: None,
             display_name: Some(display_name.clone()),
+            readme: None,
         };
 
         let pkg_info: PkgInfo = (&pkg_registry_info).into();
 
         assert!(pkg_info.manifest.display_name.is_some());
         let converted_display_name = pkg_info.manifest.display_name.unwrap();
-        assert_eq!(converted_display_name, display_name);
+        assert_eq!(
+            converted_display_name
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Test Extension"
+        );
+        assert_eq!(
+            converted_display_name
+                .locales
+                .get("fr")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
+            "Extension de Test"
+        );
 
         // Check that display_name is properly added to all_fields
         let all_fields = &pkg_info.manifest.all_fields;
@@ -224,12 +363,17 @@ mod tests {
         let display_name_value = &all_fields["display_name"];
         assert!(display_name_value.is_object());
         let display_name_obj = display_name_value.as_object().unwrap();
+        assert!(display_name_obj.contains_key("locales"));
+        let locales_obj =
+            display_name_obj.get("locales").unwrap().as_object().unwrap();
+        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
         assert_eq!(
-            display_name_obj.get("en-US").unwrap().as_str().unwrap(),
+            en_obj.get("content").unwrap().as_str().unwrap(),
             "Test Extension"
         );
+        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
         assert_eq!(
-            display_name_obj.get("fr").unwrap().as_str().unwrap(),
+            fr_obj.get("content").unwrap().as_str().unwrap(),
             "Extension de Test"
         );
     }

@@ -362,9 +362,15 @@ async fn create_input_str_for_dependency_relationship(
             ManifestDependency::RegistryDependency {
                 pkg_type, name, ..
             } => PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
-            ManifestDependency::LocalDependency { path, base_dir } => {
+            ManifestDependency::LocalDependency { path, base_dir, .. } => {
                 // Get type and name from the manifest.
-                let abs_path = std::path::Path::new(base_dir).join(path);
+                let base_dir_str = base_dir.as_deref().ok_or_else(|| {
+                    anyhow!(
+                        "base_dir cannot be None when processing local \
+                         dependency"
+                    )
+                })?;
+                let abs_path = std::path::Path::new(base_dir_str).join(path);
                 let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
 
                 // Parse manifest to get type and name.
@@ -452,9 +458,19 @@ async fn create_input_str_for_pkg_info_dependencies(
                     name,
                     ..
                 } => PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
-                ManifestDependency::LocalDependency { path, base_dir } => {
+                ManifestDependency::LocalDependency {
+                    path, base_dir, ..
+                } => {
                     // Get type and name from the manifest.
-                    let abs_path = std::path::Path::new(base_dir).join(path);
+                    let base_dir_str =
+                        base_dir.as_deref().ok_or_else(|| {
+                            anyhow!(
+                                "base_dir cannot be None when processing \
+                                 local dependency"
+                            )
+                        })?;
+                    let abs_path =
+                        std::path::Path::new(base_dir_str).join(path);
                     let dep_manifest_path =
                         abs_path.join(MANIFEST_JSON_FILENAME);
 

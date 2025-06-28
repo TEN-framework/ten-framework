@@ -410,6 +410,23 @@
       ],
     },
     {
+      "name": "tman fetch (lldb)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/linux/x64/ten_manager/bin/tman",
+      "cwd": "${workspaceFolder}/out/linux/x64/",
+      "args": [
+        "--verbose",
+        "--config-file=${workspaceFolder}/out/linux/x64/tests/local_registry/config.json",
+        "fetch",
+        "extension",
+        "default_extension_cpp"
+      ],
+      "preRunCommands": [
+        "script import pathlib;import subprocess;import lldb;rustc_sysroot = subprocess.getoutput(\"rustc --print sysroot\");rustlib_etc = pathlib.Path(rustc_sysroot) / \"lib\" / \"rustlib\" / \"etc\";lldb.debugger.HandleCommand(f'command script import \"{rustlib_etc / \"lldb_lookup.py\"}\"');lldb.debugger.HandleCommand(f'command source -s 0 \"{rustlib_etc / \"lldb_commands\"}\"')"
+      ],
+    },
+    {
       "name": "tman publish_mock (lldb)",
       "type": "lldb",
       "request": "launch",
@@ -441,8 +458,8 @@
       "name": "tman designer (lldb)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/core/src/ten_manager/target/x86_64-unknown-linux-gnu/debug/tman",
-      "cwd": "/home/wei/MyData/MyProject/ten_framework/out/linux/x64/tests/ten_runtime/integration/cpp/ffmpeg_basic/.assemble_info/ffmpeg_basic_app/files_to_be_replaced_after_install_app/ffmpeg_basic_app/",
+      "program": "tman",
+      "cwd": "${workspaceFolder}/core/src/ten_manager/tests/test_data/cmd_check_predefined_graph_with_subgraph",
       "args": [
         "--config-file=${workspaceFolder}/out/linux/x64/tests/local_registry/config.json",
         "designer",
@@ -515,9 +532,9 @@
       "name": "app (c/c++) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app/bin/import_graph_app",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/interface_schema_check/interface_schema_check_app/bin/interface_schema_check_app",
       "args": [],
-      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app",
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/interface_schema_check/interface_schema_check_app",
       "env": {
         "ASAN_OPTIONS": "use_sigaltstack=0",
       },

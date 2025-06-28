@@ -15,6 +15,7 @@ group("cpp") {
     "graph_env_var_4",
     "hello_world",
     "import_graph",
+    "interface_schema_check",
     "large_result",
     "long_running",
     "metadata_additional_field",
