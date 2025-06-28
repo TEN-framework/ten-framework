@@ -75,6 +75,7 @@ from .realtime.struct import (
     FunctionCallOutputItemParam,
     ResponseCreate,
     ServerVADUpdateParams,
+    SemanticVADUpdateParams,
 )
 
 CMD_IN_FLUSH = "flush"
@@ -610,19 +611,23 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         prompt = self._replace(self.config.prompt)
 
         self.ten_env.log_info(f"update session {prompt} {tools}")
+        if self.config.vad_type == "server_vad":
+            vad_params = ServerVADUpdateParams(
+                threshold=self.config.vad_threshold,
+                prefix_padding_ms=self.config.vad_prefix_padding_ms,
+                silence_duration_ms=self.config.vad_silence_duration_ms,
+            )
+        else:  # semantic vad
+            vad_params = SemanticVADUpdateParams(
+                eagerness=self.config.vad_eagerness,
+            )
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
-                turn_detection=ServerVADUpdateParams(
-                    type=self.config.vad_type,
-                    eagerness=self.config.vad_eagerness,
-                    threshold=self.config.vad_threshold,
-                    prefix_padding_ms=self.config.vad_prefix_padding_ms,
-                    silence_duration_ms=self.config.vad_silence_duration_ms,
-                ),
+                turn_detection=vad_params,
             )
         )
         if self.config.audio_out:
