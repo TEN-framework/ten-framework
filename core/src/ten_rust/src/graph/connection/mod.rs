@@ -178,7 +178,12 @@ impl GraphConnection {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphMessageFlow {
     pub name: String,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dest: Vec<GraphDestination>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub source: Vec<GraphSource>,
 }
 
 impl GraphMessageFlow {
@@ -208,6 +213,14 @@ impl GraphMessageFlow {
         }
 
         Ok(())
+    }
+
+    pub fn new(
+        name: String,
+        dest: Vec<GraphDestination>,
+        source: Vec<GraphSource>,
+    ) -> Self {
+        Self { name, dest, source }
     }
 }
 
@@ -257,4 +270,10 @@ impl GraphDestination {
     pub fn get_app_uri(&self) -> &Option<String> {
         self.loc.get_app_uri()
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphSource {
+    #[serde(flatten)]
+    pub loc: GraphLoc,
 }

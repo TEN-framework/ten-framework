@@ -18,14 +18,11 @@ use ten_rust::graph::msg_conversion::MsgAndResultConversion;
 
 impl From<DesignerMessageFlow> for GraphMessageFlow {
     fn from(designer_msg_flow: DesignerMessageFlow) -> Self {
-        GraphMessageFlow {
-            name: designer_msg_flow.name,
-            dest: designer_msg_flow
-                .dest
-                .into_iter()
-                .map(|d| d.into())
-                .collect(),
-        }
+        GraphMessageFlow::new(
+            designer_msg_flow.name,
+            designer_msg_flow.dest.into_iter().map(|d| d.into()).collect(),
+            vec![],
+        )
     }
 }
 

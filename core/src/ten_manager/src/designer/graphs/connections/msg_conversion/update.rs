@@ -161,10 +161,11 @@ fn update_property_all_fields(
             };
 
             // Create the message flow.
-            let message_flow = GraphMessageFlow {
-                name: request_payload.msg_name.clone(),
-                dest: vec![destination],
-            };
+            let message_flow = GraphMessageFlow::new(
+                request_payload.msg_name.clone(),
+                vec![destination],
+                vec![],
+            );
 
             // Set the appropriate message type field.
             match request_payload.msg_type {

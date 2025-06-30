@@ -2002,4 +2002,211 @@ mod tests {
         // The extension node without addon is invalid.
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_validate_source_extension_subgraph_mutual_exclusion() {
+        // Test that source with both extension and subgraph fields fails
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_ext",
+                  "addon": "test_addon",
+                  "extension_group": "test_group"
+                }],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "source": [
+                          {
+                            "extension": "test_ext",
+                            "subgraph": "test_subgraph"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
+    fn test_validate_source_extension_only() {
+        // Test that source with only extension field succeeds
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_ext",
+                  "addon": "test_addon",
+                  "extension_group": "test_group"
+                }],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "source": [
+                          {
+                            "extension": "test_ext"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_source_subgraph_only() {
+        // Test that source with only subgraph field succeeds
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_ext",
+                  "addon": "test_addon",
+                  "extension_group": "test_group"
+                }],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "source": [
+                          {
+                            "subgraph": "test_subgraph"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_source_with_app() {
+        // Test that source with app field succeeds
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_ext",
+                  "addon": "test_addon",
+                  "extension_group": "test_group"
+                }],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "source": [
+                          {
+                            "app": "msgpack://127.0.0.1:8001/",
+                            "extension": "test_ext"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_source_with_invalid_field() {
+        // Test that source with invalid additional field fails
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [
+              {
+                "name": "default",
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_ext",
+                  "addon": "test_addon",
+                  "extension_group": "test_group"
+                }],
+                "connections": [
+                  {
+                    "extension": "test_ext",
+                    "cmd": [
+                      {
+                        "name": "test_cmd",
+                        "source": [
+                          {
+                            "extension": "test_ext",
+                            "invalid_field": "value"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("Additional properties are not allowed"));
+    }
 }

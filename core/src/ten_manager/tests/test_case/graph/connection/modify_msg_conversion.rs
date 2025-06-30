@@ -53,9 +53,9 @@ mod tests {
                 extension: Some("extension_1".to_string()),
                 subgraph: None,
             },
-            cmd: Some(vec![GraphMessageFlow {
-                name: "existing_cmd".to_string(),
-                dest: vec![GraphDestination {
+            cmd: Some(vec![GraphMessageFlow::new(
+                "existing_cmd".to_string(),
+                vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("http://example.com:8000".to_string()),
                         extension: Some("extension_2".to_string()),
@@ -103,7 +103,8 @@ mod tests {
                         }),
                     }),
                 }],
-            }]),
+                vec![],
+            )]),
             data: None,
             audio_frame: None,
             video_frame: None,

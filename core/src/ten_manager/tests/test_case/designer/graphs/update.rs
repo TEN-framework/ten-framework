@@ -130,7 +130,7 @@ mod tests {
         };
 
         let message_flow =
-            GraphMessageFlow { name: "test_cmd".to_string(), dest: vec![dest] };
+            GraphMessageFlow::new("test_cmd".to_string(), vec![dest], vec![]);
 
         let connection = GraphConnection {
             loc: GraphLoc {
