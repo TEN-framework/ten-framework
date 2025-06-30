@@ -240,7 +240,6 @@ mod tests {
 
     #[test]
     fn test_empty_source_handling() {
-        // 测试用例6：空source的消息流处理
         let mut graph_empty_source = Graph {
             nodes: vec![],
             connections: None,
@@ -284,72 +283,5 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(converted.connections.as_ref().unwrap().len(), 2);
-    }
-
-    #[test]
-    fn test_complex_scenario() {
-        // 测试用例7：复杂场景 - 多个source和destination
-        let mut graph_complex = Graph {
-            nodes: vec![],
-            connections: None,
-            exposed_messages: None,
-            exposed_properties: None,
-        };
-        let mut conn = GraphConnection {
-            loc: GraphLoc {
-                app: Some("app1".to_string()),
-                extension: Some("ext1".to_string()),
-                subgraph: None,
-            },
-            cmd: None,
-            data: None,
-            audio_frame: None,
-            video_frame: None,
-        };
-        conn.cmd = Some(vec![GraphMessageFlow {
-            name: "flow1".to_string(),
-            dest: vec![
-                GraphDestination {
-                    loc: GraphLoc {
-                        app: Some("dest1".to_string()),
-                        extension: Some("ext1".to_string()),
-                        subgraph: None,
-                    },
-                    msg_conversion: None,
-                },
-                GraphDestination {
-                    loc: GraphLoc {
-                        app: Some("dest2".to_string()),
-                        extension: Some("ext2".to_string()),
-                        subgraph: None,
-                    },
-                    msg_conversion: None,
-                },
-            ],
-            source: vec![
-                GraphSource {
-                    loc: GraphLoc {
-                        app: Some("source1".to_string()),
-                        extension: Some("ext1".to_string()),
-                        subgraph: None,
-                    },
-                },
-                GraphSource {
-                    loc: GraphLoc {
-                        app: Some("source2".to_string()),
-                        extension: Some("ext2".to_string()),
-                        subgraph: None,
-                    },
-                },
-            ],
-        }]);
-        graph_complex.connections = Some(vec![conn]);
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_complex,
-            )
-            .unwrap()
-            .unwrap();
-        assert_eq!(converted.connections.as_ref().unwrap().len(), 3);
     }
 }

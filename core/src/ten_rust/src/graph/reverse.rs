@@ -220,7 +220,71 @@ impl Graph {
         // TODO(xilin): Merge flows with the same source, type and name. If
         // destinations are also the same, determine conflicts based on msg
         // conversion.
-        
+
+        // Helper closure to merge flows within a connection
+        let merge_flows = |flows: &mut Vec<GraphMessageFlow>| {
+            let mut flow_map: HashMap<
+                (Vec<GraphLoc>, String),
+                GraphMessageFlow,
+            > = HashMap::new();
+
+            for flow in flows.drain(..) {
+                let sources: Vec<GraphLoc> =
+                    flow.source.iter().map(|src| src.loc.clone()).collect();
+                let key = (sources, flow.name.clone());
+
+                if let Some(existing) = flow_map.get_mut(&key) {
+                    // Merge destinations if they don't exist
+                    for dest in flow.dest {
+                        if !existing.dest.iter().any(|d| d.loc == dest.loc) {
+                            // If destination exists with different
+                            // msg_conversion, it's a conflict
+                            if let Some(existing_dest) =
+                                existing.dest.iter().find(|d| {
+                                    d.loc == dest.loc
+                                        && d.msg_conversion
+                                            != dest.msg_conversion
+                                })
+                            {
+                                return Err(anyhow::anyhow!(
+                                    "Conflicting message conversion for \
+                                     destination {:?}: {:?} vs {:?}",
+                                    dest.loc,
+                                    existing_dest.msg_conversion,
+                                    dest.msg_conversion
+                                ));
+                            }
+                            existing.dest.push(dest);
+                        }
+                    }
+                } else {
+                    flow_map.insert(key, flow);
+                }
+            }
+
+            *flows = flow_map.into_values().collect();
+            Ok(())
+        };
+
+        // Merge flows for each connection
+        for conn in merged_connections.values_mut() {
+            // Merge cmd flows
+            if let Some(ref mut cmd_flows) = conn.cmd {
+                merge_flows(cmd_flows)?;
+            }
+            // Merge data flows
+            if let Some(ref mut data_flows) = conn.data {
+                merge_flows(data_flows)?;
+            }
+            // Merge audio_frame flows
+            if let Some(ref mut audio_flows) = conn.audio_frame {
+                merge_flows(audio_flows)?;
+            }
+            // Merge video_frame flows
+            if let Some(ref mut video_flows) = conn.video_frame {
+                merge_flows(video_flows)?;
+            }
+        }
 
         // Update the graph with merged connections
         new_graph.connections =
