@@ -70,7 +70,20 @@
 
 ## 👋 Welcome to TEN
 
-TEN is a collection of open-source projects for building real-time, multimodal conversational voice agents. It includes [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection), TEN Agent, TMAN Designer, and [TEN Portal](https://github.com/ten-framework/portal), all fully open-source. [TEN VAD](https://github.com/ten-framework/ten-vad) is not fully open-source yet, but it is open for public use.
+TEN is a collection of open-source projects for building real-time, multimodal conversational voice AI agents.
+
+It includes:
+
+- [TEN Framework](https://github.com/ten-framework/ten-framework): the core framework
+- [TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection): a separate repo and model can be used as extension within TEN.
+
+- [TEN VAD](https:github.com/ten-framework/ten-vad): a separate repo and model can be used as extension within TEN.
+
+- [TEN Agent](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/demo): a demo agent for real-time voice and video interaction.
+
+- [TMAN Designer](https://github.com/TEN-framework/ten-framework/tree/main/core/src/ten_manager/designer_frontend): a workflow-ish UI for building voice agents.
+
+- [TEN Portal](https://github.com/ten-framework/portal): official site, doc and blog.
 
 <br>
 
