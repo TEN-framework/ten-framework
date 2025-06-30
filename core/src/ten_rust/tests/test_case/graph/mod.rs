@@ -8,6 +8,7 @@ mod exposed_message;
 mod flatten_integration;
 mod graph_info;
 mod import_uri;
+mod reverse;
 mod subgraph;
 
 #[cfg(test)]

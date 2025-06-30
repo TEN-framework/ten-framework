@@ -6,7 +6,9 @@
 //
 
 use crate::graph::{
-    connection::{GraphConnection, GraphDestination, GraphMessageFlow},
+    connection::{
+        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
+    },
     Graph,
 };
 use anyhow::Result;
@@ -19,7 +21,7 @@ impl Graph {
         flow_type: &str,
         conn_loc: &GraphDestination,
         new_connections: &mut Vec<GraphConnection>,
-    ) -> Vec<GraphMessageFlow> {
+    ) -> Option<Vec<GraphMessageFlow>> {
         let mut new_flows = Vec::new();
         let mut has_source = false;
 
@@ -35,6 +37,7 @@ impl Graph {
                 let mut forward_conn = GraphConnection::new(
                     src.loc.app.clone(),
                     src.loc.extension.clone(),
+                    src.loc.subgraph.clone(),
                 );
 
                 // Create a new message flow with the current destinations
@@ -62,10 +65,12 @@ impl Graph {
             }
         }
 
-        if has_source {
-            new_flows
+        let result = if has_source { new_flows } else { flows.to_vec() };
+
+        if result.is_empty() {
+            None
         } else {
-            flows.to_vec()
+            Some(result)
         }
     }
 
@@ -120,6 +125,7 @@ impl Graph {
             let mut new_conn = GraphConnection::new(
                 conn.loc.app.clone(),
                 conn.loc.extension.clone(),
+                conn.loc.subgraph.clone(),
             );
 
             let conn_dest = GraphDestination {
@@ -129,39 +135,39 @@ impl Graph {
 
             // Process each type of flow
             if let Some(ref cmd_flows) = conn.cmd {
-                new_conn.cmd = Some(Self::process_message_flows(
+                new_conn.cmd = Self::process_message_flows(
                     cmd_flows,
                     "cmd",
                     &conn_dest,
                     &mut new_connections,
-                ));
+                );
             }
 
             if let Some(ref data_flows) = conn.data {
-                new_conn.data = Some(Self::process_message_flows(
+                new_conn.data = Self::process_message_flows(
                     data_flows,
                     "data",
                     &conn_dest,
                     &mut new_connections,
-                ));
+                );
             }
 
             if let Some(ref audio_flows) = conn.audio_frame {
-                new_conn.audio_frame = Some(Self::process_message_flows(
+                new_conn.audio_frame = Self::process_message_flows(
                     audio_flows,
                     "audio_frame",
                     &conn_dest,
                     &mut new_connections,
-                ));
+                );
             }
 
             if let Some(ref video_flows) = conn.video_frame {
-                new_conn.video_frame = Some(Self::process_message_flows(
+                new_conn.video_frame = Self::process_message_flows(
                     video_flows,
                     "video_frame",
                     &conn_dest,
                     &mut new_connections,
-                ));
+                );
             }
 
             // Only add connection if it still has flows
@@ -175,12 +181,10 @@ impl Graph {
         }
 
         // Merge duplicate forward connections
-        let mut merged_connections: HashMap<
-            (Option<String>, Option<String>),
-            GraphConnection,
-        > = HashMap::new();
+        let mut merged_connections: HashMap<GraphLoc, GraphConnection> =
+            HashMap::new();
         for mut conn in new_connections {
-            let key = (conn.loc.app.clone(), conn.loc.extension.clone());
+            let key = conn.loc.clone();
 
             if let Some(existing) = merged_connections.get_mut(&key) {
                 // Merge cmd flows
@@ -212,6 +216,11 @@ impl Graph {
                 merged_connections.insert(key, conn);
             }
         }
+
+        // TODO(xilin): Merge flows with the same source, type and name. If
+        // destinations are also the same, determine conflicts based on msg
+        // conversion.
+        
 
         // Update the graph with merged connections
         new_graph.connections =
