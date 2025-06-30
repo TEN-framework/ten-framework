@@ -7,6 +7,7 @@
 import asyncio
 import json
 import os
+from types import SimpleNamespace
 
 from ten_runtime import (
     AsyncExtensionTester,
@@ -71,7 +72,22 @@ class ExtensionTesterDeepgram(AsyncExtensionTester):
             pass
 
 
-def test_deepgram():
+def test_deepgram(patch_deepgram_ws):
+    async def fake_start(*args, **kwargs):
+        await asyncio.sleep(1)
+        handler = patch_deepgram_ws._handlers.get("Results")
+        if handler:
+            await handler(None, SimpleNamespace(
+                channel=SimpleNamespace(
+                    alternatives=[SimpleNamespace(transcript="hello world")]
+                ),
+                start=0.0, duration=0.5, is_final=True
+            ))
+        return True
+
+    patch_deepgram_ws.start.side_effect = fake_start
+
+
     tester = ExtensionTesterDeepgram()
     tester.set_test_mode_single("deepgram_asr_python", json.dumps({
         "api_key": "111",

@@ -71,31 +71,9 @@ def patch_deepgram_ws():
 
         mock_ws.on = mock_on
 
-        async def mocked_start(*args, **kwargs):
-            await asyncio.sleep(0.05)
-
-            async def delayed_trigger():
-                await asyncio.sleep(0.05)
-
-                handler = mock_ws._handlers.get("Results")
-                if handler:
-                    fake_result = SimpleNamespace(
-                        channel=SimpleNamespace(
-                            alternatives=[SimpleNamespace(transcript="hello world")]
-                        ),
-                        start=1.0,
-                        duration=0.5,
-                        is_final=True,
-                    )
-                    await handler(None, fake_result)
-
-            asyncio.create_task(delayed_trigger())
-            return True
-
-        mock_ws.start.side_effect = mocked_start
-
         MockWSClient.return_value = mock_ws
-        yield  # patch stays active through the whole session
+        yield mock_ws
+        # patch stays active through the whole session
 
 @pytest.fixture(scope="session", autouse=True)
 def global_setup_and_teardown():
