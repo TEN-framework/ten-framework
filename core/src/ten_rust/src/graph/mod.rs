@@ -9,6 +9,7 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod reverse;
 pub mod subgraph;
 
 use std::collections::HashMap;
@@ -422,6 +423,29 @@ impl Graph {
                     extension
                 )
             })
+    }
+
+    /// Convenience method for flattening a graph instance without preserving
+    /// exposed info. This is the main public API for flattening graphs.
+    ///
+    /// Returns `Ok(None)` if the graph doesn't need flattening. Returns
+    /// `Ok(Some(flattened_graph))` if the graph was successfully flattened.
+    pub async fn flatten_graph(
+        &self,
+        current_base_dir: Option<&str>,
+    ) -> Result<Option<Graph>> {
+        let mut processing_graph = self;
+
+        // Convert the reversed connections to forward connections if needed.
+        let converted_graph =
+            Self::convert_reversed_connections_to_forward_connections(self)?;
+        if let Some(ref converted) = converted_graph {
+            processing_graph = converted;
+        }
+
+        Self::flatten_subgraphs(processing_graph, current_base_dir, false)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to flatten graph: {}", e))
     }
 }
 

@@ -1383,8 +1383,10 @@ mod tests {
         fs::write(subgraph_file_path, subgraph_json).unwrap();
 
         // Flatten the graph with preserve_exposed_info = true
-        let flattened =
-            Graph::flatten(&main_graph, None, true).await.unwrap().unwrap();
+        let flattened = Graph::flatten_subgraphs(&main_graph, None, true)
+            .await
+            .unwrap()
+            .unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
