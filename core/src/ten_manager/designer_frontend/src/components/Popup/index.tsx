@@ -6,30 +6,29 @@
 //
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-// import { PinIcon } from "lucide-react";
 
-import { useWidgetStore, useDialogStore } from "@/store";
-import { TerminalPopupContent } from "@/components/Popup/Terminal";
-import { CustomNodeConnPopupContent } from "@/components/Popup/CustomNodeConn";
-import { LogViewerPopupContent } from "@/components/Popup/LogViewer";
-import { GraphPopupContent } from "@/components/Popup/Graph";
-import { PopupTabContentDefault } from "@/components/Popup/Default";
-import { ExtensionPopupContent } from "@/components/Popup/Default/Extension";
-import { EditorPopupContent } from "@/components/Popup/Editor";
 import {
   PopupBase,
   PopupTabsBar,
-  PopupTabsBarItem,
   PopupTabsBarContent,
+  PopupTabsBarItem,
 } from "@/components/Popup/Base";
+import { CustomNodeConnPopupContent } from "@/components/Popup/CustomNodeConn";
+import { PopupTabContentDefault } from "@/components/Popup/Default";
+import { ExtensionPopupContent } from "@/components/Popup/Default/Extension";
+import { EditorPopupContent } from "@/components/Popup/Editor";
+import { GraphPopupContent } from "@/components/Popup/Graph";
+import { LogViewerPopupContent } from "@/components/Popup/LogViewer";
+import { TerminalPopupContent } from "@/components/Popup/Terminal";
 import { groupWidgetsById } from "@/components/Popup/utils";
+import { cn } from "@/lib/utils";
+import { useDialogStore, useWidgetStore } from "@/store";
 import {
   EWidgetCategory,
   EWidgetDisplayType,
   EWidgetPredefinedCheck,
-  IWidget,
+  type IWidget,
 } from "@/types/widgets";
-import { cn } from "@/lib/utils";
 import { getCurrentWindowSize } from "@/utils";
 
 const PopupWithTabs = (props: {
@@ -69,8 +68,7 @@ const PopupWithTabs = (props: {
     }));
     for (const check of uniqueChecks) {
       switch (check.check) {
-        case EWidgetPredefinedCheck.EDITOR_UNSAVED_CHANGES:
-          // eslint-disable-next-line no-case-declarations
+        case EWidgetPredefinedCheck.EDITOR_UNSAVED_CHANGES: {
           const editorWidgets = widgets.filter(
             (widget) => widget.category === EWidgetCategory.Editor
           );
@@ -83,6 +81,7 @@ const PopupWithTabs = (props: {
             check.passed = true;
           }
           break;
+        }
         default:
           break;
       }
@@ -95,7 +94,7 @@ const PopupWithTabs = (props: {
       )
     ) {
       console.warn("Some widgets are not ready to be closed");
-      const dialogId = containerId + groupId + "close-popup-dialog";
+      const dialogId = `${containerId + groupId}close-popup-dialog`;
       appendDialog({
         id: dialogId,
         title: t("action.confirm"),
@@ -164,8 +163,7 @@ const PopupWithTabs = (props: {
     }
     const firstWidget = widgets[0];
     return firstWidget.actions?.custom_actions;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, widgets]);
+  }, [widgets]);
 
   const globalTitle = React.useMemo(() => {
     if (widgets.length > 1) return undefined;
@@ -181,7 +179,7 @@ const PopupWithTabs = (props: {
       onClose={handleClose}
       customActions={globalCustomActions}
       title={globalTitle}
-      contentClassName={cn("p-0 flex flex-col", {
+      contentClassName={cn("flex flex-col p-0", {
         "h-full p-2": widgets.length === 1,
       })}
       defaultWidth={
@@ -198,8 +196,8 @@ const PopupWithTabs = (props: {
             : size?.height * (size?.windowHeight || 1)
           : undefined
       }
-      maxWidth={size?.windowWidth}
-      maxHeight={size?.windowHeight}
+      maxWidth={size?.windowWidth ? size.windowWidth - 80 : undefined}
+      maxHeight={size?.windowHeight ? size.windowHeight - 80 : undefined}
       initialPosition={size?.initialPosition}
       onSelectWidget={handleSelectWidget}
     >
@@ -257,7 +255,7 @@ const PopupTabs = (props: {
         <PopupTabsBar>
           {widgets.map((widget) => (
             <PopupTabsBarItem
-              key={"PopupTabsBarItem" + widget.widget_id}
+              key={`PopupTabsBarItem${widget.widget_id}`}
               id={widget.widget_id}
               isActive={widget.widget_id === selectedWidgetId}
               onSelect={onSelectWidget}
@@ -285,7 +283,7 @@ const PopupTabs = (props: {
 
         return (
           <PopupTabsBarContent
-            key={"PopupTabsBarContent" + widget.widget_id}
+            key={`PopupTabsBarContent${widget.widget_id}`}
             isActive={widget.widget_id === selectedWidgetId}
             fullHeight={widgets.length === 1}
           >

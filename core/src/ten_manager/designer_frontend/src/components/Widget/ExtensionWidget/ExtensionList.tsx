@@ -14,6 +14,7 @@ import { FixedSizeList as VirtualList } from "react-window";
 import { useFetchAddons } from "@/api/services/addons";
 import { postReloadApps } from "@/api/services/apps";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
+import { extractLocaleContentFromPkg } from "@/api/services/utils";
 import { HighlightText } from "@/components/Highlight";
 import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
@@ -49,6 +50,42 @@ import {
   EWidgetDisplayType,
 } from "@/types/widgets";
 
+const VirtualListItem = (props: {
+  index: number;
+  style: React.CSSProperties;
+  items: (ITenPackage | ITenPackageLocal)[];
+  versions: Map<string, IListTenCloudStorePackage[]>;
+  toolTipSide?: TooltipContentProps["side"];
+  readOnly?: boolean;
+}) => {
+  const { items, versions, toolTipSide, readOnly } = props;
+  const item = items[props.index];
+
+  if (item._type === EPackageSource.Local) {
+    return (
+      <AddonItem
+        item={item}
+        style={props.style}
+        toolTipSide={toolTipSide}
+        _type={item._type}
+      />
+    );
+  }
+
+  const targetVersions = versions.get(item.name);
+
+  return (
+    <ExtensionStoreItem
+      item={item}
+      style={props.style}
+      toolTipSide={toolTipSide}
+      versions={targetVersions}
+      isInstalled={item.isInstalled}
+      readOnly={readOnly}
+    />
+  );
+};
+
 export const ExtensionList = (props: {
   items: (ITenPackage | ITenPackageLocal)[];
   versions: Map<string, IListTenCloudStorePackage[]>;
@@ -57,37 +94,6 @@ export const ExtensionList = (props: {
   readOnly?: boolean;
 }) => {
   const { items, versions, className, toolTipSide, readOnly } = props;
-
-  const VirtualListItem = (props: {
-    index: number;
-    style: React.CSSProperties;
-  }) => {
-    const item = items[props.index];
-
-    if (item._type === EPackageSource.Local) {
-      return (
-        <AddonItem
-          item={item}
-          style={props.style}
-          toolTipSide={toolTipSide}
-          _type={item._type}
-        />
-      );
-    }
-
-    const targetVersions = versions.get(item.name);
-
-    return (
-      <ExtensionStoreItem
-        item={item}
-        style={props.style}
-        toolTipSide={toolTipSide}
-        versions={targetVersions}
-        isInstalled={item.isInstalled}
-        readOnly={readOnly}
-      />
-    );
-  };
 
   return (
     <div className={cn("h-full w-full", className)}>
@@ -99,7 +105,15 @@ export const ExtensionList = (props: {
             itemCount={items.length}
             itemSize={52}
           >
-            {VirtualListItem}
+            {(virtualProps) => (
+              <VirtualListItem
+                {...virtualProps}
+                items={items}
+                versions={versions}
+                toolTipSide={toolTipSide}
+                readOnly={readOnly}
+              />
+            )}
           </VirtualList>
         )}
       </AutoSizer>
@@ -123,7 +137,7 @@ export const ExtensionBaseItem = React.forwardRef<
 >((props, ref) => {
   const { item, className, isInstalled, _type, readOnly, ...rest } = props;
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     extSearch,
     appendWidget,
@@ -138,6 +152,19 @@ export const ExtensionBaseItem = React.forwardRef<
 
   const deferredSearch = React.useDeferredValue(extSearch);
 
+  const [prettyName, prettyDesc] = React.useMemo(() => {
+    const name =
+      extractLocaleContentFromPkg(
+        (item as IListTenCloudStorePackage)?.display_name,
+        i18n.language
+      ) || item.name;
+    const desc = extractLocaleContentFromPkg(
+      (item as IListTenCloudStorePackage)?.description,
+      i18n.language
+    );
+    return [name, desc];
+  }, [item, i18n.language]);
+
   const handleInstall =
     (baseDir: string, item: IListTenCloudStorePackage) =>
     (e: React.MouseEvent) => {
@@ -146,7 +173,7 @@ export const ExtensionBaseItem = React.forwardRef<
       if (!baseDir || !item) {
         return;
       }
-      const widgetId = "ext-install-" + item.hash;
+      const widgetId = `ext-install-${item.hash}`;
       appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_LOG_VIEWER_ID,
@@ -225,7 +252,7 @@ export const ExtensionBaseItem = React.forwardRef<
             "text-foreground"
           )}
         >
-          <HighlightText highlight={deferredSearch}>{item.name}</HighlightText>
+          <HighlightText highlight={deferredSearch}>{prettyName}</HighlightText>
 
           {_type === EPackageSource.Local && (
             <span className={cn("text-ten-icontext-2", "font-normal text-xs")}>
@@ -233,15 +260,23 @@ export const ExtensionBaseItem = React.forwardRef<
             </span>
           )}
         </h3>
-        <p className={cn("font-thin text-ten-icontext-2 text-xs")}>
-          {item.type}
+        <p
+          className={cn(
+            "font-thin text-ten-icontext-2 text-xs",
+            "overflow-hidden text-ellipsis"
+          )}
+        >
+          <span className="me-1">{item.type}</span>
+          {prettyDesc && (
+            <span className={cn("mx-1 font-normal text-xs", "text-nowrap")}>
+              {prettyDesc}
+            </span>
+          )}
         </p>
       </div>
       <div className="my-auto flex flex-col items-end">
         {isInstalled ? (
-          <>
-            <CheckIcon className="size-4" />
-          </>
+          <CheckIcon className="size-4" />
         ) : (
           <Button
             variant="outline"
@@ -286,19 +321,33 @@ export const ExtensionStoreItem = (props: {
 
   const { appendWidget } = useWidgetStore();
 
+  const { i18n } = useTranslation();
+
   const handleClick = () => {
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_EXTENSION_ID,
-      widget_id: EXTENSION_WIDGET_ID + "-" + item.name,
+      widget_id: `${EXTENSION_WIDGET_ID}-${item.name}`,
 
       category: EWidgetCategory.Extension,
       display_type: EWidgetDisplayType.Popup,
 
-      title: <ExtensionPopupTitle name={item.name} />,
+      title: (
+        <ExtensionPopupTitle
+          name={
+            extractLocaleContentFromPkg(
+              (item as IListTenCloudStorePackage)?.display_name,
+              i18n.language
+            ) || item.name
+          }
+        />
+      ),
       metadata: {
         name: item.name,
         versions: versions || [],
+      },
+      popup: {
+        height: 0.8,
       },
     });
   };
