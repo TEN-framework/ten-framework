@@ -829,7 +829,7 @@
 
     "for-each": ["for-each@0.3.5", "", { "dependencies": { "is-callable": "^1.2.7" } }, "sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg=="],
 
-    "framer-motion": ["framer-motion@12.20.2", "", { "dependencies": { "motion-dom": "^12.20.2", "motion-utils": "^12.19.0", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid", "react", "react-dom"] }, "sha512-h3WG4sN4zzK1jL9fK7R49SDLYW4sLrz18Onmn9ojxF9eItIK0+UkktYVUMK1BCMkpjWLOoP3PvvvBhHMUw7ecQ=="],
+    "framer-motion": ["framer-motion@12.20.5", "", { "dependencies": { "motion-dom": "^12.20.5", "motion-utils": "^12.19.0", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid", "react", "react-dom"] }, "sha512-qXcIBXVrohQeANVoMyfikjwl1V4qDyVyJ2rQU+PjUinghKBeW9bsqdabJ25XlDyh2xswSej8IY1RDOx7j+n6fw=="],
 
     "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
 
@@ -1115,9 +1115,9 @@
 
     "monaco-editor": ["monaco-editor@0.52.2", "", {}, "sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ=="],
 
-    "motion": ["motion@12.20.2", "", { "dependencies": { "framer-motion": "^12.20.2", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid", "react", "react-dom"] }, "sha512-V7dEQYvETH+0OHZLPFHxV3nYc0tELBtjDMQlZXFO8Zctnr582XrjPYqm348iTFgahFYd1QxBbzmE4KYilDyk2A=="],
+    "motion": ["motion@12.20.5", "", { "dependencies": { "framer-motion": "^12.20.5", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid", "react", "react-dom"] }, "sha512-KIV+YePEvJc1OflTMp71l90nvU8JGXsana3K+eZKYrRhK/Ijv+LDN5G4VfHqwW94Z+6zH9LBoASwk8n0wxJNFA=="],
 
-    "motion-dom": ["motion-dom@12.20.2", "", { "dependencies": { "motion-utils": "^12.19.0" } }, "sha512-Hq7AZMmEMrmMnVQmewmbH64b81cdIG2jwWkbqQ3m+SZoz8g97CqL9QIepc6iN7DuAvYdUuPFHGGMUyj1bzfGvA=="],
+    "motion-dom": ["motion-dom@12.20.5", "", { "dependencies": { "motion-utils": "^12.19.0" } }, "sha512-JvmYEBBvB81C2YoJSeK0rlVkqyMnrXMbrO4kESE4GeQiFHyuW1ekwbIzxH/pZyOKHZW33EcsEM0lhB9ka7LU9g=="],
 
     "motion-utils": ["motion-utils@12.19.0", "", {}, "sha512-BuFTHINYmV07pdWs6lj6aI63vr2N4dg0vR+td0rtrdpWOhBzIkEklZyLcvKBoEtwSqx8Jg06vUB5RS0xDiUybw=="],
 

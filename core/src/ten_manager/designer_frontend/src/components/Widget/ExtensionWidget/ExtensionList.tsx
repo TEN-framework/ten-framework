@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-
 import type { TooltipContentProps } from "@radix-ui/react-tooltip";
 import { BlocksIcon, BrushCleaningIcon, CheckIcon } from "lucide-react";
 import * as React from "react";
