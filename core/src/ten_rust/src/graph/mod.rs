@@ -210,6 +210,12 @@ impl Graph {
         Ok(graph)
     }
 
+    pub fn from_str_and_validate(s: &str) -> Result<()> {
+        let mut graph: Graph = serde_json::from_str(s)?;
+        graph.validate_and_complete(None)?;
+        Ok(())
+    }
+
     /// Determines how app URIs are declared across all nodes in the graph.
     ///
     /// This method analyzes all nodes in the graph to determine the app
@@ -297,6 +303,35 @@ impl Graph {
                 .map_err(|e| anyhow::anyhow!("nodes[{}]: {}", idx, e))?;
         }
 
+        // Validate if any nodes have the same name but different addon.
+        let mut nodes_by_name = HashMap::new();
+        for node in &self.nodes {
+            nodes_by_name.entry(node.name.clone()).or_insert(vec![]).push(node);
+        }
+        for (name, nodes) in nodes_by_name {
+            if nodes.len() > 1 {
+                // Check if all nodes have the same addon.
+                let mut all_same_addon = true;
+                for node in &nodes {
+                    if node.addon.as_ref().unwrap_or(&String::new())
+                        != nodes[0].addon.as_ref().unwrap_or(&String::new())
+                    {
+                        all_same_addon = false;
+                        break;
+                    }
+                }
+                if !all_same_addon {
+                    return Err(anyhow::anyhow!(
+                        "extension '{}' is associated with different addon \
+                         '{}', '{}'",
+                        name,
+                        nodes[0].addon.as_ref().unwrap_or(&String::new()),
+                        nodes[1].addon.as_ref().unwrap_or(&String::new())
+                    ));
+                }
+            }
+        }
+
         // Validate all connections if they exist.
         if let Some(connections) = &mut self.connections {
             for (idx, connection) in connections.iter_mut().enumerate() {
@@ -336,8 +371,10 @@ impl Graph {
         &mut self,
         current_base_dir: Option<&str>,
     ) -> Result<()> {
+        // Step 1: Initial validation and completion
         self.validate_and_complete(current_base_dir)?;
 
+        // Step 2: Attempt to flatten the graph
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
         // the flatten_graph method will return an appropriate error.
@@ -346,6 +383,7 @@ impl Graph {
             *self = flattened;
         }
 
+        // Step 3: Final validation after flattening
         // After flattening, there should basically be no logic that requires
         // current_base_dir, so passing None here should not cause
         // errors, and we can use this for validation.
@@ -434,18 +472,31 @@ impl Graph {
         &self,
         current_base_dir: Option<&str>,
     ) -> Result<Option<Graph>> {
-        let mut processing_graph = self;
-
-        // Convert the reversed connections to forward connections if needed.
+        // Step 1: Convert reversed connections to forward connections if needed
         let converted_graph =
             Self::convert_reversed_connections_to_forward_connections(self)?;
-        if let Some(ref converted) = converted_graph {
-            processing_graph = converted;
-        }
 
-        Self::flatten_subgraphs(processing_graph, current_base_dir, false)
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to flatten graph: {}", e))
+        let processing_graph = converted_graph.as_ref().unwrap_or(self);
+
+        // Step 2: Flatten subgraphs
+        let flattened =
+            Self::flatten_subgraphs(processing_graph, current_base_dir, false)
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Failed to flatten graph: {}", e)
+                })?;
+
+        // Step 3: Return the result based on what operations were performed
+        match (converted_graph, flattened) {
+            // Both conversion and flattening occurred - return flattened result
+            (Some(_), Some(flattened)) => Ok(Some(flattened)),
+            // Only conversion occurred - return converted graph
+            (Some(converted), None) => Ok(Some(converted)),
+            // Only flattening occurred - return flattened result
+            (None, Some(flattened)) => Ok(Some(flattened)),
+            // No changes needed
+            (None, None) => Ok(None),
+        }
     }
 }
 

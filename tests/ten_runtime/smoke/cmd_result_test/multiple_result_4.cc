@@ -158,12 +158,15 @@ TEST(CmdResultTest, MultipleResult4) {  // NOLINT
                 "app": "msgpack://127.0.0.1:8001/"
              }],
              "connections": [{
+               "app": "msgpack://127.0.0.1:8001/",
                "extension": "test_extension_1",
                "cmd": [{
                  "name": "hello_world",
                  "dest": [{
+                   "app": "msgpack://127.0.0.1:8001/",
                    "extension": "test_extension_2"
                  },{
+                   "app": "msgpack://127.0.0.1:8001/",
                    "extension": "test_extension_3"
                  }]
                }]

@@ -614,4 +614,38 @@ mod tests {
         assert!(dest_extensions.contains(&"ext1"));
         assert!(dest_extensions.contains(&"ext3"));
     }
+
+    #[test]
+    fn test_graph_with_app_uri() {
+        let graph: Graph = serde_json::from_str(include_str!(
+            "../../test_data/graph_with_sources/graph_with_app_uri.json"
+        ))
+        .unwrap();
+
+        let converted =
+            Graph::convert_reversed_connections_to_forward_connections(&graph)
+                .unwrap()
+                .unwrap();
+
+        println!(
+            "converted graph with app uri: {}",
+            serde_json::to_string_pretty(&converted).unwrap()
+        );
+
+        assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
+        assert_eq!(converted.connections.as_ref().unwrap()[0].loc.app,
+            Some("msgpack://127.0.0.1:8001/".to_string())
+        );
+        assert_eq!(
+            converted.connections.as_ref().unwrap()[0].loc.extension,
+            Some("test_extension_1".to_string())
+        );
+        assert_eq!(
+            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
+                .dest[0]
+                .loc
+                .extension,
+            Some("test_extension_2".to_string())
+        );
+    }
 }

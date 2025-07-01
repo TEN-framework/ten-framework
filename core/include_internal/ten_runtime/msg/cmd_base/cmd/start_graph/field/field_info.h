@@ -14,6 +14,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/extension_info.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/field.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/graph_json.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/long_running_mode.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/predefined_graph_name.h"
 #include "include_internal/ten_runtime/msg/field/field_info.h"
@@ -47,6 +48,12 @@ static const ten_msg_field_info_t ten_cmd_start_graph_fields_info[] = {
             .field_name = NULL,
             .copy_field = ten_cmd_start_graph_copy_extensions_info,
             .process_field = ten_cmd_start_graph_process_extensions_info,
+        },
+    [TEN_CMD_CONNECT_FIELD_GRAPH_JSON] =
+        {
+            .field_name = TEN_STR_GRAPH_JSON,
+            .copy_field = ten_cmd_start_graph_copy_graph_json,
+            .process_field = ten_cmd_start_graph_process_graph_json,
         },
     [TEN_CMD_CONNECT_FIELD_LAST] = {0},
 };

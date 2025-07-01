@@ -95,8 +95,8 @@ TEST(ExtensionTest, ErrorClientSendJson) {  // NOLINT
   EXPECT_EQ(success, false);
   EXPECT_STREQ(ten_error_message(err),
                "extension 'extension_1' is associated with different addon "
-               "'error_client_send_json__extension_2', "
-               "'error_client_send_json__extension_1'");
+               "'error_client_send_json__extension_1', "
+               "'error_client_send_json__extension_2'");
 
   ten_error_destroy(err);
   ten_shared_ptr_destroy(invalid_graph_cmd);
