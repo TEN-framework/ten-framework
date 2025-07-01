@@ -281,7 +281,8 @@
     "selectVersion": "Select a version",
     "versionLatest": "Latest",
     "localAddonTip": "(local)",
-    "tags": "Tags"
+    "tags": "Tags",
+    "identifier": "Identifier"
   },
   "rtcInteraction": {
     "title": "Realtime Voice AI Agent"

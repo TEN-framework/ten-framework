@@ -4,13 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import useSWR, { type SWRResponse, type SWRConfiguration } from "swr";
-import { QueryClient } from "@tanstack/react-query";
 
-import logger from "@/logger";
+import { QueryClient } from "@tanstack/react-query";
+import useSWR, { type SWRConfiguration, type SWRResponse } from "swr";
+import type { z } from "zod";
 import type { IReqTemplate } from "@/api/endpoints";
 import type { ENDPOINT_METHOD } from "@/api/endpoints/constant";
+import logger from "@/logger";
 import { EPreferencesLocale } from "@/types/apps";
+import type { TenCloudStorePackageSchemaI18nField } from "@/types/extension";
 
 export const prepareReqUrl = (
   reqTemplate: IReqTemplate<ENDPOINT_METHOD, unknown>,
@@ -212,6 +214,29 @@ export const getShortLocale = (locale?: string) => {
   const inputLocale = locale ?? EPreferencesLocale.EN_US;
 
   return inputLocale.split("-")?.[0]?.toLowerCase();
+};
+
+export const getFullLocale = (locale?: string) => {
+  const inputLocale = locale ?? EPreferencesLocale.EN_US;
+  const target = localeStringToEnum(inputLocale);
+  return target;
+};
+
+export const extractLocaleContentFromPkg = (
+  data?: z.infer<typeof TenCloudStorePackageSchemaI18nField>,
+  locale?: string
+): string | undefined => {
+  if (!data) {
+    return undefined;
+  }
+  const targetLocale = getFullLocale(locale);
+  const targetContent = data.locales[targetLocale]?.content;
+  if (targetContent) {
+    return targetContent;
+  }
+  const defaultLocale = EPreferencesLocale.EN_US;
+  const defaultContent = data.locales[defaultLocale]?.content;
+  return defaultContent;
 };
 
 let _tanstackQueryClient: QueryClient | null = null;

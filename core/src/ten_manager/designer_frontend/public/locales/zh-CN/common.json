@@ -281,7 +281,8 @@
     "selectVersion": "选择版本",
     "versionLatest": "最新",
     "localAddonTip": "(本地)",
-    "tags": "标签"
+    "tags": "标签",
+    "identifier": "标识符"
   },
   "rtcInteraction": {
     "title": "实时对话式 AI Agent"

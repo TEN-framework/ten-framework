@@ -4,14 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import z from "zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
 
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type z from "zod";
 import { ENDPOINT_PREFERENCES, ENDPOINT_STORAGE } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { PERSISTENT_SCHEMA, PERSISTENT_DEFAULTS } from "@/constants/persistent";
-import { IRunAppParams } from "@/types/apps";
+import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
+import { PERSISTENT_DEFAULTS, PERSISTENT_SCHEMA } from "@/constants/persistent";
+import type { IRunAppParams } from "@/types/apps";
+import type {
+  GraphUiNodeGeometrySchema,
+  SetGraphUiPayloadSchema,
+} from "@/types/graphs";
 
 export const getPreferencesLogViewerLines = async () => {
   const template =
@@ -157,4 +161,22 @@ export const addRecentRunApp = async (app: IRunAppParams) => {
       ...(data?.recent_run_apps || []),
     ].slice(0, 3), // keep only the first 3
   });
+};
+
+export const postSetGraphNodeGeometry = async (
+  data: z.infer<typeof SetGraphUiPayloadSchema>
+) => {
+  const originalData = await getStorageValueByKey("graph_ui");
+  const updatedData = {
+    ...originalData,
+    [data.graph_id]: data,
+  };
+  await setStorageValueByKey("graph_ui", updatedData);
+};
+
+export const postGetGraphNodeGeometry = async (
+  graphId: string
+): Promise<z.infer<typeof GraphUiNodeGeometrySchema>[]> => {
+  const data = await getStorageValueByKey("graph_ui");
+  return data?.[graphId]?.graph_geometry?.nodes_geometry || [];
 };
