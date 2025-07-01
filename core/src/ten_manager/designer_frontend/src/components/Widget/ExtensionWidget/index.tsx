@@ -363,8 +363,6 @@ export const ExtensionStoreWidget = (props: {
           {!currentWorkspace?.app?.base_dir && (
             <p
               className="ml-auto w-fit cursor-pointer"
-              tabIndex="0"
-              role="button"
               onClick={onOpenExistingGraph}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
