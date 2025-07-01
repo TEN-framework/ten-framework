@@ -537,8 +537,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_graph_connection_with_source() {
-        let graph_str =
-            include_str!("../../test_data/graph_connection_with_source.json");
+        let graph_str = include_str!(
+            "../../test_data/graph_with_sources/graph_connection_with_source.\
+             json"
+        );
 
         let graph = Graph::from_str_with_base_dir(graph_str, None).await;
 
