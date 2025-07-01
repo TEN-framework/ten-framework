@@ -281,7 +281,8 @@
     "selectVersion": "選擇版本",
     "versionLatest": "最新",
     "localAddonTip": "(本地)",
-    "tags": "標籤"
+    "tags": "標籤",
+    "identifier": "識別碼"
   },
   "rtcInteraction": {
     "title": "實時語音 AI 代理"

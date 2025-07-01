@@ -281,7 +281,8 @@
     "selectVersion": "バージョンを選択",
     "versionLatest": "最新",
     "localAddonTip": "(ローカル)",
-    "tags": "タグ"
+    "tags": "タグ",
+    "identifier": "識別"
   },
   "rtcInteraction": {
     "title": "リアルタイム音声AIエージェント"
