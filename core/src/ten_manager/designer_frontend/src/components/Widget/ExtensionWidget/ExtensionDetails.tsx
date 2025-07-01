@@ -432,7 +432,8 @@ export const ExtensionDetails = (props: {
                   {osArchMemo.get(osArch)?.map((version) => (
                     <SelectItem key={version.hash} value={version.hash}>
                       {version.hash === defaultVersionMemo?.hash
-                        ? `${version.version}(${t("extensionStore.versionLatest")})`
+                        ? // eslint-disable-next-line max-len
+                          `${version.version}(${t("extensionStore.versionLatest")})`
                         : version.version}
                     </SelectItem>
                   ))}
