@@ -4,12 +4,19 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { BlocksIcon, CheckIcon, BrushCleaningIcon } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { FixedSizeList as VirtualList } from "react-window";
-import AutoSizer from "react-virtualized-auto-sizer";
 
+import type { TooltipContentProps } from "@radix-ui/react-tooltip";
+import { BlocksIcon, BrushCleaningIcon, CheckIcon } from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import AutoSizer from "react-virtualized-auto-sizer";
+import { FixedSizeList as VirtualList } from "react-window";
+import { useFetchAddons } from "@/api/services/addons";
+import { postReloadApps } from "@/api/services/apps";
+import { useListTenCloudStorePackages } from "@/api/services/extension";
+import { HighlightText } from "@/components/Highlight";
+import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
+import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import { Button } from "@/components/ui/Button";
 import {
   Tooltip,
@@ -17,37 +24,30 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
+// eslint-disable-next-line max-len
+import { ExtensionTooltipContent } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
+import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
+import {
+  CONTAINER_DEFAULT_ID,
+  EXTENSION_WIDGET_ID,
+  GROUP_EXTENSION_ID,
+  GROUP_LOG_VIEWER_ID,
+} from "@/constants/widgets";
 import { cn } from "@/lib/utils";
-import { useWidgetStore, useAppStore } from "@/store";
+import { useAppStore, useWidgetStore } from "@/store";
+import {
+  EPackageSource,
+  type IListTenCloudStorePackage,
+  type IListTenLocalStorePackage,
+  type ITenPackage,
+  type ITenPackageLocal,
+} from "@/types/extension";
 import {
   ELogViewerScriptType,
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-// eslint-disable-next-line max-len
-import { ExtensionTooltipContent } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
-import {
-  type IListTenCloudStorePackage,
-  type IListTenLocalStorePackage,
-  EPackageSource,
-  ITenPackage,
-  ITenPackageLocal,
-} from "@/types/extension";
-import { useListTenCloudStorePackages } from "@/api/services/extension";
-import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
-import { getWSEndpointFromWindow } from "@/constants/utils";
-import { HighlightText } from "@/components/Highlight";
-
-import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-import { postReloadApps } from "@/api/services/apps";
-import {
-  EXTENSION_WIDGET_ID,
-  GROUP_EXTENSION_ID,
-  GROUP_LOG_VIEWER_ID,
-} from "@/constants/widgets";
-import { CONTAINER_DEFAULT_ID } from "@/constants/widgets";
-import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
-import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
 
 export const ExtensionList = (props: {
   items: (ITenPackage | ITenPackageLocal)[];
@@ -90,7 +90,7 @@ export const ExtensionList = (props: {
   };
 
   return (
-    <div className={cn("w-full h-full", className)}>
+    <div className={cn("h-full w-full", className)}>
       <AutoSizer>
         {({ width, height }: { width: number; height: number }) => (
           <VirtualList
@@ -131,7 +131,10 @@ export const ExtensionBaseItem = React.forwardRef<
     removeLogViewerHistory,
   } = useWidgetStore();
   const { currentWorkspace } = useAppStore();
-  const { mutate } = useListTenCloudStorePackages();
+  const { mutate: mutatePkgs } = useListTenCloudStorePackages();
+  const { mutate: mutateAddons } = useFetchAddons({
+    base_dir: currentWorkspace?.app?.base_dir,
+  });
 
   const deferredSearch = React.useDeferredValue(extSearch);
 
@@ -168,7 +171,8 @@ export const ExtensionBaseItem = React.forwardRef<
             title: t("popup.logViewer.appInstall"),
           },
           postActions: () => {
-            mutate();
+            mutatePkgs();
+            mutateAddons();
             postReloadApps(baseDir);
           },
         },
@@ -199,8 +203,8 @@ export const ExtensionBaseItem = React.forwardRef<
       ref={ref}
       className={cn(
         "px-1 py-2",
-        "flex gap-2 w-full items-center max-w-full font-roboto h-fit",
-        "hover:bg-ten-fill-4 rounded-sm",
+        "flex h-fit w-full max-w-full items-center gap-2 font-roboto",
+        "rounded-sm hover:bg-ten-fill-4",
         {
           "cursor-pointer": !!rest?.onClick && !readOnly,
         },
@@ -211,25 +215,25 @@ export const ExtensionBaseItem = React.forwardRef<
       <BlocksIcon className="size-8" />
       <div
         className={cn(
-          "flex flex-col  justify-between",
+          "flex flex-col justify-between",
           "w-full overflow-hidden text-sm"
         )}
       >
         <h3
           className={cn(
-            "font-semibold w-full overflow-hidden text-ellipsis",
+            "w-full overflow-hidden text-ellipsis font-semibold",
             "text-foreground"
           )}
         >
           <HighlightText highlight={deferredSearch}>{item.name}</HighlightText>
 
           {_type === EPackageSource.Local && (
-            <span className={cn("text-ten-icontext-2", "text-xs font-normal")}>
+            <span className={cn("text-ten-icontext-2", "font-normal text-xs")}>
               {t("extensionStore.localAddonTip")}
             </span>
           )}
         </h3>
-        <p className={cn("text-xs text-ten-icontext-2 font-thin")}>
+        <p className={cn("font-thin text-ten-icontext-2 text-xs")}>
           {item.type}
         </p>
       </div>
@@ -243,7 +247,7 @@ export const ExtensionBaseItem = React.forwardRef<
             variant="outline"
             size="xs"
             className={cn(
-              "text-xs px-2 py-0.5 font-normal h-fit cursor-pointer",
+              "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
               "shadow-none"
             )}
             disabled={readOnly || !currentWorkspace?.app?.base_dir}
@@ -315,7 +319,7 @@ export const ExtensionStoreItem = (props: {
         <TooltipContent
           side={toolTipSide}
           className={cn(
-            "backdrop-blur-xs shadow-xl text-popover-foreground",
+            "text-popover-foreground shadow-xl backdrop-blur-xs",
             "bg-slate-50/80 dark:bg-gray-900/90",
             "border border-slate-100/50 dark:border-gray-900/50",
             "ring-1 ring-slate-100/50 dark:ring-gray-900/50",
