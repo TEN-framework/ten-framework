@@ -33,7 +33,7 @@ typedef struct ten_cmd_start_graph_t {
 
   // The graph json string stored in the start_graph cmd, which will be
   // flattened into extension_groups_info and extensions_info when the app
-  // processes the cmd, and graph_json will be cleared afterwards
+  // processes the cmd, and graph_json will be cleared afterwards.
   ten_value_t graph_json;  // string
 } ten_cmd_start_graph_t;
 

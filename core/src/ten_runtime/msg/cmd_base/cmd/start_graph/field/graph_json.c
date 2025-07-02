@@ -19,9 +19,13 @@
 void ten_cmd_start_graph_copy_graph_json(
     ten_msg_t *self, ten_msg_t *src,
     TEN_UNUSED ten_list_t *excluded_field_ids) {
-  TEN_ASSERT(self && src && ten_raw_cmd_check_integrity((ten_cmd_t *)src) &&
-                 ten_raw_msg_get_type(src) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(src, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)src),
              "Should not happen.");
+  TEN_ASSERT(ten_raw_msg_get_type(src) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
   ten_string_copy(
       ten_value_peek_string(&((ten_cmd_start_graph_t *)self)->graph_json),
       ten_value_peek_string(&((ten_cmd_start_graph_t *)src)->graph_json));

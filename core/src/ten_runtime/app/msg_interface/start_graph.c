@@ -27,7 +27,6 @@
 #include "include_internal/ten_runtime/protocol/protocol.h"
 #include "include_internal/ten_rust/ten_rust.h"
 #include "ten_runtime/app/app.h"
-#include "ten_runtime/msg/cmd/start_graph/cmd.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/log/log.h"
