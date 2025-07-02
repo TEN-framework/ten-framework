@@ -76,6 +76,7 @@
 #define TEN_STR_PREDEFINED_GRAPH "predefined_graph"
 #define TEN_STR_NODES "nodes"
 #define TEN_STR_CONNECTIONS "connections"
+#define TEN_STR_GRAPH_JSON "graph_json"
 
 #define TEN_STR_PROPERTY_STORE_SCOPE_DELIMITER ":"
 

@@ -513,9 +513,12 @@ impl Graph {
     ) -> Result<()> {
         // Recursively flatten the loaded subgraph first to handle nested
         // subgraphs. This ensures depth-first processing.
-        let flattened_subgraph =
-            Box::pin(Self::flatten(loaded_subgraph, current_base_dir, true))
-                .await?;
+        let flattened_subgraph = Box::pin(Self::flatten_subgraphs(
+            loaded_subgraph,
+            current_base_dir,
+            true,
+        ))
+        .await?;
 
         // If the subgraph doesn't need flattening, use the original
         let flattened_subgraph =
@@ -622,7 +625,7 @@ impl Graph {
 
     /// Helper function that contains the common logic for flattening a graph's
     /// nodes and connections.
-    async fn flatten_graph_internal(
+    async fn flatten_subgraph_internal(
         graph: &Graph,
         current_base_dir: Option<&str>,
         flattened_nodes: &mut Vec<GraphNode>,
@@ -820,7 +823,7 @@ impl Graph {
     /// Returns `Ok(None)` if the graph contains no subgraphs and doesn't need
     /// flattening. Returns `Ok(Some(flattened_graph))` if the graph was
     /// successfully flattened.
-    pub async fn flatten(
+    pub async fn flatten_subgraphs(
         graph: &Graph,
         current_base_dir: Option<&str>,
         preserve_exposed_info: bool,
@@ -841,7 +844,7 @@ impl Graph {
         let mut flattened_connections = Vec::new();
         let mut subgraph_mappings = HashMap::new();
 
-        Self::flatten_graph_internal(
+        Self::flatten_subgraph_internal(
             graph,
             current_base_dir,
             &mut flattened_nodes,
@@ -878,20 +881,5 @@ impl Graph {
             exposed_messages: updated_exposed_messages,
             exposed_properties: updated_exposed_properties,
         }))
-    }
-
-    /// Convenience method for flattening a graph instance without preserving
-    /// exposed info. This is the main public API for flattening graphs.
-    ///
-    /// Returns `Ok(None)` if the graph contains no subgraphs and doesn't need
-    /// flattening. Returns `Ok(Some(flattened_graph))` if the graph was
-    /// successfully flattened.
-    pub async fn flatten_graph(
-        &self,
-        current_base_dir: Option<&str>,
-    ) -> Result<Option<Graph>> {
-        Self::flatten(self, current_base_dir, false)
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to flatten graph: {}", e))
     }
 }

@@ -20,7 +20,7 @@ use crate::{
 
 use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GraphLoc {
     #[serde(skip_serializing_if = "is_app_default_loc_or_none")]
     pub app: Option<String>,
@@ -37,11 +37,12 @@ impl GraphLoc {
         Self { app: None, extension: None, subgraph: None }
     }
 
-    pub fn with_app_and_extension(
+    pub fn with_app_and_extension_or_subgraph(
         app: Option<String>,
         extension: Option<String>,
+        subgraph: Option<String>,
     ) -> Self {
-        Self { app, extension, subgraph: None }
+        Self { app, extension, subgraph }
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
@@ -111,9 +112,15 @@ pub struct GraphConnection {
 }
 
 impl GraphConnection {
-    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+    pub fn new(
+        app: Option<String>,
+        extension: Option<String>,
+        subgraph: Option<String>,
+    ) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension(app, extension),
+            loc: GraphLoc::with_app_and_extension_or_subgraph(
+                app, extension, subgraph,
+            ),
             cmd: None,
             data: None,
             audio_frame: None,
@@ -234,9 +241,15 @@ pub struct GraphDestination {
 }
 
 impl GraphDestination {
-    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+    pub fn new(
+        app: Option<String>,
+        extension: Option<String>,
+        subgraph: Option<String>,
+    ) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension(app, extension),
+            loc: GraphLoc::with_app_and_extension_or_subgraph(
+                app, extension, subgraph,
+            ),
             msg_conversion: None,
         }
     }

@@ -9,6 +9,7 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod reverse;
 pub mod subgraph;
 
 use std::collections::HashMap;
@@ -209,6 +210,12 @@ impl Graph {
         Ok(graph)
     }
 
+    pub fn from_str_and_validate(s: &str) -> Result<Self> {
+        let mut graph: Graph = serde_json::from_str(s)?;
+        graph.validate_and_complete(None)?;
+        Ok(graph)
+    }
+
     /// Determines how app URIs are declared across all nodes in the graph.
     ///
     /// This method analyzes all nodes in the graph to determine the app
@@ -335,8 +342,10 @@ impl Graph {
         &mut self,
         current_base_dir: Option<&str>,
     ) -> Result<()> {
+        // Step 1: Initial validation and completion
         self.validate_and_complete(current_base_dir)?;
 
+        // Step 2: Attempt to flatten the graph
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
         // the flatten_graph method will return an appropriate error.
@@ -345,6 +354,7 @@ impl Graph {
             *self = flattened;
         }
 
+        // Step 3: Final validation after flattening
         // After flattening, there should basically be no logic that requires
         // current_base_dir, so passing None here should not cause
         // errors, and we can use this for validation.
@@ -358,10 +368,7 @@ impl Graph {
         graph_app_base_dir: &Option<String>,
         pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     ) -> Result<()> {
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -369,9 +376,6 @@ impl Graph {
             pkgs_cache,
             false,
         )?;
-
-        self.check_extension_uniqueness_in_connections()?;
-        self.check_message_names()?;
 
         Ok(())
     }
@@ -383,10 +387,7 @@ impl Graph {
     ) -> Result<()> {
         assert!(pkgs_cache.len() == 1);
 
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.
@@ -397,8 +398,17 @@ impl Graph {
             true,
         )?;
 
+        Ok(())
+    }
+
+    pub fn static_check(&self) -> Result<()> {
+        self.check_extension_uniqueness()?;
+        self.check_extension_existence()?;
+        self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
         self.check_extension_uniqueness_in_connections()?;
         self.check_message_names()?;
+        self.check_msg_conversions()?;
 
         Ok(())
     }
@@ -422,6 +432,42 @@ impl Graph {
                     extension
                 )
             })
+    }
+
+    /// Convenience method for flattening a graph instance without preserving
+    /// exposed info. This is the main public API for flattening graphs.
+    ///
+    /// Returns `Ok(None)` if the graph doesn't need flattening. Returns
+    /// `Ok(Some(flattened_graph))` if the graph was successfully flattened.
+    pub async fn flatten_graph(
+        &self,
+        current_base_dir: Option<&str>,
+    ) -> Result<Option<Graph>> {
+        // Step 1: Convert reversed connections to forward connections if needed
+        let converted_graph =
+            Self::convert_reversed_connections_to_forward_connections(self)?;
+
+        let processing_graph = converted_graph.as_ref().unwrap_or(self);
+
+        // Step 2: Flatten subgraphs
+        let flattened =
+            Self::flatten_subgraphs(processing_graph, current_base_dir, false)
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Failed to flatten graph: {}", e)
+                })?;
+
+        // Step 3: Return the result based on what operations were performed
+        match (converted_graph, flattened) {
+            // Both conversion and flattening occurred - return flattened result
+            (Some(_), Some(flattened)) => Ok(Some(flattened)),
+            // Only conversion occurred - return converted graph
+            (Some(converted), None) => Ok(Some(converted)),
+            // Only flattening occurred - return flattened result
+            (None, Some(flattened)) => Ok(Some(flattened)),
+            // No changes needed
+            (None, None) => Ok(None),
+        }
     }
 }
 

@@ -244,7 +244,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     data: None,
                     audio_frame: None,
@@ -268,7 +268,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     data: None,
                     audio_frame: None,
@@ -1025,7 +1025,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     data: Some(vec![connection::GraphMessageFlow::new(
                         "TestData".to_string(),
@@ -1037,7 +1037,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     audio_frame: Some(vec![connection::GraphMessageFlow::new(
                         "TestAudio".to_string(),
@@ -1049,7 +1049,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     video_frame: Some(vec![connection::GraphMessageFlow::new(
                         "TestVideo".to_string(),
@@ -1061,7 +1061,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                 },
                 // subgraph_3 sends various message types to ext_a
@@ -1081,7 +1081,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     data: Some(vec![connection::GraphMessageFlow::new(
                         "ResponseData".to_string(),
@@ -1093,7 +1093,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     audio_frame: Some(vec![connection::GraphMessageFlow::new(
                         "ResponseAudio".to_string(),
@@ -1105,7 +1105,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                     video_frame: Some(vec![connection::GraphMessageFlow::new(
                         "ResponseVideo".to_string(),
@@ -1117,7 +1117,7 @@ mod tests {
                             },
                             msg_conversion: None,
                         }],
-                    vec![],
+                        vec![],
                     )]),
                 },
             ]),
@@ -1383,8 +1383,10 @@ mod tests {
         fs::write(subgraph_file_path, subgraph_json).unwrap();
 
         // Flatten the graph with preserve_exposed_info = true
-        let flattened =
-            Graph::flatten(&main_graph, None, true).await.unwrap().unwrap();
+        let flattened = Graph::flatten_subgraphs(&main_graph, None, true)
+            .await
+            .unwrap()
+            .unwrap();
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph

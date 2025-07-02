@@ -85,6 +85,9 @@ TEN_RUST_PRIVATE_API const char *
 ten_rust_predefined_graph_validate_complete_flatten(
     const char *json_str, const char *current_base_dir, char **err_msg);
 
+TEN_RUST_PRIVATE_API const char *ten_rust_graph_validate_complete_flatten(
+    const char *json_str, const char *current_base_dir, char **err_msg);
+
 /**
  * @brief Validates a manifest API and returns it as a JSON string.
  *
@@ -122,6 +125,9 @@ ten_rust_predefined_graph_validate_complete_flatten(
 TEN_RUST_PRIVATE_API const char *ten_rust_manifest_api_flatten(
     const char *manifest_api_json_str, const char *current_base_dir,
     char **err_msg);
+
+TEN_RUST_PRIVATE_API bool ten_rust_validate_graph_json_string(
+    const char *graph_json_str, char **err_msg);
 
 TEN_RUST_PRIVATE_API Cipher *ten_cipher_create(const char *algorithm,
                                                const char *params);
