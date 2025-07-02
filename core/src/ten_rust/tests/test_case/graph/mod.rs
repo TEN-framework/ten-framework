@@ -15,8 +15,6 @@ mod subgraph;
 mod tests {
     use std::collections::HashMap;
 
-    use anyhow::Result;
-
     use ten_rust::{
         constants::{
             ERR_MSG_GRAPH_APP_FIELD_EMPTY,
@@ -28,12 +26,6 @@ mod tests {
         graph::Graph,
         pkg_info::property::parse_property_from_str,
     };
-
-    fn check_extension_existence_and_uniqueness(graph: &Graph) -> Result<()> {
-        graph.check_extension_existence()?;
-        graph.check_extension_uniqueness()?;
-        Ok(())
-    }
 
     #[tokio::test]
     async fn test_predefined_graph_has_no_extensions() {
@@ -53,7 +45,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = check_extension_existence_and_uniqueness(graph);
+        let result = graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -78,7 +70,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = check_extension_existence_and_uniqueness(graph);
+        let result = graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -92,7 +84,7 @@ mod tests {
 
         let graph: Graph =
             Graph::from_str_with_base_dir(cmd_str, None).await.unwrap();
-        let result = check_extension_existence_and_uniqueness(&graph);
+        let result = graph.static_check();
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -558,5 +550,23 @@ mod tests {
         let dest = cmd.dest.first().unwrap();
         let loc = &dest.loc;
         assert_eq!(loc.extension, Some("some_extension".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_graph_result_conversion_in_not_allowed_flow() {
+        let graph_str = include_str!(
+            "../../test_data/graph_result_conversion_in_not_allowed_flow.json"
+        );
+
+        let graph = Graph::from_str_and_validate(graph_str).unwrap();
+
+        let result = graph.static_check();
+        assert!(result.is_err());
+        println!("Error: {result:?}");
+
+        let msg = result.err().unwrap().to_string();
+        assert!(
+            msg.contains("result conversion is not allowed for data out msg")
+        );
     }
 }

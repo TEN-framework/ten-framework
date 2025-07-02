@@ -368,7 +368,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
     }
 
     let c_graph_json_str = CStr::from_ptr(graph_json_str);
-    let _rust_graph_json_str = match c_graph_json_str.to_str() {
+    let rust_graph_json_str = match c_graph_json_str.to_str() {
         Ok(s) => s,
         Err(e) => {
             if !err_msg.is_null() {
@@ -379,7 +379,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
         }
     };
 
-    let result = Graph::from_str_and_validate(_rust_graph_json_str);
+    let result = Graph::from_str_and_validate(rust_graph_json_str);
     if result.is_err() {
         if !err_msg.is_null() {
             let err_msg_c_str =
@@ -389,19 +389,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
         return false;
     }
 
-    let graph = result.unwrap();
-
-    let result = graph.check_extension_existence();
-    if result.is_err() {
-        if !err_msg.is_null() {
-            let err_msg_c_str =
-                CString::new(result.err().unwrap().to_string()).unwrap();
-            *err_msg = err_msg_c_str.into_raw();
-        }
-        return false;
-    }
-
-    let result = graph.check_extension_uniqueness();
+    let result = result.unwrap().static_check();
     if result.is_err() {
         if !err_msg.is_null() {
             let err_msg_c_str =

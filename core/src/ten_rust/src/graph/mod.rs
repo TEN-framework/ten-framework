@@ -368,10 +368,7 @@ impl Graph {
         graph_app_base_dir: &Option<String>,
         pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     ) -> Result<()> {
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -379,9 +376,6 @@ impl Graph {
             pkgs_cache,
             false,
         )?;
-
-        self.check_extension_uniqueness_in_connections()?;
-        self.check_message_names()?;
 
         Ok(())
     }
@@ -393,10 +387,7 @@ impl Graph {
     ) -> Result<()> {
         assert!(pkgs_cache.len() == 1);
 
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.
@@ -407,8 +398,17 @@ impl Graph {
             true,
         )?;
 
+        Ok(())
+    }
+
+    pub fn static_check(&self) -> Result<()> {
+        self.check_extension_uniqueness()?;
+        self.check_extension_existence()?;
+        self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
         self.check_extension_uniqueness_in_connections()?;
         self.check_message_names()?;
+        self.check_msg_conversions()?;
 
         Ok(())
     }
