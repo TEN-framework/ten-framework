@@ -210,10 +210,10 @@ impl Graph {
         Ok(graph)
     }
 
-    pub fn from_str_and_validate(s: &str) -> Result<()> {
+    pub fn from_str_and_validate(s: &str) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
         graph.validate_and_complete(None)?;
-        Ok(())
+        Ok(graph)
     }
 
     /// Determines how app URIs are declared across all nodes in the graph.
@@ -301,35 +301,6 @@ impl Graph {
         for (idx, node) in self.nodes.iter_mut().enumerate() {
             node.validate_and_complete(&app_uri_declaration_state)
                 .map_err(|e| anyhow::anyhow!("nodes[{}]: {}", idx, e))?;
-        }
-
-        // Validate if any nodes have the same name but different addon.
-        let mut nodes_by_name = HashMap::new();
-        for node in &self.nodes {
-            nodes_by_name.entry(node.name.clone()).or_insert(vec![]).push(node);
-        }
-        for (name, nodes) in nodes_by_name {
-            if nodes.len() > 1 {
-                // Check if all nodes have the same addon.
-                let mut all_same_addon = true;
-                for node in &nodes {
-                    if node.addon.as_ref().unwrap_or(&String::new())
-                        != nodes[0].addon.as_ref().unwrap_or(&String::new())
-                    {
-                        all_same_addon = false;
-                        break;
-                    }
-                }
-                if !all_same_addon {
-                    return Err(anyhow::anyhow!(
-                        "extension '{}' is associated with different addon \
-                         '{}', '{}'",
-                        name,
-                        nodes[0].addon.as_ref().unwrap_or(&String::new()),
-                        nodes[1].addon.as_ref().unwrap_or(&String::new())
-                    ));
-                }
-            }
         }
 
         // Validate all connections if they exist.

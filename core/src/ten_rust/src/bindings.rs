@@ -389,6 +389,28 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
         return false;
     }
 
+    let graph = result.unwrap();
+
+    let result = graph.check_extension_existence();
+    if result.is_err() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new(result.err().unwrap().to_string()).unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return false;
+    }
+
+    let result = graph.check_extension_uniqueness();
+    if result.is_err() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new(result.err().unwrap().to_string()).unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return false;
+    }
+
     true
 }
 

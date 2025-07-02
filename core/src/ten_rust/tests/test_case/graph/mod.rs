@@ -547,10 +547,16 @@ mod tests {
         assert!(graph.is_ok());
 
         let connections = graph.unwrap().connections.unwrap();
+        let loc = &connections.first().unwrap().loc;
+        assert_eq!(loc.extension, Some("another_ext".to_string()));
+
         let cmd =
             connections.first().unwrap().cmd.as_ref().unwrap().first().unwrap();
         let source = &cmd.source;
-        assert_eq!(source.len(), 1);
-        assert_eq!(source[0].loc.extension, Some("another_ext".to_string()));
+        assert!(source.is_empty());
+
+        let dest = cmd.dest.first().unwrap();
+        let loc = &dest.loc;
+        assert_eq!(loc.extension, Some("some_extension".to_string()));
     }
 }
