@@ -633,7 +633,8 @@ mod tests {
         );
 
         assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
-        assert_eq!(converted.connections.as_ref().unwrap()[0].loc.app,
+        assert_eq!(
+            converted.connections.as_ref().unwrap()[0].loc.app,
             Some("msgpack://127.0.0.1:8001/".to_string())
         );
         assert_eq!(
