@@ -25,6 +25,15 @@ export const TenLocalStorePackageSchema = TenPackageBaseSchema.extend({
   api: z.unknown().optional(),
 });
 
+export const TenCloudStorePackageSchemaI18nField = z.object({
+  locales: z.record(
+    z.string(),
+    z.object({
+      content: z.string(),
+    })
+  ),
+});
+
 export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   version: z.string(),
   hash: z.string(),
@@ -45,6 +54,9 @@ export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
     )
     .optional(),
   tags: z.array(z.string()).optional(),
+  display_name: TenCloudStorePackageSchemaI18nField.optional(),
+  description: TenCloudStorePackageSchemaI18nField.optional(),
+  readme: TenCloudStorePackageSchemaI18nField.optional(),
 });
 
 export enum EPackageSource {

@@ -9,16 +9,16 @@ import z from "zod";
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
 import {
-  AddNodePayloadSchema,
-  DeleteNodePayloadSchema,
   AddConnectionPayloadSchema,
-  type IBackendNode,
-  type IBackendConnection,
-  type IGraph,
-  UpdateNodePropertyPayloadSchema,
+  AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
+  DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
+  type IBackendConnection,
+  type IBackendNode,
+  type IGraph,
   SetGraphUiPayloadSchema,
+  UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
 
 export const ENDPOINT_GRAPHS = {
@@ -207,6 +207,11 @@ export const ENDPOINT_GRAPHS = {
   },
 };
 
+/**
+ * @deprecated
+ * This endpoint is deprecated and will be removed in the future.
+ * Use `persistentSchema` endpoint instead.
+ */
 export const ENDPOINT_GRAPH_UI = {
   set: {
     [ENDPOINT_METHOD.POST]: {
