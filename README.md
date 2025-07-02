@@ -43,21 +43,20 @@
 
 - [👋 Welcome to TEN](#-welcome-to-ten)
 - [🎨 TMAN Designer](#-tman-designer)
-- [🤖 TEN Agent](#-ten-agent)
+- [✨ Features](#-features)
   - [1️⃣ Real-time Avatar](#1️⃣-real-time-avatar)
   - [2️⃣ Real-time voice with MCP servers](#2️⃣-real-time-voice-with-mcp-servers)
   - [3️⃣ Real-time communication with hardware](#3️⃣-real-time-communication-with-hardware)
   - [4️⃣ Real-time vision and real-time screenshare detection](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
   - [5️⃣ TEN with other LLM platforms](#5️⃣-ten-with-other-llm-platforms)
   - [6️⃣ StoryTeller - TEN image generation](#6️⃣-storyteller---ten-image-generation)
-- [🛝 TEN Agent Playground](#-ten-agent-playground)
-  - [️🅰️ Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
-  - [️🅱️ Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
+- [👩‍💻 Get TEN Agent up and running](#-get-ten-agent-up-and-running)
+  - [🅰️ Run TEN Agent in `localhost`](#🅰️-run-ten-agent-in-localhost)
+  - [🅱️ Run TEN Agent in Codespace(no docker)](#🅱️-run-ten-agent-in-codespaceno-docker)
 - [🛳️ TEN Agent Self Hosting](#️-ten-agent-self-hosting)
   - [🅰️ 🐳 Deploying with Docker](#️--deploying-with-docker)
   - [🅱️ Deploying with other cloud services](#️-deploying-with-other-cloud-services)
-- [🏗️ TEN Agent Architecture](#️-ten-agent-architecture)
-- [🌍 TEN Framework Ecosystem](#-ten-framework-ecosystem)
+- [🌍 TEN Ecosystem](#-ten-ecosystem)
 - [❓ Ask Questions](#-ask-questions)
 - [🥰 Contributing](#-contributing)
   - [Code Contributors](#code-contributors)
@@ -70,7 +69,9 @@
 
 ## 👋 Welcome to TEN
 
-TEN is a collection of open-source projects for building real-time, multimodal conversational voice agents. It includes [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection), TEN Agent, TMAN Designer, and [TEN Portal](https://github.com/ten-framework/portal), all fully open-source. [TEN VAD](https://github.com/ten-framework/ten-vad) is not fully open-source yet, but it is open for public use.
+TEN is a comprehensive open-source ecosystem for creating, customizing, and deploying real-time conversational AI agents with multimodal capabilities including voice, vision, and avatar interactions.
+
+TEN includes [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection), [TEN VAD](https://github.com/ten-framework/ten-vad), [TEN Agent](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/demo), [TMAN Designer](https://github.com/TEN-framework/ten-framework/tree/main/core/src/ten_manager/designer_frontend), and [TEN Portal](https://github.com/ten-framework/portal). Check out [🌍 TEN Ecosystem](#-ten-ecosystem) for more details.
 
 <br>
 
@@ -113,7 +114,7 @@ TEN is a collection of open-source projects for building real-time, multimodal c
 
 ## 🎨 TMAN Designer
 
-![TMAN Designer](https://github.com/user-attachments/assets/04fd75df-4de9-41b6-8aab-19014ecb46a4)
+<https://github.com/user-attachments/assets/44c6a087-ec7a-45b0-a084-dab5dac5e36b>
 
 ### TMAN Designer
 
@@ -141,7 +142,7 @@ Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for
 
 ## ✨ Features
 
-![TEN Agent with Trulience](https://github.com/user-attachments/assets/2f1dfd55-14a3-47ea-ae25-40ad40ceadea)
+![TEN Agent with Trulience](https://github.com/user-attachments/assets/0716f1ee-9585-4d35-a517-d92bf2ce6019)
 
 ### 1️⃣ Real-time Avatar
 
@@ -158,7 +159,7 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 
 <br>
 
-![TEN Agent with MCP servers](https://github.com/user-attachments/assets/934ba928-a4a3-4662-8624-cebefc88ce05)
+![TEN with MCP servers](https://github.com/user-attachments/assets/afb77ad3-9c23-452f-b870-216687779017)
 
 ### 2️⃣ Real-time voice with MCP servers
 
@@ -195,7 +196,7 @@ Check out the [integration guide](https://github.com/TEN-framework/ten-framework
 
 <br>
 
-![Real-time vision](https://github.com/user-attachments/assets/7be06e38-994e-4f82-8ec6-183d08fe90f1)
+![Real-time Vision](https://github.com/user-attachments/assets/f8fe0b41-c795-422c-9569-8f049d0f1a4f)
 
 ### 4️⃣ Real-time vision and real-time screenshare detection
 
@@ -209,7 +210,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 <br>
 
-![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
+![TEN with Dify](https://github.com/user-attachments/assets/5f420237-fd8d-4c7e-aec0-8c81e94e32b5)
 
 ### 5️⃣ TEN with other LLM platforms
 
@@ -225,7 +226,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/ea1025d4-b22b-4416-ab35-36cd910bc28c)
+![TEN StoryTeller](https://github.com/user-attachments/assets/fe28a549-ddb9-431e-9282-57539fb87371)
 
 ### 6️⃣ StoryTeller - TEN image generation
 
@@ -239,9 +240,9 @@ Experience the real-time image generation with StoryTeller, it is a ready-to-use
 
 <br>
 
-## 🛝 Quick Start with TEN Agent Playground
+## 👩‍💻 Get TEN Agent up and running
 
-#### 🅰️ Run Playground in localhost
+#### 🅰️ Run TEN Agent in localhost
 
 #### Step ⓵ - Prerequisites
 
@@ -311,12 +312,10 @@ task run
 
 #### Step ⓷ - Customize your agent with TMAN Designer
 
-![Customize your agent with TMAN Designer](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
-
  1. Open [localhost:49483](http://localhost:49483).
- 2. Load the corresponding graph from the menu (e.g., Voice Assistant).
+ 2. Right click to load the corresponding graph (e.g., Voice Assistant).
  3. Enter API keys and set preferences for each extension.
- 4. Open [localhost:3000](http://localhost:3000) to see the changes after selecting Voice Assistant.
+ 4. Right click and select `Run` to start the agent.
 
 <div align="right">
 
@@ -326,7 +325,7 @@ task run
 
 <br>
 
-### 🅱️ Run Playground in Codespace(no docker)
+### 🅱️ Run TEN Agent in Codespace(no docker)
 
 GitHub offers free Codespace for each repository, you can run the playground in Codespace without using Docker.Also, the speed of Codespace is much faster than localhost.
 
@@ -402,7 +401,7 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 <br> -->
 
-## 🌏 TEN Ecosystem
+## 🌍 TEN Ecosystem
 
 | Project | Preview |
 | ------- | ------- |
@@ -410,7 +409,7 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 | [**️🔂 TEN Turn Detection**][ten-turn-detection-link]<br>TEN is for full-duplex dialogue communication.<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
 | [**🔉 TEN VAD**][ten-vad-link]<br>TEN VAD is a low-latency, lightweight and high-performance streaming voice activity detector (VAD).<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
 | [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a showcase of TEN Framewrok.<br><br> | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** <br>TMAN Designer is low/no code option to make a voice agent with easy to use workflow UI.<br><br> | ![][tman-designer-banner] |
+| [**🎨 TMAN Designer**][tman-designer-link]<br>TMAN Designer is low/no code option to make a voice agent with easy to use workflow UI.<br><br> | ![][tman-designer-banner] |
 | [**📒 TEN Portal**][ten-portal-link]<br>The official site of TEN framework, it has documentation and blog.<br><br>![][ten-portal-shield] | ![][ten-portal-banner] |
 
 <br>
@@ -428,6 +427,7 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 Most questions can be answered by using DeepWiki, it is fast, intutive to use and supports multiple languages.
 
+<br>
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -489,6 +489,7 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 [ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
 [ten-agent-banner]: https://github.com/user-attachments/assets/38de2207-939b-4702-a0aa-04491f5b5275
 [tman-designer-banner]: https://github.com/user-attachments/assets/804c3543-0a47-42b7-b40b-ef32b742fb8f
+[tman-designer-link]: https://github.com/TEN-framework/ten-framework/tree/main/core/src/ten_manager/designer_frontend
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
