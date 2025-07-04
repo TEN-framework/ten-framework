@@ -250,6 +250,7 @@ mod tests {
                     app: None,
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: Some(vec![GraphMessageFlow::new(
                     "test_cmd".to_string(),
@@ -258,6 +259,7 @@ mod tests {
                             app: None,
                             extension: Some("subgraph_1:ext_b".to_string()),
                             subgraph: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],

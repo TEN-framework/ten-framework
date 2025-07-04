@@ -227,6 +227,7 @@ mod tests {
                     app: None,
                     extension: Some("source_ext".to_string()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: Some(vec![GraphMessageFlow::new(
                     "test_cmd".to_string(),
@@ -235,6 +236,7 @@ mod tests {
                             app: None,
                             extension: Some("target_ext".to_string()),
                             subgraph: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],

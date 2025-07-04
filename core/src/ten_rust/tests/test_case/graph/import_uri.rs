@@ -10,11 +10,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use ten_rust::graph::{
-        graph_info::GraphInfo,
-        node::GraphNode,
-        Graph,
-    };
+    use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode, Graph};
 
     #[tokio::test]
     async fn test_graph_import_uri() {
@@ -143,6 +139,7 @@ mod tests {
                         app: None,
                         extension: Some("test_ext".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     cmd: Some(vec![GraphMessageFlow::new(
                         "test_cmd".to_string(),

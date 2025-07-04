@@ -10,6 +10,7 @@ mod graph_info;
 mod import_uri;
 mod reverse;
 mod subgraph;
+mod selector;
 
 #[cfg(test)]
 mod tests {

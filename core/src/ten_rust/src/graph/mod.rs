@@ -10,6 +10,7 @@ pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
 pub mod reverse;
+pub mod selector;
 pub mod subgraph;
 
 use std::collections::HashMap;
@@ -449,31 +450,34 @@ impl Graph {
         &self,
         current_base_dir: Option<&str>,
     ) -> Result<Option<Graph>> {
-        // Step 1: Convert reversed connections to forward connections if needed
-        let converted_graph =
-            Self::convert_reversed_connections_to_forward_connections(self)?;
+        let mut processing_graph = self;
 
-        let processing_graph = converted_graph.as_ref().unwrap_or(self);
+        // Step 1: Match nodes according to selector rules and replace them in
+        // connections
+        let flattened_selector_graph = processing_graph.flatten_selectors()?;
+        processing_graph =
+            flattened_selector_graph.as_ref().unwrap_or(processing_graph);
 
-        // Step 2: Flatten subgraphs
+        // Step 2: Convert reversed connections to forward connections if needed
+        let reversed_graph = processing_graph
+            .convert_reversed_connections_to_forward_connections()?;
+        processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 3: Flatten subgraphs
         let flattened =
             Self::flatten_subgraphs(processing_graph, current_base_dir, false)
                 .await
                 .map_err(|e| {
                     anyhow::anyhow!("Failed to flatten graph: {}", e)
                 })?;
+        processing_graph = flattened.as_ref().unwrap_or(processing_graph);
 
-        // Step 3: Return the result based on what operations were performed
-        match (converted_graph, flattened) {
-            // Both conversion and flattening occurred - return flattened result
-            (Some(_), Some(flattened)) => Ok(Some(flattened)),
-            // Only conversion occurred - return converted graph
-            (Some(converted), None) => Ok(Some(converted)),
-            // Only flattening occurred - return flattened result
-            (None, Some(flattened)) => Ok(Some(flattened)),
-            // No changes needed
-            (None, None) => Ok(None),
+        // Check if the processing graph is the same as the original graph.
+        if std::ptr::eq(processing_graph, self) {
+            return Ok(None);
         }
+
+        Ok(Some(processing_graph.clone()))
     }
 }
 

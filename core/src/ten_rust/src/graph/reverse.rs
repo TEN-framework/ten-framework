@@ -91,6 +91,7 @@ impl Graph {
                 app: conn.loc.app.clone(),
                 extension: conn.loc.extension.clone(),
                 subgraph: conn.loc.subgraph.clone(),
+                selector: conn.loc.selector.clone(),
             },
             msg_conversion: None,
         };
@@ -349,10 +350,10 @@ impl Graph {
     /// * `Ok(Some(Graph))` with converted graph if reversed connections exist
     /// * `Err` if there are conflicts during merging
     pub fn convert_reversed_connections_to_forward_connections(
-        graph: &Graph,
+        &self,
     ) -> Result<Option<Graph>> {
         // Early return if no connections exist
-        let Some(connections) = &graph.connections else {
+        let Some(connections) = &self.connections else {
             return Ok(None);
         };
 
@@ -362,7 +363,7 @@ impl Graph {
         }
 
         // Create a new graph with the same nodes
-        let mut new_graph = graph.clone();
+        let mut new_graph = self.clone();
 
         // Add original connections to new_connections. We don't care about
         // the reverse flows specified by source, so we have to remove all

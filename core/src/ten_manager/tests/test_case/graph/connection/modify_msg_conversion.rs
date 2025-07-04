@@ -52,6 +52,7 @@ mod tests {
                 app: Some("http://example.com:8000".to_string()),
                 extension: Some("extension_1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![GraphMessageFlow::new(
                 "existing_cmd".to_string(),
@@ -60,6 +61,7 @@ mod tests {
                         app: Some("http://example.com:8000".to_string()),
                         extension: Some("extension_2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: Some(MsgAndResultConversion {
                         msg: Some(MsgConversion {

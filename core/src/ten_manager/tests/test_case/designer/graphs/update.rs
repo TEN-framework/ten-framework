@@ -123,6 +123,7 @@ mod tests {
                 app: None,
                 extension: Some("node2".to_string()),
                 subgraph: None,
+                selector: None,
             },
             msg_conversion: None,
         };
@@ -135,6 +136,7 @@ mod tests {
                 app: None,
                 extension: Some("node1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![message_flow]),
             data: None,

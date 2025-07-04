@@ -204,6 +204,7 @@ pub async fn delete_graph_connection_endpoint(
                     app: request_payload.src_app.clone(),
                     extension: Some(request_payload.src_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: None,
                 data: None,
@@ -217,6 +218,7 @@ pub async fn delete_graph_connection_endpoint(
                     app: request_payload.dest_app.clone(),
                     extension: Some(request_payload.dest_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 msg_conversion: None,
             };
