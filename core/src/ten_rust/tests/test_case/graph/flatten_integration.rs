@@ -8,7 +8,7 @@ use ten_rust::graph::{
     connection::{
         GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
     },
-    node::{GraphNode, GraphNodeType},
+    node::{GraphContent, GraphNode, GraphNodeType},
     Graph,
 };
 
@@ -25,24 +25,20 @@ mod tests {
         // Create a main graph with subgraph nodes
         let mut main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some("./test_subgraph.json".to_string()),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: "./test_subgraph.json".to_string(),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
@@ -87,24 +83,20 @@ mod tests {
         // Create a graph without subgraph nodes
         let mut graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_b".to_string(),
-                    addon: Some("addon_b".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_b".to_string(),
+                    "addon_b".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
@@ -142,22 +134,20 @@ mod tests {
         assert!(graph
             .nodes
             .iter()
-            .all(|node| node.type_ == GraphNodeType::Extension));
+            .all(|node| node.get_type() == GraphNodeType::Extension));
     }
 
     #[tokio::test]
     async fn test_flatten_graph_returns_none_for_no_subgraphs() {
         // Create a graph without subgraph nodes
         let graph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "ext_a".to_string(),
-                addon: Some("addon_a".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            }],
+            nodes: vec![GraphNode::new_extension_node(
+                "ext_a".to_string(),
+                "addon_a".to_string(),
+                None,
+                None,
+                None,
+            )],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -177,24 +167,20 @@ mod tests {
         // Create a graph with subgraph nodes
         let graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some("./test_subgraph.json".to_string()),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: "./test_subgraph.json".to_string(),
+                    },
+                ),
             ],
             connections: None,
             exposed_messages: None,
@@ -203,15 +189,13 @@ mod tests {
 
         // Create a simple subgraph
         let subgraph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "ext_b".to_string(),
-                addon: Some("addon_b".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            }],
+            nodes: vec![GraphNode::new_extension_node(
+                "ext_b".to_string(),
+                "addon_b".to_string(),
+                None,
+                None,
+                None,
+            )],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -230,10 +214,10 @@ mod tests {
 
         let flattened = result.unwrap();
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
-        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"));
+        assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
         assert!(flattened
             .nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_ext_b"));
+            .any(|node| node.get_name() == "subgraph_1_ext_b"));
     }
 }

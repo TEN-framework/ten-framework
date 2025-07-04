@@ -20,7 +20,9 @@
           {
             "type": "subgraph",
             "name": "function_graph",
-            "import_uri": "graphs/function_graph.json",
+            "graph": {
+              "import_uri": "graphs/function_graph.json"
+            },
             "property": {
               "base": 10,
               "power": 2,

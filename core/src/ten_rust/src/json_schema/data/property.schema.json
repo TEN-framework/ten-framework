@@ -169,10 +169,19 @@
         "extension_group": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
-        "import_uri": {
-          "type": "string",
-          "format": "uri-reference",
-          "minLength": 1
+        "graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "import_uri"
+          ],
+          "properties": {
+            "import_uri": {
+              "type": "string",
+              "format": "uri-reference",
+              "minLength": 1
+            }
+          }
         },
         "property": {
           "type": "object",
@@ -222,7 +231,12 @@
           "then": {
             "required": [
               "addon"
-            ]
+            ],
+            "not": {
+              "required": [
+                "graph"
+              ]
+            }
           }
         },
         {
@@ -237,11 +251,12 @@
             ]
           },
           "then": {
-            "not": {
-              "required": [
-                "addon"
-              ]
-            }
+            "required": [
+              "type",
+              "name",
+              "graph"
+            ],
+            "additionalProperties": false
           }
         }
       ]

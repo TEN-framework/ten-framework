@@ -252,7 +252,7 @@ impl Graph {
         let mut app_uris = std::collections::HashSet::new();
 
         for (idx, node) in self.nodes.iter().enumerate() {
-            if let Some(app_uri) = &node.app {
+            if let Some(app_uri) = &node.get_app_uri() {
                 if app_uri.is_empty() {
                     return Err(anyhow::anyhow!(
                         "nodes[{}]: {}",
@@ -320,7 +320,7 @@ impl Graph {
                 // Verify that the extension exists in the graph
                 if !self.nodes.iter().any(|node| {
                     if let Some(ext) = &property.extension {
-                        &node.name == ext
+                        &node.get_name() == ext
                     } else {
                         false
                     }
@@ -421,11 +421,17 @@ impl Graph {
         self.nodes
             .iter()
             .find(|node| {
-                node.type_ == GraphNodeType::Extension
-                    && node.name.as_str() == extension
+                node.get_type() == GraphNodeType::Extension
+                    && node.get_name() == extension
                     && node.get_app_uri() == app
             })
-            .and_then(|node| node.addon.as_ref())
+            .and_then(|node| {
+                if let GraphNode::Extension { content } = node {
+                    Some(&content.addon)
+                } else {
+                    None
+                }
+            })
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Extension '{}' is not found in nodes, should not happen.",

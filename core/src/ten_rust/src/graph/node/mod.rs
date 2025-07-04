@@ -15,29 +15,21 @@ use crate::graph::is_app_default_loc_or_none;
 use crate::pkg_info::localhost;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
 pub enum GraphNodeType {
-    #[serde(rename = "extension")]
     Extension,
-
-    #[serde(rename = "subgraph")]
     Subgraph,
 }
 
-/// Represents a node in a graph. This struct is completely equivalent to the
-/// node element in the graph JSON.
+/// Represents an extension node in the graph
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GraphNode {
-    #[serde(rename = "type")]
-    pub type_: GraphNodeType,
-
+pub struct ExtensionNode {
     pub name: String,
+    pub addon: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub addon: Option<String>,
-
-    /// The extension group this node belongs to. This field is only present
-    /// for extension nodes. Extension group nodes themselves do not contain
-    /// this field, as they define groups rather than belong to them.
+    /// The extension group this node belongs to. Extension group nodes
+    /// themselves do not contain this field, as they define groups rather
+    /// than belong to them.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension_group: Option<String>,
 
@@ -46,14 +38,66 @@ pub struct GraphNode {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property: Option<serde_json::Value>,
+}
 
-    /// The URI to the source subgraph JSON file. This field is only present
-    /// for subgraph nodes.
+/// Represents a subgraph node in the graph
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SubgraphNode {
+    pub name: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub import_uri: Option<String>,
+    pub property: Option<serde_json::Value>,
+
+    pub graph: GraphContent,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphContent {
+    pub import_uri: String,
+}
+
+/// Represents a node in a graph. This enum represents different types of nodes
+/// that can exist in the graph.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum GraphNode {
+    Extension {
+        #[serde(flatten)]
+        content: ExtensionNode,
+    },
+    Subgraph {
+        #[serde(flatten)]
+        content: SubgraphNode,
+    },
 }
 
 impl GraphNode {
+    pub fn new_extension_node(
+        name: String,
+        addon: String,
+        extension_group: Option<String>,
+        app: Option<String>,
+        property: Option<serde_json::Value>,
+    ) -> Self {
+        Self::Extension {
+            content: ExtensionNode {
+                name,
+                addon,
+                extension_group,
+                app,
+                property,
+            },
+        }
+    }
+
+    pub fn new_subgraph_node(
+        name: String,
+        property: Option<serde_json::Value>,
+        graph: GraphContent,
+    ) -> Self {
+        Self::Subgraph { content: SubgraphNode { name, property, graph } }
+    }
+
     /// Validates and completes a graph node by ensuring it has all required
     /// fields and follows the app declaration rules of the graph.
     ///
@@ -67,43 +111,53 @@ impl GraphNode {
         &mut self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
-        // Validate addon field based on node type
-        match self.type_ {
-            GraphNodeType::Extension => {
-                if self.addon.is_none() {
-                    return Err(anyhow::anyhow!(
-                        "Extension node must have an addon"
-                    ));
+        match self {
+            GraphNode::Extension { content } => {
+                // Validate app URI if provided
+                if let Some(app) = &content.app {
+                    // Disallow 'localhost' as an app URI in graph definitions.
+                    if app.as_str() == localhost() {
+                        let err_msg = if app_uri_declaration_state
+                            .is_single_app_graph()
+                        {
+                            ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE
+                        } else {
+                            ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE
+                        };
+                        return Err(anyhow::anyhow!(err_msg));
+                    }
                 }
+                Ok(())
             }
-            GraphNodeType::Subgraph => {
-                if self.addon.is_some() {
-                    return Err(anyhow::anyhow!(
-                        "Subgraph node must not have an addon"
-                    ));
-                }
-            }
+            GraphNode::Subgraph { .. } => Ok(()),
         }
-
-        // Check if app URI is provided and validate it.
-        if let Some(app) = &self.app {
-            // Disallow 'localhost' as an app URI in graph definitions.
-            if app.as_str() == localhost() {
-                let err_msg = if app_uri_declaration_state.is_single_app_graph()
-                {
-                    ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE
-                } else {
-                    ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE
-                };
-
-                return Err(anyhow::anyhow!(err_msg));
-            }
-        }
-
-        Ok(())
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
-        &self.app
+        match self {
+            GraphNode::Extension { content } => &content.app,
+            GraphNode::Subgraph { .. } => &None,
+        }
+    }
+
+    pub fn get_type(&self) -> GraphNodeType {
+        match self {
+            GraphNode::Extension { .. } => GraphNodeType::Extension,
+            GraphNode::Subgraph { .. } => GraphNodeType::Subgraph,
+        }
+    }
+
+    pub fn get_name(&self) -> &str {
+        match self {
+            GraphNode::Extension { content } => &content.name,
+            GraphNode::Subgraph { content } => &content.name,
+        }
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        match self {
+            GraphNode::Extension { content } => content.name = name,
+            GraphNode::Subgraph { content } => content.name = name,
+        }
     }
 }

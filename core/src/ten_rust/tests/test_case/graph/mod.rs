@@ -447,7 +447,7 @@ mod tests {
 
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
 
         // Verify the graph can be serialized back to JSON
         let serialized = serde_json::to_string(&graph);
@@ -508,7 +508,7 @@ mod tests {
 
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
     }
 
     #[tokio::test]

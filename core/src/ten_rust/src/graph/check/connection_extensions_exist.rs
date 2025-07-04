@@ -89,11 +89,11 @@ impl Graph {
         // Each extension is uniquely identified as "app_uri:extension_name"
         let mut all_extensions: Vec<String> = Vec::new();
         for node in &self.nodes {
-            if node.type_ == GraphNodeType::Extension {
+            if node.get_type() == GraphNodeType::Extension {
                 let unique_ext_name = format!(
                     "{}:{}",
                     node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    node.name
+                    node.get_name()
                 );
                 all_extensions.push(unique_ext_name);
             }

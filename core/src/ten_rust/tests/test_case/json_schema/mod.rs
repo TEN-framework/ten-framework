@@ -1964,7 +1964,9 @@ mod tests {
                     "type": "subgraph",
                     "name": "subgraph_1",
                     "addon": "subgraph_1",
-                    "import_uri": "graphs/test_graph.json"
+                    "graph": {
+                      "import_uri": "graphs/test_graph.json"
+                    }
                   }
                 ]
               }

@@ -4,7 +4,7 @@
   "C_Cpp.formatting": "disabled",
   "C_Cpp.intelliSenseEngine": "disabled",
   "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
   "[markdown]": {
     "editor.wordWrap": "bounded",

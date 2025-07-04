@@ -11,7 +11,7 @@ mod tests {
     use tempfile::tempdir;
     use ten_rust::graph::{
         connection::{self, GraphConnection},
-        node::{GraphNode, GraphNodeType},
+        node::{GraphContent, GraphNode, GraphNodeType},
         Graph, GraphExposedMessage, GraphExposedMessageType,
         GraphExposedProperty,
     };
@@ -25,29 +25,23 @@ mod tests {
         // Create a main graph with a subgraph node
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: Some(
-                        serde_json::json!({"app_id": "${env:AGORA_APP_ID}"}),
-                    ),
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    Some(serde_json::json!({"app_id": "${env:AGORA_APP_ID}"})),
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -78,24 +72,20 @@ mod tests {
         // Create a subgraph to be loaded
         let subgraph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_c".to_string(),
-                    addon: Some("addon_c".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_d".to_string(),
-                    addon: Some("addon_d".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_c".to_string(),
+                    "addon_c".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_d".to_string(),
+                    "addon_d".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -137,25 +127,39 @@ mod tests {
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
 
+        // Verify that all nodes are extension nodes
+        assert!(flattened
+            .nodes
+            .iter()
+            .all(|node| node.get_type() == GraphNodeType::Extension));
+
+        // Convert to extension nodes
+        let extension_nodes = flattened
+            .nodes
+            .iter()
+            .map(|node| match node {
+                GraphNode::Extension { content } => content.clone(),
+                _ => panic!("Expected extension node, got {:?}", node),
+            })
+            .collect::<Vec<_>>();
+
         // Check that original extension is preserved
-        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"
-            && node.addon == Some("addon_a".to_string())));
+        assert!(extension_nodes
+            .iter()
+            .any(|node| node.name == "ext_a" && node.addon == "addon_a"));
 
         // Check that subgraph extensions are flattened with prefix
-        assert!(flattened
-            .nodes
+        assert!(extension_nodes
             .iter()
             .any(|node| node.name == "subgraph_1_ext_c"
-                && node.addon == Some("addon_c".to_string())));
-        assert!(flattened
-            .nodes
+                && node.addon == "addon_c"));
+        assert!(extension_nodes
             .iter()
             .any(|node| node.name == "subgraph_1_ext_d"
-                && node.addon == Some("addon_d".to_string())));
+                && node.addon == "addon_d"));
 
         // Check that properties are merged correctly
-        let ext_d_node = flattened
-            .nodes
+        let ext_d_node = extension_nodes
             .iter()
             .find(|node| node.name == "subgraph_1_ext_d")
             .unwrap();
@@ -203,27 +207,23 @@ mod tests {
         // Create a main graph with subgraph field references
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_2".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_2".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![
                 // ext_a sends cmd B to subgraph_2 (should resolve to ext_d via
@@ -286,24 +286,20 @@ mod tests {
         // Create a subgraph with exposed_messages
         let subgraph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_c".to_string(),
-                    addon: Some("addon_c".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_d".to_string(),
-                    addon: Some("addon_d".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_c".to_string(),
+                    "addon_c".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_d".to_string(),
+                    "addon_d".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: Some(vec![
@@ -332,6 +328,37 @@ mod tests {
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Verify that all nodes are extension nodes
+        assert!(flattened
+            .nodes
+            .iter()
+            .all(|node| node.get_type() == GraphNodeType::Extension));
+
+        // Convert to extension nodes
+        let extension_nodes = flattened
+            .nodes
+            .iter()
+            .map(|node| match node {
+                GraphNode::Extension { content } => content.clone(),
+                _ => panic!("Expected extension node, got {:?}", node),
+            })
+            .collect::<Vec<_>>();
+
+        // Check that original extension is preserved
+        assert!(extension_nodes
+            .iter()
+            .any(|node| node.name == "ext_a" && node.addon == "addon_a"));
+
+        // Check that subgraph extensions are flattened with prefix
+        assert!(extension_nodes
+            .iter()
+            .any(|node| node.name == "subgraph_2_ext_c"
+                && node.addon == "addon_c"));
+        assert!(extension_nodes
+            .iter()
+            .any(|node| node.name == "subgraph_2_ext_d"
+                && node.addon == "addon_d"));
 
         // Check that connections are resolved correctly
         let connections = flattened.connections.as_ref().unwrap();
@@ -371,27 +398,23 @@ mod tests {
         // Create a main graph with subgraph field reference
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_2".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_2".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -422,15 +445,13 @@ mod tests {
         // Create a subgraph with exposed_messages that doesn't include the
         // requested message
         let subgraph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "ext_d".to_string(),
-                addon: Some("addon_d".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            }],
+            nodes: vec![GraphNode::new_extension_node(
+                "ext_d".to_string(),
+                "addon_d".to_string(),
+                None,
+                None,
+                None,
+            )],
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
                 msg_type: GraphExposedMessageType::CmdIn,
@@ -463,27 +484,23 @@ mod tests {
         // Create a main graph with subgraph field reference
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_2".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_2".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -513,15 +530,13 @@ mod tests {
 
         // Create a subgraph without exposed_messages
         let subgraph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "ext_d".to_string(),
-                addon: Some("addon_d".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            }],
+            nodes: vec![GraphNode::new_extension_node(
+                "ext_d".to_string(),
+                "addon_d".to_string(),
+                None,
+                None,
+                None,
+            )],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -549,27 +564,23 @@ mod tests {
         // Create a main graph with a subgraph node
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph1_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph1_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -602,27 +613,23 @@ mod tests {
         // Create a subgraph that contains another subgraph (nested)
         let subgraph_1 = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_x".to_string(),
-                    addon: Some("addon_x".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_2".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph2_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_x".to_string(),
+                    "addon_x".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_2".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph2_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -653,24 +660,20 @@ mod tests {
         // Create the innermost subgraph
         let subgraph_2 = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_y".to_string(),
-                    addon: Some("addon_y".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_z".to_string(),
-                    addon: Some("addon_z".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_y".to_string(),
+                    "addon_y".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_z".to_string(),
+                    "addon_z".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -711,27 +714,41 @@ mod tests {
         // Verify results
         assert_eq!(flattened.nodes.len(), 4); // ext_a + ext_x + ext_y + ext_z (all flattened)
 
+        // Verify that all nodes are extension nodes
+        assert!(flattened
+            .nodes
+            .iter()
+            .all(|node| node.get_type() == GraphNodeType::Extension));
+
+        // Convert to extension nodes
+        let extension_nodes = flattened
+            .nodes
+            .iter()
+            .map(|node| match node {
+                GraphNode::Extension { content } => content.clone(),
+                _ => panic!("Expected extension node, got {:?}", node),
+            })
+            .collect::<Vec<_>>();
+
         // Check that original extension is preserved
-        assert!(flattened.nodes.iter().any(|node| node.name == "ext_a"
-            && node.addon == Some("addon_a".to_string())));
+        assert!(extension_nodes
+            .iter()
+            .any(|node| node.name == "ext_a" && node.addon == "addon_a"));
 
         // Check that nested subgraph extensions are flattened with proper
         // prefixes
-        assert!(flattened
-            .nodes
+        assert!(extension_nodes
             .iter()
             .any(|node| node.name == "subgraph_1_ext_x"
-                && node.addon == Some("addon_x".to_string())));
-        assert!(flattened
-            .nodes
+                && node.addon == "addon_x"));
+        assert!(extension_nodes
             .iter()
             .any(|node| node.name == "subgraph_1_subgraph_2_ext_y"
-                && node.addon == Some("addon_y".to_string())));
-        assert!(flattened
-            .nodes
+                && node.addon == "addon_y"));
+        assert!(extension_nodes
             .iter()
             .any(|node| node.name == "subgraph_1_subgraph_2_ext_z"
-                && node.addon == Some("addon_z".to_string())));
+                && node.addon == "addon_z"));
 
         // Check that connections are flattened correctly
         let connections = flattened.connections.as_ref().unwrap();
@@ -787,27 +804,23 @@ mod tests {
         // Create a main graph with subgraph field references
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph1_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph1_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: connection::GraphLoc {
@@ -838,27 +851,23 @@ mod tests {
         // Create a subgraph that contains another subgraph (nested)
         let subgraph_1 = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_x".to_string(),
-                    addon: Some("addon_x".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_2".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph2_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_x".to_string(),
+                    "addon_x".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_2".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph2_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
@@ -873,24 +882,20 @@ mod tests {
         // Create the innermost subgraph
         let subgraph_2 = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_y".to_string(),
-                    addon: Some("addon_y".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_z".to_string(),
-                    addon: Some("addon_z".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_y".to_string(),
+                    "addon_y".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_z".to_string(),
+                    "addon_z".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: Some(vec![GraphExposedMessage {
@@ -921,15 +926,15 @@ mod tests {
         assert!(flattened
             .nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_ext_x"));
+            .any(|node| node.get_name() == "subgraph_1_ext_x"));
         assert!(flattened
             .nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_subgraph_2_ext_y"));
+            .any(|node| node.get_name() == "subgraph_1_subgraph_2_ext_y"));
         assert!(flattened
             .nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_subgraph_2_ext_z"));
+            .any(|node| node.get_name() == "subgraph_1_subgraph_2_ext_z"));
 
         // Check that connections are resolved correctly through nested
         // exposed_messages
@@ -953,15 +958,13 @@ mod tests {
     #[tokio::test]
     async fn test_flatten_missing_import_uri_error() {
         let main_graph = Graph {
-            nodes: vec![GraphNode {
-                type_: GraphNodeType::Subgraph,
-                name: "subgraph_1".to_string(),
-                addon: None,
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None, // Missing import_uri
-            }],
+            nodes: vec![GraphNode::new_subgraph_node(
+                "subgraph_1".to_string(),
+                None,
+                GraphContent {
+                    import_uri: "".to_string(), // Missing import_uri
+                },
+            )],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -972,7 +975,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Subgraph node 'subgraph_1' must have import_uri"));
+            .contains("Subgraph node 'subgraph_1' has an empty import_uri"));
     }
 
     #[tokio::test]
@@ -985,27 +988,23 @@ mod tests {
         // types
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_3".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_3".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: Some(vec![
                 // ext_a sends various message types to subgraph_3
@@ -1128,24 +1127,20 @@ mod tests {
         // Create a subgraph with exposed_messages for all message types
         let subgraph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_input".to_string(),
-                    addon: Some("addon_input".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_output".to_string(),
-                    addon: Some("addon_output".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_input".to_string(),
+                    "addon_input".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_output".to_string(),
+                    "addon_output".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: Some(vec![
@@ -1230,7 +1225,6 @@ mod tests {
             cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_3_ext_input"
         );
-        assert!(cmd_flow.dest[0].loc.subgraph.is_none());
 
         // Verify data destination
         let data_flow = &connection_to_subgraph.data.as_ref().unwrap()[0];
@@ -1307,27 +1301,23 @@ mod tests {
         // exposed_properties
         let main_graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some(format!(
-                        "file://{}",
-                        subgraph_file_path.to_str().unwrap()
-                    )),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: format!(
+                            "file://{}",
+                            subgraph_file_path.to_str().unwrap()
+                        ),
+                    },
+                ),
             ],
             connections: None,
             exposed_messages: None,
@@ -1350,24 +1340,20 @@ mod tests {
         // Create a subgraph with exposed_properties
         let subgraph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_x".to_string(),
-                    addon: Some("addon_x".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_y".to_string(),
-                    addon: Some("addon_y".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_x".to_string(),
+                    "addon_x".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_y".to_string(),
+                    "addon_y".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: None,
@@ -1390,6 +1376,12 @@ mod tests {
 
         // Verify results
         assert_eq!(flattened.nodes.len(), 3); // ext_a + 2 from subgraph
+
+        // Verify that all nodes are extension nodes
+        assert!(flattened
+            .nodes
+            .iter()
+            .all(|node| node.get_type() == GraphNodeType::Extension));
 
         // Check that exposed_properties are updated correctly
         let exposed_properties = flattened.exposed_properties.as_ref().unwrap();

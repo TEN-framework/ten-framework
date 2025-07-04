@@ -11,7 +11,7 @@ mod tests {
         connection::{
             GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
         },
-        node::{GraphNode, GraphNodeType},
+        node::GraphNode,
         Graph,
     };
 
@@ -21,15 +21,13 @@ mod tests {
         app: Option<&str>,
         extension_group: Option<&str>,
     ) -> GraphNode {
-        GraphNode {
-            type_: GraphNodeType::Extension,
-            name: name.to_string(),
-            addon: Some(addon.to_string()),
-            extension_group: extension_group.map(|s| s.to_string()),
-            app: app.map(|s| s.to_string()),
-            property: None,
-            import_uri: None,
-        }
+        GraphNode::new_extension_node(
+            name.to_string(),
+            addon.to_string(),
+            extension_group.map(|s| s.to_string()),
+            app.map(|s| s.to_string()),
+            None,
+        )
     }
 
     fn create_test_connection(

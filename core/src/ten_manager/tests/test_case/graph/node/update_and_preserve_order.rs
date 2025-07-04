@@ -15,7 +15,7 @@ mod tests {
 
     use ten_manager::fs::json::write_property_json_file;
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::{GraphNode, GraphNodeType};
+    use ten_rust::graph::node::GraphNode;
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
 
     #[test]
@@ -112,27 +112,23 @@ mod tests {
         write_property_json_file(&temp_path, &all_fields)?;
 
         // Create a new node to add.
-        let new_node = GraphNode {
-            type_: GraphNodeType::Extension,
-            name: "new-node".to_string(),
-            addon: Some("new-addon".to_string()),
-            extension_group: None,
-            app: None,
-            property: None,
-            import_uri: None,
-        };
+        let new_node = GraphNode::new_extension_node(
+            "new-node".to_string(),
+            "new-addon".to_string(),
+            None,
+            None,
+            None,
+        );
         let new_nodes = vec![new_node];
 
         // Create a node to remove (the second one).
-        let remove_node = GraphNode {
-            type_: GraphNodeType::Extension,
-            name: "second-node".to_string(),
-            addon: Some("second-addon".to_string()),
-            extension_group: None,
-            app: None,
-            property: None,
-            import_uri: None,
-        };
+        let remove_node = GraphNode::new_extension_node(
+            "second-node".to_string(),
+            "second-addon".to_string(),
+            None,
+            None,
+            None,
+        );
         let remove_nodes = vec![remove_node];
 
         // Update the property: add one node and remove one node in a single

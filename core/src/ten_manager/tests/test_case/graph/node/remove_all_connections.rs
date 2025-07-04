@@ -15,7 +15,7 @@ mod tests {
 
     use ten_manager::fs::json::write_property_json_file;
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::{GraphNode, GraphNodeType};
+    use ten_rust::graph::node::GraphNode;
     use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
 
     #[test]
@@ -83,24 +83,20 @@ mod tests {
 
         // Create nodes to remove (both node1 and node2).
         let remove_nodes = vec![
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "node1".to_string(),
-                addon: Some("addon1".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            },
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "node2".to_string(),
-                addon: Some("addon2".to_string()),
-                extension_group: None,
-                app: None,
-                property: None,
-                import_uri: None,
-            },
+            GraphNode::new_extension_node(
+                "node1".to_string(),
+                "addon1".to_string(),
+                None,
+                None,
+                None,
+            ),
+            GraphNode::new_extension_node(
+                "node2".to_string(),
+                "addon2".to_string(),
+                None,
+                None,
+                None,
+            ),
         ];
 
         // Update the property: remove both nodes.
