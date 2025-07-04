@@ -112,7 +112,7 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   // },
   {
     label: "Shisa",
-    value: "shisa_llm",
+    value: "Shisa",
   },
   {
     label: "With TEN Turn Detection",
