@@ -41,6 +41,7 @@ impl Graph {
             let node = match node {
                 GraphNode::Extension { content } => content,
                 GraphNode::Subgraph { .. } => unreachable!(),
+                GraphNode::Selector { .. } => unreachable!(),
             };
 
             let found = find_pkgs_cache_entry_by_app_uri(pkgs_cache, &node.app);

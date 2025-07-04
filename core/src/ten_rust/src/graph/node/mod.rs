@@ -19,6 +19,7 @@ use crate::pkg_info::localhost;
 pub enum GraphNodeType {
     Extension,
     Subgraph,
+    Selector,
 }
 
 /// Represents an extension node in the graph
@@ -56,6 +57,44 @@ pub struct GraphContent {
     pub import_uri: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum PatternType {
+    #[serde(rename = "regex")]
+    Regex,
+
+    #[serde(rename = "exact")]
+    Exact,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SelectorPattern {
+    #[serde(rename = "type")]
+    pub type_: PatternType,
+
+    #[serde(rename = "pattern")]
+    pub pattern: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Selector {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<SelectorPattern>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app: Option<SelectorPattern>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<SelectorPattern>,
+}
+
+/// Represents a subgraph node in the graph
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SelectorNode {
+    pub name: String,
+
+    pub selector: Selector,
+}
+
 /// Represents a node in a graph. This enum represents different types of nodes
 /// that can exist in the graph.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -68,6 +107,10 @@ pub enum GraphNode {
     Subgraph {
         #[serde(flatten)]
         content: SubgraphNode,
+    },
+    Selector {
+        #[serde(flatten)]
+        content: SelectorNode,
     },
 }
 
@@ -130,6 +173,7 @@ impl GraphNode {
                 Ok(())
             }
             GraphNode::Subgraph { .. } => Ok(()),
+            GraphNode::Selector { .. } => Ok(()),
         }
     }
 
@@ -137,6 +181,7 @@ impl GraphNode {
         match self {
             GraphNode::Extension { content } => &content.app,
             GraphNode::Subgraph { .. } => &None,
+            GraphNode::Selector { .. } => &None,
         }
     }
 
@@ -144,6 +189,7 @@ impl GraphNode {
         match self {
             GraphNode::Extension { .. } => GraphNodeType::Extension,
             GraphNode::Subgraph { .. } => GraphNodeType::Subgraph,
+            GraphNode::Selector { .. } => GraphNodeType::Selector,
         }
     }
 
@@ -151,6 +197,7 @@ impl GraphNode {
         match self {
             GraphNode::Extension { content } => &content.name,
             GraphNode::Subgraph { content } => &content.name,
+            GraphNode::Selector { content } => &content.name,
         }
     }
 
@@ -158,6 +205,28 @@ impl GraphNode {
         match self {
             GraphNode::Extension { content } => content.name = name,
             GraphNode::Subgraph { content } => content.name = name,
+            GraphNode::Selector { content } => content.name = name,
+        }
+    }
+
+    pub fn as_selector_node(&self) -> Option<&SelectorNode> {
+        match self {
+            GraphNode::Selector { content } => Some(content),
+            _ => None,
+        }
+    }
+
+    pub fn as_extension_node(&self) -> Option<&ExtensionNode> {
+        match self {
+            GraphNode::Extension { content } => Some(content),
+            _ => None,
+        }
+    }
+
+    pub fn as_subgraph_node(&self) -> Option<&SubgraphNode> {
+        match self {
+            GraphNode::Subgraph { content } => Some(content),
+            _ => None,
         }
     }
 }

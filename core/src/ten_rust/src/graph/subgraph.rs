@@ -653,6 +653,10 @@ impl Graph {
                     )
                     .await?;
                 }
+                GraphNode::Selector { .. } => {
+                    // Skip selector nodes
+                    continue;
+                }
             }
         }
 

@@ -424,7 +424,7 @@ mod tests {
             graph_id: graph_id_clone,
             name: "new_node".to_string(),
             addon: "new_addon".to_string(),
-            extension_group: None,
+            extension_group: Some("default".to_string()),
             app: None,
             property: None,
         };
