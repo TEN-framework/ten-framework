@@ -296,7 +296,7 @@ export const getGraphProperties = (
             "llm": {
                 "model": "gpt-4o",
                 "prompt": prompt,
-                "greeting": combined_greeting,
+                "greeting": 'Hi there, this is TEN Agent connected to Shisa, ask me anything!',
             },
             "tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
@@ -338,7 +338,7 @@ export const getGraphProperties = (
             "llm": {
                 "model": "gpt-4o",
                 "prompt": prompt,
-                "greeting": combined_greeting,
+                "greeting": 'Hi there, this is TEN Agent with VAD and Turn Detection, ask me anything!',
             },
             "tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
