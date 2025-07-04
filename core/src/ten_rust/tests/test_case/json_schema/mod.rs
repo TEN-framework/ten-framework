@@ -1964,7 +1964,9 @@ mod tests {
                     "type": "subgraph",
                     "name": "subgraph_1",
                     "addon": "subgraph_1",
-                    "import_uri": "graphs/test_graph.json"
+                    "graph": {
+                      "import_uri": "graphs/test_graph.json"
+                    }
                   }
                 ]
               }
@@ -2208,5 +2210,343 @@ mod tests {
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Additional properties are not allowed"));
+    }
+
+    #[test]
+    fn test_validate_msg_dest_extension_with_app() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "dest": [{
+                    "extension": "target_ext",
+                    "app": "test_app"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_dest_extension_with_msg_conversion() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "dest": [{
+                    "extension": "target_ext",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "rules": [{
+                        "path": "data",
+                        "conversion_mode": "fixed_value",
+                        "value": "test"
+                      }]
+                    }
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_dest_subgraph() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "dest": [{
+                    "subgraph": "target_subgraph"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_dest_selector() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "dest": [{
+                    "selector": "target_selector"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_dest_invalid_combination() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "dest": [{
+                    "extension": "target_ext",
+                    "subgraph": "target_subgraph"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_msg_source_extension_with_app() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "source": [{
+                    "extension": "source_ext",
+                    "app": "test_app"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_source_subgraph() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "source": [{
+                    "subgraph": "source_subgraph"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_msg_source_selector() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "connections": [{
+                "extension": "test_ext",
+                "cmd": [{
+                  "name": "test_cmd",
+                  "source": [{
+                    "selector": "source_selector"
+                  }]
+                }]
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_node_extension() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "extension",
+                "name": "test_ext",
+                "addon": "test_addon",
+                "extension_group": "test_group",
+                "app": "test_app",
+                "property": {
+                  "key1": "value1"
+                }
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_node_subgraph() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "subgraph",
+                "name": "test_subgraph",
+                "graph": {
+                  "import_uri": "test.json"
+                },
+                "property": {
+                  "key1": "value1"
+                }
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_node_selector() {
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "selector",
+                "name": "test_selector",
+                "selector": {
+                  "extension": {
+                    "type": "regex",
+                    "pattern": "test.*"
+                  }
+                }
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_node_extension_missing_required() {
+        // missing addon
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "extension",
+                "name": "test_ext",
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_graph_node_subgraph_missing_required() {
+        // missing graph
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "subgraph",
+                "name": "test_subgraph"
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_graph_node_selector_missing_required() {
+        // missing selector
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "test",
+              "nodes": [{
+                "type": "selector",
+                "name": "test_selector"
+              }]
+            }]
+          }
+        }
+        "#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
     }
 }

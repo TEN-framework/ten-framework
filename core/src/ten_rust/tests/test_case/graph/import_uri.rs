@@ -10,7 +10,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use ten_rust::graph::{graph_info::GraphInfo, node::GraphNodeType, Graph};
+    use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode, Graph};
 
     #[tokio::test]
     async fn test_graph_import_uri() {
@@ -74,11 +74,13 @@ mod tests {
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes.len(), 1);
-        assert_eq!(graph_info.graph.nodes[0].type_, GraphNodeType::Extension);
-        assert_eq!(
-            graph_info.graph.nodes[0].addon,
-            Some("test_addon".to_string())
-        );
+
+        if let GraphNode::Extension { content } = &graph_info.graph.nodes[0] {
+            assert_eq!(content.addon, "test_addon");
+        } else {
+            panic!("Unexpected non-extension node in graph");
+        }
+
         assert!(graph_info.graph.connections.is_some());
         let connections = graph_info.graph.connections.as_ref().unwrap();
         assert_eq!(connections.len(), 1);
@@ -87,23 +89,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_import_uri_mutual_exclusion_with_nodes() {
-        use ten_rust::graph::node::{GraphNode, GraphNodeType};
-
         // Create a GraphInfo with both import_uri and nodes - this should fail
         let mut graph_info = GraphInfo {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
             graph: Graph {
-                nodes: vec![GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "test_ext".to_string(),
-                    addon: Some("test_addon".to_string()),
-                    extension_group: Some("test_group".to_string()),
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                }],
+                nodes: vec![GraphNode::new_extension_node(
+                    "test_ext".to_string(),
+                    "test_addon".to_string(),
+                    Some("test_group".to_string()),
+                    None,
+                    None,
+                )],
                 connections: None,
                 exposed_messages: None,
                 exposed_properties: None,
@@ -141,6 +139,7 @@ mod tests {
                         app: None,
                         extension: Some("test_ext".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     cmd: Some(vec![GraphMessageFlow::new(
                         "test_cmd".to_string(),
@@ -288,6 +287,6 @@ mod tests {
 
         // Verify that the graph was loaded from import_uri
         assert_eq!(graph_info.graph.nodes.len(), 1);
-        assert_eq!(graph_info.graph.nodes[0].name, "test_ext");
+        assert_eq!(graph_info.graph.nodes[0].get_name(), "test_ext");
     }
 }

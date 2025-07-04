@@ -30,11 +30,14 @@ pub struct GraphLoc {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subgraph: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selector: Option<String>,
 }
 
 impl GraphLoc {
     pub fn new() -> Self {
-        Self { app: None, extension: None, subgraph: None }
+        Self { app: None, extension: None, subgraph: None, selector: None }
     }
 
     pub fn with_app_and_extension_or_subgraph(
@@ -42,7 +45,7 @@ impl GraphLoc {
         extension: Option<String>,
         subgraph: Option<String>,
     ) -> Self {
-        Self { app, extension, subgraph }
+        Self { app, extension, subgraph, selector: None }
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {

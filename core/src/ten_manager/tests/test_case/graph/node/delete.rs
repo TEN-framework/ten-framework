@@ -11,7 +11,7 @@ mod tests {
         connection::{
             GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
         },
-        node::{GraphNode, GraphNodeType},
+        node::GraphNode,
         Graph,
     };
 
@@ -21,15 +21,13 @@ mod tests {
         app: Option<&str>,
         extension_group: Option<&str>,
     ) -> GraphNode {
-        GraphNode {
-            type_: GraphNodeType::Extension,
-            name: name.to_string(),
-            addon: Some(addon.to_string()),
-            extension_group: extension_group.map(|s| s.to_string()),
-            app: app.map(|s| s.to_string()),
-            property: None,
-            import_uri: None,
-        }
+        GraphNode::new_extension_node(
+            name.to_string(),
+            addon.to_string(),
+            extension_group.map(|s| s.to_string()),
+            app.map(|s| s.to_string()),
+            None,
+        )
     }
 
     fn create_test_connection(
@@ -44,6 +42,7 @@ mod tests {
                 app: dest_app.map(|s| s.to_string()),
                 extension: Some(dest_extension.to_string()),
                 subgraph: None,
+                selector: None,
             },
             msg_conversion: None,
         };
@@ -56,6 +55,7 @@ mod tests {
                 app: app.map(|s| s.to_string()),
                 extension: Some(extension.to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![message_flow]),
             data: None,
@@ -206,6 +206,7 @@ mod tests {
                 app: Some("app1".to_string()),
                 extension: Some("ext1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![GraphMessageFlow::new(
                 "cmd1".to_string(),
@@ -214,6 +215,7 @@ mod tests {
                         app: Some("app1".to_string()),
                         extension: Some("ext2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],
@@ -226,6 +228,7 @@ mod tests {
                         app: Some("app1".to_string()),
                         extension: Some("ext2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],
@@ -238,6 +241,7 @@ mod tests {
                         app: Some("app1".to_string()),
                         extension: Some("ext2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],
@@ -250,6 +254,7 @@ mod tests {
                         app: Some("app1".to_string()),
                         extension: Some("ext2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],

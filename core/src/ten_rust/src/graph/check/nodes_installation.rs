@@ -10,7 +10,10 @@ use anyhow::Result;
 
 use crate::{
     base_dir_pkg_info::PkgsInfoInApp,
-    graph::{node::GraphNodeType, Graph},
+    graph::{
+        node::{GraphNode, GraphNodeType},
+        Graph,
+    },
     pkg_info::{find_pkgs_cache_entry_by_app_uri, pkg_type::PkgType},
 };
 
@@ -30,6 +33,17 @@ impl Graph {
         // Iterate through all nodes in the graph to verify their installation
         // status.
         for node in &self.nodes {
+            // Skip subgraph nodes as they don't need installation checks
+            if node.get_type() == GraphNodeType::Subgraph {
+                continue;
+            }
+
+            let node = match node {
+                GraphNode::Extension { content } => content,
+                GraphNode::Subgraph { .. } => unreachable!(),
+                GraphNode::Selector { .. } => unreachable!(),
+            };
+
             let found = find_pkgs_cache_entry_by_app_uri(pkgs_cache, &node.app);
 
             let pkgs_info_in_app = match found {
@@ -43,24 +57,10 @@ impl Graph {
                 }
             };
 
-            // Convert GraphNodeType to PkgType.
-            // Skip subgraph nodes as they don't need installation checks
-            let pkg_type = match node.type_ {
-                GraphNodeType::Extension => PkgType::Extension,
-                GraphNodeType::Subgraph => {
-                    // Subgraph nodes don't need installation checks, skip them
-                    continue;
-                }
-            };
-
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 // Search for the package using the helper method.
-                let found = pkgs_info_in_app.find_pkg_by_type_and_name(
-                    pkg_type,
-                    node.addon
-                        .as_ref()
-                        .expect("Extension node must have an addon"),
-                );
+                let found = pkgs_info_in_app
+                    .find_pkg_by_type_and_name(PkgType::Extension, &node.addon);
 
                 // If the node is not found, add it to the missing packages
                 // list.
@@ -70,10 +70,8 @@ impl Graph {
                             .as_ref()
                             .map(|s| s.to_string())
                             .unwrap_or("".to_string()),
-                        pkg_type,
-                        node.addon
-                            .clone()
-                            .expect("Extension node must have an addon"),
+                        PkgType::Extension,
+                        node.addon.clone(),
                     ));
                 }
             } else if !ignore_missing_apps {
@@ -82,10 +80,8 @@ impl Graph {
                         .as_ref()
                         .map(|s| s.to_string())
                         .unwrap_or("".to_string()),
-                    pkg_type,
-                    node.addon
-                        .clone()
-                        .expect("Extension node must have an addon"),
+                    PkgType::Extension,
+                    node.addon.clone(),
                 ));
             }
         }

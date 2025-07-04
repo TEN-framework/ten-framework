@@ -33,6 +33,7 @@ impl From<DesignerDestination> for GraphDestination {
                 app: designer_destination.app,
                 extension: Some(designer_destination.extension),
                 subgraph: None,
+                selector: None,
             },
             msg_conversion: designer_destination.msg_conversion,
         }

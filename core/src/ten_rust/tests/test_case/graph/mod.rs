@@ -9,6 +9,7 @@ mod flatten_integration;
 mod graph_info;
 mod import_uri;
 mod reverse;
+mod selector;
 mod subgraph;
 
 #[cfg(test)]
@@ -23,7 +24,10 @@ mod tests {
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
         },
-        graph::Graph,
+        graph::{
+            node::{GraphNode, PatternType},
+            Graph,
+        },
         pkg_info::property::parse_property_from_str,
     };
 
@@ -447,7 +451,7 @@ mod tests {
 
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
 
         // Verify the graph can be serialized back to JSON
         let serialized = serde_json::to_string(&graph);
@@ -508,7 +512,7 @@ mod tests {
 
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
     }
 
     #[tokio::test]
@@ -567,6 +571,45 @@ mod tests {
         let msg = result.err().unwrap().to_string();
         assert!(
             msg.contains("result conversion is not allowed for data out msg")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_graph_selector_node() {
+        let graph_str = include_str!(
+            "../../test_data/graph_with_selector/graph_with_selector_1.json"
+        );
+
+        let graph = serde_json::from_str::<Graph>(graph_str).unwrap();
+
+        // Get the selector node
+        let selector_node = graph
+            .nodes
+            .iter()
+            .find(|node| matches!(node, GraphNode::Selector { .. }))
+            .unwrap();
+        assert_eq!(selector_node.get_name(), "selector_for_ext_1_and_2");
+
+        let selector_node = selector_node.as_selector_node().unwrap();
+
+        // Get the selector node's children
+        let selector = &selector_node.selector;
+
+        assert_eq!(
+            selector.extension.as_ref().unwrap().type_,
+            PatternType::Regex
+        );
+
+        assert_eq!(
+            selector.extension.as_ref().unwrap().pattern,
+            "test_extension_[1-2]"
+        );
+
+        assert_eq!(selector.app.as_ref().unwrap().type_, PatternType::Exact);
+
+        assert_eq!(
+            selector.app.as_ref().unwrap().pattern,
+            "msgpack://127.0.0.1:8001/"
         );
     }
 }

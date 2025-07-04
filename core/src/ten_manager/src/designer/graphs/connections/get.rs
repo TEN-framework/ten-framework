@@ -92,6 +92,7 @@ impl From<GraphConnectionsSingleResponseData> for GraphConnection {
                 app: designer_connection.app,
                 extension: Some(designer_connection.extension),
                 subgraph: designer_connection.subgraph,
+                selector: None,
             },
 
             cmd: designer_connection

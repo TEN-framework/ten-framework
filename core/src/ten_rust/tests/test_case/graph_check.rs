@@ -17,7 +17,7 @@ mod tests {
                 GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
             },
             graph_info::GraphInfo,
-            node::{GraphNode, GraphNodeType},
+            node::{GraphContent, GraphNode},
             Graph,
         },
         pkg_info::get_app_installed_pkgs,
@@ -230,30 +230,27 @@ mod tests {
         // parsing
         let graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: Some("some_group".to_string()),
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some("/tmp/subgraph.json".to_string()),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: "/tmp/subgraph.json".to_string(),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
                     app: None,
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: Some(vec![GraphMessageFlow::new(
                     "test_cmd".to_string(),
@@ -262,6 +259,7 @@ mod tests {
                             app: None,
                             extension: Some("subgraph_1:ext_b".to_string()),
                             subgraph: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],

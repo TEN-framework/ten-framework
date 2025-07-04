@@ -56,6 +56,7 @@ mod tests {
                 app: Some("http://example.com:8000".to_string()),
                 extension: Some("extension_1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![GraphMessageFlow::new(
                 "new_cmd1".to_string(),
@@ -64,6 +65,7 @@ mod tests {
                         app: Some("http://example.com:8000".to_string()),
                         extension: Some("extension_2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],
@@ -79,6 +81,7 @@ mod tests {
                 app: Some("http://example.com:8000".to_string()),
                 extension: Some("extension_1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![GraphMessageFlow::new(
                 "new_cmd2".to_string(),
@@ -87,6 +90,7 @@ mod tests {
                         app: Some("http://example.com:8000".to_string()),
                         extension: Some("extension_3".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: None,
                 }],

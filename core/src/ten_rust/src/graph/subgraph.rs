@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 
 use crate::graph::graph_info::load_graph_from_uri;
+use crate::graph::node::{ExtensionNode, SubgraphNode};
 
 use super::connection::GraphLoc;
 use super::node::GraphNode;
@@ -145,6 +146,7 @@ impl Graph {
                         app: base_connection.loc.app.clone(),
                         extension: Some(extension_name),
                         subgraph: None,
+                        selector: None,
                     },
                     cmd: None,
                     data: None,
@@ -368,9 +370,9 @@ impl Graph {
     /// Applies properties from subgraph node reference to a flattened extension
     /// node based on exposed_properties mapping.
     fn apply_subgraph_properties_to_extension(
-        flattened_node: &mut GraphNode,
-        sub_node: &GraphNode,
-        subgraph_node: &GraphNode,
+        flattened_node: &mut ExtensionNode,
+        sub_node: &ExtensionNode,
+        subgraph_node: &SubgraphNode,
         subgraph: &Graph,
     ) -> Result<()> {
         // Apply properties from subgraph node reference based on
@@ -475,11 +477,11 @@ impl Graph {
     /// to the flattened nodes list with proper name prefixing and property
     /// application.
     fn process_extension_nodes_from_subgraph(
-        subgraph_nodes: &[GraphNode],
+        subgraph_nodes: &[ExtensionNode],
         subgraph_name: &str,
-        subgraph_node: &GraphNode,
+        subgraph_node: &SubgraphNode,
         subgraph: &Graph,
-        flattened_nodes: &mut Vec<GraphNode>,
+        flattened_nodes: &mut Vec<ExtensionNode>,
     ) -> Result<()> {
         for sub_node in subgraph_nodes {
             let mut flattened_node = sub_node.clone();
@@ -504,10 +506,10 @@ impl Graph {
     /// Helper function to process a loaded subgraph and integrate it into the
     /// flattened structure.
     async fn process_loaded_subgraph(
-        subgraph_node: &GraphNode,
+        subgraph_node: &SubgraphNode,
         loaded_subgraph: &Graph,
         current_base_dir: Option<&str>,
-        flattened_nodes: &mut Vec<GraphNode>,
+        flattened_nodes: &mut Vec<ExtensionNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()> {
@@ -529,20 +531,24 @@ impl Graph {
 
         // Flatten subgraph nodes (now all should be extensions after recursive
         // flattening)
-        for sub_node in &flattened_subgraph.nodes {
-            if sub_node.type_ != GraphNodeType::Extension {
-                return Err(anyhow::anyhow!(
-                    "Unexpected non-extension node '{}' in flattened subgraph \
-                     '{}'",
-                    sub_node.name,
-                    subgraph_node.name
-                ));
-            }
-        }
+
+        let subgraph_nodes = flattened_subgraph
+            .nodes
+            .iter()
+            .map(|node| {
+                if let GraphNode::Extension { content } = node {
+                    content.clone()
+                } else {
+                    panic!(
+                        "Unexpected non-extension node in flattened subgraph"
+                    );
+                }
+            })
+            .collect::<Vec<ExtensionNode>>();
 
         // Process all extension nodes from the subgraph
         Self::process_extension_nodes_from_subgraph(
-            &flattened_subgraph.nodes,
+            &subgraph_nodes,
             &subgraph_node.name,
             subgraph_node,
             &flattened_subgraph,
@@ -562,19 +568,19 @@ impl Graph {
     /// Helper function to process a single subgraph node and add its flattened
     /// content to the output collections.
     async fn process_subgraph_node(
-        subgraph_node: &GraphNode,
+        subgraph_node: &SubgraphNode,
         current_base_dir: Option<&str>,
-        flattened_nodes: &mut Vec<GraphNode>,
+        flattened_nodes: &mut Vec<ExtensionNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()> {
-        let import_uri =
-            subgraph_node.import_uri.as_ref().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Subgraph node '{}' must have import_uri",
-                    subgraph_node.name
-                )
-            })?;
+        let import_uri = subgraph_node.graph.import_uri.as_str();
+        if import_uri.is_empty() {
+            return Err(anyhow::anyhow!(
+                "Subgraph node '{}' has an empty import_uri",
+                subgraph_node.name
+            ));
+        }
 
         let mut new_base_dir: Option<String> = None;
         let subgraph = load_graph_from_uri(
@@ -628,25 +634,29 @@ impl Graph {
     async fn flatten_subgraph_internal(
         graph: &Graph,
         current_base_dir: Option<&str>,
-        flattened_nodes: &mut Vec<GraphNode>,
+        flattened_nodes: &mut Vec<ExtensionNode>,
         flattened_connections: &mut Vec<GraphConnection>,
         subgraph_mappings: &mut HashMap<String, Graph>,
     ) -> Result<()> {
         // Process all nodes in the graph
         for node in &graph.nodes {
-            match node.type_ {
-                GraphNodeType::Extension => {
-                    flattened_nodes.push(node.clone());
+            match node {
+                GraphNode::Extension { content } => {
+                    flattened_nodes.push(content.clone());
                 }
-                GraphNodeType::Subgraph => {
+                GraphNode::Subgraph { content } => {
                     Self::process_subgraph_node(
-                        node,
+                        content,
                         current_base_dir,
                         flattened_nodes,
                         flattened_connections,
                         subgraph_mappings,
                     )
                     .await?;
+                }
+                GraphNode::Selector { .. } => {
+                    // Skip selector nodes
+                    continue;
                 }
             }
         }
@@ -832,7 +842,7 @@ impl Graph {
         let has_subgraphs = graph
             .nodes
             .iter()
-            .any(|node| node.type_ == GraphNodeType::Subgraph);
+            .any(|node| node.get_type() == GraphNodeType::Subgraph);
 
         if !has_subgraphs {
             // No subgraphs, return None to indicate no flattening needed
@@ -872,7 +882,10 @@ impl Graph {
             };
 
         Ok(Some(Graph {
-            nodes: flattened_nodes,
+            nodes: flattened_nodes
+                .into_iter()
+                .map(|node| GraphNode::Extension { content: node })
+                .collect(),
             connections: if flattened_connections.is_empty() {
                 None
             } else {
