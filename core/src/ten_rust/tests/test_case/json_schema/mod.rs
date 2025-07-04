@@ -2500,7 +2500,6 @@ mod tests {
               "nodes": [{
                 "type": "extension",
                 "name": "test_ext",
-                "addon": "test_addon"
               }]
             }]
           }

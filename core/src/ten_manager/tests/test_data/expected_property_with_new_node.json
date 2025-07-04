@@ -11,14 +11,12 @@
           {
             "type": "extension",
             "name": "first_node",
-            "addon": "first_addon",
-            "extension_group": "default"
+            "addon": "first_addon"
           },
           {
             "type": "extension",
             "name": "new_node",
-            "addon": "new_addon",
-            "extension_group": "default"
+            "addon": "new_addon"
           }
         ],
         "connections": []

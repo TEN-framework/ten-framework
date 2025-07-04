@@ -331,8 +331,7 @@
               "required": [
                 "type",
                 "name",
-                "addon",
-                "extension_group"
+                "addon"
               ],
               "additionalProperties": false
             },

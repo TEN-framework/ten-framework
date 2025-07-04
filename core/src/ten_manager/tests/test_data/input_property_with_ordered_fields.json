@@ -11,8 +11,7 @@
           {
             "type": "extension",
             "name": "first_node",
-            "addon": "first_addon",
-            "extension_group": "default"
+            "addon": "first_addon"
           }
         ],
         "connections": []
