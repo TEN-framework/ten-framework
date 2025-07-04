@@ -111,12 +111,9 @@ pub async fn replace_graph_node_endpoint(
         GraphNode::Extension { content } => content.extension_group.clone(),
         _ => None,
     };
-    match graph_node {
-        GraphNode::Extension { content } => {
-            content.addon = request_payload.addon.clone();
-            content.property = request_payload.property.clone();
-        }
-        _ => {}
+    if let GraphNode::Extension { content } = graph_node {
+        content.addon = request_payload.addon.clone();
+        content.property = request_payload.property.clone();
     }
 
     // Validate the graph.

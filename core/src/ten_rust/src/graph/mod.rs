@@ -321,7 +321,7 @@ impl Graph {
                 // Verify that the extension exists in the graph
                 if !self.nodes.iter().any(|node| {
                     if let Some(ext) = &property.extension {
-                        &node.get_name() == ext
+                        node.get_name() == ext
                     } else {
                         false
                     }

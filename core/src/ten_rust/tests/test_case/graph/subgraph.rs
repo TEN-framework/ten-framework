@@ -143,7 +143,7 @@ mod tests {
             .iter()
             .map(|node| match node {
                 GraphNode::Extension { content } => content.clone(),
-                _ => panic!("Expected extension node, got {:?}", node),
+                _ => panic!("Expected extension node, got {node:?}"),
             })
             .collect::<Vec<_>>();
 
@@ -349,7 +349,7 @@ mod tests {
             .iter()
             .map(|node| match node {
                 GraphNode::Extension { content } => content.clone(),
-                _ => panic!("Expected extension node, got {:?}", node),
+                _ => panic!("Expected extension node, got {node:?}"),
             })
             .collect::<Vec<_>>();
 
@@ -744,7 +744,7 @@ mod tests {
             .iter()
             .map(|node| match node {
                 GraphNode::Extension { content } => content.clone(),
-                _ => panic!("Expected extension node, got {:?}", node),
+                _ => panic!("Expected extension node, got {node:?}"),
             })
             .collect::<Vec<_>>();
 

@@ -185,7 +185,7 @@ fn remove_nodes_from_array(
                 // Match the name.
                 let name_match = match item_obj.get("name") {
                     Some(Value::String(item_name)) => {
-                        item_name == &remove_node.get_name()
+                        item_name == remove_node.get_name()
                     }
                     _ => false,
                 };
@@ -280,7 +280,7 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             // Match the name.
             let name_match = match node_obj.get("name") {
                 Some(Value::String(node_name)) => {
-                    node_name == &modify_node.get_name()
+                    node_name == modify_node.get_name()
                 }
                 _ => false,
             };

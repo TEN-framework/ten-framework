@@ -78,7 +78,7 @@ mod tests {
         if let GraphNode::Extension { content } = &graph_info.graph.nodes[0] {
             assert_eq!(content.addon, "test_addon");
         } else {
-            assert!(false, "Unexpected non-extension node in graph");
+            panic!("Unexpected non-extension node in graph");
         }
 
         assert!(graph_info.graph.connections.is_some());

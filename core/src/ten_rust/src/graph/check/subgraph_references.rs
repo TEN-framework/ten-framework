@@ -136,7 +136,7 @@ impl Graph {
             if node.get_type() == GraphNodeType::Subgraph {
                 let unique_subgraph_name = Self::create_subgraph_identifier(
                     node.get_app_uri().as_ref(),
-                    &node.get_name(),
+                    node.get_name(),
                 );
                 all_subgraphs.push(unique_subgraph_name);
             }

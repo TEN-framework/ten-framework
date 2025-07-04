@@ -2492,6 +2492,7 @@ mod tests {
 
     #[test]
     fn test_validate_graph_node_extension_missing_required() {
+        // missing addon
         let property = r#"
         {
           "ten": {
@@ -2511,6 +2512,7 @@ mod tests {
 
     #[test]
     fn test_validate_graph_node_subgraph_missing_required() {
+        // missing graph
         let property = r#"
         {
           "ten": {
@@ -2530,6 +2532,7 @@ mod tests {
 
     #[test]
     fn test_validate_graph_node_selector_missing_required() {
+        // missing selector
         let property = r#"
         {
           "ten": {
