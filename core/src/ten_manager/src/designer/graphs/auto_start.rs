@@ -69,7 +69,7 @@ pub async fn update_graph_auto_start_endpoint(
                 app_base_dir,
                 &mut property.all_fields,
                 graph_name,
-                &graph_info.graph.nodes(),
+                graph_info.graph.nodes(),
                 graph_info.graph.connections().as_ref().unwrap_or(&vec![]),
                 graph_info.graph.exposed_messages().as_ref().unwrap_or(&vec![]),
                 graph_info
