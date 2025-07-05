@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 
-from ten import (
+from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
@@ -51,5 +51,5 @@ class SpeechmaticsASRExtension(AsyncExtension):
         cmd_name = cmd.get_name()
         ten_env.log_debug(f"on_cmd: {cmd_name}")
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)

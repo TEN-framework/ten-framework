@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import AsyncTenEnv, Cmd
+from ten_runtime import AsyncTenEnv, Cmd
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.types import (
     LLMToolMetadata,

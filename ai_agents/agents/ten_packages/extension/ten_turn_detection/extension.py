@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import (
+from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
@@ -32,7 +32,7 @@ class TENTurnDetectorExtension(AsyncExtension):
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         # read property to initialize configuration
-        config_json = await ten_env.get_property_to_json("")
+        config_json, _ = await ten_env.get_property_to_json("")
 
         from .config import TENTurnDetectorConfig
 
@@ -60,8 +60,8 @@ class TENTurnDetectorExtension(AsyncExtension):
 
         # TODO: handle cmd
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
@@ -69,14 +69,14 @@ class TENTurnDetectorExtension(AsyncExtension):
             return
 
         try:
-            input_text = data.get_property_string("text")
+            input_text, _ = data.get_property_string("text")
         except Exception as e:
             ten_env.log_warn(f"get_property_string(text) error: {e}")
             return
 
         is_final = False
         try:
-            is_final = data.get_property_bool("is_final")
+            is_final, _ = data.get_property_bool("is_final")
         except Exception as _e:
             pass
 

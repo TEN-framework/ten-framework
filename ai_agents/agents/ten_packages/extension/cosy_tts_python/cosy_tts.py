@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from websocket import WebSocketConnectionClosedException
 
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 import dashscope
 from dashscope.audio.tts_v2 import (

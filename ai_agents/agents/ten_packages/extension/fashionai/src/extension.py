@@ -6,7 +6,7 @@
 #
 #
 import traceback
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,
@@ -15,7 +15,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten.async_extension import AsyncExtension
+from ten_runtime.async_extension import AsyncExtension
 
 import asyncio
 from .fashionai_client import FashionAIClient
@@ -50,11 +50,11 @@ class FashionAIExtension(AsyncExtension):
         )
 
         try:
-            self.app_id = await ten_env.get_property_string("app_id")
-            self.token = await ten_env.get_property_string("token")
-            self.channel = await ten_env.get_property_string("channel")
-            self.stream_id = str(await ten_env.get_property_int("stream_id"))
-            self.service_id = await ten_env.get_property_string("service_id")
+            self.app_id, _ = await ten_env.get_property_string("app_id")
+            self.token, _ = await ten_env.get_property_string("token")
+            self.channel, _ = await ten_env.get_property_string("channel")
+            self.stream_id, _ = str(await ten_env.get_property_int("stream_id"))
+            self.service_id, _ = await ten_env.get_property_string("service_id")
 
             ten_env.log_info(
                 f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}, service_id = {self.service_id}"
@@ -99,11 +99,11 @@ class FashionAIExtension(AsyncExtension):
             ten_env.log_info(f"unknown cmd {cmd_name}")
 
         ten_env.log_info("FASHION_AI on_cmd done")
-        cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        input_text = data.get_property_string("text")
+        input_text, _ = data.get_property_string("text")
         if len(input_text) == 0:
             ten_env.log_info("FASHION_AI ignore empty text")
             return

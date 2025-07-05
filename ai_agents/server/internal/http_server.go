@@ -127,7 +127,7 @@ func (s *HttpServer) handleGraphs(c *gin.Context) {
 		return
 	}
 
-	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	tenSection, ok := propertyJson["ten"].(map[string]interface{})
 	if !ok {
 		slog.Error("Invalid format: _ten section missing", logTag)
 		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
@@ -524,7 +524,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	// Locate the predefined graphs array
-	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	tenSection, ok := propertyJson["ten"].(map[string]interface{})
 	if !ok {
 		slog.Error("Invalid format: _ten section missing", "requestId", req.RequestId, logTag)
 		return
