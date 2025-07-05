@@ -84,7 +84,17 @@ class ServerVADUpdateParams:
     silence_duration_ms: Optional[int] = (
         None  # Duration of silence before considering speech stopped (in milliseconds)
     )
-    type: str = "server_vad"  # Fixed value for VAD type
+    type: Literal["server_vad"] = "server_vad"
+    create_response: bool = True  # only in conversation mode
+    interrupt_response: bool = True  # only in conversation mode
+
+
+@dataclass
+class SemanticVADUpdateParams:
+    type: Literal["semantic_vad"] = "semantic_vad"
+    eagerness: Literal["low", "medium", "high", "auto"] = "auto"
+    create_response: bool = True  # only in conversation mode
+    interrupt_response: bool = True  # only in conversation mode
 
 
 @dataclass
@@ -102,9 +112,9 @@ class Session:
     voice: Voices = (
         Voices.Alloy
     )  # Voice configuration for audio responses, defaulting to "Alloy"
-    turn_detection: Optional[ServerVADUpdateParams] = (
-        None  # Voice activity detection (VAD) settings
-    )
+    turn_detection: Optional[
+        Union[ServerVADUpdateParams, SemanticVADUpdateParams]
+    ] = None  # Voice activity detection (VAD) settings
     input_audio_format: AudioFormats = (
         AudioFormats.PCM16
     )  # Audio format for input (e.g., "pcm16")
@@ -136,9 +146,9 @@ class SessionUpdateParams:
     voice: Optional[Voices] = (
         None  # Voice selection, can be `None` or from `Voices` Enum
     )
-    turn_detection: Optional[ServerVADUpdateParams] = (
-        None  # Server VAD update params
-    )
+    turn_detection: Optional[
+        Union[ServerVADUpdateParams, SemanticVADUpdateParams]
+    ] = None  # Server VAD update params
     input_audio_format: Optional[AudioFormats] = (
         None  # Input audio format from `AudioFormats` Enum
     )
