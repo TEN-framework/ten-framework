@@ -120,7 +120,7 @@ pub async fn get_graph_connections_endpoint(
     // Look up the graph directly by UUID from graphs_cache
     if let Some(graph_info) = graphs_cache.get(&request_payload.graph_id) {
         // Convert the connections field to RespConnection.
-        let connections: Option<_> = graph_info.graph.connections.as_ref();
+        let connections = graph_info.graph.connections().clone();
         let resp_connections: Vec<GraphConnectionsSingleResponseData> =
             match connections {
                 Some(connections) => {

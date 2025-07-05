@@ -293,7 +293,7 @@ mod tests {
             // Check if the connection is gone.
             let connection_exists = predefined_graph
                 .graph
-                .connections
+                .connections()
                 .as_ref()
                 .is_some_and(|connections| {
                     connections.iter().any(|conn| {

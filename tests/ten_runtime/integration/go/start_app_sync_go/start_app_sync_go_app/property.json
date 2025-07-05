@@ -9,14 +9,16 @@
         "name": "default",
         "auto_start": true,
         "singleton": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "default_extension_go",
-            "addon": "default_extension_go",
-            "extension_group": "default_extension_group"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "default_extension_go",
+              "addon": "default_extension_go",
+              "extension_group": "default_extension_group"
+            }
+          ]
+        }
       }
     ]
   },

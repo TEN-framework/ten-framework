@@ -85,7 +85,27 @@ fn find_and_update_graph(
         }
 
         // Found the matching graph, update its connections.
-        match graph_obj.get_mut("connections") {
+        // Get or create the graph field.
+        let graph_content_obj = match graph_obj.get_mut("graph") {
+            Some(Value::Object(graph_content)) => graph_content,
+            Some(_) => {
+                // graph field exists but is not an object, skip this graph
+                continue;
+            }
+            None => {
+                // Create graph field if it doesn't exist
+                graph_obj.insert(
+                    "graph".to_string(),
+                    Value::Object(serde_json::Map::new()),
+                );
+                match graph_obj.get_mut("graph") {
+                    Some(Value::Object(graph_content)) => graph_content,
+                    _ => continue, // This should not happen
+                }
+            }
+        };
+
+        match graph_content_obj.get_mut("connections") {
             Some(Value::Array(connections_array)) => {
                 // Process existing connections.
                 update_existing_connections(
@@ -97,12 +117,15 @@ fn find_and_update_graph(
 
                 // Remove the connections array if it's empty.
                 if connections_array.is_empty() {
-                    graph_obj.remove("connections");
+                    graph_content_obj.remove("connections");
                 }
             }
             _ => {
                 // No connections array, create one if needed.
-                create_connections_if_needed(graph_obj, connections_to_add);
+                create_connections_if_needed(
+                    graph_content_obj,
+                    connections_to_add,
+                );
             }
         }
 
@@ -622,14 +645,14 @@ fn update_destinations(
                 _ => false,
             };
 
-            let extension_match = match (Some(dest_ext), &modify_dest.loc.extension)
-            {
-                (Some(dest_ext_str), Some(modify_ext)) => {
-                    dest_ext_str == modify_ext
-                }
-                (None, None) => true,
-                _ => false,
-            };
+            let extension_match =
+                match (Some(dest_ext), &modify_dest.loc.extension) {
+                    (Some(dest_ext_str), Some(modify_ext)) => {
+                        dest_ext_str == modify_ext
+                    }
+                    (None, None) => true,
+                    _ => false,
+                };
 
             if !app_match || !extension_match {
                 continue;

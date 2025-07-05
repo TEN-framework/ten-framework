@@ -832,162 +832,168 @@
                 "type": "boolean",
                 "default": false
               },
-              "import_uri": {
-                "type": "string",
-                "format": "uri-reference",
-                "minLength": 1
-              },
-              "nodes": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/graphNode"
-                }
-              },
-              "connections": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/graphConnection"
-                }
-              },
-              "exposed_messages": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "type",
-                    "name"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "cmd_in",
-                        "cmd_out",
-                        "data_in",
-                        "data_out",
-                        "audio_frame_in",
-                        "audio_frame_out",
-                        "video_frame_in",
-                        "video_frame_out"
-                      ]
-                    },
-                    "name": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "extension": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "subgraph": {
-                      "$ref": "#/$defs/alphanumericCharacters"
+              "graph": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "import_uri": {
+                    "type": "string",
+                    "format": "uri-reference",
+                    "minLength": 1
+                  },
+                  "nodes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/graphNode"
                     }
                   },
-                  "oneOf": [
-                    {
-                      "required": [
-                        "extension"
-                      ],
-                      "not": {
-                        "required": [
-                          "subgraph"
-                        ]
-                      }
-                    },
-                    {
-                      "required": [
-                        "subgraph"
-                      ],
-                      "not": {
-                        "required": [
-                          "extension"
-                        ]
-                      }
-                    }
-                  ]
-                }
-              },
-              "exposed_properties": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "name"
-                  ],
-                  "properties": {
-                    "extension": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "subgraph": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "name": {
-                      "$ref": "#/$defs/alphanumericCharacters"
+                  "connections": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/graphConnection"
                     }
                   },
-                  "oneOf": [
-                    {
+                  "exposed_messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
                       "required": [
-                        "extension"
+                        "type",
+                        "name"
                       ],
-                      "not": {
-                        "required": [
-                          "subgraph"
-                        ]
-                      }
-                    },
-                    {
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "cmd_in",
+                            "cmd_out",
+                            "data_in",
+                            "data_out",
+                            "audio_frame_in",
+                            "audio_frame_out",
+                            "video_frame_in",
+                            "video_frame_out"
+                          ]
+                        },
+                        "name": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "extension": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "subgraph": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        }
+                      },
+                      "oneOf": [
+                        {
+                          "required": [
+                            "extension"
+                          ],
+                          "not": {
+                            "required": [
+                              "subgraph"
+                            ]
+                          }
+                        },
+                        {
+                          "required": [
+                            "subgraph"
+                          ],
+                          "not": {
+                            "required": [
+                              "extension"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "exposed_properties": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
                       "required": [
-                        "subgraph"
+                        "name"
                       ],
-                      "not": {
-                        "required": [
-                          "extension"
-                        ]
-                      }
-                    }
-                  ]
-                }
-              }
-            },
-            "oneOf": [
-              {
-                "required": [
-                  "import_uri"
-                ],
-                "not": {
-                  "anyOf": [
-                    {
-                      "required": [
-                        "nodes"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "connections"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "exposed_messages"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "exposed_properties"
+                      "properties": {
+                        "extension": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "subgraph": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "name": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        }
+                      },
+                      "oneOf": [
+                        {
+                          "required": [
+                            "extension"
+                          ],
+                          "not": {
+                            "required": [
+                              "subgraph"
+                            ]
+                          }
+                        },
+                        {
+                          "required": [
+                            "subgraph"
+                          ],
+                          "not": {
+                            "required": [
+                              "extension"
+                            ]
+                          }
+                        }
                       ]
                     }
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "required": [
-                    "import_uri"
-                  ]
-                }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "import_uri"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "nodes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "connections"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "exposed_messages"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "exposed_properties"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "required": [
+                        "import_uri"
+                      ]
+                    }
+                  }
+                ]
               }
-            ]
+            }
           }
         }
       }

@@ -346,7 +346,7 @@ mod tests {
         {
             // Check if the node is gone.
             let node_exists =
-                graph_info.graph.nodes.iter().any(|node| match node {
+                graph_info.graph.nodes().iter().any(|node| match node {
                     GraphNode::Extension { content } => {
                         content.name == "test_delete_node"
                             && content.addon == "test_addon"

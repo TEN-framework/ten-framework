@@ -33,7 +33,7 @@ mod tests {
 
         let property_json_value = serde_json::to_value(&graph_info).unwrap();
         assert_eq!(
-            property_json_value.as_object().unwrap()["connections"]
+            property_json_value.as_object().unwrap()["graph"]["connections"]
                 .as_array()
                 .unwrap()
                 .len(),

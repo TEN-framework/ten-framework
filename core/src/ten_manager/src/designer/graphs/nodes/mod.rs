@@ -175,7 +175,7 @@ pub fn get_nodes_in_graph<'a>(
     // Look for the graph by ID in the graphs_cache.
     if let Some(graph_info) = graphs_cache.get(graph_id) {
         // Collect all extension nodes from the graph.
-        Ok(&graph_info.graph.nodes)
+        Ok(graph_info.graph.nodes())
     } else {
         Err(anyhow::anyhow!(
             "Graph with ID '{}' not found in graph caches",

@@ -174,7 +174,7 @@ pub async fn delete_graph_connection_endpoint(
 
     // Delete the connection.
     if let Err(err) = graph_delete_connection(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         request_payload.src_app.clone(),
         request_payload.src_extension.clone(),
         request_payload.msg_type.clone(),

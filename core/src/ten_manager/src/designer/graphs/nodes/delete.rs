@@ -182,7 +182,7 @@ pub async fn delete_graph_node_endpoint(
 
     // Delete the extension node.
     if let Err(err) = graph_delete_extension_node(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         request_payload.name.clone(),
         request_payload.addon.clone(),
         request_payload.app.clone(),

@@ -4,7 +4,9 @@
       {
         "name": "default",
         "auto_start": false,
-        "nodes": []
+        "graph": {
+          "nodes": []
+        }
       }
     ]
   }

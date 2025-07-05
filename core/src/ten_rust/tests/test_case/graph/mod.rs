@@ -49,7 +49,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = graph.static_check();
+        let result = graph.graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -74,7 +74,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = graph.static_check();
+        let result = graph.graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -111,7 +111,7 @@ mod tests {
         .await
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let result = graph_info.graph.check_connection_extensions_exist();
+        let result = graph_info.graph.graph.check_connection_extensions_exist();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -135,7 +135,7 @@ mod tests {
         .await
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let result = graph_info.graph.check_connection_extensions_exist();
+        let result = graph_info.graph.graph.check_connection_extensions_exist();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());

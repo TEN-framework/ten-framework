@@ -120,7 +120,7 @@ pub async fn update_graph_endpoint(
 
     // Access the graph and update it.
     match replace_graph_nodes_and_connections(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         &graph_nodes,
         &request_payload.connections,
         &request_payload.exposed_messages,

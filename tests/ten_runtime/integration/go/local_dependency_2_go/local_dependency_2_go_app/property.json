@@ -9,17 +9,19 @@
         "name": "default",
         "auto_start": true,
         "singleton": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "A",
-            "addon": "extension_a",
-            "extension_group": "nodetest",
-            "property": {
-              "env_not_set_has_default": "${env:ENV_NOT_SET|}"
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "A",
+              "addon": "extension_a",
+              "extension_group": "nodetest",
+              "property": {
+                "env_not_set_has_default": "${env:ENV_NOT_SET|}"
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     ]
   }

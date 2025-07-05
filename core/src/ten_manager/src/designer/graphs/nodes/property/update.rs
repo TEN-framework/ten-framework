@@ -50,7 +50,7 @@ fn update_node_property_in_graph(
 ) -> Result<()> {
     // Find the node in the graph.
     let graph_node =
-        graph_info.graph.nodes.iter_mut().find(|node| match node {
+        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
             GraphNode::Extension { content } => {
                 content.name == request_payload.name
                     && content.addon == request_payload.addon

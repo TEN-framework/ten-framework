@@ -44,7 +44,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -69,7 +69,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -94,7 +94,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
     }
@@ -120,7 +120,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }

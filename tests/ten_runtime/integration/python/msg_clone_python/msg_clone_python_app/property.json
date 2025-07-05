@@ -7,120 +7,122 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "simple_http_server_cpp",
-            "addon": "simple_http_server_cpp",
-            "extension_group": "default_extension_group",
-            "property": {
-              "server_port": 8002
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "server",
+              "addon": "default_extension_python",
+              "extension_group": "server"
+            },
+            {
+              "type": "extension",
+              "name": "client",
+              "addon": "default_extension_python",
+              "extension_group": "client"
             }
-          },
-          {
-            "type": "extension",
-            "name": "server",
-            "addon": "default_extension_python",
-            "extension_group": "server"
-          },
-          {
-            "type": "extension",
-            "name": "client",
-            "addon": "default_extension_python",
-            "extension_group": "client"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "simple_http_server_cpp",
-            "cmd": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "client"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "client",
-            "cmd": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "server"
-                  }
-                ]
-              }
-            ],
-            "data": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "server"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "server"
-                  }
-                ]
-              }
-            ],
-            "video_frame": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "server"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "server",
-            "data": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "client"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "client"
-                  }
-                ]
-              }
-            ],
-            "video_frame": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "client"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "client"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "client",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "server"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "server"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "server"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "server"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "server",
+              "data": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "client"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "client"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "client"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

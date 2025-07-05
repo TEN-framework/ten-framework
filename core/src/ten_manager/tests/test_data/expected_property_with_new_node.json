@@ -7,19 +7,21 @@
       {
         "name": "test_graph",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "first_node",
-            "addon": "first_addon"
-          },
-          {
-            "type": "extension",
-            "name": "new_node",
-            "addon": "new_addon"
-          }
-        ],
-        "connections": []
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "first_node",
+              "addon": "first_addon"
+            },
+            {
+              "type": "extension",
+              "name": "new_node",
+              "addon": "new_addon"
+            }
+          ],
+          "connections": []
+        }
       }
     ]
   },

@@ -73,8 +73,30 @@ pub fn update_graph_node_all_fields(
 
         // Found matching graph, process it.
 
+        // Get or create the graph field.
+        let graph_content_obj = match graph_obj.get_mut("graph") {
+            Some(Value::Object(graph_content)) => graph_content,
+            Some(_) => {
+                // graph field exists but is not an object, skip this graph
+                continue;
+            }
+            None => {
+                // Create graph field if it doesn't exist
+                graph_obj.insert(
+                    "graph".to_string(),
+                    Value::Object(serde_json::Map::new()),
+                );
+                match graph_obj.get_mut("graph") {
+                    Some(Value::Object(graph_content)) => graph_content,
+                    _ => continue, // This should not happen
+                }
+            }
+        };
+
         // Process nodes array if it exists.
-        if let Some(Value::Array(nodes_array)) = graph_obj.get_mut("nodes") {
+        if let Some(Value::Array(nodes_array)) =
+            graph_content_obj.get_mut("nodes")
+        {
             process_existing_nodes_array(
                 nodes_array,
                 nodes_to_remove,
@@ -84,13 +106,16 @@ pub fn update_graph_node_all_fields(
         } else if should_create_nodes_array(nodes_to_add) {
             // No nodes array in the graph yet, create one if we have nodes to
             // add.
-            create_new_nodes_array(graph_obj, nodes_to_add.unwrap());
+            create_new_nodes_array(graph_content_obj, nodes_to_add.unwrap());
         }
 
         // Process connections if nodes were removed.
         if let Some(remove_nodes) = nodes_to_remove {
             if !remove_nodes.is_empty() {
-                update_connections_for_removed_nodes(graph_obj, remove_nodes);
+                update_connections_for_removed_nodes(
+                    graph_content_obj,
+                    remove_nodes,
+                );
             }
         }
 

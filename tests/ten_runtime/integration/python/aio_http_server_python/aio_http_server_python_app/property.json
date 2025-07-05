@@ -7,38 +7,40 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "aio_http_server_python",
-            "addon": "aio_http_server_python",
-            "extension_group": "test",
-            "property": {
-              "server_port": 8002
-            }
-          },
-          {
-            "type": "extension",
-            "name": "simple_echo_cpp",
-            "addon": "simple_echo_cpp",
-            "extension_group": "default_extension_group"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "aio_http_server_python",
-            "cmd": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "simple_echo_cpp"
-                  }
-                ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "aio_http_server_python",
+              "addon": "aio_http_server_python",
+              "extension_group": "test",
+              "property": {
+                "server_port": 8002
               }
-            ]
-          }
-        ]
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "aio_http_server_python",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }
