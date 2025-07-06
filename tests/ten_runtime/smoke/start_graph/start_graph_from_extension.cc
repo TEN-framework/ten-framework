@@ -120,12 +120,14 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "addon": "start_graph_from_extension__predefined_graph_extension",
-                            "extension_group": "start_graph_from_extension__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "addon": "start_graph_from_extension__predefined_graph_extension",
+                              "extension_group": "start_graph_from_extension__predefined_graph_group"
+                            }]
+                          }
                         }]
                       }
                     })"
