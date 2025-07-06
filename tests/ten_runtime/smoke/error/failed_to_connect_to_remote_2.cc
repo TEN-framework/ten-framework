@@ -71,13 +71,15 @@ class test_app_1 : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "addon": "failed_to_connect_to_remote_2__predefined_graph_extension",
-                            "extension_group": "failed_to_connect_to_remote_2__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "addon": "failed_to_connect_to_remote_2__predefined_graph_extension",
+                              "extension_group": "failed_to_connect_to_remote_2__predefined_graph_group"
+                            }]
+                          }
                         },{
                           "name": "graph_1",
                           "auto_start": false,
