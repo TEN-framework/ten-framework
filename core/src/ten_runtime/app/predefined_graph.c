@@ -517,7 +517,7 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
         ten_value_is_object(predefined_graph_info_graph_value)) {
       // Check if this is an import_uri graph
       ten_value_t *import_uri_value = ten_value_object_peek(
-          predefined_graph_info_graph_value, "import_uri");
+          predefined_graph_info_graph_value, TEN_STR_IMPORT_URI);
       if (import_uri_value && ten_value_is_string(import_uri_value)) {
         // TODO(Wei): Handle import_uri case when needed. For now, just log that
         // we found an import_uri
