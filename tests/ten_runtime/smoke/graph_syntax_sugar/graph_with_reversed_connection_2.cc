@@ -57,30 +57,32 @@ class test_app : public ten::app_t {
                  "name": "default",
                  "auto_start": false,
                  "singleton": true,
-                 "nodes": [{
-                   "type": "extension",
-                   "name": "test_extension_1",
-                   "extension_group": "graph_with_reversed_connection_2",
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "addon": "graph_with_reversed_connection_2__extension_1"
-                 },{
-                   "type": "extension",
-                   "name": "test_extension_2",
-                   "extension_group": "graph_with_reversed_connection_2",
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "addon": "graph_with_reversed_connection_2__extension_2"
-                 }],
-                 "connections": [{
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "test_extension_2",
-                   "cmd": [{
-                     "name": "hello_world",
-                     "source": [{
-                       "app": "msgpack://127.0.0.1:8001/",
-                       "extension": "test_extension_1"
+                 "graph": {
+                   "nodes": [{
+                     "type": "extension",
+                     "name": "test_extension_1",
+                     "extension_group": "graph_with_reversed_connection_2",
+                     "app": "msgpack://127.0.0.1:8001/",
+                     "addon": "graph_with_reversed_connection_2__extension_1"
+                   },{
+                     "type": "extension",
+                     "name": "test_extension_2",
+                     "extension_group": "graph_with_reversed_connection_2",
+                     "app": "msgpack://127.0.0.1:8001/",
+                     "addon": "graph_with_reversed_connection_2__extension_2"
+                   }],
+                   "connections": [{
+                     "app": "msgpack://127.0.0.1:8001/",
+                     "extension": "test_extension_2",
+                     "cmd": [{
+                       "name": "hello_world",
+                       "source": [{
+                         "app": "msgpack://127.0.0.1:8001/",
+                         "extension": "test_extension_1"
+                       }]
                      }]
                    }]
-                 }]
+                 }
                }]
              }
            })",

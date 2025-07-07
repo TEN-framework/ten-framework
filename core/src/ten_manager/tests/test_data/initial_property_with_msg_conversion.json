@@ -3,34 +3,36 @@
     "predefined_graphs": [
       {
         "name": "test_graph",
-        "connections": [
-          {
-            "app": "http://example.com:8000",
-            "extension": "extension_1",
-            "cmd": [
-              {
-                "name": "existing_cmd",
-                "dest": [
-                  {
-                    "app": "http://example.com:8000",
-                    "extension": "extension_2",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "old_param",
-                          "conversion_mode": "from_original",
-                          "original_path": "source_param"
-                        }
-                      ]
+        "graph": {
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "existing_cmd",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                          {
+                            "path": "old_param",
+                            "conversion_mode": "from_original",
+                            "original_path": "source_param"
+                          }
+                        ]
+                      }
                     }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

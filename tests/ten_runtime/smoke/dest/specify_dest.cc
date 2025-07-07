@@ -193,22 +193,24 @@ class business_app : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "business_extension",
-                            "addon": "specify_dest__business_extension",
-                            "extension_group": "specify_dest_group"
-                          },{
-                            "type": "extension",
-                            "name": "plugin_extension_1",
-                            "addon": "specify_dest__plugin_extension_1",
-                            "extension_group": "specify_dest_group"
-                          },{
-                            "type": "extension",
-                            "name": "plugin_extension_2",
-                            "addon": "specify_dest__plugin_extension_2",
-                            "extension_group": "specify_dest_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "business_extension",
+                              "addon": "specify_dest__business_extension",
+                              "extension_group": "specify_dest_group"
+                            },{
+                              "type": "extension",
+                              "name": "plugin_extension_1",
+                              "addon": "specify_dest__plugin_extension_1",
+                              "extension_group": "specify_dest_group"
+                            },{
+                              "type": "extension",
+                              "name": "plugin_extension_2",
+                              "addon": "specify_dest__plugin_extension_2",
+                              "extension_group": "specify_dest_group"
+                            }]
+                          }
                         }]
                       }
                     })"
