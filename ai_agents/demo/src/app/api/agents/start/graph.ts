@@ -288,7 +288,6 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-
     // }else if (graphName === "with_ten_turn_detection") {
     //     return {
     //         "agora_rtc": {
