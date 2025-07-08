@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List
 from pydantic import BaseModel
 from ten_ai_base.asr import AsyncASRBaseExtension
@@ -51,6 +52,12 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
         cmd_result.set_property_string("detail", "success")
         await ten_env.return_result(cmd_result)
 
+
+    async def _handle_reconnect(self):
+        await asyncio.sleep(0.2)  # Adjust the sleep time as needed
+
+        await self.stop_connection()
+        await self.start_connection()
 
     async def start_connection(self) -> None:
         self.ten_env.log_info("start and listen bytedance_asr")
@@ -122,6 +129,9 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 module=ModuleType.STT,
             )
             await self.send_asr_error(error_message, None)
+            if not self.stopped:
+                # If the extension is not stopped, attempt to reconnect
+                await self._handle_reconnect()
 
     async def stop_connection(self) -> None:
         if self.client:

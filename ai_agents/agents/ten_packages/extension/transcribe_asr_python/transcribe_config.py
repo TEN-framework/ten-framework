@@ -1,7 +1,9 @@
 from typing import Union
 
+from pydantic import BaseModel
 
-class TranscribeConfig:
+
+class TranscribeConfig(BaseModel):
     def __init__(
         self,
         region: str,

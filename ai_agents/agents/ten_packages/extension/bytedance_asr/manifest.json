@@ -9,6 +9,7 @@
       "version": "=0.10.18"
     }
   ],
+  "interface": "../../system/ten_ai_base/api/asr-interface.json",
   "api": {
     "property": {
       "properties": {
@@ -25,76 +26,6 @@
           "type": "string"
         }
       }
-    },
-    "cmd_in": [
-      {
-        "name": "on_user_joined",
-        "property": {
-          "properties": {
-            "user_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      {
-        "name": "on_user_left",
-        "property": {
-          "properties": {
-            "user_id": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      {
-        "name": "on_connection_failure",
-        "property": {
-          "properties": {
-            "error": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "properties": {
-            "time": {
-              "type": "int64"
-            },
-            "duration_ms": {
-              "type": "int64"
-            },
-            "language": {
-              "type": "string"
-            },
-            "text": {
-              "type": "string"
-            },
-            "is_final": {
-              "type": "bool"
-            },
-            "stream_id": {
-              "type": "uint32"
-            },
-            "end_of_segment": {
-              "type": "bool"
-            }
-          }
-        }
-      }
-    ],
-    "audio_frame_in": [
-      {
-        "name": "pcm_frame",
-        "property": {
-          "properties": {}
-        }
-      }
-    ]
+    }
   }
 }
