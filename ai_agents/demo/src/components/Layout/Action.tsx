@@ -118,6 +118,7 @@ export default function Action(props: { className?: string }) {
             )
           }
           startServicePayload.dify_api_key = difySettingsResult.data.api_key
+          startServicePayload.dify_base_url = difySettingsResult.data.base_url
         }
         // common -- start service
         const res = await apiStartService(startServicePayload)
