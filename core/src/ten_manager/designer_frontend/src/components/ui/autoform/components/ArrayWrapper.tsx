@@ -4,10 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
-import { Button } from "@/components/ui/Button";
+
+import type { ArrayWrapperProps } from "@autoform/react";
 import { PlusIcon } from "lucide-react";
-import { ArrayWrapperProps } from "@autoform/react";
+import type React from "react";
+import { Button } from "@/components/ui/Button";
 
 export const ArrayWrapper: React.FC<ArrayWrapperProps> = ({
   label,
@@ -16,7 +17,7 @@ export const ArrayWrapper: React.FC<ArrayWrapperProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{label}</h3>
+      <h3 className="font-medium text-lg">{label}</h3>
       {children}
       <Button onClick={onAddItem} variant="outline" size="sm" type="button">
         <PlusIcon className="h-4 w-4" />

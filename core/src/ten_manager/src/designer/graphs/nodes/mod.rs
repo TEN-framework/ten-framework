@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::node::{GraphNode, GraphNodeType};
+use ten_rust::graph::node::GraphNode;
 use ten_rust::pkg_info::manifest::api::ManifestApiMsg;
 use ten_rust::pkg_info::manifest::api::{
     ManifestApiCmdResult, ManifestApiProperty, ManifestApiPropertyAttributes,
@@ -168,14 +168,14 @@ impl From<ManifestApiMsg> for DesignerApiMsg {
 }
 
 /// Retrieves all extension nodes from a specified graph.
-pub fn get_extension_nodes_in_graph<'a>(
+pub fn get_nodes_in_graph<'a>(
     graph_id: &Uuid,
     graphs_cache: &'a HashMap<Uuid, GraphInfo>,
 ) -> Result<&'a Vec<GraphNode>> {
     // Look for the graph by ID in the graphs_cache.
     if let Some(graph_info) = graphs_cache.get(graph_id) {
         // Collect all extension nodes from the graph.
-        Ok(&graph_info.graph.nodes)
+        Ok(graph_info.graph.nodes())
     } else {
         Err(anyhow::anyhow!(
             "Graph with ID '{}' not found in graph caches",
@@ -205,15 +205,13 @@ pub fn update_graph_node_in_property_all_fields(
         belonging_pkg_info_find_by_graph_info_mut(pkgs_cache, graph_info)
     {
         // Create the graph node.
-        let new_node = GraphNode {
-            type_: GraphNodeType::Extension,
-            name: node_name.to_string(),
-            addon: Some(addon_name.to_string()),
-            extension_group: extension_group_name.clone(),
-            app: app_uri.clone(),
-            property: property.clone(),
-            import_uri: None,
-        };
+        let new_node = GraphNode::new_extension_node(
+            node_name.to_string(),
+            addon_name.to_string(),
+            extension_group_name.clone(),
+            app_uri.clone(),
+            property.clone(),
+        );
 
         // Update property.json file with the graph node.
         if let Some(property) = &mut pkg_info.property {

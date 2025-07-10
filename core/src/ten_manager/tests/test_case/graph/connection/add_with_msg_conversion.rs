@@ -59,14 +59,16 @@ mod tests {
                 app: Some("http://example.com:8000".to_string()),
                 extension: Some("extension_1".to_string()),
                 subgraph: None,
+                selector: None,
             },
-            cmd: Some(vec![GraphMessageFlow {
-                name: "cmd_with_conversion".to_string(),
-                dest: vec![GraphDestination {
+            cmd: Some(vec![GraphMessageFlow::new(
+                "cmd_with_conversion".to_string(),
+                vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("http://example.com:8000".to_string()),
                         extension: Some("extension_2".to_string()),
                         subgraph: None,
+                        selector: None,
                     },
                     msg_conversion: Some(MsgAndResultConversion {
                         msg: Some(MsgConversion {
@@ -110,7 +112,8 @@ mod tests {
                         }),
                     }),
                 }],
-            }]),
+                vec![],
+            )]),
             data: None,
             audio_frame: None,
             video_frame: None,

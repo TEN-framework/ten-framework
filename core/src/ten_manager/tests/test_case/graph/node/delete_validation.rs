@@ -12,7 +12,7 @@ mod tests {
             connection::{
                 GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
             },
-            node::{GraphNode, GraphNodeType},
+            node::GraphNode,
             Graph,
         },
         pkg_info::localhost,
@@ -23,24 +23,20 @@ mod tests {
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "test_extension_1".to_string(),
-                    addon: Some("test_addon_1".to_string()),
-                    extension_group: None,
-                    app: Some("http://test-app-uri.com".to_string()),
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "test_extension_2".to_string(),
-                    addon: Some("test_addon_2".to_string()),
-                    extension_group: None,
-                    app: Some("http://test-app-uri.com".to_string()),
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "test_extension_1".to_string(),
+                    "test_addon_1".to_string(),
+                    None,
+                    Some("http://test-app-uri.com".to_string()),
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "test_extension_2".to_string(),
+                    "test_addon_2".to_string(),
+                    None,
+                    Some("http://test-app-uri.com".to_string()),
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: None,
@@ -58,7 +54,13 @@ mod tests {
         .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension_2");
+        if let ten_rust::graph::node::GraphNode::Extension { content } =
+            &graph.nodes[0]
+        {
+            assert_eq!(content.name, "test_extension_2");
+        } else {
+            panic!("Expected Extension node");
+        }
 
         // Test case 2: Delete the remaining node - should also succeed
         // because validate_and_complete_and_flatten() doesn't check for minimum
@@ -92,11 +94,15 @@ mod tests {
             // Find and remove the matching node.
             let original_nodes_len = graph.nodes.len();
             graph.nodes.retain(|node| {
-                !(node.type_ == GraphNodeType::Extension
-                    && node.name == pkg_name
-                    && node.addon == Some(addon.clone())
-                    && node.app == app
-                    && node.extension_group == extension_group)
+                !(match node {
+                    GraphNode::Extension { content } => {
+                        content.name == pkg_name
+                            && content.addon == addon.clone()
+                            && content.app == app
+                            && content.extension_group == extension_group
+                    }
+                    _ => false,
+                })
             });
 
             // If no node was removed, return early.
@@ -106,9 +112,17 @@ mod tests {
 
             // Corrupt the remaining node to cause validation failure
             if !graph.nodes.is_empty() {
-                graph.nodes[0].app = Some(localhost().to_string()); // This will
-                                                                    // cause validation
-                                                                    // to fail
+                if let ten_rust::graph::node::GraphNode::Extension { content } =
+                    &graph.nodes[0]
+                {
+                    let mut content = content.clone();
+                    content.app = Some(localhost().to_string()); // This will
+                                                                 // cause validation
+                                                                 // to fail
+                    graph.nodes[0] = GraphNode::Extension { content };
+                } else {
+                    panic!("Expected Extension node");
+                }
             }
 
             // Validate the graph.
@@ -124,24 +138,20 @@ mod tests {
 
         let mut graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "test_extension_1".to_string(),
-                    addon: Some("test_addon_1".to_string()),
-                    extension_group: None,
-                    app: Some("http://test-app-uri.com".to_string()),
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "test_extension_2".to_string(),
-                    addon: Some("test_addon_2".to_string()),
-                    extension_group: None,
-                    app: Some("http://test-app-uri.com".to_string()),
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "test_extension_1".to_string(),
+                    "test_addon_1".to_string(),
+                    None,
+                    Some("http://test-app-uri.com".to_string()),
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "test_extension_2".to_string(),
+                    "test_addon_2".to_string(),
+                    None,
+                    Some("http://test-app-uri.com".to_string()),
+                    None,
+                ),
             ],
             connections: None,
             exposed_messages: None,
@@ -167,17 +177,29 @@ mod tests {
 
         // The graph should be restored to its original state.
         assert_eq!(graph.nodes.len(), original_nodes_len);
-        assert_eq!(graph.nodes[0].name, "test_extension_1");
-        assert_eq!(graph.nodes[1].name, "test_extension_2");
-        // Verify the graph was properly restored (no localhost corruption)
-        assert_eq!(
-            graph.nodes[0].app,
-            Some("http://test-app-uri.com".to_string())
-        );
-        assert_eq!(
-            graph.nodes[1].app,
-            Some("http://test-app-uri.com".to_string())
-        );
+
+        if let ten_rust::graph::node::GraphNode::Extension { content } =
+            &graph.nodes[0]
+        {
+            assert_eq!(content.name, "test_extension_1");
+            assert_eq!(
+                content.app,
+                Some("http://test-app-uri.com".to_string())
+            );
+        } else {
+            panic!("Expected Extension node");
+        }
+        if let ten_rust::graph::node::GraphNode::Extension { content } =
+            &graph.nodes[1]
+        {
+            assert_eq!(content.name, "test_extension_2");
+            assert_eq!(
+                content.app,
+                Some("http://test-app-uri.com".to_string())
+            );
+        } else {
+            panic!("Expected Extension node");
+        }
     }
 
     #[tokio::test]
@@ -185,42 +207,41 @@ mod tests {
         // Create a graph with connections that should be cleaned up.
         let mut graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "source_ext".to_string(),
-                    addon: Some("source_addon".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "target_ext".to_string(),
-                    addon: Some("target_addon".to_string()),
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "source_ext".to_string(),
+                    "source_addon".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "target_ext".to_string(),
+                    "target_addon".to_string(),
+                    None,
+                    None,
+                    None,
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
                     app: None,
                     extension: Some("source_ext".to_string()),
                     subgraph: None,
+                    selector: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "test_cmd".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "test_cmd".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             app: None,
                             extension: Some("target_ext".to_string()),
                             subgraph: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,
@@ -241,7 +262,13 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "source_ext");
+        if let ten_rust::graph::node::GraphNode::Extension { content } =
+            &graph.nodes[0]
+        {
+            assert_eq!(content.name, "source_ext");
+        } else {
+            panic!("Expected Extension node");
+        }
 
         // The connections should be cleaned up since the target was removed.
         assert!(

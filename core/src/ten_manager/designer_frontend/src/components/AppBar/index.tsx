@@ -5,26 +5,25 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
-
+import { AppStatus } from "@/components/AppBar/AppStatus";
+import {
+  AppMenu,
+  DesignerMenu,
+  ExtensionMenu,
+  GraphMenu,
+  TenAgentToolsMenu,
+} from "@/components/AppBar/Menu";
+import { Version } from "@/components/AppBar/Version";
+import { LanguageToggle } from "@/components/LangSwitch";
+import { ModeToggle } from "@/components/ModeToggle";
 import {
   NavigationMenu,
   NavigationMenuList,
 } from "@/components/ui/NavigationMenu";
-import { ModeToggle } from "@/components/ModeToggle";
-import { LanguageToggle } from "@/components/LangSwitch";
-import {
-  AppMenu,
-  GraphMenu,
-  DesignerMenu,
-  ExtensionMenu,
-  TenAgentToolsMenu,
-} from "@/components/AppBar/Menu";
 import { Separator } from "@/components/ui/Separator";
-import { AppStatus } from "@/components/AppBar/AppStatus";
 import { GHStargazersCount, GHTryTENAgent } from "@/components/Widget/GH";
-import { Version } from "@/components/AppBar/Version";
-import { cn } from "@/lib/utils";
 import { TEN_FRAMEWORK_GH_OWNER, TEN_FRAMEWORK_GH_REPO } from "@/constants";
+import { cn } from "@/lib/utils";
 
 interface AppBarProps {
   onAutoLayout: () => void;
@@ -94,11 +93,11 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
   return (
     <header
       className={cn(
-        "flex justify-between items-center  text-sm select-none",
+        "flex select-none items-center justify-between text-sm",
         "h-10 w-full px-5",
-        "fixed top-0 left-0 right-0",
+        "fixed top-0 right-0 left-0",
         "bg-zinc-50 dark:bg-zinc-900",
-        "border-b border-[#e5e7eb] dark:border-[#374151]",
+        "border-[#e5e7eb] border-b dark:border-[#374151]",
         className
       )}
     >
@@ -137,8 +136,8 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
       {/* Middle part is the status bar. */}
       <AppStatus
         className={cn(
-          "flex-1 flex justify-center items-center",
-          "text-xs text-muted-foreground"
+          "flex flex-1 items-center justify-center",
+          "text-muted-foreground text-xs"
         )}
       />
 

@@ -8,20 +8,18 @@ mod add;
 mod add_with_msg_conversion;
 mod modify_msg_conversion;
 
-use ten_rust::graph::node::{GraphNode, GraphNodeType};
+use ten_rust::graph::node::GraphNode;
 
 pub fn create_test_node(
     name: &str,
     addon: &str,
     app: Option<&str>,
 ) -> GraphNode {
-    GraphNode {
-        type_: GraphNodeType::Extension,
-        name: name.to_string(),
-        addon: Some(addon.to_string()),
-        extension_group: None,
-        app: app.map(|s| s.to_string()),
-        property: None,
-        import_uri: None,
-    }
+    GraphNode::new_extension_node(
+        name.to_string(),
+        addon.to_string(),
+        None,
+        app.map(|s| s.to_string()),
+        None,
+    )
 }

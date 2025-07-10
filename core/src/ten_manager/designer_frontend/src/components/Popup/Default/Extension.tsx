@@ -10,7 +10,7 @@ import {
   ExtensionStoreWidget,
   ExtensionWidget,
 } from "@/components/Widget/ExtensionWidget";
-import { IExtensionWidgetData, IWidget } from "@/types/widgets";
+import type { IExtensionWidgetData, IWidget } from "@/types/widgets";
 
 export const ExtensionStorePopupTitle = () => {
   const { t } = useTranslation();

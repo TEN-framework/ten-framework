@@ -4,19 +4,26 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+
 import {
-  SortingState,
-  getSortedRowModel,
-  ColumnDef,
+  type ColumnDef,
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
-
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useFetchApps } from "@/api/services/apps";
+import { postGraphsAutoStart, useGraphs } from "@/api/services/graphs";
+import { SpinnerLoading } from "@/components/Status/Loading";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Label } from "@/components/ui/Label";
 import {
   Select,
   SelectContent,
@@ -26,8 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Badge } from "@/components/ui/Badge";
 import {
   Table,
   TableBody,
@@ -36,18 +41,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { Label } from "@/components/ui/Label";
-import { Button } from "@/components/ui/Button";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import { useGraphs, postGraphsAutoStart } from "@/api/services/graphs";
-import { useFetchApps } from "@/api/services/apps";
-import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
-import { cn } from "@/lib/utils";
-
 import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
-import { IWidget } from "@/types/widgets";
-import { type IApp } from "@/types/apps";
-import { type IGraph } from "@/types/graphs";
+import { cn } from "@/lib/utils";
+import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
+import type { IApp } from "@/types/apps";
+import type { IGraph } from "@/types/graphs";
+import type { IWidget } from "@/types/widgets";
 
 export const GraphSelectPopupTitle = () => {
   const { t } = useTranslation();
@@ -119,11 +118,11 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
   }, [error, errorApps]);
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full">
+    <div className="flex h-full w-full flex-col gap-2">
       <Label>{t("popup.selectGraph.app")}</Label>
       {isLoadingApps ? (
         <SpinnerLoading
-          className="w-full h-full"
+          className="h-full w-full"
           svgProps={{ className: "size-10" }}
         />
       ) : (
@@ -157,7 +156,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
       {isLoading ? (
         <>
           <SpinnerLoading
-            className="w-full h-full"
+            className="h-full w-full"
             svgProps={{ className: "size-10" }}
           />
         </>
@@ -176,7 +175,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
           </div>
         </div>
       )}
-      <div className="flex mt-auto justify-end gap-2">
+      <div className="mt-auto flex justify-end gap-2">
         <Button variant="default" onClick={handleOk}>
           {t("action.ok")}
         </Button>

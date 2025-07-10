@@ -8,21 +8,21 @@ import { MarkerType } from "@xyflow/react";
 import dagre from "dagre";
 
 import { retrieveAddons } from "@/api/services/addons";
-import type { IExtensionAddon } from "@/types/apps";
-import type {
-  TCustomNode,
-  TCustomEdge,
-  TCustomEdgeAddressMap,
-} from "@/types/flow";
-import {
-  type IBackendNode,
-  type IBackendConnection,
-  EConnectionType,
-} from "@/types/graphs";
 import {
   postGetGraphNodeGeometry,
   postSetGraphNodeGeometry,
-} from "@/api/services/graphs";
+} from "@/api/services/storage";
+import type { IExtensionAddon } from "@/types/apps";
+import type {
+  TCustomEdge,
+  TCustomEdgeAddressMap,
+  TCustomNode,
+} from "@/types/flow";
+import {
+  EConnectionType,
+  type IBackendConnection,
+  type IBackendNode,
+} from "@/types/graphs";
 
 const NODE_WIDTH = 172;
 const NODE_HEIGHT = 48;

@@ -75,46 +75,48 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "cmd_mapping_path_array_4__test_extension_1",
-                            "extension_group": "cmd_mapping_path_array_4__extension_group"
-                          },{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "cmd_mapping_path_array_4__test_extension_2",
-                            "extension_group": "cmd_mapping_path_array_4__extension_group"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "test_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8001/",
-                                "extension": "test_extension_2",
-                                "msg_conversion": {
-                                  "type": "per_property",
-                                  "rules": [{
-                                    "path": "ten.name",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "hello_mapping"
-                                  },{
-                                    "path": "test_group[3][4].test_property_name_1",
-                                    "conversion_mode": "from_original",
-                                    "original_path": "test_property"
-                                  },{
-                                    "path": "test_group[2][40].test_property_name_2",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "may the force be with you."
-                                  }]
-                                }
+                          "graph": {
+                            "nodes": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "cmd_mapping_path_array_4__test_extension_1",
+                              "extension_group": "cmd_mapping_path_array_4__extension_group"
+                            },{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "cmd_mapping_path_array_4__test_extension_2",
+                              "extension_group": "cmd_mapping_path_array_4__extension_group"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "test_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8001/",
+                                  "extension": "test_extension_2",
+                                  "msg_conversion": {
+                                    "type": "per_property",
+                                    "rules": [{
+                                      "path": "ten.name",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "hello_mapping"
+                                    },{
+                                      "path": "test_group[3][4].test_property_name_1",
+                                      "conversion_mode": "from_original",
+                                      "original_path": "test_property"
+                                    },{
+                                      "path": "test_group[2][40].test_property_name_2",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "may the force be with you."
+                                    }]
+                                  }
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })###"

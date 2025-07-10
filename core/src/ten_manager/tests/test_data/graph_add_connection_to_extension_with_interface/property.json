@@ -4,20 +4,22 @@
       {
         "name": "default",
         "auto_start": false,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "ext_a",
-            "addon": "ext_a",
-            "extension_group": "some_group"
-          },
-          {
-            "type": "extension",
-            "name": "ext_b",
-            "addon": "ext_b",
-            "extension_group": "some_group"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext_a",
+              "addon": "ext_a",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "ext_b",
+              "addon": "ext_b",
+              "extension_group": "some_group"
+            }
+          ]
+        }
       }
     ]
   }

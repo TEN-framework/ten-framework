@@ -4,18 +4,25 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import {
-  XIcon,
-  EllipsisVerticalIcon,
-  PanelRightIcon,
-  PanelLeftIcon,
-  PanelBottomIcon,
-  SquareArrowOutUpRightIcon,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
 
-import { cn } from "@/lib/utils";
+import {
+  EllipsisVerticalIcon,
+  PanelBottomIcon,
+  PanelLeftIcon,
+  PanelRightIcon,
+  SquareArrowOutUpRightIcon,
+  XIcon,
+} from "lucide-react";
+import type * as React from "react";
+import { useTranslation } from "react-i18next";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from "@/components/ui/ContextMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,16 +32,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuTrigger,
-} from "@/components/ui/ContextMenu";
+import { cn } from "@/lib/utils";
 // import { useWidgetStore, useDialogStore } from "@/store";
-import {
+import type {
   //   EWidgetCategory,
   //   EWidgetDisplayType,
   //   IEditorWidget,
@@ -59,7 +59,7 @@ export const DockBase = (props: IDockBaseProps) => {
 
   return (
     <div
-      className={cn("w-full h-full bg-muted text-muted-foreground", className)}
+      className={cn("h-full w-full bg-muted text-muted-foreground", className)}
     >
       {children}
     </div>
@@ -86,7 +86,7 @@ export const DockHeader = (props: {
   return (
     <div
       className={cn(
-        "w-full h-6 flex items-center justify-between",
+        "flex h-6 w-full items-center justify-between",
         "px-4",
         "bg-border dark:bg-popover",
         className
@@ -94,10 +94,10 @@ export const DockHeader = (props: {
     >
       {children}
       {/* Action Bar */}
-      <div className="w-fit flex items-center gap-2">
+      <div className="flex w-fit items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <EllipsisVerticalIcon className="w-4 h-4" />
+            <EllipsisVerticalIcon className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuLabel>{t("dock.dockSide")}</DropdownMenuLabel>
@@ -107,15 +107,15 @@ export const DockHeader = (props: {
               onValueChange={onPositionChange}
             >
               <DropdownMenuRadioItem value="left">
-                <PanelLeftIcon className="w-4 h-4 me-2" />
+                <PanelLeftIcon className="me-2 h-4 w-4" />
                 {t("dock.left")}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="right">
-                <PanelRightIcon className="w-4 h-4 me-2" />
+                <PanelRightIcon className="me-2 h-4 w-4" />
                 {t("dock.right")}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="bottom">
-                <PanelBottomIcon className="w-4 h-4 me-2" />
+                <PanelBottomIcon className="me-2 h-4 w-4" />
                 {t("dock.bottom")}
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
@@ -123,7 +123,7 @@ export const DockHeader = (props: {
         </DropdownMenu>
         {onClose && (
           <XIcon
-            className="w-4 h-4 cursor-pointer"
+            className="h-4 w-4 cursor-pointer"
             type="button"
             tabIndex={1}
             onClick={onClose}
@@ -154,20 +154,20 @@ export const DockerHeaderTabElement = (props: {
       <ContextMenuTrigger>
         <div
           className={cn(
-            "w-fit px-2 py-1 text-xs text-muted-foreground",
-            "flex items-center gap-1 cursor-pointer",
-            "border-b-2 border-transparent",
+            "w-fit px-2 py-1 text-muted-foreground text-xs",
+            "flex cursor-pointer items-center gap-1",
+            "border-transparent border-b-2",
             {
               "text-primary": selected,
               "border-purple-900": selected,
             },
-            "hover:text-primary hover:border-purple-950"
+            "hover:border-purple-950 hover:text-primary"
           )}
           onClick={() => onSelect?.(widget.widget_id)}
         >
           {title}
           {hasUnsavedChanges && (
-            <span className="text-foreground/50 text-sm font-sans">*</span>
+            <span className="font-sans text-foreground/50 text-sm">*</span>
           )}
           {onClose && (
             <XIcon

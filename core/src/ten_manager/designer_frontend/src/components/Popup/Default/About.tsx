@@ -4,12 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation, Trans } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
 import { Separator } from "@/components/ui/Separator";
+import { TEN_FRAMEWORK_GITHUB_URL, TEN_FRAMEWORK_URL } from "@/constants";
 import { cn } from "@/lib/utils";
-import { TEN_FRAMEWORK_URL, TEN_FRAMEWORK_GITHUB_URL } from "@/constants";
-import { IWidget } from "@/types/widgets";
+import type { IWidget } from "@/types/widgets";
 
 export const AboutWidgetTitle = () => {
   const { t } = useTranslation();
@@ -22,11 +22,11 @@ export const AboutWidgetContent = (_props: { widget: IWidget }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-2 h-full w-full">
+    <div className="flex h-full w-full flex-col gap-2">
       <p
         className={cn(
           "text-center",
-          "italic text-base",
+          "text-base italic",
           "font-['Segoe_UI',Tahoma,Geneva,Verdana,sans-serif]"
         )}
       >
@@ -38,7 +38,7 @@ export const AboutWidgetContent = (_props: { widget: IWidget }) => {
       </p>
       <Separator className="" />
       <ul className="flex flex-col gap-2">
-        <li className="flex justify-between items-center gap-2">
+        <li className="flex items-center justify-between gap-2">
           <span>{t("header.officialSite")}</span>
           <a
             href={TEN_FRAMEWORK_URL}
@@ -49,7 +49,7 @@ export const AboutWidgetContent = (_props: { widget: IWidget }) => {
             {TEN_FRAMEWORK_URL}
           </a>
         </li>
-        <li className="flex justify-between items-center gap-2">
+        <li className="flex items-center justify-between gap-2">
           <span>{t("header.github")}</span>
           <a
             href={TEN_FRAMEWORK_GITHUB_URL}

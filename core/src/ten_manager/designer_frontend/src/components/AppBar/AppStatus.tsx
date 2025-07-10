@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { SaveIcon, FilePenLineIcon, SaveOffIcon } from "lucide-react";
+import { FilePenLineIcon, SaveIcon, SaveOffIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -24,19 +24,19 @@ export function AppStatus(props: { className?: string; status?: EAppStatus }) {
   return (
     <div className={cn("flex items-center gap-2", "w-fit", className)}>
       <div className="flex items-center">
-        {status === EAppStatus.SAVED && <SaveIcon className="w-4 h-4 me-2" />}
+        {status === EAppStatus.SAVED && <SaveIcon className="me-2 h-4 w-4" />}
         {status === EAppStatus.UNSAVED && (
-          <SaveOffIcon className="w-4 h-4 me-2" />
+          <SaveOffIcon className="me-2 h-4 w-4" />
         )}
         {status === EAppStatus.EDITING && (
-          <FilePenLineIcon className="w-4 h-4 me-2" />
+          <FilePenLineIcon className="me-2 h-4 w-4" />
         )}
         {status}
       </div>
       {status === EAppStatus.EDITING && (
         <div className="flex items-center text-primary">
           <Button variant="outline" size="sm" className="">
-            <SaveIcon className="w-3 h-3" />
+            <SaveIcon className="h-3 w-3" />
             <span className="text-xs">Save</span>
           </Button>
         </div>

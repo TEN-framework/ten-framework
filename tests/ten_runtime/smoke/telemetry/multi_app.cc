@@ -171,31 +171,31 @@ TEST(TelemetryTest, MultiApp) {  // NOLINT
 
       auto start_graph_cmd = ten::cmd_start_graph_t::create();
       start_graph_cmd->set_graph_from_json(R"({
-           "nodes": [{
-                   "type": "extension",
-                   "name": "test_extension_1",
-                   "addon": "telemetry_multi_app__extension_1",
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "extension_group": "test_extension_group 1"
-                 },{
-                   "type": "extension",
-                   "name": "test_extension_2",
-                   "addon": "telemetry_multi_app__extension_2",
-                   "app": "msgpack://127.0.0.1:8002/",
-                   "extension_group": "test_extension_group 2"
-                 }],
-                 "connections": [{
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "test_extension_1",
-                   "cmd": [{
-                     "name": "hello_world",
-                     "dest": [{
-                       "app": "msgpack://127.0.0.1:8002/",
-                       "extension": "test_extension_2"
-                     }]
-                   }]
-                 }]
-               })");
+        "nodes": [{
+          "type": "extension",
+          "name": "test_extension_1",
+          "addon": "telemetry_multi_app__extension_1",
+          "app": "msgpack://127.0.0.1:8001/",
+          "extension_group": "test_extension_group 1"
+        },{
+          "type": "extension",
+          "name": "test_extension_2",
+          "addon": "telemetry_multi_app__extension_2",
+          "app": "msgpack://127.0.0.1:8002/",
+          "extension_group": "test_extension_group 2"
+        }],
+        "connections": [{
+          "app": "msgpack://127.0.0.1:8001/",
+          "extension": "test_extension_1",
+          "cmd": [{
+            "name": "hello_world",
+            "dest": [{
+              "app": "msgpack://127.0.0.1:8002/",
+              "extension": "test_extension_2"
+            }]
+          }]
+        }]
+      })");
       auto cmd_result =
           client->send_cmd_and_recv_result(std::move(start_graph_cmd));
 

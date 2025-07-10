@@ -9,6 +9,8 @@ pub mod connection;
 pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
+pub mod reverse;
+pub mod selector;
 pub mod subgraph;
 
 use std::collections::HashMap;
@@ -209,6 +211,12 @@ impl Graph {
         Ok(graph)
     }
 
+    pub fn from_str_and_validate(s: &str) -> Result<Self> {
+        let mut graph: Graph = serde_json::from_str(s)?;
+        graph.validate_and_complete(None)?;
+        Ok(graph)
+    }
+
     /// Determines how app URIs are declared across all nodes in the graph.
     ///
     /// This method analyzes all nodes in the graph to determine the app
@@ -245,7 +253,7 @@ impl Graph {
         let mut app_uris = std::collections::HashSet::new();
 
         for (idx, node) in self.nodes.iter().enumerate() {
-            if let Some(app_uri) = &node.app {
+            if let Some(app_uri) = &node.get_app_uri() {
                 if app_uri.is_empty() {
                     return Err(anyhow::anyhow!(
                         "nodes[{}]: {}",
@@ -313,7 +321,7 @@ impl Graph {
                 // Verify that the extension exists in the graph
                 if !self.nodes.iter().any(|node| {
                     if let Some(ext) = &property.extension {
-                        &node.name == ext
+                        node.get_name() == ext
                     } else {
                         false
                     }
@@ -335,8 +343,10 @@ impl Graph {
         &mut self,
         current_base_dir: Option<&str>,
     ) -> Result<()> {
+        // Step 1: Initial validation and completion
         self.validate_and_complete(current_base_dir)?;
 
+        // Step 2: Attempt to flatten the graph
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
         // the flatten_graph method will return an appropriate error.
@@ -345,6 +355,7 @@ impl Graph {
             *self = flattened;
         }
 
+        // Step 3: Final validation after flattening
         // After flattening, there should basically be no logic that requires
         // current_base_dir, so passing None here should not cause
         // errors, and we can use this for validation.
@@ -358,10 +369,7 @@ impl Graph {
         graph_app_base_dir: &Option<String>,
         pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     ) -> Result<()> {
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
         self.check_connections_compatibility(
@@ -369,9 +377,6 @@ impl Graph {
             pkgs_cache,
             false,
         )?;
-
-        self.check_extension_uniqueness_in_connections()?;
-        self.check_message_names()?;
 
         Ok(())
     }
@@ -383,10 +388,7 @@ impl Graph {
     ) -> Result<()> {
         assert!(pkgs_cache.len() == 1);
 
-        self.check_extension_uniqueness()?;
-        self.check_extension_existence()?;
-        self.check_connection_extensions_exist()?;
-        self.check_subgraph_references_exist()?;
+        self.static_check()?;
 
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.
@@ -397,8 +399,17 @@ impl Graph {
             true,
         )?;
 
+        Ok(())
+    }
+
+    pub fn static_check(&self) -> Result<()> {
+        self.check_extension_uniqueness()?;
+        self.check_extension_existence()?;
+        self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
         self.check_extension_uniqueness_in_connections()?;
         self.check_message_names()?;
+        self.check_msg_conversions()?;
 
         Ok(())
     }
@@ -411,17 +422,62 @@ impl Graph {
         self.nodes
             .iter()
             .find(|node| {
-                node.type_ == GraphNodeType::Extension
-                    && node.name.as_str() == extension
+                node.get_type() == GraphNodeType::Extension
+                    && node.get_name() == extension
                     && node.get_app_uri() == app
             })
-            .and_then(|node| node.addon.as_ref())
+            .and_then(|node| {
+                if let GraphNode::Extension { content } = node {
+                    Some(&content.addon)
+                } else {
+                    None
+                }
+            })
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Extension '{}' is not found in nodes, should not happen.",
                     extension
                 )
             })
+    }
+
+    /// Convenience method for flattening a graph instance without preserving
+    /// exposed info. This is the main public API for flattening graphs.
+    ///
+    /// Returns `Ok(None)` if the graph doesn't need flattening. Returns
+    /// `Ok(Some(flattened_graph))` if the graph was successfully flattened.
+    pub async fn flatten_graph(
+        &self,
+        current_base_dir: Option<&str>,
+    ) -> Result<Option<Graph>> {
+        let mut processing_graph = self;
+
+        // Step 1: Match nodes according to selector rules and replace them in
+        // connections
+        let flattened_selector_graph = processing_graph.flatten_selectors()?;
+        processing_graph =
+            flattened_selector_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 2: Convert reversed connections to forward connections if needed
+        let reversed_graph = processing_graph
+            .convert_reversed_connections_to_forward_connections()?;
+        processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 3: Flatten subgraphs
+        let flattened =
+            Self::flatten_subgraphs(processing_graph, current_base_dir, false)
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Failed to flatten graph: {}", e)
+                })?;
+        processing_graph = flattened.as_ref().unwrap_or(processing_graph);
+
+        // Check if the processing graph is the same as the original graph.
+        if std::ptr::eq(processing_graph, self) {
+            return Ok(None);
+        }
+
+        Ok(Some(processing_graph.clone()))
     }
 }
 

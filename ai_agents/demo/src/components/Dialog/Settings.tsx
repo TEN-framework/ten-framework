@@ -39,7 +39,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import { ECozeBaseUrl } from "@/common/constant"
+import { DEFAULT_DIFY_SETTINGS, ECozeBaseUrl } from "@/common/constant"
 import {
   setAgentSettings,
   setCozeSettings,
@@ -418,6 +418,11 @@ export const difySettingsFormSchema = z.object({
       message: "API Key is required",
     })
     .min(1),
+  base_url: z
+    .string({
+      message: "Base URL is required",
+    })
+    .min(1)
 })
 
 export const isDifyGraph = (graphName: string) => {
@@ -435,8 +440,9 @@ export function DifySettingsTab(props: {
 
   const form = useForm<z.infer<typeof difySettingsFormSchema>>({
     resolver: zodResolver(difySettingsFormSchema),
-    defaultValues: {
+    values: {
       api_key: difySettings.api_key,
+      base_url: difySettings.base_url,
     },
   })
 
@@ -462,6 +468,19 @@ export function DifySettingsTab(props: {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="base_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Base URL*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your Dify API base URL" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-2">
             <Button
@@ -470,9 +489,7 @@ export function DifySettingsTab(props: {
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                form.reset({
-                  api_key: "",
-                })
+                form.reset(DEFAULT_DIFY_SETTINGS)
                 dispatch(resetDifySettings())
                 toast.success("Dify settings reset")
               }}

@@ -4,41 +4,39 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+import type { TooltipContentProps } from "@radix-ui/react-tooltip";
 import * as React from "react";
-import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-
-import { useListTenCloudStorePackages } from "@/api/services/extension";
+import { toast } from "sonner";
 import { useFetchAddons } from "@/api/services/addons";
 import { useEnv } from "@/api/services/common";
+import { useListTenCloudStorePackages } from "@/api/services/extension";
+import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { SpinnerLoading } from "@/components/Status/Loading";
-import { useWidgetStore, useAppStore } from "@/store";
+// eslint-disable-next-line max-len
+import { ExtensionDetails } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
 // eslint-disable-next-line max-len
 import { ExtensionList } from "@/components/Widget/ExtensionWidget/ExtensionList";
 // eslint-disable-next-line max-len
 import { ExtensionSearch } from "@/components/Widget/ExtensionWidget/ExtensionSearch";
-// eslint-disable-next-line max-len
-import { ExtensionDetails } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
+import {
+  CONTAINER_DEFAULT_ID,
+  GRAPH_SELECT_WIDGET_ID,
+} from "@/constants/widgets";
 import { cn, compareVersions } from "@/lib/utils";
+import { useAppStore, useWidgetStore } from "@/store";
+import {
+  EPackageSource,
+  type IListTenCloudStorePackage,
+  type IListTenLocalStorePackage,
+  type ITenPackage,
+  type ITenPackageLocal,
+} from "@/types/extension";
 import {
   EDefaultWidgetType,
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-import {
-  GRAPH_SELECT_WIDGET_ID,
-  CONTAINER_DEFAULT_ID,
-} from "@/constants/widgets";
-
-import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-import {
-  IListTenCloudStorePackage,
-  ITenPackageLocal,
-  ITenPackage,
-  IListTenLocalStorePackage,
-  EPackageSource,
-} from "@/types/extension";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 
 export const ExtensionStoreWidget = (props: {
   className?: string;
@@ -313,23 +311,22 @@ export const ExtensionStoreWidget = (props: {
     if (envData?.os && envData?.arch) {
       setDefaultOsArch({ os: envData.os, arch: envData.arch });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envData?.os, envData?.arch]);
+  }, [envData?.os, envData?.arch, setDefaultOsArch]);
 
   if (isLoading || isFetchingAddons || isLoadingEnv) {
     return <SpinnerLoading className="mx-auto" />;
   }
 
   return (
-    <div className={cn("flex flex-col w-full h-full", className)}>
+    <div className={cn("flex h-full w-full flex-col", className)}>
       <div>
         <ExtensionSearch />
         <div
           className={cn(
-            "select-none cursor-default",
-            "bg-slate-100/80 dark:bg-gray-900/80 px-2 py-1",
+            "cursor-default select-none",
+            "bg-slate-100/80 px-2 py-1 dark:bg-gray-900/80",
             "text-gray-500 dark:text-gray-400",
-            "text-xs font-semibold",
+            "font-semibold text-xs",
             "flex items-center gap-2"
           )}
         >
@@ -366,6 +363,11 @@ export const ExtensionStoreWidget = (props: {
             <p
               className="ml-auto w-fit cursor-pointer"
               onClick={onOpenExistingGraph}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  onOpenExistingGraph();
+                }
+              }}
             >
               {t("extensionStore.openAGraphToInstall")}
             </p>

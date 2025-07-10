@@ -18,6 +18,7 @@ group("nodejs") {
     "send_cmd_nodejs",
     "send_data_nodejs",
     "send_video_frame_nodejs",
+    "set_dest_nodejs",
     "standalone_test_nodejs",
     "standalone_test_nodejs_2",
     "standalone_test_nodejs_3",

@@ -4,6 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import { FitAddon } from "@xterm/addon-fit";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { Terminal as XTermTerminal } from "@xterm/xterm";
 import {
   forwardRef,
   useEffect,
@@ -11,10 +16,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { Terminal as XTermTerminal } from "@xterm/xterm";
-import { Unicode11Addon } from "@xterm/addon-unicode11";
-import { WebLinksAddon } from "@xterm/addon-web-links";
-import { FitAddon } from "@xterm/addon-fit";
 import { TEN_PATH_WS_TERMINAL } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 
@@ -256,7 +257,7 @@ const TerminalWidget = forwardRef<unknown, ITerminalWidgetProps>(
       },
     }));
 
-    return <div ref={terminalRef} className="flex-1 w-full h-full bg-black" />;
+    return <div ref={terminalRef} className="h-full w-full flex-1 bg-black" />;
   }
 );
 
