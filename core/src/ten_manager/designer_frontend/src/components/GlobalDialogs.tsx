@@ -6,7 +6,7 @@
 //
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-
+import { SpinnerLoading } from "@/components/Status/Loading";
 import { Button } from "@/components/ui/Button";
 import {
   Dialog,
@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import { SpinnerLoading } from "@/components/Status/Loading";
 import { type IDialog, useDialogStore } from "@/store/dialog";
 
 export function GlobalDialogs() {
@@ -75,7 +74,7 @@ function GlobalDialog(props: { dialog: IDialog }) {
                     setIsLoading(false);
                   }}
                 >
-                  {isLoading && <SpinnerLoading className="w-4 h-4" />}
+                  {isLoading && <SpinnerLoading className="h-4 w-4" />}
                   {dialog.confirmLabel || t("action.confirm")}
                 </Button>
               )}

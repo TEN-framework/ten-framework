@@ -4,9 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { z } from "zod";
+
 import { buildZodFieldConfig } from "@autoform/react";
-import { FieldTypes } from "@/components/ui/autoform/AutoForm";
+import { z } from "zod";
+import type { FieldTypes } from "@/components/ui/autoform/AutoForm";
 
 export type TExtPropertySchema = Record<string, Record<"type", string>>;
 

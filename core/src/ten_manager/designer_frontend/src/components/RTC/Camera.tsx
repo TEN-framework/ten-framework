@@ -6,19 +6,23 @@
 //
 "use client";
 
+import AgoraRTC, {
+  type ICameraVideoTrack,
+  type ILocalVideoTrack,
+  LocalVideoTrack,
+} from "agora-rtc-react";
+import { t } from "i18next";
+import {
+  CameraIcon,
+  CameraOffIcon,
+  MonitorIcon,
+  MonitorXIcon,
+} from "lucide-react";
 import * as React from "react";
-import { CameraIcon, CameraOffIcon } from "lucide-react";
 import { DeviceSelect } from "@/components/RTC/Device";
 import { Button } from "@/components/ui/Button";
 import { SelectItem } from "@/components/ui/Select";
-import { MonitorIcon, MonitorXIcon } from "lucide-react";
-import AgoraRTC, {
-  ICameraVideoTrack,
-  ILocalVideoTrack,
-  LocalVideoTrack,
-} from "agora-rtc-react";
 import { VideoSourceType } from "@/types/rtc";
-import { t } from "i18next";
 
 export function VideoDeviceWrapper(props: {
   children: React.ReactNode;
@@ -33,12 +37,12 @@ export function VideoDeviceWrapper(props: {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex w-full items-center gap-2">
           {/* Fixed width button */}
           <Button
             variant="outline"
             size="default"
-            className="border-secondary bg-transparent w-32 flex-shrink-0"
+            className="w-32 flex-shrink-0 border-secondary bg-transparent"
             onClick={onIconClick}
           >
             {videoSourceType === VideoSourceType.SCREEN ? (

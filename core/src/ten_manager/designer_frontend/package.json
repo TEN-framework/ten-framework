@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:prepare": "playwright install",
     "test:e2e": "playwright test",
-    "test:show-report": "playwright show-report"
+    "test:show-report": "playwright show-report",
+    "check": "biome check --write"
   },
   "dependencies": {
     "@autoform/react": "^3.1.0",

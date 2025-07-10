@@ -4,8 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-react";
 import { useMultibandTrackVolume } from "@/hooks/use-audio-visualizer";
-import { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-react";
 
 export interface AudioVisualizerProps {
   type: "agent" | "user";
