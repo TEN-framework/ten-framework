@@ -15,7 +15,7 @@ mod tests {
     use tempfile::TempDir;
 
     use ten_manager::graph::update_graph_node_all_fields;
-    use ten_rust::graph::node::{GraphNode, GraphNodeType};
+    use ten_rust::graph::node::GraphNode;
 
     #[test]
     fn test_update_graph_node_modifies_node_property() -> Result<()> {
@@ -39,55 +39,47 @@ mod tests {
         // Create nodes with modified properties to update existing nodes.
         let nodes_to_modify = vec![
             // Node1 with modified property
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "node1".to_string(),
-                addon: Some("addon1".to_string()),
-                extension_group: None,
-                app: None,
-                property: Some(serde_json::json!({
+            GraphNode::new_extension_node(
+                "node1".to_string(),
+                "addon1".to_string(),
+                None,
+                None,
+                Some(serde_json::json!({
                     "setting1": "updated-value1",
                     "setting2": 99,
                     "newSetting": "added-value"
                 })),
-                import_uri: None,
-            },
+            ),
             // Node2 with modified property
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "node2".to_string(),
-                addon: Some("addon2".to_string()),
-                extension_group: Some("group1".to_string()),
-                app: None,
-                property: Some(serde_json::json!({
+            GraphNode::new_extension_node(
+                "node2".to_string(),
+                "addon2".to_string(),
+                Some("group1".to_string()),
+                None,
+                Some(serde_json::json!({
                     "config": "updated-config"
                 })),
-                import_uri: None,
-            },
+            ),
             // Non-existent node (should not affect anything)
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "non-existent".to_string(),
-                addon: Some("addon4".to_string()),
-                extension_group: None,
-                app: None,
-                property: Some(serde_json::json!({
-                  "test": "value"
+            GraphNode::new_extension_node(
+                "non-existent".to_string(),
+                "addon4".to_string(),
+                None,
+                None,
+                Some(serde_json::json!({
+                    "test": "value"
                 })),
-                import_uri: None,
-            },
+            ),
             // Node with mismatched app field (should not update)
-            GraphNode {
-                type_: GraphNodeType::Extension,
-                name: "node3".to_string(),
-                addon: Some("addon3".to_string()),
-                extension_group: None,
-                app: Some("app2".to_string()), // Mismatched app
-                property: Some(serde_json::json!({
+            GraphNode::new_extension_node(
+                "node3".to_string(),
+                "addon3".to_string(),
+                None,
+                Some("app2".to_string()), // Mismatched app
+                Some(serde_json::json!({
                     "enabled": false
                 })),
-                import_uri: None,
-            },
+            ),
         ];
 
         // Update the property: modify node properties.

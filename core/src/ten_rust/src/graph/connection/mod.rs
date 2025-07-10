@@ -20,7 +20,7 @@ use crate::{
 
 use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GraphLoc {
     #[serde(skip_serializing_if = "is_app_default_loc_or_none")]
     pub app: Option<String>,
@@ -30,18 +30,22 @@ pub struct GraphLoc {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subgraph: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selector: Option<String>,
 }
 
 impl GraphLoc {
     pub fn new() -> Self {
-        Self { app: None, extension: None, subgraph: None }
+        Self { app: None, extension: None, subgraph: None, selector: None }
     }
 
-    pub fn with_app_and_extension(
+    pub fn with_app_and_extension_or_subgraph(
         app: Option<String>,
         extension: Option<String>,
+        subgraph: Option<String>,
     ) -> Self {
-        Self { app, extension, subgraph: None }
+        Self { app, extension, subgraph, selector: None }
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
@@ -111,9 +115,15 @@ pub struct GraphConnection {
 }
 
 impl GraphConnection {
-    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+    pub fn new(
+        app: Option<String>,
+        extension: Option<String>,
+        subgraph: Option<String>,
+    ) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension(app, extension),
+            loc: GraphLoc::with_app_and_extension_or_subgraph(
+                app, extension, subgraph,
+            ),
             cmd: None,
             data: None,
             audio_frame: None,
@@ -178,7 +188,12 @@ impl GraphConnection {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphMessageFlow {
     pub name: String,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dest: Vec<GraphDestination>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub source: Vec<GraphSource>,
 }
 
 impl GraphMessageFlow {
@@ -209,6 +224,14 @@ impl GraphMessageFlow {
 
         Ok(())
     }
+
+    pub fn new(
+        name: String,
+        dest: Vec<GraphDestination>,
+        source: Vec<GraphSource>,
+    ) -> Self {
+        Self { name, dest, source }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -221,9 +244,15 @@ pub struct GraphDestination {
 }
 
 impl GraphDestination {
-    pub fn new(app: Option<String>, extension: Option<String>) -> Self {
+    pub fn new(
+        app: Option<String>,
+        extension: Option<String>,
+        subgraph: Option<String>,
+    ) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension(app, extension),
+            loc: GraphLoc::with_app_and_extension_or_subgraph(
+                app, extension, subgraph,
+            ),
             msg_conversion: None,
         }
     }
@@ -257,4 +286,10 @@ impl GraphDestination {
     pub fn get_app_uri(&self) -> &Option<String> {
         self.loc.get_app_uri()
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphSource {
+    #[serde(flatten)]
+    pub loc: GraphLoc,
 }

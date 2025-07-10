@@ -1,0 +1,55 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "test_extension_1",
+      "extension_group": "ext_group_1",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_1"
+    },
+    {
+      "type": "extension",
+      "name": "test_extension_2",
+      "extension_group": "ext_group_2",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_2"
+    },
+    {
+      "type": "extension",
+      "name": "test_extension_3",
+      "extension_group": "ext_group_3",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_3"
+    },
+    {
+      "type": "selector",
+      "name": "selector_for_ext_1_and_2",
+      "selector": {
+        "extension": {
+          "type": "regex",
+          "pattern": "test_extension_[1-2]"
+        },
+        "app": {
+          "type": "exact",
+          "pattern": "msgpack://127.0.0.1:8001/"
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "test_extension_3",
+      "cmd": [
+        {
+          "name": "hello_world",
+          "dest": [
+            {
+              "selector": "selector_for_ext_1_and_2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

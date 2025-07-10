@@ -7,9 +7,8 @@
 import z from "zod";
 
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { TenCloudStorePackageSchema } from "@/types/extension";
 import { genResSchema } from "@/api/endpoints/utils";
-import { ExtensionSchema } from "@/types/extension";
+import { ExtensionSchema, TenCloudStorePackageSchema } from "@/types/extension";
 
 export const ENDPOINT_EXTENSION = {
   registryPackages: {

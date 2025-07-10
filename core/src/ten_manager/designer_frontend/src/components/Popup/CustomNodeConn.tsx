@@ -4,27 +4,27 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import { ArrowBigRightDashIcon, BlocksIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { BlocksIcon, ArrowBigRightDashIcon, XIcon } from "lucide-react";
-
-import { Button } from "@/components/ui/Button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { Badge } from "@/components/ui/Badge";
-import { useFlowStore } from "@/store/flow";
 import {
   DataTable as ConnectionDataTable,
   connectionColumns,
   extensionConnectionColumns1,
   extensionConnectionColumns2,
 } from "@/components/DataTable/ConnectionTable";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { useFlowStore } from "@/store/flow";
+import type { EConnectionType } from "@/types/graphs";
 
 import type {
-  ICustomConnectionWidgetData,
   ICustomConnectionWidget,
+  ICustomConnectionWidgetData,
 } from "@/types/widgets";
-import { EConnectionType } from "@/types/graphs";
+import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
 const SUPPORTED_FILTERS = ["type"];
 
@@ -56,7 +56,7 @@ export const CustomNodeConnPopupContent = (props: {
   const { source, target, filters } = widget.metadata;
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full">
+    <div className="flex h-full w-full flex-col gap-2">
       {source && target && (
         <EdgeInfoContent source={source} target={target} filters={filters} />
       )}
@@ -134,10 +134,10 @@ function EdgeInfoContent(props: {
             })
           }
         >
-          <BlocksIcon className="w-4 h-4" />
+          <BlocksIcon className="h-4 w-4" />
           <span>{source}</span>
         </Button>
-        <ArrowBigRightDashIcon className="w-6 h-6" />
+        <ArrowBigRightDashIcon className="h-6 w-6" />
         <Button
           variant="outline"
           size="lg"
@@ -148,7 +148,7 @@ function EdgeInfoContent(props: {
             })
           }
         >
-          <BlocksIcon className="w-4 h-4" />
+          <BlocksIcon className="h-4 w-4" />
           <span>{target}</span>
         </Button>
       </div>
@@ -286,7 +286,7 @@ const Filters = (props: {
               <Button
                 variant="ghost"
                 size="icon"
-                className="[&>svg]:size-3 h-4 w-4 cursor-pointer"
+                className="h-4 w-4 cursor-pointer [&>svg]:size-3"
                 disabled={!onRemove}
                 onClick={() => onRemove?.(item.label)}
               >

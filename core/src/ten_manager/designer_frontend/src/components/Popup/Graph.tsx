@@ -6,17 +6,15 @@
 //
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-
-import { useWidgetStore } from "@/store/widget";
 import {
-  GraphConnectionCreationWidget,
   GraphAddNodeWidget,
+  GraphConnectionCreationWidget,
   GraphUpdateNodePropertyWidget,
 } from "@/components/Widget/GraphsWidget";
+import { useWidgetStore } from "@/store/widget";
+import type { TCustomNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
-
 import type { IGraphWidget } from "@/types/widgets";
-import { TCustomNode } from "@/types/flow";
 
 export const GraphPopupTitle = (props: {
   type: EGraphActions;

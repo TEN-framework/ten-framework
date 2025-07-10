@@ -17,7 +17,7 @@ mod tests {
                 GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
             },
             graph_info::GraphInfo,
-            node::{GraphNode, GraphNodeType},
+            node::{GraphContent, GraphNode},
             Graph,
         },
         pkg_info::get_app_installed_pkgs,
@@ -44,7 +44,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -69,7 +69,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -94,7 +94,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
     }
@@ -120,7 +120,7 @@ mod tests {
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result = graph.check(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.graph.check(&Some(app_dir.to_string()), &pkgs_cache);
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
     }
@@ -230,42 +230,41 @@ mod tests {
         // parsing
         let graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_a".to_string(),
-                    addon: Some("addon_a".to_string()),
-                    extension_group: Some("some_group".to_string()),
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Subgraph,
-                    name: "subgraph_1".to_string(),
-                    addon: None,
-                    extension_group: None,
-                    app: None,
-                    property: None,
-                    import_uri: Some("/tmp/subgraph.json".to_string()),
-                },
+                GraphNode::new_extension_node(
+                    "ext_a".to_string(),
+                    "addon_a".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+                GraphNode::new_subgraph_node(
+                    "subgraph_1".to_string(),
+                    None,
+                    GraphContent {
+                        import_uri: "/tmp/subgraph.json".to_string(),
+                    },
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
                     app: None,
                     extension: Some("ext_a".to_string()),
                     subgraph: None,
+                    selector: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "test_cmd".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "test_cmd".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             app: None,
                             extension: Some("subgraph_1:ext_b".to_string()),
                             subgraph: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 audio_frame: None,
                 video_frame: None,

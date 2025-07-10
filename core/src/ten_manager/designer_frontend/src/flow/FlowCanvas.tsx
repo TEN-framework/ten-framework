@@ -4,48 +4,57 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
 import {
+  type Connection,
+  Controls,
+  type EdgeChange,
+  MiniMap,
+  type NodeChange,
+  ReactFlow,
+} from "@xyflow/react";
+import { BrushCleaningIcon } from "lucide-react";
+import {
+  forwardRef,
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useContext,
   useEffect,
   useState,
-  useCallback,
-  forwardRef,
-  MouseEvent as ReactMouseEvent,
-  useContext,
 } from "react";
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Connection,
-  type NodeChange,
-  type EdgeChange,
-} from "@xyflow/react";
 import { useTranslation } from "react-i18next";
-import { BrushCleaningIcon } from "lucide-react";
-
-import CustomNode from "@/flow/CustomNode";
-import CustomEdge from "@/flow/CustomEdge";
-import NodeContextMenu from "@/flow/ContextMenu/NodeContextMenu";
-import EdgeContextMenu from "@/flow/ContextMenu/EdgeContextMenu";
-import { ThemeProviderContext } from "@/components/theme-context";
-import { cn } from "@/lib/utils";
-import { useWidgetStore, useAppStore } from "@/store";
-import {
-  EWidgetDisplayType,
-  EWidgetCategory,
-  ELogViewerScriptType,
-  ITerminalWidgetData,
-  EDefaultWidgetType,
-} from "@/types/widgets";
-import { EConnectionType, EGraphActions } from "@/types/graphs";
-import { EEventName, eventPubSub } from "@/utils/events";
 import { CustomNodeConnPopupTitle } from "@/components/Popup/CustomNodeConn";
-
+import { ThemeProviderContext } from "@/components/theme-context";
+import EdgeContextMenu from "@/flow/ContextMenu/EdgeContextMenu";
+import NodeContextMenu from "@/flow/ContextMenu/NodeContextMenu";
+import CustomEdge from "@/flow/CustomEdge";
+import CustomNode from "@/flow/CustomNode";
+import { cn } from "@/lib/utils";
+import { useAppStore, useWidgetStore } from "@/store";
 import type { TCustomEdge, TCustomNode } from "@/types/flow";
+import type { EConnectionType, EGraphActions } from "@/types/graphs";
+import {
+  EDefaultWidgetType,
+  ELogViewerScriptType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+  type ITerminalWidgetData,
+} from "@/types/widgets";
+import { EEventName, eventPubSub } from "@/utils/events";
 
 // Import react-flow style.
 import "@xyflow/react/dist/style.css";
 import "@/flow/reactflow.css";
+import {
+  addRecentRunApp as addToRecentRunApp,
+  useStorage,
+} from "@/api/services/storage";
+import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
+import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
+import { GraphPopupTitle } from "@/components/Popup/Graph";
+import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
+import { TEN_PATH_WS_EXEC } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
   APPS_MANAGER_WIDGET_ID,
   CONTAINER_DEFAULT_ID,
@@ -57,18 +66,8 @@ import {
   GROUP_TERMINAL_ID,
   RTC_INTERACTION_WIDGET_ID,
 } from "@/constants/widgets";
-import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
+import type { IRunAppParams } from "@/types/apps";
 import PaneContextMenu from "./ContextMenu/PaneContextMenu";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
-import { GraphPopupTitle } from "@/components/Popup/Graph";
-import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
-import { getWSEndpointFromWindow } from "@/constants/utils";
-import { TEN_PATH_WS_EXEC } from "@/constants";
-import { IRunAppParams } from "@/types/apps";
-import {
-  addRecentRunApp as addToRecentRunApp,
-  useStorage,
-} from "@/api/services/storage";
 
 export interface FlowCanvasRef {
   performAutoLayout: () => void;
@@ -460,7 +459,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
 
     return (
       <div
-        className={cn("flow-container w-full h-[calc(100vh-40px)]", className)}
+        className={cn("flow-container h-[calc(100vh-40px)] w-full", className)}
       >
         <ReactFlow
           colorMode={theme}

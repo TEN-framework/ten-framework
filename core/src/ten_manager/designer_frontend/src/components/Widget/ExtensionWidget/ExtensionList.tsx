@@ -4,12 +4,19 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+import type { TooltipContentProps } from "@radix-ui/react-tooltip";
+import { BlocksIcon, BrushCleaningIcon, CheckIcon } from "lucide-react";
 import * as React from "react";
-import { BlocksIcon, CheckIcon, BrushCleaningIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { FixedSizeList as VirtualList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-
+import { FixedSizeList as VirtualList } from "react-window";
+import { useFetchAddons } from "@/api/services/addons";
+import { postReloadApps } from "@/api/services/apps";
+import { useListTenCloudStorePackages } from "@/api/services/extension";
+import { extractLocaleContentFromPkg } from "@/api/services/utils";
+import { HighlightText } from "@/components/Highlight";
+import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
+import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import { Button } from "@/components/ui/Button";
 import {
   Tooltip,
@@ -17,37 +24,66 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
+// eslint-disable-next-line max-len
+import { ExtensionTooltipContent } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
+import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
+import {
+  CONTAINER_DEFAULT_ID,
+  EXTENSION_WIDGET_ID,
+  GROUP_EXTENSION_ID,
+  GROUP_LOG_VIEWER_ID,
+} from "@/constants/widgets";
 import { cn } from "@/lib/utils";
-import { useWidgetStore, useAppStore } from "@/store";
+import { useAppStore, useWidgetStore } from "@/store";
+import {
+  EPackageSource,
+  type IListTenCloudStorePackage,
+  type IListTenLocalStorePackage,
+  type ITenPackage,
+  type ITenPackageLocal,
+} from "@/types/extension";
 import {
   ELogViewerScriptType,
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-// eslint-disable-next-line max-len
-import { ExtensionTooltipContent } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
-import {
-  type IListTenCloudStorePackage,
-  type IListTenLocalStorePackage,
-  EPackageSource,
-  ITenPackage,
-  ITenPackageLocal,
-} from "@/types/extension";
-import { useListTenCloudStorePackages } from "@/api/services/extension";
-import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
-import { getWSEndpointFromWindow } from "@/constants/utils";
-import { HighlightText } from "@/components/Highlight";
 
-import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-import { postReloadApps } from "@/api/services/apps";
-import {
-  EXTENSION_WIDGET_ID,
-  GROUP_EXTENSION_ID,
-  GROUP_LOG_VIEWER_ID,
-} from "@/constants/widgets";
-import { CONTAINER_DEFAULT_ID } from "@/constants/widgets";
-import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
-import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
+const VirtualListItem = (props: {
+  index: number;
+  style: React.CSSProperties;
+  items: (ITenPackage | ITenPackageLocal)[];
+  versions: Map<string, IListTenCloudStorePackage[]>;
+  toolTipSide?: TooltipContentProps["side"];
+  readOnly?: boolean;
+}) => {
+  const { items, versions, toolTipSide, readOnly } = props;
+  const item = items[props.index];
+
+  if (item._type === EPackageSource.Local) {
+    return (
+      <AddonItem
+        item={item}
+        style={props.style}
+        toolTipSide={toolTipSide}
+        _type={item._type}
+      />
+    );
+  }
+
+  const targetVersions = versions.get(item.name);
+
+  return (
+    <ExtensionStoreItem
+      item={item}
+      style={props.style}
+      toolTipSide={toolTipSide}
+      versions={targetVersions}
+      isInstalled={item.isInstalled}
+      readOnly={readOnly}
+    />
+  );
+};
 
 export const ExtensionList = (props: {
   items: (ITenPackage | ITenPackageLocal)[];
@@ -58,39 +94,8 @@ export const ExtensionList = (props: {
 }) => {
   const { items, versions, className, toolTipSide, readOnly } = props;
 
-  const VirtualListItem = (props: {
-    index: number;
-    style: React.CSSProperties;
-  }) => {
-    const item = items[props.index];
-
-    if (item._type === EPackageSource.Local) {
-      return (
-        <AddonItem
-          item={item}
-          style={props.style}
-          toolTipSide={toolTipSide}
-          _type={item._type}
-        />
-      );
-    }
-
-    const targetVersions = versions.get(item.name);
-
-    return (
-      <ExtensionStoreItem
-        item={item}
-        style={props.style}
-        toolTipSide={toolTipSide}
-        versions={targetVersions}
-        isInstalled={item.isInstalled}
-        readOnly={readOnly}
-      />
-    );
-  };
-
   return (
-    <div className={cn("w-full h-full", className)}>
+    <div className={cn("h-full w-full", className)}>
       <AutoSizer>
         {({ width, height }: { width: number; height: number }) => (
           <VirtualList
@@ -99,7 +104,15 @@ export const ExtensionList = (props: {
             itemCount={items.length}
             itemSize={52}
           >
-            {VirtualListItem}
+            {(virtualProps) => (
+              <VirtualListItem
+                {...virtualProps}
+                items={items}
+                versions={versions}
+                toolTipSide={toolTipSide}
+                readOnly={readOnly}
+              />
+            )}
           </VirtualList>
         )}
       </AutoSizer>
@@ -123,7 +136,7 @@ export const ExtensionBaseItem = React.forwardRef<
 >((props, ref) => {
   const { item, className, isInstalled, _type, readOnly, ...rest } = props;
 
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     extSearch,
     appendWidget,
@@ -131,9 +144,25 @@ export const ExtensionBaseItem = React.forwardRef<
     removeLogViewerHistory,
   } = useWidgetStore();
   const { currentWorkspace } = useAppStore();
-  const { mutate } = useListTenCloudStorePackages();
+  const { mutate: mutatePkgs } = useListTenCloudStorePackages();
+  const { mutate: mutateAddons } = useFetchAddons({
+    base_dir: currentWorkspace?.app?.base_dir,
+  });
 
   const deferredSearch = React.useDeferredValue(extSearch);
+
+  const [prettyName, prettyDesc] = React.useMemo(() => {
+    const name =
+      extractLocaleContentFromPkg(
+        (item as IListTenCloudStorePackage)?.display_name,
+        i18n.language
+      ) || item.name;
+    const desc = extractLocaleContentFromPkg(
+      (item as IListTenCloudStorePackage)?.description,
+      i18n.language
+    );
+    return [name, desc];
+  }, [item, i18n.language]);
 
   const handleInstall =
     (baseDir: string, item: IListTenCloudStorePackage) =>
@@ -143,7 +172,7 @@ export const ExtensionBaseItem = React.forwardRef<
       if (!baseDir || !item) {
         return;
       }
-      const widgetId = "ext-install-" + item.hash;
+      const widgetId = `ext-install-${item.hash}`;
       appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
         group_id: GROUP_LOG_VIEWER_ID,
@@ -168,7 +197,8 @@ export const ExtensionBaseItem = React.forwardRef<
             title: t("popup.logViewer.appInstall"),
           },
           postActions: () => {
-            mutate();
+            mutatePkgs();
+            mutateAddons();
             postReloadApps(baseDir);
           },
         },
@@ -199,8 +229,8 @@ export const ExtensionBaseItem = React.forwardRef<
       ref={ref}
       className={cn(
         "px-1 py-2",
-        "flex gap-2 w-full items-center max-w-full font-roboto h-fit",
-        "hover:bg-ten-fill-4 rounded-sm",
+        "flex h-fit w-full max-w-full items-center gap-2 font-roboto",
+        "rounded-sm hover:bg-ten-fill-4",
         {
           "cursor-pointer": !!rest?.onClick && !readOnly,
         },
@@ -211,39 +241,47 @@ export const ExtensionBaseItem = React.forwardRef<
       <BlocksIcon className="size-8" />
       <div
         className={cn(
-          "flex flex-col  justify-between",
+          "flex flex-col justify-between",
           "w-full overflow-hidden text-sm"
         )}
       >
         <h3
           className={cn(
-            "font-semibold w-full overflow-hidden text-ellipsis",
+            "w-full overflow-hidden text-ellipsis font-semibold",
             "text-foreground"
           )}
         >
-          <HighlightText highlight={deferredSearch}>{item.name}</HighlightText>
+          <HighlightText highlight={deferredSearch}>{prettyName}</HighlightText>
 
           {_type === EPackageSource.Local && (
-            <span className={cn("text-ten-icontext-2", "text-xs font-normal")}>
+            <span className={cn("text-ten-icontext-2", "font-normal text-xs")}>
               {t("extensionStore.localAddonTip")}
             </span>
           )}
         </h3>
-        <p className={cn("text-xs text-ten-icontext-2 font-thin")}>
-          {item.type}
+        <p
+          className={cn(
+            "font-thin text-ten-icontext-2 text-xs",
+            "overflow-hidden text-ellipsis"
+          )}
+        >
+          <span className="me-1">{item.type}</span>
+          {prettyDesc && (
+            <span className={cn("mx-1 font-normal text-xs", "text-nowrap")}>
+              {prettyDesc}
+            </span>
+          )}
         </p>
       </div>
       <div className="my-auto flex flex-col items-end">
         {isInstalled ? (
-          <>
-            <CheckIcon className="size-4" />
-          </>
+          <CheckIcon className="size-4" />
         ) : (
           <Button
             variant="outline"
             size="xs"
             className={cn(
-              "text-xs px-2 py-0.5 font-normal h-fit cursor-pointer",
+              "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
               "shadow-none"
             )}
             disabled={readOnly || !currentWorkspace?.app?.base_dir}
@@ -282,19 +320,33 @@ export const ExtensionStoreItem = (props: {
 
   const { appendWidget } = useWidgetStore();
 
+  const { i18n } = useTranslation();
+
   const handleClick = () => {
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_EXTENSION_ID,
-      widget_id: EXTENSION_WIDGET_ID + "-" + item.name,
+      widget_id: `${EXTENSION_WIDGET_ID}-${item.name}`,
 
       category: EWidgetCategory.Extension,
       display_type: EWidgetDisplayType.Popup,
 
-      title: <ExtensionPopupTitle name={item.name} />,
+      title: (
+        <ExtensionPopupTitle
+          name={
+            extractLocaleContentFromPkg(
+              (item as IListTenCloudStorePackage)?.display_name,
+              i18n.language
+            ) || item.name
+          }
+        />
+      ),
       metadata: {
         name: item.name,
         versions: versions || [],
+      },
+      popup: {
+        height: 0.8,
       },
     });
   };
@@ -315,7 +367,7 @@ export const ExtensionStoreItem = (props: {
         <TooltipContent
           side={toolTipSide}
           className={cn(
-            "backdrop-blur-xs shadow-xl text-popover-foreground",
+            "text-popover-foreground shadow-xl backdrop-blur-xs",
             "bg-slate-50/80 dark:bg-gray-900/90",
             "border border-slate-100/50 dark:border-gray-900/50",
             "ring-1 ring-slate-100/50 dark:ring-gray-900/50",

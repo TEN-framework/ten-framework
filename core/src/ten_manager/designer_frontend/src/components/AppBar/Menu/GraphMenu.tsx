@@ -4,15 +4,19 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
+
 import {
   FolderOpenIcon,
-  MoveIcon,
-  PackagePlusIcon,
   GitPullRequestCreateIcon,
   InfoIcon,
+  MoveIcon,
+  PackagePlusIcon,
 } from "lucide-react";
-
+import { useTranslation } from "react-i18next";
+import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
+import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
+import { GraphPopupTitle } from "@/components/Popup/Graph";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenuContent,
   NavigationMenuItem,
@@ -20,27 +24,23 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
 import { Separator } from "@/components/ui/Separator";
-import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
-import { useWidgetStore, useAppStore } from "@/store";
 import {
   CONTAINER_DEFAULT_ID,
+  DOC_REF_WIDGET_ID,
+  GRAPH_ACTIONS_WIDGET_ID,
   GRAPH_SELECT_WIDGET_ID,
   GROUP_DOC_REF_ID,
-  DOC_REF_WIDGET_ID,
   GROUP_GRAPH_ID,
-  GRAPH_ACTIONS_WIDGET_ID,
 } from "@/constants/widgets";
+import { cn } from "@/lib/utils";
+import { useAppStore, useWidgetStore } from "@/store";
+import { EDocLinkKey } from "@/types/doc";
+import { EGraphActions } from "@/types/graphs";
 import {
   EDefaultWidgetType,
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-import { EGraphActions } from "@/types/graphs";
-import { EDocLinkKey } from "@/types/doc";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
-import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
-import { GraphPopupTitle } from "@/components/Popup/Graph";
 
 export function GraphMenu(props: {
   onAutoLayout: () => void;
@@ -140,7 +140,7 @@ export function GraphMenu(props: {
         {t("header.menuGraph.title")}
       </NavigationMenuTrigger>
       <NavigationMenuContent
-        className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
+        className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
       >
         <NavigationMenuLink asChild>
           <Button

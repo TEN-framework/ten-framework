@@ -7,12 +7,11 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import { SpinnerLoading } from "@/components/Status/Loading";
-import { IDefaultWidget } from "@/types/widgets";
 import { useRetrieveDocLink } from "@/api/services/doc";
-import { EDocLinkKey } from "@/types/doc";
+import { SpinnerLoading } from "@/components/Status/Loading";
 import { TEN_DOC_URL } from "@/constants";
+import type { EDocLinkKey } from "@/types/doc";
+import type { IDefaultWidget } from "@/types/widgets";
 
 export const DocRefPopupTitle = (props: { name: string }) => {
   const { name } = props;
@@ -63,7 +62,7 @@ const DocRefRemoteContent = (props: {
   return (
     <iframe
       src={TEN_DOC_URL + docPathMemo}
-      className="w-full h-full"
+      className="h-full w-full"
       title={queryKey}
       sandbox="allow-scripts allow-same-origin"
     />

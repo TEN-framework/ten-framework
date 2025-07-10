@@ -28,7 +28,7 @@ mod tests {
             connection::{
                 GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
             },
-            node::{GraphNode, GraphNodeType},
+            node::GraphNode,
         },
         pkg_info::constants::PROPERTY_JSON_FILENAME,
     };
@@ -109,15 +109,13 @@ mod tests {
         .await;
 
         // Create test nodes and connections.
-        let nodes = [GraphNode {
-            type_: GraphNodeType::Extension,
-            name: "node1".to_string(),
-            addon: Some("test_addon".to_string()),
-            extension_group: None,
-            app: None,
-            property: None,
-            import_uri: None,
-        }];
+        let nodes = [GraphNode::new_extension_node(
+            "node1".to_string(),
+            "test_addon".to_string(),
+            None,
+            None,
+            None,
+        )];
 
         // Create a connection with message flow.
         let dest = GraphDestination {
@@ -125,18 +123,20 @@ mod tests {
                 app: None,
                 extension: Some("node2".to_string()),
                 subgraph: None,
+                selector: None,
             },
             msg_conversion: None,
         };
 
         let message_flow =
-            GraphMessageFlow { name: "test_cmd".to_string(), dest: vec![dest] };
+            GraphMessageFlow::new("test_cmd".to_string(), vec![dest], vec![]);
 
         let connection = GraphConnection {
             loc: GraphLoc {
                 app: None,
                 extension: Some("node1".to_string()),
                 subgraph: None,
+                selector: None,
             },
             cmd: Some(vec![message_flow]),
             data: None,
@@ -151,15 +151,15 @@ mod tests {
             graph_id: graph_id_clone,
             nodes: nodes
                 .iter()
-                .map(|node| GraphNodeForUpdate {
-                    name: node.name.clone(),
-                    addon: node
-                        .addon
-                        .clone()
-                        .expect("Extension node must have an addon"),
-                    extension_group: node.extension_group.clone(),
-                    app: node.app.clone(),
-                    property: node.property.clone(),
+                .map(|node| match node {
+                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                        name: content.name.clone(),
+                        addon: content.addon.clone(),
+                        extension_group: content.extension_group.clone(),
+                        app: content.app.clone(),
+                        property: content.property.clone(),
+                    },
+                    _ => panic!("Node is not an extension node"),
                 })
                 .collect(),
             connections: connections.clone(),
@@ -341,15 +341,14 @@ mod tests {
         .await;
 
         // Create test nodes but empty connections.
-        let nodes = [GraphNode {
-            type_: GraphNodeType::Extension,
-            name: "new_node".to_string(),
-            addon: Some("test_addon".to_string()),
-            extension_group: None,
-            app: Some("http://example.com:8000".to_string()),
-            property: None,
-            import_uri: None,
-        }];
+        let nodes = [GraphNode::new_extension_node(
+            "new_node".to_string(),
+            "test_addon".to_string(),
+            None,
+            Some("http://example.com:8000".to_string()),
+            None,
+        )];
+
         let connections = vec![]; // Empty connections.
 
         // Create a request payload.
@@ -357,15 +356,15 @@ mod tests {
             graph_id: graph_id_clone,
             nodes: nodes
                 .iter()
-                .map(|node| GraphNodeForUpdate {
-                    name: node.name.clone(),
-                    addon: node
-                        .addon
-                        .clone()
-                        .expect("Extension node must have an addon"),
-                    extension_group: node.extension_group.clone(),
-                    app: node.app.clone(),
-                    property: node.property.clone(),
+                .map(|node| match node {
+                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                        name: content.name.clone(),
+                        addon: content.addon.clone(),
+                        extension_group: content.extension_group.clone(),
+                        app: content.app.clone(),
+                        property: content.property.clone(),
+                    },
+                    _ => panic!("Node is not an extension node"),
                 })
                 .collect(),
             connections,

@@ -4,37 +4,29 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { useTranslation, Translation } from "react-i18next";
 
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
+  type ColumnDef,
+  type ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  BlocksIcon,
   ArrowBigRightDashIcon,
-  MoreHorizontal,
+  ArrowDownIcon,
   ArrowUpDown,
   ArrowUpIcon,
-  ArrowDownIcon,
+  BlocksIcon,
+  MoreHorizontal,
 } from "lucide-react";
+import * as React from "react";
+import { Translation, useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/Table";
+import { postDeleteConnection } from "@/api/services/graphs";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -45,14 +37,20 @@ import {
   // DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { cn } from "@/lib/utils";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
-import { useDialogStore, useAppStore, useFlowStore } from "@/store";
-import { postDeleteConnection } from "@/api/services/graphs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
-import { EConnectionType } from "@/types/graphs";
-
+import { cn } from "@/lib/utils";
+import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
+import { EConnectionType } from "@/types/graphs";
+import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
 export type TConnection = {
   id: string;
@@ -273,8 +271,8 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
       if (!downstream) return null;
       return (
         <div className="flex items-center">
-          <BlocksIcon className="w-4 h-4 me-1" />
-          <ArrowBigRightDashIcon className="w-4 h-4 me-1" />
+          <BlocksIcon className="me-1 h-4 w-4" />
+          <ArrowBigRightDashIcon className="me-1 h-4 w-4" />
           <Button
             variant="outline"
             size="sm"
@@ -285,7 +283,7 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
               })
             }
           >
-            <BlocksIcon className="w-3 h-3 me-1" />
+            <BlocksIcon className="me-1 h-3 w-3" />
             <span className="text-xs">{downstream}</span>
           </Button>
         </div>
@@ -333,11 +331,11 @@ export const extensionConnectionColumns2: ColumnDef<TConnection>[] = [
               })
             }
           >
-            <BlocksIcon className="w-3 h-3 me-1" />
+            <BlocksIcon className="me-1 h-3 w-3" />
             <span className="text-xs">{upstream}</span>
           </Button>
-          <ArrowBigRightDashIcon className="w-4 h-4 ms-1" />
-          <BlocksIcon className="w-4 h-4 ms-1" />
+          <ArrowBigRightDashIcon className="ms-1 h-4 w-4" />
+          <BlocksIcon className="ms-1 h-4 w-4" />
         </div>
       );
     },

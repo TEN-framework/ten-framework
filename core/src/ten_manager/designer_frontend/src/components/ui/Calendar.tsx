@@ -5,12 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable max-len */
-import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
 
-import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type * as React from "react";
+import { DayPicker } from "react-day-picker";
 import { buttonVariants } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 function Calendar({
   className,

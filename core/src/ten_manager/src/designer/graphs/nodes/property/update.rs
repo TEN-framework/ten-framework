@@ -11,7 +11,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use ten_rust::graph::graph_info::GraphInfo;
+use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode};
 
 use crate::{
     designer::{
@@ -49,12 +49,17 @@ fn update_node_property_in_graph(
     request_payload: &UpdateGraphNodePropertyRequestPayload,
 ) -> Result<()> {
     // Find the node in the graph.
-    let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
-        node.name == request_payload.name
-            && node.addon == Some(request_payload.addon.clone())
-            && node.extension_group == request_payload.extension_group
-            && node.app == request_payload.app
-    });
+    let graph_node =
+        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+            GraphNode::Extension { content } => {
+                content.name == request_payload.name
+                    && content.addon == request_payload.addon
+                    && content.extension_group
+                        == request_payload.extension_group
+                    && content.app == request_payload.app
+            }
+            _ => false,
+        });
 
     if graph_node.is_none() {
         return Err(anyhow::anyhow!(
@@ -66,7 +71,12 @@ fn update_node_property_in_graph(
     }
 
     // Update the node's property.
-    graph_node.unwrap().property = request_payload.property.clone();
+    match graph_node.unwrap() {
+        GraphNode::Extension { content } => {
+            content.property = request_payload.property.clone();
+        }
+        _ => return Err(anyhow::anyhow!("Node is not an extension node")),
+    }
 
     Ok(())
 }

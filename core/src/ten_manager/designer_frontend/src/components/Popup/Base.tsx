@@ -4,23 +4,22 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
+
 import { ChevronDown, ChevronUp, X, XIcon } from "lucide-react";
 import {
   motion,
+  type PanInfo,
   useDragControls,
   useMotionValue,
-  type PanInfo,
 } from "motion/react";
-
-import { cn } from "@/lib/utils";
+import * as React from "react";
 import { Button } from "@/components/ui/Button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuTrigger,
   ContextMenuSeparator,
+  ContextMenuTrigger,
 } from "@/components/ui/ContextMenu";
 import {
   Tooltip,
@@ -28,9 +27,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
 import { useWidgetStore } from "@/store";
+import type { TWidgetCustomAction } from "@/types/widgets";
 import { EEventName, eventPubSub } from "@/utils/events";
-import { TWidgetCustomAction } from "@/types/widgets";
 
 const POPUP_MIN_HEIGHT = 100;
 const POPUP_MIN_WIDTH = 100;
@@ -71,7 +71,7 @@ export const PopupTabsBar = (props: {
   return (
     <ul
       className={cn(
-        "w-full h-8 flex items-center overflow-x-auto overflow-y-hidden",
+        "flex h-8 w-full items-center overflow-x-auto overflow-y-hidden",
         "scroll-p-1",
         "bg-border dark:bg-popover",
         className
@@ -99,20 +99,20 @@ export const PopupTabsBarItem = (props: {
       <ContextMenuTrigger asChild>
         <li
           className={cn(
-            "w-fit flex items-center gap-2 px-2 py-1 text-xs cursor-pointer",
-            "border-b-2 border-transparent",
+            "flex w-fit cursor-pointer items-center gap-2 px-2 py-1 text-xs",
+            "border-transparent border-b-2",
             {
-              "text-primary border-purple-900": isActive,
+              "border-purple-900 text-primary": isActive,
             },
             "hover:text-primary",
             className
           )}
           onClick={() => onSelect?.(id)}
         >
-          <div className={cn("truncate max-w-[150px]")}>{children}</div>
+          <div className={cn("max-w-[150px] truncate")}>{children}</div>
           {onClose && (
             <XIcon
-              className="size-3 ml-1 text-foreground hover:text-destructive"
+              className="ml-1 size-3 text-foreground hover:text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
                 onClose?.(id);
@@ -149,7 +149,7 @@ export const PopupTabsBarContent = (props: {
   return (
     <div
       className={cn(
-        "w-full h-[calc(100%-32px)]",
+        "h-[calc(100%-32px)] w-full",
         {
           ["hidden"]: !isActive,
           ["h-full"]: fullHeight,
@@ -356,11 +356,11 @@ export const PopupBase = (props: IPopupBaseProps) => {
       }}
       className={cn(
         "popup",
-        "fixed text-sm overflow-hidden",
+        "fixed overflow-hidden text-sm",
         "drop-shadow-lg",
         "bg-popover text-popover-foreground",
         "border border-ten-line-3",
-        "rounded-lg focus:outline-hidden flex flex-col",
+        "flex flex-col rounded-lg focus:outline-hidden",
         "transition-opacity duration-200 ease-in-out",
         className
       )}
@@ -382,17 +382,17 @@ export const PopupBase = (props: IPopupBaseProps) => {
         onPointerDown={(event) => dragControls.start(event)}
         className={cn(
           "px-2.5 py-1",
-          "flex justify-between items-center cursor-move select-none",
+          "flex cursor-move select-none items-center justify-between",
           "bg-ten-fill-5",
           "rounded-t-lg",
-          "text-sm font-bold",
+          "font-bold text-sm",
           {
-            ["border-b border-border/50"]: !isCollapsed,
+            ["border-border/50 border-b"]: !isCollapsed,
           }
         )}
       >
         {typeof title === "string" ? <span>{title}</span> : title}
-        <div className="flex items-center gap-1.5 ml-auto text-ten-icontext-2">
+        <div className="ml-auto flex items-center gap-1.5 text-ten-icontext-2">
           {customActions?.map((action) => (
             <TooltipProvider key={action.id}>
               <Tooltip>
@@ -400,7 +400,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="transition-colors cursor-pointer"
+                    className="cursor-pointer transition-colors"
                     onClick={action.onClick}
                   >
                     <action.Icon className="opacity-70" />
@@ -416,7 +416,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="transition-colors cursor-pointer"
+            className="cursor-pointer transition-colors"
             onClick={() => {
               setIsCollapsed(!isCollapsed);
               onCollapseToggle?.(isCollapsed);
@@ -432,7 +432,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="transition-colors cursor-pointer"
+            className="cursor-pointer transition-colors"
             onClick={handleClose}
           >
             <X className="opacity-70" />
@@ -441,7 +441,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
       </motion.div>
       <motion.div
         className={cn(
-          "p-2.5 overflow-hidden flex w-full",
+          "flex w-full overflow-hidden p-2.5",
           "bg-ten-fill-2",
           "h-full opacity-100",
           contentClassName
@@ -463,7 +463,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
         {/* bottom resize handler */}
         <motion.div
           className={cn(
-            "absolute bottom-0 left-0 right-1",
+            "absolute right-1 bottom-0 left-0",
             "h-0.5 cursor-ns-resize bg-transparent"
           )}
           drag="y"
@@ -484,7 +484,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
         {/* right resize handler */}
         <motion.div
           className={cn(
-            "absolute right-0 top-0 bottom-1",
+            "absolute top-0 right-0 bottom-1",
             "w-0.5 cursor-ew-resize bg-transparent"
           )}
           drag="x"
@@ -524,7 +524,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
         {/* top resize handler */}
         <motion.div
           className={cn(
-            "absolute top-0 left-0 right-0",
+            "absolute top-0 right-0 left-0",
             "h-0.5 cursor-ns-resize bg-transparent"
           )}
           drag="y"
@@ -544,7 +544,7 @@ export const PopupBase = (props: IPopupBaseProps) => {
         {/* left resize handler */}
         <motion.div
           className={cn(
-            "absolute left-0 top-0 bottom-0",
+            "absolute top-0 bottom-0 left-0",
             "w-0.5 cursor-ew-resize bg-transparent"
           )}
           drag="x"

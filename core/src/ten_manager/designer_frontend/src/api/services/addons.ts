@@ -4,11 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useQuery, useMutation } from "@tanstack/react-query";
-
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ENDPOINT_ADDONS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
+import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
 
 export const retrieveAddons = async (payload: {
   // base_dir is the base directory of the app to retrieve addons for.

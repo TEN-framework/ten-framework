@@ -70,40 +70,44 @@ class test_app_1 : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "addon": "failed_to_connect_to_remote_4__predefined_graph_extension",
-                            "extension_group": "failed_to_connect_to_remote_4__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "addon": "failed_to_connect_to_remote_4__predefined_graph_extension",
+                              "extension_group": "failed_to_connect_to_remote_4__predefined_graph_group"
+                            }]
+                          }
                         },{
                           "name": "graph_1",
                           "auto_start": false,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "normal_extension_1",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "addon": "failed_to_connect_to_remote_4__normal_extension_1",
-                            "extension_group": "failed_to_connect_to_remote_4__normal_extension_group"
-                          }, {
-                            "type": "extension",
-                            "name": "normal_extension_2",
-                            "app": "msgpack://127.0.0.1:8888/",
-                            "addon": "failed_to_connect_to_remote_4__normal_extension_2",
-                            "extension_group": "failed_to_connect_to_remote_4__normal_extension_group"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "normal_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8888/",
-                                "extension": "normal_extension_2"
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "normal_extension_1",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "addon": "failed_to_connect_to_remote_4__normal_extension_1",
+                              "extension_group": "failed_to_connect_to_remote_4__normal_extension_group"
+                            }, {
+                              "type": "extension",
+                              "name": "normal_extension_2",
+                              "app": "msgpack://127.0.0.1:8888/",
+                              "addon": "failed_to_connect_to_remote_4__normal_extension_2",
+                              "extension_group": "failed_to_connect_to_remote_4__normal_extension_group"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "normal_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8888/",
+                                  "extension": "normal_extension_2"
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })"

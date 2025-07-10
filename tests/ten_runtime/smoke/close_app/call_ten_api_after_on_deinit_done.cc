@@ -169,34 +169,34 @@ TEST(CloseAppTest, CallTenApiAfterOnDeinitDone) {  // NOLINT
   // Send graph.
   auto start_graph_cmd = ten::cmd_start_graph_t::create();
   start_graph_cmd->set_graph_from_json(R"({
-           "nodes": [{
-                "type": "extension",
-                "name": "test_extension_1",
-                "addon": "call_ten_api_after_on_deinit_done__test_extension_1",
-                "extension_group": "basic_extension_group_1",
-                "app": "msgpack://127.0.0.1:8001/"
-             },{
-                "type": "extension",
-                "name": "test_extension_2",
-                "addon": "call_ten_api_after_on_deinit_done__test_extension_2",
-                "extension_group": "basic_extension_group_2",
-                "app": "msgpack://127.0.0.1:8001/",
-                "property": {
-                  "test_property": "test_value"
-                }
-             }],
-             "connections": [{
-               "app": "msgpack://127.0.0.1:8001/",
-               "extension": "test_extension_1",
-               "cmd": [{
-                 "name": "return_immediately",
-                 "dest": [{
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "test_extension_2"
-                 }]
-               }]
-             }]
-           })");
+    "nodes": [{
+      "type": "extension",
+      "name": "test_extension_1",
+      "addon": "call_ten_api_after_on_deinit_done__test_extension_1",
+      "extension_group": "basic_extension_group_1",
+      "app": "msgpack://127.0.0.1:8001/"
+    },{
+      "type": "extension",
+      "name": "test_extension_2",
+      "addon": "call_ten_api_after_on_deinit_done__test_extension_2",
+      "extension_group": "basic_extension_group_2",
+      "app": "msgpack://127.0.0.1:8001/",
+      "property": {
+        "test_property": "test_value"
+      }
+    }],
+    "connections": [{
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "test_extension_1",
+      "cmd": [{
+        "name": "return_immediately",
+        "dest": [{
+          "app": "msgpack://127.0.0.1:8001/",
+          "extension": "test_extension_2"
+        }]
+      }]
+    }]
+  })");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

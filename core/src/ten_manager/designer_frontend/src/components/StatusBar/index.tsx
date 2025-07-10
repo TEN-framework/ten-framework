@@ -4,16 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
+
 import {
-  FolderTreeIcon,
-  FolderOpenIcon,
   ChevronRightIcon,
+  FolderOpenIcon,
+  FolderTreeIcon,
   MessageSquareShareIcon,
 } from "lucide-react";
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
+import { useFetchApps } from "@/api/services/apps";
+import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { Button } from "@/components/ui/Button";
 import {
   Tooltip,
@@ -21,21 +23,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { cn } from "@/lib/utils";
-import { useFetchApps } from "@/api/services/apps";
-import {
-  EWidgetDisplayType,
-  EDefaultWidgetType,
-  EWidgetCategory,
-} from "@/types/widgets";
+import { TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL } from "@/constants";
 import {
   APPS_MANAGER_WIDGET_ID,
   CONTAINER_DEFAULT_ID,
   GRAPH_SELECT_WIDGET_ID,
 } from "@/constants/widgets";
-import { TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL } from "@/constants";
-import { useWidgetStore, useAppStore } from "@/store";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
+import { cn } from "@/lib/utils";
+import { useAppStore, useWidgetStore } from "@/store";
+import {
+  EDefaultWidgetType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 import { LoadedAppsPopupTitle } from "../Popup/Default/App";
 
 export default function StatusBar(props: { className?: string }) {
@@ -44,16 +44,16 @@ export default function StatusBar(props: { className?: string }) {
   return (
     <footer
       className={cn(
-        "flex justify-between items-center text-xs select-none",
+        "flex select-none items-center justify-between text-xs",
         "h-5 w-full",
-        "fixed bottom-0 left-0 right-0",
+        "fixed right-0 bottom-0 left-0",
         "bg-background/80 backdrop-blur-xs",
-        "border-t border-[#e5e7eb] dark:border-[#374151]",
+        "border-[#e5e7eb] border-t dark:border-[#374151]",
         "select-none",
         className
       )}
     >
-      <div className="flex w-full h-full gap-2">
+      <div className="flex h-full w-full gap-2">
         <StatusApps />
         <StatusWorkspace />
       </div>
@@ -193,11 +193,11 @@ const StatusWorkspace = () => {
         </TooltipTrigger>
         <TooltipContent className="flex flex-col gap-1">
           <p className="text-sm">{t("statusBar.workspace.title")}</p>
-          <p className="flex gap-1 justify-between">
+          <p className="flex justify-between gap-1">
             <span className="min-w-24">{t("statusBar.workspace.baseDir")}</span>
             <span className="">{baseDirMemo}</span>
           </p>
-          <p className="flex gap-1 justify-between">
+          <p className="flex justify-between gap-1">
             <span className="">{t("statusBar.workspace.graphName")}</span>
             <span className="">
               {graphNameMemo ?? t("popup.selectGraph.unspecified")}

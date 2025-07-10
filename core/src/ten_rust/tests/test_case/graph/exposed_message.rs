@@ -10,7 +10,7 @@ mod tests {
         connection::{
             GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
         },
-        node::{GraphNode, GraphNodeType},
+        node::GraphNode,
         Graph, GraphExposedMessage, GraphExposedMessageType,
     };
 
@@ -19,42 +19,41 @@ mod tests {
         // Create a graph with exposed messages.
         let graph = Graph {
             nodes: vec![
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_c".to_string(),
-                    addon: Some("extension_c".to_string()),
-                    extension_group: Some("some_group".to_string()),
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
-                GraphNode {
-                    type_: GraphNodeType::Extension,
-                    name: "ext_d".to_string(),
-                    addon: Some("extension_d".to_string()),
-                    extension_group: Some("another_group".to_string()),
-                    app: None,
-                    property: None,
-                    import_uri: None,
-                },
+                GraphNode::new_extension_node(
+                    "ext_c".to_string(),
+                    "extension_c".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_d".to_string(),
+                    "extension_d".to_string(),
+                    Some("another_group".to_string()),
+                    None,
+                    None,
+                ),
             ],
             connections: Some(vec![GraphConnection {
                 loc: GraphLoc {
                     extension: Some("ext_c".to_string()),
                     app: None,
                     subgraph: None,
+                    selector: None,
                 },
-                cmd: Some(vec![GraphMessageFlow {
-                    name: "B".to_string(),
-                    dest: vec![GraphDestination {
+                cmd: Some(vec![GraphMessageFlow::new(
+                    "B".to_string(),
+                    vec![GraphDestination {
                         loc: GraphLoc {
                             extension: Some("ext_d".to_string()),
                             subgraph: None,
                             app: None,
+                            selector: None,
                         },
                         msg_conversion: None,
                     }],
-                }]),
+                    vec![],
+                )]),
                 data: None,
                 video_frame: None,
                 audio_frame: None,
@@ -90,8 +89,8 @@ mod tests {
 
         // Verify the deserialized graph.
         assert_eq!(deserialized_graph.nodes.len(), 2);
-        assert_eq!(deserialized_graph.nodes[0].name, "ext_c");
-        assert_eq!(deserialized_graph.nodes[1].name, "ext_d");
+        assert_eq!(deserialized_graph.nodes[0].get_name(), "ext_c");
+        assert_eq!(deserialized_graph.nodes[1].get_name(), "ext_d");
 
         let connections = deserialized_graph.connections.unwrap();
         assert_eq!(connections.len(), 1);

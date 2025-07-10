@@ -60,26 +60,28 @@ class test_app : public ten::app_t {
                         "predefined_graphs": [{
                           "name": "default",
                           "auto_start": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "simple_http_server_cpp",
-                            "addon": "simple_http_server_cpp",
-                            "extension_group": "test_extension_group"
-                          },{
-                            "type": "extension",
-                            "name": "test_extension",
-                            "addon": "http_server_extension_two_extensions__test_extension",
-                            "extension_group": "test_extension_group"
-                          }],
-                          "connections": [{
-                            "extension": "simple_http_server_cpp",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "extension": "test_extension"
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "simple_http_server_cpp",
+                              "addon": "simple_http_server_cpp",
+                              "extension_group": "test_extension_group"
+                            },{
+                              "type": "extension",
+                              "name": "test_extension",
+                              "addon": "http_server_extension_two_extensions__test_extension",
+                              "extension_group": "test_extension_group"
+                            }],
+                            "connections": [{
+                              "extension": "simple_http_server_cpp",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "extension": "test_extension"
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })"
