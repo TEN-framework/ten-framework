@@ -4,46 +4,48 @@
       {
         "name": "default",
         "auto_start": false,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "some_extension",
-            "addon": "default_extension_go",
-            "extension_group": "some_group"
-          },
-          {
-            "type": "extension",
-            "name": "some_extension_1",
-            "addon": "default_extension_go",
-            "extension_group": "some_group"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "some_extension",
-            "cmd": [
-              {
-                "name": "hello",
-                "dest": [
-                  {
-                    "extension": "some_extension_1"
-                  }
-                ]
-              },
-              {
-                "name": "world",
-                "dest": [
-                  {
-                    "extension": "some_extension_1"
-                  },
-                  {
-                    "extension": "consumer"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "some_extension",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "some_extension_1",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "some_extension",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "some_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "world",
+                  "dest": [
+                    {
+                      "extension": "some_extension_1"
+                    },
+                    {
+                      "extension": "consumer"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

@@ -4,13 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
-import { z } from "zod";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import { Label } from "@/components/ui/Label";
+import type { z } from "zod";
+import { updatePreferencesLogViewerLines } from "@/api/services/storage";
+import { LanguageToggle } from "@/components/LangSwitch";
+import { ModeToggle } from "@/components/ModeToggle";
 import { Button } from "@/components/ui/Button";
 import {
   Form,
@@ -22,18 +24,16 @@ import {
   FormMessage,
 } from "@/components/ui/Form";
 import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { useTheme } from "@/components/use-theme";
 import { cn } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import {
-  PREFERENCES_SCHEMA_LOG,
-  EPreferencesTabs,
   EPreferencesLocale,
+  EPreferencesTabs,
+  PREFERENCES_SCHEMA_LOG,
 } from "@/types/apps";
-import { LanguageToggle } from "@/components/LangSwitch";
-import { ModeToggle } from "@/components/ModeToggle";
-import { useTheme } from "@/components/use-theme";
-import { updatePreferencesLogViewerLines } from "@/api/services/storage";
 import type { IWidget } from "@/types/widgets";
 
 export const PreferencesWidgetTitle = () => {
@@ -102,7 +102,7 @@ export const PreferencesGeneralTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label>{t("preferences.general.language")}</Label>
         <LanguageToggle
           buttonProps={{
@@ -111,7 +111,7 @@ export const PreferencesGeneralTab = () => {
           }}
         />
       </div>
-      <div className="flex items-center gap-2 justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label>{t("preferences.general.theme")}</Label>
         <ModeToggle
           hideIcon
@@ -168,7 +168,7 @@ export const PreferencesLogTab = (props: {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col h-full gap-4"
+        className="flex h-full flex-col gap-4"
       >
         <FormField
           control={form.control}
@@ -191,7 +191,7 @@ export const PreferencesLogTab = (props: {
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-2 mt-auto">
+        <div className="mt-auto flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={props.onCancel}>
             {t("preferences.cancel")}
           </Button>

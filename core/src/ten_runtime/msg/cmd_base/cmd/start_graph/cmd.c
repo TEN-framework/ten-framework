@@ -23,6 +23,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/field_info.h"
 #include "include_internal/ten_runtime/msg/msg.h"
+#include "include_internal/ten_rust/ten_rust.h"
 #include "include_internal/ten_utils/value/value_set.h"
 #include "ten_runtime/app/app.h"
 #include "ten_utils/container/list.h"
@@ -51,6 +52,7 @@ static void ten_raw_cmd_start_graph_destroy(ten_cmd_start_graph_t *self) {
 
   ten_value_deinit(&self->long_running_mode);
   ten_value_deinit(&self->predefined_graph_name);
+  ten_value_deinit(&self->graph_json);
 
   TEN_FREE(self);
 }
@@ -73,6 +75,7 @@ ten_cmd_start_graph_t *ten_raw_cmd_start_graph_create(void) {
 
   ten_value_init_bool(&self->long_running_mode, false);
   ten_value_init_string(&self->predefined_graph_name);
+  ten_value_init_string(&self->graph_json);
 
   return self;
 }
@@ -92,6 +95,9 @@ static bool ten_raw_cmd_start_graph_as_msg_get_graph_from_json(
       field->field_value && ten_value_check_integrity(field->field_value),
       "Should not happen.");
 
+  // TODO(xilin): We should also read the 'exposed_messages' and
+  // 'exposed_properties' fields, so that we can support sending messages
+  // directly to the graph later.
   if (ten_c_string_is_equal(field->field_name, TEN_STR_NODES) ||
       ten_c_string_is_equal(field->field_name, TEN_STR_CONNECTIONS)) {
     ten_json_t *json = (ten_json_t *)user_data;
@@ -127,7 +133,8 @@ static bool ten_raw_cmd_start_graph_as_msg_get_graph_from_json(
 bool ten_raw_cmd_start_graph_init_from_json(ten_cmd_start_graph_t *self,
                                             ten_json_t *json,
                                             ten_error_t *err) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
   TEN_ASSERT(json, "Should not happen.");
   TEN_ASSERT(ten_json_check_integrity(json), "Should not happen.");
@@ -137,10 +144,10 @@ bool ten_raw_cmd_start_graph_init_from_json(ten_cmd_start_graph_t *self,
       ten_raw_msg_get_one_field_from_json_include_internal_field, json, err);
 }
 
-bool ten_raw_cmd_start_graph_set_graph_from_json(ten_cmd_start_graph_t *self,
-                                                 ten_json_t *json,
-                                                 ten_error_t *err) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self),
+static bool ten_raw_cmd_start_graph_apply_graph_json(
+    ten_cmd_start_graph_t *self, ten_json_t *json, ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
   TEN_ASSERT(json, "Should not happen.");
   TEN_ASSERT(ten_json_check_integrity(json), "Should not happen.");
@@ -150,23 +157,72 @@ bool ten_raw_cmd_start_graph_set_graph_from_json(ten_cmd_start_graph_t *self,
       json, err);
 }
 
-static bool ten_raw_cmd_start_graph_set_graph_from_json_str(
-    ten_msg_t *self, const char *json_str, ten_error_t *err) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self),
-             "Invalid argument.");
-  TEN_ASSERT(json_str, "Invalid argument.");
+static bool ten_raw_cmd_start_graph_apply_graph_json_str(
+    ten_cmd_start_graph_t *self, const char *json_str, ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
+             "Should not happen.");
+  TEN_ASSERT(json_str, "Should not happen.");
 
   ten_json_t *json = ten_json_from_string(json_str, err);
   if (!json) {
     return false;
   }
 
-  bool rc = ten_raw_cmd_start_graph_set_graph_from_json(
-      (ten_cmd_start_graph_t *)self, json, err);
+  bool success = ten_raw_cmd_start_graph_apply_graph_json(self, json, err);
+  ten_json_destroy(json);
+
+  if (success) {
+    // Reset the graph_json field of the cmd.
+    ten_value_set_string(&self->graph_json, "");
+  }
+
+  return success;
+}
+
+bool ten_cmd_start_graph_apply_graph_json_str(ten_shared_ptr_t *self,
+                                              const char *json_str,
+                                              ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
+  return ten_raw_cmd_start_graph_apply_graph_json_str(get_raw_cmd(self),
+                                                      json_str, err);
+}
+
+static bool ten_raw_cmd_start_graph_set_graph_from_json_str(
+    ten_msg_t *self, const char *json_str, ten_error_t *err) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
+             "Invalid argument.");
+  TEN_ASSERT(json_str, "Invalid argument.");
+
+  ten_cmd_start_graph_t *cmd = (ten_cmd_start_graph_t *)self;
+
+  ten_json_t *json = ten_json_from_string(json_str, err);
+  if (!json) {
+    return false;
+  }
 
   ten_json_destroy(json);
 
-  return rc;
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  char *err_msg = NULL;
+  bool valid = ten_rust_validate_graph_json_string(json_str, &err_msg);
+  if (!valid) {
+    TEN_LOGE("Failed to validate graph json string, err: %s", err_msg);
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_GRAPH, err_msg);
+    }
+    ten_rust_free_cstring(err_msg);
+    return false;
+  }
+#endif
+
+  ten_value_t *graph_json_str_value = &cmd->graph_json;
+  return ten_value_set_string(graph_json_str_value, json_str);
 }
 
 bool ten_cmd_start_graph_set_graph_from_json_str(ten_shared_ptr_t *self,
@@ -199,10 +255,12 @@ ten_msg_t *ten_raw_cmd_start_graph_as_msg_clone(
 
 ten_list_t *ten_raw_cmd_start_graph_get_extensions_info(
     ten_cmd_start_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
 
   return &self->extensions_info;
 }
@@ -213,10 +271,12 @@ ten_list_t *ten_cmd_start_graph_get_extensions_info(ten_shared_ptr_t *self) {
 
 ten_list_t *ten_raw_cmd_start_graph_get_extension_groups_info(
     ten_cmd_start_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
 
   return &self->extension_groups_info;
 }
@@ -340,10 +400,12 @@ void ten_cmd_start_graph_collect_all_immediate_connectable_apps(
 
 static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
     ten_cmd_start_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
 
   ten_list_t *extensions_info = &self->extensions_info;
   ten_list_t *extension_groups_info = &self->extension_groups_info;
@@ -403,8 +465,9 @@ static void ten_raw_cmd_start_graph_add_missing_extension_group_node(
 
 void ten_cmd_start_graph_add_missing_extension_group_node(
     ten_shared_ptr_t *self) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   ten_raw_cmd_start_graph_add_missing_extension_group_node(get_raw_cmd(self));
@@ -412,17 +475,20 @@ void ten_cmd_start_graph_add_missing_extension_group_node(
 
 bool ten_raw_cmd_start_graph_get_long_running_mode(
     ten_cmd_start_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
 
   return ten_value_get_bool(&self->long_running_mode, NULL);
 }
 
 bool ten_cmd_start_graph_get_long_running_mode(ten_shared_ptr_t *self) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   return ten_raw_cmd_start_graph_get_long_running_mode(get_raw_cmd(self));
@@ -431,8 +497,9 @@ bool ten_cmd_start_graph_get_long_running_mode(ten_shared_ptr_t *self) {
 bool ten_cmd_start_graph_set_predefined_graph_name(
     ten_shared_ptr_t *self, const char *predefined_graph_name,
     TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   return ten_value_set_string(&get_raw_cmd(self)->predefined_graph_name,
@@ -442,8 +509,9 @@ bool ten_cmd_start_graph_set_predefined_graph_name(
 bool ten_cmd_start_graph_set_long_running_mode(ten_shared_ptr_t *self,
                                                bool long_running_mode,
                                                TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   return ten_value_set_bool(&get_raw_cmd(self)->long_running_mode,
@@ -452,18 +520,21 @@ bool ten_cmd_start_graph_set_long_running_mode(ten_shared_ptr_t *self,
 
 ten_string_t *ten_raw_cmd_start_graph_get_predefined_graph_name(
     ten_cmd_start_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
 
   return ten_value_peek_string(&self->predefined_graph_name);
 }
 
 ten_string_t *ten_cmd_start_graph_get_predefined_graph_name(
     ten_shared_ptr_t *self) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   return ten_raw_cmd_start_graph_get_predefined_graph_name(get_raw_cmd(self));
@@ -531,8 +602,9 @@ ten_cmd_start_graph_get_extension_addon_and_instance_name_pairs_of_specified_ext
 
 ten_list_t ten_cmd_start_graph_get_requested_extension_names(
     ten_shared_ptr_t *self) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
   ten_list_t requested_extension_names = TEN_LIST_INIT_VAL;
@@ -575,4 +647,13 @@ bool ten_raw_cmd_start_graph_loop_all_fields(
   }
 
   return true;
+}
+
+ten_string_t *ten_cmd_start_graph_get_graph_json(ten_shared_ptr_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
+  return ten_value_peek_string(&get_raw_cmd(self)->graph_json);
 }

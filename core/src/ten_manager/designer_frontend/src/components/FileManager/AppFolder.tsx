@@ -4,15 +4,24 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import {
-  FolderClosedIcon,
-  FileIcon,
-  FolderOpenIcon,
-  ArrowDownUpIcon,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
 
+import {
+  ArrowDownUpIcon,
+  FileIcon,
+  FolderClosedIcon,
+  FolderOpenIcon,
+} from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { useRetrieveDirList } from "@/api/services/fileSystem";
+import type { IFMItem } from "@/components/FileManager/utils";
+import {
+  baseDirEntriesToIFMItems,
+  calculateDirDepth,
+  EFMItemType,
+  fmItemsToFMArray,
+} from "@/components/FileManager/utils";
+import { SpinnerLoading } from "@/components/Status/Loading";
 import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
@@ -24,16 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Input } from "@/components/ui/Input";
-import { SpinnerLoading } from "@/components/Status/Loading";
 import { cn } from "@/lib/utils";
-import type { IFMItem } from "@/components/FileManager/utils";
-import {
-  EFMItemType,
-  calculateDirDepth,
-  baseDirEntriesToIFMItems,
-  fmItemsToFMArray,
-} from "@/components/FileManager/utils";
-import { useRetrieveDirList } from "@/api/services/fileSystem";
 import { useAppStore } from "@/store/app";
 import type { TBaseDirEntry } from "@/types/fileSystem";
 
@@ -56,7 +56,7 @@ function FileManagerColumn(props: {
   return (
     <ul
       className={cn(
-        "px-2 overflow-y-auto",
+        "overflow-y-auto px-2",
         {
           "flex items-center justify-center text-gray-500 dark:text-gray-400":
             isLoading,
@@ -239,8 +239,8 @@ export function FileManager(props: {
   }, [colsMemo?.length]);
 
   return (
-    <div className={cn("w-full h-full space-y-2", className)}>
-      <div className="flex items-center gap-2 justify-between">
+    <div className={cn("h-full w-full space-y-2", className)}>
+      <div className="flex items-center justify-between gap-2">
         <Input
           className="h-10"
           value={selectedPath}
@@ -250,7 +250,7 @@ export function FileManager(props: {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
-              <ArrowDownUpIcon className="w-4 h-4" />
+              <ArrowDownUpIcon className="h-4 w-4" />
               <span className="sr-only">{t("extensionStore.filter.sort")}</span>
             </Button>
           </DropdownMenuTrigger>
@@ -278,8 +278,8 @@ export function FileManager(props: {
       </div>
       <div
         className={cn(
-          "flex py-2 w-full h-[calc(100%-3rem)]",
-          "bg-gray-50 dark:bg-gray-900 rounded-lg",
+          "flex h-[calc(100%-3rem)] w-full py-2",
+          "rounded-lg bg-gray-50 dark:bg-gray-900",
           "overflow-x-auto"
         )}
       >
@@ -301,7 +301,7 @@ export function FileManager(props: {
           )?.map((item, idx) => (
             <FileManagerColumn
               key={idx}
-              className="border-r border-gray-300"
+              className="border-gray-300 border-r"
               style={{ width: colWidth }}
               isLoading={isLoading && idx === colsMemo.length - 1}
             >
@@ -390,18 +390,18 @@ export const AppFileManager = (props: {
   }, [data, folderPath]);
 
   return (
-    <div className={cn("flex flex-col gap-2 w-full h-full", className)}>
+    <div className={cn("flex h-full w-full flex-col gap-2", className)}>
       <FileManager
         key={fmId}
         data={fmItems}
         allowSelectTypes={[EFMItemType.FOLDER]}
-        className="w-full h-[calc(100%-3rem)]"
+        className="h-[calc(100%-3rem)] w-full"
         onSelect={(path) => setFolderPath(path)}
         selectedPath={folderPath}
         isLoading={isLoading}
         colWidth={200}
       />
-      <div className="flex justify-end h-fit gap-2">
+      <div className="flex h-fit justify-end gap-2">
         <Button
           variant="destructive"
           onClick={handleReset}
@@ -421,7 +421,7 @@ export const AppFileManager = (props: {
             disabled={isSaveLoading || !folderPath.trim()}
           >
             <>
-              {isSaveLoading && <SpinnerLoading className="w-4 h-4 mr-2" />}
+              {isSaveLoading && <SpinnerLoading className="mr-2 h-4 w-4" />}
               {t("action.ok")}
             </>
           </Button>

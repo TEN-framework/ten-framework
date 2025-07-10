@@ -68,34 +68,36 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "cmd_conversion_graph_default_uri_extension_1",
-                            "extension_group": "cmd_conversion_graph_default_uri_extension_group"
-                          },{
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "cmd_conversion_graph_default_uri_extension_2",
-                            "extension_group": "cmd_conversion_graph_default_uri_extension_group"
-                          }],
-                          "connections": [{
-                            "extension": "test_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "extension": "test_extension_2",
-                                "msg_conversion": {
-                                  "type": "per_property",
-                                  "rules": [{
-                                    "path": "ten.name",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "hello_mapping"
-                                  }]
-                                }
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "cmd_conversion_graph_default_uri_extension_1",
+                              "extension_group": "cmd_conversion_graph_default_uri_extension_group"
+                            },{
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "cmd_conversion_graph_default_uri_extension_2",
+                              "extension_group": "cmd_conversion_graph_default_uri_extension_group"
+                            }],
+                            "connections": [{
+                              "extension": "test_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "extension": "test_extension_2",
+                                  "msg_conversion": {
+                                    "type": "per_property",
+                                    "rules": [{
+                                      "path": "ten.name",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "hello_mapping"
+                                    }]
+                                  }
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })###"

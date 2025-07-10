@@ -4,21 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { z } from "zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
 
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { z } from "zod";
 import { ENDPOINT_GRAPH_UI, ENDPOINT_GRAPHS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
+import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
 
 import type {
-  AddNodePayloadSchema,
-  DeleteNodePayloadSchema,
   AddConnectionPayloadSchema,
+  AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
-  UpdateNodePropertyPayloadSchema,
-  SetGraphUiPayloadSchema,
+  DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
+  SetGraphUiPayloadSchema,
+  UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
 
 export const retrieveGraphNodes = async (graphId: string) => {
@@ -139,6 +139,11 @@ export const postReplaceNode = async (
   return template.responseSchema.parse(res).data;
 };
 
+/**
+ * @deprecated
+ * This endpoint is deprecated and will be removed in the future.
+ * Use `persistentSchema` endpoint instead.
+ */
 export const postSetGraphNodeGeometry = async (
   data: z.infer<typeof SetGraphUiPayloadSchema>
 ) => {
@@ -150,6 +155,11 @@ export const postSetGraphNodeGeometry = async (
   return template.responseSchema.parse(res).data;
 };
 
+/**
+ * @deprecated
+ * This endpoint is deprecated and will be removed in the future.
+ * Use `persistentSchema` endpoint instead.
+ */
 export const postGetGraphNodeGeometry = async (
   graphId: string
 ): Promise<z.infer<typeof GraphUiNodeGeometrySchema>[]> => {

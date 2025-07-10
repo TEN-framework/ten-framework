@@ -7,38 +7,40 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "http_server_extension_nodejs",
-            "addon": "http_server_extension_nodejs",
-            "extension_group": "default_extension_group",
-            "property": {
-              "server_port": 8002
-            }
-          },
-          {
-            "type": "extension",
-            "name": "simple_echo_cpp",
-            "addon": "simple_echo_cpp",
-            "extension_group": "default_extension_group"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "http_server_extension_nodejs",
-            "cmd": [
-              {
-                "name": "test",
-                "dest": [
-                  {
-                    "extension": "simple_echo_cpp"
-                  }
-                ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "http_server_extension_nodejs",
+              "addon": "http_server_extension_nodejs",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
               }
-            ]
-          }
-        ]
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "http_server_extension_nodejs",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

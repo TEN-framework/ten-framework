@@ -14,6 +14,7 @@ export interface StartRequestConfig {
   coze_bot_id?: string
   coze_base_url?: string
   dify_api_key?: string
+  dify_base_url?: string
 }
 
 interface GenAgoraDataConfig {
@@ -52,6 +53,7 @@ export const apiStartService = async (
     coze_bot_id,
     coze_base_url,
     dify_api_key,
+    dify_base_url
   } = config
   const data = {
     request_id: genUUID(),
@@ -65,7 +67,8 @@ export const apiStartService = async (
     coze_token: coze_token ?? undefined,
     coze_bot_id: coze_bot_id ?? undefined,
     coze_base_url: coze_base_url ?? undefined,
-    dify_api_key: dify_api_key ?? undefined
+    dify_api_key: dify_api_key ?? undefined,
+    dify_base_url: dify_base_url ?? undefined,
   }
   let resp: any = await axios.post(url, data)
   resp = resp.data || {}

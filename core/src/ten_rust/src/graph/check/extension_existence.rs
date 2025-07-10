@@ -19,7 +19,7 @@ impl Graph {
         let extension_exists = self
             .nodes
             .iter()
-            .any(|node| node.type_ == GraphNodeType::Extension);
+            .any(|node| node.get_type() == GraphNodeType::Extension);
 
         if !extension_exists {
             return Err(anyhow::anyhow!(

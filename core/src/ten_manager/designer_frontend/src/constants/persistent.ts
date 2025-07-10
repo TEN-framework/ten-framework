@@ -37,6 +37,39 @@ export const PERSISTENT_SCHEMA = {
         ],
       },
     },
+    graph_ui: {
+      type: "object",
+      patternProperties: {
+        "^.*$": {
+          type: "object",
+          properties: {
+            graph_geometry: {
+              type: "object",
+              properties: {
+                nodes_geometry: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      app: { type: "string", description: "App ID" },
+                      extension: {
+                        type: "string",
+                        description: "Extension ID",
+                      },
+                      x: { type: "number", description: "X coordinate" },
+                      y: { type: "number", description: "Y coordinate" },
+                    },
+                    required: ["extension", "x", "y"],
+                  },
+                },
+              },
+              required: ["nodes_geometry"],
+            },
+          },
+          required: ["graph_geometry"],
+        },
+      },
+    },
   },
   required: ["version"],
 };
@@ -44,4 +77,5 @@ export const PERSISTENT_SCHEMA = {
 export const PERSISTENT_DEFAULTS = {
   version: "0.0.1",
   recent_run_apps: [],
+  graph_ui: {},
 };

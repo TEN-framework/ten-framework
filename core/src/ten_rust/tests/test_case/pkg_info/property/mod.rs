@@ -107,7 +107,7 @@ mod tests {
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
 
-        let nodes = &graph_info.graph.nodes;
+        let nodes = graph_info.graph.nodes();
         let node = nodes.first().unwrap();
         assert_eq!(node.get_app_uri(), &None);
 
@@ -141,7 +141,7 @@ mod tests {
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
 
-        let connections = &graph_info.graph.connections.as_ref().unwrap();
+        let connections = graph_info.graph.connections().as_ref().unwrap();
         let connection = connections.first().unwrap();
         let cmd = connection.cmd.as_ref().unwrap();
         assert_eq!(cmd.len(), 1);
