@@ -43,43 +43,45 @@ export function MessageItem(props: { data: IChatItem }) {
   const { data } = props;
 
   return (
-    <>
+    <div
+      className={cn("mt-2 flex items-start gap-2", {
+        "flex-row-reverse": data.type === EMessageType.USER,
+      })}
+    >
+      {data.type === EMessageType.AGENT ? (
+        data.data_type === EMessageDataType.REASON ? (
+          <Avatar>
+            <AvatarFallback>
+              <Brain size={20} />
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <Avatar>
+            <AvatarFallback>
+              <Bot />
+            </AvatarFallback>
+          </Avatar>
+        )
+      ) : null}
       <div
-        className={cn("mt-2 flex items-start gap-2", {
-          "flex-row-reverse": data.type === EMessageType.USER,
-        })}
+        className={cn(
+          "max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground"
+        )}
       >
-        {data.type === EMessageType.AGENT ? (
-          data.data_type === EMessageDataType.REASON ? (
-            <Avatar>
-              <AvatarFallback>
-                <Brain size={20} />
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <Avatar>
-              <AvatarFallback>
-                <Bot />
-              </AvatarFallback>
-            </Avatar>
-          )
-        ) : null}
-        <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground ">
-          {data.data_type === EMessageDataType.IMAGE ? (
-            <img src={data.text} alt="chat" className="w-full" />
-          ) : (
-            <p
-              className={
-                data.data_type === EMessageDataType.REASON
-                  ? cn("text-xs", "text-zinc-500")
-                  : ""
-              }
-            >
-              {data.text}
-            </p>
-          )}
-        </div>
+        {data.data_type === EMessageDataType.IMAGE ? (
+          <img src={data.text} alt="chat" className="w-full" />
+        ) : (
+          <p
+            className={
+              data.data_type === EMessageDataType.REASON
+                ? cn("text-xs", "text-zinc-500")
+                : ""
+            }
+          >
+            {data.text}
+          </p>
+        )}
       </div>
-    </>
+    </div>
   );
 }

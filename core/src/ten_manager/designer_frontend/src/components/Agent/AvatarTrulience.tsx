@@ -121,7 +121,12 @@ export default function Avatar({ audioTrack }: AvatarProps) {
 
       {/* Show a loader overlay while progress < 1 */}
       {errorMessage ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-500 bg-opacity-80 text-white">
+        <div
+          className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center",
+            "bg-red-500 bg-opacity-80 text-white"
+          )}
+        >
           <div>{errorMessage}</div>
         </div>
       ) : (
