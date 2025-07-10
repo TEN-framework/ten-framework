@@ -5,22 +5,21 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable max-len */
-import * as React from "react";
-
-import { GraphSelectPopupContent } from "@/components/Popup/Default/GraphSelect";
+import type * as React from "react";
 import { AboutWidgetContent } from "@/components/Popup/Default/About";
-import { PreferencesWidgetContent } from "@/components/Popup/Default/Preferences";
 import {
-  AppFolderPopupContent,
   AppCreatePopupContent,
-  LoadedAppsPopupContent,
+  AppFolderPopupContent,
   AppRunPopupContent,
+  LoadedAppsPopupContent,
 } from "@/components/Popup/Default/App";
-import { ExtensionStorePopupContent } from "@/components/Popup/Default/Extension";
 import { DocRefPopupContent } from "@/components/Popup/Default/DocRef";
+import { ExtensionStorePopupContent } from "@/components/Popup/Default/Extension";
+import { GraphSelectPopupContent } from "@/components/Popup/Default/GraphSelect";
+import { PreferencesWidgetContent } from "@/components/Popup/Default/Preferences";
 import { RTCWidgetContent } from "@/components/Popup/Default/RTC";
 import { TrulienceConfigWidgetContent } from "@/components/Popup/Default/TrulienceConfig";
-import { EDefaultWidgetType, IDefaultWidget } from "@/types/widgets";
+import { EDefaultWidgetType, type IDefaultWidget } from "@/types/widgets";
 
 const PopupTabContentDefaultMappings: Record<
   EDefaultWidgetType,

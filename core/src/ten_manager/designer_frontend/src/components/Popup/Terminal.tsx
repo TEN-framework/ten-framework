@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import TerminalWidget from "@/components/Widget/TerminalWidget";
-import { ITerminalWidget } from "@/types/widgets";
+import type { ITerminalWidget } from "@/types/widgets";
 
 export const TerminalPopupContent = (props: { widget: ITerminalWidget }) => {
   const { widget } = props;

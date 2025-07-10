@@ -4,9 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
+
+import type { FieldWrapperProps } from "@autoform/react";
+import type React from "react";
 import { Label } from "@/components/ui/Label";
-import { FieldWrapperProps } from "@autoform/react";
 
 const DISABLED_LABELS = ["boolean", "object", "array"];
 
@@ -29,11 +30,11 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
       )}
       {children}
       {field.fieldConfig?.description && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {field.fieldConfig.description}
         </p>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 };

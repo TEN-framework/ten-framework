@@ -4,13 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useQuery, useMutation } from "@tanstack/react-query";
-
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ENDPOINT_DOC_LINK } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { EDocLinkKey } from "@/types/doc";
-import { localeStringToEnum } from "@/api/services/utils";
+import {
+  getTanstackQueryClient,
+  localeStringToEnum,
+  makeAPIRequest,
+} from "@/api/services/utils";
+import type { EDocLinkKey } from "@/types/doc";
 
 export const retrieveDocLink = async (key: EDocLinkKey, locale?: string) => {
   const template = ENDPOINT_DOC_LINK.retrieveDocLink[ENDPOINT_METHOD.POST];

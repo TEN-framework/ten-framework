@@ -4,37 +4,34 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
-import AgoraRTC, { useRTCClient } from "agora-rtc-react";
-import {
-  AgoraRTCScreenShareProvider,
-  useLocalScreenTrack,
-} from "agora-rtc-react";
-import {
+
+import AgoraRTC, {
   AgoraRTCProvider,
+  AgoraRTCScreenShareProvider,
   useJoin,
   useLocalCameraTrack,
   useLocalMicrophoneTrack,
+  useLocalScreenTrack,
   usePublish,
+  useRTCClient,
 } from "agora-rtc-react";
-
-import { IDefaultWidget } from "@/types/widgets";
-import { useEffect, useState } from "react";
 import { RtcTokenBuilder } from "agora-token";
-import { useRTCEnvVar } from "@/api/services/env-var";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useFlowStore } from "@/store";
+import { useRTCEnvVar } from "@/api/services/env-var";
 import AgentView from "@/components/Agent";
-import MicrophoneBlock from "@/components/RTC/Microphone";
-import VideoBlock from "@/components/RTC/Camera";
-import { VideoSourceType } from "@/types/rtc";
-import { Separator } from "@/components/ui/Separator";
 import MessageList from "@/components/Agent/Message";
+import VideoBlock from "@/components/RTC/Camera";
+import MicrophoneBlock from "@/components/RTC/Microphone";
+import { Separator } from "@/components/ui/Separator";
 import {
   useChatItemReducer,
   useRTCMessageParser,
 } from "@/hooks/use-rtc-message-parser";
+import { useFlowStore } from "@/store";
+import { VideoSourceType } from "@/types/rtc";
+import type { IDefaultWidget } from "@/types/widgets";
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
@@ -171,7 +168,7 @@ const RTCWidgetContentInner = ({ widget: _ }: { widget: IDefaultWidget }) => {
   }, [rtcEnvError, joinError, publishError, micError, camError, screenError]);
 
   return (
-    <div className="flex flex-col h-full w-full gap-2">
+    <div className="flex h-full w-full flex-col gap-2">
       {/* Row 1 - Fixed height */}
       <div className="shrink-0">
         <AgentView />
@@ -187,7 +184,7 @@ const RTCWidgetContentInner = ({ widget: _ }: { widget: IDefaultWidget }) => {
       <Separator orientation="horizontal" />
 
       {/* Row 3 - Fixed height */}
-      <div className="shrink-0 flex flex-col gap-2 mt-1">
+      <div className="mt-1 flex shrink-0 flex-col gap-2">
         <MicrophoneBlock
           audioTrack={localMicrophoneTrack}
           micOn={micOn}

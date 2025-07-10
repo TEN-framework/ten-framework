@@ -30,7 +30,7 @@ const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      "[&_tr]:border-b [&_tr]:border-ten-line-2 [&_tr]:text-ten-icontext-2",
+      "[&_tr]:border-ten-line-2 [&_tr]:border-b [&_tr]:text-ten-icontext-2",
       className
     )}
     {...props}
@@ -57,7 +57,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-ten-line-2 bg-muted/50 font-medium last:[&>tr]:border-b-0",
+      "border-ten-line-2 border-t bg-muted/50 font-medium last:[&>tr]:border-b-0",
       className
     )}
     {...props}
@@ -72,7 +72,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-ten-line-2 transition-colors hover:bg-ten-hover data-[state=selected]:bg-muted",
+      "border-ten-line-2 border-b transition-colors hover:bg-ten-hover data-[state=selected]:bg-muted",
       "[&>td]:first:rounded-l-md [&>td]:last:rounded-r-md",
       "[&>th]:first:rounded-l-md [&>th]:last:rounded-r-md",
       className
@@ -118,7 +118,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-muted-foreground", className)}
+    className={cn("mt-4 text-muted-foreground text-sm", className)}
     {...props}
   />
 ));

@@ -4,20 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React, {
-  useEffect,
-  useState,
-  useContext,
-  useImperativeHandle,
-} from "react";
+
 import Editor from "@monaco-editor/react";
-import { type editor as MonacoEditor } from "monaco-editor";
-import { toast } from "sonner";
+import type { editor as MonacoEditor } from "monaco-editor";
+import React, {
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import {
-  retrieveFileContent,
   putFileContent,
+  retrieveFileContent,
   validateManifest,
   validateProperty,
 } from "@/api/services/fileSystem";
@@ -25,10 +26,10 @@ import { ThemeProviderContext } from "@/components/theme-context";
 import { useDialogStore, useWidgetStore } from "@/store";
 
 import type {
+  IEditorWidget,
   IEditorWidgetData,
   IEditorWidgetRef,
   TEditorCheck,
-  IEditorWidget,
 } from "@/types/widgets";
 
 export interface EditorWidgetProps {
@@ -139,7 +140,7 @@ const EditorWidget = React.forwardRef<IEditorWidgetRef, EditorWidgetProps>(
 
     return (
       <>
-        <div className="p-0 box-border flex flex-col w-full h-full">
+        <div className="box-border flex h-full w-full flex-col p-0">
           <Editor
             theme={theme === "dark" ? "vs-dark" : "vs-light"}
             height="100%"
@@ -174,13 +175,11 @@ const EditorWidget = React.forwardRef<IEditorWidgetRef, EditorWidgetProps>(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const realMethod = (contextmenu as any)._getMenuActions;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (contextmenu as any)._getMenuActions = function (...args: any[]) {
+              (contextmenu as any)._getMenuActions = (...args: any[]) => {
                 const items = realMethod.apply(contextmenu, args);
-                const filteredItems = items.filter(function (item: {
-                  id: string;
-                }) {
-                  return keepIds.includes(item.id);
-                });
+                const filteredItems = items.filter((item: { id: string }) =>
+                  keepIds.includes(item.id)
+                );
                 // Remove separator if it's the last item
                 if (
                   filteredItems.length > 0 &&

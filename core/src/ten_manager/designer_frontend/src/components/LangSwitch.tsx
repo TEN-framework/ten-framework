@@ -4,10 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
-import { LanguagesIcon, CheckIcon } from "lucide-react";
 
-import { Button, ButtonProps } from "@/components/ui/Button";
+import { CheckIcon, LanguagesIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import { Button, type ButtonProps } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -4,21 +4,20 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
+
+import { ListCollapseIcon, PencilIcon, TrashIcon } from "lucide-react";
+import type React from "react";
 import { useTranslation } from "react-i18next";
-import { PencilIcon, ListCollapseIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
-
-import ContextMenu, {
-  type IContextMenuItem,
-  EContextMenuItemType,
-} from "@/flow/ContextMenu/ContextMenu";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
-import { useDialogStore, useAppStore, useFlowStore } from "@/store";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import { postDeleteConnection } from "@/api/services/graphs";
-
+import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import ContextMenu, {
+  EContextMenuItemType,
+  type IContextMenuItem,
+} from "@/flow/ContextMenu/ContextMenu";
+import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
+import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
 interface EdgeContextMenuProps {
   visible: boolean;

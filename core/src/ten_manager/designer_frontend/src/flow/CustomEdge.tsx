@@ -5,8 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import {
-  type EdgeProps,
   BaseEdge,
+  type EdgeProps,
   getSmoothStepPath,
   Position,
 } from "@xyflow/react";

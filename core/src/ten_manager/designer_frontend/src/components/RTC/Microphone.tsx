@@ -6,13 +6,13 @@
 //
 "use client";
 
+import AgoraRTC, { type IMicrophoneAudioTrack } from "agora-rtc-react";
+import { MicIcon, MicOffIcon } from "lucide-react";
 import * as React from "react";
 import AudioVisualizer from "@/components/Agent/AudioVisualizer";
-import { Button } from "@/components/ui/Button";
-import AgoraRTC, { IMicrophoneAudioTrack } from "agora-rtc-react";
-import { MicIcon, MicOffIcon } from "lucide-react";
-import { DEFAULT_DEVICE_ITEM, TDeviceSelectItem } from "@/types/rtc";
 import { DeviceSelect } from "@/components/RTC/Device";
+import { Button } from "@/components/ui/Button";
+import { DEFAULT_DEVICE_ITEM, type TDeviceSelectItem } from "@/types/rtc";
 
 export default function MicrophoneBlock(props: {
   audioTrack: IMicrophoneAudioTrack | null;
@@ -50,10 +50,10 @@ export function MicrophoneDeviceWrapper(props: {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex w-full items-center gap-2">
           <Button
             variant="outline"
-            className="border-secondary bg-transparent w-32 flex-shrink-0"
+            className="w-32 flex-shrink-0 border-secondary bg-transparent"
             onClick={onIconClick}
           >
             <Icon className="h-5 w-5" />
