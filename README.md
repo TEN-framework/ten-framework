@@ -142,7 +142,7 @@ Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for
 
 ## ✨ Features
 
-![TEN Agent with Trulience](https://github.com/user-attachments/assets/0716f1ee-9585-4d35-a517-d92bf2ce6019)
+![TEN Agent with Trulience](https://github.com/user-attachments/assets/c6702995-de94-4d3e-8cae-af097f087ac1)
 
 ### 1️⃣ Real-time Avatar
 
@@ -196,7 +196,7 @@ Check out the [integration guide](https://github.com/TEN-framework/ten-framework
 
 <br>
 
-![Real-time Vision](https://github.com/user-attachments/assets/f8fe0b41-c795-422c-9569-8f049d0f1a4f)
+![Real-time Vision](https://github.com/user-attachments/assets/a1addb02-a450-47be-8cb2-d25e3b574f53)
 
 ### 4️⃣ Real-time vision and real-time screenshare detection
 
@@ -210,7 +210,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 <br>
 
-![TEN with Dify](https://github.com/user-attachments/assets/5f420237-fd8d-4c7e-aec0-8c81e94e32b5)
+![TEN with Dify](https://github.com/user-attachments/assets/234ff443-bef8-4cc4-9a10-09d6ec3f5bc1)
 
 ### 5️⃣ TEN with other LLM platforms
 

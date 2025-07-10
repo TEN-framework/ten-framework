@@ -10,6 +10,7 @@ pub mod graph_info;
 pub mod msg_conversion;
 pub mod node;
 pub mod reverse;
+pub mod selector;
 pub mod subgraph;
 
 use std::collections::HashMap;
@@ -252,7 +253,7 @@ impl Graph {
         let mut app_uris = std::collections::HashSet::new();
 
         for (idx, node) in self.nodes.iter().enumerate() {
-            if let Some(app_uri) = &node.app {
+            if let Some(app_uri) = &node.get_app_uri() {
                 if app_uri.is_empty() {
                     return Err(anyhow::anyhow!(
                         "nodes[{}]: {}",
@@ -320,7 +321,7 @@ impl Graph {
                 // Verify that the extension exists in the graph
                 if !self.nodes.iter().any(|node| {
                     if let Some(ext) = &property.extension {
-                        &node.name == ext
+                        node.get_name() == ext
                     } else {
                         false
                     }
@@ -421,11 +422,17 @@ impl Graph {
         self.nodes
             .iter()
             .find(|node| {
-                node.type_ == GraphNodeType::Extension
-                    && node.name.as_str() == extension
+                node.get_type() == GraphNodeType::Extension
+                    && node.get_name() == extension
                     && node.get_app_uri() == app
             })
-            .and_then(|node| node.addon.as_ref())
+            .and_then(|node| {
+                if let GraphNode::Extension { content } = node {
+                    Some(&content.addon)
+                } else {
+                    None
+                }
+            })
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Extension '{}' is not found in nodes, should not happen.",
@@ -443,31 +450,34 @@ impl Graph {
         &self,
         current_base_dir: Option<&str>,
     ) -> Result<Option<Graph>> {
-        // Step 1: Convert reversed connections to forward connections if needed
-        let converted_graph =
-            Self::convert_reversed_connections_to_forward_connections(self)?;
+        let mut processing_graph = self;
 
-        let processing_graph = converted_graph.as_ref().unwrap_or(self);
+        // Step 1: Match nodes according to selector rules and replace them in
+        // connections
+        let flattened_selector_graph = processing_graph.flatten_selectors()?;
+        processing_graph =
+            flattened_selector_graph.as_ref().unwrap_or(processing_graph);
 
-        // Step 2: Flatten subgraphs
+        // Step 2: Convert reversed connections to forward connections if needed
+        let reversed_graph = processing_graph
+            .convert_reversed_connections_to_forward_connections()?;
+        processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 3: Flatten subgraphs
         let flattened =
             Self::flatten_subgraphs(processing_graph, current_base_dir, false)
                 .await
                 .map_err(|e| {
                     anyhow::anyhow!("Failed to flatten graph: {}", e)
                 })?;
+        processing_graph = flattened.as_ref().unwrap_or(processing_graph);
 
-        // Step 3: Return the result based on what operations were performed
-        match (converted_graph, flattened) {
-            // Both conversion and flattening occurred - return flattened result
-            (Some(_), Some(flattened)) => Ok(Some(flattened)),
-            // Only conversion occurred - return converted graph
-            (Some(converted), None) => Ok(Some(converted)),
-            // Only flattening occurred - return flattened result
-            (None, Some(flattened)) => Ok(Some(flattened)),
-            // No changes needed
-            (None, None) => Ok(None),
+        // Check if the processing graph is the same as the original graph.
+        if std::ptr::eq(processing_graph, self) {
+            return Ok(None);
         }
+
+        Ok(Some(processing_graph.clone()))
     }
 }
 

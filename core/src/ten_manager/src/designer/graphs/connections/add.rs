@@ -64,6 +64,7 @@ fn create_graph_connection(
             app: request_payload.dest_app.clone(),
             extension: Some(request_payload.dest_extension.clone()),
             subgraph: None,
+            selector: None,
         },
         msg_conversion: request_payload.msg_conversion.clone(),
     };
@@ -81,6 +82,7 @@ fn create_graph_connection(
             app: request_payload.src_app.clone(),
             extension: Some(request_payload.src_extension.clone()),
             subgraph: None,
+            selector: None,
         },
         cmd: None,
         data: None,
@@ -131,7 +133,7 @@ pub async fn add_graph_connection_endpoint(
     };
 
     if let Err(e) = graph_add_connection(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         &graph_info.app_base_dir,
         request_payload.src_app.clone(),
         request_payload.src_extension.clone(),

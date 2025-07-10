@@ -73,8 +73,7 @@ class test_predefined_graph : public ten::extension_t {
                 // Shut down the graph; otherwise, the app won't be able to
                 // close because there is still a running engine/graph.
                 auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-                stop_graph_cmd->set_dest(nullptr, nullptr, nullptr,
-                                         nullptr);
+                stop_graph_cmd->set_dest(nullptr, nullptr, nullptr, nullptr);
                 stop_graph_cmd->set_graph_id(graph_id.c_str());
 
                 ten_env.send_cmd(
@@ -150,40 +149,44 @@ class test_app_1 : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "addon": "start_predefined_graph_cross_app__predefined_graph_extension",
-                            "extension_group": "start_predefined_graph_cross_app__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "addon": "start_predefined_graph_cross_app__predefined_graph_extension",
+                              "extension_group": "start_predefined_graph_cross_app__predefined_graph_group"
+                            }]
+                          }
                         },{
                           "name": "graph_1",
                           "auto_start": false,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "normal_extension_1",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "addon": "start_predefined_graph_cross_app__normal_extension_1",
-                            "extension_group": "start_predefined_graph_cross_app__normal_extension_group"
-                          }, {
-                            "type": "extension",
-                            "name": "normal_extension_2",
-                            "app": "msgpack://127.0.0.1:8002/",
-                            "addon": "start_predefined_graph_cross_app__normal_extension_2",
-                            "extension_group": "start_predefined_graph_cross_app__normal_extension_group"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "normal_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8002/",
-                                "extension": "normal_extension_2"
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "normal_extension_1",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "addon": "start_predefined_graph_cross_app__normal_extension_1",
+                              "extension_group": "start_predefined_graph_cross_app__normal_extension_group"
+                            }, {
+                              "type": "extension",
+                              "name": "normal_extension_2",
+                              "app": "msgpack://127.0.0.1:8002/",
+                              "addon": "start_predefined_graph_cross_app__normal_extension_2",
+                              "extension_group": "start_predefined_graph_cross_app__normal_extension_group"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "normal_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8002/",
+                                  "extension": "normal_extension_2"
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })"

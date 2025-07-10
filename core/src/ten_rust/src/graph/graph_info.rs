@@ -49,44 +49,85 @@ pub async fn load_graph_from_uri(
     Ok(graph)
 }
 
+/// Represents the content of a graph field in predefined_graphs.
+/// This can either contain an import_uri or direct graph content (nodes,
+/// connections, etc.).
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GraphInfo {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auto_start: Option<bool>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub singleton: Option<bool>,
-
-    #[serde(flatten)]
-    pub graph: Graph,
-
+pub struct GraphContent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub import_uri: Option<String>,
 
-    #[serde(skip)]
-    pub app_base_dir: Option<String>,
-    #[serde(skip)]
-    pub belonging_pkg_type: Option<PkgType>,
-    #[serde(skip)]
-    pub belonging_pkg_name: Option<String>,
+    #[serde(flatten)]
+    pub graph: Graph,
 }
 
-impl GraphInfo {
-    pub async fn from_str_with_base_dir(
-        s: &str,
-        current_base_dir: Option<&str>,
-    ) -> Result<Self> {
-        let mut graph_info: GraphInfo = serde_json::from_str(s)?;
-        graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
-        graph_info.validate_and_complete_and_flatten().await?;
-        // Return the parsed data.
-        Ok(graph_info)
+impl GraphContent {
+    /// Get a reference to the nodes
+    pub fn nodes(&self) -> &Vec<crate::graph::node::GraphNode> {
+        &self.graph.nodes
     }
 
-    pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
+    /// Get a mutable reference to the nodes
+    pub fn nodes_mut(&mut self) -> &mut Vec<crate::graph::node::GraphNode> {
+        &mut self.graph.nodes
+    }
+
+    /// Get a reference to the connections
+    pub fn connections(
+        &self,
+    ) -> &Option<Vec<crate::graph::connection::GraphConnection>> {
+        &self.graph.connections
+    }
+
+    /// Get a mutable reference to the connections
+    pub fn connections_mut(
+        &mut self,
+    ) -> &mut Option<Vec<crate::graph::connection::GraphConnection>> {
+        &mut self.graph.connections
+    }
+
+    /// Get a reference to the exposed_messages
+    pub fn exposed_messages(
+        &self,
+    ) -> &Option<Vec<crate::graph::GraphExposedMessage>> {
+        &self.graph.exposed_messages
+    }
+
+    /// Get a mutable reference to the exposed_messages
+    pub fn exposed_messages_mut(
+        &mut self,
+    ) -> &mut Option<Vec<crate::graph::GraphExposedMessage>> {
+        &mut self.graph.exposed_messages
+    }
+
+    /// Get a reference to the exposed_properties
+    pub fn exposed_properties(
+        &self,
+    ) -> &Option<Vec<crate::graph::GraphExposedProperty>> {
+        &self.graph.exposed_properties
+    }
+
+    /// Get a mutable reference to the exposed_properties
+    pub fn exposed_properties_mut(
+        &mut self,
+    ) -> &mut Option<Vec<crate::graph::GraphExposedProperty>> {
+        &mut self.graph.exposed_properties
+    }
+
+    /// Get a reference to the inner Graph
+    pub fn graph(&self) -> &Graph {
+        &self.graph
+    }
+
+    /// Get a mutable reference to the inner Graph
+    pub fn graph_mut(&mut self) -> &mut Graph {
+        &mut self.graph
+    }
+
+    pub async fn validate_and_complete_and_flatten(
+        &mut self,
+        current_base_dir: Option<&str>,
+    ) -> Result<()> {
         // Validate mutual exclusion between import_uri and graph fields
         if self.import_uri.is_some() {
             // When import_uri is present, the graph fields should be empty or
@@ -127,21 +168,54 @@ impl GraphInfo {
         }
 
         // If import_uri is specified, load graph from the URI.
-        let import_uri = self.import_uri.clone();
-        let app_base_dir = self.app_base_dir.clone();
-        if let Some(import_uri) = import_uri {
+        if let Some(import_uri) = &self.import_uri {
             // Load graph from URI and replace the current graph
-            let graph = load_graph_from_uri(
-                &import_uri,
-                app_base_dir.as_deref(),
-                &mut None,
-            )
-            .await?;
+            let graph =
+                load_graph_from_uri(import_uri, current_base_dir, &mut None)
+                    .await?;
             self.graph = graph;
         }
 
+        self.graph.validate_and_complete_and_flatten(current_base_dir).await
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_start: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub singleton: Option<bool>,
+
+    pub graph: GraphContent,
+
+    #[serde(skip)]
+    pub app_base_dir: Option<String>,
+    #[serde(skip)]
+    pub belonging_pkg_type: Option<PkgType>,
+    #[serde(skip)]
+    pub belonging_pkg_name: Option<String>,
+}
+
+impl GraphInfo {
+    pub async fn from_str_with_base_dir(
+        s: &str,
+        current_base_dir: Option<&str>,
+    ) -> Result<Self> {
+        let mut graph_info: GraphInfo = serde_json::from_str(s)?;
+        graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
+        graph_info.validate_and_complete_and_flatten().await?;
+        // Return the parsed data.
+        Ok(graph_info)
+    }
+
+    pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         self.graph
-            .validate_and_complete_and_flatten(app_base_dir.as_deref())
+            .validate_and_complete_and_flatten(self.app_base_dir.as_deref())
             .await
     }
 }

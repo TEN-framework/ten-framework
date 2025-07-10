@@ -4,7 +4,9 @@
       {
         "name": "http_service",
         "auto_start": true,
-        "import_uri": "./graphs/test_graph.json"
+        "graph": {
+          "import_uri": "./graphs/test_graph.json"
+        }
       }
     ]
   }

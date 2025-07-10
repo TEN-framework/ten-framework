@@ -50,17 +50,19 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "two_extensions_group_extension_1",
-                            "addon": "prebuild_two_extensions_2",
-                            "extension_group": "two_extensions_group_1"
-                          },{
-                            "type": "extension",
-                            "name": "two_extensions_group_extension_2",
-                            "addon": "prebuild_two_extensions_2",
-                            "extension_group": "two_extensions_group_2"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "two_extensions_group_extension_1",
+                              "addon": "prebuild_two_extensions_2",
+                              "extension_group": "two_extensions_group_1"
+                            },{
+                              "type": "extension",
+                              "name": "two_extensions_group_extension_2",
+                              "addon": "prebuild_two_extensions_2",
+                              "extension_group": "two_extensions_group_2"
+                            }]
+                          }
                         }]
                       }
                     })"

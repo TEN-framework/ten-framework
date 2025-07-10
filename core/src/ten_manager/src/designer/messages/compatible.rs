@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use ten_rust::{
-    graph::node::GraphNode,
+    graph::node::{ExtensionNode, GraphNode},
     pkg_info::{
         find_pkgs_cache_entry_by_app_uri, get_pkg_info_for_extension_addon,
         message::{MsgDirection, MsgType},
@@ -21,7 +21,7 @@ use ten_rust::{
 
 use crate::{
     designer::{
-        graphs::nodes::get_extension_nodes_in_graph,
+        graphs::nodes::get_nodes_in_graph,
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
@@ -78,13 +78,18 @@ impl From<CompatibleExtensionAndMsg<'_>>
     for GetCompatibleMsgsSingleResponseData
 {
     fn from(compatible: CompatibleExtensionAndMsg) -> Self {
-        GetCompatibleMsgsSingleResponseData {
-            app: compatible.extension.app.clone(),
-            extension_group: compatible.extension.extension_group.clone(),
-            extension: compatible.extension.name.clone(),
-            msg_type: compatible.msg_type,
-            msg_direction: compatible.msg_direction,
-            msg_name: compatible.msg_name,
+        match compatible.extension {
+            GraphNode::Extension { content } => {
+                GetCompatibleMsgsSingleResponseData {
+                    app: content.app.clone(),
+                    extension_group: content.extension_group.clone(),
+                    extension: content.name.clone(),
+                    msg_type: compatible.msg_type,
+                    msg_direction: compatible.msg_direction,
+                    msg_name: compatible.msg_name,
+                }
+            }
+            _ => panic!("should not happen."),
         }
     }
 }
@@ -94,13 +99,15 @@ fn get_extension_graph_node<'a>(
     app: &Option<String>,
     extension_group: &Option<String>,
     extension_name: &str,
-) -> Result<&'a GraphNode> {
+) -> Result<&'a ExtensionNode> {
     for extension in extension_graph_nodes {
-        if extension.name == extension_name
-            && extension.extension_group.as_ref() == extension_group.as_ref()
-            && extension.app == *app
-        {
-            return Ok(extension);
+        if let GraphNode::Extension { content } = extension {
+            if content.name == extension_name
+                && content.extension_group.as_ref() == extension_group.as_ref()
+                && content.app == *app
+            {
+                return Ok(content);
+            }
         }
     }
 
@@ -137,7 +144,7 @@ pub async fn get_compatible_messages_endpoint(
                 return Ok(HttpResponse::NotFound().json(error_response));
             }
 
-            let extension_graph_nodes = match get_extension_nodes_in_graph(
+            let extension_graph_nodes = match get_nodes_in_graph(
                 &request_payload.graph_id,
                 &graphs_cache,
             ) {
@@ -186,10 +193,7 @@ pub async fn get_compatible_messages_endpoint(
                 &pkgs_cache,
                 app_base_dir_of_graph,
                 &extension_graph_node.app,
-                extension_graph_node
-                    .addon
-                    .as_ref()
-                    .expect("Extension node must have an addon"),
+                &extension_graph_node.addon,
             ) {
                 let compatible_list = match msg_ty {
                     MsgType::Cmd => {

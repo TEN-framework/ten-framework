@@ -9,7 +9,9 @@
     {
       "type": "subgraph",
       "name": "subgraph1",
-      "import_uri": "graphs/subgraph1.json"
+      "graph": {
+        "import_uri": "graphs/subgraph1.json"
+      }
     }
   ],
   "connections": [

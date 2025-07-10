@@ -68,7 +68,7 @@ async fn update_graph_info(
     let original_graph = graph_info.graph.clone();
 
     // First check if connections exist in the graph.
-    if let Some(connections) = &mut graph_info.graph.connections {
+    if let Some(connections) = &mut graph_info.graph.connections_mut() {
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
             if connection.loc.app == request_payload.src_app
@@ -143,6 +143,7 @@ fn update_property_all_fields(
                     app: request_payload.src_app.clone(),
                     extension: Some(request_payload.src_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: None,
                 data: None,
@@ -156,6 +157,7 @@ fn update_property_all_fields(
                     app: request_payload.dest_app.clone(),
                     extension: Some(request_payload.dest_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 msg_conversion: request_payload.msg_conversion.clone(),
             };
@@ -235,7 +237,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     // Validate connection schema first.
     if let Err(e) = validate_connection_schema(
         &pkgs_cache,
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         &graph_info.app_base_dir,
         &MsgConversionValidateInfo {
             src_app: &request_payload.src_app,
