@@ -4,30 +4,30 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
-import { PodcastIcon, ScanFaceIcon } from "lucide-react";
 
+import { PodcastIcon, ScanFaceIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+// import { Separator } from "@/components/ui/Separator";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
-// import { Separator } from "@/components/ui/Separator";
-import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
-import {
-  EDefaultWidgetType,
-  EWidgetDisplayType,
-  EWidgetCategory,
-} from "@/types/widgets";
-import { useWidgetStore } from "@/store/widget";
 import {
   CONTAINER_DEFAULT_ID,
   RTC_INTERACTION_WIDGET_ID,
   TRULIENCE_CONFIG_WIDGET_ID,
 } from "@/constants/widgets";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store";
+import { useWidgetStore } from "@/store/widget";
+import {
+  EDefaultWidgetType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 
 export const TenAgentToolsMenu = (props: {
   disableMenuClick?: boolean;
@@ -101,7 +101,7 @@ export const TenAgentToolsMenu = (props: {
           {t("header.menuTenAgentTools.title")}
         </NavigationMenuTrigger>
         <NavigationMenuContent
-          className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
+          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
         >
           <NavigationMenuLink asChild>
             <Button

@@ -86,7 +86,7 @@ pub async fn add_graph_node_endpoint(
     }
 
     if let Err(e) = graph_add_extension_node(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         &request_payload.name,
         &request_payload.addon,
         &request_payload.app,

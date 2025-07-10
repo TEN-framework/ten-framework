@@ -9,6 +9,7 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use ten_rust::graph::node::GraphNode;
 use uuid::Uuid;
 
 use crate::designer::graphs::nodes::{
@@ -81,9 +82,14 @@ pub async fn replace_graph_node_endpoint(
     let original_graph = graph_info.graph.clone();
 
     // Find the graph node in the graph.
-    let graph_node = graph_info.graph.nodes.iter_mut().find(|node| {
-        node.name == request_payload.name && node.app == request_payload.app
-    });
+    let graph_node =
+        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+            GraphNode::Extension { content } => {
+                content.name == request_payload.name
+                    && content.app == request_payload.app
+            }
+            _ => false,
+        });
 
     if graph_node.is_none() {
         let error_response = ErrorResponse {
@@ -101,9 +107,14 @@ pub async fn replace_graph_node_endpoint(
 
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
-    let extension_group = graph_node.extension_group.clone();
-    graph_node.addon = Some(request_payload.addon.clone());
-    graph_node.property = request_payload.property.clone();
+    let extension_group = match graph_node {
+        GraphNode::Extension { content } => content.extension_group.clone(),
+        _ => None,
+    };
+    if let GraphNode::Extension { content } = graph_node {
+        content.addon = request_payload.addon.clone();
+        content.property = request_payload.property.clone();
+    }
 
     // Validate the graph.
     if let Err(e) =

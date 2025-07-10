@@ -6,21 +6,20 @@
 //
 import {
   ArrowUpIcon,
-  SquareArrowOutUpRightIcon,
   ChevronsRightIcon,
+  SquareArrowOutUpRightIcon,
 } from "lucide-react";
-import { useTranslation, Trans } from "react-i18next";
-
-import { BadgeWithRef, Badge } from "@/components/ui/Badge";
+import { Trans, useTranslation } from "react-i18next";
+import { useCheckUpdate, useFetchVersion } from "@/api/services/common";
+import { Badge, BadgeWithRef } from "@/components/ui/Badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { useFetchVersion, useCheckUpdate } from "@/api/services/common";
-import { cn } from "@/lib/utils";
 import { TEN_FRAMEWORK_RELEASE_URL } from "@/constants";
+import { cn } from "@/lib/utils";
 
 export function Version() {
   const { data: version } = useFetchVersion();
@@ -45,7 +44,7 @@ export function Version() {
                 <ArrowUpIcon
                   className={cn(
                     "size-3 stroke-3",
-                    "text-emerald-500 animate-bounce"
+                    "animate-bounce text-emerald-500"
                   )}
                 />
               )}
@@ -58,10 +57,10 @@ export function Version() {
               <p className="font-bold text-lg">
                 {t("header.newVersionAvailable")}
               </p>
-              <div className="flex items-center gap-2 select-none">
+              <div className="flex select-none items-center gap-2">
                 <Badge variant="secondary">
                   <span className="uppercase">{version}</span>
-                  <span className="text-xs font-normal italic">
+                  <span className="font-normal text-xs italic">
                     ({t("header.currentVersion")})
                   </span>
                 </Badge>
@@ -75,7 +74,7 @@ export function Version() {
                     <span className="uppercase">
                       {updateData?.latest_version}
                     </span>
-                    <span className="text-xs font-normal italic">
+                    <span className="font-normal text-xs italic">
                       ({t("header.latestVersion")})
                     </span>
                   </Badge>

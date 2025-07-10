@@ -133,10 +133,10 @@ impl Graph {
         // Each subgraph is uniquely identified as "app_uri:subgraph_name"
         let mut all_subgraphs: Vec<String> = Vec::new();
         for node in &self.nodes {
-            if node.type_ == GraphNodeType::Subgraph {
+            if node.get_type() == GraphNodeType::Subgraph {
                 let unique_subgraph_name = Self::create_subgraph_identifier(
                     node.get_app_uri().as_ref(),
-                    &node.name,
+                    node.get_name(),
                 );
                 all_subgraphs.push(unique_subgraph_name);
             }

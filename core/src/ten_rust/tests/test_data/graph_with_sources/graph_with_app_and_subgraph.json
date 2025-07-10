@@ -1,0 +1,32 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext1",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "subgraph",
+      "name": "subgraph1",
+      "graph": {
+        "import_uri": "graphs/subgraph1.json"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext1",
+      "cmd": [
+        {
+          "name": "subgraph_call",
+          "source": [
+            {
+              "subgraph": "subgraph1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

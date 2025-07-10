@@ -6,7 +6,7 @@
 //
 import z from "zod";
 
-import { TenLocalStorePackageSchema } from "@/types/extension";
+import type { TenLocalStorePackageSchema } from "@/types/extension";
 
 export interface ISetBaseDirResponse {
   app_uri: string | null;

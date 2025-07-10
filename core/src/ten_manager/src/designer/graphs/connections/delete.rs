@@ -174,7 +174,7 @@ pub async fn delete_graph_connection_endpoint(
 
     // Delete the connection.
     if let Err(err) = graph_delete_connection(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         request_payload.src_app.clone(),
         request_payload.src_extension.clone(),
         request_payload.msg_type.clone(),
@@ -204,6 +204,7 @@ pub async fn delete_graph_connection_endpoint(
                     app: request_payload.src_app.clone(),
                     extension: Some(request_payload.src_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 cmd: None,
                 data: None,
@@ -217,15 +218,17 @@ pub async fn delete_graph_connection_endpoint(
                     app: request_payload.dest_app.clone(),
                     extension: Some(request_payload.dest_extension.clone()),
                     subgraph: None,
+                    selector: None,
                 },
                 msg_conversion: None,
             };
 
             // Create the message flow with destination.
-            let message_flow = GraphMessageFlow {
-                name: request_payload.msg_name.clone(),
-                dest: vec![dest_to_remove],
-            };
+            let message_flow = GraphMessageFlow::new(
+                request_payload.msg_name.clone(),
+                vec![dest_to_remove],
+                vec![],
+            );
 
             // Set the appropriate message type field.
             match request_payload.msg_type {

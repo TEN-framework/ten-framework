@@ -4,11 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
-import { PlayIcon, BrushCleaningIcon } from "lucide-react";
 
+import { BrushCleaningIcon, PlayIcon } from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { postLoadDir, useFetchApps } from "@/api/services/apps";
+import { addRecentRunApp } from "@/api/services/storage";
+import { AppFileManager } from "@/components/FileManager/AppFolder";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import {
   Select,
   SelectContent,
@@ -17,36 +24,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
-import { Label } from "@/components/ui/Label";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { useWidgetStore, useAppStore } from "@/store";
-import { AppFileManager } from "@/components/FileManager/AppFolder";
-import { postLoadDir, useFetchApps } from "@/api/services/apps";
-import {
-  CONTAINER_DEFAULT_ID,
-  GROUP_LOG_VIEWER_ID,
-  RTC_INTERACTION_WIDGET_ID,
-} from "@/constants/widgets";
-import { getWSEndpointFromWindow } from "@/constants/utils";
+import { Separator } from "@/components/ui/Separator";
 import {
   AppsManagerWidget,
   AppTemplateWidget,
 } from "@/components/Widget/AppsWidget";
 import { TEN_PATH_WS_EXEC } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
-  ELogViewerScriptType,
-  EWidgetDisplayType,
-  EWidgetCategory,
-  IWidget,
-  IDefaultWidgetData,
-  IDefaultWidget,
+  CONTAINER_DEFAULT_ID,
+  GROUP_LOG_VIEWER_ID,
+  RTC_INTERACTION_WIDGET_ID,
+} from "@/constants/widgets";
+import { useAppStore, useWidgetStore } from "@/store";
+import {
   EDefaultWidgetType,
+  ELogViewerScriptType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+  type IDefaultWidget,
+  type IDefaultWidgetData,
+  type IWidget,
 } from "@/types/widgets";
 import { LogViewerPopupTitle } from "../LogViewer";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Separator } from "@/components/ui/Separator";
-import { addRecentRunApp } from "@/api/services/storage";
 
 export const AppFolderPopupTitle = () => {
   const { t } = useTranslation();
@@ -225,7 +225,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full h-full p-2">
+    <div className="flex h-full w-full flex-col gap-2 p-2">
       <div className="flex flex-col gap-2">
         <Label htmlFor="runapp_base_dir">{t("popup.apps.baseDir")}</Label>
         <Input id="runapp_base_dir" type="text" value={baseDir} disabled />
@@ -248,7 +248,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         </Select>
       </div>
       <Separator className="my-2" />
-      <div className="flex flex-col gap-2 mb-2">
+      <div className="mb-2 flex flex-col gap-2">
         <Label>{t("popup.apps.run_opts")}</Label>
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -261,7 +261,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
           </Label>
         </div>
       </div>
-      <div className="flex justify-end gap-2 mt-auto">
+      <div className="mt-auto flex justify-end gap-2">
         <Button
           variant="outline"
           onClick={() => removeWidget(widget.widget_id)}

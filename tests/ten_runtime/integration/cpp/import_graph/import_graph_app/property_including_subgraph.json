@@ -4,13 +4,17 @@
       {
         "name": "http_service",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "subgraph",
-            "name": "subgraph_1",
-            "import_uri": "graphs/test_graph.json"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "subgraph",
+              "name": "subgraph_1",
+              "graph": {
+                "import_uri": "graphs/test_graph.json"
+              }
+            }
+          ]
+        }
       }
     ]
   }

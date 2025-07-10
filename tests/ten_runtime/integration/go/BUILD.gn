@@ -31,6 +31,7 @@ group("go") {
       "send_audio_frame_go",
       "send_data_go",
       "send_video_frame_go",
+      "set_dest_go",
       "standalone_test_1_go",
       "standalone_test_2_go",
       "start_app_sync_go",

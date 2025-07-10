@@ -5,17 +5,18 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable react-refresh/only-export-components */
-import React from "react";
-import { ChevronRightIcon } from "lucide-react";
 
-import { Button, ButtonProps } from "@/components/ui/Button";
+import { ChevronRightIcon } from "lucide-react";
+import type React from "react";
+
+import { Button, type ButtonProps } from "@/components/ui/Button";
+import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { Separator } from "@/components/ui/Separator";
 import { cn } from "@/lib/utils";
 
 export enum EContextMenuItemType {
@@ -75,23 +76,23 @@ export const ContextItem = (props: IContextMenuItem) => {
       <Button
         variant="ghost"
         className={cn(
-          "flex w-full justify-start px-2.5 py-1.5 whitespace-nowrap",
-          "h-auto font-normal cursor-pointer"
+          "flex w-full justify-start whitespace-nowrap px-2.5 py-1.5",
+          "h-auto cursor-pointer font-normal"
         )}
         {...props}
       >
         <span
           className={cn(
-            "flex items-center shrink-0 justify-center",
+            "flex shrink-0 items-center justify-center",
             "mr-2 h-[1em] w-5"
           )}
         >
           {props.icon || null}
         </span>
         <span className="flex-1 text-left">{props.label}</span>
-        <div className="min-w-4 ml-auto">
+        <div className="ml-auto min-w-4">
           {props.shortcut && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {props.shortcut}
             </span>
           )}
@@ -105,7 +106,7 @@ export const ContextItem = (props: IContextMenuItem) => {
   if (props._type === EContextMenuItemType.LABEL) {
     return (
       <div
-        className={cn("text-xs font-medium text-muted-foreground", "px-2.5")}
+        className={cn("font-medium text-muted-foreground text-xs", "px-2.5")}
       >
         {props.label}
       </div>
@@ -120,22 +121,22 @@ export const ContextItem = (props: IContextMenuItem) => {
               variant="ghost"
               asChild
               className={cn(
-                "flex w-full justify-start px-2.5 py-1.5 whitespace-nowrap",
-                "h-auto font-normal cursor-pointer"
+                "flex w-full justify-start whitespace-nowrap px-2.5 py-1.5",
+                "h-auto cursor-pointer font-normal"
               )}
               {...props}
             >
               <div className="flex items-center">
                 <span
                   className={cn(
-                    "flex items-center shrink-0 justify-center",
+                    "flex shrink-0 items-center justify-center",
                     "mr-2 h-[1em] w-5"
                   )}
                 >
                   {props.icon || null}
                 </span>
                 <span className="flex-1 text-left">{props.label}</span>
-                <ChevronRightIcon className="size-4 ml-auto" />
+                <ChevronRightIcon className="ml-auto size-4" />
               </div>
             </Button>
           </TooltipTrigger>
@@ -144,13 +145,13 @@ export const ContextItem = (props: IContextMenuItem) => {
             sideOffset={-10}
             className={cn(
               "w-auto",
-              "bg-transparent px-3 py-1.5 text-normal text-foreground"
+              "bg-transparent px-3 py-1.5 text-foreground text-normal"
             )}
           >
             <div
               className={cn(
-                "bg-popover shadow-md box-border p-1.5",
-                "border border-border rounded-md"
+                "box-border bg-popover p-1.5 shadow-md",
+                "rounded-md border border-border"
               )}
             >
               {props.items.map((item, index) => (
@@ -175,8 +176,8 @@ const ContextMenuContainer: React.FC<ContextMenuProps> = ({
   return (
     <div
       className={cn(
-        "fixed p-1.5 z-9999",
-        "bg-popover border border-border rounded-md shadow-md box-border"
+        "fixed z-9999 p-1.5",
+        "box-border rounded-md border border-border bg-popover shadow-md"
       )}
       style={{
         left: x,

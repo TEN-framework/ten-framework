@@ -6,7 +6,7 @@
 //
 use anyhow::Result;
 
-use crate::graph::{node::GraphNodeType, Graph};
+use crate::graph::{node::GraphNode, Graph};
 
 impl Graph {
     /// Validates that no extension nodes are duplicated within the graph.
@@ -25,28 +25,34 @@ impl Graph {
 
         // Iterate through all nodes in the graph to find extensions
         for (node_idx, node) in self.nodes.iter().enumerate() {
-            if node.type_ == GraphNodeType::Extension {
-                // Create a unique identifier by combining app URI and extension
-                // name
-                let unique_ext_name = format!(
-                    "{}:{}",
-                    node.get_app_uri().as_ref().map_or("", |s| s.as_str()),
-                    node.name
-                );
+            match node {
+                GraphNode::Extension { content } => {
+                    // Create a unique identifier by combining app URI and
+                    // extension name
+                    let unique_ext_name = format!(
+                        "{}:{}",
+                        content.app.as_ref().map_or("", |s| s.as_str()),
+                        content.name
+                    );
 
-                // Check if this extension already exists in our tracking list
-                if all_extensions.contains(&unique_ext_name) {
-                    return Err(anyhow::anyhow!(
-                        "Duplicated extension was found in nodes[{}], addon: \
-                         {}, name: {}.",
-                        node_idx,
-                        node.addon.as_ref().map_or("None", String::as_str),
-                        node.name
-                    ));
+                    // Check if this extension already exists in our tracking
+                    // list
+                    if all_extensions.contains(&unique_ext_name) {
+                        return Err(anyhow::anyhow!(
+                            "Duplicated extension was found in nodes[{}], \
+                             addon: {}, name: {}.",
+                            node_idx,
+                            content.addon,
+                            content.name
+                        ));
+                    }
+
+                    // Add this extension to our tracking list
+                    all_extensions.push(unique_ext_name);
                 }
-
-                // Add this extension to our tracking list
-                all_extensions.push(unique_ext_name);
+                _ => {
+                    continue;
+                }
             }
         }
 

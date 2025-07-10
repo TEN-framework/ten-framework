@@ -8,8 +8,8 @@ import z from "zod";
 
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
-import { EDocLinkKey } from "@/types/doc";
 import { EPreferencesLocale } from "@/types/apps";
+import { EDocLinkKey } from "@/types/doc";
 
 export const ENDPOINT_DOC_LINK = {
   retrieveDocLink: {

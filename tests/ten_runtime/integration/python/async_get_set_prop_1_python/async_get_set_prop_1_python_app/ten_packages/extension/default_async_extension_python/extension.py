@@ -20,7 +20,9 @@ class DefaultAsyncExtension(AsyncExtension):
         await ten_env.set_property_int("int_field", 1)
         await ten_env.set_property_float("float_field", 1.0)
         await ten_env.set_property_string("string_field", "hello")
-        await ten_env.set_property_from_json("json_field", '{"testKey": "testValue2"}')
+        await ten_env.set_property_from_json(
+            "json_field", '{"testKey": "testValue2"}'
+        )
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)

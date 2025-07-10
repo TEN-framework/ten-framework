@@ -5,11 +5,15 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable max-len */
+
+import {
+  Check,
+  ChevronsUpDown,
+  CirclePlus,
+  LoaderCircleIcon,
+} from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircleIcon } from "lucide-react";
-
-import { Check, ChevronsUpDown, CirclePlus } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/Button";
 import {
@@ -69,8 +73,8 @@ function CommandAddItem({
         }
       }}
       className={cn(
-        "flex w-full text-blue-500 cursor-pointer text-sm px-2 py-1.5 rounded-sm items-center focus:outline-none gap-2",
-        "hover:bg-blue-200 focus:!bg-blue-200"
+        "flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-blue-500 text-sm focus:outline-none",
+        "focus:!bg-blue-200 hover:bg-blue-200"
       )}
     >
       <CirclePlus className="mr-2 size-4" />
@@ -145,11 +149,11 @@ export function Combobox({
           className={cn("w-full font-normal", className)}
         >
           {selected && selected.length > 0 ? (
-            <div className="truncate mr-auto">
+            <div className="mr-auto truncate">
               {options.find((item) => item.value === selected)?.label}
             </div>
           ) : (
-            <div className="text-slate-600 mr-auto">
+            <div className="mr-auto text-slate-600">
               {placeholder ?? "Select"}
             </div>
           )}
@@ -179,9 +183,9 @@ export function Combobox({
               }
             }}
           />
-          <CommandEmpty className="flex pl-1 py-1 w-full">
+          <CommandEmpty className="flex w-full py-1 pl-1">
             {query && (
-              <div className="py-1.5 pl-8 space-y-1 text-sm">
+              <div className="space-y-1 py-1.5 pl-8 text-sm">
                 <p>
                   {commandLabels?.noMatchedItems ||
                     t("components.combobox.noItems")}
@@ -198,7 +202,7 @@ export function Combobox({
               {/* No options and no query */}
               {/* Even if written as a Child of CommandEmpty, it may not be displayed only the first time, so write it in CommandGroup. */}
               {options.length === 0 && !query && (
-                <div className="py-1.5 pl-8 space-y-1 text-sm">
+                <div className="space-y-1 py-1.5 pl-8 text-sm">
                   <p>
                     {commandLabels?.noItems || t("components.combobox.noItems")}
                   </p>

@@ -1,0 +1,45 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext_c",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext_a",
+      "cmd": [
+        {
+          "name": "forward_cmd",
+          "dest": [
+            {
+              "extension": "ext_b"
+            }
+          ]
+        },
+        {
+          "name": "reverse_cmd",
+          "source": [
+            {
+              "extension": "ext_c"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

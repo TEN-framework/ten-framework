@@ -30,8 +30,8 @@ export const EditorPopupTitle = (props: {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="font-medium text-foreground/90 font-sans">{title}</span>
-      <span className="text-foreground/50 text-sm font-sans">
+      <span className="font-medium font-sans text-foreground/90">{title}</span>
+      <span className="font-sans text-foreground/50 text-sm">
         {isEditing ? `(${t("action.unsaved")})` : ""}
       </span>
     </div>

@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { TDeviceSelectItem } from "@/types/rtc";
+
 import {
   Select,
   SelectContent,
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import type { TDeviceSelectItem } from "@/types/rtc";
 
 export const DeviceSelect = (props: {
   items: TDeviceSelectItem[];

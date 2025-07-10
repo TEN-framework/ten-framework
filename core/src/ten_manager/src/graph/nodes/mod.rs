@@ -73,8 +73,30 @@ pub fn update_graph_node_all_fields(
 
         // Found matching graph, process it.
 
+        // Get or create the graph field.
+        let graph_content_obj = match graph_obj.get_mut("graph") {
+            Some(Value::Object(graph_content)) => graph_content,
+            Some(_) => {
+                // graph field exists but is not an object, skip this graph
+                continue;
+            }
+            None => {
+                // Create graph field if it doesn't exist
+                graph_obj.insert(
+                    "graph".to_string(),
+                    Value::Object(serde_json::Map::new()),
+                );
+                match graph_obj.get_mut("graph") {
+                    Some(Value::Object(graph_content)) => graph_content,
+                    _ => continue, // This should not happen
+                }
+            }
+        };
+
         // Process nodes array if it exists.
-        if let Some(Value::Array(nodes_array)) = graph_obj.get_mut("nodes") {
+        if let Some(Value::Array(nodes_array)) =
+            graph_content_obj.get_mut("nodes")
+        {
             process_existing_nodes_array(
                 nodes_array,
                 nodes_to_remove,
@@ -84,13 +106,16 @@ pub fn update_graph_node_all_fields(
         } else if should_create_nodes_array(nodes_to_add) {
             // No nodes array in the graph yet, create one if we have nodes to
             // add.
-            create_new_nodes_array(graph_obj, nodes_to_add.unwrap());
+            create_new_nodes_array(graph_content_obj, nodes_to_add.unwrap());
         }
 
         // Process connections if nodes were removed.
         if let Some(remove_nodes) = nodes_to_remove {
             if !remove_nodes.is_empty() {
-                update_connections_for_removed_nodes(graph_obj, remove_nodes);
+                update_connections_for_removed_nodes(
+                    graph_content_obj,
+                    remove_nodes,
+                );
             }
         }
 
@@ -185,41 +210,51 @@ fn remove_nodes_from_array(
                 // Match the name.
                 let name_match = match item_obj.get("name") {
                     Some(Value::String(item_name)) => {
-                        item_name == &remove_node.name
+                        item_name == remove_node.get_name()
                     }
                     _ => false,
                 };
 
                 // Match the addon.
                 let addon_match = match item_obj.get("addon") {
-                    Some(Value::String(item_addon)) => {
-                        match &remove_node.addon {
-                            Some(addon) => item_addon == addon,
-                            None => false,
+                    Some(Value::String(item_addon)) => match &remove_node {
+                        GraphNode::Extension { content } => {
+                            item_addon == &content.addon
                         }
-                    }
+                        _ => false,
+                    },
                     _ => false,
+                };
+
+                let extension_group = match &remove_node {
+                    GraphNode::Extension { content } => {
+                        content.extension_group.clone()
+                    }
+                    _ => None,
                 };
 
                 // Match the extension_group if it exists in the node to remove.
-                let extension_group_match = match (
-                    &remove_node.extension_group,
-                    item_obj.get("extension_group"),
-                ) {
-                    (Some(group), Some(Value::String(item_group))) => {
-                        group == item_group
-                    }
-                    (None, None) => true,
-                    // Node to remove doesn't specify extension_group.
-                    (None, Some(_)) => false,
-                    // Node to remove has extension_group but item doesn't.
-                    (Some(_), None) => false,
-                    // Other cases (like mismatched types) don't match.
-                    _ => false,
+                let extension_group_match =
+                    match (&extension_group, item_obj.get("extension_group")) {
+                        (Some(group), Some(Value::String(item_group))) => {
+                            group == item_group
+                        }
+                        (None, None) => true,
+                        // Node to remove doesn't specify extension_group.
+                        (None, Some(_)) => false,
+                        // Node to remove has extension_group but item doesn't.
+                        (Some(_), None) => false,
+                        // Other cases (like mismatched types) don't match.
+                        _ => false,
+                    };
+
+                let app = match &remove_node {
+                    GraphNode::Extension { content } => content.app.clone(),
+                    _ => None,
                 };
 
                 // Match the app if it exists in the node to remove.
-                let app_match = match (&remove_node.app, item_obj.get("app")) {
+                let app_match = match (&app, item_obj.get("app")) {
                     (Some(app), Some(Value::String(item_app))) => {
                         app == item_app
                     }
@@ -270,13 +305,18 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             // Match the name.
             let name_match = match node_obj.get("name") {
                 Some(Value::String(node_name)) => {
-                    node_name == &modify_node.name
+                    node_name == modify_node.get_name()
                 }
                 _ => false,
             };
 
             // Match the app.
-            let app_match = match (&modify_node.app, node_obj.get("app")) {
+            let app = match &modify_node {
+                GraphNode::Extension { content } => content.app.clone(),
+                _ => None,
+            };
+
+            let app_match = match (&app, node_obj.get("app")) {
                 (Some(app), Some(Value::String(node_app))) => app == node_app,
                 (None, None) => true,
                 // Modified node doesn't specify app but graph node does.
@@ -291,14 +331,23 @@ fn modify_node(nodes_array: &mut Vec<Value>, modify_nodes: &[GraphNode]) {
             if type_match && name_match && app_match {
                 node_obj.insert(
                     "addon".to_string(),
-                    match &modify_node.addon {
-                        Some(addon) => Value::String(addon.clone()),
-                        None => Value::Null,
+                    match &modify_node {
+                        GraphNode::Extension { content } => {
+                            Value::String(content.addon.clone())
+                        }
+                        _ => Value::Null,
                     },
                 );
 
-                if let Some(property) = &modify_node.property {
-                    node_obj.insert("property".to_string(), property.clone());
+                let property = match &modify_node {
+                    GraphNode::Extension { content } => {
+                        content.property.clone()
+                    }
+                    _ => None,
+                };
+
+                if let Some(property) = property {
+                    node_obj.insert("property".to_string(), property);
                 }
 
                 // No need to check further modify_nodes for this graph node.
@@ -325,7 +374,14 @@ fn add_nodes_to_array(nodes_array: &mut Vec<Value>, new_nodes: &[GraphNode]) {
             // add "default_extension_group" to the JSON
             if is_tman_08_compatible {
                 if let Value::Object(ref mut node_obj) = new_node_value {
-                    if new_node.extension_group.is_none() {
+                    let extension_group = match new_node {
+                        GraphNode::Extension { content } => {
+                            content.extension_group.clone()
+                        }
+                        _ => None,
+                    };
+
+                    if extension_group.is_none() {
                         node_obj.insert(
                             "extension_group".to_string(),
                             Value::String(
@@ -349,7 +405,12 @@ fn update_connections_for_removed_nodes(
     // Create a list of node identifiers to remove.
     let nodes_names_to_remove: Vec<(String, Option<String>)> = remove_nodes
         .iter()
-        .map(|node| (node.name.clone(), node.app.clone()))
+        .map(|node| match node {
+            GraphNode::Extension { content } => {
+                (content.name.clone(), content.app.clone())
+            }
+            _ => (String::new(), None),
+        })
         .collect();
 
     if let Some(Value::Array(connections_array)) =

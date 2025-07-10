@@ -93,10 +93,8 @@ TEST(ExtensionTest, ErrorClientSendJson) {  // NOLINT
       })",
                                                   err);
   EXPECT_EQ(success, false);
-  EXPECT_STREQ(ten_error_message(err),
-               "extension 'extension_1' is associated with different addon "
-               "'error_client_send_json__extension_2', "
-               "'error_client_send_json__extension_1'");
+  EXPECT_TRUE(ten_c_string_contains(ten_error_message(err),
+                                    "Duplicated extension was found"));
 
   ten_error_destroy(err);
   ten_shared_ptr_destroy(invalid_graph_cmd);

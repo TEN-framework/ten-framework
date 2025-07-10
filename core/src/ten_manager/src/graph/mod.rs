@@ -148,7 +148,7 @@ pub fn update_graph_endpoint(
     {
         // Access the graph and update it
         replace_graph_nodes_and_connections(
-            &mut graph_info.graph,
+            graph_info.graph.graph_mut(),
             nodes,
             connections,
             exposed_messages,
@@ -203,35 +203,58 @@ pub fn update_graph_all_fields(
             continue;
         }
 
-        // Found the matching graph, update its nodes.
+        // Found the matching graph, get or create the graph field.
+        let graph_content_obj = match graph_obj.get_mut("graph") {
+            Some(serde_json::Value::Object(graph_content)) => graph_content,
+            Some(_) => {
+                // graph field exists but is not an object, skip this graph
+                continue;
+            }
+            None => {
+                // Create graph field if it doesn't exist
+                graph_obj.insert(
+                    "graph".to_string(),
+                    serde_json::Value::Object(serde_json::Map::new()),
+                );
+                match graph_obj.get_mut("graph") {
+                    Some(serde_json::Value::Object(graph_content)) => {
+                        graph_content
+                    }
+                    _ => continue, // This should not happen
+                }
+            }
+        };
+
+        // Update nodes.
         let nodes_value = serde_json::to_value(nodes)?;
-        graph_obj.insert("nodes".to_string(), nodes_value);
+        graph_content_obj.insert("nodes".to_string(), nodes_value);
 
         // Update connections or remove if empty.
         if connections.is_empty() {
-            graph_obj.remove("connections");
+            graph_content_obj.remove("connections");
         } else {
             let connections_value = serde_json::to_value(connections)?;
-            graph_obj.insert("connections".to_string(), connections_value);
+            graph_content_obj
+                .insert("connections".to_string(), connections_value);
         }
 
         // Update exposed_messages or remove if empty.
         if exposed_messages.is_empty() {
-            graph_obj.remove("exposed_messages");
+            graph_content_obj.remove("exposed_messages");
         } else {
             let exposed_messages_value =
                 serde_json::to_value(exposed_messages)?;
-            graph_obj
+            graph_content_obj
                 .insert("exposed_messages".to_string(), exposed_messages_value);
         }
 
         // Update exposed_properties or remove if empty.
         if exposed_properties.is_empty() {
-            graph_obj.remove("exposed_properties");
+            graph_content_obj.remove("exposed_properties");
         } else {
             let exposed_properties_value =
                 serde_json::to_value(exposed_properties)?;
-            graph_obj.insert(
+            graph_content_obj.insert(
                 "exposed_properties".to_string(),
                 exposed_properties_value,
             );

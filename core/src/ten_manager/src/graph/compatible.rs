@@ -37,15 +37,17 @@ pub fn get_compatible_msg_extension<'a>(
 ) -> Result<Vec<CompatibleExtensionAndMsg<'a>>> {
     let mut result = Vec::new();
 
-    for target_extension_graph_node in extension_graph_nodes {
+    for target_node in extension_graph_nodes {
+        let target_extension_graph_node = match target_node {
+            GraphNode::Extension { content } => content,
+            _ => continue,
+        };
+
         let target_extension_pkg_info = get_pkg_info_for_extension_addon(
             pkgs_cache,
             app_base_dir,
             &target_extension_graph_node.app,
-            target_extension_graph_node
-                .addon
-                .as_ref()
-                .expect("Extension node must have an addon"),
+            &target_extension_graph_node.addon,
         );
 
         match target_extension_pkg_info {
@@ -108,7 +110,7 @@ pub fn get_compatible_msg_extension<'a>(
 
                 if compatible.is_ok() {
                     result.push(CompatibleExtensionAndMsg {
-                        extension: target_extension_graph_node,
+                        extension: target_node,
                         msg_type: msg_type.clone(),
                         msg_name: msg_name.to_string(),
                         msg_direction: desired_msg_dir.clone(),

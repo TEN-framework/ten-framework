@@ -4,10 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React, { useState, useEffect } from "react";
-import { Switch } from "@/components/ui/Switch";
-import { AutoFormFieldProps } from "@autoform/react";
+
+import type { AutoFormFieldProps } from "@autoform/react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/Label";
+import { Switch } from "@/components/ui/Switch";
 
 export const SwitchField: React.FC<AutoFormFieldProps> = ({
   field,

@@ -4,48 +4,47 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
-import { useTranslation } from "react-i18next";
+
 import {
+  ArrowDownToDotIcon,
+  ArrowUpFromDotIcon,
   FilePenLineIcon,
+  LogsIcon,
+  ReplaceIcon,
+  SaveIcon,
   TablePropertiesIcon,
   TerminalIcon,
   Trash2Icon,
-  LogsIcon,
-  SaveIcon,
-  ArrowDownToDotIcon,
-  ArrowUpFromDotIcon,
-  ReplaceIcon,
   // PinIcon,
 } from "lucide-react";
+import React from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
+import { postDeleteNode, useGraphs } from "@/api/services/graphs";
+import { EditorPopupTitle } from "@/components/Popup/Editor";
+import { GraphPopupTitle } from "@/components/Popup/Graph";
+import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import {
+  CONTAINER_DEFAULT_ID,
+  GRAPH_ACTIONS_WIDGET_ID,
+  GROUP_EDITOR_ID,
+  GROUP_GRAPH_ID,
+} from "@/constants/widgets";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/ContextMenu/ContextMenu";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import { postDeleteNode, useGraphs } from "@/api/services/graphs";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import type { TCustomNode } from "@/types/flow";
+import { EGraphActions } from "@/types/graphs";
 import {
   EWidgetCategory,
   EWidgetDisplayType,
-  type ITerminalWidgetData,
+  EWidgetPredefinedCheck,
   type IEditorWidgetData,
   type IEditorWidgetRef,
-  EWidgetPredefinedCheck,
+  type ITerminalWidgetData,
 } from "@/types/widgets";
-import { EGraphActions } from "@/types/graphs";
-
-import type { TCustomNode } from "@/types/flow";
-import {
-  GRAPH_ACTIONS_WIDGET_ID,
-  CONTAINER_DEFAULT_ID,
-  GROUP_EDITOR_ID,
-} from "@/constants/widgets";
-import { GROUP_GRAPH_ID } from "@/constants/widgets";
-import { GraphPopupTitle } from "@/components/Popup/Graph";
-import { EditorPopupTitle } from "@/components/Popup/Editor";
 
 interface NodeContextMenuProps {
   visible: boolean;

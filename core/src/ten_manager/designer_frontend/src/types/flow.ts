@@ -4,9 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import type { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 
-import type { IBackendNode, EConnectionType } from "@/types/graphs";
+import type { EConnectionType, IBackendNode } from "@/types/graphs";
 
 export type TCustomNodeData = Partial<IBackendNode> & {
   addon: string;

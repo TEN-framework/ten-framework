@@ -4,46 +4,45 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
+
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   applyEdgeChanges,
   applyNodeChanges,
-  EdgeChange,
-  NodeChange,
+  type EdgeChange,
+  type NodeChange,
 } from "@xyflow/react";
+import * as React from "react";
 import { toast } from "sonner";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-import { ThemeProvider } from "@/components/ThemeProvider";
+import {
+  getStorageValueByKey,
+  initPersistentStorageSchema,
+  setStorageValueByKey,
+  usePreferencesLogViewerLines,
+} from "@/api/services/storage";
+import { getTanstackQueryClient } from "@/api/services/utils";
 import AppBar from "@/components/AppBar";
+import { GlobalDialogs } from "@/components/GlobalDialogs";
+import { GlobalPopups } from "@/components/Popup";
+import { SpinnerLoading } from "@/components/Status/Loading";
 import StatusBar from "@/components/StatusBar";
-import FlowCanvas, { type FlowCanvasRef } from "@/flow/FlowCanvas";
-import { generateNodesAndEdges, syncGraphNodeGeometry } from "@/flow/graph";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/Resizable";
-import { GlobalDialogs } from "@/components/GlobalDialogs";
-// import Dock from "@/components/Dock";
-import { useWidgetStore, useFlowStore, useAppStore } from "@/store";
-import { EWidgetDisplayType } from "@/types/widgets";
-import { GlobalPopups } from "@/components/Popup";
 import { BackstageWidgets } from "@/components/Widget/BackstageWidgets";
-import { cn } from "@/lib/utils";
-import {
-  usePreferencesLogViewerLines,
-  initPersistentStorageSchema,
-  getStorageValueByKey,
-  setStorageValueByKey,
-} from "@/api/services/storage";
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
-import { SpinnerLoading } from "@/components/Status/Loading";
+import FlowCanvas, { type FlowCanvasRef } from "@/flow/FlowCanvas";
+import { generateNodesAndEdges, syncGraphNodeGeometry } from "@/flow/graph";
+import { cn } from "@/lib/utils";
+// import Dock from "@/components/Dock";
+import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
-import { getTanstackQueryClient } from "@/api/services/utils";
-
 import type { TCustomEdge, TCustomNode } from "@/types/flow";
+import { EWidgetDisplayType } from "@/types/widgets";
 
 const queryClient = getTanstackQueryClient();
 
@@ -177,7 +176,7 @@ const Main = () => {
 
   if (isLoadingPreferences || !isPersistentSchemaInited) {
     return (
-      <div className="flex items-center justify-center h-screen w-full">
+      <div className="flex h-screen w-full items-center justify-center">
         <SpinnerLoading />
       </div>
     );
@@ -190,7 +189,7 @@ const Main = () => {
       <ResizablePanelGroup
         key={`resizable-panel-group-${resizablePanelMode}`}
         direction={resizablePanelMode === "bottom" ? "vertical" : "horizontal"}
-        className={cn("w-screen h-screen", "min-h-screen min-w-screen")}
+        className={cn("h-screen w-screen", "min-h-screen min-w-screen")}
       >
         {resizablePanelMode === "left" && dockWidgetsMemo.length > 0 && (
           <>
@@ -218,7 +217,7 @@ const Main = () => {
             //   setEdges(newEdges);
             // }}
             onConnect={() => {}}
-            className="w-full h-[calc(100dvh-60px)] mt-10"
+            className="mt-10 h-[calc(100dvh-60px)] w-full"
           />
         </ResizablePanel>
         {resizablePanelMode !== "left" && dockWidgetsMemo.length > 0 && (

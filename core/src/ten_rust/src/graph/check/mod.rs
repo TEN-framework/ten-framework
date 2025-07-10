@@ -10,5 +10,6 @@ pub mod extension_existence;
 pub mod extension_uniqueness;
 pub mod extension_uniqueness_in_connections;
 pub mod message_names;
+pub mod msg_conversions;
 pub mod nodes_installation;
 pub mod subgraph_references;

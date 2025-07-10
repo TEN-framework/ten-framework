@@ -5,23 +5,23 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import {
+  type AutoFormUIComponents,
   AutoForm as BaseAutoForm,
-  AutoFormUIComponents,
 } from "@autoform/react";
-import { AutoFormProps } from "./types";
-import { Form } from "./components/Form";
-import { FieldWrapper } from "./components/FieldWrapper";
+import { ArrayElementWrapper } from "./components/ArrayElementWrapper";
+import { ArrayWrapper } from "./components/ArrayWrapper";
+import { DateField } from "./components/DateField";
 import { ErrorMessage } from "./components/ErrorMessage";
-import { SubmitButton } from "./components/SubmitButton";
-import { StringField } from "./components/StringField";
+import { FieldWrapper } from "./components/FieldWrapper";
+import { Form } from "./components/Form";
 import { NumberField } from "./components/NumberField";
+import { ObjectWrapper } from "./components/ObjectWrapper";
+import { SelectField } from "./components/SelectField";
+import { StringField } from "./components/StringField";
+import { SubmitButton } from "./components/SubmitButton";
 // import { BooleanField } from "./components/BooleanField";
 import { SwitchField } from "./components/SwitchField";
-import { DateField } from "./components/DateField";
-import { SelectField } from "./components/SelectField";
-import { ObjectWrapper } from "./components/ObjectWrapper";
-import { ArrayWrapper } from "./components/ArrayWrapper";
-import { ArrayElementWrapper } from "./components/ArrayElementWrapper";
+import type { AutoFormProps } from "./types";
 
 const ShadcnUIComponents: AutoFormUIComponents = {
   Form,
