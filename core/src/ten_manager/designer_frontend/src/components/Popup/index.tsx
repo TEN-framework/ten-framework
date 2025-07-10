@@ -163,7 +163,7 @@ const PopupWithTabs = (props: {
     }
     const firstWidget = widgets[0];
     return firstWidget.actions?.custom_actions;
-  }, [widgets, groupId]);
+  }, [widgets]);
 
   const globalTitle = React.useMemo(() => {
     if (widgets.length > 1) return undefined;

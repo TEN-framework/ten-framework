@@ -4,28 +4,26 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
-import { StarIcon, BotIcon } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
+import type { VariantProps } from "class-variance-authority";
+import { BotIcon, StarIcon } from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { EHelpTextKey } from "@/api/endpoints";
+import { useGitHubRepository } from "@/api/services/github";
+import { useHelpText } from "@/api/services/helpText";
+import { GHIcon } from "@/components/Icons";
+import { SpinnerLoading } from "@/components/Status/Loading";
 import { badgeVariants } from "@/components/ui/Badge";
+import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { GHIcon } from "@/components/Icons";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import { cn } from "@/lib/utils";
-import { useGitHubRepository } from "@/api/services/github";
-import { formatNumberWithCommas } from "@/lib/utils";
 import { TEN_AGENT_URL } from "@/constants";
-import { useHelpText } from "@/api/services/helpText";
-import { EHelpTextKey } from "@/api/endpoints";
-import { Separator } from "@/components/ui/Separator";
-
-import { type VariantProps } from "class-variance-authority";
+import { cn, formatNumberWithCommas } from "@/lib/utils";
 
 export function GHStargazersCount(props: {
   owner: string;

@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as React from "react";
+import type * as React from "react";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 

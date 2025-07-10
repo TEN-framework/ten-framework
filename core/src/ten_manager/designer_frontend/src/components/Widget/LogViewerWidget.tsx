@@ -5,26 +5,28 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import * as React from "react";
-import { z } from "zod";
 import { useTranslation } from "react-i18next";
-import { VariableSizeList as VirtualList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-
-import { Input } from "@/components/ui/Input";
+import { VariableSizeList as VirtualList } from "react-window";
+import type { z } from "zod";
+import { HighlightText } from "@/components/Highlight";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
-import { HighlightText } from "@/components/Highlight";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { appendLogsById } from "@/store/widget";
-import { ILogViewerWidget, ILogViewerWidgetOptions } from "@/types/widgets";
 import {
-  EWSMessageType,
-  LogSchema,
-  LegacyLogSchema,
-  LogLineInfoSchema,
   ETenLogLevel,
+  EWSMessageType,
+  type LegacyLogSchema,
+  type LogLineInfoSchema,
+  type LogSchema,
 } from "@/types/apps";
+import type {
+  ILogViewerWidget,
+  ILogViewerWidgetOptions,
+} from "@/types/widgets";
 
 export function LogViewerBackstageWidget(props: ILogViewerWidget) {
   const {
@@ -186,7 +188,7 @@ export function LogViewerFrontStageWidget(props: {
   return (
     <div className="flex h-full w-full flex-col" id={id}>
       {!options?.disableSearch && (
-        <div className="h-12 w-full flex items-center space-x-2 px-2">
+        <div className="flex h-12 w-full items-center space-x-2 px-2">
           <Input
             placeholder="Search"
             className="w-full"
@@ -313,7 +315,7 @@ const LogViewerLogItem = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "font-mono text-xs py-0.5",
+        "py-0.5 font-mono text-xs",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
         {
           "bg-red-50 dark:bg-red-900":

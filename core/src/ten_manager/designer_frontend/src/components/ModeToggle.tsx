@@ -7,7 +7,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button, ButtonProps } from "@/components/ui/Button";
+import { Button, type ButtonProps } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,

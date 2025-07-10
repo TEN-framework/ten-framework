@@ -4,11 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useQuery, useMutation } from "@tanstack/react-query";
-
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ENDPOINT_COMMON } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
+import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
 
 export const getVersion = async () => {
   const template = ENDPOINT_COMMON.version[ENDPOINT_METHOD.GET];

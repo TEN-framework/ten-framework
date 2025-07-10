@@ -4,8 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
-import { useTranslation } from "react-i18next";
+
 import {
   FolderOpenIcon,
   FolderTreeIcon,
@@ -13,14 +12,15 @@ import {
   PackagePlusIcon,
   PlayIcon,
 } from "lucide-react";
-
+import type React from "react";
+import { useTranslation } from "react-i18next";
+import { useStorage } from "@/api/services/storage";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/ContextMenu/ContextMenu";
+import type { IRunAppParams } from "@/types/apps";
 import { EGraphActions } from "@/types/graphs";
-import { useStorage } from "@/api/services/storage";
-import { IRunAppParams } from "@/types/apps";
 
 interface PaneContextMenuProps {
   visible: boolean;

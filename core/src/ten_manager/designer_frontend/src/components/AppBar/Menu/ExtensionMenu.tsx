@@ -4,9 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
-import { BlocksIcon, InfoIcon } from "lucide-react";
 
+import { BlocksIcon, InfoIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
+import { ExtensionStorePopupTitle } from "@/components/Popup/Default/Extension";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenuContent,
   NavigationMenuItem,
@@ -14,23 +17,20 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
 import { Separator } from "@/components/ui/Separator";
-import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
-import {
-  EDefaultWidgetType,
-  EWidgetDisplayType,
-  EWidgetCategory,
-} from "@/types/widgets";
-import { useWidgetStore } from "@/store/widget";
 import {
   CONTAINER_DEFAULT_ID,
-  EXTENSION_STORE_WIDGET_ID,
   DOC_REF_WIDGET_ID,
+  EXTENSION_STORE_WIDGET_ID,
   GROUP_DOC_REF_ID,
 } from "@/constants/widgets";
+import { cn } from "@/lib/utils";
+import { useWidgetStore } from "@/store/widget";
 import { EDocLinkKey } from "@/types/doc";
-import { ExtensionStorePopupTitle } from "@/components/Popup/Default/Extension";
-import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
+import {
+  EDefaultWidgetType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 
 export const ExtensionMenu = (props: {
   disableMenuClick?: boolean;
@@ -103,7 +103,7 @@ export const ExtensionMenu = (props: {
         {t("header.menuExtension.title")}
       </NavigationMenuTrigger>
       <NavigationMenuContent
-        className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
+        className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
       >
         <NavigationMenuLink asChild>
           <Button

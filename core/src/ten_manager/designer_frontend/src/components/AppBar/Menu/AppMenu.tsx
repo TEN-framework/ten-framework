@@ -5,15 +5,22 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import {
-  FolderPlusIcon,
   FolderCogIcon,
   FolderOpenIcon,
-  InfoIcon,
+  FolderPlusIcon,
   FolderSyncIcon,
+  InfoIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
+import { postReloadApps, useFetchApps } from "@/api/services/apps";
+import {
+  AppCreatePopupTitle,
+  AppFolderPopupTitle,
+  LoadedAppsPopupTitle,
+} from "@/components/Popup/Default/App";
+import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenuContent,
   NavigationMenuItem,
@@ -21,7 +28,14 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
 import { Separator } from "@/components/ui/Separator";
-import { Button } from "@/components/ui/Button";
+import {
+  APP_CREATE_WIDGET_ID,
+  APP_FOLDER_WIDGET_ID,
+  APPS_MANAGER_WIDGET_ID,
+  CONTAINER_DEFAULT_ID,
+  DOC_REF_WIDGET_ID,
+  GROUP_DOC_REF_ID,
+} from "@/constants/widgets";
 import { cn } from "@/lib/utils";
 import {
   useAppStore,
@@ -29,27 +43,12 @@ import {
   useFlowStore,
   useWidgetStore,
 } from "@/store";
-import {
-  EWidgetCategory,
-  EWidgetDisplayType,
-  EDefaultWidgetType,
-} from "@/types/widgets";
-import {
-  CONTAINER_DEFAULT_ID,
-  APP_FOLDER_WIDGET_ID,
-  APP_CREATE_WIDGET_ID,
-  APPS_MANAGER_WIDGET_ID,
-  DOC_REF_WIDGET_ID,
-  GROUP_DOC_REF_ID,
-} from "@/constants/widgets";
 import { EDocLinkKey } from "@/types/doc";
 import {
-  AppCreatePopupTitle,
-  AppFolderPopupTitle,
-  LoadedAppsPopupTitle,
-} from "@/components/Popup/Default/App";
-import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
-import { useFetchApps, postReloadApps } from "@/api/services/apps";
+  EDefaultWidgetType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 
 export function AppMenu(props: {
   disableMenuClick?: boolean;
@@ -224,7 +223,7 @@ export function AppMenu(props: {
           {t("header.menuApp.title")}
         </NavigationMenuTrigger>
         <NavigationMenuContent
-          className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
+          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
         >
           <NavigationMenuLink asChild>
             <Button
@@ -232,7 +231,7 @@ export function AppMenu(props: {
               variant="ghost"
               onClick={openAppCreatePopup}
             >
-              <FolderPlusIcon className="w-4 h-4 me-2" />
+              <FolderPlusIcon className="me-2 h-4 w-4" />
               {t("header.menuApp.createApp")}
             </Button>
           </NavigationMenuLink>
@@ -242,7 +241,7 @@ export function AppMenu(props: {
               variant="ghost"
               onClick={openAppFolderPopup}
             >
-              <FolderOpenIcon className="w-4 h-4 me-2" />
+              <FolderOpenIcon className="me-2 h-4 w-4" />
               {t("header.menuApp.loadApp")}
             </Button>
           </NavigationMenuLink>
@@ -254,7 +253,7 @@ export function AppMenu(props: {
                 handleReloadApp();
               }}
             >
-              <FolderSyncIcon className="w-4 h-4 me-2" />
+              <FolderSyncIcon className="me-2 h-4 w-4" />
               {t("header.menuApp.reloadAllApps")}
             </Button>
           </NavigationMenuLink>
@@ -264,7 +263,7 @@ export function AppMenu(props: {
               variant="ghost"
               onClick={openAppsManagerPopup}
             >
-              <FolderCogIcon className="w-4 h-4 me-2" />
+              <FolderCogIcon className="me-2 h-4 w-4" />
               {t("header.menuApp.manageLoadedApps")}
             </Button>
           </NavigationMenuLink>
@@ -275,7 +274,7 @@ export function AppMenu(props: {
               variant="ghost"
               onClick={openAbout}
             >
-              <InfoIcon className="w-4 h-4 me-2" />
+              <InfoIcon className="me-2 h-4 w-4" />
               {t("header.menuApp.about")}
             </Button>
           </NavigationMenuLink>

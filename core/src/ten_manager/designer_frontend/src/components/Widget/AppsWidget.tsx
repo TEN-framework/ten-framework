@@ -5,22 +5,62 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable react-hooks/exhaustive-deps */
-import * as React from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  BrushCleaningIcon,
+  FolderIcon,
   FolderMinusIcon,
   FolderPlusIcon,
   FolderSyncIcon,
   HardDriveDownloadIcon,
   PlayIcon,
-  FolderIcon,
-  BrushCleaningIcon,
 } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import * as React from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { z } from "zod";
-
+import {
+  postCreateApp,
+  postReloadApps,
+  postUnloadApps,
+  retrieveTemplatePkgs,
+  useFetchAppScripts,
+  useFetchApps,
+} from "@/api/services/apps";
+import { AppFileManager } from "@/components/FileManager/AppFolder";
+import {
+  AppFolderPopupTitle,
+  AppRunPopupTitle,
+} from "@/components/Popup/Default/App";
+import { SpinnerLoading } from "@/components/Status/Loading";
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/Dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/Form";
+import { Input } from "@/components/ui/Input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import {
   Table,
   TableBody,
@@ -37,73 +77,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/Dialog";
-import { Button } from "@/components/ui/Button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/Form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/Select";
-import { Input } from "@/components/ui/Input";
-import { cn } from "@/lib/utils";
-import {
-  useFetchApps,
-  useFetchAppScripts,
-  retrieveTemplatePkgs,
-  postReloadApps,
-  postUnloadApps,
-  postCreateApp,
-} from "@/api/services/apps";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import {
-  useWidgetStore,
-  useFlowStore,
-  useAppStore,
-  useDialogStore,
-} from "@/store";
-import {
-  EDefaultWidgetType,
-  EWidgetDisplayType,
-  EWidgetCategory,
-  ELogViewerScriptType,
-} from "@/types/widgets";
+import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
   APP_FOLDER_WIDGET_ID,
   APP_RUN_WIDGET_ID,
   CONTAINER_DEFAULT_ID,
   GROUP_LOG_VIEWER_ID,
 } from "@/constants/widgets";
-import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
-import { getWSEndpointFromWindow } from "@/constants/utils";
+import { cn } from "@/lib/utils";
 import {
+  useAppStore,
+  useDialogStore,
+  useFlowStore,
+  useWidgetStore,
+} from "@/store";
+import {
+  AppCreateReqSchema,
   ETemplateLanguage,
   ETemplateType,
   TemplatePkgsReqSchema,
-  AppCreateReqSchema,
 } from "@/types/apps";
-import { AppFileManager } from "@/components/FileManager/AppFolder";
 import {
-  AppFolderPopupTitle,
-  AppRunPopupTitle,
-} from "@/components/Popup/Default/App";
+  EDefaultWidgetType,
+  ELogViewerScriptType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 import { LogViewerPopupTitle } from "../Popup/LogViewer";
 
 export const AppsManagerWidget = (props: { className?: string }) => {
@@ -313,7 +313,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 w-full h-full overflow-y-auto",
+        "flex h-full w-full flex-col gap-2 overflow-y-auto",
         props.className
       )}
     >
@@ -342,7 +342,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
               <TableRow key={app.base_dir}>
                 <TableCell className="font-medium">{index + 1}</TableCell>
                 <TableCell>
-                  <span className={cn("text-xs rounded-md p-1 bg-muted px-2")}>
+                  <span className={cn("rounded-md bg-muted p-1 px-2 text-xs")}>
                     {app.base_dir}
                   </span>
                 </TableCell>
@@ -360,14 +360,14 @@ export const AppsManagerWidget = (props: { className?: string }) => {
         </TableBody>
         <TableFooter className="bg-transparent">
           <TableRow>
-            <TableCell colSpan={3} className="text-right space-x-2">
+            <TableCell colSpan={3} className="space-x-2 text-right">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={openAppFolderPopup}
                 disabled={isLoadingMemo}
               >
-                <FolderPlusIcon className="w-4 h-4" />
+                <FolderPlusIcon className="h-4 w-4" />
                 {t("header.menuApp.loadApp")}
               </Button>
               <Button
@@ -376,7 +376,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
                 disabled={isLoadingMemo}
                 onClick={() => handleReloadApp()}
               >
-                <FolderSyncIcon className="w-4 h-4" />
+                <FolderSyncIcon className="h-4 w-4" />
                 <span>{t("header.menuApp.reloadAllApps")}</span>
               </Button>
             </TableCell>
@@ -423,7 +423,7 @@ const AppRowActions = (props: {
   }, [scriptsError]);
 
   return (
-    <TableCell className="text-right flex items-center gap-2">
+    <TableCell className="flex items-center gap-2 text-right">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -433,7 +433,7 @@ const AppRowActions = (props: {
               disabled={isLoading}
               onClick={() => handleUnloadApp(baseDir)}
             >
-              <FolderMinusIcon className="w-4 h-4" />
+              <FolderMinusIcon className="h-4 w-4" />
               <span className="sr-only">{t("header.menuApp.unloadApp")}</span>
             </Button>
           </TooltipTrigger>
@@ -452,7 +452,7 @@ const AppRowActions = (props: {
               disabled={isLoading}
               onClick={() => handleReloadApp(baseDir)}
             >
-              <FolderSyncIcon className="w-4 h-4" />
+              <FolderSyncIcon className="h-4 w-4" />
               <span className="sr-only">{t("header.menuApp.reloadApp")}</span>
             </Button>
           </TooltipTrigger>
@@ -471,7 +471,7 @@ const AppRowActions = (props: {
               disabled={isLoading}
               onClick={() => handleAppInstallAll(baseDir)}
             >
-              <HardDriveDownloadIcon className="w-4 h-4" />
+              <HardDriveDownloadIcon className="h-4 w-4" />
               <span className="sr-only">{t("header.menuApp.installAll")}</span>
             </Button>
           </TooltipTrigger>
@@ -757,10 +757,10 @@ export const AppTemplateWidget = (props: {
                     size="sm"
                     className="w-full max-w-sm"
                   >
-                    <span className="text-ellipsis overflow-hidden">
+                    <span className="overflow-hidden text-ellipsis">
                       {field.value || t("action.chooseBaseDir")}
                     </span>
-                    <FolderIcon className="w-4 h-4" />
+                    <FolderIcon className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="h-fit w-fit max-w-screen">

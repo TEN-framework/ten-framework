@@ -4,15 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import type { z } from "zod";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { z } from "zod";
-
+import type { IFMItem } from "@/components/FileManager/utils";
 import { TEN_DEFAULT_APP_RUN_SCRIPT } from "@/constants";
-import { PREFERENCES_SCHEMA, EPreferencesLocale, IApp } from "@/types/apps";
-
-import { type IFMItem } from "@/components/FileManager/utils";
-import { type IGraph } from "@/types/graphs";
+import {
+  EPreferencesLocale,
+  type IApp,
+  type PREFERENCES_SCHEMA,
+} from "@/types/apps";
+import type { IGraph } from "@/types/graphs";
 
 export interface IAppStore {
   currentWorkspace: {

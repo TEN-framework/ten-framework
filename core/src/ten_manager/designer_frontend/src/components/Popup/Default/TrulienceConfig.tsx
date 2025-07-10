@@ -4,14 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useTranslation } from "react-i18next";
 
-import { IWidget } from "@/types/widgets";
-import { AutoForm } from "@/components/ui/autoform";
 import { fieldConfig, ZodProvider } from "@autoform/zod";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import { AutoForm } from "@/components/ui/autoform";
 import { Button } from "@/components/ui/Button";
 import { useAppStore, useWidgetStore } from "@/store";
+import type { IWidget } from "@/types/widgets";
 
 export const TrulienceConfigWidgetTitle = () => {
   const { t } = useTranslation();
@@ -83,7 +83,7 @@ export const TrulienceConfigWidgetContent = (_props: { widget: IWidget }) => {
   ];
 
   return (
-    <div className="flex flex-col gap-2 h-full w-full overflow-y-auto">
+    <div className="flex h-full w-full flex-col gap-2 overflow-y-auto">
       <>
         <AutoForm
           onSubmit={async (data) => {
