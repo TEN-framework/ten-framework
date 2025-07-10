@@ -9,11 +9,11 @@ import z from "zod";
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
 import {
-  type ISetBaseDirResponse,
+  AppCreateReqSchema,
   type IExtensionAddon,
   type IGetAppsResponse,
+  type ISetBaseDirResponse,
   TemplatePkgsReqSchema,
-  AppCreateReqSchema,
 } from "@/types/apps";
 import { ETenPackageType } from "@/types/extension";
 

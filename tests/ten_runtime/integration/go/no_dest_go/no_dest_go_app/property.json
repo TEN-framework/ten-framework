@@ -9,14 +9,16 @@
         "name": "default",
         "auto_start": true,
         "singleton": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "A",
-            "addon": "extension_a",
-            "extension_group": "nodetest"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "A",
+              "addon": "extension_a",
+              "extension_group": "nodetest"
+            }
+          ]
+        }
       }
     ]
   }

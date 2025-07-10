@@ -42,7 +42,7 @@ mod tests {
         assert!(result.is_ok());
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
 
         // Check that new_base_dir was set correctly
         assert!(new_base_dir.is_some());
@@ -89,7 +89,7 @@ mod tests {
         assert!(result.is_ok());
         let graph = result.unwrap();
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(graph.nodes[0].name, "test_extension");
+        assert_eq!(graph.nodes[0].get_name(), "test_extension");
 
         // Check that new_base_dir was set correctly
         assert!(new_base_dir.is_some());

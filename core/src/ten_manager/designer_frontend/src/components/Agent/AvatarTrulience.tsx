@@ -6,12 +6,12 @@
 //
 "use client";
 
+import type { IRemoteAudioTrack } from "agora-rtc-react";
+import { Maximize, Minimize } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TrulienceAvatar } from "trulience-sdk";
-import { IRemoteAudioTrack } from "agora-rtc-react";
-import { Maximize, Minimize } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Progress, ProgressIndicator } from "@/components/ui/Progress";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store";
 import "@/components/Agent/trulience.css";
 
@@ -103,9 +103,9 @@ export default function Avatar({ audioTrack }: AvatarProps) {
     >
       <button
         className={cn(
-          "absolute z-10 top-2 right-2",
-          "bg-black/50 p-2 rounded-lg",
-          "hover:bg-black/70 transition"
+          "absolute top-2 right-2 z-10",
+          "rounded-lg bg-black/50 p-2",
+          "transition hover:bg-black/70"
         )}
         onClick={() => setFullscreen((prevValue) => !prevValue)}
       >
@@ -122,8 +122,10 @@ export default function Avatar({ audioTrack }: AvatarProps) {
       {/* Show a loader overlay while progress < 1 */}
       {errorMessage ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center
-                     bg-red-500 bg-opacity-80 text-white"
+          className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center",
+            "bg-red-500 bg-opacity-80 text-white"
+          )}
         >
           <div>{errorMessage}</div>
         </div>
@@ -150,7 +152,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
             >
               <ProgressIndicator
                 className={cn(
-                  "ease-[cubic-bezier(0.65, 0, 0.35, 1)]",
+                  "0, 0.35, 1)] ease-[cubic-bezier(0.65,",
                   "size-full bg-white",
                   "transition-transform duration-[660ms]"
                 )}

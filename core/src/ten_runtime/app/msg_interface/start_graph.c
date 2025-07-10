@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/app/base_dir.h"
 #include "include_internal/ten_runtime/app/close.h"
 #include "include_internal/ten_runtime/app/engine_interface.h"
 #include "include_internal/ten_runtime/app/metadata.h"
@@ -24,6 +25,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
+#include "include_internal/ten_rust/ten_rust.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -91,6 +93,47 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
   TEN_ASSERT(
       connection ? ten_app_has_orphan_connection(self, connection) : true,
       "Invalid argument.");
+
+  // If the start_graph command contains graph_json, we should flatten the
+  // graph json first, and then apply the flattened graph json to the cmd.
+  ten_string_t *graph_json_str = ten_cmd_start_graph_get_graph_json(cmd);
+  if (graph_json_str && !ten_string_is_empty(graph_json_str)) {
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Flatten the graph json string.
+    char *err_msg = NULL;
+    const char *flattened_graph_json_str =
+        ten_rust_graph_validate_complete_flatten(
+            ten_string_get_raw_str(graph_json_str), ten_app_get_base_dir(self),
+            &err_msg);
+    if (!flattened_graph_json_str) {
+      TEN_LOGE("Failed to flatten graph json string: %s", err_msg);
+      ten_rust_free_cstring(err_msg);
+      return false;
+    }
+
+    bool rc = ten_cmd_start_graph_apply_graph_json_str(
+        cmd, flattened_graph_json_str, err);
+    if (!rc) {
+      TEN_LOGE(
+          "Failed to apply flattened graph json string to cmd, flattened "
+          "graph json string: %s, error: %s",
+          flattened_graph_json_str, ten_error_message(err));
+      return false;
+    }
+
+    ten_rust_free_cstring(flattened_graph_json_str);
+#else
+    bool rc = ten_cmd_start_graph_apply_graph_json_str(
+        cmd, ten_string_get_raw_str(graph_json_str), err);
+    if (!rc) {
+      TEN_LOGE(
+          "Failed to apply graph json string to cmd, graph json string: "
+          "%s, error: %s",
+          ten_string_get_raw_str(graph_json_str), ten_error_message(err));
+      return false;
+    }
+#endif
+  }
 
   // If the start_graph command is aimed at initting from a predefined graph, we
   // should append the extension info list of the predefined graph to the cmd.

@@ -6,7 +6,9 @@
 //
 import { InfoIcon, SettingsIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
+import { AboutWidgetTitle } from "@/components/Popup/Default/About";
+import { PreferencesWidgetTitle } from "@/components/Popup/Default/Preferences";
+import { Button } from "@/components/ui/Button";
 import {
   NavigationMenuContent,
   NavigationMenuItem,
@@ -14,7 +16,12 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
 import { Separator } from "@/components/ui/Separator";
-import { Button } from "@/components/ui/Button";
+import {
+  ABOUT_WIDGET_ID,
+  CONTAINER_DEFAULT_ID,
+  GROUP_ABOUT_ID,
+  PREFERENCES_WIDGET_ID,
+} from "@/constants/widgets";
 import { cn } from "@/lib/utils";
 import { useWidgetStore } from "@/store/widget";
 import {
@@ -22,14 +29,6 @@ import {
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-import {
-  ABOUT_WIDGET_ID,
-  CONTAINER_DEFAULT_ID,
-  PREFERENCES_WIDGET_ID,
-  GROUP_ABOUT_ID,
-} from "@/constants/widgets";
-import { AboutWidgetTitle } from "@/components/Popup/Default/About";
-import { PreferencesWidgetTitle } from "@/components/Popup/Default/Preferences";
 
 export function DesignerMenu(props: {
   disableMenuClick?: boolean;
@@ -93,11 +92,11 @@ export function DesignerMenu(props: {
           {t("header.menuDesigner.title")}
         </NavigationMenuTrigger>
         <NavigationMenuContent
-          className={cn("flex flex-col items-center px-1 py-1.5 gap-1.5")}
+          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
         >
           <NavigationMenuLink asChild>
             <Button
-              className="w-full justify-start max-w-(--breakpoint-sm)"
+              className="w-full max-w-(--breakpoint-sm) justify-start"
               variant="ghost"
               onClick={openPreferences}
             >
@@ -108,7 +107,7 @@ export function DesignerMenu(props: {
           <Separator className="w-full" />
           <NavigationMenuLink asChild>
             <Button
-              className="w-full justify-start max-w-(--breakpoint-sm)"
+              className="w-full max-w-(--breakpoint-sm) justify-start"
               variant="ghost"
               onClick={openAbout}
             >

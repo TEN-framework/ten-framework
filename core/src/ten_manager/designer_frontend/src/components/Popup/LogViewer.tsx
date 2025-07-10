@@ -8,14 +8,13 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 
 import { LogViewerFrontStageWidget } from "@/components/Widget/LogViewerWidget";
+import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
+import { useWidgetStore } from "@/store/widget";
 import {
   EWidgetCategory,
   EWidgetDisplayType,
   type ILogViewerWidget,
 } from "@/types/widgets";
-import { useWidgetStore } from "@/store/widget";
-import { GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
-import { CONTAINER_DEFAULT_ID } from "@/constants/widgets";
 
 export const LogViewerPopupTitle = (props: {
   title?: string | React.ReactNode;
@@ -24,7 +23,7 @@ export const LogViewerPopupTitle = (props: {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1.5">
-      <span className="font-medium text-foreground/90 font-sans">
+      <span className="font-medium font-sans text-foreground/90">
         {title || t("popup.logViewer.title")}
       </span>
     </div>

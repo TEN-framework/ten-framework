@@ -4,12 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { useQuery, useMutation } from "@tanstack/react-query";
-
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
-import { ENDPOINT_HELP_TEXT, EHelpTextKey } from "@/api/endpoints";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { type EHelpTextKey, ENDPOINT_HELP_TEXT } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { localeStringToEnum } from "@/api/services/utils";
+import {
+  getTanstackQueryClient,
+  localeStringToEnum,
+  makeAPIRequest,
+} from "@/api/services/utils";
 
 export const retrieveHelpText = async (option: {
   key: string;

@@ -5,15 +5,16 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable max-len */
-import { useTheme } from "next-themes";
-import { Toaster as Sonner } from "sonner";
+
 import {
-  TriangleAlertIcon,
   CircleCheckIcon,
+  CircleXIcon,
   InfoIcon,
   LoaderCircleIcon,
-  CircleXIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -41,7 +42,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         warning: <TriangleAlertIcon className="h-4 w-4 text-amber-500" />,
         error: <CircleXIcon className="h-4 w-4 text-red-500" />,
         loading: (
-          <LoaderCircleIcon className="h-4 w-4 text-gray-500 animate-spin" />
+          <LoaderCircleIcon className="h-4 w-4 animate-spin text-gray-500" />
         ),
       }}
       {...props}

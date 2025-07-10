@@ -4,8 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
-import { Handle, Position, HandleProps } from "@xyflow/react";
+
+import { Handle, type HandleProps, type Position } from "@xyflow/react";
+import type React from "react";
 
 interface CustomHandleProps extends HandleProps {
   id: string;

@@ -8,7 +8,8 @@ use std::ffi::{c_char, CStr, CString};
 use tokio::runtime::Runtime;
 
 use crate::{
-    graph::graph_info::GraphInfo, pkg_info::manifest::api::ManifestApi,
+    graph::{graph_info::GraphInfo, Graph},
+    pkg_info::manifest::api::ManifestApi,
 };
 
 /// Frees a C string that was allocated by Rust.
@@ -317,6 +318,196 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
 
     // Convert to C string
     match CString::new(flattened_api_json_str) {
+        Ok(c_string) => c_string.into_raw(),
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            std::ptr::null() // Contains null bytes
+        }
+    }
+}
+
+/// Validates the graph json string.
+///
+/// # Parameters
+/// - `graph_json_str`: A null-terminated C string containing the JSON
+///   representation of a graph. Must not be NULL.
+/// - `err_msg`: Pointer to a char* that will be set to an error message if the
+///   function fails. Can be NULL if error details are not needed. If set, the
+///   error message must be freed using `ten_rust_free_cstring()`.
+///
+/// # Returns
+/// - On success: true
+/// - On failure: false
+///
+/// # Safety
+///
+/// The caller must ensure that:
+/// - `graph_json_str` is a valid null-terminated C string
+/// - If err_msg is not NULL, the error message (if set) must be freed using
+///   `ten_rust_free_cstring()`
+/// - The input string contains valid UTF-8 encoded JSON
+///
+/// # Memory Management
+///
+/// The error message (if set) is allocated by Rust and must be freed by
+/// calling `ten_rust_free_cstring()` when no longer needed.
+#[no_mangle]
+pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
+    graph_json_str: *const c_char,
+    err_msg: *mut *mut c_char,
+) -> bool {
+    if graph_json_str.is_null() {
+        if !err_msg.is_null() {
+            let err_msg_c_str = CString::new("graph_json_str is null").unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return false;
+    }
+
+    let c_graph_json_str = CStr::from_ptr(graph_json_str);
+    let rust_graph_json_str = match c_graph_json_str.to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            return false; // Invalid UTF-8
+        }
+    };
+
+    let result = Graph::from_str_and_validate(rust_graph_json_str);
+    if result.is_err() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new(result.err().unwrap().to_string()).unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return false;
+    }
+
+    let result = result.unwrap().static_check();
+    if result.is_err() {
+        if !err_msg.is_null() {
+            let err_msg_c_str =
+                CString::new(result.err().unwrap().to_string()).unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return false;
+    }
+
+    true
+}
+
+/// Validates the graph json string and returns it as a JSON string.
+///
+/// # Parameters
+/// - `json_str`: A null-terminated C string containing the JSON representation
+///   of a graph. Must not be NULL.
+/// - `current_base_dir`: A null-terminated C string containing the current base
+///   directory. Can be NULL if the current base directory is not known.
+/// - `err_msg`: Pointer to a char* that will be set to an error message if the
+///   function fails. Can be NULL if error details are not needed. If set, the
+///   error message must be freed using `ten_rust_free_cstring()`.
+///
+/// # Returns
+/// - On success: A pointer to a newly allocated C string containing the
+///   processed graph JSON
+/// - On failure: NULL pointer
+///
+/// # Safety
+///
+/// The caller must ensure that:
+/// - `json_str` is a valid null-terminated C string
+/// - `current_base_dir` is a valid null-terminated C string, or NULL
+/// - If err_msg is not NULL, the error message (if set) must be freed using
+///   `ten_rust_free_cstring()`
+/// - The input string contains valid UTF-8 encoded JSON
+///
+/// # Memory Management
+///
+/// Both the returned string (if not NULL) and error message (if set) are
+/// allocated by Rust and must be freed by calling `ten_rust_free_cstring()`
+/// when no longer needed.
+#[no_mangle]
+pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
+    json_str: *const c_char,
+    current_base_dir: *const c_char,
+    err_msg: *mut *mut c_char,
+) -> *const c_char {
+    if json_str.is_null() {
+        if !err_msg.is_null() {
+            let err_msg_c_str = CString::new("json_str is null").unwrap();
+            *err_msg = err_msg_c_str.into_raw();
+        }
+        return std::ptr::null();
+    }
+
+    // Convert C string to Rust string
+    let json_str_c_str = CStr::from_ptr(json_str);
+    let json_str_rust_str = match json_str_c_str.to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            return std::ptr::null(); // Invalid UTF-8
+        }
+    };
+
+    let current_base_dir_rust_str = if current_base_dir.is_null() {
+        None
+    } else {
+        let current_base_dir_c_str = CStr::from_ptr(current_base_dir);
+        let current_base_dir_rust_str = match current_base_dir_c_str.to_str() {
+            Ok(s) => s,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Invalid UTF-8
+            }
+        };
+        Some(current_base_dir_rust_str)
+    };
+
+    // Parse the JSON string into a Graph
+    let graph = {
+        let rt = Runtime::new().unwrap();
+        match rt.block_on(Graph::from_str_with_base_dir(
+            json_str_rust_str,
+            current_base_dir_rust_str,
+        )) {
+            Ok(g) => g,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Parsing failed
+            }
+        }
+    };
+
+    // Serialize the graph back to JSON
+    let json_output = match serde_json::to_string(&graph) {
+        Ok(json) => json,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            return std::ptr::null(); // Serialization failed
+        }
+    };
+
+    // Convert to C string
+    match CString::new(json_output) {
         Ok(c_string) => c_string.into_raw(),
         Err(e) => {
             if !err_msg.is_null() {

@@ -4,8 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import React from "react";
-import { ObjectWrapperProps } from "@autoform/react";
+
+import type { ObjectWrapperProps } from "@autoform/react";
+import type React from "react";
 
 export const ObjectWrapper: React.FC<ObjectWrapperProps> = ({
   label,
@@ -13,7 +14,7 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">{label}</h3>
+      <h3 className="font-medium text-lg">{label}</h3>
       {children}
     </div>
   );

@@ -54,12 +54,14 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "addon": "predefined_graph_engine_own_eventloop__extension",
-                            "extension_group": "predefined_graph_engine_own_eventloop__extension_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "addon": "predefined_graph_engine_own_eventloop__extension",
+                              "extension_group": "predefined_graph_engine_own_eventloop__extension_group"
+                            }]
+                          }
                         }]
                       }
                     })"

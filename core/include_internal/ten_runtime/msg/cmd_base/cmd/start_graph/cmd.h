@@ -30,6 +30,11 @@ typedef struct ten_cmd_start_graph_t {
 
   // ten_shared_ptr_t of ten_extension_info_t
   ten_list_t extensions_info;
+
+  // The graph json string stored in the start_graph cmd, which will be
+  // flattened into extension_groups_info and extensions_info when the app
+  // processes the cmd, and graph_json will be cleared afterwards.
+  ten_value_t graph_json;  // string
 } ten_cmd_start_graph_t;
 
 TEN_RUNTIME_PRIVATE_API void
@@ -89,3 +94,9 @@ TEN_RUNTIME_PRIVATE_API ten_msg_t *ten_raw_cmd_start_graph_as_msg_clone(
 TEN_RUNTIME_PRIVATE_API bool ten_raw_cmd_start_graph_loop_all_fields(
     ten_msg_t *self, ten_raw_msg_process_one_field_func_t cb, void *user_data,
     ten_error_t *err);
+
+TEN_RUNTIME_PRIVATE_API bool ten_cmd_start_graph_apply_graph_json_str(
+    ten_shared_ptr_t *self, const char *json_str, ten_error_t *err);
+
+TEN_RUNTIME_PRIVATE_API ten_string_t *ten_cmd_start_graph_get_graph_json(
+    ten_shared_ptr_t *self);
