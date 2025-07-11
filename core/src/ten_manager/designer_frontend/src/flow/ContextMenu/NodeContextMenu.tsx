@@ -35,7 +35,7 @@ import ContextMenu, {
   type IContextMenuItem,
 } from "@/flow/ContextMenu/ContextMenu";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import type { TCustomNode } from "@/types/flow";
+import type { TCommonNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
 import {
   EWidgetCategory,
@@ -50,12 +50,12 @@ interface NodeContextMenuProps {
   visible: boolean;
   x: number;
   y: number;
-  node: TCustomNode;
+  node: TCommonNode;
   baseDir?: string | null;
   graphId?: string | null;
   onClose: () => void;
   onLaunchTerminal: (data: ITerminalWidgetData) => void;
-  onLaunchLogViewer?: (node: TCustomNode) => void;
+  onLaunchLogViewer?: (node: TCommonNode) => void;
 }
 
 const NodeContextMenu: React.FC<NodeContextMenuProps> = ({

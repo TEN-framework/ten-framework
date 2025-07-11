@@ -5,9 +5,26 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import type { Edge, Node } from "@xyflow/react";
-
 import type { EConnectionType, IBackendNode } from "@/types/graphs";
 
+export enum ECustomNodeType {
+  EXTENSION = "extension",
+  SELECTOR = "selector",
+  SUB_GRAPH = "sub-graph",
+}
+
+export interface IExtensionNodeData extends IBackendNode {
+  _type: ECustomNodeType.EXTENSION;
+  src: Record<EConnectionType, TCustomEdgeAddressData[]>;
+  target: Record<EConnectionType, TCustomEdgeAddressData[]>;
+  url?: string; // ? need to be removed(ws)
+  [key: string]: unknown;
+}
+export type TExtensionNode = Node<IExtensionNodeData, "extensionNode">;
+
+export type TCommonNode = TExtensionNode;
+
+/** @deprecated */
 export type TCustomNodeData = Partial<IBackendNode> & {
   addon: string;
   name: string;
@@ -18,6 +35,7 @@ export type TCustomNodeData = Partial<IBackendNode> & {
   target: Record<EConnectionType, TCustomEdgeAddressData[]>;
 };
 
+/** @deprecated */
 export type TCustomNode = Node<TCustomNodeData, "customNode">;
 
 export type TCustomEdgeAddress = {

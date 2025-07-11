@@ -12,13 +12,13 @@ import {
   GraphUpdateNodePropertyWidget,
 } from "@/components/Widget/GraphsWidget";
 import { useWidgetStore } from "@/store/widget";
-import type { TCustomNode } from "@/types/flow";
+import type { TCommonNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
 import type { IGraphWidget } from "@/types/widgets";
 
 export const GraphPopupTitle = (props: {
   type: EGraphActions;
-  node?: TCustomNode;
+  node?: TCommonNode;
 }) => {
   const { type, node } = props;
   const { t } = useTranslation();

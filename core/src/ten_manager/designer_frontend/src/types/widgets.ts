@@ -9,7 +9,7 @@ import type { editor as MonacoEditor } from "monaco-editor";
 import { z } from "zod";
 import type { EDocLinkKey } from "@/types/doc";
 import type { IListTenCloudStorePackage } from "@/types/extension";
-import type { TCustomNode } from "@/types/flow";
+import type { TCommonNode } from "@/types/flow";
 import type { EConnectionType, EGraphActions } from "@/types/graphs";
 
 export enum EWidgetDisplayType {
@@ -138,9 +138,9 @@ export interface IGraphWidgetData {
   base_dir: string;
   graph_id?: string;
   app_uri?: string | null;
-  node?: TCustomNode;
-  src_node?: TCustomNode;
-  dest_node?: TCustomNode;
+  node?: TCommonNode;
+  src_node?: TCommonNode;
+  dest_node?: TCommonNode;
 }
 
 export interface IGraphWidget extends IWidgetBase<IGraphWidgetData> {

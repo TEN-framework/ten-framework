@@ -1,0 +1,98 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+
+import {
+  applyEdgeChanges,
+  applyNodeChanges,
+  Controls,
+  type EdgeChange,
+  MiniMap,
+  type NodeChange,
+  ReactFlow,
+} from "@xyflow/react";
+import * as React from "react";
+import { ThemeProviderContext } from "@/components/theme-context";
+import CustomEdge from "@/flow/CustomEdge";
+import { syncGraphNodeGeometry } from "@/flow/graph";
+import { ExtensionNode } from "@/flow/node";
+import { cn } from "@/lib/utils";
+import { useAppStore, useFlowStore } from "@/store";
+import type { TCustomEdge, TExtensionNode } from "@/types/flow";
+
+import "@xyflow/react/dist/style.css"; // Import react-flow style.
+import "@/flow/reactflow.css"; // Import react-flow style.
+
+export const FlowCanvas = (props: { className?: string }) => {
+  const { className } = props;
+
+  const { currentWorkspace } = useAppStore(); // todo: remove
+
+  const { nodes, setNodes, edges, setEdges } = useFlowStore();
+
+  const { theme } = React.useContext(ThemeProviderContext);
+
+  //   const onConnect: OnConnect = React.useCallback(
+  //     (params) => {
+  //       setEdges((edges) =>
+  //         addEdge({ type: "data", data: { key: "value" }, ...params }, edges)
+  //       );
+  //     },
+  //     [setEdges]
+  //   );
+
+  const onNodesChange = React.useCallback(
+    (changes: NodeChange<TExtensionNode>[]) => {
+      const newNodes = applyNodeChanges(changes, nodes);
+      const positionChanges = changes.filter(
+        (change) => change.type === "position" && change.dragging === false
+      );
+      if (positionChanges?.length > 0 && currentWorkspace?.graph?.uuid) {
+        syncGraphNodeGeometry(currentWorkspace?.graph?.uuid, newNodes, {
+          forceLocal: true,
+        });
+      }
+      setNodes(newNodes);
+    },
+    [currentWorkspace?.graph?.uuid, nodes, setNodes]
+  );
+
+  const onEdgesChange = React.useCallback(
+    (changes: EdgeChange<TCustomEdge>[]) => {
+      const newEdges = applyEdgeChanges(changes, edges);
+      setEdges(newEdges);
+    },
+    [edges, setEdges]
+  );
+
+  return (
+    <div
+      className={cn("flow-container h-[calc(100vh-40px)] w-full", className)}
+    >
+      <ReactFlow
+        colorMode={theme}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        // onConnect={onConnect}
+        nodeTypes={{
+          extensionNode: ExtensionNode,
+        }}
+        edgeTypes={{
+          customEdge: CustomEdge,
+        }}
+        fitView
+        nodesDraggable
+        edgesFocusable
+        style={{ width: "100%", height: "100%" }}
+      >
+        <Controls />
+        <MiniMap zoomable pannable />
+      </ReactFlow>
+    </div>
+  );
+};

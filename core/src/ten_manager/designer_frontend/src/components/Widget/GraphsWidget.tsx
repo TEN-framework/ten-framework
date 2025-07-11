@@ -65,7 +65,7 @@ import {
 } from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useAppStore, useDialogStore, useFlowStore } from "@/store";
-import type { TCustomNode } from "@/types/flow";
+import type { TCommonNode } from "@/types/flow";
 import {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
@@ -227,7 +227,7 @@ export const GraphAddNodeWidget = (props: {
   base_dir: string;
   graph_id?: string;
   postAddNodeActions?: () => void | Promise<void>;
-  node?: TCustomNode;
+  node?: TCommonNode;
   isReplaceNode?: boolean;
 }) => {
   const {
@@ -807,7 +807,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
   base_dir: string;
   app_uri?: string | null;
   graph_id?: string;
-  node: TCustomNode;
+  node: TCommonNode;
   postUpdateNodePropertyActions?: () => void | Promise<void>;
 }) => {
   const { app_uri, graph_id, node, postUpdateNodePropertyActions } = props;
@@ -909,8 +909,8 @@ export const GraphConnectionCreationWidget = (props: {
   base_dir: string;
   app_uri?: string | null;
   graph_id?: string;
-  src_node?: TCustomNode;
-  dest_node?: TCustomNode;
+  src_node?: TCommonNode;
+  dest_node?: TCommonNode;
   postAddConnectionActions?: () => void | Promise<void>;
 }) => {
   const {
@@ -1034,7 +1034,7 @@ export const GraphConnectionCreationWidget = (props: {
         targetArray.push(cur);
         return prev;
       },
-      [[], []] as [TCustomNode[], TCustomNode[]]
+      [[], []] as [TCommonNode[], TCommonNode[]]
     );
   }, [nodes, src_node, dest_node?.data.name]);
 

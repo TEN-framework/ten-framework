@@ -6,17 +6,17 @@
 //
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { TCustomEdge, TCustomNode } from "@/types/flow";
+import type { TCommonNode, TCustomEdge } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
 
 export interface IFlowStore {
-  nodes: TCustomNode[];
+  nodes: TCommonNode[];
   edges: TCustomEdge[];
   cdavInfo: Map<
     string,
     {
-      source: TCustomNode;
-      target: TCustomNode;
+      source: TCommonNode;
+      target: TCommonNode;
       relatedEdges: TCustomEdge[];
       connectionCounts: {
         cmd: number;
@@ -27,9 +27,9 @@ export interface IFlowStore {
     }
   >;
 
-  setNodes: (nodes: TCustomNode[]) => void;
+  setNodes: (nodes: TCommonNode[]) => void;
   setEdges: (edges: TCustomEdge[]) => void;
-  setNodesAndEdges: (nodes: TCustomNode[], edges: TCustomEdge[]) => void;
+  setNodesAndEdges: (nodes: TCommonNode[], edges: TCustomEdge[]) => void;
 }
 
 export const useFlowStore = create<IFlowStore>()(
@@ -38,7 +38,7 @@ export const useFlowStore = create<IFlowStore>()(
     edges: [],
     cdavInfo: new Map(),
 
-    setNodes: (nodes: TCustomNode[]) => {
+    setNodes: (nodes: TCommonNode[]) => {
       set({ nodes });
       // Recalculate CDAV info when nodes change
       const { edges } = get();
@@ -54,7 +54,7 @@ export const useFlowStore = create<IFlowStore>()(
       set({ cdavInfo });
     },
 
-    setNodesAndEdges: (nodes: TCustomNode[], edges: TCustomEdge[]) => {
+    setNodesAndEdges: (nodes: TCommonNode[], edges: TCustomEdge[]) => {
       set({ nodes, edges });
       const cdavInfo = calculateCDAVInfo(nodes, edges);
       set({ cdavInfo });
@@ -62,7 +62,7 @@ export const useFlowStore = create<IFlowStore>()(
   }))
 );
 
-function calculateCDAVInfo(nodes: TCustomNode[], edges: TCustomEdge[]) {
+function calculateCDAVInfo(nodes: TCommonNode[], edges: TCustomEdge[]) {
   const cdavInfo = new Map();
 
   edges.forEach((edge) => {
