@@ -9,6 +9,7 @@
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
   },
+  "biome.configurationPath": "biome.json",
   "black-formatter.args": [
     "--line-length",
     "80",

@@ -23,14 +23,14 @@ import * as React from "react";
 import { Separator } from "@/components/ui/Separator";
 import CustomHandle from "@/flow/CustomHandle";
 import { cn } from "@/lib/utils";
-import type { TCustomNode, TCustomNodeData } from "@/types/flow";
+import type { TCommonNode, TCustomNodeData } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
 import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
 const onConnect = (params: Connection | Edge) =>
   console.log("Handle onConnect", params);
 
-export function CustomNode({ data, isConnectable }: NodeProps<TCustomNode>) {
+export function CustomNode({ data, isConnectable }: NodeProps<TCommonNode>) {
   return (
     <>
       <div

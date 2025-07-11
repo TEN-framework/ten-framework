@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+// TODO: delete this file when FlowCanvas is fully implemented.
 
 import {
   type Connection,
@@ -12,6 +13,7 @@ import {
   MiniMap,
   type NodeChange,
   ReactFlow,
+  useNodesState,
 } from "@xyflow/react";
 import { BrushCleaningIcon } from "lucide-react";
 import {
@@ -29,9 +31,15 @@ import EdgeContextMenu from "@/flow/ContextMenu/EdgeContextMenu";
 import NodeContextMenu from "@/flow/ContextMenu/NodeContextMenu";
 import CustomEdge from "@/flow/CustomEdge";
 import CustomNode from "@/flow/CustomNode";
+import { ExtensionNode } from "@/flow/node";
 import { cn } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
-import type { TCustomEdge, TCustomNode } from "@/types/flow";
+import type {
+  IExtensionNodeData,
+  TCommonNode,
+  TCustomEdge,
+  TExtensionNode,
+} from "@/types/flow";
 import type { EConnectionType, EGraphActions } from "@/types/graphs";
 import {
   EDefaultWidgetType,
@@ -74,9 +82,9 @@ export interface FlowCanvasRef {
 }
 
 interface FlowCanvasProps {
-  nodes: TCustomNode[];
+  nodes: TCommonNode[];
   edges: TCustomEdge[];
-  onNodesChange: (changes: NodeChange<TCustomNode>[]) => void;
+  onNodesChange: (changes: NodeChange<TCommonNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<TCustomEdge>[]) => void;
   onConnect: (connection: Connection) => void;
   className?: string;
@@ -96,7 +104,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       y: number;
       type?: "node" | "edge" | "pane";
       edge?: TCustomEdge;
-      node?: TCustomNode;
+      node?: TCommonNode;
     }>({ visible: false, x: 0, y: 0 });
 
     const launchTerminal = (data: ITerminalWidgetData) => {
@@ -144,7 +152,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
       });
     };
 
-    const launchLogViewer = (node: TCustomNode) => {
+    const launchLogViewer = (node: TCommonNode) => {
       const widgetId = `logViewer-${Date.now()}`;
       appendWidget({
         container_id: CONTAINER_DEFAULT_ID,
@@ -379,7 +387,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
 
     // Right click nodes.
     const clickNodeContextMenu = useCallback(
-      (event: ReactMouseEvent, node: TCustomNode) => {
+      (event: ReactMouseEvent, node: TCommonNode) => {
         event.preventDefault();
         setContextMenu({
           visible: true,
@@ -469,7 +477,7 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
             customEdge: CustomEdge,
           }}
           nodeTypes={{
-            customNode: CustomNode,
+            customNode: ExtensionNode,
           }}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -515,7 +523,6 @@ const FlowCanvas = forwardRef<FlowCanvasRef, FlowCanvasProps>(
             </defs>
           </svg>
         </ReactFlow>
-
         {renderContextMenu()}
       </div>
     );

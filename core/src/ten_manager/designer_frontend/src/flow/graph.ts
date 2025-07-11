@@ -13,10 +13,11 @@ import {
   postSetGraphNodeGeometry,
 } from "@/api/services/storage";
 import type { IExtensionAddon } from "@/types/apps";
-import type {
-  TCustomEdge,
-  TCustomEdgeAddressMap,
-  TCustomNode,
+import {
+  ECustomNodeType,
+  type TCommonNode,
+  type TCustomEdge,
+  type TCustomEdgeAddressMap,
 } from "@/types/flow";
 import {
   EConnectionType,
@@ -29,11 +30,11 @@ const NODE_HEIGHT = 48;
 
 export const generateRawNodes = (
   backendNodes: IBackendNode[]
-): TCustomNode[] => {
+): TCommonNode[] => {
   return backendNodes.map((n, idx) => ({
     id: n.name,
     position: { x: idx * 200, y: 100 },
-    type: "customNode",
+    type: "extensionNode",
     data: {
       name: n.name,
       addon: n.addon,
@@ -41,6 +42,8 @@ export const generateRawNodes = (
       app: n.app,
       property: n.property,
       api: n.api,
+      _type: ECustomNodeType.EXTENSION,
+      is_installed: true,
       src: {
         [EConnectionType.CMD]: [],
         [EConnectionType.DATA]: [],
@@ -136,9 +139,9 @@ export const generateRawEdges = (
 };
 
 export const updateNodesWithConnections = (
-  nodes: TCustomNode[],
+  nodes: TCommonNode[],
   edgeAddressMap: TCustomEdgeAddressMap
-): TCustomNode[] => {
+): TCommonNode[] => {
   nodes.forEach((node) => {
     [
       EConnectionType.CMD,
@@ -161,8 +164,8 @@ export const updateNodesWithConnections = (
 
 export const updateNodesWithAddonInfo = async (
   baseDir: string,
-  nodes: TCustomNode[]
-): Promise<TCustomNode[]> => {
+  nodes: TCommonNode[]
+): Promise<TCommonNode[]> => {
   const nodesAddonNameList = [...new Set(nodes.map((node) => node.data.addon))];
   const addonInfoMap = new Map<string, IExtensionAddon>();
   for (const addonName of nodesAddonNameList) {
@@ -191,9 +194,9 @@ export const updateNodesWithAddonInfo = async (
 };
 
 export const generateNodesAndEdges = (
-  inputNodes: TCustomNode[],
+  inputNodes: TCommonNode[],
   inputEdges: TCustomEdge[]
-): { nodes: TCustomNode[]; edges: TCustomEdge[] } => {
+): { nodes: TCommonNode[]; edges: TCustomEdge[] } => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -279,11 +282,11 @@ export const generateNodesAndEdges = (
 
 export const syncGraphNodeGeometry = async (
   graphId: string,
-  nodes: TCustomNode[],
+  nodes: TCommonNode[],
   options: {
     forceLocal?: boolean; // override all nodes geometry
   } = {}
-): Promise<TCustomNode[]> => {
+): Promise<TCommonNode[]> => {
   const isForceLocal = options.forceLocal ?? false;
 
   const localNodesGeometry = nodes.map((node) => ({
@@ -359,7 +362,7 @@ export const syncGraphNodeGeometry = async (
       }
     });
 
-    return nodesWithGeometry as TCustomNode[];
+    return nodesWithGeometry as TCommonNode[];
   } catch (error) {
     console.error("Error syncing graph node geometry", error);
     return nodes;
