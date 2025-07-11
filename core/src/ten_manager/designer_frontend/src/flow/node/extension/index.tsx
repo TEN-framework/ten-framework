@@ -10,7 +10,6 @@ import {
   type Edge,
   type NodeProps,
   Position,
-  useReactFlow,
 } from "@xyflow/react";
 import {
   AudioLinesIcon,
@@ -20,11 +19,10 @@ import {
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
-import React, { useCallback } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { DropdownMenuItem } from "@/components/ui/DropdownMenu";
 import { BaseHandle } from "@/components/ui/react-flow/BaseHandle";
 import { BaseNode } from "@/components/ui/react-flow/BaseNode";
 import {
@@ -40,23 +38,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
+import { ContextMenu } from "@/flow/node/extension/ContextMenu";
 import { cn } from "@/lib/utils";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
 import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
-export function ExtensionNode({
-  id,
-  data,
-  isConnectable,
-}: NodeProps<TExtensionNode>) {
-  const { setNodes } = useReactFlow();
+export function ExtensionNode(props: NodeProps<TExtensionNode>) {
+  const { data, isConnectable } = props;
 
   const { t } = useTranslation();
-
-  const handleDelete = useCallback(() => {
-    setNodes((nodes) => nodes.filter((node) => node.id !== id));
-  }, [id, setNodes]);
 
   const isInstalled = React.useMemo(() => {
     return data.is_installed;
@@ -111,7 +102,12 @@ export function ExtensionNode({
             className="cursor-pointer"
             label="Open node menu"
           >
-            <DropdownMenuItem onSelect={handleDelete}>Delete</DropdownMenuItem>
+            <ContextMenu
+              // TODO: Fix type casting
+              node={props as unknown as TExtensionNode}
+              baseDir={data._graph.base_dir}
+              graphId={data._graph.uuid}
+            />
           </NodeHeaderMenuAction>
         </NodeHeaderActions>
       </NodeHeader>

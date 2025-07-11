@@ -23,26 +23,29 @@ import {
   EConnectionType,
   type IBackendConnection,
   type IBackendNode,
+  type IGraph,
 } from "@/types/graphs";
 
 const NODE_WIDTH = 172;
 const NODE_HEIGHT = 48;
 
 export const generateRawNodes = (
-  backendNodes: IBackendNode[]
+  backendNodes: IBackendNode[],
+  graph: IGraph
 ): TCommonNode[] => {
   return backendNodes.map((n, idx) => ({
     id: n.name,
     position: { x: idx * 200, y: 100 },
     type: "extensionNode",
     data: {
+      _type: ECustomNodeType.EXTENSION,
+      _graph: graph,
       name: n.name,
       addon: n.addon,
       extension_group: n.extension_group,
       app: n.app,
       property: n.property,
       api: n.api,
-      _type: ECustomNodeType.EXTENSION,
       is_installed: true,
       src: {
         [EConnectionType.CMD]: [],

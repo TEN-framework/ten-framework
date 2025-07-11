@@ -6,10 +6,21 @@
 //
 /* eslint-disable react-refresh/only-export-components */
 
+import type * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { ChevronRightIcon } from "lucide-react";
 import type React from "react";
-
 import { Button, type ButtonProps } from "@/components/ui/Button";
+import {
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/DropdownMenu";
 import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
@@ -70,6 +81,7 @@ interface ContextMenuProps {
   items: IContextMenuItem[];
 }
 
+/** @deprecated */
 export const ContextItem = (props: IContextMenuItem) => {
   if (props._type === EContextMenuItemType.BUTTON) {
     return (
@@ -165,6 +177,7 @@ export const ContextItem = (props: IContextMenuItem) => {
   }
 };
 
+/** @deprecated */
 const ContextMenuContainer: React.FC<ContextMenuProps> = ({
   visible,
   x,
@@ -193,3 +206,118 @@ const ContextMenuContainer: React.FC<ContextMenuProps> = ({
 };
 
 export default ContextMenuContainer;
+
+export enum EContextDropdownMenuItemType {
+  MENU_ITEM = "menu_item",
+  SEPARATOR = "separator",
+  MENU_GROUP = "menu_group",
+  MENU_SUB = "menu_sub",
+  LABEL = "label",
+}
+
+export interface IContextDropdownMenuItemBase {
+  _type: EContextDropdownMenuItemType;
+  _id: string;
+  icon?: React.ReactNode;
+  shortcut?: string | React.ReactNode;
+}
+
+export interface IContextDropdownMenuItem
+  extends IContextDropdownMenuItemBase,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
+  _type: EContextDropdownMenuItemType.MENU_ITEM;
+  inset?: boolean;
+}
+
+export interface IContextDropdownMenuItemSeparator
+  extends IContextDropdownMenuItemBase,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> {
+  _type: EContextDropdownMenuItemType.SEPARATOR;
+}
+
+export interface IContextDropdownMenuItemLabel
+  extends IContextDropdownMenuItemBase,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> {
+  _type: EContextDropdownMenuItemType.LABEL;
+}
+
+export interface IContextDropdownMenuItemGroup
+  extends IContextDropdownMenuItemBase,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Group> {
+  _type: EContextDropdownMenuItemType.MENU_GROUP;
+  children: React.ReactNode;
+}
+
+export interface IContextDropdownMenuItemSub
+  extends IContextDropdownMenuItemBase,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Sub> {
+  _type: EContextDropdownMenuItemType.MENU_SUB;
+  label?: string | React.ReactNode;
+  triggerProps?: React.ComponentPropsWithoutRef<
+    typeof DropdownMenuPrimitive.SubTrigger
+  > & {
+    inset?: boolean;
+  };
+  contentProps?: React.ComponentPropsWithoutRef<
+    typeof DropdownMenuPrimitive.SubContent
+  >;
+  items: (
+    | IContextDropdownMenuItem
+    | IContextDropdownMenuItemSeparator
+    | IContextDropdownMenuItemLabel
+    | IContextDropdownMenuItemGroup
+    | IContextDropdownMenuItemSub
+  )[];
+}
+
+export type ContextDropdownMenuItem =
+  | IContextDropdownMenuItem
+  | IContextDropdownMenuItemSeparator
+  | IContextDropdownMenuItemLabel
+  | IContextDropdownMenuItemGroup
+  | IContextDropdownMenuItemSub;
+export const ContextDropdownMenuItem = (props: {
+  item: ContextDropdownMenuItem;
+}) => {
+  const { item } = props;
+
+  if (item._type === EContextDropdownMenuItemType.MENU_ITEM) {
+    const { children, icon = null, shortcut, ...rest } = item;
+    return (
+      <DropdownMenuItem {...rest}>
+        {icon}
+        {children}
+        {shortcut && <DropdownMenuShortcut>{shortcut}</DropdownMenuShortcut>}
+      </DropdownMenuItem>
+    );
+  }
+  if (item._type === EContextDropdownMenuItemType.SEPARATOR) {
+    return <DropdownMenuSeparator {...item} />;
+  }
+  if (item._type === EContextDropdownMenuItemType.LABEL) {
+    return <DropdownMenuLabel {...item} />;
+  }
+  if (item._type === EContextDropdownMenuItemType.MENU_GROUP) {
+    const { children, ...rest } = item;
+    return <DropdownMenuGroup {...rest}>{children}</DropdownMenuGroup>;
+  }
+  if (item._type === EContextDropdownMenuItemType.MENU_SUB) {
+    const { label, items, triggerProps, contentProps, ...rest } = item;
+    return (
+      <DropdownMenuSub {...rest}>
+        <DropdownMenuSubTrigger {...triggerProps}>
+          {label}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent {...contentProps}>
+            {items.map((item) => (
+              <ContextDropdownMenuItem key={item._id} item={item} />
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    );
+  }
+
+  return null;
+};

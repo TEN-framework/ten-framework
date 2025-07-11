@@ -18,7 +18,7 @@ import { useStorage } from "@/api/services/storage";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
-} from "@/flow/ContextMenu/ContextMenu";
+} from "@/flow/ContextMenu/Base";
 import type { IRunAppParams } from "@/types/apps";
 import { EGraphActions } from "@/types/graphs";
 
