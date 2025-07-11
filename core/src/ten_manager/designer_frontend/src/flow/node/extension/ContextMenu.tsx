@@ -8,6 +8,7 @@
 import {
   ArrowDownToDotIcon,
   ArrowUpFromDotIcon,
+  BrushCleaningIcon,
   FilePenLineIcon,
   LogsIcon,
   ReplaceIcon,
@@ -15,29 +16,32 @@ import {
   TablePropertiesIcon,
   TerminalIcon,
   Trash2Icon,
-  // PinIcon,
 } from "lucide-react";
-import React from "react";
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postDeleteNode, useGraphs } from "@/api/services/graphs";
 import { EditorPopupTitle } from "@/components/Popup/Editor";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
+import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import {
   CONTAINER_DEFAULT_ID,
   GRAPH_ACTIONS_WIDGET_ID,
   GROUP_EDITOR_ID,
   GROUP_GRAPH_ID,
+  GROUP_LOG_VIEWER_ID,
+  GROUP_TERMINAL_ID,
 } from "@/constants/widgets";
-import ContextMenu, {
-  EContextMenuItemType,
-  type IContextMenuItem,
-} from "@/flow/ContextMenu/ContextMenu";
+import {
+  ContextDropdownMenuItem,
+  EContextDropdownMenuItemType,
+} from "@/flow/ContextMenu/Base";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import type { TCommonNode } from "@/types/flow";
+import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
 import {
+  ELogViewerScriptType,
   EWidgetCategory,
   EWidgetDisplayType,
   EWidgetPredefinedCheck,
@@ -46,33 +50,18 @@ import {
   type ITerminalWidgetData,
 } from "@/types/widgets";
 
-interface NodeContextMenuProps {
-  visible: boolean;
-  x: number;
-  y: number;
-  node: TCommonNode;
-  baseDir?: string | null;
-  graphId?: string | null;
-  onClose: () => void;
-  onLaunchTerminal: (data: ITerminalWidgetData) => void;
-  onLaunchLogViewer?: (node: TCommonNode) => void;
-}
-
-const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
-  visible,
-  x,
-  y,
-  node,
-  baseDir,
-  graphId,
-  onClose,
-  onLaunchTerminal,
-  onLaunchLogViewer,
+export const ContextMenu = (props: {
+  node: TExtensionNode;
+  baseDir: string;
+  graphId: string;
 }) => {
+  const { node, baseDir, graphId } = props;
+
   const { t } = useTranslation();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
   const { appendDialog, removeDialog } = useDialogStore();
   const { setNodesAndEdges } = useFlowStore();
-  const { appendWidget } = useWidgetStore();
 
   const { data: graphs } = useGraphs();
 
@@ -80,66 +69,130 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
     Record<string, React.RefObject<IEditorWidgetRef>>
   >({});
 
-  const launchEditor = (data: IEditorWidgetData) => {
-    const widgetId = `${data.url}-${Date.now()}`;
-    appendWidget({
-      container_id: CONTAINER_DEFAULT_ID,
-      group_id: GROUP_EDITOR_ID,
-      widget_id: widgetId,
+  const launchEditor = React.useCallback(
+    (data: IEditorWidgetData) => {
+      const widgetId = `${data.url}-${Date.now()}`;
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: GROUP_EDITOR_ID,
+        widget_id: widgetId,
 
-      category: EWidgetCategory.Editor,
-      display_type: EWidgetDisplayType.Popup,
+        category: EWidgetCategory.Editor,
+        display_type: EWidgetDisplayType.Popup,
 
-      title: <EditorPopupTitle title={data.title} widgetId={widgetId} />,
-      metadata: data,
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-      actions: {
-        checks: [EWidgetPredefinedCheck.EDITOR_UNSAVED_CHANGES],
-        custom_actions: [
-          {
-            id: "save-file",
-            label: t("action.save"),
-            Icon: SaveIcon,
-            onClick: () => {
-              editorRefMappings?.current?.[widgetId]?.current?.save?.();
+        title: <EditorPopupTitle title={data.title} widgetId={widgetId} />,
+        metadata: data,
+        popup: {
+          width: 0.5,
+          height: 0.8,
+        },
+        actions: {
+          checks: [EWidgetPredefinedCheck.EDITOR_UNSAVED_CHANGES],
+          custom_actions: [
+            {
+              id: "save-file",
+              label: t("action.save"),
+              Icon: SaveIcon,
+              onClick: () => {
+                editorRefMappings?.current?.[widgetId]?.current?.save?.();
+              },
+            },
+          ],
+        },
+      });
+    },
+    [appendWidget, t]
+  );
+
+  const launchTerminal = React.useCallback(
+    (data: ITerminalWidgetData) => {
+      const newPopup = { id: `${data.title}-${Date.now()}`, data };
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: GROUP_TERMINAL_ID,
+        widget_id: newPopup.id,
+
+        category: EWidgetCategory.Terminal,
+        display_type: EWidgetDisplayType.Popup,
+
+        title: data.title,
+        metadata: newPopup.data,
+        popup: {
+          width: 0.5,
+          height: 0.8,
+        },
+      });
+    },
+    [appendWidget]
+  );
+
+  const launchLogViewer = React.useCallback(
+    (data: IExtensionNodeData) => {
+      const widgetId = `logViewer-${Date.now()}`;
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: GROUP_LOG_VIEWER_ID,
+        widget_id: widgetId,
+
+        category: EWidgetCategory.LogViewer,
+        display_type: EWidgetDisplayType.Popup,
+
+        title: (
+          <LogViewerPopupTitle
+            title={`${t("popup.logViewer.title")} - ${data.name}`}
+          />
+        ),
+        metadata: {
+          wsUrl: "",
+          scriptType: ELogViewerScriptType.DEFAULT,
+          script: {},
+          options: {
+            filters: {
+              extensions: [data.name],
             },
           },
-          // {
-          //   id: "pin-to-dock",
-          //   label: t("action.pinToDock"),
-          //   Icon: PinIcon,
-          //   onClick: () => {
-          //     onClose();
-          //     editorRefMappings?.current?.[widgetId]?.current?.check?.({
-          //       title: t("action.confirm"),
-          //       content: t("popup.editor.confirmSaveChanges"),
-          //       postConfirm: async () => {
-          //         updateWidgetDisplayType(widgetId, EWidgetDisplayType.Dock);
-          //       },
-          //     });
-          //   },
-          // },
-        ],
-      },
-    });
-  };
+        },
+        popup: {
+          width: 0.5,
+          height: 0.8,
+        },
+        actions: {
+          onClose: () => {
+            removeBackstageWidget(widgetId);
+          },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(widgetId);
+              },
+            },
+          ],
+        },
+      });
+    },
+    [appendWidget, removeBackstageWidget, removeLogViewerHistory, t]
+  );
 
-  const items: IContextMenuItem[] = [
+  const items: ContextDropdownMenuItem[] = [
     {
-      _type: EContextMenuItemType.SUB_MENU_BUTTON,
-      label: t("action.edit") + " " + t("extensionStore.extension"),
+      _type: EContextDropdownMenuItemType.MENU_SUB,
+      _id: "extension-node-edit",
+      label: `${t("action.edit")} ${t("extensionStore.extension")}`,
       icon: <FilePenLineIcon />,
+      triggerProps: {
+        inset: true,
+      },
       items: [
         {
-          _type: EContextMenuItemType.BUTTON,
-          label: t("action.edit") + " manifest.json",
+          _type: EContextDropdownMenuItemType.MENU_ITEM,
+          _id: "extension-node-edit-manifest",
+          children: `${t("action.edit")} manifest.json`,
           icon: <FilePenLineIcon />,
-          onClick: () => {
-            onClose();
-            if (node?.data.url)
+          onSelect: () => {
+            if (node.data.url)
               launchEditor({
                 title: `${node.data.name} manifest.json`,
                 content: "",
@@ -149,12 +202,12 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
           },
         },
         {
-          _type: EContextMenuItemType.BUTTON,
-          label: t("action.edit") + " property.json",
+          _type: EContextDropdownMenuItemType.MENU_ITEM,
+          _id: "extension-node-edit-property",
+          children: `${t("action.edit")} property.json`,
           icon: <FilePenLineIcon />,
-          onClick: () => {
-            onClose();
-            if (node?.data.url)
+          onSelect: () => {
+            if (node.data.url)
               launchEditor({
                 title: `${node.data.name} property.json`,
                 content: "",
@@ -166,19 +219,21 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       ],
     },
     {
-      _type: EContextMenuItemType.SEPARATOR,
+      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _id: "extension-node-separator-1",
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.update") + " " + t("popup.node.properties"),
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-update-properties",
+      children: `${t("action.update")} ${t("popup.node.properties")}`,
       icon: <TablePropertiesIcon />,
       disabled: !baseDir || !graphId,
-      onClick: () => {
+      onSelect: () => {
         if (!baseDir || !graphId) return;
         appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
-          widget_id: GRAPH_ACTIONS_WIDGET_ID + `-update-` + node.data.name,
+          widget_id: `${GRAPH_ACTIONS_WIDGET_ID}-update-${node.data.name}`,
 
           category: EWidgetCategory.Graph,
           display_type: EWidgetDisplayType.Popup,
@@ -200,17 +255,17 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
             height: 0.8,
           },
         });
-        onClose();
       },
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("header.menuGraph.addConnectionFromNode", {
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-add-connection-from",
+      children: t("header.menuGraph.addConnectionFromNode", {
         node: node.data.name,
       }),
       icon: <ArrowUpFromDotIcon />,
       disabled: !baseDir || !graphId,
-      onClick: () => {
+      onSelect: () => {
         if (!baseDir || !graphId) return;
         appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
@@ -232,17 +287,17 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
           },
           popup: {},
         });
-        onClose();
       },
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("header.menuGraph.addConnectionToNode", {
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-add-connection-to",
+      children: t("header.menuGraph.addConnectionToNode", {
         node: node.data.name,
       }),
       icon: <ArrowDownToDotIcon />,
       disabled: !baseDir || !graphId,
-      onClick: () => {
+      onSelect: () => {
         if (!baseDir || !graphId) return;
         appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
@@ -264,45 +319,46 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
           },
           popup: {},
         });
-        onClose();
       },
     },
     {
-      _type: EContextMenuItemType.SEPARATOR,
+      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _id: "extension-node-separator-2",
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.launchTerminal"),
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-launch-terminal",
+      children: t("action.launchTerminal"),
       icon: <TerminalIcon />,
-      onClick: () => {
-        onClose();
-        onLaunchTerminal({ title: node.data.name, url: node.data.url });
+      onSelect: () => {
+        launchTerminal({ title: node.data.name, url: node.data.url });
       },
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.launchLogViewer"),
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-launch-log-viewer",
+      children: t("action.launchLogViewer"),
       icon: <LogsIcon />,
-      onClick: () => {
-        onClose();
-        onLaunchLogViewer?.(node);
+      onSelect: () => {
+        launchLogViewer(node.data);
       },
     },
     {
-      _type: EContextMenuItemType.SEPARATOR,
+      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _id: "extension-node-separator-3",
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.replaceNode"),
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-replace",
+      children: t("action.replaceNode"),
       icon: <ReplaceIcon />,
       disabled: !baseDir || !graphId,
-      onClick: () => {
+      onSelect: () => {
         const type = EGraphActions.REPLACE_NODE;
         appendWidget({
           container_id: CONTAINER_DEFAULT_ID,
           group_id: GROUP_GRAPH_ID,
-          widget_id:
-            GRAPH_ACTIONS_WIDGET_ID + `-${type}-` + `${baseDir}-${graphId}`,
+          widget_id: `${GRAPH_ACTIONS_WIDGET_ID}-${type}-${baseDir}-${graphId}`,
 
           category: EWidgetCategory.Graph,
           display_type: EWidgetDisplayType.Popup,
@@ -310,37 +366,37 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
           title: <GraphPopupTitle type={type} node={node} />,
           metadata: {
             type,
-            base_dir: baseDir!,
-            graph_id: graphId!,
+            base_dir: baseDir,
+            graph_id: graphId,
             node: node,
           },
           popup: {
             width: 340,
           },
         });
-        onClose();
       },
     },
     {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.delete"),
+      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _id: "extension-node-delete",
+      children: t("action.delete"),
+      className: "text-destructive",
       disabled: !baseDir || !graphId,
       icon: <Trash2Icon />,
       onClick: () => {
-        onClose();
         appendDialog({
-          id: "delete-node-dialog-" + node.data.name,
+          id: `delete-node-dialog-${node.data.name}`,
           title: t("action.delete"),
           content: t("action.deleteNodeConfirmationWithName", {
             name: node.data.name,
           }),
           variant: "destructive",
           onCancel: async () => {
-            removeDialog("delete-node-dialog-" + node.data.name);
+            removeDialog(`delete-node-dialog-${node.data.name}`);
           },
           onConfirm: async () => {
             if (!baseDir || !graphId) {
-              removeDialog("delete-node-dialog-" + node.data.name);
+              removeDialog(`delete-node-dialog-${node.data.name}`);
               return;
             }
             try {
@@ -366,7 +422,7 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
               });
               console.error(error);
             } finally {
-              removeDialog("delete-node-dialog-" + node.data.name);
+              removeDialog(`delete-node-dialog-${node.data.name}`);
             }
           },
         });
@@ -374,7 +430,11 @@ const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
     },
   ];
 
-  return <ContextMenu visible={visible} x={x} y={y} items={items} />;
+  return (
+    <>
+      {items.map((item) => (
+        <ContextDropdownMenuItem key={item._id} item={item} />
+      ))}
+    </>
+  );
 };
-
-export default NodeContextMenu;

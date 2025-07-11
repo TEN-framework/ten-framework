@@ -5,4 +5,4 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-export { ExtensionNode } from "@/flow/node/ExtensionNode";
+export { ExtensionNode } from "@/flow/node/extension";

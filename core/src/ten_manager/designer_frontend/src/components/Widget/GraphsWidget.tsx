@@ -79,7 +79,7 @@ import {
 export const resetNodesAndEdgesByGraph = async (graph: IGraph) => {
   const backendNodes = await retrieveGraphNodes(graph.uuid);
   const backendConnections = await retrieveGraphConnections(graph.uuid);
-  const rawNodes = generateRawNodes(backendNodes);
+  const rawNodes = generateRawNodes(backendNodes, graph);
   const [rawEdges, rawEdgeAddressMap] = generateRawEdges(backendConnections);
   const nodesWithConnections = updateNodesWithConnections(
     rawNodes,

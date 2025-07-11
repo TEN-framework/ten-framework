@@ -14,7 +14,7 @@ import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
-} from "@/flow/ContextMenu/ContextMenu";
+} from "@/flow/ContextMenu/Base";
 import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
 import { dispatchCustomNodeActionPopup } from "@/utils/events";
