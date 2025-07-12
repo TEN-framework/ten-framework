@@ -906,8 +906,8 @@ class test_extension_2 : public ten::extension_t {
                           "Failed to send 'from_extension_2' command.");
 
                       received_from_extension_2_cmd_result++;
-                      TEN_ENV_LOG_INFO(
-                          ten_env,
+                      TEN_ENV_LOG(
+                          ten_env, TEN_LOG_LEVEL_INFO,
                           (std::string("extension_2 got a result for "
                                        "from_extension_2 cmd: ") +
                            std::to_string(received_from_extension_2_cmd_result))
@@ -981,7 +981,8 @@ class test_extension_2 : public ten::extension_t {
   void on_stop(ten::ten_env_t &ten_env) override {
     TEN_ASSERT(timeout_thread, "Should not happen.");
 
-    TEN_ENV_LOG_INFO(ten_env, "extension_2 join timeout thread.");
+    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                "extension_2 join timeout thread.");
 
     timeout_thread->join();
     delete timeout_thread;

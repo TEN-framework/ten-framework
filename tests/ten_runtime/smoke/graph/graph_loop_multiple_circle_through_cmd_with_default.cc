@@ -40,8 +40,8 @@ class test_extension : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG_INFO(ten_env,
-                     (std::string("xxxx on_cmd") + cmd->get_name()).c_str());
+    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                (std::string("xxxx on_cmd") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "sum") {
       if (counter_ == LOOP_CNT) {
