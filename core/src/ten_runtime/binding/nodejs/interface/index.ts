@@ -18,3 +18,4 @@ export * from "./msg/video_frame.js";
 export * from "./test/extension_tester.js";
 export * from "./test/env_tester.js";
 export * from "./error/error.js";
+export * from "./ten_env/log_level.js";
