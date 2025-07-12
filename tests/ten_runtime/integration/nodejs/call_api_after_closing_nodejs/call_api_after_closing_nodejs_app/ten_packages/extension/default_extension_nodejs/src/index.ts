@@ -69,7 +69,7 @@ class DefaultExtension extends Extension {
           LogLevel.INFO,
           "Promise done after on deinit done",
         );
-        assert(err !== null, "logInfo() should return an error");
+        assert(err !== null, "log() should return an error");
 
         const newCmd = Cmd.Create("test");
         const [_, err1] = await tenEnv.sendCmd(newCmd);
@@ -135,7 +135,8 @@ class DefaultExtension extends Extension {
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== null, "result is null");
 
-    tenEnv.logInfo(
+    tenEnv.log(
+      LogLevel.INFO,
       "received result detail:" + result?.getPropertyToJson("detail"),
     );
 
