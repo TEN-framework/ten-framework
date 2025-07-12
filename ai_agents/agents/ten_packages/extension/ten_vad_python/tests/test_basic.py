@@ -9,7 +9,7 @@ import os
 import aiofiles
 import asyncio
 import json
-from ten import (
+from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
     Cmd,
@@ -81,7 +81,7 @@ class ExtensionTesterBasic(AsyncExtensionTester):
                 assert False, f"{self.next_expect_cmd} cmd not received"
 
         cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
 
 def test_basic():

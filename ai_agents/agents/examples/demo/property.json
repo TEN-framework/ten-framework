@@ -1,5 +1,5 @@
 {
-  "_ten": {
+  "ten": {
     "predefined_graphs": [
       {
         "name": "va_llama4",
@@ -2900,6 +2900,8 @@
         ]
       }
     ],
-    "log_level": 3
+    "log": {
+      "level": 3
+    }
   }
 }
