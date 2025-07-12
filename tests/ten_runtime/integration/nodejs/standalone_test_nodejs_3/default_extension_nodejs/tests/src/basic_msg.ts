@@ -10,6 +10,7 @@ import {
   CmdResult,
   Data,
   ExtensionTester,
+  LogLevel,
   StatusCode,
   TenEnvTester,
   VideoFrame,

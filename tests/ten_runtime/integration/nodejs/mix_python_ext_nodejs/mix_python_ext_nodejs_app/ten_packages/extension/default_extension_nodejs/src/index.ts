@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,

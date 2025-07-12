@@ -7,6 +7,7 @@ import {
   Addon,
   RegisterAddonAsExtension,
   Extension,
+  LogLevel,
   TenEnv,
   Cmd,
   CmdResult,
@@ -81,7 +82,10 @@ class DefaultExtension extends Extension {
       const pongVideoFrame = VideoFrame.Create("pong");
       tenEnv.sendVideoFrame(pongVideoFrame);
     } else {
-      tenEnv.log(LogLevel.ERROR, "unknown video frame received: " + videoFrameName);
+      tenEnv.log(
+        LogLevel.ERROR,
+        "unknown video frame received: " + videoFrameName,
+      );
     }
   }
 
@@ -93,7 +97,10 @@ class DefaultExtension extends Extension {
       const pongAudioFrame = AudioFrame.Create("pong");
       tenEnv.sendAudioFrame(pongAudioFrame);
     } else {
-      tenEnv.log(LogLevel.ERROR, "unknown audio frame received: " + audioFrameName);
+      tenEnv.log(
+        LogLevel.ERROR,
+        "unknown audio frame received: " + audioFrameName,
+      );
     }
   }
 

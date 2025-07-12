@@ -10,6 +10,7 @@ import {
   Extension,
   TenEnv,
   Cmd,
+  LogLevel,
   CmdResult,
   StatusCode,
   VideoFrame,
@@ -56,7 +57,7 @@ class DefaultExtension extends Extension {
 
     this.cachedCmd = cmd;
 
-    let videoFrame = VideoFrame.Create("video_frame");
+    const videoFrame = VideoFrame.Create("video_frame");
     videoFrame.setWidth(320);
     videoFrame.setHeight(240);
     videoFrame.setPixelFmt(PixelFmt.RGBA);
@@ -66,7 +67,7 @@ class DefaultExtension extends Extension {
     videoFrame.setTimestamp(now);
 
     videoFrame.allocBuf(320 * 240 * 4);
-    let buf = videoFrame.lockBuf();
+    const buf = videoFrame.lockBuf();
     const bufView = new Uint8Array(buf);
     for (let i = 0; i < 320 * 240 * 4; i++) {
       bufView[i] = i % 256;
@@ -109,7 +110,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }
