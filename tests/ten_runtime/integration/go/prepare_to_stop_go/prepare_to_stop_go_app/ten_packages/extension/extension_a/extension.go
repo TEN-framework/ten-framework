@@ -39,8 +39,9 @@ func (p *aExtension) OnCmd(
 ) {
 	go func() {
 		cmdName, _ := cmd.GetName()
-		tenEnv.LogInfo(
-			"receive command: " + cmdName,
+		tenEnv.Log(
+			ten.LogLevelInfo,
+			"receive command: "+cmdName,
 		)
 		if cmdName == "start" {
 			tenEnv.SendCmd(cmd, func(r ten.TenEnv, cs ten.CmdResult, e error) {
