@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,
@@ -64,7 +65,7 @@ class DefaultExtension extends Extension {
     // Create a new promise but not await it
     const promise = new Promise((resolve, reject) => {
       setTimeout(async () => {
-        const err = tenEnv.logInfo("Promise done after on deinit done");
+        const err = tenEnv.log(LogLevel.INFO, "Promise done after on deinit done");
         assert(err !== null, "logInfo() should return an error");
 
         const newCmd = Cmd.Create("test");
@@ -123,10 +124,10 @@ class DefaultExtension extends Extension {
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onCmd");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logVerbose("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
@@ -143,7 +144,7 @@ class DefaultExtension extends Extension {
     );
 
     const [detailJson, err] = cmdResult.getPropertyToJson("detail");
-    tenEnv.logInfo("detailJson:" + detailJson);
+    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }

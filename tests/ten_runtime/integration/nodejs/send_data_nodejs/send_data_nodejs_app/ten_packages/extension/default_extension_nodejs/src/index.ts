@@ -83,10 +83,10 @@ class DefaultExtension extends Extension {
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onCmd");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logVerbose("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
 
     const newData = Data.Create("data");
 
@@ -126,7 +126,7 @@ class DefaultExtension extends Extension {
   }
 
   async onData(tenEnv: TenEnv, data: Data): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onData name:" + data.getName());
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onData name:" + data.getName());
 
     if (data.getName() === "data2") {
       const [value1, err] = data.getPropertyString("key1");

@@ -52,7 +52,7 @@ class DefaultExtension extends Extension {
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.logDebug("DefaultExtension onCmd " + cmdName);
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd " + cmdName);
 
     this.cachedCmd = cmd;
 
@@ -78,7 +78,7 @@ class DefaultExtension extends Extension {
   }
 
   async onVideoFrame(tenEnv: TenEnv, frame: VideoFrame): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onVideoFrame");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onVideoFrame");
 
     assert(frame.getPixelFmt() === PixelFmt.RGBA, "Pixel format is not RGBA");
     assert(frame.getWidth() === 320, "Width is not 320");

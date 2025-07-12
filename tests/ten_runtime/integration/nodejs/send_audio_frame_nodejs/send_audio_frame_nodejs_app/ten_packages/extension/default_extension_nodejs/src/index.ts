@@ -52,7 +52,7 @@ class DefaultExtension extends Extension {
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.logDebug("DefaultExtension onCmd " + cmdName);
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd " + cmdName);
 
     this.cachedCmd = cmd;
 
@@ -81,7 +81,7 @@ class DefaultExtension extends Extension {
   }
 
   async onAudioFrame(tenEnv: TenEnv, frame: AudioFrame): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onAudioFrame");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onAudioFrame");
 
     assert(
       frame.getDataFmt() === AudioFrameDataFmt.INTERLEAVE,
