@@ -27,7 +27,7 @@ func newAExtension(name string) ten.Extension {
 func (p *aExtension) OnDeinit(tenEnv ten.TenEnv) {
 	defer tenEnv.OnDeinitDone()
 
-	tenEnv.LogDebug("onDeinit")
+	tenEnv.Log(ten.LogLevelDebug, "onDeinit")
 	if !p.isStopped {
 		panic("should not happen.")
 	}
@@ -52,7 +52,7 @@ func (p *aExtension) OnCmd(
 
 func (p *aExtension) OnStop(tenEnv ten.TenEnv) {
 	go func() {
-		tenEnv.LogDebug("onStop ")
+		tenEnv.Log(ten.LogLevelDebug, "onStop ")
 
 		cmd, _ := ten.NewCmd("stop")
 		respChan := make(chan ten.CmdResult, 1)

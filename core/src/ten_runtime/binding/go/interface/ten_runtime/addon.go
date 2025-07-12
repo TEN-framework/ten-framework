@@ -43,7 +43,7 @@ func (p *ExtensionAddon) OnCreateInstance(
 	if ext != nil {
 		extWrapper = wrapExtension(ext, name)
 	} else {
-		tenEnv.LogError("Failed to create extension " + name)
+		tenEnv.Log(ten.LogLevelError, "Failed to create extension " + name)
 	}
 
 	tenEnv.OnCreateInstanceDone(extWrapper, context)

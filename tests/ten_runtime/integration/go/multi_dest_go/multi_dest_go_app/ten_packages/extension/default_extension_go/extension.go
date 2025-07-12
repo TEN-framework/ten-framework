@@ -67,7 +67,7 @@ func (ext *clientExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 				}
 
 				completed, _ := cmdResult.IsCompleted()
-				tenEnv.LogInfo("completed: " + strconv.FormatBool(completed))
+				tenEnv.Log(ten.LogLevelInfo, "completed: " + strconv.FormatBool(completed))
 				if completed {
 					if receivedOkCount != 2 || receivedErrCount != 1 {
 						panic("Invalid number of received ok or err" +
