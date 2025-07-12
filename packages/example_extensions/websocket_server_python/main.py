@@ -13,6 +13,7 @@ from ten_runtime import (
     CmdResult,
     StatusCode,
     AsyncTenEnv,
+    LogLevel,
 )
 
 
@@ -31,34 +32,36 @@ class WebsocketServerExtension(AsyncExtension):
             await websocket.send(f"Server received: {message}")
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         self.server_port, err = await ten_env.get_property_int("server_port")
         if err is not None:
-            ten_env.log_error(
-                "Could not read 'server_port' from properties." + str(err)
+            ten_env.log(
+                LogLevel.ERROR,
+                "Could not read 'server_port' from properties." + str(err),
             )
             self.server_port = 8002
 
         self.server = websockets.serve(self.echo, "localhost", self.server_port)
-        self.ten_env.log_debug(
-            f"Websocket server started on port {self.server_port}"
+        self.ten_env.log(
+            LogLevel.DEBUG,
+            f"Websocket server started on port {self.server_port}",
         )
 
         await self.server
         print("Websocket server started.")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        ten_env.log(LogLevel.DEBUG, "on_deinit")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        ten_env.log_debug("on_cmd")
+        ten_env.log(LogLevel.DEBUG, "on_cmd")
 
         # Not supported command.
         await ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
         self.server.ws_server.close()
 
 

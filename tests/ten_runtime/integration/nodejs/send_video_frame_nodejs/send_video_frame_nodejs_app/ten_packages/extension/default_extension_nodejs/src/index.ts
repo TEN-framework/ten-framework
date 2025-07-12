@@ -10,6 +10,7 @@ import {
   Extension,
   TenEnv,
   Cmd,
+  LogLevel,
   CmdResult,
   StatusCode,
   VideoFrame,
@@ -52,11 +53,11 @@ class DefaultExtension extends Extension {
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.logDebug("DefaultExtension onCmd " + cmdName);
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd " + cmdName);
 
     this.cachedCmd = cmd;
 
-    let videoFrame = VideoFrame.Create("video_frame");
+    const videoFrame = VideoFrame.Create("video_frame");
     videoFrame.setWidth(320);
     videoFrame.setHeight(240);
     videoFrame.setPixelFmt(PixelFmt.RGBA);
@@ -66,7 +67,7 @@ class DefaultExtension extends Extension {
     videoFrame.setTimestamp(now);
 
     videoFrame.allocBuf(320 * 240 * 4);
-    let buf = videoFrame.lockBuf();
+    const buf = videoFrame.lockBuf();
     const bufView = new Uint8Array(buf);
     for (let i = 0; i < 320 * 240 * 4; i++) {
       bufView[i] = i % 256;
@@ -78,7 +79,7 @@ class DefaultExtension extends Extension {
   }
 
   async onVideoFrame(tenEnv: TenEnv, frame: VideoFrame): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onVideoFrame");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onVideoFrame");
 
     assert(frame.getPixelFmt() === PixelFmt.RGBA, "Pixel format is not RGBA");
     assert(frame.getWidth() === 320, "Width is not 320");
@@ -109,7 +110,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

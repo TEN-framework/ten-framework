@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,
@@ -27,15 +28,15 @@ class DefaultExtension extends Extension {
   }
 
   async onConfigure(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onConfigure");
+    tenEnv.log(LogLevel.INFO, "onConfigure");
   }
 
   async onInit(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onInit");
+    tenEnv.log(LogLevel.INFO, "onInit");
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onStart");
+    tenEnv.log(LogLevel.INFO, "onStart");
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
@@ -56,18 +57,18 @@ class DefaultExtension extends Extension {
   }
 
   async onStop(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onStop");
+    tenEnv.log(LogLevel.INFO, "onStop");
   }
 
   async onDeinit(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onDeinit");
+    tenEnv.log(LogLevel.INFO, "onDeinit");
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logInfo("onCmd");
+    tenEnv.log(LogLevel.INFO, "onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logInfo("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.INFO, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
@@ -84,7 +85,7 @@ class DefaultExtension extends Extension {
     );
 
     const detailJson = cmdResult.getPropertyToJson("detail");
-    tenEnv.logInfo("detailJson:" + detailJson);
+    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }

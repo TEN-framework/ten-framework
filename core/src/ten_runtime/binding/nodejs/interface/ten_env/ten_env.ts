@@ -230,28 +230,8 @@ export class TenEnv {
     });
   }
 
-  logVerbose(message: string): TenError | null {
-    return this.log_internal(LogLevel.VERBOSE, message);
-  }
-
-  logDebug(message: string): TenError | null {
-    return this.log_internal(LogLevel.DEBUG, message);
-  }
-
-  logInfo(message: string): TenError | null {
-    return this.log_internal(LogLevel.INFO, message);
-  }
-
-  logWarn(message: string): TenError | null {
-    return this.log_internal(LogLevel.WARN, message);
-  }
-
-  logError(message: string): TenError | null {
-    return this.log_internal(LogLevel.ERROR, message);
-  }
-
-  logFatal(message: string): TenError | null {
-    return this.log_internal(LogLevel.FATAL, message);
+  log(level: LogLevel, message: string): TenError | null {
+    return this.log_internal(level, message);
   }
 
   private log_internal(level: number, message: string): TenError | null {

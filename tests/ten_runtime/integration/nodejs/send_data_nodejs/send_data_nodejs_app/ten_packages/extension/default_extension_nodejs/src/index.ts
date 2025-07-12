@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,
@@ -34,7 +35,7 @@ class DefaultExtension extends Extension {
     console.log("DefaultExtension onConfigure");
 
     await tenEnv.initPropertyFromJson(
-      JSON.stringify({ key1: "value1", key2: 2 })
+      JSON.stringify({ key1: "value1", key2: 2 }),
     );
   }
 
@@ -59,16 +60,16 @@ class DefaultExtension extends Extension {
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
-    let buf = testData.lockBuf();
+    const buf = testData.lockBuf();
 
-    let view = new Uint8Array(buf);
+    const view = new Uint8Array(buf);
     view[0] = 1;
     view[1] = 2;
     view[2] = 3;
     testData.unlockBuf(buf);
 
-    let copiedBuf = testData.getBuf();
-    let copiedView = new Uint8Array(copiedBuf);
+    const copiedBuf = testData.getBuf();
+    const copiedView = new Uint8Array(copiedBuf);
     assert(copiedView[0] === 1, "copiedView[0] incorrect");
     assert(copiedView[1] === 2, "copiedView[1] incorrect");
     assert(copiedView[2] === 3, "copiedView[2] incorrect");
@@ -83,10 +84,10 @@ class DefaultExtension extends Extension {
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onCmd");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logVerbose("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
 
     const newData = Data.Create("data");
 
@@ -96,8 +97,8 @@ class DefaultExtension extends Extension {
     const uint8Array = encoder.encode(str);
 
     newData.allocBuf(uint8Array.byteLength);
-    let dataBuf = newData.lockBuf();
-    let dataBufView = new Uint8Array(dataBuf);
+    const dataBuf = newData.lockBuf();
+    const dataBufView = new Uint8Array(dataBuf);
     dataBufView.set(uint8Array);
 
     newData.unlockBuf(dataBuf);
@@ -126,7 +127,10 @@ class DefaultExtension extends Extension {
   }
 
   async onData(tenEnv: TenEnv, data: Data): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onData name:" + data.getName());
+    tenEnv.log(
+      LogLevel.DEBUG,
+      "DefaultExtension onData name:" + data.getName(),
+    );
 
     if (data.getName() === "data2") {
       const [value1, err] = data.getPropertyString("key1");
@@ -162,7 +166,7 @@ class DefaultExtension extends Extension {
         bufView[i] += 1;
       }
 
-      let lockedBuf = data.lockBuf();
+      const lockedBuf = data.lockBuf();
       const decoder = new TextDecoder();
       const decodedStr = decoder.decode(lockedBuf);
 
@@ -187,7 +191,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

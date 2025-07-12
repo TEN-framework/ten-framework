@@ -26,7 +26,7 @@ func newAExtension(name string) ten.Extension {
 }
 
 func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnStart")
+	tenEnv.Log(ten.LogLevelDebug, "OnStart")
 
 	noDestCmd, _ := ten.NewCmd("unknownCmd")
 	tenEnv.SendCmd(noDestCmd, func(te ten.TenEnv, cr ten.CmdResult, err error) {
@@ -34,7 +34,7 @@ func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
 			panic("SendCmd should fail if no destination is found.")
 		}
 
-		tenEnv.LogInfo("SendCmd failed as expected, err: " + err.Error())
+		tenEnv.Log(ten.LogLevelInfo, "SendCmd failed as expected, err: " + err.Error())
 
 		ext.counter++
 
@@ -49,7 +49,7 @@ func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
 			panic("SendData should fail if no destination is found.")
 		}
 
-		tenEnv.LogInfo("SendData failed as expected, err: " + err.Error())
+		tenEnv.Log(ten.LogLevelInfo, "SendData failed as expected, err: " + err.Error())
 
 		ext.counter++
 
@@ -64,7 +64,7 @@ func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
 			panic("SendVideoFrame should fail if no destination is found.")
 		}
 
-		tenEnv.LogInfo("SendVideoFrame failed as expected, err: " + err.Error())
+		tenEnv.Log(ten.LogLevelInfo, "SendVideoFrame failed as expected, err: " + err.Error())
 
 		ext.counter++
 
@@ -79,7 +79,7 @@ func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
 			panic("SendAudioFrame should fail if no destination is found.")
 		}
 
-		tenEnv.LogInfo("SendAudioFrame failed as expected, err: " + err.Error())
+		tenEnv.Log(ten.LogLevelInfo, "SendAudioFrame failed as expected, err: " + err.Error())
 
 		ext.counter++
 
@@ -90,7 +90,7 @@ func (ext *aExtension) OnStart(tenEnv ten.TenEnv) {
 }
 
 func (ext *aExtension) OnStop(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnStop")
+	tenEnv.Log(ten.LogLevelDebug, "OnStop")
 
 	tenEnv.OnStopDone()
 }

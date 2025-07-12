@@ -25,13 +25,13 @@ func newExtension(name string) ten.Extension {
 }
 
 func (e *{{class_name_prefix}}Extension) OnStart(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnStart")
+	tenEnv.Log(ten.LogLevelDebug, "OnStart")
 
 	tenEnv.OnStartDone()
 }
 
 func (e *{{class_name_prefix}}Extension) OnStop(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnStop")
+	tenEnv.Log(ten.LogLevelDebug, "OnStop")
 
 	tenEnv.OnStopDone()
 }
@@ -40,7 +40,7 @@ func (e *{{class_name_prefix}}Extension) OnCmd(
 	tenEnv ten.TenEnv,
 	cmd ten.Cmd,
 ) {
-	tenEnv.LogDebug("OnCmd")
+	tenEnv.Log(ten.LogLevelDebug, "OnCmd")
 
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 	tenEnv.ReturnResult(cmdResult, nil)

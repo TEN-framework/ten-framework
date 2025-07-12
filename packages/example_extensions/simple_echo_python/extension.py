@@ -11,30 +11,31 @@ from ten_runtime import (
     Cmd,
     StatusCode,
     CmdResult,
+    LogLevel,
     Data,
 )
 
 
 class SimpleEchoExtension(AsyncExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         # IMPLEMENT: read properties, initialize resources
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         # IMPLEMENT: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        ten_env.log(LogLevel.DEBUG, "on_deinit")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_debug("on_cmd name {}".format(cmd_name))
+        ten_env.log(LogLevel.DEBUG, "on_cmd name {}".format(cmd_name))
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", cmd_name + ", too")
@@ -43,7 +44,7 @@ class SimpleEchoExtension(AsyncExtension):
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log_debug("on_data name {}".format(data_name))
+        ten_env.log(LogLevel.DEBUG, "on_data name {}".format(data_name))
 
         buf = data.get_buf()
 
@@ -59,7 +60,9 @@ class SimpleEchoExtension(AsyncExtension):
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         audio_frame_name = audio_frame.get_name()
-        ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
+        ten_env.log(
+            LogLevel.DEBUG, "on_audio_frame name {}".format(audio_frame_name)
+        )
 
         buf = audio_frame.get_buf()
         new_audio_frame = AudioFrame.create(audio_frame_name)
@@ -84,7 +87,9 @@ class SimpleEchoExtension(AsyncExtension):
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame
     ) -> None:
         video_frame_name = video_frame.get_name()
-        ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
+        ten_env.log(
+            LogLevel.DEBUG, "on_video_frame name {}".format(video_frame_name)
+        )
 
         buf = video_frame.get_buf()
         new_video_frame = VideoFrame.create(video_frame_name)

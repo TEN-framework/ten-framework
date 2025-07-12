@@ -7,7 +7,7 @@
 
 //go:build dev
 
-package ten
+package ten_runtime
 
 import "fmt"
 

@@ -13,6 +13,7 @@ from ten_runtime import (
     Cmd,
     StatusCode,
     CmdResult,
+    LogLevel,
 )
 
 
@@ -22,7 +23,7 @@ class DefaultExtension(Extension):
         self.name = name
 
     def on_configure(self, ten_env: TenEnv) -> None:
-        ten_env.log_info("on_init")
+        ten_env.log(LogLevel.INFO, "on_init")
         assert self.name == "default_extension_python"
 
         ten_env.init_property_from_json('{"testKey": "testValue"}')
@@ -44,7 +45,7 @@ class DefaultExtension(Extension):
         print("DefaultExtension __test_thread_routine done")
 
     def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         ten_env.set_property_from_json("testKey2", '"testValue2"')
         testValue, _ = ten_env.get_property_to_json("testKey")

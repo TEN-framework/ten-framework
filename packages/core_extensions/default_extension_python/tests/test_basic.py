@@ -6,6 +6,7 @@
 from typing import Optional
 from ten_runtime import (
     ExtensionTester,
+    LogLevel,
     TenEnvTester,
     Cmd,
     CmdResult,
@@ -27,7 +28,9 @@ class ExtensionTesterBasic(ExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_debug(f"receive hello_world, status: {statusCode}")
+        ten_env.log(
+            LogLevel.DEBUG, f"receive hello_world, status: {statusCode}"
+        )
 
         if statusCode == StatusCode.OK:
             ten_env.stop_test()
@@ -35,7 +38,7 @@ class ExtensionTesterBasic(ExtensionTester):
     def on_start(self, ten_env: TenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
 
-        ten_env.log_debug("send hello_world")
+        ten_env.log(LogLevel.DEBUG, "send hello_world")
         ten_env.send_cmd(
             new_cmd,
             lambda ten_env, result, error: self.check_hello(
@@ -43,7 +46,7 @@ class ExtensionTesterBasic(ExtensionTester):
             ),
         )
 
-        ten_env.log_debug("tester on_start_done")
+        ten_env.log(LogLevel.DEBUG, "tester on_start_done")
         ten_env.on_start_done()
 
 

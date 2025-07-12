@@ -12,6 +12,7 @@ from ten_runtime import (
     CmdResult,
     StatusCode,
     TenError,
+    LogLevel,
 )
 
 
@@ -28,7 +29,9 @@ class ExtensionTesterSetProperty(ExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+        ten_env.log(
+            LogLevel.INFO, "receive hello_world, status:" + str(statusCode)
+        )
 
         if statusCode == StatusCode.OK:
             detail, _ = result.get_property_string("detail")
@@ -46,7 +49,7 @@ class ExtensionTesterSetProperty(ExtensionTester):
             ),
         )
 
-        ten_env.log_info("tester on_start_done")
+        ten_env.log(LogLevel.INFO, "tester on_start_done")
         ten_env.on_start_done()
 
 

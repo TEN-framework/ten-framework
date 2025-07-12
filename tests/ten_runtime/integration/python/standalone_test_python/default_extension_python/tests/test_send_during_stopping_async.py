@@ -8,6 +8,7 @@ from ten_runtime import (
     Cmd,
     AsyncExtensionTester,
     AsyncTenEnvTester,
+    LogLevel,
 )
 
 
@@ -15,7 +16,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         register_cmd = Cmd.create("register")
 
-        ten_env.log_info("send register cmd")
+        ten_env.log(LogLevel.INFO, "send register cmd")
         await ten_env.send_cmd(register_cmd)
 
         ten_env.stop_test()
@@ -23,10 +24,10 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
         unregister_cmd = Cmd.create("unregister")
 
-        ten_env.log_info("send unregister cmd")
+        ten_env.log(LogLevel.INFO, "send unregister cmd")
         await ten_env.send_cmd(unregister_cmd)
 
-        ten_env.log_info("tester on_stop_done")
+        ten_env.log(LogLevel.INFO, "tester on_stop_done")
 
 
 def test_basic():

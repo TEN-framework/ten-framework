@@ -12,29 +12,30 @@ from ten_runtime import (
     StatusCode,
     CmdResult,
     Data,
+    LogLevel,
 )
 
 
 class DefaultAsyncExtension(AsyncExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         # IMPLEMENT: read properties, initialize resources
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         # IMPLEMENT: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        ten_env.log(LogLevel.DEBUG, "on_deinit")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_debug("on_cmd name {}".format(cmd_name))
+        ten_env.log(LogLevel.DEBUG, "on_cmd name {}".format(cmd_name))
 
         # IMPLEMENT: process cmd
 
@@ -43,7 +44,7 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log_debug("on_data name {}".format(data_name))
+        ten_env.log(LogLevel.DEBUG, "on_data name {}".format(data_name))
 
         # IMPLEMENT: process data
 
@@ -51,7 +52,9 @@ class DefaultAsyncExtension(AsyncExtension):
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         audio_frame_name = audio_frame.get_name()
-        ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
+        ten_env.log(
+            LogLevel.DEBUG, "on_audio_frame name {}".format(audio_frame_name)
+        )
 
         # IMPLEMENT: process audio frame
 
@@ -59,6 +62,8 @@ class DefaultAsyncExtension(AsyncExtension):
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame
     ) -> None:
         video_frame_name = video_frame.get_name()
-        ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
+        ten_env.log(
+            LogLevel.DEBUG, "on_video_frame name {}".format(video_frame_name)
+        )
 
         # IMPLEMENT: process video frame

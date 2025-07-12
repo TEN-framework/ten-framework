@@ -14,6 +14,7 @@ from ten_runtime import (
     CmdResult,
     StatusCode,
     AsyncTenEnv,
+    LogLevel,
 )
 
 
@@ -23,7 +24,7 @@ class HttpServerExtension(AsyncExtension):
         try:
             data = await request.json()
         except Exception as e:
-            self.ten_env.log_error("Error: " + str(e))
+            self.ten_env.log(LogLevel.ERROR, "Error: " + str(e))
             return web.Response(status=400, text="Bad request")
 
         cmd_result = None
@@ -60,7 +61,7 @@ class HttpServerExtension(AsyncExtension):
         ):
             detail, err = cmd_result.get_property_string("detail")
             if err is not None:
-                self.ten_env.log_error("Error: " + str(err))
+                self.ten_env.log(LogLevel.ERROR, "Error: " + str(err))
                 return web.Response(status=500, text="Internal server error")
             return web.Response(text=detail)
         else:
@@ -77,8 +78,9 @@ class HttpServerExtension(AsyncExtension):
                 else:
                     await ws.send_str("some websocket message payload")
             elif msg.type == WSMsgType.ERROR:
-                self.ten_env.log_error(
-                    "ws connection closed with exception %s" % ws.exception()
+                self.ten_env.log(
+                    LogLevel.ERROR,
+                    "ws connection closed with exception %s" % ws.exception(),
                 )
 
         return ws
@@ -107,28 +109,29 @@ class HttpServerExtension(AsyncExtension):
         self.ten_env = ten_env
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         self.server_port, err = await ten_env.get_property_int("server_port")
         if err is not None:
-            ten_env.log_error(
-                "Could not read 'server_port' from properties." + str(err)
+            ten_env.log(
+                LogLevel.ERROR,
+                "Could not read 'server_port' from properties." + str(err),
             )
             self.server_port = 8002
 
         await self.start_server("0.0.0.0", self.server_port)
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        ten_env.log(LogLevel.DEBUG, "on_deinit")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        ten_env.log_debug("on_cmd")
+        ten_env.log(LogLevel.DEBUG, "on_cmd")
 
         # Not supported command.
         await ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
 
 @register_addon_as_extension("aio_http_server_python")

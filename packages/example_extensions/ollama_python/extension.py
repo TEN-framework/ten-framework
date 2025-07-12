@@ -9,6 +9,7 @@ from ten_runtime import (
     Cmd,
     StatusCode,
     CmdResult,
+    LogLevel,
 )
 from ollama import chat
 from ollama import ChatResponse
@@ -20,7 +21,7 @@ class OllamaExtension(AsyncExtension):
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_debug("on_cmd name {}".format(cmd_name))
+        ten_env.log(LogLevel.DEBUG, "on_cmd name {}".format(cmd_name))
 
         if cmd_name == "ask":
             await self.handle_ask_cmd(ten_env, cmd)

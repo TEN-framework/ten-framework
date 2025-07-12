@@ -10,6 +10,7 @@ import {
   CmdResult,
   Data,
   ExtensionTester,
+  LogLevel,
   StatusCode,
   TenEnvTester,
   VideoFrame,
@@ -17,7 +18,7 @@ import {
 
 export class CmdTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    tenEnvTester.logInfo("CmdTester onStart");
+    tenEnvTester.log(LogLevel.INFO, "CmdTester onStart");
 
     const pingCmd = Cmd.Create("ping");
     tenEnvTester.sendCmd(pingCmd);
@@ -28,7 +29,7 @@ export class CmdTester extends ExtensionTester {
     console.log("CmdTester onCmd: " + cmdName);
 
     if (cmdName === "pong") {
-      tenEnvTester.logInfo("pong cmd received");
+      tenEnvTester.log(LogLevel.INFO, "pong cmd received");
 
       const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
       await tenEnvTester.returnResult(cmdResult);
@@ -40,7 +41,7 @@ export class CmdTester extends ExtensionTester {
 
 export class DataTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    tenEnvTester.logInfo("DataTester onStart");
+    tenEnvTester.log(LogLevel.INFO, "DataTester onStart");
 
     const pingData = Data.Create("ping");
     tenEnvTester.sendData(pingData);
@@ -51,7 +52,7 @@ export class DataTester extends ExtensionTester {
     console.log("DataTester onData: " + dataName);
 
     if (dataName === "pong") {
-      tenEnvTester.logInfo("pong data received");
+      tenEnvTester.log(LogLevel.INFO, "pong data received");
 
       tenEnvTester.stopTest();
     }
@@ -60,7 +61,7 @@ export class DataTester extends ExtensionTester {
 
 export class VideoFrameTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    tenEnvTester.logInfo("VideoFrameTester onStart");
+    tenEnvTester.log(LogLevel.INFO, "VideoFrameTester onStart");
 
     const pingVideoFrame = VideoFrame.Create("ping");
     tenEnvTester.sendVideoFrame(pingVideoFrame);
@@ -71,7 +72,7 @@ export class VideoFrameTester extends ExtensionTester {
     console.log("VideoFrameTester onVideoFrame: " + videoFrameName);
 
     if (videoFrameName === "pong") {
-      tenEnvTester.logInfo("pong video frame received");
+      tenEnvTester.log(LogLevel.INFO, "pong video frame received");
 
       tenEnvTester.stopTest();
     }
@@ -80,7 +81,7 @@ export class VideoFrameTester extends ExtensionTester {
 
 export class AudioFrameTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    tenEnvTester.logInfo("AudioFrameTester onStart");
+    tenEnvTester.log(LogLevel.INFO, "AudioFrameTester onStart");
 
     const pingAudioFrame = AudioFrame.Create("ping");
     tenEnvTester.sendAudioFrame(pingAudioFrame);
@@ -91,7 +92,7 @@ export class AudioFrameTester extends ExtensionTester {
     console.log("AudioFrameTester onAudioFrame: " + audioFrameName);
 
     if (audioFrameName === "pong") {
-      tenEnvTester.logInfo("pong audio frame received");
+      tenEnvTester.log(LogLevel.INFO, "pong audio frame received");
 
       tenEnvTester.stopTest();
     }
@@ -100,6 +101,6 @@ export class AudioFrameTester extends ExtensionTester {
 
 export class TimeoutTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    tenEnvTester.logInfo("TimeoutTester onStart");
+    tenEnvTester.log(LogLevel.INFO, "TimeoutTester onStart");
   }
 }

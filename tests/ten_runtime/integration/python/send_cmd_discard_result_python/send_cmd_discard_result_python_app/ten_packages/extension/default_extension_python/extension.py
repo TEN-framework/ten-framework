@@ -10,6 +10,7 @@ from ten_runtime import (
     Cmd,
     StatusCode,
     CmdResult,
+    LogLevel,
 )
 
 
@@ -19,12 +20,12 @@ class DefaultExtension(Extension):
         self.name = name
 
     def on_init(self, ten_env: TenEnv) -> None:
-        ten_env.log_info("on_init")
+        ten_env.log(LogLevel.INFO, "on_init")
         ten_env.on_init_done()
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_info(f"on_cmd json: {cmd_json}")
+        ten_env.log(LogLevel.INFO, f"on_cmd json: {cmd_json}")
 
         if self.name == "default_extension_python_1":
             if cmd.get_name() == "test":
@@ -36,9 +37,9 @@ class DefaultExtension(Extension):
                 cmd_result.set_property_string("detail", "nbnb")
                 ten_env.return_result(cmd_result)
         elif self.name == "default_extension_python_2":
-            ten_env.log_info("create respCmd 1")
+            ten_env.log(LogLevel.INFO, "create respCmd 1")
             ten_env.return_result(CmdResult.create(StatusCode.OK, cmd))
 
-            ten_env.log_info("create respCmd 2")
+            ten_env.log(LogLevel.INFO, "create respCmd 2")
             hello2_cmd = Cmd.create("hello2")
             ten_env.send_cmd(hello2_cmd, None)

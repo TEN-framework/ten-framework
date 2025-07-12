@@ -9,6 +9,7 @@ from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
+    LogLevel,
     VideoFrame,
     StatusCode,
     CmdResult,
@@ -19,12 +20,12 @@ from PIL import Image
 
 class DefaultExtension(Extension):
     def on_configure(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
         ten_env.init_property_from_json('{"testKey": "testValue"}')
         ten_env.on_configure_done()
 
     def on_init(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
 
         im = Image.open("../test_data/tiger.jpg")
         self.pixels = im.convert("RGBA")
@@ -34,7 +35,7 @@ class DefaultExtension(Extension):
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_info(f"DefaultExtension on_cmd json: {cmd_json}")
+        ten_env.log(LogLevel.INFO, f"DefaultExtension on_cmd json: {cmd_json}")
 
         assert hasattr(self, "request_cmd") is not True
 
@@ -67,7 +68,7 @@ class DefaultExtension(Extension):
         ten_env.send_video_frame(new_image)
 
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
-        ten_env.log_debug("on_video_frame")
+        ten_env.log(LogLevel.DEBUG, "on_video_frame")
 
         assert hasattr(self, "request_cmd") is True
 

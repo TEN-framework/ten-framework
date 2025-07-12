@@ -43,7 +43,7 @@ func (e *defaultExtension) OnCmd(
 	cmd ten.Cmd,
 ) {
 	cmdName, _ := cmd.GetName()
-	tenEnv.LogInfo(fmt.Sprintf("OnCmd: %s", cmdName))
+	tenEnv.Log(ten.LogLevelInfo, fmt.Sprintf("OnCmd: %s", cmdName))
 
 	if cmdName == "ping" {
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
@@ -62,16 +62,16 @@ func (e *defaultExtension) OnData(
 	tenEnv ten.TenEnv,
 	data ten.Data,
 ) {
-	tenEnv.LogInfo("OnData")
+	tenEnv.Log(ten.LogLevelInfo, "OnData")
 
 	dataName, _ := data.GetName()
 	if dataName == "ping" {
-		tenEnv.LogInfo("ping data received")
+		tenEnv.Log(ten.LogLevelInfo, "ping data received")
 
 		newData, _ := ten.NewData("pong")
 		tenEnv.SendData(newData, nil)
 	} else {
-		tenEnv.LogInfo("unknown data received")
+		tenEnv.Log(ten.LogLevelInfo, "unknown data received")
 	}
 }
 
@@ -79,16 +79,16 @@ func (e *defaultExtension) OnVideoFrame(
 	tenEnv ten.TenEnv,
 	videoFrame ten.VideoFrame,
 ) {
-	tenEnv.LogInfo("OnVideoFrame")
+	tenEnv.Log(ten.LogLevelInfo, "OnVideoFrame")
 
 	videoFrameName, _ := videoFrame.GetName()
 	if videoFrameName == "ping" {
-		tenEnv.LogInfo("ping video frame received")
+		tenEnv.Log(ten.LogLevelInfo, "ping video frame received")
 
 		newVideoFrame, _ := ten.NewVideoFrame("pong")
 		tenEnv.SendVideoFrame(newVideoFrame, nil)
 	} else {
-		tenEnv.LogInfo("unknown video frame received")
+		tenEnv.Log(ten.LogLevelInfo, "unknown video frame received")
 	}
 }
 
@@ -96,16 +96,16 @@ func (e *defaultExtension) OnAudioFrame(
 	tenEnv ten.TenEnv,
 	audioFrame ten.AudioFrame,
 ) {
-	tenEnv.LogInfo("OnAudioFrame")
+	tenEnv.Log(ten.LogLevelInfo, "OnAudioFrame")
 
 	audioFrameName, _ := audioFrame.GetName()
 	if audioFrameName == "ping" {
-		tenEnv.LogInfo("ping audio frame received")
+		tenEnv.Log(ten.LogLevelInfo, "ping audio frame received")
 
 		newAudioFrame, _ := ten.NewAudioFrame("pong")
 		tenEnv.SendAudioFrame(newAudioFrame, nil)
 	} else {
-		tenEnv.LogInfo("unknown audio frame received")
+		tenEnv.Log(ten.LogLevelInfo, "unknown audio frame received")
 	}
 }
 

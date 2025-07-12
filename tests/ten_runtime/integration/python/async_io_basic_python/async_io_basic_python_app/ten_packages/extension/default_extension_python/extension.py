@@ -11,12 +11,13 @@ from ten_runtime import (
     TenEnv,
     Cmd,
     CmdResult,
+    LogLevel,
 )
 
 
 class DefaultExtension(Extension):
     async def __thread_routine(self, ten_env: TenEnv):
-        ten_env.log_info("__thread_routine start")
+        ten_env.log(LogLevel.INFO, "__thread_routine start")
 
         self.loop = asyncio.get_running_loop()
 
@@ -32,7 +33,7 @@ class DefaultExtension(Extension):
         self.stopEvent.set()
 
     async def send_cmd_async(self, ten_env: TenEnv, cmd: Cmd) -> CmdResult:
-        ten_env.log_info("send_cmd_async")
+        ten_env.log(LogLevel.INFO, "send_cmd_async")
         q = asyncio.Queue(maxsize=10)
         ten_env.send_cmd(
             cmd,
@@ -55,7 +56,7 @@ class DefaultExtension(Extension):
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         self.thread = threading.Thread(
             target=asyncio.run, args=(self.__thread_routine(ten_env),)
@@ -65,14 +66,14 @@ class DefaultExtension(Extension):
         self.thread.start()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
-        ten_env.log_info("on_deinit")
+        ten_env.log(LogLevel.INFO, "on_deinit")
         ten_env.on_deinit_done()
 
     async def on_cmd_async(self, ten_env: TenEnv, cmd: Cmd) -> None:
-        ten_env.log_info("on_cmd_async")
+        ten_env.log(LogLevel.INFO, "on_cmd_async")
 
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_info("on_cmd_async json: " + cmd_json)
+        ten_env.log(LogLevel.INFO, "on_cmd_async json: " + cmd_json)
 
         # Mock async operation, e.g. network, file I/O
         await asyncio.sleep(1)
@@ -90,14 +91,14 @@ class DefaultExtension(Extension):
         ten_env.return_result(new_result)
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
-        ten_env.log_info("on_cmd")
+        ten_env.log(LogLevel.INFO, "on_cmd")
 
         asyncio.run_coroutine_threadsafe(
             self.on_cmd_async(ten_env, cmd), self.loop
         )
 
     def on_stop(self, ten_env: TenEnv) -> None:
-        ten_env.log_info("on_stop")
+        ten_env.log(LogLevel.INFO, "on_stop")
 
         if self.thread.is_alive():
             asyncio.run_coroutine_threadsafe(self.stop_thread(), self.loop)
