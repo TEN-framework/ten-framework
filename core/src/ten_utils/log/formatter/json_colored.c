@@ -95,7 +95,7 @@ void ten_log_json_colored_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
   }
 
   // Add message.
-  ten_string_append_formatted(buf, ",\"message\":\"%s", TEN_LOG_COLOR_WHITE);
+  ten_string_append_formatted(buf, ",\"message\":\"%s", TEN_LOG_COLOR_YELLOW);
   ten_json_escape_string(buf, msg, msg_len);
   ten_string_append_formatted(buf, "%s\"", TEN_LOG_COLOR_RESET);
 
