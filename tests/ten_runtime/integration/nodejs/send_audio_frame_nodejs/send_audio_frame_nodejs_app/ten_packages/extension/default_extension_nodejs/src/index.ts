@@ -10,6 +10,7 @@ import {
   Extension,
   TenEnv,
   Cmd,
+  LogLevel,
   CmdResult,
   StatusCode,
   AudioFrame,
@@ -52,7 +53,7 @@ class DefaultExtension extends Extension {
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.logDebug("DefaultExtension onCmd " + cmdName);
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd " + cmdName);
 
     this.cachedCmd = cmd;
 
@@ -70,7 +71,7 @@ class DefaultExtension extends Extension {
     audioFrame.setLineSize(320);
 
     audioFrame.allocBuf(320);
-    let buf = audioFrame.lockBuf();
+    const buf = audioFrame.lockBuf();
     const bufView = new Uint8Array(buf);
     for (let i = 0; i < 320; i++) {
       bufView[i] = i % 256;
@@ -81,18 +82,18 @@ class DefaultExtension extends Extension {
   }
 
   async onAudioFrame(tenEnv: TenEnv, frame: AudioFrame): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onAudioFrame");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onAudioFrame");
 
     assert(
       frame.getDataFmt() === AudioFrameDataFmt.INTERLEAVE,
-      "DataFmt is not INTERLEAVE"
+      "DataFmt is not INTERLEAVE",
     );
     assert(frame.getBytesPerSample() === 2, "BytesPerSample is not 2");
     assert(frame.getSampleRate() === 16000, "SampleRate is not 16000");
     assert(frame.getNumberOfChannels() === 1, "NumberOfChannels is not 1");
     assert(
       frame.getSamplesPerChannel() === 160,
-      "SamplesPerChannel is not 160"
+      "SamplesPerChannel is not 160",
     );
 
     const timestamp = frame.getTimestamp();
@@ -122,7 +123,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

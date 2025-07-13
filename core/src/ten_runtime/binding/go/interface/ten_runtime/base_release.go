@@ -7,7 +7,7 @@
 
 //go:build !dev
 
-package ten
+package ten_runtime
 
 // All methods in this file are only enabled without build flags: -tags "dev".
 

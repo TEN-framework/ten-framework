@@ -340,7 +340,7 @@ void ten_log_set_output_to_file(ten_log_t *self, const char *log_path) {
                      ten_log_close_file, ten_log_output_to_file_reload,
                      ten_log_output_to_file_deinit, ctx);
 
-  ten_log_set_formatter(self, ten_log_default_formatter, NULL);
+  ten_log_set_formatter(self, ten_log_json_plain_formatter, NULL);
 }
 
 const char *ten_log_get_output_file_path(ten_log_t *self) {
@@ -394,9 +394,9 @@ void ten_log_set_output_to_stderr(ten_log_t *self) {
   ten_log_formatter_on_format_func_t formatter_func = NULL;
 
 #if defined(OS_LINUX) || defined(OS_MACOS)
-  formatter_func = ten_log_colored_formatter;
+  formatter_func = ten_log_json_colored_formatter;
 #else
-  formatter_func = ten_log_default_formatter;
+  formatter_func = ten_log_json_plain_formatter;
 #endif
 
   // The default formatter for `stderr` can be overridden using the below

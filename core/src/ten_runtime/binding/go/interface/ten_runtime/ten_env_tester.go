@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "ten_env_tester.h"
 import "C"
@@ -39,12 +39,7 @@ type TenEnvTester interface {
 
 	StopTest(testResult *TenError) error
 
-	LogVerbose(msg string) error
-	LogDebug(msg string) error
-	LogInfo(msg string) error
-	LogWarn(msg string) error
-	LogError(msg string) error
-	LogFatal(msg string) error
+	Log(level LogLevel, msg string) error
 }
 
 var (
@@ -309,28 +304,8 @@ func (p *tenEnvTester) stopTest(testResult *TenError) error {
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) LogVerbose(msg string) error {
-	return p.logInternal(LogLevelVerbose, msg, 2)
-}
-
-func (p *tenEnvTester) LogDebug(msg string) error {
-	return p.logInternal(LogLevelDebug, msg, 2)
-}
-
-func (p *tenEnvTester) LogInfo(msg string) error {
-	return p.logInternal(LogLevelInfo, msg, 2)
-}
-
-func (p *tenEnvTester) LogWarn(msg string) error {
-	return p.logInternal(LogLevelWarn, msg, 2)
-}
-
-func (p *tenEnvTester) LogError(msg string) error {
-	return p.logInternal(LogLevelError, msg, 2)
-}
-
-func (p *tenEnvTester) LogFatal(msg string) error {
-	return p.logInternal(LogLevelFatal, msg, 2)
+func (p *tenEnvTester) Log(level LogLevel, msg string) error {
+	return p.logInternal(level, msg, 2)
 }
 
 func (p *tenEnvTester) logInternal(level LogLevel, msg string, skip int) error {
