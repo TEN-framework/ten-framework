@@ -46,6 +46,12 @@ type TenEnv interface {
 	iProperty
 	InitPropertyFromJSONBytes(value []byte) error
 
+	LogVerbose(msg string) error
+	LogDebug(msg string) error
+	LogInfo(msg string) error
+	LogWarn(msg string) error
+	LogError(msg string) error
+	LogFatal(msg string) error
 	Log(level LogLevel, msg string) error
 }
 
@@ -337,6 +343,30 @@ func (p *tenEnv) String() string {
 	defer C.free(unsafe.Pointer(cString))
 
 	return C.GoString(cString)
+}
+
+func (p *tenEnv) LogVerbose(msg string) error {
+	return p.logInternal(LogLevelVerbose, msg, 2)
+}
+
+func (p *tenEnv) LogDebug(msg string) error {
+	return p.logInternal(LogLevelDebug, msg, 2)
+}
+
+func (p *tenEnv) LogInfo(msg string) error {
+	return p.logInternal(LogLevelInfo, msg, 2)
+}
+
+func (p *tenEnv) LogWarn(msg string) error {
+	return p.logInternal(LogLevelWarn, msg, 2)
+}
+
+func (p *tenEnv) LogError(msg string) error {
+	return p.logInternal(LogLevelError, msg, 2)
+}
+
+func (p *tenEnv) LogFatal(msg string) error {
+	return p.logInternal(LogLevelFatal, msg, 2)
 }
 
 func (p *tenEnv) Log(level LogLevel, msg string) error {
