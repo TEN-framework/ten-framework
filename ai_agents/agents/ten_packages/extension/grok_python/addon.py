@@ -12,11 +12,11 @@ from ten import (
 )
 
 
-@register_addon_as_extension("openai_chatgpt_python")
-class OpenAIChatGPTExtensionAddon(Addon):
+@register_addon_as_extension("grok_python")
+class GrokExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import OpenAIChatGPTExtension
+        from .extension import GrokExtension
 
-        ten_env.log_info("OpenAIChatGPTExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(OpenAIChatGPTExtension(name), context)
+        ten_env.log_info("GrokExtensionAddon on_create_instance")
+        ten_env.on_create_instance_done(GrokExtension(name), context)

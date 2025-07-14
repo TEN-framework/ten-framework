@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "openai_chatgpt_python",
+  "name": "grok_python",
   "version": "0.1.0",
   "dependencies": [
     {

@@ -18,7 +18,7 @@ from ten_ai_base.config import BaseConfig
 
 
 @dataclass
-class OpenAIChatGPTConfig(BaseConfig):
+class grokConfig(BaseConfig):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
     model: str = (
@@ -79,7 +79,7 @@ class ThinkParser:
 class OpenAIChatGPT:
     client = None
 
-    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
+    def __init__(self, ten_env: AsyncTenEnv, config: grokConfig):
         self.config = config
         self.ten_env = ten_env
         ten_env.log_info(

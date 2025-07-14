@@ -37,7 +37,7 @@ from ten_ai_base.types import (
 from ten_ai_base.llm import AsyncLLMBaseExtension
 
 from .helper import parse_sentences
-from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
+from .openai import OpenAIChatGPT, grokConfig
 from ten import (
     Cmd,
     StatusCode,
@@ -55,7 +55,7 @@ DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
 
 
-class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
+class GrokExtension(AsyncLLMBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self.memory = []
@@ -75,7 +75,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         async_ten_env.log_info("on_start")
         await super().on_start(async_ten_env)
 
-        self.config = await OpenAIChatGPTConfig.create_async(
+        self.config = await grokConfig.create_async(
             ten_env=async_ten_env
         )
 
