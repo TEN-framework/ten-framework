@@ -233,46 +233,12 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "app": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "extension": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "subgraph": {
-              "$ref": "#/$defs/selectorPattern"
+            "filter": {
+              "$ref": "#/$defs/filter"
             }
           },
-          "oneOf": [
-            {
-              "required": [
-                "extension"
-              ],
-              "not": {
-                "required": [
-                  "subgraph"
-                ]
-              }
-            },
-            {
-              "required": [
-                "subgraph"
-              ],
-              "not": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "extension"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "app"
-                    ]
-                  }
-                ]
-              }
-            }
+          "required": [
+            "filter"
           ]
         },
         "property": {
@@ -995,6 +961,59 @@
               }
             }
           }
+        }
+      }
+    },
+    "filter": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/atomicFilter"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["and"],
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["or"],
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "atomicFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "operator", "value"],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": ["exact", "regex"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }

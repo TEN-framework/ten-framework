@@ -267,11 +267,17 @@ impl Graph {
             }
         }
 
+        let extension_nodes_len = self
+            .nodes
+            .iter()
+            .filter(|node| node.get_type() == GraphNodeType::Extension)
+            .count();
+
         // Some nodes have 'app' declared and some don't - this is invalid.
         // Because TEN can not determine which app the nodes without the defined
         // field belong to.
         if nodes_have_declared_app != 0
-            && nodes_have_declared_app != self.nodes.len()
+            && nodes_have_declared_app != extension_nodes_len
         {
             return Err(anyhow::anyhow!(ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS));
         }
