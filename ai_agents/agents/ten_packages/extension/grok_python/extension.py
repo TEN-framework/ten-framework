@@ -9,7 +9,7 @@ import asyncio
 import json
 import time
 import traceback
-from typing import Iterable
+from typing import Iterable, Optional
 import uuid
 
 from ten.async_ten_env import AsyncTenEnv
@@ -37,7 +37,7 @@ from ten_ai_base.types import (
 from ten_ai_base.llm import AsyncLLMBaseExtension
 
 from .helper import parse_sentences
-from .openai import OpenAIChatGPT, grokConfig
+from .openai import GrokClient, grokConfig
 from ten import (
     Cmd,
     StatusCode,
@@ -63,7 +63,7 @@ class GrokExtension(AsyncLLMBaseExtension):
         self.config = None
         self.client = None
         self.sentence_fragment = ""
-        self.tool_task_future: asyncio.Future | None = None
+        self.tool_task_future: Optional[asyncio.Future] = None
         self.users_count = 0
         self.last_reasoning_ts = 0
 
@@ -86,12 +86,12 @@ class GrokExtension(AsyncLLMBaseExtension):
 
         # Create instance
         try:
-            self.client = OpenAIChatGPT(async_ten_env, self.config)
+            self.client = GrokClient(async_ten_env, self.config)
             async_ten_env.log_info(
                 f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}"
             )
         except Exception as err:
-            async_ten_env.log_info(f"Failed to initialize OpenAIChatGPT: {err}")
+            async_ten_env.log_info(f"Failed to initialize GrokClient: {err}")
 
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
@@ -116,7 +116,7 @@ class GrokExtension(AsyncLLMBaseExtension):
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
-            if self.config.greeting and self.users_count == 1:
+            if self.config and self.config.greeting and self.users_count == 1:
                 self.send_text_output(async_ten_env, self.config.greeting, True)
 
             status_code, detail = StatusCode.OK, "success"
@@ -166,6 +166,8 @@ class GrokExtension(AsyncLLMBaseExtension):
         kmessages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
 
         async_ten_env.log_info(f"on_call_chat_completion: {kmessages}")
+        if not self.client:
+            raise RuntimeError("GrokClient is not initialized")
         response = await self.client.get_chat_completions(kmessages, None)
         return response.to_json()
 
@@ -350,6 +352,8 @@ class GrokExtension(AsyncLLMBaseExtension):
             listener.on("content_finished", handle_content_finished)
 
             # Make an async API call to get chat completions
+            if not self.client:
+                raise RuntimeError("GrokClient is not initialized")
             await self.client.get_chat_completions_stream(
                 memory + messages, tools, listener
             )
@@ -425,11 +429,17 @@ class GrokExtension(AsyncLLMBaseExtension):
         return message
 
     def _append_memory(self, message: str):
-        if len(self.memory) > self.config.max_memory_length:
+        if not self.config:
+            max_memory = 10
+        else:
+            max_memory = self.config.max_memory_length
+
+        if len(self.memory) > max_memory:
             removed_item = self.memory.pop(0)
             # Remove tool calls from memory
             if (
                 removed_item.get("tool_calls")
+                and len(self.memory) > 0
                 and self.memory[0].get("role") == "tool"
             ):
                 self.memory.pop(0)

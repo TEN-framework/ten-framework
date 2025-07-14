@@ -1,15 +1,15 @@
-# openai_chatgpt_python
+# grok_python
 
-An extension for integrating OpenAI's GPT models (e.g., GPT-4) into your application, providing configurable AI-driven features such as conversational agents, task automation, and tool integration.
+An extension for integrating Grok AI models into your application, providing configurable AI-driven features such as conversational agents, task automation, and tool integration.
 
 ## Features
 
 <!-- main features introduction -->
 
-- OpenAI GPT Integration: Leverage GPT models for text processing and conversational tasks.
+- Grok AI Integration: Leverage Grok models for text processing and conversational tasks.
 - Configurable: Easily customize API keys, model settings, prompts, temperature, etc.
 - Async Queue Processing: Supports real-time message processing with task cancellation and prioritization.
-- Tool Support: Integrate external tools like image recognition via OpenAI's API.
+- Tool Support: Integrate external tools like image recognition via Grok's API.
 
 ## API
 
@@ -19,12 +19,12 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 
 | **Property**               | **Type**   | **Description**                           |
 |----------------------------|------------|-------------------------------------------|
-| `api_key`                   | `string`   | API key for authenticating with OpenAI    |
+| `api_key`                   | `string`   | API key for authenticating with Grok      |
 | `frequency_penalty`         | `float64`  | Controls how much to penalize new tokens based on their existing frequency in the text so far |
 | `presence_penalty`          | `float64`  | Controls how much to penalize new tokens based on whether they appear in the text so far |
 | `temperature`               | `float64`  | Sampling temperature, higher values mean more randomness |
 | `top_p`                     | `float64`  | Nucleus sampling, chooses tokens with cumulative probability `p` |
-| `model`                     | `string`   | Model identifier (e.g., GPT-3.5, GPT-4)   |
+| `model`                     | `string`   | Model identifier (e.g., grok-beta, grok-pro)   |
 | `max_tokens`                | `int64`    | Maximum number of tokens to generate      |
 | `base_url`                  | `string`   | API base URL                              |
 | `prompt`                    | `string`   | Default prompt to send to the model       |
