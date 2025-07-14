@@ -46,6 +46,12 @@
                           __LINE__, __VA_ARGS__);                           \
   } while (0)
 
+#define TEN_ENV_LOG_INTERNAL(ten_env, level, ...)                       \
+  do {                                                                  \
+    ten_env_log_formatted(ten_env, level, __func__, __FILE__, __LINE__, \
+                          __VA_ARGS__);                                 \
+  } while (0)
+
 typedef struct ten_env_t ten_env_t;
 
 TEN_RUNTIME_API void ten_env_log_with_size_formatted_without_check_thread(

@@ -27,9 +27,10 @@ class vosk_asr_cpp_t : public ten::extension_t {
     }
 
     auto sample_rate = ten_env.get_property_float32("sample_rate");
-    TEN_ENV_LOG_INFO(ten_env, std::string("Specify sample rate: " +
-                                          std::to_string(sample_rate))
-                                  .c_str());
+    TEN_ENV_LOG(
+        ten_env, TEN_LOG_LEVEL_INFO,
+        (std::string("Specify sample rate: ") + std::to_string(sample_rate))
+            .c_str());
 
     vosk_recognizer = vosk_recognizer_new(vosk_model, sample_rate);
     if (vosk_recognizer == nullptr) {
@@ -43,8 +44,8 @@ class vosk_asr_cpp_t : public ten::extension_t {
   void on_audio_frame(ten::ten_env_t &ten_env,
                       std::unique_ptr<ten::audio_frame_t> frame) override {
     std::string frame_name = frame->get_name();
-    TEN_ENV_LOG_INFO(
-        ten_env,
+    TEN_ENV_LOG(
+        ten_env, TEN_LOG_LEVEL_INFO,
         (std::string("Received audio frame '") + frame_name + "'").c_str());
 
     ten::buf_t locked_in_buf = frame->lock_buf();

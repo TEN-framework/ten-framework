@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "ten_env.h"
 import "C"
@@ -52,6 +52,7 @@ type TenEnv interface {
 	LogWarn(msg string) error
 	LogError(msg string) error
 	LogFatal(msg string) error
+	Log(level LogLevel, msg string) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't
@@ -287,7 +288,7 @@ func (p *tenEnv) SendAudioFrame(
 }
 
 func (p *tenEnv) OnConfigureDone() error {
-	p.LogDebug("OnConfigureDone")
+	p.Log(LogLevelDebug, "OnConfigureDone")
 
 	C.ten_go_ten_env_on_configure_done(p.cPtr)
 
@@ -366,6 +367,10 @@ func (p *tenEnv) LogError(msg string) error {
 
 func (p *tenEnv) LogFatal(msg string) error {
 	return p.logInternal(LogLevelFatal, msg, 2)
+}
+
+func (p *tenEnv) Log(level LogLevel, msg string) error {
+	return p.logInternal(level, msg, 2)
 }
 
 func (p *tenEnv) logInternal(level LogLevel, msg string, skip int) error {

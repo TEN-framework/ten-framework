@@ -254,6 +254,10 @@ export class TenEnv {
     return this.log_internal(LogLevel.FATAL, message);
   }
 
+  log(level: LogLevel, message: string): TenError | null {
+    return this.log_internal(level, message);
+  }
+
   private log_internal(level: number, message: string): TenError | null {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;

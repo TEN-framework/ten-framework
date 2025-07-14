@@ -12,6 +12,7 @@ import traceback
 from typing import final
 
 from libten_runtime_python import _Extension
+from .log_level import LogLevel
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .ten_env import TenEnv
@@ -242,8 +243,9 @@ class AsyncExtension(_Extension):
     def _exit_on_exception(self, async_ten_env: AsyncTenEnv, e: Exception):
         traceback_info = traceback.format_exc()
 
-        err = async_ten_env.log_fatal(
-            f"Uncaught exception: {e} \ntraceback: {traceback_info}"
+        err = async_ten_env.log(
+            LogLevel.FATAL,
+            f"Uncaught exception: {e} \ntraceback: {traceback_info}",
         )
         if err is not None:
             # If the log_fatal API fails, print the error message to the

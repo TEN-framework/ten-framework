@@ -79,6 +79,21 @@
       },
       "enable_storage": {
         "type": "bool"
+      },
+      "vad_type": {
+        "type": "string"
+      },
+      "vad_eagerness": {
+        "type": "string"
+      },
+      "vad_threshold": {
+        "type": "float32"
+      },
+      "vad_prefix_padding_ms": {
+        "type": "int32"
+      },
+      "vad_silence_duration_ms": {
+        "type": "int32"
       }
     },
     "audio_frame_in": [
