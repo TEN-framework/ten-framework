@@ -72,6 +72,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va_llama4",
   },
   {
+    label: "Voice Agent with Grok4",
+    value: "grok4",
+  },
+  {
     label: "Voice Agent with Qwen3 Reasoning",
     value: "qwen3",
   },
