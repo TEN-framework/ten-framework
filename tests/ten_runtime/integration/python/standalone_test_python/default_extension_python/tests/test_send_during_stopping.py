@@ -11,6 +11,7 @@ from ten_runtime import (
     Cmd,
     CmdResult,
     TenError,
+    LogLevel,
 )
 
 
@@ -21,7 +22,7 @@ class ExtensionTesterBasic(ExtensionTester):
         result: Optional[CmdResult],
         error: Optional[TenError],
     ):
-        ten_env.log_info("received register response")
+        ten_env.log(LogLevel.INFO, "received register response")
         ten_env.stop_test()
 
     def on_unregister_response(
@@ -32,13 +33,13 @@ class ExtensionTesterBasic(ExtensionTester):
     ):
         # All ten_env_tester methods will return error because on_deinit_done()
         # of the extension tester is called.
-        err = ten_env.log_info("received unregister response")
+        err = ten_env.log(LogLevel.INFO, "received unregister response")
         assert err is not None
 
     def on_start(self, ten_env: TenEnvTester) -> None:
         new_cmd = Cmd.create("register")
 
-        ten_env.log_info("send register cmd")
+        ten_env.log(LogLevel.INFO, "send register cmd")
         ten_env.send_cmd(
             new_cmd,
             lambda ten_env, result, error: self.on_register_response(
@@ -49,7 +50,7 @@ class ExtensionTesterBasic(ExtensionTester):
         ten_env.on_start_done()
 
     def on_deinit(self, ten_env: TenEnvTester) -> None:
-        ten_env.log_info("tester on_deinit")
+        ten_env.log(LogLevel.INFO, "tester on_deinit")
 
         new_cmd = Cmd.create("unregister")
         ten_env.send_cmd(

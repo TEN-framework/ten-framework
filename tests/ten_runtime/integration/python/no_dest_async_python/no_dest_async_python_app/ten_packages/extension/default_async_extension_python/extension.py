@@ -13,6 +13,7 @@ from ten_runtime import (
     Data,
     AudioFrame,
     VideoFrame,
+    LogLevel,
 )
 
 
@@ -25,7 +26,7 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         assert (await ten_env.is_property_exist("unknown_field"))[0] is False
 
@@ -35,33 +36,33 @@ class DefaultAsyncExtension(AsyncExtension):
         _, err = await ten_env.send_cmd(Cmd.create("unknown_cmd"))
         assert err is not None
 
-        ten_env.log_error(f"Error: {err.error_message()}")
+        ten_env.log(LogLevel.ERROR, f"Error: {err.error_message()}")
 
         err = await ten_env.send_data(Data.create("unknown_data"))
         assert err is not None
 
-        ten_env.log_error(f"Error: {err.error_message()}")
+        ten_env.log(LogLevel.ERROR, f"Error: {err.error_message()}")
 
         err = await ten_env.send_audio_frame(
             AudioFrame.create("unknown_audio_frame")
         )
         assert err is not None
 
-        ten_env.log_error(f"Error: {err.error_message()}")
+        ten_env.log(LogLevel.ERROR, f"Error: {err.error_message()}")
 
         err = await ten_env.send_video_frame(
             VideoFrame.create("unknown_video_frame")
         )
         assert err is not None
 
-        ten_env.log_error(f"Error: {err.error_message()}")
+        ten_env.log(LogLevel.ERROR, f"Error: {err.error_message()}")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_debug(f"on_cmd: {cmd_json}")
+        ten_env.log(LogLevel.DEBUG, f"on_cmd: {cmd_json}")
 
         # Mock async operation, e.g. network, file I/O.
         await asyncio.sleep(0.5)
@@ -80,6 +81,6 @@ class DefaultAsyncExtension(AsyncExtension):
         await ten_env.return_result(new_result)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         await asyncio.sleep(0.5)

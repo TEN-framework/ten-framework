@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 const (
 	intSize = 32 << (^uint(0) >> 63) // 32 or 64

@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "app.h"
 import "C"
@@ -30,7 +30,7 @@ type DefaultApp struct{}
 func (p *DefaultApp) OnConfigure(
 	tenEnv TenEnv,
 ) {
-	tenEnv.LogDebug("OnConfigure.")
+	tenEnv.Log(LogLevelDebug, "OnConfigure.")
 
 	tenEnv.OnConfigureDone()
 }
@@ -39,14 +39,14 @@ func (p *DefaultApp) OnConfigure(
 func (p *DefaultApp) OnInit(
 	tenEnv TenEnv,
 ) {
-	tenEnv.LogDebug("OnInit.")
+	tenEnv.Log(LogLevelDebug, "OnInit.")
 
 	tenEnv.OnInitDone()
 }
 
 // OnDeinit deinitializes the app.
 func (p *DefaultApp) OnDeinit(tenEnv TenEnv) {
-	tenEnv.LogDebug("OnDeinit.")
+	tenEnv.Log(LogLevelDebug, "OnDeinit.")
 
 	tenEnv.OnDeinitDone()
 }
