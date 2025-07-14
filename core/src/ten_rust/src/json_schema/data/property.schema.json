@@ -972,7 +972,9 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["and"],
+          "required": [
+            "and"
+          ],
           "properties": {
             "and": {
               "type": "array",
@@ -986,7 +988,9 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["or"],
+          "required": [
+            "or"
+          ],
           "properties": {
             "or": {
               "type": "array",
@@ -1002,14 +1006,21 @@
     "atomicFilter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["field", "operator", "value"],
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
       "properties": {
         "field": {
           "type": "string"
         },
         "operator": {
           "type": "string",
-          "enum": ["exact", "regex"]
+          "enum": [
+            "exact",
+            "regex"
+          ]
         },
         "value": {
           "type": "string",
