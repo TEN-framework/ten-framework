@@ -2605,7 +2605,7 @@ mod tests {
 
     #[test]
     fn test_validate_graph_node_selector_missing_required() {
-        // missing selector
+        // missing filter
         let property = r#"{
                             "ten": {
                               "predefined_graphs": [

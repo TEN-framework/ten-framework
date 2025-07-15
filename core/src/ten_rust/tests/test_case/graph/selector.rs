@@ -21,12 +21,12 @@ mod tests {
         .unwrap();
 
         // test_extension_1,2,3 --data--> test_extension_4
-        // test_extension_3 --cmd--> test_extension_1,2
+        // test_extension_3     --cmd --> test_extension_1,2
         // ----merged---
-        // test_extension_1 --data--> test_extension_4
-        // test_extension_2 --data--> test_extension_4
-        // test_extension_3 --cmd--> test_extension_1,2
-        //                  --data--> test_extension_4
+        // test_extension_1     --data--> test_extension_4
+        // test_extension_2     --data--> test_extension_4
+        // test_extension_3     --cmd --> test_extension_1,2
+        //                      --data--> test_extension_4
 
         assert_eq!(graph.connections.as_ref().unwrap().len(), 3);
 
