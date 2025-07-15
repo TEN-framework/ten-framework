@@ -21,9 +21,9 @@ typedef struct ten_log_formatter_entry_t {
 } ten_log_formatter_entry_t;
 
 static ten_log_formatter_entry_t registered_formatters[] = {
-    {"text_plain", ten_log_text_plain_formatter},
-    {"text_colored", ten_log_text_colored_formatter},
-    {"json_plain", ten_log_json_plain_formatter},
+    {"plain", ten_log_plain_formatter},
+    {"plain_colored", ten_log_plain_colored_formatter},
+    {"json", ten_log_json_formatter},
     {"json_colored", ten_log_json_colored_formatter},
 };
 
