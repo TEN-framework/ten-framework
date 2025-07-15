@@ -73,6 +73,10 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
 
   const { data: graphs = [], error, isLoading, mutate } = useGraphs();
 
+  const currentAppGraphs = React.useMemo(() => {
+    return graphs.filter((graph) => graph.base_dir === selectedApp?.base_dir);
+  }, [graphs, selectedApp]);
+
   const handleOk = () => {
     removeWidget(widget.widget_id);
   };
@@ -84,7 +88,7 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     }
     try {
       const { nodes: layoutedNodes, edges: layoutedEdges } =
-        await resetNodesAndEdgesByGraphs(graphs);
+        await resetNodesAndEdgesByGraphs(currentAppGraphs);
 
       setNodesAndEdges(layoutedNodes, layoutedEdges);
 

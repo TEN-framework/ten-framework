@@ -15,6 +15,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useFetchApps } from "@/api/services/apps";
+import { useGraphs } from "@/api/services/graphs";
 import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { Button } from "@/components/ui/Button";
 import {
@@ -29,8 +30,9 @@ import {
   CONTAINER_DEFAULT_ID,
   GRAPH_SELECT_WIDGET_ID,
 } from "@/constants/widgets";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore, useWidgetStore } from "@/store";
+import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import {
   EDefaultWidgetType,
   EWidgetCategory,
@@ -134,6 +136,9 @@ const StatusWorkspace = () => {
   const { t } = useTranslation();
   const { currentWorkspace } = useAppStore();
   const { appendWidget } = useWidgetStore();
+  const { setNodesAndEdges } = useFlowStore();
+
+  const { data: graphs = [], isLoading: isLoadingGraphs } = useGraphs();
 
   const [baseDirAbbrMemo, baseDirMemo] = React.useMemo(() => {
     if (!currentWorkspace?.app?.base_dir) {
@@ -142,13 +147,6 @@ const StatusWorkspace = () => {
     const lastFolderName = currentWorkspace.app.base_dir.split("/").pop();
     return [`...${lastFolderName}`, currentWorkspace.app.base_dir];
   }, [currentWorkspace?.app?.base_dir]);
-
-  const graphNameMemo = React.useMemo(() => {
-    if (!currentWorkspace.graph?.name) {
-      return null;
-    }
-    return currentWorkspace.graph.name;
-  }, [currentWorkspace.graph?.name]);
 
   const onOpenExistingGraph = () => {
     appendWidget({
@@ -170,6 +168,23 @@ const StatusWorkspace = () => {
     });
   };
 
+  React.useEffect(() => {
+    const init = async () => {
+      if (!isLoadingGraphs && baseDirMemo && graphs?.length > 0) {
+        const validGraphs = graphs.filter(
+          (graph) => graph.base_dir === baseDirMemo
+        );
+
+        const { nodes: layoutedNodes, edges: layoutedEdges } =
+          await resetNodesAndEdgesByGraphs(validGraphs);
+
+        setNodesAndEdges(layoutedNodes, layoutedEdges);
+      }
+    };
+
+    init();
+  }, [isLoadingGraphs, graphs, baseDirMemo]);
+
   if (!baseDirMemo) {
     return null;
   }
@@ -186,13 +201,6 @@ const StatusWorkspace = () => {
           >
             <FolderOpenIcon className="size-3" />
             <span className="">{baseDirAbbrMemo}</span>
-
-            {graphNameMemo && (
-              <>
-                <ChevronRightIcon className="size-3" />
-                <span className="">{graphNameMemo}</span>
-              </>
-            )}
           </Button>
         </TooltipTrigger>
         <TooltipContent className="flex max-w-md flex-col gap-1">
