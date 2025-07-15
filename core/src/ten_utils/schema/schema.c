@@ -477,14 +477,12 @@ bool ten_schema_is_compatible_with_schema_error(
     // It's OK if some source keyword or target keyword is missing, such as
     // 'required' keyword; if the source schema has 'required' keyword but the
     // target does not, it's compatible.
-    if (source_keyword) {
-      result = source_keyword->is_compatible(source_keyword, target_keyword,
-                                             schema_err);
-    } else if (target_keyword) {
-      result = target_keyword->is_compatible(NULL, target_keyword, schema_err);
-    } else {
+    if (!source_keyword || !target_keyword) {
       continue;
     }
+
+    result = source_keyword->is_compatible(source_keyword, target_keyword,
+                                           schema_err);
 
     if (!result) {
       break;
