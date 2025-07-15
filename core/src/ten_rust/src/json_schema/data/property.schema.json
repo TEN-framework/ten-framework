@@ -229,17 +229,8 @@
             }
           }
         },
-        "selector": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "filter": {
-              "$ref": "#/$defs/filter"
-            }
-          },
-          "required": [
-            "filter"
-          ]
+        "filter": {
+          "$ref": "#/$defs/filter"
         },
         "property": {
           "type": "object",
@@ -323,12 +314,12 @@
                   "const": "selector"
                 },
                 "name": {},
-                "selector": {}
+                "filter": {}
               },
               "required": [
                 "type",
                 "name",
-                "selector"
+                "filter"
               ],
               "additionalProperties": false
             }

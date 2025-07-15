@@ -2640,12 +2640,10 @@ mod tests {
                                         {
                                           "type": "selector",
                                           "name": "test_selector",
-                                          "selector": {
-                                            "filter": {
-                                              "field": "name",
-                                              "operator": "exact",
-                                              "value": "test_extension"
-                                            }
+                                          "filter": {
+                                            "field": "name",
+                                            "operator": "exact",
+                                            "value": "test_extension"
                                           }
                                         }
                                       ]
@@ -2668,12 +2666,10 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "regex",
-                                            "value": "test.*"
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "regex",
+                                          "value": "test.*"
                                         }
                                       }
                                     ]
@@ -2699,21 +2695,19 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "and": [
-                                              {
-                                                "field": "name",
-                                                "operator": "regex",
-                                                "value": "test.*"
-                                              },
-                                              {
-                                                "field": "type",
-                                                "operator": "exact",
-                                                "value": "extension"
-                                              }
-                                            ]
-                                          }
+                                        "filter": {
+                                          "and": [
+                                            {
+                                              "field": "name",
+                                              "operator": "regex",
+                                              "value": "test.*"
+                                            },
+                                            {
+                                              "field": "type",
+                                              "operator": "exact",
+                                              "value": "extension"
+                                            }
+                                          ]
                                         }
                                       }
                                     ]
@@ -2736,21 +2730,19 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "or": [
-                                              {
-                                                "field": "name",
-                                                "operator": "exact",
-                                                "value": "test1"
-                                              },
-                                              {
-                                                "field": "name",
-                                                "operator": "exact",
-                                                "value": "test2"
-                                              }
-                                            ]
-                                          }
+                                        "filter": {
+                                          "or": [
+                                            {
+                                              "field": "name",
+                                              "operator": "exact",
+                                              "value": "test1"
+                                            },
+                                            {
+                                              "field": "name",
+                                              "operator": "exact",
+                                              "value": "test2"
+                                            }
+                                          ]
                                         }
                                       }
                                     ]
@@ -2773,30 +2765,28 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "and": [
-                                              {
-                                                "field": "type",
-                                                "operator": "exact",
-                                                "value": "extension"
-                                              },
-                                              {
-                                                "or": [
-                                                  {
-                                                    "field": "name",
-                                                    "operator": "exact",
-                                                    "value": "test1"
-                                                  },
-                                                  {
-                                                    "field": "name",
-                                                    "operator": "exact",
-                                                    "value": "test2"
-                                                  }
-                                                ]
-                                              }
-                                            ]
-                                          }
+                                        "filter": {
+                                          "and": [
+                                            {
+                                              "field": "type",
+                                              "operator": "exact",
+                                              "value": "extension"
+                                            },
+                                            {
+                                              "or": [
+                                                {
+                                                  "field": "name",
+                                                  "operator": "exact",
+                                                  "value": "test1"
+                                                },
+                                                {
+                                                  "field": "name",
+                                                  "operator": "exact",
+                                                  "value": "test2"
+                                                }
+                                              ]
+                                            }
+                                          ]
                                         }
                                       }
                                     ]
@@ -2822,11 +2812,9 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "exact"
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact"
                                         }
                                       }
                                     ]
@@ -2849,10 +2837,8 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "and": []
-                                          }
+                                        "filter": {
+                                          "and": []
                                         }
                                       }
                                     ]
@@ -2875,12 +2861,10 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "contains",
-                                            "value": "test"
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "contains",
+                                          "value": "test"
                                         }
                                       }
                                     ]
@@ -2903,12 +2887,10 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "exact",
-                                            "value": ""
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": ""
                                         }
                                       }
                                     ]
@@ -2934,13 +2916,11 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "exact",
-                                            "value": "test",
-                                            "extra": "invalid"
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": "test",
+                                          "extra": "invalid"
                                         }
                                       }
                                     ]
@@ -2963,12 +2943,10 @@ mod tests {
                                       {
                                         "type": "selector",
                                         "name": "test_selector",
-                                        "selector": {
-                                          "filter": {
-                                            "field": "name",
-                                            "operator": "exact",
-                                            "value": "test"
-                                          }
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": "test"
                                         },
                                         "extra": "invalid"
                                       }
