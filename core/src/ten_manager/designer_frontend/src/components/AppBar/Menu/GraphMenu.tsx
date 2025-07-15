@@ -6,7 +6,6 @@
 //
 
 import {
-  FolderOpenIcon,
   GitPullRequestCreateIcon,
   InfoIcon,
   MoveIcon,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { Button } from "@/components/ui/Button";
 import {
@@ -28,7 +26,6 @@ import {
   CONTAINER_DEFAULT_ID,
   DOC_REF_WIDGET_ID,
   GRAPH_ACTIONS_WIDGET_ID,
-  GRAPH_SELECT_WIDGET_ID,
   GROUP_DOC_REF_ID,
   GROUP_GRAPH_ID,
 } from "@/constants/widgets";
@@ -53,26 +50,6 @@ export function GraphMenu(props: {
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
   const { currentWorkspace } = useAppStore();
-
-  const onOpenExistingGraph = () => {
-    appendWidget({
-      container_id: CONTAINER_DEFAULT_ID,
-      group_id: GRAPH_SELECT_WIDGET_ID,
-      widget_id: GRAPH_SELECT_WIDGET_ID,
-
-      category: EWidgetCategory.Default,
-      display_type: EWidgetDisplayType.Popup,
-
-      title: <GraphSelectPopupTitle />,
-      metadata: {
-        type: EDefaultWidgetType.GraphSelect,
-      },
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-    });
-  };
 
   const onGraphAct = (type: EGraphActions) => () => {
     if (!currentWorkspace?.graph || !currentWorkspace?.app) return;
@@ -104,7 +81,7 @@ export function GraphMenu(props: {
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
-      widget_id: DOC_REF_WIDGET_ID + "-" + EDocLinkKey.Graph,
+      widget_id: `${DOC_REF_WIDGET_ID}-${EDocLinkKey.Graph}`,
 
       category: EWidgetCategory.Default,
       display_type: EWidgetDisplayType.Popup,
@@ -142,16 +119,6 @@ export function GraphMenu(props: {
       <NavigationMenuContent
         className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
       >
-        <NavigationMenuLink asChild>
-          <Button
-            className="w-full justify-start"
-            variant="ghost"
-            onClick={onOpenExistingGraph}
-          >
-            <FolderOpenIcon />
-            {t("header.menuGraph.loadGraph")}
-          </Button>
-        </NavigationMenuLink>
         <NavigationMenuLink asChild>
           <Button
             className="w-full justify-start"

@@ -8,6 +8,7 @@ import type { Edge, Node } from "@xyflow/react";
 import type { EConnectionType, IBackendNode, IGraph } from "@/types/graphs";
 
 export enum ECustomNodeType {
+  GRAPH = "graph",
   EXTENSION = "extension",
   SELECTOR = "selector",
   SUB_GRAPH = "sub-graph",
@@ -15,7 +16,7 @@ export enum ECustomNodeType {
 
 export interface IExtensionNodeData extends IBackendNode {
   _type: ECustomNodeType.EXTENSION;
-  _graph: IGraph;
+  graph: IGraph;
   src: Record<EConnectionType, TCustomEdgeAddressData[]>;
   target: Record<EConnectionType, TCustomEdgeAddressData[]>;
   url?: string; // ? need to be removed(ws)
@@ -23,7 +24,14 @@ export interface IExtensionNodeData extends IBackendNode {
 }
 export type TExtensionNode = Node<IExtensionNodeData, "extensionNode">;
 
-export type TCommonNode = TExtensionNode;
+export interface IGraphNodeData {
+  _type: ECustomNodeType.GRAPH;
+  graph: IGraph;
+  [key: string]: unknown;
+}
+export type TGraphNode = Node<IGraphNodeData, "graphNode">;
+
+export type TCommonNode = TGraphNode | TExtensionNode;
 
 /** @deprecated */
 export type TCustomNodeData = Partial<IBackendNode> & {
@@ -53,12 +61,14 @@ export type TCustomEdgeData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
+  graph: IGraph;
 };
 
 export type TCustomEdgeAddressData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
+  graph: IGraph;
 };
 
 export type TCustomEdgeAddressMap = Record<

@@ -65,7 +65,7 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
         className={cn(
           "bg-gray-200 dark:bg-gray-800",
           "rounded-t-sm px-2 py-1",
-          "min-w-sm",
+          "w-sm",
           "text-secondary-foreground",
           {
             "text-ten-icontext-2": !isInstalled,
@@ -105,8 +105,8 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
             <ContextMenu
               // TODO: Fix type casting
               node={props as unknown as TExtensionNode}
-              baseDir={data._graph.base_dir}
-              graphId={data._graph.uuid}
+              baseDir={data.graph.base_dir}
+              graphId={data.graph.uuid}
             />
           </NodeHeaderMenuAction>
         </NodeHeaderActions>

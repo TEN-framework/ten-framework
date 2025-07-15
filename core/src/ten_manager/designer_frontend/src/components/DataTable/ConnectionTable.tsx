@@ -26,7 +26,7 @@ import {
 import * as React from "react";
 import { Translation, useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { postDeleteConnection } from "@/api/services/graphs";
+import { postDeleteConnection, useGraphs } from "@/api/services/graphs";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -45,7 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
@@ -126,6 +126,8 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
   const { currentWorkspace } = useAppStore();
   const { setNodesAndEdges } = useFlowStore();
 
+  const { data: graphs = [] } = useGraphs();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -191,9 +193,8 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                     dest_extension: edge.target,
                   });
                   toast.success(t("action.deleteConnectionSuccess"));
-                  const { nodes, edges } = await resetNodesAndEdgesByGraph(
-                    currentWorkspace!.graph!
-                  );
+                  const { nodes, edges } =
+                    await resetNodesAndEdgesByGraphs(graphs);
                   setNodesAndEdges(nodes, edges);
                 } catch (error) {
                   console.error(error);
@@ -388,58 +389,50 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <>
-      <div className={cn("", className)}>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+    <div className={cn("", className)}>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
               </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  {t("dataTable.noResults")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                {t("dataTable.noResults")}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

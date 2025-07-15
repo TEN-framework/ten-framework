@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import type { IApp } from "@/types/apps";
@@ -77,30 +77,27 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
     removeWidget(widget.widget_id);
   };
 
-  const handleSelectGraph = async (graph: IGraph) => {
-    updateCurrentWorkspace({
-      app: selectedApp,
-      graph,
-    });
+  const handleResetNodesAndEdges = async () => {
+    if (!selectedApp) {
+      toast.error(t("popup.selectGraph.noAppSelected"));
+      return;
+    }
     try {
       const { nodes: layoutedNodes, edges: layoutedEdges } =
-        await resetNodesAndEdgesByGraph(graph);
+        await resetNodesAndEdgesByGraphs(graphs);
 
       setNodesAndEdges(layoutedNodes, layoutedEdges);
 
       toast.success(t("popup.selectGraph.updateSuccess"), {
         description: (
           <>
-            <p>{`${t("popup.selectGraph.app")}: ${selectedApp?.base_dir}`}</p>
-            <p>{`${t("popup.selectGraph.graph")}: ${graph.name}`}</p>
+            <p>{`${t("popup.selectGraph.app")}: ${selectedApp.base_dir}`}</p>
           </>
         ),
       });
     } catch (err: unknown) {
       console.error(err);
-      toast.error("Failed to load graph.");
-    } finally {
-      // removeWidget(widget.widget_id);
+      toast.error("Failed to reset nodes and edges.");
     }
   };
 
@@ -133,6 +130,9 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
             );
             if (app) {
               setSelectedApp(app);
+              updateCurrentWorkspace({
+                app: app,
+              });
             }
           }}
           value={selectedApp?.base_dir ?? undefined}
@@ -154,12 +154,10 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
       )}
       <Label>{t("popup.selectGraph.graph")}</Label>
       {isLoading ? (
-        <>
-          <SpinnerLoading
-            className="h-full w-full"
-            svgProps={{ className: "size-10" }}
-          />
-        </>
+        <SpinnerLoading
+          className="h-full w-full"
+          svgProps={{ className: "size-10" }}
+        />
       ) : (
         <div className="h-full overflow-y-auto">
           <div className="rounded-md border">
@@ -167,7 +165,6 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
               items={graphs?.filter(
                 (graph) => graph.base_dir === selectedApp?.base_dir
               )}
-              onSelect={handleSelectGraph}
               onReload={mutate}
               className="pointer-events-auto"
               disabled={isLoadingApps || isLoading}
@@ -176,6 +173,9 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
         </div>
       )}
       <div className="mt-auto flex justify-end gap-2">
+        <Button variant="destructive" onClick={handleResetNodesAndEdges}>
+          {t("action.reset")}
+        </Button>
         <Button variant="default" onClick={handleOk}>
           {t("action.ok")}
         </Button>
@@ -186,12 +186,13 @@ export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
 
 const GraphSelectTable = (props: {
   items?: IGraph[];
+  /** @deprecated */
   onSelect?: (item: IGraph) => void;
   className?: string;
   onReload?: () => void;
   disabled?: boolean;
 }) => {
-  const { items = [], onSelect, className, onReload, disabled } = props;
+  const { items = [], className, onReload, disabled } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const { t } = useTranslation();
@@ -243,30 +244,31 @@ const GraphSelectTable = (props: {
         );
       },
     },
-    {
-      header: t("dataTable.actions"),
-      cell: ({ row }) => {
-        const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
+    // {
+    //   header: t("dataTable.actions"),
+    //   cell: ({ row }) => {
+    // eslint-disable-next-line max-len
+    //     const isCurrent = row.original.uuid === currentWorkspace?.graph?.uuid;
 
-        return (
-          <div className="flex items-center">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isCurrent || disabled}
-              onClick={() => {
-                const graph = row.original as IGraph;
-                onSelect?.(graph);
-              }}
-            >
-              {isCurrent
-                ? t("popup.selectGraph.selected")
-                : t("popup.selectGraph.select")}
-            </Button>
-          </div>
-        );
-      },
-    },
+    //     return (
+    //       <div className="flex items-center">
+    //         <Button
+    //           size="sm"
+    //           variant="outline"
+    //           disabled={isCurrent || disabled}
+    //           onClick={() => {
+    //             const graph = row.original as IGraph;
+    //             onSelect?.(graph);
+    //           }}
+    //         >
+    //           {isCurrent
+    //             ? t("popup.selectGraph.selected")
+    //             : t("popup.selectGraph.select")}
+    //         </Button>
+    //       </div>
+    //     );
+    //   },
+    // },
   ];
 
   const table = useReactTable<IGraph>({
@@ -281,50 +283,48 @@ const GraphSelectTable = (props: {
   });
 
   return (
-    <>
-      <Table className={cn("w-full caption-bottom text-sm", className)}>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
+    <Table className={cn("w-full caption-bottom text-sm", className)}>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => {
+              return (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              data-state={row.getIsSelected() && "selected"}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
             </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                {t("dataTable.noResults")}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={columns.length} className="h-24 text-center">
+              {t("dataTable.noResults")}
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 };
 

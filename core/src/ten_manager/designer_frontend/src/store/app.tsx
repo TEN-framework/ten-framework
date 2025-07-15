@@ -27,10 +27,6 @@ export interface IAppStore {
     graph?: IGraph | null;
     app?: IApp | null;
   }) => void;
-  /** @deprecated */
-  runScript: string;
-  /** @deprecated */
-  setRunScript: (runScript: string) => void;
   folderPath: string;
   setFolderPath: (folderPath: string) => void;
   fmItems: IFMItem[][];
@@ -59,16 +55,16 @@ export const useAppStore = create<IAppStore>()(
       initialized: false,
     },
     updateCurrentWorkspace: (currentWorkspace: {
-      graph?: IGraph | null;
+      graph?: IGraph | null; // TODO: remove
       app?: IApp | null;
     }) =>
       set((state) => ({
         currentWorkspace: {
           ...state.currentWorkspace,
-          graph:
-            currentWorkspace.graph !== undefined
-              ? currentWorkspace.graph
-              : state.currentWorkspace.graph,
+          // graph:
+          //   currentWorkspace.graph !== undefined
+          //     ? currentWorkspace.graph
+          //     : state.currentWorkspace.graph,
           app:
             currentWorkspace.app !== undefined
               ? currentWorkspace.app
@@ -76,8 +72,6 @@ export const useAppStore = create<IAppStore>()(
           initialized: true,
         },
       })),
-    runScript: TEN_DEFAULT_APP_RUN_SCRIPT,
-    setRunScript: (runScript: string) => set({ runScript }),
     folderPath: "/",
     setFolderPath: (folderPath: string) => set({ folderPath }),
     fmItems: [[]],

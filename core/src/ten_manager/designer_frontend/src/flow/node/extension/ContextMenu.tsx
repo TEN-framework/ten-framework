@@ -24,7 +24,6 @@ import { postDeleteNode, useGraphs } from "@/api/services/graphs";
 import { EditorPopupTitle } from "@/components/Popup/Editor";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
 import {
   CONTAINER_DEFAULT_ID,
   GRAPH_ACTIONS_WIDGET_ID,
@@ -37,6 +36,7 @@ import {
   ContextDropdownMenuItem,
   EContextDropdownMenuItemType,
 } from "@/flow/ContextMenu/Base";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
@@ -413,7 +413,9 @@ export const ContextMenu = (props: {
               if (!graph) {
                 throw new Error("Graph not found");
               }
-              const { nodes, edges } = await resetNodesAndEdgesByGraph(graph);
+              const { nodes, edges } = await resetNodesAndEdgesByGraphs([
+                graph,
+              ]);
               setNodesAndEdges(nodes, edges);
             } catch (error: unknown) {
               toast.error(t("action.deleteNodeFailed"), {

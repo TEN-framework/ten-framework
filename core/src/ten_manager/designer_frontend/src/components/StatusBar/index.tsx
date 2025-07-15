@@ -96,8 +96,12 @@ const StatusApps = () => {
         app: data?.app_info?.[0],
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, currentWorkspace?.app?.base_dir, currentWorkspace?.initialized]);
+  }, [
+    data?.app_info,
+    currentWorkspace?.app?.base_dir,
+    currentWorkspace?.initialized,
+    updateCurrentWorkspace,
+  ]);
 
   React.useEffect(() => {
     if (error) {
@@ -191,17 +195,11 @@ const StatusWorkspace = () => {
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent className="flex flex-col gap-1">
+        <TooltipContent className="flex max-w-md flex-col gap-1">
           <p className="text-sm">{t("statusBar.workspace.title")}</p>
-          <p className="flex justify-between gap-1">
+          <p className="flex w-full justify-between gap-1">
             <span className="min-w-24">{t("statusBar.workspace.baseDir")}</span>
-            <span className="">{baseDirMemo}</span>
-          </p>
-          <p className="flex justify-between gap-1">
-            <span className="">{t("statusBar.workspace.graphName")}</span>
-            <span className="">
-              {graphNameMemo ?? t("popup.selectGraph.unspecified")}
-            </span>
+            <span className="break-all">{baseDirMemo}</span>
           </p>
         </TooltipContent>
       </Tooltip>
@@ -213,18 +211,16 @@ const Feedback = () => {
   const { t } = useTranslation();
 
   return (
-    <>
-      <Button asChild variant="ghost" size="status" className="truncate">
-        <a
-          target="_blank"
-          referrerPolicy="no-referrer"
-          href={TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL}
-          className="animate-[pulse_1s_ease-in-out_5]"
-        >
-          <MessageSquareShareIcon className="size-3" />
-          <span>{t("statusBar.feedback.title")}</span>
-        </a>
-      </Button>
-    </>
+    <Button asChild variant="ghost" size="status" className="truncate">
+      <a
+        target="_blank"
+        referrerPolicy="no-referrer"
+        href={TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL}
+        className="animate-[pulse_1s_ease-in-out_5]"
+      >
+        <MessageSquareShareIcon className="size-3" />
+        <span>{t("statusBar.feedback.title")}</span>
+      </a>
+    </Button>
   );
 };

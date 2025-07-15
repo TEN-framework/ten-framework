@@ -19,12 +19,18 @@ import { ThemeProviderContext } from "@/components/theme-context";
 import CustomEdge from "@/flow/CustomEdge";
 import { syncGraphNodeGeometry } from "@/flow/graph";
 import { ExtensionNode } from "@/flow/node";
+import { GraphNode } from "@/flow/node/graph";
 import { cn } from "@/lib/utils";
 import { useAppStore, useFlowStore } from "@/store";
 import type { TCustomEdge, TExtensionNode } from "@/types/flow";
 
 import "@xyflow/react/dist/style.css"; // Import react-flow style.
 import "@/flow/reactflow.css"; // Import react-flow style.
+
+const nodeTypes = {
+  extensionNode: ExtensionNode,
+  graphNode: GraphNode,
+};
 
 export const FlowCanvas = (props: { className?: string }) => {
   const { className } = props;
@@ -79,9 +85,7 @@ export const FlowCanvas = (props: { className?: string }) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         // onConnect={onConnect}
-        nodeTypes={{
-          extensionNode: ExtensionNode,
-        }}
+        nodeTypes={nodeTypes}
         edgeTypes={{
           customEdge: CustomEdge,
         }}

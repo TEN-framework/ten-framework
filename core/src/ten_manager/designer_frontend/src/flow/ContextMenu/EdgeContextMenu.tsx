@@ -9,12 +9,12 @@ import { ListCollapseIcon, PencilIcon, TrashIcon } from "lucide-react";
 import type React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { postDeleteConnection } from "@/api/services/graphs";
-import { resetNodesAndEdgesByGraph } from "@/components/Widget/GraphsWidget";
+import { postDeleteConnection, useGraphs } from "@/api/services/graphs";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/ContextMenu/Base";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
 import { dispatchCustomNodeActionPopup } from "@/utils/events";
@@ -39,6 +39,8 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const { appendDialog, removeDialog } = useDialogStore();
   const { currentWorkspace } = useAppStore();
   const { setNodesAndEdges } = useFlowStore();
+
+  const { data: graphs = [] } = useGraphs();
 
   const items: IContextMenuItem[] = [
     {
@@ -94,9 +96,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
                 dest_extension: edge.target,
               });
               toast.success(t("action.deleteConnectionSuccess"));
-              const { nodes, edges } = await resetNodesAndEdgesByGraph(
-                currentWorkspace!.graph!
-              );
+              const { nodes, edges } = await resetNodesAndEdgesByGraphs(graphs);
               setNodesAndEdges(nodes, edges);
             } catch (error) {
               console.error(error);

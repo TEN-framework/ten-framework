@@ -24,8 +24,6 @@ import {
   postAddNode,
   postReplaceNode,
   postUpdateNodeProperty,
-  retrieveGraphConnections,
-  retrieveGraphNodes,
   useGraphs,
 } from "@/api/services/graphs";
 import { useCompatibleMessages } from "@/api/services/messages";
@@ -55,14 +53,6 @@ import {
 } from "@/components/ui/Select";
 // eslint-disable-next-line max-len
 import { convertExtensionPropertySchema2ZodSchema } from "@/components/Widget/utils";
-import {
-  generateNodesAndEdges,
-  generateRawEdges,
-  generateRawNodes,
-  syncGraphNodeGeometry,
-  updateNodesWithAddonInfo,
-  updateNodesWithConnections,
-} from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useAppStore, useDialogStore, useFlowStore } from "@/store";
 import type { TCommonNode } from "@/types/flow";
@@ -71,37 +61,8 @@ import {
   AddNodePayloadSchema,
   EConnectionType,
   EMsgDirection,
-  type IGraph,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const resetNodesAndEdgesByGraph = async (graph: IGraph) => {
-  const backendNodes = await retrieveGraphNodes(graph.uuid);
-  const backendConnections = await retrieveGraphConnections(graph.uuid);
-  const rawNodes = generateRawNodes(backendNodes, graph);
-  const [rawEdges, rawEdgeAddressMap] = generateRawEdges(backendConnections);
-  const nodesWithConnections = updateNodesWithConnections(
-    rawNodes,
-    rawEdgeAddressMap
-  );
-  const nodesWithAddonInfo = await updateNodesWithAddonInfo(
-    graph.base_dir,
-    nodesWithConnections
-  );
-
-  const { nodes: layoutedNodes, edges: layoutedEdges } = generateNodesAndEdges(
-    nodesWithAddonInfo,
-    rawEdges
-  );
-
-  const nodesWithGeometry = await syncGraphNodeGeometry(
-    graph.uuid,
-    layoutedNodes
-  );
-
-  return { nodes: nodesWithGeometry, edges: layoutedEdges };
-};
 
 const GraphAddNodePropertyField = (props: {
   addon: string;
