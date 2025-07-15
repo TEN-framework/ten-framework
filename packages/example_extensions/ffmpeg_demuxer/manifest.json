@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ffmpeg_demuxer",
-  "version": "0.10.20",
+  "version": "0.10.21",
   "display_name": {
     "locales": {
       "en-US": {
