@@ -726,12 +726,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                     await self._flush_audio_buffer()
                     ten_env.log_debug("Flushed audio buffer due to timeout")
 
-                # Wait for audio data from the queue
-                if self.audio_queue.empty():
-                    await asyncio.sleep(0.01)
-                    continue
-
-                # Get the audio data
+                # Wait for audio data from the queue (blocks until available)
                 current_buff = await self.audio_queue.get()
 
                 # Only process if we're connected
@@ -924,7 +919,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             result = result.replace("{" + token + "}", value)
         return result
 
-    async def _send_transcript(
+    def _send_transcript(
         self, content: str, role: Role, is_final: bool, end_of_segment: bool
     ) -> None:
         def is_punctuation(char):
