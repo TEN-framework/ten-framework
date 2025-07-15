@@ -143,7 +143,6 @@ static bool ten_schema_keyword_items_is_compatible(
     return true;
   }
 
-  TEN_ASSERT(self_ && target_, "Invalid argument.");
   TEN_ASSERT(schema_err && ten_schema_error_check_integrity(schema_err),
              "Invalid argument.");
 
