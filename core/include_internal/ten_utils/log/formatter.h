@@ -8,6 +8,8 @@
 
 #include "ten_utils/ten_config.h"
 
+#include <time.h>
+
 #include "ten_utils/log/log.h"
 
 typedef void (*ten_log_formatter_on_format_func_t)(
@@ -15,12 +17,32 @@ typedef void (*ten_log_formatter_on_format_func_t)(
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);
 
-TEN_UTILS_PRIVATE_API void ten_log_default_formatter(
+TEN_UTILS_PRIVATE_API void ten_json_escape_string(ten_string_t *dest,
+                                                  const char *src,
+                                                  size_t src_len);
+
+TEN_UTILS_PRIVATE_API void ten_format_timestamp_iso8601(ten_string_t *dest,
+                                                        struct tm *time_info,
+                                                        size_t msec);
+
+TEN_UTILS_PRIVATE_API const char *ten_log_level_to_string(TEN_LOG_LEVEL level);
+
+TEN_UTILS_PRIVATE_API void ten_log_plain_formatter(
     ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);
 
-TEN_UTILS_PRIVATE_API void ten_log_colored_formatter(
+TEN_UTILS_PRIVATE_API void ten_log_plain_colored_formatter(
+    ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *msg, size_t msg_len);
+
+TEN_UTILS_PRIVATE_API void ten_log_json_formatter(
+    ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *msg, size_t msg_len);
+
+TEN_UTILS_PRIVATE_API void ten_log_json_colored_formatter(
     ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);

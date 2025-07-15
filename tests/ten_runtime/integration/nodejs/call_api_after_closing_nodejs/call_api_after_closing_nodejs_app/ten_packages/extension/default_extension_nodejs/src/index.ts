@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,
@@ -41,16 +42,16 @@ class DefaultExtension extends Extension {
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
-    let buf = testData.lockBuf();
+    const buf = testData.lockBuf();
 
-    let view = new Uint8Array(buf);
+    const view = new Uint8Array(buf);
     view[0] = 1;
     view[1] = 2;
     view[2] = 3;
     testData.unlockBuf(buf);
 
-    let copiedBuf = testData.getBuf();
-    let copiedView = new Uint8Array(copiedBuf);
+    const copiedBuf = testData.getBuf();
+    const copiedView = new Uint8Array(copiedBuf);
     assert(copiedView[0] === 1, "copiedView[0] incorrect");
     assert(copiedView[1] === 2, "copiedView[1] incorrect");
     assert(copiedView[2] === 3, "copiedView[2] incorrect");
@@ -64,8 +65,11 @@ class DefaultExtension extends Extension {
     // Create a new promise but not await it
     const promise = new Promise((resolve, reject) => {
       setTimeout(async () => {
-        const err = tenEnv.logInfo("Promise done after on deinit done");
-        assert(err !== null, "logInfo() should return an error");
+        const err = tenEnv.log(
+          LogLevel.INFO,
+          "Promise done after on deinit done",
+        );
+        assert(err !== null, "log() should return an error");
 
         const newCmd = Cmd.Create("test");
         const [_, err1] = await tenEnv.sendCmd(newCmd);
@@ -87,14 +91,13 @@ class DefaultExtension extends Extension {
         const err5 = await tenEnv.returnResult(newCmdResult);
         assert(err5 !== null, "returnResult() should return an error");
 
-        const [propertyJson, err6] = await tenEnv.getPropertyToJson(
-          "testProperty"
-        );
+        const [propertyJson, err6] =
+          await tenEnv.getPropertyToJson("testProperty");
         assert(err6 !== null, "getPropertyToJson() should return an error");
 
         const err7 = await tenEnv.setPropertyFromJson(
           "testProperty",
-          propertyJson
+          propertyJson,
         );
         assert(err7 !== null, "setPropertyFromJson() should return an error");
 
@@ -123,27 +126,28 @@ class DefaultExtension extends Extension {
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logDebug("DefaultExtension onCmd");
+    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logVerbose("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== null, "result is null");
 
-    tenEnv.logInfo(
-      "received result detail:" + result?.getPropertyToJson("detail")
+    tenEnv.log(
+      LogLevel.INFO,
+      "received result detail:" + result?.getPropertyToJson("detail"),
     );
 
     const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
     cmdResult.setPropertyFromJson(
       "detail",
-      JSON.stringify({ key1: "value1", key2: 2 })
+      JSON.stringify({ key1: "value1", key2: 2 }),
     );
 
     const [detailJson, err] = cmdResult.getPropertyToJson("detail");
-    tenEnv.logInfo("detailJson:" + detailJson);
+    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }
@@ -153,7 +157,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

@@ -229,51 +229,8 @@
             }
           }
         },
-        "selector": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "app": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "extension": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "subgraph": {
-              "$ref": "#/$defs/selectorPattern"
-            }
-          },
-          "oneOf": [
-            {
-              "required": [
-                "extension"
-              ],
-              "not": {
-                "required": [
-                  "subgraph"
-                ]
-              }
-            },
-            {
-              "required": [
-                "subgraph"
-              ],
-              "not": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "extension"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "app"
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
+        "filter": {
+          "$ref": "#/$defs/filter"
         },
         "property": {
           "type": "object",
@@ -357,12 +314,12 @@
                   "const": "selector"
                 },
                 "name": {},
-                "selector": {}
+                "filter": {}
               },
               "required": [
                 "type",
                 "name",
-                "selector"
+                "filter"
               ],
               "additionalProperties": false
             }
@@ -995,6 +952,70 @@
               }
             }
           }
+        }
+      }
+    },
+    "filter": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/atomicFilter"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "and"
+          ],
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "or"
+          ],
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "atomicFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "regex"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }

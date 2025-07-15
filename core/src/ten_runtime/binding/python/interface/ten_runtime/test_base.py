@@ -40,6 +40,9 @@ class TenEnvTesterBase:
     def log_fatal(self, msg: str) -> Optional[TenError]:
         return self._log_internal(LogLevel.FATAL, msg, 2)
 
+    def log(self, level: LogLevel, msg: str) -> Optional[TenError]:
+        return self._log_internal(level, msg, 2)
+
     def _log_internal(
         self, level: LogLevel, msg: str, skip: int
     ) -> Optional[TenError]:

@@ -23,7 +23,7 @@ type GreetingTester struct {
 
 // OnStart is called when the test starts.
 func (tester *GreetingTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStart")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
 
 	if tester.DelayMs > 0 {
 		time.Sleep(time.Duration(tester.DelayMs) * time.Millisecond)
@@ -34,7 +34,7 @@ func (tester *GreetingTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 // OnStop is called when the test stops.
 func (tester *GreetingTester) OnStop(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStop")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStop")
 	tenEnvTester.OnStopDone()
 }
 
@@ -44,7 +44,7 @@ func (tester *GreetingTester) OnCmd(
 	cmd ten.Cmd,
 ) {
 	cmdName, _ := cmd.GetName()
-	tenEnv.LogInfo(fmt.Sprintf("OnCmd: %s", cmdName))
+	tenEnv.Log(ten.LogLevelInfo, fmt.Sprintf("OnCmd: %s", cmdName))
 
 	if cmdName == "greeting" {
 		actualGreetingMsg, _ := cmd.GetPropertyString("greetingMsg")

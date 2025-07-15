@@ -13,6 +13,7 @@ from ten_runtime import (
     AudioFrame,
     VideoFrame,
     StatusCode,
+    LogLevel,
 )
 
 
@@ -32,7 +33,9 @@ class AsyncExtensionTesterOuterThread(AsyncExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+        ten_env.log(
+            LogLevel.INFO, "receive hello_world, status:" + str(statusCode)
+        )
 
         if statusCode == StatusCode.OK:
             ten_env.stop_test()
@@ -40,7 +43,7 @@ class AsyncExtensionTesterOuterThread(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         asyncio.create_task(self.send_msgs(ten_env))
 
-        ten_env.log_info("tester on_start_done")
+        ten_env.log(LogLevel.INFO, "tester on_start_done")
 
 
 def test_basic():

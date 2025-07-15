@@ -2560,35 +2560,6 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_graph_node_selector() {
-        let property = r#"{
-  "ten": {
-    "predefined_graphs": [
-      {
-        "name": "test",
-        "graph": {
-          "nodes": [
-            {
-              "type": "selector",
-              "name": "test_selector",
-              "selector": {
-                "extension": {
-                  "type": "regex",
-                  "pattern": "test.*"
-                }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}"#;
-        let result = ten_validate_property_json_string(property);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn test_validate_graph_node_extension_missing_required() {
         // missing addon
         let property = r#"
@@ -2612,47 +2583,384 @@ mod tests {
     fn test_validate_graph_node_subgraph_missing_required() {
         // missing graph
         let property = r#"{
-  "ten": {
-    "predefined_graphs": [
-      {
-        "name": "test",
-        "graph": {
-          "nodes": [
-            {
-              "type": "subgraph",
-              "name": "test_subgraph"
-            }
-          ]
-        }
-      }
-    ]
-  }
-}"#;
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "subgraph",
+                                        "name": "test_subgraph"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
         let result = ten_validate_property_json_string(property);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_validate_graph_node_selector_missing_required() {
-        // missing selector
+        // missing filter
         let property = r#"{
-  "ten": {
-    "predefined_graphs": [
-      {
-        "name": "test",
-        "graph": {
-          "nodes": [
-            {
-              "type": "selector",
-              "name": "test_selector"
-            }
-          ]
-        }
-      }
-    ]
-  }
-}"#;
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
         let result = ten_validate_property_json_string(property);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_selector_node_atomic_filter() {
+        // Test atomic filter with exact operator
+        let property = r#"{
+                              "ten": {
+                                "predefined_graphs": [
+                                  {
+                                    "name": "test",
+                                    "graph": {
+                                      "nodes": [
+                                        {
+                                          "type": "selector",
+                                          "name": "test_selector",
+                                          "filter": {
+                                            "field": "name",
+                                            "operator": "exact",
+                                            "value": "test_extension"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+
+        // Test atomic filter with regex operator
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "regex",
+                                          "value": "test.*"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_selector_node_compound_filter() {
+        // Test AND filter
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "and": [
+                                            {
+                                              "field": "name",
+                                              "operator": "regex",
+                                              "value": "test.*"
+                                            },
+                                            {
+                                              "field": "type",
+                                              "operator": "exact",
+                                              "value": "extension"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+
+        // Test OR filter
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "or": [
+                                            {
+                                              "field": "name",
+                                              "operator": "exact",
+                                              "value": "test1"
+                                            },
+                                            {
+                                              "field": "name",
+                                              "operator": "exact",
+                                              "value": "test2"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+
+        // Test nested AND/OR filter
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "and": [
+                                            {
+                                              "field": "type",
+                                              "operator": "exact",
+                                              "value": "extension"
+                                            },
+                                            {
+                                              "or": [
+                                                {
+                                                  "field": "name",
+                                                  "operator": "exact",
+                                                  "value": "test1"
+                                                },
+                                                {
+                                                  "field": "name",
+                                                  "operator": "exact",
+                                                  "value": "test2"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_selector_node_invalid_filter() {
+        // Test missing required field in atomic filter
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+
+        // Test empty AND array
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "and": []
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+
+        // Test invalid operator
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "contains",
+                                          "value": "test"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+
+        // Test empty value string
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": ""
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_selector_node_additional_properties() {
+        // Test additional properties in selector
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": "test",
+                                          "extra": "invalid"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+
+        // Test additional properties in selector node
+        let property = r#"{
+                            "ten": {
+                              "predefined_graphs": [
+                                {
+                                  "name": "test",
+                                  "graph": {
+                                    "nodes": [
+                                      {
+                                        "type": "selector",
+                                        "name": "test_selector",
+                                        "filter": {
+                                          "field": "name",
+                                          "operator": "exact",
+                                          "value": "test"
+                                        },
+                                        "extra": "invalid"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }"#;
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Additional properties are not allowed"));
     }
 }

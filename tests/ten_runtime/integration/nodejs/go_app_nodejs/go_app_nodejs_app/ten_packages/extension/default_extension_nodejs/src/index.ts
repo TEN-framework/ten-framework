@@ -9,6 +9,7 @@ import {
   RegisterAddonAsExtension,
   Extension,
   TenEnv,
+  LogLevel,
   Cmd,
   Data,
   CmdResult,
@@ -27,64 +28,65 @@ class DefaultExtension extends Extension {
   }
 
   async onConfigure(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onConfigure");
+    tenEnv.log(LogLevel.INFO, "onConfigure");
   }
 
   async onInit(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onInit");
+    tenEnv.log(LogLevel.INFO, "onInit");
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onStart");
+    tenEnv.log(LogLevel.INFO, "onStart");
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
-    let buf = testData.lockBuf();
+    const buf = testData.lockBuf();
 
-    let view = new Uint8Array(buf);
+    const view = new Uint8Array(buf);
     view[0] = 1;
     view[1] = 2;
     view[2] = 3;
 
     testData.unlockBuf(buf);
 
-    let copiedBuf = testData.getBuf();
-    let copiedView = new Uint8Array(copiedBuf);
+    const copiedBuf = testData.getBuf();
+    const copiedView = new Uint8Array(copiedBuf);
     assert(copiedView[0] === 1, "copiedView[0] incorrect");
     assert(copiedView[1] === 2, "copiedView[1] incorrect");
     assert(copiedView[2] === 3, "copiedView[2] incorrect");
   }
 
   async onStop(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onStop");
+    tenEnv.log(LogLevel.INFO, "onStop");
   }
 
   async onDeinit(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("onDeinit");
+    tenEnv.log(LogLevel.INFO, "onDeinit");
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.logInfo("onCmd");
+    tenEnv.log(LogLevel.INFO, "onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.logInfo("cmdName:" + cmdName);
+    tenEnv.log(LogLevel.INFO, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== null, "result is null");
 
-    tenEnv.logInfo(
-      "received result detail:" + result?.getPropertyToJson("detail")
+    tenEnv.log(
+      LogLevel.INFO,
+      "received result detail:" + result?.getPropertyToJson("detail"),
     );
 
     const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
     cmdResult.setPropertyFromJson(
       "detail",
-      JSON.stringify({ key1: "value1", key2: 2 })
+      JSON.stringify({ key1: "value1", key2: 2 }),
     );
 
     const detailJson = cmdResult.getPropertyToJson("detail");
-    tenEnv.logInfo("detailJson:" + detailJson);
+    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }
@@ -94,7 +96,7 @@ class DefaultExtension extends Extension {
 class DefaultExtensionAddon extends Addon {
   async onCreateInstance(
     _tenEnv: TenEnv,
-    instanceName: string
+    instanceName: string,
   ): Promise<Extension> {
     return new DefaultExtension(instanceName);
   }

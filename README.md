@@ -214,7 +214,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 ### 5️⃣ TEN with other LLM platforms
 
-[TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)
+[TEN Agent + Dify](https://theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify#steps)
 
 TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
 

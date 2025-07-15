@@ -15,6 +15,7 @@ from ten_runtime import (
     StatusCode,
     CmdResult,
     TenError,
+    LogLevel,
 )
 
 
@@ -24,7 +25,9 @@ class DefaultExtension(Extension):
         self.name = name
 
     def on_configure(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug(f"DefaultExtension on_init, name: {self.name}")
+        ten_env.log(
+            LogLevel.DEBUG, f"DefaultExtension on_init, name: {self.name}"
+        )
         assert self.name == "default_extension_python"
 
         ten_env.init_property_from_json('{"testKey": "testValue"}')
@@ -32,8 +35,9 @@ class DefaultExtension(Extension):
 
     def handle_error(self, ten_env: TenEnv, error: Optional[TenError]) -> None:
         assert error is not None
-        ten_env.log_error(
-            "DefaultExtension handle_error: " + error.error_message()
+        ten_env.log(
+            LogLevel.ERROR,
+            "DefaultExtension handle_error: " + error.error_message(),
         )
 
         self.no_dest_error_recv_count += 1
@@ -41,7 +45,7 @@ class DefaultExtension(Extension):
             ten_env.on_start_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         self.no_dest_error_recv_count = 0
 

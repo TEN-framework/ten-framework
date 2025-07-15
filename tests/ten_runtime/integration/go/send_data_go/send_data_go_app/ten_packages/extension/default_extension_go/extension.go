@@ -18,7 +18,7 @@ type defaultExtension struct {
 }
 
 func (ext *defaultExtension) OnConfigure(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnConfigure")
+	tenEnv.Log(ten.LogLevelDebug, "OnConfigure")
 	tenEnv.OnConfigureDone()
 }
 
@@ -86,7 +86,7 @@ func (ext *defaultExtension) OnData(
 		panic("Failed to get data name.")
 	}
 
-	tenEnv.LogDebug("OnData" + dataName)
+	tenEnv.Log(ten.LogLevelDebug, "OnData" + dataName)
 
 	if dataName == "data2" {
 		testValue, error := data.GetPropertyString("test_key")
@@ -127,7 +127,7 @@ func (ext *defaultExtension) OnData(
 		panic("Failed to unlock buf.")
 	}
 
-	tenEnv.LogDebug("Data process done.")
+	tenEnv.Log(ten.LogLevelDebug, "Data process done.")
 }
 
 func newAExtension(name string) ten.Extension {
