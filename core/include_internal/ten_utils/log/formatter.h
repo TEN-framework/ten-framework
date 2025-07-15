@@ -27,17 +27,17 @@ TEN_UTILS_PRIVATE_API void ten_format_timestamp_iso8601(ten_string_t *dest,
 
 TEN_UTILS_PRIVATE_API const char *ten_log_level_to_string(TEN_LOG_LEVEL level);
 
-TEN_UTILS_PRIVATE_API void ten_log_text_plain_formatter(
+TEN_UTILS_PRIVATE_API void ten_log_plain_formatter(
     ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);
 
-TEN_UTILS_PRIVATE_API void ten_log_text_colored_formatter(
+TEN_UTILS_PRIVATE_API void ten_log_plain_colored_formatter(
     ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);
 
-TEN_UTILS_PRIVATE_API void ten_log_json_plain_formatter(
+TEN_UTILS_PRIVATE_API void ten_log_json_formatter(
     ten_string_t *buf, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len);

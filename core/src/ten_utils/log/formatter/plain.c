@@ -18,11 +18,10 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 
-void ten_log_text_plain_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
-                                  const char *func_name, size_t func_name_len,
-                                  const char *file_name, size_t file_name_len,
-                                  size_t line_no, const char *msg,
-                                  size_t msg_len) {
+void ten_log_plain_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
+                             const char *func_name, size_t func_name_len,
+                             const char *file_name, size_t file_name_len,
+                             size_t line_no, const char *msg, size_t msg_len) {
   struct tm time_info;
   size_t msec = 0;
 

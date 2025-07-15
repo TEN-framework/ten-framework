@@ -4,10 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use crate::graph::connection::{GraphDestination, GraphLoc, GraphMessageFlow};
+use crate::graph::connection::{
+    GraphDestination, GraphLoc, GraphMessageFlow, GraphSource,
+};
 use crate::graph::msg_conversion::MsgAndResultConversion;
 use crate::graph::node::{
-    GraphNode, GraphNodeType, PatternType, Selector, SelectorNode,
+    AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType,
+    SelectorNode,
 };
 use crate::graph::Graph;
 use anyhow::Result;
@@ -64,6 +67,7 @@ fn process_message_flows_with_selector(
 ) -> Result<()> {
     for flow in flows.iter_mut() {
         let mut new_dest = Vec::new();
+        let mut new_source = Vec::new();
 
         for dest in &flow.dest {
             if let Some(selector_name) = &dest.loc.selector {
@@ -97,7 +101,39 @@ fn process_message_flows_with_selector(
             }
         }
 
+        for source in &flow.source {
+            if let Some(selector_name) = &source.loc.selector {
+                let matching_nodes = find_matching_nodes(
+                    selector_name,
+                    selector_nodes,
+                    graph,
+                    flow_type,
+                    regex_cache,
+                )?;
+
+                if matching_nodes.is_empty() {
+                    println!(
+                        "Selector '{selector_name}' in flow '{flow_type}' \
+                         didn't match any nodes"
+                    );
+                }
+
+                // Create new destinations for each matching node
+                for matched_node in matching_nodes {
+                    if let Some(new_source_loc) =
+                        create_source_for_node(matched_node)
+                    {
+                        new_source.push(new_source_loc);
+                    }
+                }
+            } else {
+                // If there's no selector, keep it as is
+                new_source.push(source.clone());
+            }
+        }
+
         flow.dest = new_dest;
+        flow.source = new_source;
     }
     Ok(())
 }
@@ -121,74 +157,45 @@ fn find_matching_nodes<'a>(
     Ok(graph
         .nodes
         .iter()
-        .filter(|node| {
-            matches_selector(&selector_node.selector, node, regex_cache)
-        })
+        .filter(|node| matches_filter(&selector_node.filter, node, regex_cache))
         .collect())
 }
 
-fn matches_selector(
-    selector: &Selector,
+fn matches_filter(
+    filter: &Filter,
     node: &GraphNode,
     regex_cache: &mut HashMap<String, Regex>,
 ) -> bool {
-    if let Some(ext_pattern) = &selector.extension {
-        if let Some(ext_node) = node.as_extension_node() {
-            let matches = match ext_pattern.type_ {
-                PatternType::Exact => ext_node.name == ext_pattern.pattern,
-                PatternType::Regex => match_regex(
-                    &ext_pattern.pattern,
-                    &ext_node.name,
-                    regex_cache,
-                ),
-            };
-            if !matches {
-                return false;
-            }
-
-            // If the selector restricts the app URI, check if the node
-            // matches the app URI
-            if let Some(app_pattern) = &selector.app {
-                let app = ext_node.app.as_deref().unwrap_or_default();
-                match app_pattern.type_ {
-                    PatternType::Exact => {
-                        if app != app_pattern.pattern {
-                            return false;
-                        }
-                    }
-                    PatternType::Regex => {
-                        if !match_regex(&app_pattern.pattern, app, regex_cache)
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-        } else {
-            return false;
+    match filter {
+        Filter::Atomic(atomic) => {
+            matches_atomic_filter(atomic, node, regex_cache)
         }
-    } else if let Some(subgraph_pattern) = &selector.subgraph {
-        if let Some(subgraph_node) = node.as_subgraph_node() {
-            let matches = match subgraph_pattern.type_ {
-                PatternType::Exact => {
-                    subgraph_node.name == subgraph_pattern.pattern
-                }
-                PatternType::Regex => match_regex(
-                    &subgraph_pattern.pattern,
-                    &subgraph_node.name,
-                    regex_cache,
-                ),
-            };
-
-            if !matches {
-                return false;
-            }
-        } else {
-            return false;
+        Filter::And { and } => {
+            and.iter().all(|f| matches_filter(f, node, regex_cache))
+        }
+        Filter::Or { or } => {
+            or.iter().any(|f| matches_filter(f, node, regex_cache))
         }
     }
+}
 
-    true
+fn matches_atomic_filter(
+    filter: &AtomicFilter,
+    node: &GraphNode,
+    regex_cache: &mut HashMap<String, Regex>,
+) -> bool {
+    let value = node.get_field(&filter.field);
+
+    if let Some(value) = value {
+        match filter.operator {
+            FilterOperator::Exact => value == filter.value,
+            FilterOperator::Regex => {
+                match_regex(&filter.value, value, regex_cache)
+            }
+        }
+    } else {
+        false
+    }
 }
 
 fn match_regex(
@@ -210,6 +217,28 @@ fn match_regex(
                 false
             }
         }
+    }
+}
+
+fn create_source_for_node(node: &GraphNode) -> Option<GraphSource> {
+    match node {
+        GraphNode::Extension { content: ext_node } => Some(GraphSource {
+            loc: GraphLoc {
+                app: ext_node.app.clone(),
+                extension: Some(ext_node.name.clone()),
+                subgraph: None,
+                selector: None,
+            },
+        }),
+        GraphNode::Subgraph { content: subgraph_node } => Some(GraphSource {
+            loc: GraphLoc {
+                app: None,
+                extension: None,
+                subgraph: Some(subgraph_node.name.clone()),
+                selector: None,
+            },
+        }),
+        _ => None,
     }
 }
 
