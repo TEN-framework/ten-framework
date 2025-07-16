@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import AsyncIterator, Tuple
 
 from ten_ai_base.config import BaseConfig
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 

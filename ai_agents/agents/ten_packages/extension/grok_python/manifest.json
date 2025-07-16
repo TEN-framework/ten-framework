@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -21,115 +21,105 @@
   },
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
-      "frequency_penalty": {
-        "type": "float64"
-      },
-      "presence_penalty": {
-        "type": "float64"
-      },
-      "temperature": {
-        "type": "float64"
-      },
-      "top_p": {
-        "type": "float64"
-      },
-      "model": {
-        "type": "string"
-      },
-      "max_tokens": {
-        "type": "int64"
-      },
-      "base_url": {
-        "type": "string"
-      },
-      "prompt": {
-        "type": "string"
-      },
-      "greeting": {
-        "type": "string"
-      },
-      "proxy_url": {
-        "type": "string"
-      },
-      "max_memory_length": {
-        "type": "int64"
-      },
-      "vendor": {
-        "type": "string"
-      },
-      "azure_endpoint": {
-        "type": "string"
-      },
-      "azure_api_version": {
-        "type": "string"
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "frequency_penalty": {
+          "type": "float64"
+        },
+        "presence_penalty": {
+          "type": "float64"
+        },
+        "temperature": {
+          "type": "float64"
+        },
+        "top_p": {
+          "type": "float64"
+        },
+        "model": {
+          "type": "string"
+        },
+        "max_tokens": {
+          "type": "int64"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "proxy_url": {
+          "type": "string"
+        },
+        "max_memory_length": {
+          "type": "int64"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "azure_endpoint": {
+          "type": "string"
+        },
+        "azure_api_version": {
+          "type": "string"
+        }
       }
     },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
     "cmd_in": [
       {
         "name": "flush"
       },
       {
         "name": "on_user_joined",
-        "property": {}
+        "property": {
+          "properties": {}
+        }
       },
       {
         "name": "on_user_left",
-        "property": {}
+        "property": {
+          "properties": {}
+        }
       },
       {
         "name": "tool_register",
         "property": {
-          "tool": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "parameters": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {}
+          "properties": {
+            "tool": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {}
+                  }
                 }
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "parameters"
-            ]
+              },
+              "required": [
+                "name",
+                "description",
+                "parameters"
+              ]
+            }
           }
         },
         "result": {
           "property": {
-            "response": {
-              "type": "string"
+            "properties": {
+              "response": {
+                "type": "string"
+              }
             }
           }
         }
@@ -142,16 +132,42 @@
       {
         "name": "tool_call",
         "property": {
-          "name": {
-            "type": "string"
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
           },
-          "args": {
-            "type": "string"
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
           }
-        },
-        "required": [
-          "name"
-        ]
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
       }
     ],
     "video_frame_in": [

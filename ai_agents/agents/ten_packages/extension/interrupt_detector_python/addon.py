@@ -6,7 +6,7 @@
 #
 #
 
-from ten import (
+from ten_runtime import (
     Addon,
     register_addon_as_extension,
     TenEnv,

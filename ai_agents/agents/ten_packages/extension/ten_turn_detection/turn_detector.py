@@ -1,7 +1,7 @@
 from .config import TENTurnDetectorConfig
 from .utils import remove_punctuation, TimeHelper
 
-from ten import AsyncTenEnv
+from ten_runtime import AsyncTenEnv
 
 from openai import AsyncOpenAI
 import time

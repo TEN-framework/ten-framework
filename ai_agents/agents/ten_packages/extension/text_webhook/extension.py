@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import base64
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncExtension,
@@ -601,9 +601,9 @@ class textWebhookExtension(AsyncExtension):
             # Send event notification
             await self.send_user_event_message(ten_env, "left", user_id)
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()

@@ -24,6 +24,10 @@ export const voiceNameMap: LanguageMap = {
             male: "Charon",
             female: "Aoede",
             langCode: "cmn-CN",
+        },
+        azure_grok4: {
+            male: "zh-CN-XiaoxiaoMultilingualNeural",
+            female: "zh-CN-XiaoxiaoMultilingualNeural",
         }
     },
     "en-US": {
@@ -49,6 +53,10 @@ export const voiceNameMap: LanguageMap = {
             male: "Charon",
             female: "Aoede",
             langCode: "en-US",
+        },
+        azure_grok4: {
+            male: "zh-CN-XiaoxiaoMultilingualNeural",
+            female: "zh-CN-XiaoxiaoMultilingualNeural",
         }
     },
     "ja-JP": {
@@ -64,6 +72,10 @@ export const voiceNameMap: LanguageMap = {
             male: "Charon",
             female: "Aoede",
             langCode: "ja-JP",
+        },
+        azure_grok4: {
+            male: "zh-CN-XiaoxiaoMultilingualNeural",
+            female: "zh-CN-XiaoxiaoMultilingualNeural",
         }
     },
     "ko-KR": {
@@ -79,6 +91,10 @@ export const voiceNameMap: LanguageMap = {
             male: "Charon",
             female: "Aoede",
             langCode: "ko-KR",
+        },
+        azure_grok4: {
+            male: "zh-CN-XiaoxiaoMultilingualNeural",
+            female: "zh-CN-XiaoxiaoMultilingualNeural",
         }
     },
 };
@@ -306,6 +322,19 @@ export const getGraphProperties = (
             }
         }
     } else if (graphName === "grok4") {
+        // Grok4 specific greetings for different languages
+        let grok4_greeting = "Hey, I'm Annie, you look like trouble. What’s your story?";
+
+        if (language === "zh-CN") {
+            grok4_greeting = "嗨，我是安妮，你看起来不太乖，说说你是什么来头？";
+        } else if (language === "ja-JP") {
+            grok4_greeting = "こんにちは、私はアンです。あなた、どんな人？";
+        } else if (language === "ko-KR") {
+            grok4_greeting = "안녕하세요, 저는 앤입니다. 네 얘기 좀 해봐.";
+        }
+
+        combined_greeting = greeting || grok4_greeting;
+
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -313,9 +342,10 @@ export const getGraphProperties = (
             "llm": {
                 "prompt": prompt,
                 "greeting": combined_greeting,
+                "model": "grok-4-0709",
             },
             "tts": {
-                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure_grok4"][voiceType]
             }
         }
     } else if (graphName === "va_llama4") {

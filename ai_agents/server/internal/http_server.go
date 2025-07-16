@@ -127,7 +127,7 @@ func (s *HttpServer) handleGraphs(c *gin.Context) {
 		return
 	}
 
-	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	tenSection, ok := propertyJson["ten"].(map[string]interface{})
 	if !ok {
 		slog.Error("Invalid format: _ten section missing", logTag)
 		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
@@ -524,7 +524,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	// Locate the predefined graphs array
-	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	tenSection, ok := propertyJson["ten"].(map[string]interface{})
 	if !ok {
 		slog.Error("Invalid format: _ten section missing", "requestId", req.RequestId, logTag)
 		return
@@ -567,7 +567,8 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 				// Construct the path in the nested graph structure
 				for _, graph := range newGraphs {
 					graphMap, _ := graph.(map[string]interface{})
-					nodes, _ := graphMap["nodes"].([]interface{})
+					graphData, _ := graphMap["graph"].(map[string]interface{})
+					nodes, _ := graphData["nodes"].([]interface{})
 					for _, node := range nodes {
 						nodeMap, _ := node.(map[string]interface{})
 						if nodeMap["name"] == extensionName {
@@ -588,7 +589,8 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 				// Set each start parameter to the appropriate graph and property
 				for _, graph := range newGraphs {
 					graphMap, _ := graph.(map[string]interface{})
-					nodes, _ := graphMap["nodes"].([]interface{})
+					graphData, _ := graphMap["graph"].(map[string]interface{})
+					nodes, _ := graphData["nodes"].([]interface{})
 					for _, node := range nodes {
 						nodeMap, _ := node.(map[string]interface{})
 						if nodeMap["name"] == prop.ExtensionName {
@@ -605,7 +607,8 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	envPattern := regexp.MustCompile(`\${env:([^}|]+)}`)
 	for _, graph := range newGraphs {
 		graphMap, _ := graph.(map[string]interface{})
-		nodes, ok := graphMap["nodes"].([]interface{})
+		graphData, _ := graphMap["graph"].(map[string]interface{})
+		nodes, ok := graphData["nodes"].([]interface{})
 		if !ok {
 			slog.Info("No nodes section in the graph", "graph", graphName, "requestId", req.RequestId, logTag)
 			continue

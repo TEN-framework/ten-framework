@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ten_framework/ten"
+	ten "ten_framework/ten_runtime"
 )
 
 const (
@@ -269,8 +269,8 @@ func (e *elevenlabsTTSExtension) OnCmd(
 	cmdName, err := cmd.GetName()
 	if err != nil {
 		tenEnv.LogError(fmt.Sprintf("OnCmd get name failed, err: %v", err))
-		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd, nil)
+		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
+		tenEnv.ReturnResult(cmdResult, nil)
 		return
 	}
 
@@ -284,23 +284,23 @@ func (e *elevenlabsTTSExtension) OnCmd(
 		outCmd, err := ten.NewCmd(cmdOutFlush)
 		if err != nil {
 			tenEnv.LogError(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err))
-			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd, nil)
+			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
+			tenEnv.ReturnResult(cmdResult, nil)
 			return
 		}
 
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
 			tenEnv.LogError(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err))
-			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd, nil)
+			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
+			tenEnv.ReturnResult(cmdResult, nil)
 			return
 		} else {
 			tenEnv.LogInfo(fmt.Sprintf("cmd %s sent", cmdOutFlush))
 		}
 	}
 
-	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd, nil)
+	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
+	tenEnv.ReturnResult(cmdResult, nil)
 }
 
 // OnData receives data from ten graph.

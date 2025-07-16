@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,79 +22,99 @@
     ]
   },
   "api": {
-    "property": {},
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          },
-          "is_final": {
-            "type": "bool"
-          },
-          "stream_id": {
-            "type": "uint32"
-          },
-          "end_of_segment": {
-            "type": "bool"
-          }
-        }
-      },
-      {
-        "name": "rtm_message_event",
-        "property": {
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      {
-        "name": "rtm_storage_event",
-        "property": {}
-      },
-      {
-        "name": "rtm_presence_event",
-        "property": {}
-      },
-      {
-        "name": "rtm_lock_event",
-        "property": {}
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          },
-          "is_final": {
-            "type": "bool"
-          }
-        }
-      }
-    ],
+    "property": {
+      "properties": {}
+    },
     "cmd_in": [
       {
         "name": "on_user_audio_track_state_changed",
-        "property": {}
+        "property": {
+          "properties": {}
+        }
       }
     ],
     "cmd_out": [
       {
         "name": "publish",
         "property": {
-          "message": {
-            "type": "buf"
+          "properties": {
+            "message": {
+              "type": "buf"
+            }
           }
         }
       },
       {
         "name": "set_presence_state",
         "property": {
-          "states": {
-            "type": "string"
+          "properties": {
+            "states": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            },
+            "stream_id": {
+              "type": "uint32"
+            },
+            "end_of_segment": {
+              "type": "bool"
+            }
+          }
+        }
+      },
+      {
+        "name": "rtm_message_event",
+        "property": {
+          "properties": {
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "rtm_storage_event",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "rtm_presence_event",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "rtm_lock_event",
+        "property": {
+          "properties": {}
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            }
           }
         }
       }
