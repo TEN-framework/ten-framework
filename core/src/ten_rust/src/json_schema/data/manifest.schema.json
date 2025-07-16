@@ -599,6 +599,7 @@
     "name",
     "version"
   ],
+  "additionalProperties": false,
   "if": {
     "anyOf": [
       {
