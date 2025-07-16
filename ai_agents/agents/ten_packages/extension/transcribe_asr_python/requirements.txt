@@ -1,1 +1,1 @@
-amazon-transcribe==0.6.2
+amazon-transcribe==0.6.4
