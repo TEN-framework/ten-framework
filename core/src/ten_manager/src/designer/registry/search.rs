@@ -33,7 +33,7 @@ pub struct SearchPackagesRequestPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetPackagesResponseData {
+pub struct SearchPackagesResponseData {
     pub total_size: u32,
 
     pub packages: Vec<PkgBasicInfo>,
@@ -55,7 +55,7 @@ pub async fn search_packages_endpoint(
     .await
     {
         Ok((total_size, packages)) => {
-            let response_data = GetPackagesResponseData {
+            let response_data = SearchPackagesResponseData {
                 total_size,
                 packages: packages.into_iter().map(|p| p.basic_info).collect(),
             };

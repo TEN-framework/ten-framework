@@ -43,7 +43,7 @@ mod tests {
         )
         .await;
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
 
         assert!(result.is_ok());
         let result = result.unwrap();
@@ -63,7 +63,7 @@ mod tests {
                     FilterNode::Atomic(AtomicFilter {
                         field: "name".to_string(),
                         operator: "regex".to_string(),
-                        value: "ten_runtime".to_string(),
+                        value: "^ten_runtime_.*$".to_string(),
                     }),
                     FilterNode::Atomic(AtomicFilter {
                         field: "type".to_string(),
@@ -90,6 +90,10 @@ mod tests {
         )
         .await;
 
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
+
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(!result.1.is_empty());
     }
 }
