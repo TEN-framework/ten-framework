@@ -22,7 +22,9 @@ mod tests {
         },
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
-        registry::search::{AtomicFilter, FilterNode, LogicFilter, PkgSearchFilter},
+        registry::search::{
+            AtomicFilter, FilterNode, LogicFilter, PkgSearchFilter,
+        },
     };
 
     #[actix_rt::test]
