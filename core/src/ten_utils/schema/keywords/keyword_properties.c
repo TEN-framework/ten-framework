@@ -166,12 +166,15 @@ static bool ten_schema_keyword_properties_adjust_value(
 // The type of the same property in the source collection should be compatible
 // with the target.
 //
-// Note that the `self` and `target` properties keyword should not be NULL,
-// otherwise their schemas are invalid.
+// Note that if one of the `self` and `target` properties keyword is NULL, it
+// also means it's compatible.
 static bool ten_schema_keyword_properties_is_compatible(
     ten_schema_keyword_t *self_, ten_schema_keyword_t *target_,
     ten_schema_error_t *schema_err) {
-  TEN_ASSERT(self_ && target_, "Invalid argument.");
+  if (!self_ || !target_) {
+    return true;
+  }
+
   TEN_ASSERT(schema_err && ten_schema_error_check_integrity(schema_err),
              "Invalid argument.");
 
