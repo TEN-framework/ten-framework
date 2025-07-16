@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import AsyncIterator
 from openai import AsyncOpenAI
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 
 

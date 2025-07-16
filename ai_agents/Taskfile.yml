@@ -43,7 +43,7 @@ tasks:
     desc: run tman dev http server for graph designer
     dir: ./agents
     cmds:
-      - export TMAN_08_COMPATIBLE=true && tman designer
+      - tman designer
 
   run:
     desc: run servers
@@ -128,7 +128,7 @@ tasks:
     desc: format python code with black
     internal: true
     cmds:
-      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 agents {{ .CLI_ARGS }}
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/|.ten/" --line-length 80 agents/ten_packages/extension {{ .CLI_ARGS }}
 
   check:
     desc: check code
@@ -144,4 +144,4 @@ tasks:
     desc: check code formatting with black
     internal: true
     cmds:
-      - black --check --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 agents {{ .CLI_ARGS }}
+      - black --check --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/" --line-length 80 agents/ten_packages/extension {{ .CLI_ARGS }}

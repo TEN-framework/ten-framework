@@ -6,7 +6,7 @@
 #
 #
 
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -47,7 +47,7 @@ class InterruptDetectorExtension(Extension):
         self.send_flush_cmd(ten)
 
         # then forward the cmd to downstream
-        cmd_json = cmd.get_property_to_json()
+        cmd_json, _ = cmd.get_property_to_json()
         new_cmd = Cmd.create(cmd_name)
         new_cmd.set_property_from_json(None, cmd_json)
         ten.send_cmd(
@@ -55,8 +55,8 @@ class InterruptDetectorExtension(Extension):
             lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        ten.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         """
@@ -69,7 +69,7 @@ class InterruptDetectorExtension(Extension):
         ten.log_info("on_data")
 
         try:
-            text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+            text, _ = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
             ten.log_warn(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
@@ -77,7 +77,7 @@ class InterruptDetectorExtension(Extension):
             return
 
         try:
-            final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
+            final, _ = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception as e:
             ten.log_warn(
                 f"on_data get_property_bool {TEXT_DATA_FINAL_FIELD} error: {e}"
@@ -95,3 +95,6 @@ class InterruptDetectorExtension(Extension):
         d.set_property_bool(TEXT_DATA_FINAL_FIELD, final)
         d.set_property_string(TEXT_DATA_TEXT_FIELD, text)
         ten.send_data(d)
+        ten.log_info(
+            f"sent data: {data.get_name()} with text: {text} and final: {final}"
+        )

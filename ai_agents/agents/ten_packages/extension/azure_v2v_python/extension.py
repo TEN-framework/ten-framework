@@ -15,7 +15,7 @@ import numpy as np
 from datetime import datetime
 from typing import Iterable
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
     Cmd,
@@ -23,7 +23,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten.audio_frame import AudioFrameDataFmt
+from ten_runtime.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
@@ -187,9 +187,8 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
                 [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
                 if result.get_status_code() == StatusCode.OK:
                     try:
-                        history = json.loads(
-                            result.get_property_string("response")
-                        )
+                        response, _ = result.get_property_string("response")
+                        history = json.loads(response)
                         for i in history:
                             self.memory.put(i)
                         ten_env.log_info(f"on retrieve context {history}")
@@ -231,9 +230,11 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
         self, _: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         try:
-            stream_id = audio_frame.get_property_int("stream_id")
+            stream_id, _ = audio_frame.get_property_int("stream_id")
             if self.channel_name == "":
-                self.channel_name = audio_frame.get_property_string("channel")
+                self.channel_name, _ = audio_frame.get_property_string(
+                    "channel"
+                )
 
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
@@ -274,9 +275,9 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -793,9 +794,8 @@ class AzureRealtimeExtension(AsyncLLMBaseExtension):
             )
         )
         if result.get_status_code() == StatusCode.OK:
-            tool_result: LLMToolResult = json.loads(
-                result.get_property_to_json(CMD_PROPERTY_RESULT)
-            )
+            r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
+            tool_result: LLMToolResult = json.loads(r)
 
             result_content = tool_result["content"]
             tool_response.item.output = json.dumps(

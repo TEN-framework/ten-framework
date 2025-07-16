@@ -1,7 +1,7 @@
 services:
   ten_agent_dev:
-    image: docker.theten.ai/ten-framework/ten_agent_build:0.6.4
-    #image: ghcr.io/ten-framework/ten_agent_build:0.6.4
+    image: docker.theten.ai/ten-framework/ten_agent_build:0.6.11
+    #image: ghcr.io/ten-framework/ten_agent_build:0.6.11
     container_name: ten_agent_dev
     platform: linux/amd64
     tty: true
@@ -15,6 +15,7 @@ services:
       - ${LOG_PATH}:${LOG_PATH}
       - ../.vscode/:/app/.vscode
       - ../tools/pylint/.pylintrc:/tools/pylint/.pylintrc
+      - ../tools/upgrade:/tools/upgrade
     working_dir: /app
     env_file:
       - .env

@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,32 +22,24 @@
   },
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
-      "response_format": {
-        "type": "string"
-      },
-      "instructions": {
-        "type": "string"
-      },
-      "voice": {
-        "type": "string"
-      }
-    },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "response_format": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "string"
         }
       }
-    ],
+    },
     "cmd_in": [
       {
         "name": "flush"
@@ -56,6 +48,18 @@
     "cmd_out": [
       {
         "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
       }
     ],
     "audio_frame_out": [

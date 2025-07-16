@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import json
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncTenEnv,
@@ -180,7 +180,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
             )
             ten_env.log_info("send_cmd {}".format(message))
             [cmd_result, _] = await ten_env.send_cmd(cmd)
-            result = cmd_result.get_property_to_json("response")
+            result, _ = cmd_result.get_property_to_json("response")
             return LLMToolResultLLMResult(
                 type="llmresult",
                 content=json.dumps(result),

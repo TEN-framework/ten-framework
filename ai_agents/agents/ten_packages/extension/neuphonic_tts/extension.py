@@ -5,8 +5,10 @@
 #
 import traceback
 
+from ten_ai_base.transcription import AssistantTranscription
+
 from .neuphonic_tts import NeuphonicTTS, NeuphonicTTSConfig
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
@@ -44,9 +46,9 @@ class NeuphonicTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
-        response = self.client.text_to_speech_stream(input_text)
+        response = self.client.text_to_speech_stream(t.text)
 
         async for message in response:
             await self.send_audio_out(ten_env, message.data.audio)

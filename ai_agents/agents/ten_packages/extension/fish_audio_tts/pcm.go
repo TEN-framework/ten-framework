@@ -11,7 +11,7 @@ package extension
 import (
 	"fmt"
 
-	"ten_framework/ten"
+	ten "ten_framework/ten_runtime"
 )
 
 type pcm struct {

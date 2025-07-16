@@ -6,7 +6,7 @@
 #
 #
 from threading import Thread
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -51,7 +51,7 @@ class GeminiLLMExtension(Extension):
         gemini_llm_config = GeminiLLMConfig.default_config()
 
         try:
-            api_key = ten.get_property_string(PROPERTY_API_KEY)
+            api_key, _ = ten.get_property_string(PROPERTY_API_KEY)
             gemini_llm_config.api_key = api_key
         except Exception as err:
             ten.log_info(
@@ -61,7 +61,7 @@ class GeminiLLMExtension(Extension):
 
         for key in [PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
             try:
-                val = ten.get_property_string(key)
+                val, _ = ten.get_property_string(key)
                 if val:
                     setattr(gemini_llm_config, key, val)
             except Exception as e:
@@ -71,9 +71,8 @@ class GeminiLLMExtension(Extension):
 
         for key in [PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
             try:
-                setattr(
-                    gemini_llm_config, key, float(ten.get_property_float(key))
-                )
+                val, _ = ten.get_property_float(key)
+                setattr(gemini_llm_config, key, float(val))
             except Exception as e:
                 ten.log_warn(
                     f"get_property_float optional {key} failed, err: {e}"
@@ -81,14 +80,15 @@ class GeminiLLMExtension(Extension):
 
         for key in [PROPERTY_MAX_OUTPUT_TOKENS, PROPERTY_TOP_K]:
             try:
-                setattr(gemini_llm_config, key, int(ten.get_property_int(key)))
+                val, _ = ten.get_property_int(key)
+                setattr(gemini_llm_config, key, int(val))
             except Exception as e:
                 ten.log_warn(
                     f"get_property_int optional {key} failed, err: {e}"
                 )
 
         try:
-            prop_max_memory_length = ten.get_property_int(
+            prop_max_memory_length, _ = ten.get_property_int(
                 PROPERTY_MAX_MEMORY_LENGTH
             )
             if prop_max_memory_length > 0:
@@ -105,7 +105,7 @@ class GeminiLLMExtension(Extension):
         )
 
         # Send greeting if available
-        greeting = ten.get_property_string(PROPERTY_GREETING)
+        greeting, _ = ten.get_property_string(PROPERTY_GREETING)
         if greeting:
             try:
                 output_data = Data.create("text_data")
@@ -140,14 +140,14 @@ class GeminiLLMExtension(Extension):
             ten.log_info("GeminiLLMExtension on_cmd sent flush")
         else:
             ten.log_info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
             cmd_result.set_property_string("detail", "unknown cmd")
-            ten.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result)
             return
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "success")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
         """
@@ -161,7 +161,7 @@ class GeminiLLMExtension(Extension):
 
         # Assume 'data' is an object from which we can get properties
         try:
-            is_final = data.get_property_bool(
+            is_final, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
             )
             if not is_final:
@@ -175,7 +175,7 @@ class GeminiLLMExtension(Extension):
 
         # Get input text
         try:
-            input_text = data.get_property_string(
+            input_text, _ = data.get_property_string(
                 DATA_IN_TEXT_DATA_PROPERTY_TEXT
             )
             if not input_text:

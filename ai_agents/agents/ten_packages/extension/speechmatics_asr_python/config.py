@@ -4,14 +4,15 @@
 # See the LICENSE file for more information.
 #
 
-from typing import List
+from typing import Any, Dict, List
 from dataclasses import dataclass, field
 import copy
-from ten_ai_base.config import BaseConfig
+
+from pydantic import BaseModel
 
 
 @dataclass
-class SpeechmaticsASRConfig(BaseConfig):
+class SpeechmaticsASRConfig(BaseModel):
     key: str = ""
     chunk_ms: int = 160  # 160ms per chunk
     language: str = "en-US"
@@ -41,3 +42,9 @@ class SpeechmaticsASRConfig(BaseConfig):
         if config.key:
             config.key = config.key[:4] + "****"
         return f"{config}"
+
+    params: Dict[str, Any] = field(default_factory=dict)
+    black_list_params: List[str] = field(default_factory=lambda: [])
+
+    def is_black_list_params(self, key: str) -> bool:
+        return key in self.black_list_params

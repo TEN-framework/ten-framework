@@ -5,7 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -54,12 +54,12 @@ class LlamaIndexExtension(Extension):
 
         greeting = None
         try:
-            greeting = ten.get_property_string(PROPERTY_GREETING)
+            greeting, _ = ten.get_property_string(PROPERTY_GREETING)
         except Exception as err:
             ten.log_warn(f"get {PROPERTY_GREETING} property failed, err: {err}")
 
         try:
-            self.chat_memory_token_limit = ten.get_property_int(
+            self.chat_memory_token_limit, _ = ten.get_property_int(
                 PROPERTY_CHAT_MEMORY_TOKEN_LIMIT
             )
         except Exception as err:
@@ -103,7 +103,7 @@ class LlamaIndexExtension(Extension):
         cmd_name = cmd.get_name()
         ten.log_info("on_cmd {cmd_name}")
         if cmd_name == "file_chunked":
-            coll = cmd.get_property_string("collection")
+            coll, _ = cmd.get_property_string("collection")
 
             # only update selected collection if empty
             if len(self.collection_name) == 0:
@@ -132,7 +132,7 @@ class LlamaIndexExtension(Extension):
                 (file_chunk_text, datetime.now(), TASK_TYPE_GREETING)
             )
         elif cmd_name == "update_querying_collection":
-            coll = cmd.get_property_string("collection")
+            coll, _ = cmd.get_property_string("collection")
             ten.log_info(
                 f"collection for querying has been updated from {self.collection_name} to {coll}"
             )
@@ -157,17 +157,17 @@ class LlamaIndexExtension(Extension):
             self.flush()
             ten.send_cmd(Cmd.create("flush"), None)
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "ok")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def on_data(self, ten: TenEnv, data: Data) -> None:
-        is_final = data.get_property_bool("is_final")
+        is_final, _ = data.get_property_bool("is_final")
         if not is_final:
             ten.log_info("on_data ignore non final")
             return
 
-        inputText = data.get_property_string("text")
+        inputText, _ = data.get_property_string("text")
         if len(inputText) == 0:
             ten.log_info("on_data ignore empty text")
             return

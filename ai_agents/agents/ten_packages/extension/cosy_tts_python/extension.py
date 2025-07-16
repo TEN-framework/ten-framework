@@ -4,8 +4,10 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+
+from ten_ai_base.transcription import AssistantTranscription
 from .cosy_tts import CosyTTS, CosyTTSConfig
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
@@ -50,9 +52,9 @@ class CosyTTSExtension(AsyncTTSBaseExtension):
             await self.send_audio_out(ten_env, audio_data)
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
-        self.client.text_to_speech_stream(ten_env, input_text, end_of_segment)
+        self.client.text_to_speech_stream(ten_env, t.text, t.turn_status != 1)
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         self.client.cancel(ten_env)

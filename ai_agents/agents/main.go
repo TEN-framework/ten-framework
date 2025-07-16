@@ -12,7 +12,7 @@ import (
 	"log"
 	"os"
 
-	"ten_framework/ten"
+	ten "ten_framework/ten_runtime"
 )
 
 type appConfig struct {
