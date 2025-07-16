@@ -1,0 +1,13 @@
+{
+  "type": "extension",
+  "name": "ext_e",
+  "version": "1.0.0",
+  "dependencies": [],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/sys_a/interfaces/interface_a.json"
+      }
+    ]
+  }
+}

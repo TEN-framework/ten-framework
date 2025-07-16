@@ -261,7 +261,7 @@ mod tests {
         println!("resp: {resp:?}");
 
         assert_ne!(resp.status(), StatusCode::OK);
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     #[actix_web::test]

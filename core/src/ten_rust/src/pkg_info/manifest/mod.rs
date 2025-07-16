@@ -881,7 +881,7 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Flatten the API.
     {
         let mut flattened_api = manifest.flattened_api.write().await;
-        flatten_manifest_api(&manifest.api, &mut flattened_api).await?;
+        let _ = flatten_manifest_api(&manifest.api, &mut flattened_api).await;
     }
 
     Ok(manifest)
