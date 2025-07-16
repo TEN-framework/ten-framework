@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import traceback
 import json
 from typing import AsyncIterator
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 import boto3
 from botocore.exceptions import ClientError
@@ -91,7 +91,7 @@ class PollyTTS:
             return audio_stream, visemes
 
     async def text_to_speech_stream(
-        self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, text: str
     ) -> AsyncIterator[bytes]:
         inputText = text
         if len(inputText) == 0:
@@ -101,8 +101,6 @@ class PollyTTS:
             with closing(audio_stream) as stream:
                 for chunk in stream.iter_chunks(chunk_size=self.frame_size):
                     yield chunk
-                if end_of_segment:
-                    ten_env.log_debug("End of segment reached")
         except Exception:
             ten_env.log_error(traceback.format_exc())
 

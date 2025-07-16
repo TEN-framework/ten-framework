@@ -10,7 +10,7 @@ import json
 import threading
 import time
 import uuid
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     Extension,
@@ -143,8 +143,8 @@ class MessageCollectorExtension(Extension):
 
         # TODO: process cmd
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        ten_env.return_result(cmd_result)
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         """
@@ -163,24 +163,26 @@ class MessageCollectorExtension(Extension):
         # Add the raw data type if the data is raw text data
         if data.get_name() == "text_data":
             try:
-                text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+                text, _ = data.get_property_string(TEXT_DATA_TEXT_FIELD)
             except Exception as e:
                 ten_env.log_error(
                     f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
                 )
 
             try:
-                final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
+                final, err = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
+                if err:
+                    final = True  # Default to True if not set
             except Exception:
                 pass
 
             try:
-                stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
+                stream_id, _ = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
             except Exception:
                 pass
 
             try:
-                end_of_segment = data.get_property_bool(
+                end_of_segment, _ = data.get_property_bool(
                     TEXT_DATA_END_OF_SEGMENT_FIELD
                 )
             except Exception as e:
@@ -231,14 +233,14 @@ class MessageCollectorExtension(Extension):
                 ten_env.log_warn(f"on_data new_data error: {e}")
         elif data.get_name() == "content_data":
             try:
-                text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+                text, _ = data.get_property_string(TEXT_DATA_TEXT_FIELD)
             except Exception as e:
                 ten_env.log_error(
                     f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
                 )
 
             try:
-                end_of_segment = data.get_property_bool(
+                end_of_segment, _ = data.get_property_bool(
                     TEXT_DATA_END_OF_SEGMENT_FIELD
                 )
             except Exception as e:

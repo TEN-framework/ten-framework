@@ -6,48 +6,56 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "api": {
-    "property": {},
+    "property": {
+      "properties": {}
+    },
     "cmd_in": [
       {
         "name": "file_chunk",
         "property": {
-          "filename": {
-            "type": "string"
+          "properties": {
+            "filename": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "collection": {
+              "type": "string"
+            }
           },
-          "path": {
-            "type": "string"
-          },
-          "collection": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "path"
-        ]
+          "required": [
+            "path"
+          ]
+        }
       }
     ],
     "cmd_out": [
       {
         "name": "embed_batch",
         "property": {
-          "inputs": {
-            "type": "array",
-            "items": {
-              "type": "string"
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
-          }
+          },
+          "required": [
+            "inputs"
+          ]
         },
-        "required": [
-          "inputs"
-        ],
         "result": {
           "property": {
-            "embeddings": {
-              "type": "string"
+            "properties": {
+              "embeddings": {
+                "type": "string"
+              }
             }
           }
         }
@@ -55,50 +63,56 @@
       {
         "name": "upsert_vector",
         "property": {
-          "collection_name": {
-            "type": "string"
+          "properties": {
+            "collection_name": {
+              "type": "string"
+            },
+            "file_name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
           },
-          "file_name": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "collection_name",
-          "file_name",
-          "content"
-        ]
+          "required": [
+            "collection_name",
+            "file_name",
+            "content"
+          ]
+        }
       },
       {
         "name": "create_collection",
         "property": {
-          "collection_name": {
-            "type": "string"
+          "properties": {
+            "collection_name": {
+              "type": "string"
+            },
+            "dimension": {
+              "type": "int32"
+            }
           },
-          "dimension": {
-            "type": "int32"
-          }
-        },
-        "required": [
-          "collection_name"
-        ]
+          "required": [
+            "collection_name"
+          ]
+        }
       },
       {
         "name": "file_chunked",
         "property": {
-          "path": {
-            "type": "string"
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "collection": {
+              "type": "string"
+            }
           },
-          "collection": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "path",
-          "collection"
-        ]
+          "required": [
+            "path",
+            "collection"
+          ]
+        }
       }
     ]
   }

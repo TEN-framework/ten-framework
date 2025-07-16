@@ -68,7 +68,7 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va_azure_v2v"
   },
   {
-    label: "Voice Agent with Grok4",
+    label: "Grok 4 with Annie",
     value: "grok4",
   },
   {

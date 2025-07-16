@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"ten_framework/ten"
+	ten "ten_framework/ten_runtime"
 	"time"
 
 	"github.com/vmihailenco/msgpack/v5"

@@ -5,7 +5,13 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from pathlib import Path
-from ten import ExtensionTester, TenEnvTester, Cmd, CmdResult, StatusCode
+from ten_runtime import (
+    ExtensionTester,
+    TenEnvTester,
+    Cmd,
+    CmdResult,
+    StatusCode,
+)
 
 
 class ExtensionTesterBasic(ExtensionTester):

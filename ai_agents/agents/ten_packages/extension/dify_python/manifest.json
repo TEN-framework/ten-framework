@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,20 +22,22 @@
   },
   "api": {
     "property": {
-      "user_id": {
-        "type": "string"
-      },
-      "api_key": {
-        "type": "string"
-      },
-      "base_url": {
-        "type": "string"
-      },
-      "greeting": {
-        "type": "string"
-      },
-      "failure_info": {
-        "type": "string"
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "failure_info": {
+          "type": "string"
+        }
       }
     }
   }
