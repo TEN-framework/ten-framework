@@ -881,7 +881,13 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Flatten the API.
     {
         let mut flattened_api = manifest.flattened_api.write().await;
-        let _ = flatten_manifest_api(&manifest.api, &mut flattened_api).await;
+        // Ignore the error during flattening as the api interface file could
+        // not exist now.
+        let result =
+            flatten_manifest_api(&manifest.api, &mut flattened_api).await;
+        if result.is_err() {
+            println!("Failed to flatten the API: {:?}", result.err());
+        }
     }
 
     Ok(manifest)

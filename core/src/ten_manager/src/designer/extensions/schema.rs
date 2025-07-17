@@ -81,7 +81,7 @@ pub async fn get_extension_schema_endpoint(
         Err(err) => {
             let error_response = ErrorResponse::from_error(
                 &err,
-                "Failed to get extension schema",
+                "Flatten api interface failed.",
             );
             return Ok(HttpResponse::InternalServerError().json(error_response));
         }

@@ -92,3 +92,24 @@ pub fn ten_validate_property_json_file<P: AsRef<Path>>(
 
     validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
 }
+
+pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {
+    let interface_json: serde_json::Value = serde_json::from_str(data)?;
+    validate_json_object(
+        &interface_json,
+        definition::INTERFACE_SCHEMA_DEFINITION,
+    )
+}
+
+pub fn ten_validate_interface_json_file<P: AsRef<Path>>(
+    file_path: P,
+) -> Result<()> {
+    let file = std::fs::File::open(file_path)?;
+    let reader = std::io::BufReader::new(file);
+    let interface_json: serde_json::Value = serde_json::from_reader(reader)?;
+
+    validate_json_object(
+        &interface_json,
+        definition::INTERFACE_SCHEMA_DEFINITION,
+    )
+}

@@ -318,9 +318,7 @@ mod tests {
 
         println!("resp: {resp:?}");
 
-        // TODO(xilin): Schema check for interface, so the result could be
-        // error.
-
-        // assert_ne!(resp.status(), StatusCode::OK);
+        assert_ne!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }
