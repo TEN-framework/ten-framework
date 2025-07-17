@@ -113,5 +113,6 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  }
+  },
+  "biome.lsp.bin": "node_modules/.bin/biome"
 }
