@@ -28,5 +28,6 @@ mod get_packages_with_import_uri;
 mod get_registry_packages;
 mod load_apps;
 mod log_watcher;
+mod registry;
 mod reload_apps;
 mod terminal;
