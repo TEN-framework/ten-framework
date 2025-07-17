@@ -1,0 +1,249 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+
+import { Maximize2Icon, Minimize2Icon } from "lucide-react";
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { useGraphs } from "@/api/services/graphs";
+import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Label } from "@/components/ui/Label";
+import { Separator } from "@/components/ui/Separator";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store";
+import type { IGraph } from "@/types/graphs";
+
+export const GraphSelector = (props: { className?: string }) => {
+  const { className } = props;
+
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  const { t } = useTranslation();
+  const {
+    data: graphs,
+    isLoading: isGraphLoading,
+    error: isGraphError,
+  } = useGraphs();
+  const { selectedGraphs, setSelectedGraphs } = useAppStore();
+
+  React.useEffect(() => {
+    if (!selectedGraphs && !isGraphLoading && graphs) {
+      // default select all
+      setSelectedGraphs(graphs);
+    }
+  }, [graphs, isGraphLoading, selectedGraphs, setSelectedGraphs]);
+
+  if (!graphs) {
+    return null;
+  }
+
+  return (
+    <Card
+      className={cn(
+        "absolute top-12 right-2",
+        "h-fit max-h-[calc(100%-40px-8px-8px-20px-150px-15px-15px)]",
+        "gap-0 p-4",
+        "w-3xs transition-all duration-300",
+        {
+          "w-sm": isExpanded,
+        },
+        className
+      )}
+    >
+      <CardHeader className="px-0">
+        <CardTitle>{t("graph.title")}</CardTitle>
+        <CardDescription>
+          {isGraphLoading
+            ? "Loading..."
+            : isGraphError
+              ? "Error loading graphs"
+              : t("graph.selected-sum-count", {
+                  count: selectedGraphs?.length || 0,
+                  sum: graphs.length,
+                })}
+        </CardDescription>
+        <CardAction className="flex justify-end">
+          {isExpanded ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(false)}
+            >
+              <Minimize2Icon />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className=""
+              onClick={() => setIsExpanded(true)}
+            >
+              <Maximize2Icon />
+            </Button>
+          )}
+        </CardAction>
+      </CardHeader>
+      <CardContent
+        className={cn(
+          "flex h-fit flex-col gap-2 overflow-y-auto px-0",
+          "transition-all duration-300",
+          "max-h-0 overflow-hidden opacity-0",
+          {
+            "mt-6 max-h-fit opacity-100": isExpanded,
+          }
+        )}
+      >
+        <GraphList graphs={graphs} />
+      </CardContent>
+    </Card>
+  );
+};
+
+const GraphList = (props: { graphs: IGraph[] }) => {
+  const { t } = useTranslation();
+  const {
+    selectedGraphs,
+    setSelectedGraphs,
+    appendSelectedGraphs,
+    removeSelectedGraphs,
+  } = useAppStore();
+
+  const groupedGraphs: { standalone: IGraph[]; [x: string]: IGraph[] } =
+    props.graphs.reduce(
+      (acc, graph) => {
+        const baseDir = graph.base_dir || "standalone";
+        if (!acc[baseDir]) {
+          acc[baseDir] = [];
+        }
+        acc[baseDir].push(graph);
+        return acc;
+      },
+      {} as { standalone: IGraph[]; [x: string]: IGraph[] }
+    );
+
+  return (
+    <div className="flex flex-col">
+      {Object.entries(groupedGraphs).map(([baseDir, graphs], index) => (
+        <React.Fragment key={baseDir}>
+          <Separator className={cn("mt-2 mb-2", { "mt-0": index === 0 })} />
+          <div className="flex flex-col gap-1">
+            <div
+              className={cn(
+                "font-semibold text-xs",
+                "w-full overflow-hidden text-ellipsis whitespace-nowrap",
+                "flex items-center justify-between",
+                "group relative"
+              )}
+            >
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {calcAbbreviatedBaseDir(baseDir)}
+              </span>
+              <div
+                className={cn(
+                  "flex items-center gap-0.5",
+                  "-translate-y-1/2 absolute top-1/2 right-0 transform",
+                  "opacity-0 transition-opacity group-hover:opacity-100",
+                  "overflow-hidden rounded bg-popover"
+                )}
+              >
+                <Button
+                  variant="link"
+                  size="xs"
+                  className={cn("underline")}
+                  onClick={() => {
+                    setSelectedGraphs(graphs);
+                  }}
+                >
+                  {t("graph.select-all")}
+                </Button>
+              </div>
+            </div>
+            {graphs.map((graph) => (
+              <div
+                key={graph.uuid}
+                className={cn("flex items-center gap-3", "group relative")}
+              >
+                <Checkbox
+                  id={`graph-selector-${graph.uuid}`}
+                  checked={selectedGraphs?.some((g) => g.uuid === graph.uuid)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      appendSelectedGraphs([graph]);
+                    } else {
+                      removeSelectedGraphs([graph]);
+                    }
+                  }}
+                />
+                <Label
+                  htmlFor={`graph-selector-${graph.uuid}`}
+                  className="w-full"
+                >
+                  <span
+                    className={cn(
+                      "w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                    )}
+                  >
+                    {graph.name}
+                  </span>
+                </Label>
+                <div
+                  className={cn(
+                    "flex items-center gap-0.5",
+                    "-translate-y-1/2 absolute top-1/2 right-0 transform",
+                    "opacity-0 transition-opacity group-hover:opacity-100",
+                    "overflow-hidden rounded bg-popover"
+                  )}
+                >
+                  {/* <Button
+										size="xs"
+										variant="link"
+										className={cn(
+											"opacity-0 transition-opacity group-hover:opacity-100",
+										)}
+										onClick={() => {
+											setSelectedGraphs([graph]);
+										}}
+									>
+										auto_start
+									</Button> */}
+                  <Button
+                    size="xs"
+                    variant="link"
+                    className={cn(
+                      "opacity-0 transition-opacity group-hover:opacity-100"
+                    )}
+                    onClick={() => {
+                      setSelectedGraphs([graph]);
+                    }}
+                  >
+                    {t("graph.select-only")}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
+const calcAbbreviatedBaseDir = (baseDir: string) => {
+  const parts = baseDir.split("/");
+  if (parts.length <= 2) {
+    return baseDir;
+  }
+  return `${parts[0]}/${parts[1]}/.../${parts[parts.length - 1]}`;
+};

@@ -53,6 +53,7 @@ export const GraphSelectPopupTitle = () => {
   return t("popup.selectGraph.title");
 };
 
+/** @deprecated */
 export const GraphSelectPopupContent = (props: { widget: IWidget }) => {
   const { widget } = props;
 

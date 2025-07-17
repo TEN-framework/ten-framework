@@ -18,6 +18,7 @@ import {
 import { getTanstackQueryClient } from "@/api/services/utils";
 import AppBar from "@/components/AppBar";
 import { GlobalDialogs } from "@/components/GlobalDialogs";
+import { GraphSelector } from "@/components/graph/graph-selector";
 import { GlobalPopups } from "@/components/Popup";
 import { SpinnerLoading } from "@/components/Status/Loading";
 import StatusBar from "@/components/StatusBar";
@@ -189,6 +190,8 @@ const Main = () => {
 
       {/* [invisible] Global backstage widgets. */}
       <BackstageWidgets />
+
+      <GraphSelector />
 
       <StatusBar className="z-9997" />
     </>

@@ -10,6 +10,8 @@
     "editor.wordWrapColumn": 80
   },
   "biome.configurationPath": "biome.json",
+  "biome.enabled": true,
+  "biome.lsp.bin": "node_modules/.bin/biome",
   "black-formatter.args": [
     "--line-length",
     "80",
@@ -113,6 +115,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "biome.lsp.bin": "node_modules/.bin/biome"
+  }
 }

@@ -18,15 +18,21 @@ import {
 import type { IGraph } from "@/types/graphs";
 
 export interface IAppStore {
+  /** @deprecated */
   currentWorkspace: {
     initialized?: boolean;
     graph: IGraph | null;
     app: IApp | null;
   };
+  /** @deprecated */
   updateCurrentWorkspace: (currentWorkspace: {
     graph?: IGraph | null;
     app?: IApp | null;
   }) => void;
+  selectedGraphs: IGraph[] | undefined;
+  setSelectedGraphs: (graphs: IGraph[]) => void;
+  appendSelectedGraphs: (graph: IGraph[]) => void;
+  removeSelectedGraphs: (graph: IGraph[]) => void;
   folderPath: string;
   setFolderPath: (folderPath: string) => void;
   fmItems: IFMItem[][];
@@ -72,6 +78,26 @@ export const useAppStore = create<IAppStore>()(
           initialized: true,
         },
       })),
+    appendSelectedGraphs: (graph: IGraph[]) =>
+      set((state) => {
+        const existing = state.selectedGraphs || [];
+        const existingIds = new Set(existing.map((g) => g.uuid));
+        const newGraphs = graph.filter((g) => !existingIds.has(g.uuid));
+        return {
+          selectedGraphs: [...existing, ...newGraphs],
+        };
+      }),
+    removeSelectedGraphs: (graph: IGraph[]) =>
+      set((state) => {
+        const existing = state.selectedGraphs || [];
+        const existingIds = new Set(existing.map((g) => g.uuid));
+        const newGraphs = existing.filter((g) => !existingIds.has(g.uuid));
+        return {
+          selectedGraphs: newGraphs,
+        };
+      }),
+    selectedGraphs: undefined,
+    setSelectedGraphs: (graphs: IGraph[]) => set({ selectedGraphs: graphs }),
     folderPath: "/",
     setFolderPath: (folderPath: string) => set({ folderPath }),
     fmItems: [[]],

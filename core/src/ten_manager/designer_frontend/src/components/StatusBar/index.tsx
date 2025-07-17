@@ -56,8 +56,8 @@ export default function StatusBar(props: { className?: string }) {
       )}
     >
       <div className="flex h-full w-full gap-2">
-        <StatusApps />
-        <StatusWorkspace />
+        {/* <StatusApps />
+        <StatusWorkspace /> */}
       </div>
       <div className="flex w-fit gap-2 px-2">
         <Feedback />
@@ -66,6 +66,7 @@ export default function StatusBar(props: { className?: string }) {
   );
 }
 
+/** @deprecated */
 const StatusApps = () => {
   const { t } = useTranslation();
   const { data, error, isLoading } = useFetchApps();
@@ -132,6 +133,7 @@ const StatusApps = () => {
   );
 };
 
+/** @deprecated */
 const StatusWorkspace = () => {
   const { t } = useTranslation();
   const { currentWorkspace } = useAppStore();
