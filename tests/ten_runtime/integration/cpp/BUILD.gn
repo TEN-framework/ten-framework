@@ -18,7 +18,6 @@ group("cpp") {
     "interface_schema_check",
     "large_result",
     "long_running",
-    "metadata_additional_field",
     "restful",
   ]
 
