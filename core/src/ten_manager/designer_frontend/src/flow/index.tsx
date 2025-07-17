@@ -8,6 +8,8 @@
 import {
   applyEdgeChanges,
   applyNodeChanges,
+  Background,
+  BackgroundVariant,
   Controls,
   type EdgeChange,
   MiniMap,
@@ -96,6 +98,12 @@ export const FlowCanvas = (props: { className?: string }) => {
       >
         <Controls />
         <MiniMap zoomable pannable />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={12}
+          size={1}
+          color={theme === "dark" ? "#333" : "#ccc"}
+        />
       </ReactFlow>
     </div>
   );
