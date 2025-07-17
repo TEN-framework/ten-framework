@@ -222,6 +222,7 @@ pub async fn search_packages(
     page: Option<u32>,
     sort_by: Option<&str>,
     sort_order: Option<&str>,
+    scope: Option<&str>,
     out: &Arc<Box<dyn TmanOutput>>,
 ) -> Result<(u32, Vec<PkgRegistryInfo>)> {
     // Retrieve the default registry URL from configuration.
@@ -249,6 +250,7 @@ pub async fn search_packages(
                 page,
                 sort_by,
                 sort_order,
+                scope,
                 out,
             )
             .await?
@@ -262,6 +264,7 @@ pub async fn search_packages(
                 page,
                 sort_by,
                 sort_order,
+                scope,
                 out,
             )
             .await?

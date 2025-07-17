@@ -21,6 +21,7 @@ pub struct PkgSearchOptions {
     pub page: Option<u32>,
     pub sort_by: Option<String>,
     pub sort_order: Option<String>,
+    pub scope: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -50,6 +51,7 @@ pub async fn search_packages_endpoint(
         request_payload.options.as_ref().and_then(|o| o.page),
         request_payload.options.as_ref().and_then(|o| o.sort_by.as_deref()),
         request_payload.options.as_ref().and_then(|o| o.sort_order.as_deref()),
+        request_payload.options.as_ref().and_then(|o| o.scope.as_deref()),
         &state.out,
     )
     .await

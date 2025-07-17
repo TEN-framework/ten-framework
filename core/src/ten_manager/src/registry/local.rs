@@ -535,6 +535,7 @@ pub async fn search_packages(
     page: Option<u32>,
     sort_by: Option<&str>,
     sort_order: Option<&str>,
+    _scope: Option<&str>,
     _out: &Arc<Box<dyn TmanOutput>>,
 ) -> Result<(u32, Vec<PkgRegistryInfo>)> {
     let mut path_url = url::Url::parse(base_url)
@@ -567,6 +568,10 @@ pub async fn search_packages(
             }
         });
     } // add more sort fields if needed
+
+    // For local registry, we always return all fields of a package no matter
+    // what the scope is.
+
     let total = filtered.len() as u32;
     // Paginate
     let page_size = page_size.unwrap_or(10);

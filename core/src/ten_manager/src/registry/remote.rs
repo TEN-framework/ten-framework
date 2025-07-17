@@ -954,6 +954,7 @@ pub async fn search_packages(
     page: Option<u32>,
     sort_by: Option<&str>,
     sort_order: Option<&str>,
+    scope: Option<&str>,
     out: &Arc<Box<dyn TmanOutput>>,
 ) -> Result<(u32, Vec<PkgRegistryInfo>)> {
     let max_retries = REMOTE_REGISTRY_MAX_RETRIES;
@@ -998,7 +999,8 @@ pub async fn search_packages(
                             "pageSize": page_size_value,
                             "page": current_page,
                             "sortBy": sort_by,
-                            "sortOrder": sort_order
+                            "sortOrder": sort_order,
+                            "scope": scope
                         }
                     });
 

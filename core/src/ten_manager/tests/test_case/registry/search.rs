@@ -39,6 +39,7 @@ mod tests {
             Some(1),
             Some("version"),
             Some("desc"),
+            None,
             &Arc::new(Box::new(TmanOutputCli)),
         )
         .await;
@@ -82,6 +83,7 @@ mod tests {
         let result = search_packages(
             tman_config,
             &filter,
+            None,
             None,
             None,
             None,
