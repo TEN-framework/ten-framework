@@ -8,7 +8,8 @@
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { useGraphs } from "@/api/services/graphs";
+import { toast } from "sonner";
+import { postGraphsAutoStart, useGraphs } from "@/api/services/graphs";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -153,6 +154,10 @@ export const GraphSelector = (props: { className?: string }) => {
 };
 
 const GraphList = (props: { graphs: IGraph[] }) => {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const { mutate: mutateGraphs } = useGraphs();
+
   const { t } = useTranslation();
   const {
     selectedGraphs,
@@ -218,6 +223,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
               >
                 <Checkbox
                   id={`graph-selector-${graph.uuid}`}
+                  disabled={isLoading}
                   checked={selectedGraphs?.some((g) => g.uuid === graph.uuid)}
                   onCheckedChange={(checked) => {
                     if (checked) {
@@ -238,6 +244,15 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                   >
                     {graph.name}
                   </span>
+                  {graph.auto_start && (
+                    <span
+                      className={cn(
+                        "whitespace-nowrap text-muted-foreground/50 text-xs"
+                      )}
+                    >
+                      {t("graph.auto-start")}
+                    </span>
+                  )}
                 </Label>
                 <div
                   className={cn(
@@ -247,21 +262,45 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                     "overflow-hidden rounded bg-popover"
                   )}
                 >
-                  {/* <Button
-										size="xs"
-										variant="link"
-										className={cn(
-											"opacity-0 transition-opacity group-hover:opacity-100",
-										)}
-										onClick={() => {
-											setSelectedGraphs([graph]);
-										}}
-									>
-										auto_start
-									</Button> */}
                   <Button
                     size="xs"
                     variant="link"
+                    className={cn(
+                      "opacity-0 transition-opacity group-hover:opacity-100"
+                    )}
+                    disabled={isLoading}
+                    onClick={async () => {
+                      try {
+                        setIsLoading(true);
+                        await postGraphsAutoStart({
+                          auto_start: !graph.auto_start,
+                          graph_id: graph.uuid,
+                        });
+                        await mutateGraphs();
+                        toast.success(t("graph.change-auto-start-success"), {
+                          description: `${graph.name}`,
+                        });
+                      } catch (error) {
+                        console.error(
+                          "Failed to update auto-start setting:",
+                          error
+                        );
+                        toast.error(t("graph.change-auto-start-failed"), {
+                          description: `${graph.name}`,
+                        });
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                  >
+                    {graph.auto_start
+                      ? t("graph.disable-auto-start")
+                      : t("graph.enable-auto-start")}
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="link"
+                    disabled={isLoading}
                     className={cn(
                       "opacity-0 transition-opacity group-hover:opacity-100"
                     )}
