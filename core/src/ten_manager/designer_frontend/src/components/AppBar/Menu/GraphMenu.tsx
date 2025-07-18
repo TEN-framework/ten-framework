@@ -11,7 +11,9 @@ import {
   MoveIcon,
   PackagePlusIcon,
 } from "lucide-react";
+import React from "react";
 import { useTranslation } from "react-i18next";
+import { useFetchApps } from "@/api/services/apps";
 import { DocRefPopupTitle } from "@/components/Popup/Default/DocRef";
 import { GraphPopupTitle } from "@/components/Popup/Graph";
 import { Button } from "@/components/ui/Button";
@@ -21,10 +23,10 @@ import {
   NavigationMenuLink,
   NavigationMenuTrigger,
 } from "@/components/ui/NavigationMenu";
+
 import { Separator } from "@/components/ui/Separator";
 import {
   CONTAINER_DEFAULT_ID,
-  DOC_REF_WIDGET_ID,
   GRAPH_ACTIONS_WIDGET_ID,
   GROUP_DOC_REF_ID,
   GROUP_GRAPH_ID,
@@ -47,19 +49,31 @@ export function GraphMenu(props: {
 }) {
   const { onAutoLayout, disableMenuClick, idx, triggerListRef } = props;
 
+  const { data: appRes } = useFetchApps();
+
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
-  const { currentWorkspace } = useAppStore();
+  const { selectedGraphs } = useAppStore();
+
+  const [selectedGraph, selectedApp] = React.useMemo(() => {
+    if (!selectedGraphs || selectedGraphs.length === 0)
+      return [undefined, undefined];
+    if (selectedGraphs.length > 1) return [undefined, undefined];
+    const targetApp = appRes?.app_info?.find(
+      (app) => app.base_dir === selectedGraphs[0].base_dir
+    );
+    return [selectedGraphs[0], targetApp];
+  }, [selectedGraphs, appRes?.app_info]);
 
   const onGraphAct = (type: EGraphActions) => () => {
-    if (!currentWorkspace?.graph || !currentWorkspace?.app) return;
+    if (!selectedGraph || !selectedApp) return;
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_GRAPH_ID,
       widget_id:
         GRAPH_ACTIONS_WIDGET_ID +
-        `-${type}-` +
-        `${currentWorkspace?.app?.base_dir}-${currentWorkspace?.graph?.uuid}`,
+        `-$type-` +
+        `$selectedGraph?.base_dir-$selectedGraph?.uuid`,
 
       category: EWidgetCategory.Graph,
       display_type: EWidgetDisplayType.Popup,
@@ -67,9 +81,9 @@ export function GraphMenu(props: {
       title: <GraphPopupTitle type={type} />,
       metadata: {
         type,
-        base_dir: currentWorkspace?.app?.base_dir,
-        graph_id: currentWorkspace?.graph?.uuid,
-        app_uri: currentWorkspace?.app?.app_uri,
+        base_dir: selectedGraph?.base_dir,
+        graph_id: selectedGraph?.uuid,
+        app_uri: selectedApp?.app_uri,
       },
       popup: {
         width: 340,
@@ -81,7 +95,7 @@ export function GraphMenu(props: {
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
-      widget_id: `${DOC_REF_WIDGET_ID}-${EDocLinkKey.Graph}`,
+      widget_id: `$DOC_REF_WIDGET_ID-$EDocLinkKey.Graph`,
 
       category: EWidgetCategory.Default,
       display_type: EWidgetDisplayType.Popup,
@@ -98,6 +112,14 @@ export function GraphMenu(props: {
       },
     });
   };
+
+  if (
+    !selectedGraphs ||
+    selectedGraphs.length === 0 ||
+    selectedGraphs.length > 1
+  ) {
+    return null;
+  }
 
   return (
     <NavigationMenuItem>
@@ -134,7 +156,7 @@ export function GraphMenu(props: {
           <Button
             className="w-full justify-start"
             variant="ghost"
-            disabled={!currentWorkspace || !currentWorkspace?.graph}
+            disabled={!selectedGraph}
             onClick={onGraphAct(EGraphActions.ADD_NODE)}
           >
             <PackagePlusIcon />
@@ -145,7 +167,7 @@ export function GraphMenu(props: {
           <Button
             className="w-full justify-start"
             variant="ghost"
-            disabled={!currentWorkspace || !currentWorkspace?.graph}
+            disabled={!selectedGraph}
             onClick={onGraphAct(EGraphActions.ADD_CONNECTION)}
           >
             <GitPullRequestCreateIcon />

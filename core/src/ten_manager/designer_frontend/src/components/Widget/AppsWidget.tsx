@@ -117,7 +117,6 @@ export const AppsManagerWidget = (props: { className?: string }) => {
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
-  const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
   const openAppFolderPopup = () => {
@@ -144,13 +143,6 @@ export const AppsManagerWidget = (props: { className?: string }) => {
     try {
       setIsUnloading(true);
       await postUnloadApps(baseDir);
-      if (currentWorkspace.app?.base_dir === baseDir) {
-        setNodesAndEdges([], []);
-        updateCurrentWorkspace({
-          app: null,
-          graph: null,
-        });
-      }
       toast.success(t("header.menuApp.unloadAppSuccess"));
     } catch (error) {
       console.error(error);
@@ -190,13 +182,8 @@ export const AppsManagerWidget = (props: { className?: string }) => {
       },
       onConfirm: async () => {
         await reloadApps(baseDir);
+        await reloadGraphs();
         removeDialog("reload-app");
-      },
-      postConfirm: async () => {
-        setNodesAndEdges([], []);
-        updateCurrentWorkspace({
-          graph: null,
-        });
       },
     });
   };
@@ -230,9 +217,6 @@ export const AppsManagerWidget = (props: { className?: string }) => {
     } finally {
       await mutate();
       await reloadGraphs();
-      updateCurrentWorkspace({
-        graph: null,
-      });
       setNodesAndEdges([], []);
       setIsReloading(false);
     }

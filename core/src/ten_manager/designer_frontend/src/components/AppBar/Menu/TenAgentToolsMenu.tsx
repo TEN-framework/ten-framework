@@ -21,7 +21,6 @@ import {
   TRULIENCE_CONFIG_WIDGET_ID,
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/store";
 import { useWidgetStore } from "@/store/widget";
 import {
   EDefaultWidgetType,
@@ -38,7 +37,6 @@ export const TenAgentToolsMenu = (props: {
 
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
-  const { currentWorkspace } = useAppStore();
 
   const onStartRTCInteraction = () => {
     appendWidget({
@@ -83,49 +81,47 @@ export const TenAgentToolsMenu = (props: {
   };
 
   return (
-    <>
-      <NavigationMenuItem>
-        <NavigationMenuTrigger
-          className="submenu-trigger"
-          ref={(ref) => {
-            if (triggerListRef?.current && ref) {
-              triggerListRef.current[idx] = ref;
-            }
-          }}
-          onClick={(e) => {
-            if (disableMenuClick) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {t("header.menuTenAgentTools.title")}
-        </NavigationMenuTrigger>
-        <NavigationMenuContent
-          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
-        >
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={onStartRTCInteraction}
-              disabled={!currentWorkspace?.graph}
-            >
-              <PodcastIcon />
-              {t("header.menuExtension.startRTCInteraction")}
-            </Button>
-          </NavigationMenuLink>
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={onConfigTrulience}
-            >
-              <ScanFaceIcon />
-              {t("header.menuExtension.configTrulienceAvatar")}
-            </Button>
-          </NavigationMenuLink>
-        </NavigationMenuContent>
-      </NavigationMenuItem>
-    </>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger
+        className="submenu-trigger"
+        ref={(ref) => {
+          if (triggerListRef?.current && ref) {
+            triggerListRef.current[idx] = ref;
+          }
+        }}
+        onClick={(e) => {
+          if (disableMenuClick) {
+            e.preventDefault();
+          }
+        }}
+      >
+        {t("header.menuTenAgentTools.title")}
+      </NavigationMenuTrigger>
+      <NavigationMenuContent
+        className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
+      >
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={onStartRTCInteraction}
+            // disabled={!currentWorkspace?.graph}
+          >
+            <PodcastIcon />
+            {t("header.menuExtension.startRTCInteraction")}
+          </Button>
+        </NavigationMenuLink>
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={onConfigTrulience}
+          >
+            <ScanFaceIcon />
+            {t("header.menuExtension.configTrulienceAvatar")}
+          </Button>
+        </NavigationMenuLink>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
   );
 };
