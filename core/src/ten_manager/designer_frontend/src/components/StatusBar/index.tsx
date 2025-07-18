@@ -5,34 +5,19 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import {
-  ChevronRightIcon,
-  FolderOpenIcon,
-  FolderTreeIcon,
-  MessageSquareShareIcon,
-} from "lucide-react";
+import { FolderTreeIcon, MessageSquareShareIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useFetchApps } from "@/api/services/apps";
-import { useGraphs } from "@/api/services/graphs";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { Button } from "@/components/ui/Button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/Tooltip";
 import { TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL } from "@/constants";
 import {
   APPS_MANAGER_WIDGET_ID,
   CONTAINER_DEFAULT_ID,
-  GRAPH_SELECT_WIDGET_ID,
 } from "@/constants/widgets";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
+import { useAppStore, useWidgetStore } from "@/store";
 import {
   EDefaultWidgetType,
   EWidgetCategory,
@@ -130,90 +115,6 @@ const StatusApps = () => {
         })}
       </span>
     </Button>
-  );
-};
-
-/** @deprecated */
-export const StatusWorkspace = () => {
-  const { t } = useTranslation();
-  const { currentWorkspace } = useAppStore();
-  const { appendWidget } = useWidgetStore();
-  const { setNodesAndEdges } = useFlowStore();
-
-  const { data: graphs = [], isLoading: isLoadingGraphs } = useGraphs();
-
-  const [baseDirAbbrMemo, baseDirMemo] = React.useMemo(() => {
-    if (!currentWorkspace?.app?.base_dir) {
-      return [null, null];
-    }
-    const lastFolderName = currentWorkspace.app.base_dir.split("/").pop();
-    return [`...${lastFolderName}`, currentWorkspace.app.base_dir];
-  }, [currentWorkspace?.app?.base_dir]);
-
-  const onOpenExistingGraph = () => {
-    appendWidget({
-      container_id: CONTAINER_DEFAULT_ID,
-      group_id: GRAPH_SELECT_WIDGET_ID,
-      widget_id: GRAPH_SELECT_WIDGET_ID,
-
-      category: EWidgetCategory.Default,
-      display_type: EWidgetDisplayType.Popup,
-
-      title: <GraphSelectPopupTitle />,
-      metadata: {
-        type: EDefaultWidgetType.GraphSelect,
-      },
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-    });
-  };
-
-  React.useEffect(() => {
-    const init = async () => {
-      if (!isLoadingGraphs && baseDirMemo && graphs?.length > 0) {
-        const validGraphs = graphs.filter(
-          (graph) => graph.base_dir === baseDirMemo
-        );
-
-        const { nodes: layoutedNodes, edges: layoutedEdges } =
-          await resetNodesAndEdgesByGraphs(validGraphs);
-
-        setNodesAndEdges(layoutedNodes, layoutedEdges);
-      }
-    };
-
-    init();
-  }, [isLoadingGraphs, graphs, baseDirMemo]);
-
-  if (!baseDirMemo) {
-    return null;
-  }
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="status"
-            className=""
-            onClick={onOpenExistingGraph}
-          >
-            <FolderOpenIcon className="size-3" />
-            <span className="">{baseDirAbbrMemo}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="flex max-w-md flex-col gap-1">
-          <p className="text-sm">{t("statusBar.workspace.title")}</p>
-          <p className="flex w-full justify-between gap-1">
-            <span className="min-w-24">{t("statusBar.workspace.baseDir")}</span>
-            <span className="break-all">{baseDirMemo}</span>
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 };
 

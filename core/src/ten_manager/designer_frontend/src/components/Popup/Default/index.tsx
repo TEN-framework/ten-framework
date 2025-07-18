@@ -15,7 +15,6 @@ import {
 } from "@/components/Popup/Default/App";
 import { DocRefPopupContent } from "@/components/Popup/Default/DocRef";
 import { ExtensionStorePopupContent } from "@/components/Popup/Default/Extension";
-import { GraphSelectPopupContent } from "@/components/Popup/Default/GraphSelect";
 import { PreferencesWidgetContent } from "@/components/Popup/Default/Preferences";
 import { RTCWidgetContent } from "@/components/Popup/Default/RTC";
 import { TrulienceConfigWidgetContent } from "@/components/Popup/Default/TrulienceConfig";
@@ -27,7 +26,6 @@ const PopupTabContentDefaultMappings: Record<
 > = {
   [EDefaultWidgetType.About]: AboutWidgetContent,
   [EDefaultWidgetType.Preferences]: PreferencesWidgetContent,
-  [EDefaultWidgetType.GraphSelect]: GraphSelectPopupContent,
   [EDefaultWidgetType.AppFolder]: AppFolderPopupContent,
   [EDefaultWidgetType.AppCreate]: AppCreatePopupContent,
   [EDefaultWidgetType.AppsManager]: LoadedAppsPopupContent,

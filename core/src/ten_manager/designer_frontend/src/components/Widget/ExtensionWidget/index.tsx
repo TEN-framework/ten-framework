@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { useFetchAddons } from "@/api/services/addons";
 import { useEnv } from "@/api/services/common";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
-import { GraphSelectPopupTitle } from "@/components/Popup/Default/GraphSelect";
 import { SpinnerLoading } from "@/components/Status/Loading";
 // eslint-disable-next-line max-len
 import { ExtensionDetails } from "@/components/Widget/ExtensionWidget/ExtensionDetails";
@@ -19,10 +18,6 @@ import { ExtensionDetails } from "@/components/Widget/ExtensionWidget/ExtensionD
 import { ExtensionList } from "@/components/Widget/ExtensionWidget/ExtensionList";
 // eslint-disable-next-line max-len
 import { ExtensionSearch } from "@/components/Widget/ExtensionWidget/ExtensionSearch";
-import {
-  CONTAINER_DEFAULT_ID,
-  GRAPH_SELECT_WIDGET_ID,
-} from "@/constants/widgets";
 import { cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import {
@@ -32,11 +27,6 @@ import {
   type ITenPackage,
   type ITenPackageLocal,
 } from "@/types/extension";
-import {
-  EDefaultWidgetType,
-  EWidgetCategory,
-  EWidgetDisplayType,
-} from "@/types/widgets";
 
 export const ExtensionStoreWidget = (props: {
   className?: string;
@@ -269,25 +259,25 @@ export const ExtensionStoreWidget = (props: {
     extFilter.showInstalled,
   ]);
 
-  const onOpenExistingGraph = () => {
-    appendWidget({
-      container_id: CONTAINER_DEFAULT_ID,
-      group_id: GRAPH_SELECT_WIDGET_ID,
-      widget_id: GRAPH_SELECT_WIDGET_ID,
+  // const onOpenExistingGraph = () => {
+  //   appendWidget({
+  //     container_id: CONTAINER_DEFAULT_ID,
+  //     group_id: GRAPH_SELECT_WIDGET_ID,
+  //     widget_id: GRAPH_SELECT_WIDGET_ID,
 
-      category: EWidgetCategory.Default,
-      display_type: EWidgetDisplayType.Popup,
+  //     category: EWidgetCategory.Default,
+  //     display_type: EWidgetDisplayType.Popup,
 
-      title: <GraphSelectPopupTitle />,
-      metadata: {
-        type: EDefaultWidgetType.GraphSelect,
-      },
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-    });
-  };
+  //     title: <GraphSelectPopupTitle />,
+  //     metadata: {
+  //       type: EDefaultWidgetType.GraphSelect,
+  //     },
+  //     popup: {
+  //       width: 0.5,
+  //       height: 0.8,
+  //     },
+  //   });
+  // };
 
   React.useEffect(() => {
     if (error) {
@@ -359,7 +349,7 @@ export const ExtensionStoreWidget = (props: {
               </p>
             )}
 
-          {!currentWorkspace?.app?.base_dir && (
+          {/* {!currentWorkspace?.app?.base_dir && (
             <p
               className="ml-auto w-fit cursor-pointer"
               onClick={onOpenExistingGraph}
@@ -371,7 +361,7 @@ export const ExtensionStoreWidget = (props: {
             >
               {t("extensionStore.openAGraphToInstall")}
             </p>
-          )}
+          )} */}
         </div>
       </div>
 

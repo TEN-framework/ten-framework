@@ -200,7 +200,7 @@ export interface ILogViewerWidget
 
 // 6. Default Widget
 export enum EDefaultWidgetType {
-  GraphSelect = "graph_select",
+  // GraphSelect = "graph_select",
   About = "about",
   AppFolder = "app_folder",
   AppsManager = "apps_manager",
