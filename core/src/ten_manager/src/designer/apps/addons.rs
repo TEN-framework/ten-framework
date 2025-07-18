@@ -52,10 +52,7 @@ async fn convert_pkg_info_to_addon(
 ) -> Result<GetAppAddonsSingleResponseData, ErrorResponse> {
     let manifest_api =
         pkg_info_with_src.manifest.get_flattened_api().await.map_err(|e| {
-            ErrorResponse::from_error(
-                &e,
-                "Failed to flatten API for extension",
-            )
+            ErrorResponse::from_error(&e, "Failed to flatten API for extension")
         });
 
     if manifest_api.is_err() {
