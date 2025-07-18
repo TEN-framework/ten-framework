@@ -23,13 +23,13 @@
               "type": "float64"
             }
           }
-        }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ]
       },
-      "required": [
-        "collection_name",
-        "top_k",
-        "embedding"
-      ],
       "result": {
         "property": {
           "properties": {

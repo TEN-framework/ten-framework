@@ -49,11 +49,19 @@ pub struct GetAppAddonsSingleResponseData {
 
 async fn convert_pkg_info_to_addon(
     pkg_info_with_src: &PkgInfo,
-) -> GetAppAddonsSingleResponseData {
+) -> Result<GetAppAddonsSingleResponseData, ErrorResponse> {
     let manifest_api =
-        pkg_info_with_src.manifest.get_flattened_api().await.unwrap();
+        pkg_info_with_src.manifest.get_flattened_api().await.map_err(|e| {
+            ErrorResponse::from_error(&e, "Failed to flatten API for extension")
+        });
 
-    GetAppAddonsSingleResponseData {
+    if manifest_api.is_err() {
+        return Err(manifest_api.err().unwrap());
+    }
+
+    let manifest_api = manifest_api.unwrap();
+
+    Ok(GetAppAddonsSingleResponseData {
         addon_type: pkg_info_with_src.manifest.type_and_name.pkg_type,
         addon_name: pkg_info_with_src.manifest.type_and_name.name.clone(),
         url: pkg_info_with_src.url.clone(),
@@ -103,7 +111,7 @@ async fn convert_pkg_info_to_addon(
                 .as_ref()
                 .map(|data| get_designer_api_msg_from_pkg(data.clone())),
         }),
-    }
+    })
 }
 
 pub async fn get_app_addons_endpoint(
@@ -139,7 +147,14 @@ pub async fn get_app_addons_endpoint(
             // Extract extension packages if they exist.
             if let Some(extensions) = &base_dir_pkg_info.extension_pkgs_info {
                 for ext in extensions {
-                    all_addons.push(convert_pkg_info_to_addon(ext).await);
+                    let addon = convert_pkg_info_to_addon(ext).await;
+
+                    if addon.is_err() {
+                        return Ok(HttpResponse::InternalServerError()
+                            .json(addon.err().unwrap()));
+                    }
+
+                    all_addons.push(addon.unwrap());
                 }
             }
         }
@@ -152,7 +167,14 @@ pub async fn get_app_addons_endpoint(
             // Extract protocol packages if they exist.
             if let Some(protocols) = &base_dir_pkg_info.protocol_pkgs_info {
                 for protocol in protocols {
-                    all_addons.push(convert_pkg_info_to_addon(protocol).await);
+                    let addon = convert_pkg_info_to_addon(protocol).await;
+
+                    if addon.is_err() {
+                        return Ok(HttpResponse::InternalServerError()
+                            .json(addon.err().unwrap()));
+                    }
+
+                    all_addons.push(addon.unwrap());
                 }
             }
         }
@@ -167,7 +189,14 @@ pub async fn get_app_addons_endpoint(
                 &base_dir_pkg_info.addon_loader_pkgs_info
             {
                 for loader in addon_loaders {
-                    all_addons.push(convert_pkg_info_to_addon(loader).await);
+                    let addon = convert_pkg_info_to_addon(loader).await;
+
+                    if addon.is_err() {
+                        return Ok(HttpResponse::InternalServerError()
+                            .json(addon.err().unwrap()));
+                    }
+
+                    all_addons.push(addon.unwrap());
                 }
             }
         }
@@ -180,7 +209,14 @@ pub async fn get_app_addons_endpoint(
             // Extract system packages if they exist.
             if let Some(systems) = &base_dir_pkg_info.system_pkgs_info {
                 for system in systems {
-                    all_addons.push(convert_pkg_info_to_addon(system).await);
+                    let addon = convert_pkg_info_to_addon(system).await;
+
+                    if addon.is_err() {
+                        return Ok(HttpResponse::InternalServerError()
+                            .json(addon.err().unwrap()));
+                    }
+
+                    all_addons.push(addon.unwrap());
                 }
             }
         }

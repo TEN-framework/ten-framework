@@ -1,6 +1,5 @@
 {
   "ten": {
-    "uri": "msgpack://127.0.0.1:8001/",
     "predefined_graphs": [
       {
         "name": "default",
@@ -9,14 +8,13 @@
           "nodes": [
             {
               "type": "extension",
-              "name": "default_extension_cpp",
-              "addon": "default_extension_cpp",
-              "extension_group": "default_extension_group"
+              "name": "ext_a",
+              "addon": "ext_a",
+              "extension_group": "some_group"
             }
           ]
         }
       }
     ]
-  },
-  "hello": "world"
+  }
 }

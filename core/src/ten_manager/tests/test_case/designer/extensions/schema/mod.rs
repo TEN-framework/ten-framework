@@ -23,6 +23,7 @@ mod tests {
         },
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
+        pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
 
     use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;
@@ -203,5 +204,121 @@ mod tests {
 
         // Verify the response is not found.
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[actix_web::test]
+    async fn test_get_extension_schema_with_not_found_interface() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(
+                TmanConfig::default(),
+            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
+            )),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        let designer_state = Arc::new(designer_state);
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            let _ = get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &"tests/test_data/extension_interface_reference_not_found"
+                    .to_string(),
+            )
+            .await;
+        }
+
+        let app = test::init_service(
+            App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_with_not_found_interface",
+                web::post().to(get_extension_schema_endpoint),
+            ),
+        )
+        .await;
+
+        let request_payload = GetExtensionSchemaRequestPayload {
+            app_base_dir: "tests/test_data/\
+                           extension_interface_reference_not_found"
+                .to_string(),
+            addon_name: "ext_a".to_string(),
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/test_get_extension_schema_with_not_found_interface")
+            .set_json(&request_payload)
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        println!("resp: {resp:?}");
+
+        assert_ne!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[actix_web::test]
+    async fn test_get_extension_schema_with_invalid_interface() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(
+                TmanConfig::default(),
+            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
+                TmanStorageInMemory::default(),
+            )),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        let designer_state = Arc::new(designer_state);
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            let _ = get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &"tests/test_data/extension_interface_reference_invalid"
+                    .to_string(),
+            )
+            .await;
+        }
+
+        let app = test::init_service(
+            App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_with_invalid_interface",
+                web::post().to(get_extension_schema_endpoint),
+            ),
+        )
+        .await;
+
+        let request_payload = GetExtensionSchemaRequestPayload {
+            app_base_dir: "tests/test_data/\
+                           extension_interface_reference_invalid"
+                .to_string(),
+            addon_name: "ext_a".to_string(),
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/test_get_extension_schema_with_invalid_interface")
+            .set_json(&request_payload)
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        println!("resp: {resp:?}");
+
+        assert_ne!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

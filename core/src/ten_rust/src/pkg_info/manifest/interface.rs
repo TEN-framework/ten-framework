@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use crate::{
+    json_schema::ten_validate_interface_json_string,
     pkg_info::manifest::api::{ManifestApi, ManifestApiInterface},
     utils::{
         path::{get_base_dir_of_uri, get_real_path_from_import_uri},
@@ -50,6 +51,10 @@ async fn load_interface(
 
     // Load the content from the uri.
     let interface_content = load_content_from_uri(&real_path).await?;
+
+    // Schema check for interface.
+    ten_validate_interface_json_string(&interface_content)
+        .with_context(|| format!("Invalid interface file: {real_path}"))?;
 
     // Parse the interface file into a ManifestApi structure.
     let mut interface_api: ManifestApi =
