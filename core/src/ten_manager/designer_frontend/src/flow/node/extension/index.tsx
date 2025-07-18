@@ -48,12 +48,7 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
   if (!isDetailed) {
     // Thumbnail mode
     return (
-      <BaseNode
-        className={cn(
-          "w-xs p-0 shadow-md",
-          "border-blue-300 bg-blue-100 dark:border-blue-700 dark:bg-blue-900"
-        )}
-      >
+      <BaseNode className={cn("w-xs p-0 shadow-md", "border bg-popover")}>
         <ExtensionNodeHeader
           data={data}
           onExpandedClick={() => {
@@ -84,12 +79,7 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
 
   // Detailed mode
   return (
-    <BaseNode
-      className={cn(
-        "w-xs p-0 shadow-md",
-        "border-blue-300 bg-blue-100 dark:border-blue-700 dark:bg-blue-900"
-      )}
-    >
+    <BaseNode className={cn("w-xs p-0 shadow-md", "border bg-popover")}>
       {/* Header section */}
       <ExtensionNodeHeader
         data={data}
@@ -101,7 +91,7 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
       />
 
       {/* Connection handles section */}
-      <Separator className="bg-blue-300 dark:bg-blue-700" />
+      <Separator />
       <div className={cn("py-1")}>
         <div className="space-y-1">
           <HandleGroupItem
@@ -109,19 +99,19 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
             isConnectable={isConnectable}
             connectionType={EConnectionType.CMD}
           />
-          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <Separator className={cn("my-1")} />
           <HandleGroupItem
             data={data}
             isConnectable={isConnectable}
             connectionType={EConnectionType.DATA}
           />
-          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <Separator className={cn("my-1")} />
           <HandleGroupItem
             data={data}
             isConnectable={isConnectable}
             connectionType={EConnectionType.AUDIO_FRAME}
           />
-          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <Separator className={cn("my-1")} />
           <HandleGroupItem
             data={data}
             isConnectable={isConnectable}
@@ -174,13 +164,24 @@ const ExtensionNodeHeader = (props: {
         </Tooltip>
       </TooltipProvider>
       {/* Extension type icon */}
-      <PuzzleIcon className="size-4" />
+      <PuzzleIcon
+        className={cn("size-4", { "text-foreground/50": !isInstalled })}
+      />
+
       {/* Content */}
       <div className="flex flex-col">
-        <span className={cn("font-medium text-foreground text-sm")}>
+        <span
+          className={cn("font-medium text-foreground text-sm", {
+            "text-foreground/50": !isInstalled,
+          })}
+        >
           {data.name}
         </span>
-        <span className={cn("text-muted-foreground/50 text-xs")}>
+        <span
+          className={cn("text-muted-foreground/50 text-xs", {
+            "text-muted-foreground/20": !isInstalled,
+          })}
+        >
           {data.addon}
         </span>
       </div>
@@ -241,11 +242,9 @@ const HandleGroupItem = (props: {
         source: data.name,
         target: undefined,
         metadata: {
-          filters: {
-            type,
-            source,
-            target,
-          },
+          type,
+          source,
+          target,
         },
       });
     };
