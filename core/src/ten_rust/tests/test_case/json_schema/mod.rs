@@ -1017,10 +1017,7 @@ mod tests {
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_err());
 
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("is not of type"));
+        assert!(result.unwrap_err().to_string().contains("is not of type"));
     }
 
     #[test]
