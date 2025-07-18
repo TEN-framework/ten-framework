@@ -29,6 +29,7 @@ import {
   useFetchAppScripts,
   useFetchApps,
 } from "@/api/services/apps";
+import { useGraphs } from "@/api/services/graphs";
 import { AppFileManager } from "@/components/FileManager/AppFolder";
 import {
   AppFolderPopupTitle,
@@ -112,6 +113,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
 
   const { t } = useTranslation();
   const { data: loadedApps, isLoading, error, mutate } = useFetchApps();
+  const { mutate: reloadGraphs } = useGraphs();
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
@@ -159,7 +161,8 @@ export const AppsManagerWidget = (props: { className?: string }) => {
         })
       );
     } finally {
-      mutate();
+      await mutate();
+      await reloadGraphs();
       setIsUnloading(false);
     }
   };
@@ -225,7 +228,8 @@ export const AppsManagerWidget = (props: { className?: string }) => {
         );
       }
     } finally {
-      mutate();
+      await mutate();
+      await reloadGraphs();
       updateCurrentWorkspace({
         graph: null,
       });

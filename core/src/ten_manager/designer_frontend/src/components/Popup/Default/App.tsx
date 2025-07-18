@@ -10,6 +10,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postLoadDir, useFetchApps } from "@/api/services/apps";
+import { useGraphs } from "@/api/services/graphs";
 import { addRecentRunApp } from "@/api/services/storage";
 import { AppFileManager } from "@/components/FileManager/AppFolder";
 import { Button } from "@/components/ui/Button";
@@ -63,11 +64,13 @@ export const AppFolderPopupContent = (props: { widget: IWidget }) => {
   const { folderPath } = useAppStore();
 
   const { mutate: mutateApps } = useFetchApps();
+  const { mutate: mutateGraphs } = useGraphs();
 
   const handleSetBaseDir = async (folderPath: string) => {
     try {
       await postLoadDir(folderPath.trim());
-      mutateApps();
+      await mutateApps();
+      await mutateGraphs();
       toast.success(t("header.menuApp.loadAppSuccess"));
     } catch (error: unknown) {
       if (error instanceof Error) {
