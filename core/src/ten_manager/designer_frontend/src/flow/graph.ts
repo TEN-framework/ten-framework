@@ -20,9 +20,9 @@ import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import type { IExtensionAddon } from "@/types/apps";
 import {
   ECustomNodeType,
-  type TCommonNode,
   type TCustomEdge,
   type TCustomEdgeAddressMap,
+  type TCustomNode,
   type TExtensionNode,
   type TGraphNode,
 } from "@/types/flow";
@@ -43,11 +43,11 @@ export const generateRawNodesFromSets = (
     backendNodes: IBackendNode[];
     graph: IGraph;
   }[]
-): TCommonNode[] => {
+): TCustomNode[] => {
   let currentX = 0;
   let currentY = 100;
 
-  const results: TCommonNode[][] = [];
+  const results: TCustomNode[][] = [];
 
   for (const set of sets) {
     const { backendNodes, graph } = set;
@@ -76,7 +76,7 @@ export const generateRawNodes = (
     startY?: number; // Optional starting Y position for the graph node
   }
 ): {
-  nodes: TCommonNode[];
+  nodes: TCustomNode[];
   width: number;
   height: number;
   startX: number;
@@ -116,7 +116,7 @@ export const generateRawNodes = (
 
     return {
       // id: `${graph.uuid}-${n.name}`,
-      id: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+      id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
         type: ECustomNodeType.EXTENSION,
         graph: graph.uuid,
         name: n.name,
@@ -226,12 +226,12 @@ export const generateRawEdges = (
             id: edgeId,
             // source: extension,
             // target: targetExtension,
-            source: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+            source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
               type: ECustomNodeType.EXTENSION,
               graph: graph.uuid,
               name: extension,
             }),
-            target: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+            target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
               type: ECustomNodeType.EXTENSION,
               graph: graph.uuid,
               name: targetExtension,
@@ -279,13 +279,13 @@ export const generateRawEdges = (
 };
 
 export const updateNodesWithConnections = (
-  nodes: TCommonNode[],
+  nodes: TCustomNode[],
   edgeAddressMap: TCustomEdgeAddressMap
-): TCommonNode[] => {
+): TCustomNode[] => {
   // const extensionNodeNames: TExtensionNode[] = nodes.filter(
   //   (node) => node.data._type === ECustomNodeType.EXTENSION
   // );
-  const results: TCommonNode[] = [];
+  const results: TCustomNode[] = [];
   for (const node of nodes) {
     if (node.data._type === ECustomNodeType.EXTENSION) {
       [
@@ -319,8 +319,8 @@ export const updateNodesWithConnections = (
 };
 
 export const updateNodesWithAddonInfo = async (
-  nodes: TCommonNode[]
-): Promise<TCommonNode[]> => {
+  nodes: TCustomNode[]
+): Promise<TCustomNode[]> => {
   const graphsBaseDirList = [
     ...new Set(nodes.map((node) => node.data.graph.base_dir)),
   ];
@@ -361,9 +361,9 @@ export const updateNodesWithAddonInfo = async (
 
 /** @deprecated */
 export const generateNodesAndEdges = (
-  inputNodes: TCommonNode[],
+  inputNodes: TCustomNode[],
   inputEdges: TCustomEdge[]
-): { nodes: TCommonNode[]; edges: TCustomEdge[] } => {
+): { nodes: TCustomNode[]; edges: TCustomEdge[] } => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -448,11 +448,11 @@ export const generateNodesAndEdges = (
 };
 
 export const syncGraphNodeGeometry = async (
-  nodes: TCommonNode[],
+  nodes: TCustomNode[],
   options: {
     forceLocal?: boolean; // override all nodes geometry
   } = {}
-): Promise<TCommonNode[]> => {
+): Promise<TCustomNode[]> => {
   const isForceLocal = options.forceLocal ?? false;
 
   const localNodesGeometryMappings = nodes.reduce(
@@ -489,7 +489,7 @@ export const syncGraphNodeGeometry = async (
   }
 
   // If force is false, merge local geometry with remote geometry
-  const updatedNodes: TCommonNode[] = [];
+  const updatedNodes: TCustomNode[] = [];
 
   try {
     for (const graphId in localNodesGeometryMappings) {

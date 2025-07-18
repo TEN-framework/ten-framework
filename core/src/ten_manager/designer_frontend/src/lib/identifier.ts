@@ -11,7 +11,7 @@ import type { EConnectionType } from "@/types/graphs";
 export enum EFlowElementIdentifier {
   EDGE = "edge",
   HANDLE = "handle",
-  COMMON_NODE = "common-node",
+  CUSTOM_NODE = "custom-node",
 }
 export type TEdgeData = {
   name: string;
@@ -61,30 +61,30 @@ export const data2HandleId = (
   );
 };
 
-export type TCommonNodeData = {
+export type TCustomNodeData = {
   type: ECustomNodeType;
   graph: string;
   name: string;
 };
 
-export const data2ExtensionNodeId = (data: TCommonNodeData): string => {
-  const sortedKeys: Array<keyof TCommonNodeData> = ["type", "graph", "name"];
+export const data2ExtensionNodeId = (data: TCustomNodeData): string => {
+  const sortedKeys: Array<keyof TCustomNodeData> = ["type", "graph", "name"];
   return (
-    `identifier:${EFlowElementIdentifier.COMMON_NODE};` +
+    `identifier:${EFlowElementIdentifier.CUSTOM_NODE};` +
     sortedKeys.map((keyName) => `${keyName}:${data[keyName]}`).join(";")
   );
 };
 
 export const data2identifier = (
   identifier: EFlowElementIdentifier,
-  data: TEdgeData | THandleData | TCommonNodeData
+  data: TEdgeData | THandleData | TCustomNodeData
 ) => {
   if (identifier === EFlowElementIdentifier.EDGE) {
     return data2EdgeId(data as TEdgeData);
   } else if (identifier === EFlowElementIdentifier.HANDLE) {
     return data2HandleId(data as THandleData);
-  } else if (identifier === EFlowElementIdentifier.COMMON_NODE) {
-    return data2ExtensionNodeId(data as TCommonNodeData);
+  } else if (identifier === EFlowElementIdentifier.CUSTOM_NODE) {
+    return data2ExtensionNodeId(data as TCustomNodeData);
   }
   throw new Error(`Unknown identifier type: ${identifier}`);
 };

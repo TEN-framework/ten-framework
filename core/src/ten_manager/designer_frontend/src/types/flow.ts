@@ -31,21 +31,7 @@ export interface IGraphNodeData {
 }
 export type TGraphNode = Node<IGraphNodeData, "graphNode">;
 
-export type TCommonNode = TGraphNode | TExtensionNode;
-
-/** @deprecated */
-export type TCustomNodeData = Partial<IBackendNode> & {
-  addon: string;
-  name: string;
-  extension_group?: string;
-  app?: string;
-  url?: string;
-  src: Record<EConnectionType, TCustomEdgeAddressData[]>;
-  target: Record<EConnectionType, TCustomEdgeAddressData[]>;
-};
-
-/** @deprecated */
-export type TCustomNode = Node<TCustomNodeData, "customNode">;
+export type TCustomNode = TGraphNode | TExtensionNode;
 
 export type TCustomEdgeAddress = {
   extension: string;

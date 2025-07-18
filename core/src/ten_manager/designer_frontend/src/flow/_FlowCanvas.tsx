@@ -37,7 +37,7 @@
 // import { useAppStore, useWidgetStore } from "@/store";
 // import type {
 //   IExtensionNodeData,
-//   TCommonNode,
+//   TCustomNode,
 //   TCustomEdge,
 //   TExtensionNode,
 // } from "@/types/flow";
@@ -83,9 +83,9 @@
 // }
 
 // interface FlowCanvasProps {
-//   nodes: TCommonNode[];
+//   nodes: TCustomNode[];
 //   edges: TCustomEdge[];
-//   onNodesChange: (changes: NodeChange<TCommonNode>[]) => void;
+//   onNodesChange: (changes: NodeChange<TCustomNode>[]) => void;
 //   onEdgesChange: (changes: EdgeChange<TCustomEdge>[]) => void;
 //   onConnect: (connection: Connection) => void;
 //   className?: string;
@@ -105,7 +105,7 @@
 //       y: number;
 //       type?: "node" | "edge" | "pane";
 //       edge?: TCustomEdge;
-//       node?: TCommonNode;
+//       node?: TCustomNode;
 //     }>({ visible: false, x: 0, y: 0 });
 
 //     const launchTerminal = (data: ITerminalWidgetData) => {
@@ -153,7 +153,7 @@
 //       });
 //     };
 
-//     const launchLogViewer = (node: TCommonNode) => {
+//     const launchLogViewer = (node: TCustomNode) => {
 //       const widgetId = `logViewer-${Date.now()}`;
 //       appendWidget({
 //         container_id: CONTAINER_DEFAULT_ID,
@@ -388,7 +388,7 @@
 
 //     // Right click nodes.
 //     const clickNodeContextMenu = useCallback(
-//       (event: ReactMouseEvent, node: TCommonNode) => {
+//       (event: ReactMouseEvent, node: TCustomNode) => {
 //         event.preventDefault();
 //         setContextMenu({
 //           visible: true,
