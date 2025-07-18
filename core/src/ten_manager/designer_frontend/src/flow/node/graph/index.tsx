@@ -6,9 +6,12 @@
 //
 
 import type { NodeProps } from "@xyflow/react";
-import { WaypointsIcon } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
-import { GroupNode } from "@/components/ui/react-flow/LabeledGroupNode";
+import { NetworkIcon } from "lucide-react";
+import {
+  GroupNode,
+  GroupNodeLabel,
+} from "@/components/ui/react-flow/LabeledGroupNode";
+import { cn } from "@/lib/utils";
 import type { TGraphNode } from "@/types/flow";
 
 export const GraphNode = (props: NodeProps<TGraphNode>) => {
@@ -16,11 +19,16 @@ export const GraphNode = (props: NodeProps<TGraphNode>) => {
 
   return (
     <GroupNode
+      className={cn(
+        "border-2 border-gray-300 border-dashed dark:border-gray-600"
+      )}
       label={
-        <Badge>
-          <WaypointsIcon className="me-1 size-3" />
+        <GroupNodeLabel
+          className={cn("rounded-br-sm", "flex items-center gap-2")}
+        >
+          <NetworkIcon className="size-4" />
           {data.graph.name}
-        </Badge>
+        </GroupNodeLabel>
       }
     />
   );

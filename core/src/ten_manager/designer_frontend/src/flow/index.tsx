@@ -39,22 +39,27 @@ export const FlowCanvas = (props: { className?: string }) => {
 
   const { currentWorkspace } = useAppStore(); // todo: remove
 
-  const { nodes, setNodes, edges, setEdges } = useFlowStore();
+  const {
+    displayedNodes,
+    setDisplayedNodes,
+    displayedEdges,
+    setDisplayedEdges,
+  } = useFlowStore();
 
   const { theme } = React.useContext(ThemeProviderContext);
 
   //   const onConnect: OnConnect = React.useCallback(
   //     (params) => {
-  //       setEdges((edges) =>
+  //       setDisplayedEdges((edges) =>
   //         addEdge({ type: "data", data: { key: "value" }, ...params }, edges)
   //       );
   //     },
-  //     [setEdges]
+  //     [setDisplayedEdges]
   //   );
 
   const onNodesChange = React.useCallback(
     (changes: NodeChange<TExtensionNode>[]) => {
-      const newNodes = applyNodeChanges(changes, nodes);
+      const newNodes = applyNodeChanges(changes, displayedNodes);
       const positionChanges = changes.filter(
         (change) => change.type === "position" && change.dragging === false
       );
@@ -63,17 +68,17 @@ export const FlowCanvas = (props: { className?: string }) => {
           forceLocal: true,
         });
       }
-      setNodes(newNodes);
+      setDisplayedNodes(newNodes);
     },
-    [currentWorkspace?.graph?.uuid, nodes, setNodes]
+    [currentWorkspace?.graph?.uuid, displayedNodes, setDisplayedNodes]
   );
 
   const onEdgesChange = React.useCallback(
     (changes: EdgeChange<TCustomEdge>[]) => {
-      const newEdges = applyEdgeChanges(changes, edges);
-      setEdges(newEdges);
+      const newEdges = applyEdgeChanges(changes, displayedEdges);
+      setDisplayedEdges(newEdges);
     },
-    [edges, setEdges]
+    [displayedEdges, setDisplayedEdges]
   );
 
   return (
@@ -82,8 +87,8 @@ export const FlowCanvas = (props: { className?: string }) => {
     >
       <ReactFlow
         colorMode={theme}
-        nodes={nodes}
-        edges={edges}
+        nodes={displayedNodes}
+        edges={displayedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         // onConnect={onConnect}

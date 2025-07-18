@@ -16,6 +16,7 @@ import {
   postGetGraphNodeGeometry,
   postSetGraphNodeGeometry,
 } from "@/api/services/storage";
+import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import type { IExtensionAddon } from "@/types/apps";
 import {
   ECustomNodeType,
@@ -114,7 +115,12 @@ export const generateRawNodes = (
     const col = idx % cols;
 
     return {
-      id: `${graph.uuid}-${n.name}`,
+      // id: `${graph.uuid}-${n.name}`,
+      id: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+        type: ECustomNodeType.EXTENSION,
+        graph: graph.uuid,
+        name: n.name,
+      }),
       position: {
         x:
           NODE_X_SPACING + col * (NODE_WIDTH + NODE_X_SPACING) + NODE_X_SPACING,
@@ -194,7 +200,14 @@ export const generateRawEdges = (
           const targetExtension = connectionItemDest.extension;
           const targetApp = connectionItemDest.app;
           // eslint-disable-next-line max-len
-          const edgeId = `identifier:edge;name:${name};src:${extension};target:${targetExtension};graph:${graph.uuid}`;
+          // const edgeId = `identifier:edge;s:${name};s:${extension};s:${targetExtension};s:${graph.uuid}`;
+          const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
+            name,
+            src: extension,
+            target: targetExtension,
+            graph: graph.uuid,
+            connectionType,
+          });
           // const edgeId = `edge-${extension}-${name}-${targetExtension}`;
           const edgeAddress = {
             extension: targetExtension,
@@ -211,8 +224,18 @@ export const generateRawEdges = (
           });
           edges.push({
             id: edgeId,
-            source: extension,
-            target: targetExtension,
+            // source: extension,
+            // target: targetExtension,
+            source: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+              type: ECustomNodeType.EXTENSION,
+              graph: graph.uuid,
+              name: extension,
+            }),
+            target: data2identifier(EFlowElementIdentifier.COMMON_NODE, {
+              type: ECustomNodeType.EXTENSION,
+              graph: graph.uuid,
+              name: targetExtension,
+            }),
             data: {
               graph,
               name,
@@ -228,11 +251,18 @@ export const generateRawEdges = (
             },
             type: "customEdge",
             label: name,
-            // sourceHandle: `source-${extension}`,
-            // targetHandle: `target-${targetExtension}`,
-            sourceHandle: `identifier:handle;type:src;extension:${extension}`,
-            // eslint-disable-next-line max-len
-            targetHandle: `identifier:handle;type:target;extension:${targetExtension}`,
+            sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+              type: "source",
+              extension,
+              graph: graph.uuid,
+              connectionType: connectionType,
+            }),
+            targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+              type: "target",
+              extension: targetExtension,
+              graph: graph.uuid,
+              connectionType: connectionType,
+            }),
             markerEnd: {
               type: MarkerType.ArrowClosed,
               width: 20,

@@ -38,12 +38,13 @@ GroupNodeLabel.displayName = "GroupNodeLabel";
 export type GroupNodeProps = Partial<NodeProps> & {
   label?: ReactNode | string;
   position?: PanelPosition;
+  className?: string;
 };
 
 /* GROUP NODE -------------------------------------------------------------- */
 
 export const GroupNode = forwardRef<HTMLDivElement, GroupNodeProps>(
-  ({ label, position, ...props }, ref) => {
+  ({ label, position, className, ...props }, ref) => {
     const getLabelClassName = (position?: PanelPosition) => {
       switch (position) {
         case "top-left":
@@ -66,7 +67,10 @@ export const GroupNode = forwardRef<HTMLDivElement, GroupNodeProps>(
     return (
       <BaseNode
         ref={ref}
-        className="h-full overflow-hidden rounded-sm bg-card bg-opacity-50 p-0"
+        className={cn(
+          "h-full overflow-hidden rounded-sm bg-card bg-opacity-50 p-0",
+          className
+        )}
         {...props}
       >
         <Panel className={cn("m-0 p-0")} position={position}>

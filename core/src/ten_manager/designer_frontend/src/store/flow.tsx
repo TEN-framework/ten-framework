@@ -12,6 +12,8 @@ import { EConnectionType } from "@/types/graphs";
 export interface IFlowStore {
   nodes: TCommonNode[];
   edges: TCustomEdge[];
+  displayedNodes: TCommonNode[];
+  displayedEdges: TCustomEdge[];
   cdavInfo: Map<
     string,
     {
@@ -30,12 +32,16 @@ export interface IFlowStore {
   setNodes: (nodes: TCommonNode[]) => void;
   setEdges: (edges: TCustomEdge[]) => void;
   setNodesAndEdges: (nodes: TCommonNode[], edges: TCustomEdge[]) => void;
+  setDisplayedNodes: (nodes: TCommonNode[]) => void;
+  setDisplayedEdges: (edges: TCustomEdge[]) => void;
 }
 
 export const useFlowStore = create<IFlowStore>()(
   devtools((set, get) => ({
     nodes: [],
     edges: [],
+    displayedNodes: [],
+    displayedEdges: [],
     cdavInfo: new Map(),
 
     setNodes: (nodes: TCommonNode[]) => {
@@ -58,6 +64,13 @@ export const useFlowStore = create<IFlowStore>()(
       set({ nodes, edges });
       const cdavInfo = calculateCDAVInfo(nodes, edges);
       set({ cdavInfo });
+    },
+
+    setDisplayedNodes: (nodes: TCommonNode[]) => {
+      set({ displayedNodes: nodes });
+    },
+    setDisplayedEdges: (edges: TCustomEdge[]) => {
+      set({ displayedEdges: edges });
     },
   }))
 );

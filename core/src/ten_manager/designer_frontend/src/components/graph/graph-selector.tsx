@@ -21,8 +21,9 @@ import {
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Label } from "@/components/ui/Label";
 import { Separator } from "@/components/ui/Separator";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/store";
+import { useAppStore, useFlowStore } from "@/store";
 import type { IGraph } from "@/types/graphs";
 
 export const GraphSelector = (props: { className?: string }) => {
@@ -37,13 +38,53 @@ export const GraphSelector = (props: { className?: string }) => {
     error: isGraphError,
   } = useGraphs();
   const { selectedGraphs, setSelectedGraphs } = useAppStore();
+  const {
+    nodes,
+    edges,
+    setNodesAndEdges,
+    setDisplayedEdges,
+    setDisplayedNodes,
+  } = useFlowStore();
 
+  // Initially set selectedGraphs to all graphs if not already set
   React.useEffect(() => {
     if (!selectedGraphs && !isGraphLoading && graphs) {
       // default select all
       setSelectedGraphs(graphs);
     }
   }, [graphs, isGraphLoading, selectedGraphs, setSelectedGraphs]);
+
+  // Reset nodes and edges in factory when graphs change
+  React.useEffect(() => {
+    const processNodesAndEdges = async () => {
+      if (!graphs) {
+        return;
+      }
+      const { nodes: layoutedNodes, edges: layoutedEdges } =
+        await resetNodesAndEdgesByGraphs(graphs);
+
+      setNodesAndEdges(layoutedNodes, layoutedEdges);
+    };
+
+    processNodesAndEdges();
+  }, [graphs, setNodesAndEdges]);
+
+  // Reset displayed nodes and edges when selectedGraphs change
+  React.useEffect(() => {
+    if (!selectedGraphs || selectedGraphs.length === 0) {
+      setDisplayedNodes([]);
+      setDisplayedEdges([]);
+      return;
+    }
+    const nextDisplayedNodes = nodes.filter((node) =>
+      selectedGraphs.some((graph) => graph.uuid === node.data.graph.uuid)
+    );
+    const nextDisplayedEdges = edges.filter((edge) =>
+      selectedGraphs.some((graph) => graph.uuid === edge.data?.graph.uuid)
+    );
+    setDisplayedNodes(nextDisplayedNodes);
+    setDisplayedEdges(nextDisplayedEdges);
+  }, [nodes, edges, selectedGraphs, setDisplayedEdges, setDisplayedNodes]);
 
   if (!graphs) {
     return null;

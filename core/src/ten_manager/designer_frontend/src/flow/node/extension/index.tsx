@@ -13,24 +13,18 @@ import {
 } from "@xyflow/react";
 import {
   AudioLinesIcon,
-  BlocksIcon,
+  ChevronDownIcon,
   DatabaseIcon,
-  SaveOffIcon,
+  PuzzleIcon,
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { BaseHandle } from "@/components/ui/react-flow/BaseHandle";
 import { BaseNode } from "@/components/ui/react-flow/BaseNode";
-import {
-  NodeHeader,
-  NodeHeaderActions,
-  NodeHeaderMenuAction,
-  NodeHeaderTitle,
-} from "@/components/ui/react-flow/NodeHeader";
+import { NodeHeaderMenuAction } from "@/components/ui/react-flow/NodeHeader";
 import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
@@ -38,7 +32,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
+
 import { ContextMenu } from "@/flow/node/extension/ContextMenu";
+import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
@@ -47,123 +43,179 @@ import { dispatchCustomNodeActionPopup } from "@/utils/events";
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
   const { data, isConnectable } = props;
 
-  const { t } = useTranslation();
+  const [isDetailed, setIsDetailed] = React.useState(true);
 
-  const isInstalled = React.useMemo(() => {
-    return data.is_installed;
-  }, [data.is_installed]);
+  if (!isDetailed) {
+    // Thumbnail mode
+    return (
+      <BaseNode
+        className={cn(
+          "w-xs p-0 shadow-md",
+          "border-blue-300 bg-blue-100 dark:border-blue-700 dark:bg-blue-900"
+        )}
+      >
+        <ExtensionNodeHeader
+          data={data}
+          onExpandedClick={() => {
+            setIsDetailed(true);
+          }}
+        >
+          {/* Target handle for thumbnail mode */}
+          <BaseHandle
+            type="target"
+            position={Position.Top}
+            id={`target-${data.name}-thumbnail`}
+            isConnectable={false}
+            className="h-3 w-3"
+          />
 
+          {/* Source handle for thumbnail mode */}
+          <BaseHandle
+            type="source"
+            position={Position.Bottom}
+            id={`source-${data.name}-thumbnail`}
+            isConnectable={false}
+            className="size-3"
+          />
+        </ExtensionNodeHeader>
+      </BaseNode>
+    );
+  }
+
+  // Detailed mode
   return (
-    <BaseNode className="h-fit p-0">
-      <div className="-top-7 absolute right-2">
-        <Badge>
-          <BlocksIcon className="me-1 size-3" />
-          {t("node.extension.tag")}
-        </Badge>
-      </div>
-      <NodeHeader
-        className={cn(
-          "bg-gray-200 dark:bg-gray-800",
-          "rounded-t-sm px-2 py-1",
-          "w-sm",
-          "text-secondary-foreground",
-          {
-            "text-ten-icontext-2": !isInstalled,
-          }
-        )}
-      >
-        {!isInstalled && (
-          <TooltipProvider delayDuration={50}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="xs" className="cursor-help">
-                  <SaveOffIcon className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t("node.uninstalled")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-        <div className="font-roboto">
-          <NodeHeaderTitle className="text-lg">{data.name}</NodeHeaderTitle>
-          <div
-            className={cn(
-              "text-ten-icontext-2",
-              "font-light text-sm leading-none"
-            )}
-          >
-            {data.addon}
-          </div>
+    <BaseNode
+      className={cn(
+        "w-xs p-0 shadow-md",
+        "border-blue-300 bg-blue-100 dark:border-blue-700 dark:bg-blue-900"
+      )}
+    >
+      {/* Header section */}
+      <ExtensionNodeHeader
+        data={data}
+        isExpanded={isDetailed}
+        onExpandedClick={() => {
+          setIsDetailed(false);
+        }}
+        className="rounded-b-none"
+      />
+
+      {/* Connection handles section */}
+      <Separator className="bg-blue-300 dark:bg-blue-700" />
+      <div className={cn("py-1")}>
+        <div className="space-y-1">
+          <HandleGroupItem
+            data={data}
+            isConnectable={isConnectable}
+            connectionType={EConnectionType.CMD}
+          />
+          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <HandleGroupItem
+            data={data}
+            isConnectable={isConnectable}
+            connectionType={EConnectionType.DATA}
+          />
+          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <HandleGroupItem
+            data={data}
+            isConnectable={isConnectable}
+            connectionType={EConnectionType.AUDIO_FRAME}
+          />
+          <Separator className={cn("my-1", "bg-blue-300 dark:bg-blue-700")} />
+          <HandleGroupItem
+            data={data}
+            isConnectable={isConnectable}
+            connectionType={EConnectionType.VIDEO_FRAME}
+          />
         </div>
-        <NodeHeaderActions>
-          <NodeHeaderMenuAction
-            className="cursor-pointer"
-            label="Open node menu"
-          >
-            <ContextMenu
-              // TODO: Fix type casting
-              node={props as unknown as TExtensionNode}
-              baseDir={data.graph.base_dir}
-              graphId={data.graph.uuid}
-            />
-          </NodeHeaderMenuAction>
-        </NodeHeaderActions>
-      </NodeHeader>
-
-      {/* <div className="my-10 flex items-center gap-2">content here</div> */}
-
-      <footer
-        className={cn(
-          "flex w-full flex-col font-roboto text-xs",
-          "rounded-b-sm"
-        )}
-      >
-        {/* <LabeledHandle
-          title="CMD"
-          type="source"
-          position={Position.Right}
-          className="mr-1"
-        />
-        <LabeledHandle
-          title="DATA"
-          type="source"
-          position={Position.Right}
-          className="mr-1"
-        /> */}
-        <Separator className="w-full" />
-        <HandleGroupItem
-          data={data}
-          isConnectable={isConnectable}
-          // onConnect={onConnect}
-          connectionType={EConnectionType.CMD}
-        />
-        <Separator className="w-full" />
-        <HandleGroupItem
-          data={data}
-          isConnectable={isConnectable}
-          // onConnect={onConnect}
-          connectionType={EConnectionType.DATA}
-        />
-        <Separator className="w-full" />
-        <HandleGroupItem
-          data={data}
-          isConnectable={isConnectable}
-          // onConnect={onConnect}
-          connectionType={EConnectionType.AUDIO_FRAME}
-        />
-        <Separator className="w-full" />
-        <HandleGroupItem
-          data={data}
-          isConnectable={isConnectable}
-          // onConnect={onConnect}
-          connectionType={EConnectionType.VIDEO_FRAME}
-        />
-      </footer>
+      </div>
     </BaseNode>
   );
 }
+
+const ExtensionNodeHeader = (props: {
+  className?: string;
+  data: IExtensionNodeData;
+  isDetailed?: boolean;
+  isExpanded?: boolean;
+  onExpandedClick: () => void;
+  children?: React.ReactNode;
+}) => {
+  const { data, isExpanded, onExpandedClick, className, children } = props;
+
+  const [isInstalled] = React.useMemo(() => {
+    return [data.is_installed];
+  }, [data]);
+
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className={cn(
+        "rounded-t-md rounded-b-md px-4 py-2",
+        "flex items-center gap-2",
+        className
+      )}
+    >
+      {/* Connection indicator */}
+      <TooltipProvider delayDuration={50}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                "size-2 cursor-help rounded-full",
+                isInstalled ? "bg-green-500" : "bg-gray-400"
+              )}
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isInstalled ? t("node.installed") : t("node.uninstalled")}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      {/* Extension type icon */}
+      <PuzzleIcon className="size-4" />
+      {/* Content */}
+      <div className="flex flex-col">
+        <span className={cn("font-medium text-foreground text-sm")}>
+          {data.name}
+        </span>
+        <span className={cn("text-muted-foreground/50 text-xs")}>
+          {data.addon}
+        </span>
+      </div>
+      {/* Actions */}
+      <div className="ml-auto flex items-center gap-1">
+        {/* Context menu */}
+        <NodeHeaderMenuAction
+          className="cursor-pointer p-1"
+          label="Open node menu"
+        >
+          <ContextMenu
+            node={props as unknown as TExtensionNode}
+            baseDir={data.graph.base_dir}
+            graphId={data.graph.uuid}
+          />
+        </NodeHeaderMenuAction>
+
+        {/* Expand button */}
+        <Button
+          variant="ghost"
+          size="xs"
+          className="p-1"
+          onClick={onExpandedClick}
+        >
+          <ChevronDownIcon
+            className={cn("size-3", "transition-transform", {
+              "rotate-180": isExpanded,
+            })}
+          />
+        </Button>
+      </div>
+      {children}
+    </div>
+  );
+};
 
 const HandleGroupItem = (props: {
   data: IExtensionNodeData;
@@ -199,17 +251,27 @@ const HandleGroupItem = (props: {
     };
 
   return (
-    <div className="my-0.5 flex items-center justify-between gap-x-4">
+    <div
+      className={cn(
+        "relative",
+        "flex items-center justify-between gap-x-4 px-1"
+      )}
+    >
       <div className="flex items-center gap-x-2">
         <BaseHandle
           key={`target-${data.name}-${connectionType}`}
           type="target"
           position={Position.Left}
-          id={`target-${data.name}-${connectionType}`}
-          // label={data.name}
-          // labelOffsetX={0}
+          // id={`target-${data.name}-${connectionType}`}
+          id={data2identifier(EFlowElementIdentifier.HANDLE, {
+            type: "target",
+            extension: data.name,
+            graph: data.graph.uuid,
+            connectionType,
+          })}
           isConnectable={isConnectable}
           onConnect={onConnect}
+          className={cn("size-3")}
         />
         <ConnectionCount
           onClick={handleClickDetails({
@@ -231,30 +293,38 @@ const HandleGroupItem = (props: {
           )}
         </ConnectionCount>
       </div>
+
       <Button
         size="sm"
         variant="ghost"
-        className={cn("flex items-center gap-x-1", {
-          "cursor-pointer": handleClickDetails,
-        })}
+        className={cn(
+          "flex items-center gap-x-2 px-3 py-1.5",
+          "font-medium text-xs",
+          {
+            "cursor-pointer": handleClickDetails,
+          }
+        )}
         onClick={handleClickDetails({
           type: connectionType,
         })}
       >
         {connectionType === EConnectionType.CMD && (
-          <TerminalIcon className="size-3 shrink-0" />
+          <TerminalIcon className="size-3 shrink-0 text-blue-600" />
         )}
         {connectionType === EConnectionType.DATA && (
-          <DatabaseIcon className="size-3 shrink-0" />
+          <DatabaseIcon className="size-3 shrink-0 text-green-600" />
         )}
         {connectionType === EConnectionType.AUDIO_FRAME && (
-          <AudioLinesIcon className="size-3 shrink-0" />
+          <AudioLinesIcon className="size-3 shrink-0 text-purple-600" />
         )}
         {connectionType === EConnectionType.VIDEO_FRAME && (
-          <VideoIcon className="size-3 shrink-0" />
+          <VideoIcon className="size-3 shrink-0 text-red-600" />
         )}
-        <span>{connectionType.toUpperCase()}</span>
+        <span className="text-gray-700 dark:text-green-200">
+          {connectionType.toUpperCase()}
+        </span>
       </Button>
+
       <div className="flex items-center gap-x-2">
         <ConnectionCount
           onClick={handleClickDetails({
@@ -273,16 +343,21 @@ const HandleGroupItem = (props: {
           )}
           {connectionType === EConnectionType.VIDEO_FRAME && (
             <span>{data.target[connectionType]?.length || 0}</span>
-          )}
+          )}{" "}
         </ConnectionCount>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}
           type="source"
           position={Position.Right}
-          id={`source-${data.name}-${connectionType}`}
-          // label={data.name}
-          // labelOffsetX={0}
+          // id={`source-${data.name}-${connectionType}`}
+          id={data2identifier(EFlowElementIdentifier.HANDLE, {
+            type: "source",
+            extension: data.name,
+            graph: data.graph.uuid,
+            connectionType,
+          })}
           isConnectable={isConnectable}
+          className={cn("size-3")}
         />
       </div>
     </div>
@@ -298,8 +373,8 @@ const ConnectionCount = (props: {
   return (
     <Button
       size="sm"
-      variant={"ghost"}
-      className={cn("w-8 rounded-md bg-muted px-1 py-0.5 text-center text-xs", {
+      variant="ghost"
+      className={cn("w-8 rounded-md px-1 py-0.5 text-center text-xs", {
         "cursor-pointer": onClick,
       })}
       onClick={onClick}
