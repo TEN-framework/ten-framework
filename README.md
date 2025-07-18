@@ -11,6 +11,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome!-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+[![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten_framework?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten_framework/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten_framework?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten_framework/network/?WT.mc_id=academic-105485-koreyst)
@@ -54,8 +55,8 @@
   - [🅰️ Run TEN Agent in `localhost`](#🅰️-run-ten-agent-in-localhost)
   - [🅱️ Run TEN Agent in Codespace(no docker)](#🅱️-run-ten-agent-in-codespaceno-docker)
 - [🛳️ TEN Agent Self Hosting](#️-ten-agent-self-hosting)
-  - [🅰️ 🐳 Deploying with Docker](#️--deploying-with-docker)
-  - [🅱️ Deploying with other cloud services](#️-deploying-with-other-cloud-services)
+  - [🅰️ Deploying with Docker](#🅰️-deploying-with-docker)
+  - [🅱️ Deploying with other cloud services](#🅱️-deploying-with-other-cloud-services)
 - [🌍 TEN Ecosystem](#-ten-ecosystem)
 - [❓ Ask Questions](#-ask-questions)
 - [🥰 Contributing](#-contributing)
@@ -357,7 +358,7 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 
 ## 🛳️ TEN Agent Self Hosting
 
-#### 🅰️ 🐳 Deploying with Docker
+#### 🅰️ Deploying with Docker
 
 Once you have customized your agent (either by using the TMAN Manager, Playground, or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
 
@@ -423,9 +424,12 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 
 ## ❓ Ask Questions
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+TEN Framework is available on these AI-powered Q&A platforms. They can help you find answers quickly and accurately in multiple languages, covering everything from basic setup to advanced implementation details.
 
-Most questions can be answered by using DeepWiki, it is fast, intutive to use and supports multiple languages.
+| Service | Link |
+| ------- | ---- |
+| DeepWiki | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework) |
+| ReadmeX | [![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework) |
 
 <br>
 <div align="right">
