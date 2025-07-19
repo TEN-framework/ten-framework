@@ -66,12 +66,20 @@ impl SchemaStore {
     /// SchemaStore containing all the command, data, and frame schemas
     /// defined in the manifest.
     pub async fn from_manifest(manifest: &Manifest) -> Result<Option<Self>> {
-        if let Some(api) = manifest.get_flattened_api().await? {
-            let mut schema_store = SchemaStore::default();
+        if manifest.api.is_none() {
+            return Ok(None);
+        }
+
+        let mut schema_store = SchemaStore::default();
+
+        if let Some(api) = manifest.get_flattened_api().await.unwrap_or(None) {
             schema_store.parse_schemas_from_manifest(&api)?;
             Ok(Some(schema_store))
         } else {
-            Ok(None)
+            schema_store
+                .parse_schemas_from_manifest(manifest.api.as_ref().unwrap())?;
+
+            Ok(Some(schema_store))
         }
     }
 

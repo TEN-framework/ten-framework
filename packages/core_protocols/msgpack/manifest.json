@@ -1,7 +1,7 @@
 {
   "type": "protocol",
   "name": "msgpack",
-  "version": "0.10.21",
+  "version": "0.10.25",
   "display_name": {
     "locales": {
       "en-US": {

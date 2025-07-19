@@ -6,83 +6,31 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "=0.6.9"
     }
   ],
+  "interface": "../../system/ten_ai_base/api/asr-interface.json",
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
-      "language": {
-        "type": "string"
-      },
-      "sample_rate": {
-        "type": "int64"
-      }
-    },
-    "audio_frame_in": [
-      {
-        "name": "pcm_frame",
-        "property": {}
-      }
-    ],
-    "cmd_in": [
-      {
-        "name": "on_user_joined",
-        "property": {
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      {
-        "name": "on_user_left",
-        "property": {
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      {
-        "name": "on_connection_failure",
-        "property": {
-          "error": {
-            "type": "string"
-          }
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int64"
         }
       }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "time": {
-            "type": "int64"
-          },
-          "duration_ms": {
-            "type": "int64"
-          },
-          "language": {
-            "type": "string"
-          },
-          "text": {
-            "type": "string"
-          },
-          "is_final": {
-            "type": "bool"
-          },
-          "stream_id": {
-            "type": "uint32"
-          },
-          "end_of_segment": {
-            "type": "bool"
-          }
-        }
-      }
-    ]
+    }
   }
 }

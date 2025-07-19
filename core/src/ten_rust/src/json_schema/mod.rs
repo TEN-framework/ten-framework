@@ -24,6 +24,37 @@ fn load_schema(content: &str) -> Validator {
     jsonschema::validator_for(&schema_json).unwrap()
 }
 
+/// Combines a schema with shared definitions by merging the $defs sections
+fn load_schema_with_shared_definitions(
+    schema_content: &str,
+    shared_definitions: &str,
+) -> Result<Validator> {
+    // Parse both schemas
+    let mut main_schema: serde_json::Value = json5::from_str(schema_content)?;
+    let shared_schema: serde_json::Value = json5::from_str(shared_definitions)?;
+
+    // Get the shared definitions
+    if let Some(shared_defs) = shared_schema.get("$defs") {
+        // Ensure the main schema has a $defs section
+        if main_schema.get("$defs").is_none() {
+            main_schema["$defs"] = serde_json::json!({});
+        }
+
+        // Merge shared definitions into main schema $defs
+        if let Some(main_defs) =
+            main_schema.get_mut("$defs").and_then(|v| v.as_object_mut())
+        {
+            if let Some(shared_defs_obj) = shared_defs.as_object() {
+                for (key, value) in shared_defs_obj {
+                    main_defs.insert(key.clone(), value.clone());
+                }
+            }
+        }
+    }
+
+    Ok(jsonschema::validator_for(&main_schema)?)
+}
+
 fn validate_json_object(
     json: &serde_json::Value,
     schema_str: &str,
@@ -45,9 +76,36 @@ fn validate_json_object(
     }
 }
 
+fn validate_json_object_with_shared_definitions(
+    json: &serde_json::Value,
+    schema_str: &str,
+    shared_definitions: &str,
+) -> Result<()> {
+    let validator =
+        load_schema_with_shared_definitions(schema_str, shared_definitions)?;
+
+    match validator.validate(json) {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            let mut msgs = String::new();
+            for error in validator.iter_errors(json) {
+                msgs.push_str(&format!(
+                    "{} @ {}\n",
+                    error, error.instance_path
+                ));
+            }
+            Err(anyhow::anyhow!("{}", msgs))
+        }
+    }
+}
+
 pub fn ten_validate_manifest_json_string(data: &str) -> Result<()> {
     let manifest_json: serde_json::Value = serde_json::from_str(data)?;
-    validate_json_object(&manifest_json, definition::MANIFEST_SCHEMA_DEFINITION)
+    validate_json_object_with_shared_definitions(
+        &manifest_json,
+        definition::MANIFEST_SCHEMA_DEFINITION,
+        definition::SHARED_DEFINITIONS_SCHEMA,
+    )
 }
 
 pub fn ten_validate_manifest_json_file(file_path: &str) -> Result<()> {
@@ -55,7 +113,11 @@ pub fn ten_validate_manifest_json_file(file_path: &str) -> Result<()> {
     let reader = std::io::BufReader::new(file);
     let manifest_json: serde_json::Value = serde_json::from_reader(reader)?;
 
-    validate_json_object(&manifest_json, definition::MANIFEST_SCHEMA_DEFINITION)
+    validate_json_object_with_shared_definitions(
+        &manifest_json,
+        definition::MANIFEST_SCHEMA_DEFINITION,
+        definition::SHARED_DEFINITIONS_SCHEMA,
+    )
 }
 
 pub fn validate_manifest_lock_json_string(data: &str) -> Result<()> {
@@ -91,4 +153,27 @@ pub fn ten_validate_property_json_file<P: AsRef<Path>>(
     let property_json: serde_json::Value = serde_json::from_reader(reader)?;
 
     validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
+}
+
+pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {
+    let interface_json: serde_json::Value = serde_json::from_str(data)?;
+    validate_json_object_with_shared_definitions(
+        &interface_json,
+        definition::INTERFACE_SCHEMA_DEFINITION,
+        definition::SHARED_DEFINITIONS_SCHEMA,
+    )
+}
+
+pub fn ten_validate_interface_json_file<P: AsRef<Path>>(
+    file_path: P,
+) -> Result<()> {
+    let file = std::fs::File::open(file_path)?;
+    let reader = std::io::BufReader::new(file);
+    let interface_json: serde_json::Value = serde_json::from_reader(reader)?;
+
+    validate_json_object_with_shared_definitions(
+        &interface_json,
+        definition::INTERFACE_SCHEMA_DEFINITION,
+        definition::SHARED_DEFINITIONS_SCHEMA,
+    )
 }

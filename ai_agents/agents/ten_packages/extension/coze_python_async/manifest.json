@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,45 +22,27 @@
   },
   "api": {
     "property": {
-      "base_url": {
-        "type": "string"
-      },
-      "bot_id": {
-        "type": "string"
-      },
-      "token": {
-        "type": "string"
-      },
-      "user_id": {
-        "type": "string"
-      },
-      "prompt": {
-        "type": "string"
-      },
-      "greeting": {
-        "type": "string"
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "bot_id": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        }
       }
     },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
     "cmd_in": [
       {
         "name": "flush"
@@ -69,6 +51,30 @@
     "cmd_out": [
       {
         "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
       }
     ]
   }

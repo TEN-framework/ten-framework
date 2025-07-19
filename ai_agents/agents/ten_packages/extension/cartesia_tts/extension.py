@@ -5,8 +5,10 @@
 #
 import traceback
 
+from ten_ai_base.transcription import AssistantTranscription
+
 from .cartesia_tts import CartesiaTTS, CartesiaTTSConfig
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
@@ -44,9 +46,9 @@ class CartesiaTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
-        audio_stream = await self.client.text_to_speech_stream(input_text)
+        audio_stream = self.client.text_to_speech_stream(t.text)
 
         async for audio_data in audio_stream:
             await self.send_audio_out(ten_env, audio_data["audio"])

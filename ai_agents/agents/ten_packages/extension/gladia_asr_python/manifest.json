@@ -1,0 +1,33 @@
+{
+  "type": "extension",
+  "name": "gladia_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "=0.6.9"
+    }
+  ],
+  "interface": "../../system/ten_ai_base/api/asr-interface.json",
+  "api": {
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int64"
+        }
+      }
+    }
+  }
+}

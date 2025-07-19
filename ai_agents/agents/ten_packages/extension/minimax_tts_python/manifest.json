@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,38 +22,30 @@
   },
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
-      "group_id": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
-      "request_timeout_seconds": {
-        "type": "int64"
-      },
-      "sample_rate": {
-        "type": "int64"
-      },
-      "url": {
-        "type": "string"
-      },
-      "voice_id": {
-        "type": "string"
-      }
-    },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "group_id": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "request_timeout_seconds": {
+          "type": "int64"
+        },
+        "sample_rate": {
+          "type": "int64"
+        },
+        "url": {
+          "type": "string"
+        },
+        "voice_id": {
+          "type": "string"
         }
       }
-    ],
+    },
     "cmd_in": [
       {
         "name": "flush"
@@ -62,6 +54,18 @@
     "cmd_out": [
       {
         "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
       }
     ],
     "audio_frame_out": [

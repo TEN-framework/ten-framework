@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "default_extension_python",
-  "version": "0.10.21",
+  "version": "0.10.25",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.21"
+      "version": "0.10.25"
     }
   ],
   "package": {

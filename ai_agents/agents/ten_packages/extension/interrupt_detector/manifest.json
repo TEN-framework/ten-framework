@@ -6,26 +6,28 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "api": {
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
     "data_in": [
       {
         "name": "text_data",
         "property": {
-          "text": {
-            "type": "string"
-          },
-          "is_final": {
-            "type": "bool"
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            }
           }
         }
-      }
-    ],
-    "cmd_out": [
-      {
-        "name": "flush"
       }
     ]
   }

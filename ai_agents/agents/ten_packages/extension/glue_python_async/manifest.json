@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -22,77 +22,46 @@
   },
   "api": {
     "property": {
-      "token": {
-        "type": "string"
-      },
-      "api_url": {
-        "type": "string"
-      },
-      "user_id": {
-        "type": "string"
-      },
-      "prompt": {
-        "type": "string"
-      },
-      "greeting": {
-        "type": "string"
-      },
-      "failure_info": {
-        "type": "string"
-      },
-      "modalities": {
-        "type": "array",
-        "items": {
+      "properties": {
+        "token": {
           "type": "string"
+        },
+        "api_url": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "failure_info": {
+          "type": "string"
+        },
+        "modalities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rtm_enabled": {
+          "type": "bool"
+        },
+        "ssml_enabled": {
+          "type": "bool"
+        },
+        "context_enabled": {
+          "type": "bool"
+        },
+        "extra_context": {
+          "type": "object",
+          "properties": {}
         }
-      },
-      "rtm_enabled": {
-        "type": "bool"
-      },
-      "ssml_enabled": {
-        "type": "bool"
-      },
-      "context_enabled": {
-        "type": "bool"
-      },
-      "extra_context": {
-        "type": "object",
-        "properties": {}
       }
     },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      },
-      {
-        "name": "llm_stat",
-        "property": {
-          "usage": {
-            "type": "object",
-            "properties": {}
-          },
-          "latency": {
-            "type": "object",
-            "properties": {}
-          }
-        }
-      }
-    ],
     "cmd_in": [
       {
         "name": "flush"
@@ -101,6 +70,45 @@
     "cmd_out": [
       {
         "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "llm_stat",
+        "property": {
+          "properties": {
+            "usage": {
+              "type": "object",
+              "properties": {}
+            },
+            "latency": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
       }
     ]
   }

@@ -31,6 +31,7 @@ use crate::constants::{
 use crate::home::config::is_verbose;
 use crate::http::create_http_client_with_proxies;
 use crate::output::TmanOutput;
+use crate::registry::search::PkgSearchFilter;
 use crate::{
     home::config::TmanConfig, registry::found_result::PkgRegistryInfo,
 };
@@ -938,6 +939,127 @@ pub async fn get_package_list(
                 }
 
                 Ok(results)
+            })
+        },
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn search_packages(
+    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    base_url: &str,
+    filter: &PkgSearchFilter,
+    page_size: Option<u32>,
+    page: Option<u32>,
+    sort_by: Option<&str>,
+    sort_order: Option<&str>,
+    scope: Option<&str>,
+    out: &Arc<Box<dyn TmanOutput>>,
+) -> Result<(u32, Vec<PkgRegistryInfo>)> {
+    let max_retries = REMOTE_REGISTRY_MAX_RETRIES;
+    let retry_delay = Duration::from_millis(REMOTE_REGISTRY_RETRY_DELAY_MS);
+
+    retry_async(
+        tman_config.clone(),
+        max_retries,
+        retry_delay,
+        out.clone(),
+        || {
+            let client = match create_http_client_with_proxies() {
+                Ok(c) => c,
+                Err(e) => return Box::pin(async { Err(e) }),
+            };
+
+            let out = out.clone();
+            let filter = filter.clone();
+            let sort_by = sort_by.map(|s| s.to_string());
+            let sort_order = sort_order.map(|s| s.to_string());
+            let tman_config = tman_config.clone();
+            let url = format!("{}/search", base_url.trim_end_matches('/'));
+
+            Box::pin(async move {
+                let mut results = Vec::new();
+
+                // If page is specified, we'll fetch only that page.
+                // Otherwise, we'll start from page 1 and fetch all pages.
+                let mut current_page = page.unwrap_or(1);
+                let mut total_size: u32;
+                // Determine if we should fetch multiple pages or just one.
+                let fetch_single_page = page.is_some();
+                // Use provided page_size or default to
+                // DEFAULT_REGISTRY_PAGE_SIZE.
+                let page_size_value =
+                    page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE);
+
+                loop {
+                    let body = json!({
+                        "filter": filter,
+                        "options": {
+                            "pageSize": page_size_value,
+                            "page": current_page,
+                            "sortBy": sort_by,
+                            "sortOrder": sort_order,
+                            "scope": scope
+                        }
+                    });
+
+                    let response = client
+                        .post(&url)
+                        .json(&body)
+                        .timeout(Duration::from_secs(
+                            REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
+                        ))
+                        .send()
+                        .await?;
+
+                    if !response.status().is_success() {
+                        return Err(anyhow!(
+                            "Request failed with status: {}",
+                            response.status()
+                        ));
+                    }
+
+                    // Parse the response
+                    let body = response.text().await?;
+                    let api_response =
+                        serde_json::from_str::<ApiResponse>(&body)?;
+
+                    if api_response.status != "ok" {
+                        return Err(anyhow!(
+                            "API error: {}",
+                            api_response.status
+                        ));
+                    }
+
+                    if is_verbose(tman_config.clone()).await {
+                        out.normal_line(&format!(
+                            "Searched {} packages (total: {}) at page {}",
+                            api_response.data.packages.len(),
+                            api_response.data.total_size,
+                            current_page,
+                        ));
+                    }
+
+                    // Update total size and collect packages.
+                    total_size = api_response.data.total_size;
+                    let packages_is_empty =
+                        api_response.data.packages.is_empty();
+                    results.extend(api_response.data.packages);
+
+                    // If we're only fetching a single page or we've reached the
+                    // end, break the loop.
+                    if fetch_single_page
+                        || results.len() >= total_size as usize
+                        || packages_is_empty
+                    {
+                        break;
+                    }
+
+                    current_page += 1;
+                }
+
+                Ok((total_size, results))
             })
         },
     )

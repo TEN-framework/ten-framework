@@ -12,9 +12,9 @@ import aiohttp
 from typing import Any
 from dataclasses import dataclass
 
-from ten import Cmd
+from ten_runtime import Cmd
 
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.types import (
     LLMToolMetadata,
