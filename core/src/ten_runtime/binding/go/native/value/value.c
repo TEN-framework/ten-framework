@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "ten_runtime/binding/go/interface/ten_runtime/value.h"
+#include "include_internal/ten_runtime/binding/go/value/value.h"
 
 #include <stdint.h>
 
 #include "include_internal/ten_runtime/binding/go/internal/common.h"
-#include "include_internal/ten_runtime/binding/go/value/value.h"
 #include "include_internal/ten_utils/value/value_smart_ptr.h"
+#include "ten_runtime/binding/go/interface/ten_runtime/c_value.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/alloc.h"
