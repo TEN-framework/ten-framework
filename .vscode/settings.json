@@ -105,5 +105,11 @@
   },
   "[dockerfile]": {
     "editor.defaultFormatter": "ms-azuretools.vscode-containers"
-  }
+  },
+  "cursorpyright.analysis.extraPaths": [
+    "./core/src/ten_runtime/binding/python/interface",
+    "./tests/ten_runtime/integration",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/interface",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/lib",
+  ]
 }

@@ -1,7 +1,6 @@
 from typing_extensions import override
 from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data
 import json
-import pytest
 
 
 class AzureAsrExtensionTester(AsyncExtensionTester):
@@ -10,15 +9,15 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
         super().__init__()
 
     @override
-    async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        ten_env_tester.log_info("on_start")
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
+        ten_env.log_info("on_start")
 
     @override
     async def on_data(
-        self, ten_env_tester: AsyncTenEnvTester, data: Data
+        self, ten_env: AsyncTenEnvTester, data: Data
     ) -> None:
-        ten_env_tester.log_info(f"on_data")
-        ten_env_tester.stop_test()
+        ten_env.log_info(f"on_data")
+        ten_env.stop_test()
 
 
 def test_basic(extension_name):

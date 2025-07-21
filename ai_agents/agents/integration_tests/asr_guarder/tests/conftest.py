@@ -4,6 +4,8 @@
 # See the LICENSE file for more information.
 #
 import threading
+from typing import Any
+from _pytest.config import Notset
 import pytest
 from ten_runtime import (
     App,
@@ -68,7 +70,7 @@ def global_setup_and_teardown():
     fake_app_thread.join()
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--extension_name",
         action="store",
@@ -78,5 +80,5 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def extension_name(request):
+def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
     return request.config.getoption("--extension_name")
