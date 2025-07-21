@@ -8,9 +8,15 @@
 import type { NodeProps } from "@xyflow/react";
 import { NetworkIcon } from "lucide-react";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   GroupNode,
   GroupNodeLabel,
 } from "@/components/ui/react-flow/LabeledGroupNode";
+import { ContextMenuItems } from "@/flow/node/graph/context-menu";
 import { cn } from "@/lib/utils";
 import type { TGraphNode } from "@/types/flow";
 
@@ -18,18 +24,25 @@ export const GraphNode = (props: NodeProps<TGraphNode>) => {
   const { data } = props;
 
   return (
-    <GroupNode
-      className={cn(
-        "border-2 border-gray-300 border-dashed dark:border-gray-600"
-      )}
-      label={
-        <GroupNodeLabel
-          className={cn("rounded-br-sm", "flex items-center gap-2")}
-        >
-          <NetworkIcon className="size-4" />
-          {data.graph.name}
-        </GroupNodeLabel>
-      }
-    />
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <GroupNode
+          className={cn(
+            "border-2 border-gray-300 border-dashed dark:border-gray-600"
+          )}
+          label={
+            <GroupNodeLabel
+              className={cn("rounded-br-sm", "flex items-center gap-2")}
+            >
+              <NetworkIcon className="size-4" />
+              {data.graph.name}
+            </GroupNodeLabel>
+          }
+        />
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-fit">
+        <ContextMenuItems graph={data.graph} />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };

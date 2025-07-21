@@ -22,7 +22,7 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuTrigger,
-} from "@/components/ui/ContextMenu";
+} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,

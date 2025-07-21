@@ -26,7 +26,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
-} from "@/components/ui/ContextMenu";
+} from "@/components/ui/context-menu";
 import { BaseHandle } from "@/components/ui/react-flow/BaseHandle";
 import { BaseNode } from "@/components/ui/react-flow/BaseNode";
 import { Separator } from "@/components/ui/Separator";
@@ -36,7 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-import { ContextMenuItems } from "@/flow/node/extension/ContextMenu";
+import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";

@@ -380,7 +380,7 @@ export const ContextMenuItems = (props: {
       _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-delete",
       children: t("action.delete"),
-      className: "text-destructive",
+      variant: "destructive",
       disabled: !baseDir || !graphId,
       icon: <Trash2Icon />,
       onClick: () => {

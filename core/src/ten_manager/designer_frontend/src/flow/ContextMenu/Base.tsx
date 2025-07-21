@@ -20,7 +20,7 @@ import {
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-} from "@/components/ui/ContextMenu";
+} from "@/components/ui/context-menu";
 import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
