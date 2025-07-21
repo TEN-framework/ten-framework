@@ -9,7 +9,6 @@ import type { z } from "zod";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { IFMItem } from "@/components/FileManager/utils";
-import { TEN_DEFAULT_APP_RUN_SCRIPT } from "@/constants";
 import {
   EPreferencesLocale,
   type IApp,
@@ -90,8 +89,8 @@ export const useAppStore = create<IAppStore>()(
     removeSelectedGraphs: (graph: IGraph[]) =>
       set((state) => {
         const existing = state.selectedGraphs || [];
-        const existingIds = new Set(existing.map((g) => g.uuid));
-        const newGraphs = existing.filter((g) => !existingIds.has(g.uuid));
+        const graphIdsToRemove = new Set(graph.map((g) => g.uuid));
+        const newGraphs = existing.filter((g) => !graphIdsToRemove.has(g.uuid));
         return {
           selectedGraphs: newGraphs,
         };

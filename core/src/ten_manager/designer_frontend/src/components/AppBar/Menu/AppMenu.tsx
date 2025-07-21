@@ -38,12 +38,7 @@ import {
   GROUP_DOC_REF_ID,
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
-import {
-  useAppStore,
-  useDialogStore,
-  useFlowStore,
-  useWidgetStore,
-} from "@/store";
+import { useDialogStore, useWidgetStore } from "@/store";
 import { EDocLinkKey } from "@/types/doc";
 import {
   EDefaultWidgetType,
@@ -61,7 +56,6 @@ export function AppMenu(props: {
   const { t } = useTranslation();
 
   const { appendWidget } = useWidgetStore();
-  const { setNodesAndEdges } = useFlowStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
   const { mutate: mutateApps } = useFetchApps();

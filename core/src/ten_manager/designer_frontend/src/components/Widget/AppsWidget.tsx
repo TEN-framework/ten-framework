@@ -87,12 +87,7 @@ import {
   GROUP_LOG_VIEWER_ID,
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
-import {
-  useAppStore,
-  useDialogStore,
-  useFlowStore,
-  useWidgetStore,
-} from "@/store";
+import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
 import {
   AppCreateReqSchema,
   ETemplateLanguage,

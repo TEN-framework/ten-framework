@@ -48,7 +48,7 @@ export const ExtensionStoreWidget = (props: {
     isLoading: isFetchingAddons,
   } = useFetchAddons({});
 
-  const [matched, versions, packagesMetadata] = React.useMemo(() => {
+  const [matched, versions] = React.useMemo(() => {
     const cloudExtNames = data?.packages?.map((item) => item.name) || [];
     const [localOnlyAddons, otherAddons] = addons.reduce(
       ([localOnly, other], addon) => {

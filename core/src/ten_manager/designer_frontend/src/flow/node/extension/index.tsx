@@ -243,9 +243,11 @@ const HandleGroupItem = (props: {
         source: data.name,
         target: undefined,
         metadata: {
-          type,
-          source,
-          target,
+          filters: {
+            type,
+            source,
+            target,
+          },
         },
       });
     };

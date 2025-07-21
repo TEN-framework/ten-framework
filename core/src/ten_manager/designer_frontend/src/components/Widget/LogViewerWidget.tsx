@@ -191,8 +191,8 @@ export function LogViewerFrontStageWidget(props: {
             <Combobox
               className="w-1/3"
               options={nodes.map((node) => ({
-                label: node.data.name,
-                value: node.data.name,
+                label: node.data.name as string,
+                value: node.data.name as string,
               }))}
               placeholder={t("popup.logViewer.filteredByAddon")}
               selected={addonInput}

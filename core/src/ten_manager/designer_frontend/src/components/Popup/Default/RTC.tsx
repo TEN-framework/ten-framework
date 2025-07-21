@@ -61,10 +61,12 @@ const RTCWidgetContentInner = ({ widget: _ }: { widget: IDefaultWidget }) => {
   React.useEffect(() => {
     const rtcNode = nodes.find((node) => node.data.addon === "agora_rtc");
     if (rtcNode) {
-      const property = rtcNode.data.property;
+      const property = rtcNode.data.property as
+        | Record<string, unknown>
+        | undefined;
       if (property) {
-        const propChannel = (property["channel"] || "") as string;
-        const propUid = property["remote_stream_id"] as number | null;
+        const propChannel = (property?.channel || "") as string;
+        const propUid = property?.remote_stream_id as number | null;
         setChannel(propChannel);
         setUid(propUid);
       }

@@ -112,7 +112,7 @@ export const FlowCanvas = (props: { className?: string }) => {
     >
       <ReactFlow
         colorMode={theme}
-        nodes={displayedNodes}
+        nodes={displayedNodes as TExtensionNode[]}
         edges={displayedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
