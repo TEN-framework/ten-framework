@@ -72,7 +72,7 @@ class AsrResult(BaseModel):
     text: str
     final: bool
     start_ms: int
-    dureation_ms: int
+    duration_ms: int
     language: str
     # words
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -85,8 +85,8 @@ class LLMResult(BaseModel):
 
 class AsrResultEvent(BaseModel):
     text: str
-    final: str
-    stream_id: str
+    final: bool
+    stream_id: int
 
 
 class LLMResultEvent(BaseModel):
@@ -305,11 +305,13 @@ class MainControlExtension(AsyncExtension):
     async def _on_cmd_on_user_joined(
         self, ten_env: AsyncTenEnv, cmd: Cmd
     ) -> None:
+        assert self._event_store is not None
         await self._event_store.pub_event_now(EventType.ON_USER_JOINED, {}, {})
 
     async def _on_cmd_on_user_left(
         self, ten_env: AsyncTenEnv, cmd: Cmd
     ) -> None:
+        assert self._event_store is not None
         await self._event_store.pub_event_now(EventType.ON_USER_LEFT, {}, {})
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -324,6 +326,7 @@ class MainControlExtension(AsyncExtension):
     async def _on_data_asr_result(
         self, ten_env: AsyncTenEnv, data: Data
     ) -> None:
+        assert self._event_store is not None
         json_str, _ = data.get_property_to_json(None)
         asr_result = AsrResult.model_validate_json(json_str)
 
@@ -343,6 +346,7 @@ class MainControlExtension(AsyncExtension):
     async def _on_data_llm_result(
         self, ten_env: AsyncTenEnv, data: Data
     ) -> None:
+        assert self._event_store is not None
         json_str, _ = data.get_property_to_json(None)
         llm_result = LLMResult.model_validate_json(json_str)
 
