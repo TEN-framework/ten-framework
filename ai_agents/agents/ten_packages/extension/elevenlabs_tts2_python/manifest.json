@@ -9,7 +9,9 @@
       "version": "0.10"
     },
     {
-      "path": "/tmp/ten_ai_base"
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "=0.6.11"
     }
   ],
   "package": {
