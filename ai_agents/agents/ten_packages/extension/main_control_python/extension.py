@@ -95,6 +95,7 @@ class LLMResultEvent(BaseModel):
 
 class LLMRequestEvent(BaseModel):
     text: str
+    is_final: bool
 
 
 class TTSRequestEvent(BaseModel):
@@ -172,7 +173,7 @@ class RuleEngine:
 
         if asr_result_event.final:
             await self._registry.pub_event_now(
-                EventType.LLM_REQUEST, {"text": self._view.last_asr_result}, {}
+                EventType.LLM_REQUEST, {"text": self._view.last_asr_result, "is_final": True}, {}
             )
 
     async def _rule_request_tts(self, event: Event | None):
@@ -247,6 +248,7 @@ class Operator:
         llm_request_event = LLMRequestEvent.model_validate(event.payload)
         q = Data.create("text_data")
         q.set_property_string("text", llm_request_event.text)
+        q.set_property_bool("is_final", llm_request_event.is_final)
         await self._ten_env.send_data(q)
 
     async def request_tts(self, event: Event):
