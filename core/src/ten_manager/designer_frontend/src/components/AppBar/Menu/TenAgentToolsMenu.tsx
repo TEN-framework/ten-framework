@@ -21,6 +21,7 @@ import {
   TRULIENCE_CONFIG_WIDGET_ID,
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store";
 import { useWidgetStore } from "@/store/widget";
 import {
   EDefaultWidgetType,
@@ -37,6 +38,7 @@ export const TenAgentToolsMenu = (props: {
 
   const { t } = useTranslation();
   const { appendWidget } = useWidgetStore();
+  const { selectedGraphs } = useAppStore();
 
   const onStartRTCInteraction = () => {
     appendWidget({
@@ -105,7 +107,7 @@ export const TenAgentToolsMenu = (props: {
             className="w-full justify-start"
             variant="ghost"
             onClick={onStartRTCInteraction}
-            // disabled={!currentWorkspace?.graph}
+            disabled={!selectedGraphs || selectedGraphs?.length === 0}
           >
             <PodcastIcon />
             {t("header.menuExtension.startRTCInteraction")}

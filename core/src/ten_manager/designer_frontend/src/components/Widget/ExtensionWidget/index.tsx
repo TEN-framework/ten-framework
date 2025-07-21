@@ -37,8 +37,8 @@ export const ExtensionStoreWidget = (props: {
   const { t } = useTranslation();
   const { data, error, isLoading } = useListTenCloudStorePackages();
   const { data: envData, error: envError, isLoading: isLoadingEnv } = useEnv();
-  const { extSearch, extFilter, appendWidget } = useWidgetStore();
-  const { setDefaultOsArch, currentWorkspace } = useAppStore();
+  const { extSearch, extFilter } = useWidgetStore();
+  const { setDefaultOsArch } = useAppStore();
 
   const deferredSearch = React.useDeferredValue(extSearch);
 
@@ -46,13 +46,7 @@ export const ExtensionStoreWidget = (props: {
     data: addons,
     error: addonError,
     isLoading: isFetchingAddons,
-  } = useFetchAddons(
-    currentWorkspace.app?.base_dir
-      ? {
-          base_dir: currentWorkspace.app.base_dir,
-        }
-      : {}
-  );
+  } = useFetchAddons({});
 
   const [matched, versions, packagesMetadata] = React.useMemo(() => {
     const cloudExtNames = data?.packages?.map((item) => item.name) || [];
@@ -332,7 +326,7 @@ export const ExtensionStoreWidget = (props: {
             </p>
           )}
 
-          {deferredSearch.trim() === "" &&
+          {/* {deferredSearch.trim() === "" &&
             extFilter.showInstalled &&
             extFilter.showUninstalled &&
             currentWorkspace?.app?.base_dir && (
@@ -347,7 +341,7 @@ export const ExtensionStoreWidget = (props: {
                     packagesMetadata.uninstalledPackageNames.length,
                 })}
               </p>
-            )}
+            )} */}
 
           {/* {!currentWorkspace?.app?.base_dir && (
             <p
@@ -369,7 +363,6 @@ export const ExtensionStoreWidget = (props: {
         items={matched}
         versions={versions}
         toolTipSide={toolTipSide}
-        readOnly={!currentWorkspace?.app?.base_dir}
       />
     </div>
   );
@@ -382,18 +375,11 @@ export const ExtensionWidget = (props: {
 }) => {
   const { className, versions, name } = props;
 
-  const { currentWorkspace } = useAppStore();
-
   if (versions?.length === 0) {
     return null;
   }
 
   return (
-    <ExtensionDetails
-      versions={versions}
-      name={name}
-      className={className}
-      readOnly={!currentWorkspace?.app?.base_dir}
-    />
+    <ExtensionDetails versions={versions} name={name} className={className} />
   );
 };

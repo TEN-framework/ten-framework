@@ -135,8 +135,8 @@ export interface ICustomConnectionWidget
 // 4. Graph Widget
 export interface IGraphWidgetData {
   type: EGraphActions;
-  base_dir: string;
-  graph_id?: string;
+  base_dir?: string;
+  graph_id: string;
   app_uri?: string | null;
   node?: TCustomNode;
   src_node?: TCustomNode;

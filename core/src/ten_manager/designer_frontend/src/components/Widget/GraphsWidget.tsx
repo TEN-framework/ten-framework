@@ -53,8 +53,9 @@ import {
 } from "@/components/ui/Select";
 // eslint-disable-next-line max-len
 import { convertExtensionPropertySchema2ZodSchema } from "@/components/Widget/utils";
+import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore, useDialogStore, useFlowStore } from "@/store";
+import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomNode } from "@/types/flow";
 import {
   AddConnectionPayloadSchema,
@@ -65,10 +66,11 @@ import {
 } from "@/types/graphs";
 
 const GraphAddNodePropertyField = (props: {
+  base_dir?: string;
   addon: string;
   onChange?: (value: Record<string, unknown> | undefined) => void;
 }) => {
-  const { addon, onChange } = props;
+  const { base_dir, addon, onChange } = props;
 
   const [isLoading, setIsLoading] = React.useState(false);
   const [errMsg, setErrMsg] = React.useState<string | null>(null);
@@ -80,7 +82,6 @@ const GraphAddNodePropertyField = (props: {
   >(null);
 
   const { t } = useTranslation();
-  const { currentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
   const isSchemaEmptyMemo = React.useMemo(() => {
@@ -93,7 +94,7 @@ const GraphAddNodePropertyField = (props: {
         setIsLoading(true);
 
         const addonSchema = await retrieveExtensionSchema({
-          appBaseDir: currentWorkspace?.app?.base_dir ?? "",
+          appBaseDir: base_dir ?? "",
           addonName: addon,
         });
         const propertySchema = addonSchema.property?.properties;
@@ -102,7 +103,7 @@ const GraphAddNodePropertyField = (props: {
           return;
         }
         const defaultProperty = await retrieveExtensionDefaultProperty({
-          appBaseDir: currentWorkspace?.app?.base_dir ?? "",
+          appBaseDir: base_dir ?? "",
           addonName: addon,
         });
         if (defaultProperty) {
@@ -185,8 +186,8 @@ const GraphAddNodePropertyField = (props: {
 };
 
 export const GraphAddNodeWidget = (props: {
-  base_dir: string;
-  graph_id?: string;
+  base_dir?: string;
+  graph_id: string;
   postAddNodeActions?: () => void | Promise<void>;
   node?: TCustomNode;
   isReplaceNode?: boolean;
@@ -207,14 +208,24 @@ export const GraphAddNodeWidget = (props: {
   >(undefined);
 
   const { t } = useTranslation();
-  const { currentWorkspace } = useAppStore();
   const { setNodesAndEdges } = useFlowStore();
+
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+  } = useGraphs();
+  const {
+    data: addons,
+    isLoading: isAddonsLoading,
+    error: addonError,
+  } = useFetchAddons({ base_dir });
 
   const form = useForm<z.infer<typeof AddNodePayloadSchema>>({
     resolver: zodResolver(AddNodePayloadSchema),
     defaultValues: {
-      graph_id: graph_id ?? currentWorkspace?.graph?.uuid ?? "",
-      name: node?.data?.name || undefined,
+      graph_id: graph_id ?? node?.data?.graph?.uuid ?? "",
+      name: (node?.data?.name as string | undefined) || undefined,
       addon: undefined,
       extension_group: undefined,
       app: undefined,
@@ -230,12 +241,9 @@ export const GraphAddNodeWidget = (props: {
       } else {
         await postAddNode(data);
       }
-      if (
-        currentWorkspace?.graph?.uuid &&
-        (currentWorkspace?.graph?.uuid === data.graph_id || isReplaceNode)
-      ) {
-        const { nodes, edges } = await resetNodesAndEdgesByGraph(
-          currentWorkspace.graph
+      if (graph_id === data.graph_id || isReplaceNode) {
+        const { nodes, edges } = await resetNodesAndEdgesByGraphs(
+          graphs?.filter((g) => g.uuid === data.graph_id) || []
         );
         setNodesAndEdges(nodes, edges);
         postAddNodeActions?.();
@@ -257,17 +265,6 @@ export const GraphAddNodeWidget = (props: {
       setIsSubmitting(false);
     }
   };
-
-  const {
-    data: graphs,
-    isLoading: isGraphsLoading,
-    error: graphError,
-  } = useGraphs();
-  const {
-    data: addons,
-    isLoading: isAddonsLoading,
-    error: addonError,
-  } = useFetchAddons({ base_dir });
 
   const comboboxOptionsMemo = React.useMemo(() => {
     const addonsOptions = addons
@@ -293,8 +290,7 @@ export const GraphAddNodeWidget = (props: {
         description: addonError.message,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graphError, addonError]);
+  }, [graphError, addonError, t]);
 
   return (
     <Form {...form}>
@@ -397,6 +393,7 @@ export const GraphAddNodeWidget = (props: {
                     onChange={(value: Record<string, unknown> | undefined) => {
                       field.onChange(value);
                     }}
+                    base_dir={base_dir}
                   />
                 </FormControl>
                 <FormMessage />
@@ -433,345 +430,15 @@ export const GraphAddNodeWidget = (props: {
   );
 };
 
-/** @deprecated */
-export const GraphAddConnectionWidget = (props: {
-  base_dir: string;
-  app_uri?: string | null;
-  graph_id?: string;
-  src_extension?: string;
-  dest_extension?: string;
-  postAddConnectionActions?: () => void | Promise<void>;
-}) => {
-  const {
-    base_dir,
-    app_uri,
-    graph_id,
-    src_extension,
-    dest_extension,
-    postAddConnectionActions,
-  } = props;
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isMsgNameLoading, setIsMsgNameLoading] = React.useState(false);
-  const [msgNameError, setMsgNameError] = React.useState<unknown | null>(null);
-  const [msgNameList, setMsgNameList] = React.useState<
-    {
-      value: string;
-      label: string;
-    }[]
-  >([]);
-
-  const { t } = useTranslation();
-  const { nodes, setNodesAndEdges } = useFlowStore();
-  const {
-    data: graphs,
-    isLoading: isGraphsLoading,
-    error: graphError,
-  } = useGraphs();
-  const { currentWorkspace } = useAppStore();
-
-  const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
-    resolver: zodResolver(AddConnectionPayloadSchema),
-    defaultValues: {
-      graph_id: graph_id ?? currentWorkspace?.graph?.uuid ?? "",
-      src_app: app_uri,
-      src_extension: src_extension ?? undefined,
-      msg_type: EConnectionType.CMD,
-      msg_name: undefined,
-      dest_app: app_uri,
-      dest_extension: dest_extension ?? undefined,
-    },
-  });
-
-  const srcExtension = form.watch("src_extension");
-  const destExtension = form.watch("dest_extension");
-  const msgType = form.watch("msg_type");
-
-  const onSubmit = async (data: z.infer<typeof AddConnectionPayloadSchema>) => {
-    setIsSubmitting(true);
-    try {
-      const payload = AddConnectionPayloadSchema.parse(data);
-      if (payload.src_extension === payload.dest_extension) {
-        throw new Error(t("popup.graph.sameNodeError"));
-      }
-      await postAddConnection(payload);
-      if (
-        currentWorkspace?.graph?.uuid === data.graph_id &&
-        currentWorkspace?.app?.base_dir === base_dir
-      ) {
-        const { nodes, edges } = await resetNodesAndEdgesByGraph(
-          currentWorkspace.graph
-        );
-        setNodesAndEdges(nodes, edges);
-        postAddConnectionActions?.();
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unknown error");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  React.useEffect(() => {
-    if (graphError) {
-      toast.error(t("popup.graph.graphError"), {
-        description: graphError.message,
-      });
-    }
-    if (msgNameError) {
-      toast.error(t("popup.graph.addonError"), {
-        description:
-          msgNameError instanceof Error
-            ? msgNameError.message
-            : "Unknown error",
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graphError, msgNameError]);
-
-  React.useEffect(() => {
-    const fetchNodeSchema = async () => {
-      const sourceNode = nodes.find((i) => i.data.name === srcExtension);
-      const destNode = nodes.find((i) => i.data.name === destExtension);
-      if (!sourceNode && !destNode) return;
-      try {
-        form.setValue("msg_name", undefined as unknown as string);
-        setIsMsgNameLoading(true);
-        let msgNameList: { value: string; label: string }[] = [];
-
-        if (sourceNode) {
-          const nodeSchema = await retrieveExtensionSchema({
-            appBaseDir: currentWorkspace?.app?.base_dir ?? "",
-            addonName: sourceNode.data.addon,
-          });
-          const srcMsgNameList =
-            nodeSchema?.[`${msgType}_out`]?.map((i) => i.name) ?? [];
-          msgNameList = [
-            ...msgNameList,
-            ...srcMsgNameList.map((i) => ({
-              value: i,
-              label: `${i} (${sourceNode.data.name})`,
-            })),
-          ];
-        }
-
-        if (destNode) {
-          const nodeSchema = await retrieveExtensionSchema({
-            appBaseDir: currentWorkspace?.app?.base_dir ?? "",
-            addonName: destNode.data.addon,
-          });
-          const destMsgNameList =
-            nodeSchema?.[`${msgType}_in`]?.map((i) => i.name) ?? [];
-          msgNameList = [
-            ...msgNameList,
-            ...destMsgNameList.map((i) => ({
-              value: i,
-              label: `${i} (${destNode.data.name})`,
-            })),
-          ];
-        }
-
-        setMsgNameList(msgNameList);
-      } catch (error: unknown) {
-        console.error(error);
-        setMsgNameError(error);
-      } finally {
-        setIsMsgNameLoading(false);
-      }
-    };
-
-    fetchNodeSchema();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [srcExtension, destExtension, msgType, nodes]);
-
-  return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="h-full w-full space-y-4 overflow-y-auto px-2"
-      >
-        <FormField
-          control={form.control}
-          name="graph_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("popup.graph.graphName")}</FormLabel>
-              <FormControl>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={!!src_extension}
-                >
-                  <SelectTrigger className="w-full" disabled={isGraphsLoading}>
-                    <SelectValue placeholder={t("popup.graph.graphName")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>{t("popup.graph.graphName")}</SelectLabel>
-                      {isGraphsLoading ? (
-                        <SelectItem value={t("popup.graph.graphName")}>
-                          <SpinnerLoading className="size-4" />
-                        </SelectItem>
-                      ) : (
-                        graphs?.map((graph) => (
-                          <SelectItem key={graph.uuid} value={graph.uuid}>
-                            {graph.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="src_extension"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("popup.graph.srcExtension")}</FormLabel>
-              <FormControl>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!!src_extension}
-                >
-                  <SelectTrigger className="w-full overflow-hidden">
-                    <SelectValue placeholder={t("popup.graph.srcExtension")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>{t("popup.graph.srcExtension")}</SelectLabel>
-                      {nodes.map((node) => (
-                        <SelectItem key={node.id} value={node.data.name}>
-                          {node.data.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="msg_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("popup.graph.messageType")}</FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className="w-full overflow-hidden">
-                    <SelectValue placeholder={t("popup.graph.messageType")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>{t("popup.graph.messageType")}</SelectLabel>
-                      {Object.values(EConnectionType).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {form.watch("msg_type") &&
-          (form.watch("src_extension") || form.watch("dest_extension")) && (
-            <FormField
-              control={form.control}
-              name="msg_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("popup.graph.messageName")}</FormLabel>
-                  <FormControl>
-                    <Combobox
-                      key={`${msgType}` + "-" + `${srcExtension}`}
-                      disabled={isMsgNameLoading}
-                      isLoading={isMsgNameLoading}
-                      options={msgNameList}
-                      placeholder={t("popup.graph.messageName")}
-                      selected={field.value}
-                      onChange={(i) => {
-                        field.onChange(i.value);
-                      }}
-                      onCreate={(i) => {
-                        setMsgNameList((prev) => [
-                          ...prev,
-                          {
-                            value: i,
-                            label: i,
-                          },
-                        ]);
-                        field.onChange(i);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        <FormField
-          control={form.control}
-          name="dest_extension"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("popup.graph.destExtension")}</FormLabel>
-              <FormControl>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value ?? undefined}
-                >
-                  <SelectTrigger className="w-full overflow-hidden">
-                    <SelectValue placeholder={t("popup.graph.destExtension")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>
-                        {t("popup.graph.destExtension")}
-                      </SelectLabel>
-                      {nodes
-                        .filter((i) => i.id !== srcExtension)
-                        .map((node) => (
-                          <SelectItem key={node.id} value={node.data.name}>
-                            {node.data.name}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <SpinnerLoading className="size-4" />}
-          {t("popup.graph.addConnection")}
-        </Button>
-      </form>
-    </Form>
-  );
-};
-
 export const GraphUpdateNodePropertyWidget = (props: {
-  base_dir: string;
+  base_dir?: string;
   app_uri?: string | null;
-  graph_id?: string;
+  graph_id: string;
   node: TCustomNode;
   postUpdateNodePropertyActions?: () => void | Promise<void>;
 }) => {
-  const { app_uri, graph_id, node, postUpdateNodePropertyActions } = props;
+  const { base_dir, app_uri, graph_id, node, postUpdateNodePropertyActions } =
+    props;
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSchemaLoading, setIsSchemaLoading] = React.useState(false);
   const [propertySchemaEntries, setPropertySchemaEntries] = React.useState<
@@ -781,15 +448,16 @@ export const GraphUpdateNodePropertyWidget = (props: {
   const { t } = useTranslation();
 
   const { setNodesAndEdges } = useFlowStore();
-  const { currentWorkspace } = useAppStore();
+
+  const { data: graphs } = useGraphs();
 
   React.useEffect(() => {
     const fetchSchema = async () => {
       try {
         setIsSchemaLoading(true);
         const schema = await retrieveExtensionSchema({
-          appBaseDir: currentWorkspace?.app?.base_dir ?? "",
-          addonName: node.data.addon,
+          appBaseDir: base_dir ?? "",
+          addonName: typeof node.data.addon === "string" ? node.data.addon : "",
         });
         const propertySchemaEntries = convertExtensionPropertySchema2ZodSchema(
           schema.property?.properties ?? {}
@@ -804,7 +472,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
     };
 
     fetchSchema();
-  }, [currentWorkspace?.app?.base_dir, node.data.addon]);
+  }, [base_dir, node.data.addon]);
 
   return (
     <>
@@ -821,7 +489,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
             setIsSubmitting(true);
             try {
               const nodeData = UpdateNodePropertyPayloadSchema.parse({
-                graph_id: graph_id ?? currentWorkspace?.graph?.uuid ?? "",
+                graph_id: graph_id ?? node?.data?.graph?.uuid ?? "",
                 name: node.data.name,
                 addon: node.data.addon,
                 extension_group: node.data.extension_group,
@@ -829,10 +497,13 @@ export const GraphUpdateNodePropertyWidget = (props: {
                 property: JSON.stringify(data, null, 2),
               });
               await postUpdateNodeProperty(nodeData);
-              if (currentWorkspace?.graph) {
-                const { nodes, edges } = await resetNodesAndEdgesByGraph(
-                  currentWorkspace.graph
-                );
+              const targetGraph = graphs?.find(
+                (g) => g.uuid === nodeData.graph_id
+              );
+              if (targetGraph) {
+                const { nodes, edges } = await resetNodesAndEdgesByGraphs([
+                  targetGraph,
+                ]);
                 setNodesAndEdges(nodes, edges);
               }
               toast.success(t("popup.graph.updateNodePropertySuccess"), {
@@ -867,9 +538,9 @@ export const GraphUpdateNodePropertyWidget = (props: {
 };
 
 export const GraphConnectionCreationWidget = (props: {
-  base_dir: string;
+  base_dir?: string;
   app_uri?: string | null;
-  graph_id?: string;
+  graph_id: string;
   src_node?: TCustomNode;
   dest_node?: TCustomNode;
   postAddConnectionActions?: () => void | Promise<void>;
@@ -897,7 +568,6 @@ export const GraphConnectionCreationWidget = (props: {
     isLoading: isGraphsLoading,
     error: graphError,
   } = useGraphs();
-  const { currentWorkspace } = useAppStore();
   const {
     data: extSchema,
     isLoading: isExtSchemaLoading,
@@ -905,7 +575,7 @@ export const GraphConnectionCreationWidget = (props: {
   } = useFetchExtSchema(
     src_node || dest_node
       ? {
-          appBaseDir: currentWorkspace?.app?.base_dir ?? "",
+          appBaseDir: base_dir ?? "",
           addonName: (src_node?.data.addon || dest_node?.data.addon) as string,
         }
       : null
@@ -914,13 +584,19 @@ export const GraphConnectionCreationWidget = (props: {
   const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
     resolver: zodResolver(AddConnectionPayloadSchema),
     defaultValues: {
-      graph_id: graph_id ?? currentWorkspace?.graph?.uuid ?? "",
+      graph_id: graph_id ?? "",
       src_app: app_uri,
-      src_extension: src_node?.data.name ?? undefined,
+      src_extension:
+        typeof src_node?.data.name === "string"
+          ? src_node.data.name
+          : undefined,
       msg_type: EConnectionType.CMD,
       msg_name: undefined,
       dest_app: app_uri,
-      dest_extension: dest_node?.data.name ?? undefined,
+      dest_extension:
+        typeof dest_node?.data.name === "string"
+          ? dest_node.data.name
+          : undefined,
     },
   });
 
@@ -932,13 +608,11 @@ export const GraphConnectionCreationWidget = (props: {
         throw new Error(t("popup.graph.sameNodeError"));
       }
       await postAddConnection(payload);
-      if (
-        currentWorkspace?.graph?.uuid === data.graph_id &&
-        currentWorkspace?.app?.base_dir === base_dir
-      ) {
-        const { nodes, edges } = await resetNodesAndEdgesByGraph(
-          currentWorkspace.graph
-        );
+      const targetGraph = graphs?.find((g) => g.uuid === data.graph_id);
+      if (graph_id === data.graph_id && targetGraph) {
+        const { nodes, edges } = await resetNodesAndEdgesByGraphs([
+          targetGraph,
+        ]);
         setNodesAndEdges(nodes, edges);
         postAddConnectionActions?.();
       }
@@ -958,14 +632,16 @@ export const GraphConnectionCreationWidget = (props: {
     (src_node || dest_node) &&
       form.watch("msg_type") &&
       form.watch("msg_name") &&
-      (graph_id || currentWorkspace?.graph?.uuid) &&
+      graph_id &&
       !(src_node && dest_node)
       ? {
-          graph_id: graph_id ?? currentWorkspace?.graph?.uuid ?? "",
+          graph_id: graph_id ?? "",
           app: app_uri ?? undefined,
-          extension_group:
-            src_node?.data.extension_group || dest_node?.data.extension_group,
-          extension: src_node?.data.name || dest_node?.data.name || "",
+          extension_group: (src_node?.data.extension_group ||
+            dest_node?.data.extension_group) as string | undefined,
+          extension: (src_node?.data.name ||
+            dest_node?.data.name ||
+            "") as string,
           msg_type: form.watch("msg_type"),
           msg_direction: src_node?.data.name
             ? EMsgDirection.OUT
@@ -1087,9 +763,8 @@ export const GraphConnectionCreationWidget = (props: {
                 <FormLabel>{t("popup.graph.messageName")}</FormLabel>
                 <FormControl>
                   <Combobox
-                    key={
-                      form.watch("msg_type") + "-" + form.watch("src_extension")
-                    }
+                    // eslint-disable-next-line max-len
+                    key={`${form.watch("msg_type")}-${form.watch("src_extension")}`}
                     disabled={isExtSchemaLoading}
                     isLoading={isExtSchemaLoading}
                     options={msgNameList}
@@ -1120,223 +795,218 @@ export const GraphConnectionCreationWidget = (props: {
   };
 
   return (
-    <>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="h-full w-full space-y-4 overflow-y-auto px-2"
-        >
-          <FormField
-            control={form.control}
-            name="graph_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("popup.graph.graphName")}</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={!!graph_id}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      disabled={isGraphsLoading}
-                    >
-                      <SelectValue placeholder={t("popup.graph.graphName")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>{t("popup.graph.graphName")}</SelectLabel>
-                        {isGraphsLoading ? (
-                          <SelectItem value={t("popup.graph.graphName")}>
-                            <SpinnerLoading className="size-4" />
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="h-full w-full space-y-4 overflow-y-auto px-2"
+      >
+        <FormField
+          control={form.control}
+          name="graph_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("popup.graph.graphName")}</FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={!!graph_id}
+                >
+                  <SelectTrigger className="w-full" disabled={isGraphsLoading}>
+                    <SelectValue placeholder={t("popup.graph.graphName")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>{t("popup.graph.graphName")}</SelectLabel>
+                      {isGraphsLoading ? (
+                        <SelectItem value={t("popup.graph.graphName")}>
+                          <SpinnerLoading className="size-4" />
+                        </SelectItem>
+                      ) : (
+                        graphs?.map((graph) => (
+                          <SelectItem key={graph.uuid} value={graph.uuid}>
+                            {graph.name}
                           </SelectItem>
-                        ) : (
-                          graphs?.map((graph) => (
-                            <SelectItem key={graph.uuid} value={graph.uuid}>
-                              {graph.name}
-                            </SelectItem>
-                          ))
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
+            <FormField
+              control={form.control}
+              name="src_extension"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("popup.graph.srcExtension")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={
+                        (src_node
+                          ? true
+                          : !(
+                              form.watch("msg_type") && form.watch("msg_name")
+                            )) || isCompatibleMsgLoading
+                      }
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "w-full overflow-hidden",
+                          "[&_.badge]:hidden"
                         )}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
-              <FormField
-                control={form.control}
-                name="src_extension"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("popup.graph.srcExtension")}</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={
-                          (src_node
-                            ? true
-                            : !(
-                                form.watch("msg_type") && form.watch("msg_name")
-                              )) || isCompatibleMsgLoading
-                        }
                       >
-                        <SelectTrigger
-                          className={cn(
-                            "w-full overflow-hidden",
-                            "[&_.badge]:hidden"
-                          )}
-                        >
-                          <SelectValue
-                            placeholder={t("popup.graph.srcExtension")}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>
-                              {t("popup.graph.srcExtension")}
-                            </SelectLabel>
-                            {srcNodes
-                              .sort((a, b) => {
-                                const aCompatible =
-                                  compatibleMessagesExtList.includes(
-                                    a.data.addon
-                                  );
-                                const bCompatible =
-                                  compatibleMessagesExtList.includes(
-                                    b.data.addon
-                                  );
-                                return aCompatible === bCompatible
-                                  ? 0
-                                  : aCompatible
-                                    ? -1
-                                    : 1;
-                              })
-                              .map((node) => (
-                                <SelectItem
-                                  key={node.id}
-                                  value={node.data.name}
-                                >
-                                  {node.data.name}{" "}
-                                  {compatibleMessagesExtList.includes(
-                                    node.data.addon
-                                  ) && (
-                                    <Badge
-                                      className={cn(
-                                        "badge",
-                                        "bg-ten-green-6 hover:bg-ten-green-6"
-                                      )}
-                                    >
-                                      {t("extensionStore.compatible")}
-                                    </Badge>
-                                  )}
-                                </SelectItem>
-                              ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {!!src_node && <Inner />}
-            </div>
-            <ArrowBigRightIcon className="mx-auto size-4" />
-            <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
-              <FormField
-                control={form.control}
-                name="dest_extension"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("popup.graph.destExtension")}</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value ?? undefined}
-                        disabled={
-                          (dest_node
-                            ? true
-                            : !(
-                                form.watch("msg_type") && form.watch("msg_name")
-                              )) || isCompatibleMsgLoading
-                        }
+                        <SelectValue
+                          placeholder={t("popup.graph.srcExtension")}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {t("popup.graph.srcExtension")}
+                          </SelectLabel>
+                          {srcNodes
+                            .sort((a, b) => {
+                              const aCompatible =
+                                compatibleMessagesExtList.includes(
+                                  a.data.addon as string
+                                );
+                              const bCompatible =
+                                compatibleMessagesExtList.includes(
+                                  b.data.addon as string
+                                );
+                              return aCompatible === bCompatible
+                                ? 0
+                                : aCompatible
+                                  ? -1
+                                  : 1;
+                            })
+                            .map((node) => (
+                              <SelectItem
+                                key={node.id}
+                                value={node.data.name as string}
+                              >
+                                {node.data.name as string}{" "}
+                                {compatibleMessagesExtList.includes(
+                                  node.data.addon as string
+                                ) && (
+                                  <Badge
+                                    className={cn(
+                                      "badge",
+                                      "bg-ten-green-6 hover:bg-ten-green-6"
+                                    )}
+                                  >
+                                    {t("extensionStore.compatible")}
+                                  </Badge>
+                                )}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {!!src_node && <Inner />}
+          </div>
+          <ArrowBigRightIcon className="mx-auto size-4" />
+          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
+            <FormField
+              control={form.control}
+              name="dest_extension"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("popup.graph.destExtension")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ?? undefined}
+                      disabled={
+                        (dest_node
+                          ? true
+                          : !(
+                              form.watch("msg_type") && form.watch("msg_name")
+                            )) || isCompatibleMsgLoading
+                      }
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "w-full overflow-hidden",
+                          "[&_.badge]:hidden"
+                        )}
                       >
-                        <SelectTrigger
-                          className={cn(
-                            "w-full overflow-hidden",
-                            "[&_.badge]:hidden"
-                          )}
-                        >
-                          <SelectValue
-                            placeholder={t("popup.graph.destExtension")}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>
-                              {t("popup.graph.destExtension")}
-                            </SelectLabel>
-                            {destNodes
-                              .sort((a, b) => {
-                                const aCompatible =
-                                  compatibleMessagesExtList.includes(
-                                    a.data.addon
-                                  );
-                                const bCompatible =
-                                  compatibleMessagesExtList.includes(
-                                    b.data.addon
-                                  );
-                                return aCompatible === bCompatible
-                                  ? 0
-                                  : aCompatible
-                                    ? -1
-                                    : 1;
-                              })
-                              .map((node) => (
-                                <SelectItem
-                                  key={node.id}
-                                  value={node.data.name}
-                                >
-                                  {node.data.name}{" "}
-                                  {compatibleMessagesExtList.includes(
-                                    node.data.addon
-                                  ) && (
-                                    <Badge
-                                      className={cn(
-                                        "badge",
-                                        "bg-ten-green-6 hover:bg-ten-green-6"
-                                      )}
-                                    >
-                                      {t("extensionStore.compatible")}
-                                    </Badge>
-                                  )}
-                                </SelectItem>
-                              ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {!!dest_node && <Inner />}
-            </div>
+                        <SelectValue
+                          placeholder={t("popup.graph.destExtension")}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {t("popup.graph.destExtension")}
+                          </SelectLabel>
+                          {destNodes
+                            .sort((a, b) => {
+                              const aCompatible =
+                                compatibleMessagesExtList.includes(
+                                  a.data.addon as string
+                                );
+                              const bCompatible =
+                                compatibleMessagesExtList.includes(
+                                  b.data.addon as string
+                                );
+                              return aCompatible === bCompatible
+                                ? 0
+                                : aCompatible
+                                  ? -1
+                                  : 1;
+                            })
+                            .map((node) => (
+                              <SelectItem
+                                key={node.id}
+                                value={node.data.name as string}
+                              >
+                                {node.data.name as string}{" "}
+                                {compatibleMessagesExtList.includes(
+                                  node.data.addon as string
+                                ) && (
+                                  <Badge
+                                    className={cn(
+                                      "badge",
+                                      "bg-ten-green-6 hover:bg-ten-green-6"
+                                    )}
+                                  >
+                                    {t("extensionStore.compatible")}
+                                  </Badge>
+                                )}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {!!dest_node && <Inner />}
           </div>
-          <div className="flex w-full">
-            <Button type="submit" disabled={isSubmitting} className="ml-auto">
-              {isSubmitting && <SpinnerLoading className="size-4" />}
-              {t("popup.graph.addConnection")}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </>
+        </div>
+        <div className="flex w-full">
+          <Button type="submit" disabled={isSubmitting} className="ml-auto">
+            {isSubmitting && <SpinnerLoading className="size-4" />}
+            {t("popup.graph.addConnection")}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };

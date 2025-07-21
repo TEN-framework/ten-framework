@@ -37,8 +37,6 @@ const nodeTypes = {
 export const FlowCanvas = (props: { className?: string }) => {
   const { className } = props;
 
-  const { currentWorkspace } = useAppStore(); // todo: remove
-
   const {
     displayedNodes,
     setDisplayedNodes,
@@ -63,14 +61,14 @@ export const FlowCanvas = (props: { className?: string }) => {
       const positionChanges = changes.filter(
         (change) => change.type === "position" && change.dragging === false
       );
-      if (positionChanges?.length > 0 && currentWorkspace?.graph?.uuid) {
-        syncGraphNodeGeometry(currentWorkspace?.graph?.uuid, newNodes, {
+      if (positionChanges?.length > 0) {
+        syncGraphNodeGeometry(newNodes, {
           forceLocal: true,
         });
       }
       setDisplayedNodes(newNodes);
     },
-    [currentWorkspace?.graph?.uuid, displayedNodes, setDisplayedNodes]
+    [displayedNodes, setDisplayedNodes]
   );
 
   const onEdgesChange = React.useCallback(

@@ -16,12 +16,19 @@ import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useFetchAddons } from "@/api/services/addons";
-import { postReloadApps } from "@/api/services/apps";
+import { postReloadApps, useFetchApps } from "@/api/services/apps";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { extractLocaleContentFromPkg } from "@/api/services/utils";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import { Badge, type BadgeProps } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import {
   Select,
   SelectContent,
@@ -35,8 +42,9 @@ import { Separator } from "@/components/ui/Separator";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
-import { cn, compareVersions } from "@/lib/utils";
+import { calcAbbreviatedBaseDir, cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
+import type { IApp } from "@/types/apps";
 import type { IListTenCloudStorePackage } from "@/types/extension";
 import {
   ELogViewerScriptType,
@@ -160,15 +168,12 @@ export const ExtensionDetails = (props: {
     versions[0].hash
   );
 
-  const { currentWorkspace, defaultOsArch } = useAppStore();
+  const { defaultOsArch } = useAppStore();
 
   const { mutate: mutatePkgs } = useListTenCloudStorePackages();
-  const { mutate: mutateAddons } = useFetchAddons({
-    base_dir: currentWorkspace?.app?.base_dir,
-  });
-  const { data: addons } = useFetchAddons({
-    base_dir: currentWorkspace.app?.base_dir || "",
-  });
+  const { mutate: mutateAddons } = useFetchAddons({});
+  const { data: addons } = useFetchAddons({});
+  const { data: loadedApps } = useFetchApps();
 
   const selectedVersionItemMemo = React.useMemo(() => {
     return versions.find((version) => version.hash === selectedVersion);
@@ -222,11 +227,11 @@ export const ExtensionDetails = (props: {
     setSelectedVersion(value);
   };
 
-  const handleInstall = () => {
-    if (!currentWorkspace.app?.base_dir || !selectedVersionItemMemo) {
+  const handleInstall = (targetApp?: IApp) => {
+    if (!targetApp?.base_dir || !selectedVersionItemMemo) {
       return;
     }
-    const widgetId = "ext-install-" + selectedVersionItemMemo.hash;
+    const widgetId = `ext-install-${selectedVersionItemMemo.hash}`;
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
@@ -241,7 +246,7 @@ export const ExtensionDetails = (props: {
         scriptType: ELogViewerScriptType.INSTALL,
         script: {
           type: ELogViewerScriptType.INSTALL,
-          base_dir: currentWorkspace.app?.base_dir,
+          base_dir: targetApp?.base_dir,
           pkg_type: selectedVersionItemMemo.type,
           pkg_name: selectedVersionItemMemo.name,
           pkg_version: selectedVersionItemMemo.version,
@@ -253,8 +258,8 @@ export const ExtensionDetails = (props: {
         postActions: () => {
           mutatePkgs();
           mutateAddons();
-          if (currentWorkspace.app?.base_dir) {
-            postReloadApps(currentWorkspace.app.base_dir);
+          if (targetApp?.base_dir) {
+            postReloadApps(targetApp.base_dir);
           }
         },
       },
@@ -340,20 +345,36 @@ export const ExtensionDetails = (props: {
                 <span>{t("extensionStore.installed")}</span>
               </Button>
             ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                className={cn(
-                  "cursor-pointer rounded-none",
-                  "h-fit px-2 py-0.5 [&>svg]:size-3",
-                  "font-normal text-xs"
-                )}
-                disabled={readOnly}
-                onClick={handleInstall}
-              >
-                <HardDriveDownloadIcon className="size-3" />
-                <span>{t("extensionStore.install")}</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={cn(
+                      "cursor-pointer rounded-none",
+                      "h-fit px-2 py-0.5 [&>svg]:size-3",
+                      "font-normal text-xs"
+                    )}
+                    disabled={readOnly}
+                    // onClick={handleInstall}
+                  >
+                    <HardDriveDownloadIcon className="size-3" />
+                    <span>{t("extensionStore.install")}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-fit" align="start">
+                  <DropdownMenuGroup>
+                    {loadedApps?.app_info?.map((app) => (
+                      <DropdownMenuItem
+                        key={`ext-details-app-${app.base_dir}`}
+                        onClick={() => handleInstall(app)}
+                      >
+                        {calcAbbreviatedBaseDir(app.base_dir)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
@@ -562,7 +583,7 @@ const ExtensionEleTags = (props: {
         <li
           key={rowIndex}
           className={cn("flex items-center justify-start gap-1", {
-            ["justify-between"]: row.length === maxItemsPerRow,
+            "justify-between": row.length === maxItemsPerRow,
           })}
         >
           {row.map((tag) => (

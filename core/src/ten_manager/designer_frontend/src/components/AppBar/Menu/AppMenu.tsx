@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postReloadApps, useFetchApps } from "@/api/services/apps";
+import { useGraphs } from "@/api/services/graphs";
 import {
   AppCreatePopupTitle,
   AppFolderPopupTitle,
@@ -61,10 +62,10 @@ export function AppMenu(props: {
 
   const { appendWidget } = useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
-  const { updateCurrentWorkspace } = useAppStore();
   const { appendDialog, removeDialog } = useDialogStore();
 
-  const { mutate } = useFetchApps();
+  const { mutate: mutateApps } = useFetchApps();
+  const { mutate: mutateGraphs } = useGraphs();
 
   const openAppFolderPopup = () => {
     appendWidget({
@@ -166,7 +167,8 @@ export function AppMenu(props: {
         );
       }
     } finally {
-      mutate();
+      await mutateApps();
+      await mutateGraphs();
     }
   };
 
@@ -195,91 +197,83 @@ export function AppMenu(props: {
         await reloadApps(baseDir);
         removeDialog("reload-app");
       },
-      postConfirm: async () => {
-        setNodesAndEdges([], []);
-        updateCurrentWorkspace({
-          graph: null,
-        });
-      },
     });
   };
 
   return (
-    <>
-      <NavigationMenuItem>
-        <NavigationMenuTrigger
-          className="submenu-trigger"
-          ref={(ref) => {
-            if (triggerListRef?.current && ref) {
-              triggerListRef.current[idx] = ref;
-            }
-          }}
-          onClick={(e) => {
-            if (disableMenuClick) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {t("header.menuApp.title")}
-        </NavigationMenuTrigger>
-        <NavigationMenuContent
-          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
-        >
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={openAppCreatePopup}
-            >
-              <FolderPlusIcon className="me-2 h-4 w-4" />
-              {t("header.menuApp.createApp")}
-            </Button>
-          </NavigationMenuLink>
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={openAppFolderPopup}
-            >
-              <FolderOpenIcon className="me-2 h-4 w-4" />
-              {t("header.menuApp.loadApp")}
-            </Button>
-          </NavigationMenuLink>
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={() => {
-                handleReloadApp();
-              }}
-            >
-              <FolderSyncIcon className="me-2 h-4 w-4" />
-              {t("header.menuApp.reloadAllApps")}
-            </Button>
-          </NavigationMenuLink>
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={openAppsManagerPopup}
-            >
-              <FolderCogIcon className="me-2 h-4 w-4" />
-              {t("header.menuApp.manageLoadedApps")}
-            </Button>
-          </NavigationMenuLink>
-          <Separator className="w-full" />
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full justify-start"
-              variant="ghost"
-              onClick={openAbout}
-            >
-              <InfoIcon className="me-2 h-4 w-4" />
-              {t("header.menuApp.about")}
-            </Button>
-          </NavigationMenuLink>
-        </NavigationMenuContent>
-      </NavigationMenuItem>
-    </>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger
+        className="submenu-trigger"
+        ref={(ref) => {
+          if (triggerListRef?.current && ref) {
+            triggerListRef.current[idx] = ref;
+          }
+        }}
+        onClick={(e) => {
+          if (disableMenuClick) {
+            e.preventDefault();
+          }
+        }}
+      >
+        {t("header.menuApp.title")}
+      </NavigationMenuTrigger>
+      <NavigationMenuContent
+        className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
+      >
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={openAppCreatePopup}
+          >
+            <FolderPlusIcon className="me-2 h-4 w-4" />
+            {t("header.menuApp.createApp")}
+          </Button>
+        </NavigationMenuLink>
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={openAppFolderPopup}
+          >
+            <FolderOpenIcon className="me-2 h-4 w-4" />
+            {t("header.menuApp.loadApp")}
+          </Button>
+        </NavigationMenuLink>
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={() => {
+              handleReloadApp();
+            }}
+          >
+            <FolderSyncIcon className="me-2 h-4 w-4" />
+            {t("header.menuApp.reloadAllApps")}
+          </Button>
+        </NavigationMenuLink>
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={openAppsManagerPopup}
+          >
+            <FolderCogIcon className="me-2 h-4 w-4" />
+            {t("header.menuApp.manageLoadedApps")}
+          </Button>
+        </NavigationMenuLink>
+        <Separator className="w-full" />
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full justify-start"
+            variant="ghost"
+            onClick={openAbout}
+          >
+            <InfoIcon className="me-2 h-4 w-4" />
+            {t("header.menuApp.about")}
+          </Button>
+        </NavigationMenuLink>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
   );
 }

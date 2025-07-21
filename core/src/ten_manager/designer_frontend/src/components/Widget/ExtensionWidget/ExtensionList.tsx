@@ -11,13 +11,20 @@ import { useTranslation } from "react-i18next";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList as VirtualList } from "react-window";
 import { useFetchAddons } from "@/api/services/addons";
-import { postReloadApps } from "@/api/services/apps";
+import { postReloadApps, useFetchApps } from "@/api/services/apps";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { extractLocaleContentFromPkg } from "@/api/services/utils";
 import { HighlightText } from "@/components/Highlight";
 import { ExtensionPopupTitle } from "@/components/Popup/Default/Extension";
 import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import {
   Tooltip,
   TooltipContent,
@@ -34,8 +41,8 @@ import {
   GROUP_EXTENSION_ID,
   GROUP_LOG_VIEWER_ID,
 } from "@/constants/widgets";
-import { cn } from "@/lib/utils";
-import { useAppStore, useWidgetStore } from "@/store";
+import { calcAbbreviatedBaseDir, cn } from "@/lib/utils";
+import { useWidgetStore } from "@/store";
 import {
   EPackageSource,
   type IListTenCloudStorePackage,
@@ -143,11 +150,10 @@ export const ExtensionBaseItem = React.forwardRef<
     removeBackstageWidget,
     removeLogViewerHistory,
   } = useWidgetStore();
-  const { currentWorkspace } = useAppStore();
+
   const { mutate: mutatePkgs } = useListTenCloudStorePackages();
-  const { mutate: mutateAddons } = useFetchAddons({
-    base_dir: currentWorkspace?.app?.base_dir,
-  });
+  const { mutate: mutateAddons } = useFetchAddons({});
+  const { data: loadedApps } = useFetchApps();
 
   const deferredSearch = React.useDeferredValue(extSearch);
 
@@ -277,21 +283,40 @@ export const ExtensionBaseItem = React.forwardRef<
         {isInstalled ? (
           <CheckIcon className="size-4" />
         ) : (
-          <Button
-            variant="outline"
-            size="xs"
-            className={cn(
-              "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
-              "shadow-none"
-            )}
-            disabled={readOnly || !currentWorkspace?.app?.base_dir}
-            onClick={handleInstall(
-              currentWorkspace?.app?.base_dir || "",
-              item as IListTenCloudStorePackage
-            )}
-          >
-            {t("extensionStore.install")}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="xs"
+                className={cn(
+                  "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
+                  "shadow-none"
+                )}
+                disabled={
+                  readOnly ||
+                  !loadedApps?.app_info ||
+                  loadedApps?.app_info?.length === 0
+                }
+              >
+                {t("extensionStore.install")}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-fit" align="start">
+              <DropdownMenuGroup>
+                {loadedApps?.app_info?.map((app) => (
+                  <DropdownMenuItem
+                    key={`ext-details-app-${app.base_dir}`}
+                    onClick={handleInstall(
+                      app.base_dir,
+                      item as IListTenCloudStorePackage
+                    )}
+                  >
+                    {calcAbbreviatedBaseDir(app.base_dir)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </li>

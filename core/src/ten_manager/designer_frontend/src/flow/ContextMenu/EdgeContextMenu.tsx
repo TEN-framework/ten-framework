@@ -37,7 +37,6 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const { t } = useTranslation();
 
   const { appendDialog, removeDialog } = useDialogStore();
-  const { currentWorkspace } = useAppStore();
   const { setNodesAndEdges } = useFlowStore();
 
   const { data: graphs = [] } = useGraphs();
@@ -75,7 +74,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
           edge.type +
           edge.id +
           "delete-popup-dialog";
-        if (!currentWorkspace?.graph) {
+        if (!edge?.data?.graph) {
           return;
         }
         appendDialog({
@@ -85,14 +84,17 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
           confirmLabel: t("action.delete"),
           cancelLabel: t("action.cancel"),
           onConfirm: async () => {
+            if (!edge?.data || !edge?.data?.graph) {
+              return;
+            }
             try {
               await postDeleteConnection({
-                graph_id: currentWorkspace!.graph!.uuid,
-                src_app: edge.data!.app,
+                graph_id: edge?.data?.graph?.uuid,
+                src_app: edge.data.app,
                 src_extension: edge.source,
-                msg_type: edge.data!.connectionType,
-                msg_name: edge.data!.name,
-                dest_app: edge.data!.app,
+                msg_type: edge.data.connectionType,
+                msg_name: edge.data.name,
+                dest_app: edge.data.app,
                 dest_extension: edge.target,
               });
               toast.success(t("action.deleteConnectionSuccess"));

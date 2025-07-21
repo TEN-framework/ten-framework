@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
+import { useFlowStore, useWidgetStore } from "@/store";
 import { appendLogsById } from "@/store/widget";
 import {
   ETenLogLevel,
@@ -125,7 +125,7 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, wsUrl, scriptType, script]);
 
-  return <></>;
+  return null;
 }
 
 export function LogViewerFrontStageWidget(props: {
@@ -142,7 +142,6 @@ export function LogViewerFrontStageWidget(props: {
 
   const { logViewerHistory, widgets } = useWidgetStore();
   const { nodes } = useFlowStore();
-  const { currentWorkspace } = useAppStore();
 
   const { t } = useTranslation();
 
@@ -162,24 +161,14 @@ export function LogViewerFrontStageWidget(props: {
         },
         [] as (typeof logViewerHistory)[typeof id]["history"]
       );
-      return allLogs.filter(
-        (log) =>
-          log.metadata?.extension === addonInput &&
-          currentWorkspace.graph?.name === log.metadata?.graph_name
-      );
+      return allLogs.filter((log) => log.metadata?.extension === addonInput);
     }
     const allLogs = logViewerHistory[id]?.history || [];
     if (!addonInput) return allLogs;
     return (
       allLogs.filter((log) => log.metadata?.extension === addonInput) || []
     );
-  }, [
-    logViewerHistory,
-    id,
-    addonInput,
-    currentWorkspace.graph?.name,
-    options?.filters?.extensions,
-  ]);
+  }, [logViewerHistory, id, addonInput, options?.filters?.extensions]);
 
   const currentWidget = React.useMemo(() => {
     return widgets.find((w) => w.widget_id === id);
@@ -448,31 +437,29 @@ function LogViewerLogItemList(props: {
   }
 
   return (
-    <>
-      <AutoSizer key={`LogViewerLogItemList-${prefix}`}>
-        {({ width, height }: { width: number; height: number }) => (
-          <VirtualList
-            ref={listRef}
-            width={width}
-            height={height}
-            itemCount={filteredLogs.length}
-            itemSize={getSize}
-            itemData={filteredLogs}
-          >
-            {({ data, index, style }) => (
-              <div style={style}>
-                <VirtualListItem
-                  data={data}
-                  index={index}
-                  setSize={setSize}
-                  windowWidth={width}
-                  search={search}
-                />
-              </div>
-            )}
-          </VirtualList>
-        )}
-      </AutoSizer>
-    </>
+    <AutoSizer key={`LogViewerLogItemList-${prefix}`}>
+      {({ width, height }: { width: number; height: number }) => (
+        <VirtualList
+          ref={listRef}
+          width={width}
+          height={height}
+          itemCount={filteredLogs.length}
+          itemSize={getSize}
+          itemData={filteredLogs}
+        >
+          {({ data, index, style }) => (
+            <div style={style}>
+              <VirtualListItem
+                data={data}
+                index={index}
+                setSize={setSize}
+                windowWidth={width}
+                search={search}
+              />
+            </div>
+          )}
+        </VirtualList>
+      )}
+    </AutoSizer>
   );
 }

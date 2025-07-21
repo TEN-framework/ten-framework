@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Label } from "@/components/ui/Label";
 import { Separator } from "@/components/ui/Separator";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { cn } from "@/lib/utils";
+import { calcAbbreviatedBaseDir, cn } from "@/lib/utils";
 import { useAppStore, useFlowStore } from "@/store";
 import type { IGraph } from "@/types/graphs";
 
@@ -318,12 +318,4 @@ const GraphList = (props: { graphs: IGraph[] }) => {
       ))}
     </div>
   );
-};
-
-const calcAbbreviatedBaseDir = (baseDir: string) => {
-  const parts = baseDir.split("/");
-  if (parts.length <= 2) {
-    return baseDir;
-  }
-  return `${parts[0]}/${parts[1]}/.../${parts[parts.length - 1]}`;
 };
