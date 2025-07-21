@@ -18,12 +18,13 @@ import {
 } from "@xyflow/react";
 import * as React from "react";
 import { ThemeProviderContext } from "@/components/theme-context";
-import CustomEdge from "@/flow/CustomEdge";
+import EdgeContextMenu from "@/flow/ContextMenu/EdgeContextMenu";
+import { CustomEdge } from "@/flow/edge";
 import { syncGraphNodeGeometry } from "@/flow/graph";
 import { ExtensionNode } from "@/flow/node";
 import { GraphNode } from "@/flow/node/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore, useFlowStore } from "@/store";
+import { useFlowStore } from "@/store";
 import type { TCustomEdge, TExtensionNode } from "@/types/flow";
 
 import "@xyflow/react/dist/style.css"; // Import react-flow style.
@@ -36,6 +37,14 @@ const nodeTypes = {
 
 export const FlowCanvas = (props: { className?: string }) => {
   const { className } = props;
+
+  const [contextMenu, setContextMenu] = React.useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    type?: "node" | "edge" | "pane";
+    edge?: TCustomEdge;
+  }>({ visible: false, x: 0, y: 0 });
 
   const {
     displayedNodes,
@@ -79,6 +88,24 @@ export const FlowCanvas = (props: { className?: string }) => {
     [displayedEdges, setDisplayedEdges]
   );
 
+  /** @deprecated */
+  const renderContextMenu = () => {
+    if (contextMenu.type === "edge" && contextMenu.edge) {
+      return (
+        <EdgeContextMenu
+          visible={contextMenu.visible}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          edge={contextMenu.edge}
+          onClose={() => {
+            setContextMenu({ visible: false, x: 0, y: 0 });
+          }}
+        />
+      );
+    }
+    return null;
+  };
+
   return (
     <div
       className={cn("flow-container h-[calc(100vh-40px)] w-full", className)}
@@ -94,6 +121,30 @@ export const FlowCanvas = (props: { className?: string }) => {
         edgeTypes={{
           customEdge: CustomEdge,
         }}
+        onEdgeContextMenu={(event, edge) => {
+          event.preventDefault();
+          console.log("Edge context menu", {
+            edge,
+            x: event.clientX,
+            y: event.clientY,
+          });
+          setContextMenu({
+            visible: true,
+            x: event.clientX,
+            y: event.clientY,
+            type: "edge",
+            edge: {
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              type: edge.type,
+              data: edge.data as TCustomEdge["data"],
+            },
+          });
+        }}
+        onBlur={() => {
+          setContextMenu({ visible: false, x: 0, y: 0 });
+        }}
         fitView
         nodesDraggable
         edgesFocusable
@@ -108,6 +159,7 @@ export const FlowCanvas = (props: { className?: string }) => {
           color={theme === "dark" ? "#333" : "#ccc"}
         />
       </ReactFlow>
+      {renderContextMenu()}
     </div>
   );
 };

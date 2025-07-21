@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { ListCollapseIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { ListCollapseIcon, TrashIcon } from "lucide-react";
 import type React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import ContextMenu, {
   type IContextMenuItem,
 } from "@/flow/ContextMenu/Base";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { useAppStore, useDialogStore, useFlowStore } from "@/store";
+import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
 import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
@@ -27,6 +27,7 @@ interface EdgeContextMenuProps {
   onClose: () => void;
 }
 
+/** @deprecated */
 const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   visible,
   x,
@@ -55,14 +56,14 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
         onClose();
       },
     },
-    {
-      _type: EContextMenuItemType.BUTTON,
-      label: t("action.edit"),
-      icon: <PencilIcon />,
-      onClick: () => {
-        onClose();
-      },
-    },
+    // {
+    //   _type: EContextMenuItemType.BUTTON,
+    //   label: t("action.edit"),
+    //   icon: <PencilIcon />,
+    //   onClick: () => {
+    //     onClose();
+    //   },
+    // },
     {
       _type: EContextMenuItemType.BUTTON,
       label: t("action.delete"),

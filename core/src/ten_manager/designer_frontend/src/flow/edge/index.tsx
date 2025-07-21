@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
 import {
   BaseEdge,
   type EdgeProps,
   getSmoothStepPath,
   Position,
 } from "@xyflow/react";
-
 import type { TCustomEdge } from "@/types/flow";
 
 export function CustomEdge({
@@ -40,6 +40,7 @@ export function CustomEdge({
         style={{ ...style, strokeWidth: 2 }}
         markerEnd={markerEnd}
       />
+
       {selected && (
         <path
           id={id}
@@ -52,7 +53,7 @@ export function CustomEdge({
         >
           <animate
             attributeName="stroke-dashoffset"
-            values="10;0"
+            values="100"
             dur="0.75s"
             repeatCount="indefinite"
           />
@@ -61,5 +62,3 @@ export function CustomEdge({
     </>
   );
 }
-
-export default CustomEdge;
