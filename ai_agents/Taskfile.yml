@@ -119,6 +119,14 @@ tasks:
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
 
+  asr-guarder-test:
+    desc: run tests for asr guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} {{ .CLI_ARGS }}
+
   format:
     desc: format code
     cmds:

@@ -1,0 +1,10 @@
+{
+  "type": "app",
+  "name": "asr_guarder",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "path": "../../ten_packages/extension/azure_asr_python"
+    }
+  ]
+}
