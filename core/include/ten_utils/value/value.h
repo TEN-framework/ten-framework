@@ -17,6 +17,7 @@
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/value/type.h"
+#include "ten_utils/value/value_buffer.h"  // IWYU pragma: keep
 #include "ten_utils/value/value_get.h"     // IWYU pragma: keep
 #include "ten_utils/value/value_is.h"      // IWYU pragma: keep
 #include "ten_utils/value/value_json.h"    // IWYU pragma: keep
