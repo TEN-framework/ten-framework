@@ -955,6 +955,331 @@
             }
           ]
         }
+      },
+      {
+        "name": "voice_assistant_star",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false,
+                "agora_asr_vendor_name": "microsoft",
+                "agora_asr_language": "en-US",
+                "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+                "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+                "agora_asr_session_control_file_path": "session_control.conf"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "api_key": "${env:DEEPGRAM_API_KEY}",
+                "language": "en-US",
+                "model": "nova-2",
+                "sample_rate": 16000
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_chatgpt_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "api_key": "${env:OPENAI_API_KEY}",
+                "base_url": "",
+                "frequency_penalty": 0.9,
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10,
+                "max_tokens": 512,
+                "model": "${env:OPENAI_MODEL}",
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "minimax_tts_python",
+              "extension_group": "tts",
+              "property": {
+                "voice_id": "male-qn-qingse",
+                "model": "speech-01-turbo",
+                "request_timeout_seconds": 10,
+                "api_key": "${env:MINIMAX_API_KEY}",
+                "sample_rate": 32000,
+                "group_id": "1872576106666660089",
+                "url": "https://api.minimax.chat/v1/t2a_v2"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_control_python",
+              "extension_group": "control",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "agora_rtc",
+              "cmd": [
+                {
+                  "name": "on_user_joined",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_user_left",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_connection_failure",
+                  "dest": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "data": [
+                {
+                  "name": "asr_result",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "name": "flush_llm",
+                  "dest": [
+                    {
+                      "extension": "llm",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                          {
+                            "path": "_ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "flush"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "flush_tts",
+                  "dest": [
+                    {
+                      "extension": "tts",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                          {
+                            "path": "_ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "flush"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "flush_rtc",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                          {
+                            "path": "_ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "flush"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "llm"
+                    },
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_request",
+                  "dest": [
+                    {
+                      "extension": "tts",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                          {
+                            "path": "_ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "text_data"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "llm",
+              "cmd": [
+                {
+                  "name": "tool_call",
+                  "dest": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                },
+                {
+                  "name": "content_data",
+                  "dest": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "weatherapi_tool_python",
+              "cmd": [
+                {
+                  "name": "tool_register",
+                  "dest": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {

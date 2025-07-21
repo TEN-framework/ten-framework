@@ -80,11 +80,35 @@
             }
           }
         }
+      },
+      {
+        "name": "tts_request",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "on_user_joined"
+      },
+      {
+        "name": "on_user_left"
       }
     ],
     "cmd_out": [
       {
-        "name": "flush"
+        "name": "flush_llm"
+      },
+      {
+        "name": "flush_tts"
+      },
+      {
+        "name": "flush_rtc"
       }
     ]
   }
