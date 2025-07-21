@@ -16,19 +16,19 @@ import {
   usePreferencesLogViewerLines,
 } from "@/api/services/storage";
 import { getTanstackQueryClient } from "@/api/services/utils";
-import AppBar from "@/components/AppBar";
-import { GlobalDialogs } from "@/components/GlobalDialogs";
+import AppBar from "@/components/app-bar";
+import { GlobalDialogs } from "@/components/global-dialogs";
 import { GraphSelector } from "@/components/graph/graph-selector";
-import { GlobalPopups } from "@/components/Popup";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import StatusBar from "@/components/StatusBar";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { GlobalPopups } from "@/components/popup";
+import { SpinnerLoading } from "@/components/status/loading";
+import StatusBar from "@/components/status-bar";
+import { ThemeProvider } from "@/components/theme-provider";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/Resizable";
-import { BackstageWidgets } from "@/components/Widget/BackstageWidgets";
+} from "@/components/ui/resizable";
+import { BackstageWidgets } from "@/components/widget/backstage-widgets";
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
 import { FlowCanvas } from "@/flow";
 import { generateNodesAndEdges } from "@/flow/graph";

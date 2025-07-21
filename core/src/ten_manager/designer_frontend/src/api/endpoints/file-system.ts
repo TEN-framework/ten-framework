@@ -11,7 +11,7 @@ import { genResSchema } from "@/api/endpoints/utils";
 import type {
   IBaseDirResponse,
   IFileContentResponse,
-} from "@/types/fileSystem";
+} from "@/types/file-system";
 
 export const ENDPOINT_FILE_SYSTEM = {
   fileContent: {

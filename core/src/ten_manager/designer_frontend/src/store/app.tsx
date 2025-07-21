@@ -8,7 +8,7 @@
 import type { z } from "zod";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { IFMItem } from "@/components/FileManager/utils";
+import type { IFMItem } from "@/components/file-manager/utils";
 import {
   EPreferencesLocale,
   type IApp,

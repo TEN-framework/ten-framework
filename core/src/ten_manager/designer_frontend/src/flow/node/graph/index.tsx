@@ -15,7 +15,7 @@ import {
 import {
   GroupNode,
   GroupNodeLabel,
-} from "@/components/ui/react-flow/LabeledGroupNode";
+} from "@/components/ui/react-flow/labeled-group-node";
 import { ContextMenuItems } from "@/flow/node/graph/context-menu";
 import { cn } from "@/lib/utils";
 import type { TGraphNode } from "@/types/flow";

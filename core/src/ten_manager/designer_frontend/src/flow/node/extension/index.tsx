@@ -21,21 +21,21 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { BaseHandle } from "@/components/ui/react-flow/BaseHandle";
-import { BaseNode } from "@/components/ui/react-flow/BaseNode";
-import { Separator } from "@/components/ui/Separator";
+import { BaseHandle } from "@/components/ui/react-flow/base-handle";
+import { BaseNode } from "@/components/ui/react-flow/base-node";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/Tooltip";
+} from "@/components/ui/tooltip";
 import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";

@@ -10,7 +10,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postGraphsAutoStart, useGraphs } from "@/api/services/graphs";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -18,10 +18,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/Card";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { Label } from "@/components/ui/Label";
-import { Separator } from "@/components/ui/Separator";
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { calcAbbreviatedBaseDir, cn } from "@/lib/utils";
 import { useAppStore, useFlowStore } from "@/store";

@@ -18,7 +18,7 @@ import {
 } from "@xyflow/react";
 import * as React from "react";
 import { ThemeProviderContext } from "@/components/theme-context";
-import EdgeContextMenu from "@/flow/ContextMenu/EdgeContextMenu";
+import EdgeContextMenu from "@/flow/context-menu/edge-context-menu";
 import { CustomEdge } from "@/flow/edge";
 import { syncGraphNodeGeometry } from "@/flow/graph";
 import { ExtensionNode } from "@/flow/node";

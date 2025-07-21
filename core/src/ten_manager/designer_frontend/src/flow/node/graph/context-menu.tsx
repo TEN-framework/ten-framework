@@ -18,9 +18,9 @@ import {
   addRecentRunApp as addToRecentRunApp,
   useStorage,
 } from "@/api/services/storage";
-import { LoadedAppsPopupTitle } from "@/components/Popup/Default/App";
-import { GraphPopupTitle } from "@/components/Popup/Graph";
-import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
+import { LoadedAppsPopupTitle } from "@/components/popup/default/app";
+import { GraphPopupTitle } from "@/components/popup/graph";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { TEN_PATH_WS_EXEC } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
@@ -35,7 +35,7 @@ import {
   ERightClickContextMenuItemType,
   type IRightClickContextMenuItem,
   RightClickContextMenuItem,
-} from "@/flow/ContextMenu/Base";
+} from "@/flow/context-menu/base";
 import { useWidgetStore } from "@/store";
 import type { IRunAppParams } from "@/types/apps";
 import { EGraphActions, type IGraph } from "@/types/graphs";

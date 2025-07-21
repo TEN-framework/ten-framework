@@ -21,9 +21,9 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postDeleteNode, useGraphs } from "@/api/services/graphs";
-import { EditorPopupTitle } from "@/components/Popup/Editor";
-import { GraphPopupTitle } from "@/components/Popup/Graph";
-import { LogViewerPopupTitle } from "@/components/Popup/LogViewer";
+import { EditorPopupTitle } from "@/components/popup/editor";
+import { GraphPopupTitle } from "@/components/popup/graph";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import {
   CONTAINER_DEFAULT_ID,
   GRAPH_ACTIONS_WIDGET_ID,
@@ -35,7 +35,7 @@ import {
 import {
   ERightClickContextMenuItemType,
   RightClickContextMenuItem,
-} from "@/flow/ContextMenu/Base";
+} from "@/flow/context-menu/base";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
