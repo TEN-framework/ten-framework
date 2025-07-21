@@ -19,9 +19,7 @@
       "version": "1.38.0"
     },
     {
-      "type": "system",
-      "name": "ten_ai_base",
-      "version": "=0.6.11"
+      "path": "/tmp/ten_ai_base"
     },
     {
       "type": "extension",

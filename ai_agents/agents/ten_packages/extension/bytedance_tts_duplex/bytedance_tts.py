@@ -282,7 +282,7 @@ class BytedanceV3Client:
         self.ws: WebSocketClientProtocol = None
         self.stop_event = asyncio.Event()
         self.ten_env: AsyncTenEnv = ten_env
-        self.audio_queue = asyncio.Queue[Tuple[int, bytes]]()
+        self.response_msgs = asyncio.Queue[Tuple[int, bytes]]()
 
     def gen_log_id(self) -> str:
         ts = int(time.time() * 1000)
@@ -385,13 +385,13 @@ class BytedanceV3Client:
             self._print_response(message, "recv_loop")
             if message.event == EVENT_TTSResponse:
                 if message.payload:
-                    await self.audio_queue.put((message.event, message.payload))
+                    await self.response_msgs.put((message.event, message.payload))
                 else:
                     self.ten_env.log_error(
                         "Received empty payload for TTS response"
                     )
             elif message.event == EVENT_TTSSentenceEnd:
-                await self.audio_queue.put((message.event, None))
+                await self.response_msgs.put((message.event, None))
             elif message.event in [
                 EVENT_SessionFinished,
                 EVENT_ConnectionFinished,
@@ -432,12 +432,12 @@ class BytedanceV3Client:
             raise RuntimeError(f"Failed to parse server message: {e}") from e
 
     def _print_response(self, res: ServerResponse, tag: str):
-        self.ten_env.log_debug(f"[{tag}] Header: {res.header}")
-        self.ten_env.log_debug(f"[{tag}] Optional: {res.optional}")
-        self.ten_env.log_debug(
+        self.ten_env.log_info(f"[{tag}] Header: {res.header}")
+        self.ten_env.log_info(f"[{tag}] Optional: {res.optional}")
+        self.ten_env.log_info(
             f"[{tag}] Payload Len: {len(res.payload) if res.payload else 0}"
         )
-        self.ten_env.log_debug(f"[{tag}] Payload JSON: {res.payload_json}")
+        self.ten_env.log_info(f"[{tag}] Payload JSON: {res.payload_json}")
 
     async def close(self):
         # Close the websocket connection if it exists

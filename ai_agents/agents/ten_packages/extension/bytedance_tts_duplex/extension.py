@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
 import traceback
 from typing import AsyncGenerator
 
@@ -13,6 +14,7 @@ from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .bytedance_tts import (
     BytedanceV3Client,
+    EVENT_SessionFinished,
     EVENT_TTSResponse,
     EVENT_TTSSentenceEnd,
 )
@@ -33,6 +35,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         self.config: BytedanceTTSDuplexConfig = None
         self.client: BytedanceV3Client = None
         self.current_request_id: str = None
+        self.stop_event: asyncio.Event = None
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -74,13 +77,36 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
+    async def _loop(self) -> None:
+        while True:
+            try:
+                event, audio_data = await self.client.response_msgs.get()
+                self.ten_env.log_info(f"Received event: {event}")
+
+                if event == EVENT_TTSResponse:
+                    if audio_data is not None:
+                        await self.send_tts_audio_data(audio_data)
+                    else:
+                        self.ten_env.log_error(
+                            "Received empty payload for TTS response"
+                        )
+                elif event == EVENT_SessionFinished:
+                    if self.stop_event:
+                        self.stop_event.set()
+                        self.stop_event = None
+                    break
+
+            except Exception as e:
+                self.ten_env.log_error(f"Error in _loop: {e}")
+                break
+
     def vendor(self) -> str:
         return "bytedance"
 
     def synthesize_audio_sample_rate(self) -> int:
         return 24000
 
-    async def request_tts(self, t: TTSTextInput) -> AsyncGenerator[bytes, None]:
+    async def request_tts(self, t: TTSTextInput) -> None:
         """
         Override this method to handle TTS requests.
         This is called when the TTS request is made.
@@ -88,7 +114,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         try:
             if t.text.strip() == "":
                 self.ten_env.log_info("Received empty text for TTS request")
-                yield b""
                 return
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
@@ -105,27 +130,30 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     ten_env=self.ten_env,
                 )
                 await self.client.connect()
+
+                asyncio.create_task(self._loop())
+
                 await self.client.start_connection()
                 await self.client.start_session()
 
             await self.client.send_text(t.text)
 
-            while True:
-                event, audio_data = await self.client.audio_queue.get()
-                self.ten_env.log_debug(f"Received event: {event}")
-                if event == EVENT_TTSResponse:
-                    if audio_data is not None:
-                        yield audio_data
-                    else:
-                        self.ten_env.log_error(
-                            "Received empty payload for TTS response"
-                        )
-                elif event == EVENT_TTSSentenceEnd:
-                    self.ten_env.log_info("Received TTS sentence end event")
-                    break
+            if t.text_input_end:
+                self.ten_env.log_info(
+                    f"Received TTS text input end for request ID: {t.request_id}"
+                )
+                await self.client.finish_session()
+
+                self.stop_event = asyncio.Event()
+                await self.stop_event.wait()
+
+                await self.client.finish_connection()
+                await self.client.close()
+                self.client = None
+
 
         except Exception as e:
             self.ten_env.log_error(f"Error in request_tts: {e}")
-            yield b""
+            # yield b""
 
-        self.ten_env.log_info("TTS request completed")
+        # self.ten_env.log_info("TTS request completed")

@@ -23,6 +23,10 @@ class TTSDataAdapterConfig(BaseConfig):
 
 
 class TTSDataAdapterExtension(AsyncExtension):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.request_id = uuid.uuid4().hex
+
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
 
@@ -58,11 +62,14 @@ class TTSDataAdapterExtension(AsyncExtension):
             text = json_data.get("text", "")
             final = json_data.get("final", False)
 
-            ten_env.log_info(f"Received ASR result: {json_str}")
+            ten_env.log_info(f"Received LLM result: {json_str}")
 
             output = Data.create("tts_text_input")
-            output.set_property_string("request_id", uuid.uuid4().hex)
+            output.set_property_string("request_id", self.request_id)
             output.set_property_string("text", text)
             output.set_property_bool("text_input_end", final)
 
             await ten_env.send_data(output)
+
+            if final:
+                self.request_id = uuid.uuid4().hex
