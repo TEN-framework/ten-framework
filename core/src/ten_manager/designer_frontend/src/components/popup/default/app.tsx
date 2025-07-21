@@ -13,6 +13,7 @@ import { postLoadDir, useFetchApps } from "@/api/services/apps";
 import { useGraphs } from "@/api/services/graphs";
 import { addRecentRunApp } from "@/api/services/storage";
 import { AppFileManager } from "@/components/file-manager/app-folder";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,6 @@ import {
   type IDefaultWidgetData,
   type IWidget,
 } from "@/types/widgets";
-import { LogViewerPopupTitle } from "../LogViewer";
 
 export const AppFolderPopupTitle = () => {
   const { t } = useTranslation();

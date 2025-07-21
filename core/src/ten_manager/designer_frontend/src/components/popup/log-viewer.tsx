@@ -6,7 +6,7 @@
 //
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-
+// eslint-disable-next-line max-len
 import { LogViewerFrontStageWidget } from "@/components/widget/log-viewer-widget";
 import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
 import { useWidgetStore } from "@/store/widget";

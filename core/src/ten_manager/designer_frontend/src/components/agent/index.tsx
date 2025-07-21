@@ -12,8 +12,8 @@ import {
   useRemoteUserTrack,
 } from "agora-rtc-react";
 import { BotMessageSquareIcon } from "lucide-react";
-import AudioVisualizer from "@/components/Agent/AudioVisualizer";
-import Avatar from "@/components/Agent/AvatarTrulience";
+import AudioVisualizer from "@/components/agent/audio-visualizer";
+import Avatar from "@/components/agent/avatar-trulience";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store";
 

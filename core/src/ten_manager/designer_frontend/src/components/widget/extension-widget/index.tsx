@@ -13,11 +13,11 @@ import { useEnv } from "@/api/services/common";
 import { useListTenCloudStorePackages } from "@/api/services/extension";
 import { SpinnerLoading } from "@/components/status/loading";
 // eslint-disable-next-line max-len
-import { ExtensionSearch } from "@/components/widget/extension-widget/ex";
-// eslint-disable-next-line max-len
 import { ExtensionDetails } from "@/components/widget/extension-widget/extension-details";
 // eslint-disable-next-line max-len
 import { ExtensionList } from "@/components/widget/extension-widget/extension-list";
+// eslint-disable-next-line max-len
+import { ExtensionSearch } from "@/components/widget/extension-widget/extension-search";
 import { cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import {

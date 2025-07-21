@@ -10,6 +10,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useFetchApps } from "@/api/services/apps";
+import { LoadedAppsPopupTitle } from "@/components/popup/default/app";
 import { Button } from "@/components/ui/button";
 import { TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL } from "@/constants";
 import {
@@ -23,7 +24,6 @@ import {
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-import { LoadedAppsPopupTitle } from "../Popup/Default/App";
 
 export default function StatusBar(props: { className?: string }) {
   const { className } = props;

@@ -6,6 +6,7 @@
 //
 import * as React from "react";
 
+// eslint-disable-next-line max-len
 import { LogViewerBackstageWidget } from "@/components/widget/log-viewer-widget";
 import { useWidgetStore } from "@/store/widget";
 import { EWidgetCategory } from "@/types/widgets";

@@ -35,6 +35,7 @@ import {
   AppFolderPopupTitle,
   AppRunPopupTitle,
 } from "@/components/popup/default/app";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { SpinnerLoading } from "@/components/status/loading";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,7 +101,6 @@ import {
   EWidgetCategory,
   EWidgetDisplayType,
 } from "@/types/widgets";
-import { LogViewerPopupTitle } from "../Popup/LogViewer";
 
 export const AppsManagerWidget = (props: { className?: string }) => {
   const [isUnloading, setIsUnloading] = React.useState<boolean>(false);

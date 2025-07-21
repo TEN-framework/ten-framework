@@ -13,6 +13,7 @@ import {
   PopupTabsBarContent,
   PopupTabsBarItem,
 } from "@/components/popup/base";
+// eslint-disable-next-line max-len
 import { CustomNodeConnPopupContent } from "@/components/popup/custom-node-connection";
 import { PopupTabContentDefault } from "@/components/popup/default";
 import { ExtensionPopupContent } from "@/components/popup/default/extension";
