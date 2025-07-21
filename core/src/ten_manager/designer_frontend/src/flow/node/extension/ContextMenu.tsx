@@ -33,8 +33,8 @@ import {
   GROUP_TERMINAL_ID,
 } from "@/constants/widgets";
 import {
-  ContextDropdownMenuItem,
-  EContextDropdownMenuItemType,
+  ERightClickContextMenuItemType,
+  RightClickContextMenuItem,
 } from "@/flow/ContextMenu/Base";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
@@ -50,7 +50,7 @@ import {
   type ITerminalWidgetData,
 } from "@/types/widgets";
 
-export const ContextMenu = (props: {
+export const ContextMenuItems = (props: {
   node: TExtensionNode;
   baseDir: string;
   graphId: string;
@@ -176,9 +176,9 @@ export const ContextMenu = (props: {
     [appendWidget, removeBackstageWidget, removeLogViewerHistory, t]
   );
 
-  const items: ContextDropdownMenuItem[] = [
+  const items: RightClickContextMenuItem[] = [
     {
-      _type: EContextDropdownMenuItemType.MENU_SUB,
+      _type: ERightClickContextMenuItemType.MENU_SUB,
       _id: "extension-node-edit",
       label: `${t("action.edit")} ${t("extensionStore.extension")}`,
       icon: <FilePenLineIcon />,
@@ -187,7 +187,7 @@ export const ContextMenu = (props: {
       },
       items: [
         {
-          _type: EContextDropdownMenuItemType.MENU_ITEM,
+          _type: ERightClickContextMenuItemType.MENU_ITEM,
           _id: "extension-node-edit-manifest",
           children: `${t("action.edit")} manifest.json`,
           icon: <FilePenLineIcon />,
@@ -202,7 +202,7 @@ export const ContextMenu = (props: {
           },
         },
         {
-          _type: EContextDropdownMenuItemType.MENU_ITEM,
+          _type: ERightClickContextMenuItemType.MENU_ITEM,
           _id: "extension-node-edit-property",
           children: `${t("action.edit")} property.json`,
           icon: <FilePenLineIcon />,
@@ -219,11 +219,11 @@ export const ContextMenu = (props: {
       ],
     },
     {
-      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _type: ERightClickContextMenuItemType.SEPARATOR,
       _id: "extension-node-separator-1",
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-update-properties",
       children: `${t("action.update")} ${t("popup.node.properties")}`,
       icon: <TablePropertiesIcon />,
@@ -258,7 +258,7 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-add-connection-from",
       children: t("header.menuGraph.addConnectionFromNode", {
         node: node.data.name,
@@ -290,7 +290,7 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-add-connection-to",
       children: t("header.menuGraph.addConnectionToNode", {
         node: node.data.name,
@@ -322,11 +322,11 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _type: ERightClickContextMenuItemType.SEPARATOR,
       _id: "extension-node-separator-2",
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-launch-terminal",
       children: t("action.launchTerminal"),
       icon: <TerminalIcon />,
@@ -335,7 +335,7 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-launch-log-viewer",
       children: t("action.launchLogViewer"),
       icon: <LogsIcon />,
@@ -344,11 +344,11 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.SEPARATOR,
+      _type: ERightClickContextMenuItemType.SEPARATOR,
       _id: "extension-node-separator-3",
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-replace",
       children: t("action.replaceNode"),
       icon: <ReplaceIcon />,
@@ -377,7 +377,7 @@ export const ContextMenu = (props: {
       },
     },
     {
-      _type: EContextDropdownMenuItemType.MENU_ITEM,
+      _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-delete",
       children: t("action.delete"),
       className: "text-destructive",
@@ -435,7 +435,7 @@ export const ContextMenu = (props: {
   return (
     <>
       {items.map((item) => (
-        <ContextDropdownMenuItem key={item._id} item={item} />
+        <RightClickContextMenuItem key={item._id} item={item} />
       ))}
     </>
   );

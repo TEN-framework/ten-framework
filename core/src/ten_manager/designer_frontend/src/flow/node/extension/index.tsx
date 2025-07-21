@@ -22,9 +22,13 @@ import {
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@/components/ui/ContextMenu";
 import { BaseHandle } from "@/components/ui/react-flow/BaseHandle";
 import { BaseNode } from "@/components/ui/react-flow/BaseNode";
-import { NodeHeaderMenuAction } from "@/components/ui/react-flow/NodeHeader";
 import { Separator } from "@/components/ui/Separator";
 import {
   Tooltip,
@@ -32,8 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
-
-import { ContextMenu } from "@/flow/node/extension/ContextMenu";
+import { ContextMenuItems } from "@/flow/node/extension/ContextMenu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
@@ -79,47 +82,57 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
 
   // Detailed mode
   return (
-    <BaseNode className={cn("w-xs p-0 shadow-md", "border bg-popover")}>
-      {/* Header section */}
-      <ExtensionNodeHeader
-        data={data}
-        isExpanded={isDetailed}
-        onExpandedClick={() => {
-          setIsDetailed(false);
-        }}
-        className="rounded-b-none"
-      />
-
-      {/* Connection handles section */}
-      <Separator />
-      <div className={cn("py-1")}>
-        <div className="space-y-1">
-          <HandleGroupItem
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <BaseNode className={cn("w-xs p-0 shadow-md", "border bg-popover")}>
+          {/* Header section */}
+          <ExtensionNodeHeader
             data={data}
-            isConnectable={isConnectable}
-            connectionType={EConnectionType.CMD}
+            isExpanded={isDetailed}
+            onExpandedClick={() => {
+              setIsDetailed(false);
+            }}
+            className="rounded-b-none"
           />
-          <Separator className={cn("my-1")} />
-          <HandleGroupItem
-            data={data}
-            isConnectable={isConnectable}
-            connectionType={EConnectionType.DATA}
-          />
-          <Separator className={cn("my-1")} />
-          <HandleGroupItem
-            data={data}
-            isConnectable={isConnectable}
-            connectionType={EConnectionType.AUDIO_FRAME}
-          />
-          <Separator className={cn("my-1")} />
-          <HandleGroupItem
-            data={data}
-            isConnectable={isConnectable}
-            connectionType={EConnectionType.VIDEO_FRAME}
-          />
-        </div>
-      </div>
-    </BaseNode>
+          {/* Connection handles section */}
+          <Separator />
+          <div className={cn("py-1")}>
+            <div className="space-y-1">
+              <HandleGroupItem
+                data={data}
+                isConnectable={isConnectable}
+                connectionType={EConnectionType.CMD}
+              />
+              <Separator className={cn("my-1")} />
+              <HandleGroupItem
+                data={data}
+                isConnectable={isConnectable}
+                connectionType={EConnectionType.DATA}
+              />
+              <Separator className={cn("my-1")} />
+              <HandleGroupItem
+                data={data}
+                isConnectable={isConnectable}
+                connectionType={EConnectionType.AUDIO_FRAME}
+              />
+              <Separator className={cn("my-1")} />
+              <HandleGroupItem
+                data={data}
+                isConnectable={isConnectable}
+                connectionType={EConnectionType.VIDEO_FRAME}
+              />
+            </div>
+          </div>
+        </BaseNode>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-fit">
+        <ContextMenuItems
+          node={props as unknown as TExtensionNode}
+          baseDir={data.graph.base_dir}
+          graphId={data.graph.uuid}
+        />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -187,18 +200,6 @@ const ExtensionNodeHeader = (props: {
       </div>
       {/* Actions */}
       <div className="ml-auto flex items-center gap-1">
-        {/* Context menu */}
-        <NodeHeaderMenuAction
-          className="cursor-pointer p-1"
-          label="Open node menu"
-        >
-          <ContextMenu
-            node={props as unknown as TExtensionNode}
-            baseDir={data.graph.base_dir}
-            graphId={data.graph.uuid}
-          />
-        </NodeHeaderMenuAction>
-
         {/* Expand button */}
         <Button
           variant="ghost"
