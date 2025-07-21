@@ -5,6 +5,9 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 
+import asyncio
+import json
+import uuid
 from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
@@ -14,38 +17,77 @@ from ten_runtime import (
     TenError,
     TenErrorCode,
 )
+from ten_runtime.data import Data
 
 
 class ExtensionTesterBasic(AsyncExtensionTester):
-    def check_hello(self, ten_env: AsyncTenEnvTester, result: CmdResult):
-        statusCode = result.get_status_code()
-        print("receive hello_world, status:" + str(statusCode))
+    def __init__(self) -> None:
+        super().__init__()
+        self.received_data = []
+        self.received_cmds = []
 
-        if statusCode == StatusCode.OK:
-            ten_env.stop_test()
-        else:
-            ten_env.log_error("receive hello_world, but status is not OK")
-            test_result = TenError.create(
-                TenErrorCode.ErrorCodeGeneric,
-                "receive hello_world, but status is not OK",
-            )
-            ten_env.stop_test(test_result)
+    async def on_init(self, ten_env: AsyncExtensionTester) -> None:
+        self._assertion_task = asyncio.create_task(self._assertion(ten_env))
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        new_cmd = Cmd.create("hello_world")
+        data = Data.create("asr_result")
 
-        print("send hello_world")
-        result, _ = await ten_env.send_cmd(new_cmd)
-        if result is not None:
-            self.check_hello(ten_env, result)
-        else:
-            ten_env.log_error("receive hello_world, but result is None")
+        data.set_property_from_json(
+            None,
+            json.dumps(
+                {
+                    "id": str(uuid.uuid4()),
+                    "text": "A sample final asr result",
+                    "final": True,
+                    "start_ms": 0,
+                    "duration_ms": 100,
+                    "language": "zh-CN",
+                    "metadata": {"session_id": "20000"},
+                }
+            ),
+        )
+
+        await ten_env.send_data(data)
+
+    async def on_cmd(self, ten_env: AsyncExtensionTester, cmd: Cmd) -> None:
+        cmd_name = cmd.get_name()
+        ten_env.log_info(f"on_cmd {cmd_name}")
+        self.received_cmds.append(cmd.clone())
+
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)
+
+    async def on_data(self, ten_env: AsyncExtensionTester, data: Data) -> None:
+        data_name = data.get_name()
+        ten_env.log_info(f"on_data {data_name}")
+        self.received_data.append(data.clone())
+
+    async def on_stop(self, ten_env: AsyncExtensionTester) -> None:
+        pass
+
+    async def _assertion(self, ten_env: AsyncExtensionTester):
+        await asyncio.sleep(1)
+        expected_cmd_names = ["flush_llm", "flush_tts", "flush_rtc"]
+        data = Data.create("text_data")
+        data.set_property_string("text", "A sample final asr result")
+        expected_data = [data]
+        try:
+            assert len(expected_cmd_names) == len(self.received_cmds)
+            for exp, got in zip(expected_cmd_names, self.received_cmds):
+                assert exp == got.get_name()
+
+            assert len(expected_data) == len(self.received_data)
+            for exp, got in zip(expected_data, self.received_data):
+                assert exp.get_name() == got.get_name()
+        except Exception as e:
+            ten_env.log_error(str(e))
             test_result = TenError.create(
                 TenErrorCode.ErrorCodeGeneric,
-                "receive hello_world, but result is None",
+                str(e),
             )
             ten_env.stop_test(test_result)
-
+        finally:
+            ten_env.stop_test()
 
 def test_basic():
     tester = ExtensionTesterBasic()
