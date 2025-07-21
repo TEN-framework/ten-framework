@@ -29,7 +29,6 @@
     },
     "menuGraph": {
       "title": "Graph",
-      "loadGraph": "Load Graph",
       "autoLayout": "Auto Layout",
       "selectLoadedApp": "Select a Loaded App",
       "addNode": "Add Node",
@@ -340,5 +339,26 @@
     "messageList": {
       "noMessages": "No messages yet."
     }
+  },
+  "node": {
+    "uninstalled": "Uninstalled",
+    "installed": "Installed",
+    "extension": {
+      "title": "Extension Node",
+      "tag": "Extension"
+    }
+  },
+  "graph": {
+    "title": "Graph",
+    "selected-sum-count": "{{count}} of {{sum}} Selected",
+    "select-all": "Select All",
+    "select-only": "Only",
+    "auto-start": "Auto Start",
+    "auto-start-enabled": "Auto Start Enabled",
+    "auto-start-disabled": "Auto Start Disabled",
+    "enable-auto-start": "Enable Auto Start",
+    "disable-auto-start": "Disable Auto Start",
+    "change-auto-start-success": "Successfully updated auto start setting",
+    "change-auto-start-failed": "Failed to update auto start setting"
   }
 }
