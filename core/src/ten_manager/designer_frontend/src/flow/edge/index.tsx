@@ -53,7 +53,7 @@ export function CustomEdge({
         >
           <animate
             attributeName="stroke-dashoffset"
-            values="100"
+            values="100;0"
             dur="0.75s"
             repeatCount="indefinite"
           />
