@@ -297,6 +297,10 @@ export const ExtensionBaseItem = React.forwardRef<
                   !loadedApps?.app_info ||
                   loadedApps?.app_info?.length === 0
                 }
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
                 {t("extensionStore.install")}
               </Button>
