@@ -5,7 +5,6 @@
 #
 import asyncio
 from enum import Enum
-import json
 import time
 from typing import Any, Awaitable, Callable
 import uuid
@@ -18,6 +17,7 @@ from ten_runtime import (
     Data,
 )
 from pydantic import BaseModel, Field
+
 
 class Event(BaseModel):
     event_id: str
@@ -32,9 +32,13 @@ class EventStore:
         self._events: list[Event] = []
         self._notify_queue: asyncio.Queue[Event] = asyncio.Queue()
         self._notify_task = asyncio.create_task(self._notify())
-        self._listeners: dict[str, list[Callable[[Event], Awaitable[None]]]] = {}
+        self._listeners: dict[str, list[Callable[[Event], Awaitable[None]]]] = (
+            {}
+        )
 
     def register(self, name: str, listener: Callable[[Event], Awaitable[None]]):
+        if name not in self._listeners:
+            self._listeners[name] = []
         self._listeners[name].append(listener)
 
     async def pub_event(self, event: Event):
@@ -48,8 +52,19 @@ class EventStore:
             for listener in self._listeners[event.name]:
                 await listener(event)
 
-    async def pub_event_now(self, name: str, payload: dict[str, Any], metadata: dict[str, Any]):
-        await self.pub_event(Event(event_id=str(uuid.uuid4()), name=name, timestamp=int(time.time()), payload=payload, metadata=metadata))
+    async def pub_event_now(
+        self, name: str, payload: dict[str, Any], metadata: dict[str, Any]
+    ):
+        await self.pub_event(
+            Event(
+                event_id=str(uuid.uuid4()),
+                name=name,
+                timestamp=int(time.time()),
+                payload=payload,
+                metadata=metadata,
+            )
+        )
+
 
 # Input from asr
 class AsrResult(BaseModel):
@@ -62,23 +77,29 @@ class AsrResult(BaseModel):
     # words
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+
 class LLMResult(BaseModel):
     text: str
     # end_of_segment
+
 
 class AsrResultEvent(BaseModel):
     text: str
     final: str
     stream_id: str
 
+
 class LLMResultEvent(BaseModel):
     text: str
+
 
 class LLMRequestEvent(BaseModel):
     text: str
 
+
 class TTSRequestEvent(BaseModel):
     text: str
+
 
 class EventType(str, Enum):
     ASR_RESULT = "asr_result"
@@ -96,7 +117,11 @@ class RuleEngine:
         self._registry = registry
         self._rules = []
 
-        events = [EventType.ASR_RESULT, EventType.LLM_RESULT, EventType.ON_USER_JOINED]
+        events = [
+            EventType.ASR_RESULT,
+            EventType.LLM_RESULT,
+            EventType.ON_USER_JOINED,
+        ]
         for event in events:
             registry.register(event, self._event_trigger)
 
@@ -146,7 +171,9 @@ class RuleEngine:
         asr_result_event = AsrResultEvent.model_validate(event.payload)
 
         if asr_result_event.final:
-            await self._registry.pub_event_now(EventType.LLM_REQUEST, {"text": self._view.last_asr_result}, {})
+            await self._registry.pub_event_now(
+                EventType.LLM_REQUEST, {"text": self._view.last_asr_result}, {}
+            )
 
     async def _rule_request_tts(self, event: Event | None):
         if event is None:
@@ -157,7 +184,9 @@ class RuleEngine:
 
         llm_result_event = LLMResultEvent.model_validate(event.payload)
 
-        await self._registry.pub_event_now(EventType.TTS_REQUEST, {"text": self._view.last_llm_result}, {})
+        await self._registry.pub_event_now(
+            EventType.TTS_REQUEST, {"text": self._view.last_llm_result}, {}
+        )
 
     async def _rule_greeting(self, event: Event | None):
         if event is None:
@@ -167,15 +196,20 @@ class RuleEngine:
             return
 
         if self._view.rtc_user_count == 1:
-            await self._registry.pub_event_now(EventType.TTS_REQUEST, {"text": "Hello there, I'm TEN Agent"}, {})
+            await self._registry.pub_event_now(
+                EventType.TTS_REQUEST,
+                {"text": "Hello there, I'm TEN Agent"},
+                {},
+            )
+
 
 # TODO: build different views from rules
 # TODO: support QueryView
 class StateView:
     def __init__(self, registry: EventStore) -> None:
-        self.last_asr_result: str = "";
-        self.last_llm_result: str = "";
-        self.rtc_user_count: int = 0;
+        self.last_asr_result: str = ""
+        self.last_llm_result: str = ""
+        self.rtc_user_count: int = 0
 
         registry.register(EventType.ASR_RESULT, self.watch_asr_result)
         registry.register(EventType.LLM_RESULT, self.watch_llm_result)
@@ -200,6 +234,7 @@ class StateView:
     async def watch_flush(self, event: Event):
         self.last_asr_result = ""
         self.last_llm_result = ""
+
 
 class Operator:
     def __init__(self, ten_env: AsyncTenEnv, registry: EventStore) -> None:
@@ -234,12 +269,15 @@ class Operator:
 class MainControlExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
-        self._event_store = EventStore()
-        self._state_view = StateView(self._event_store)
-        self._rule_engine = RuleEngine(self._event_store, self._state_view)
+        self._event_store = None
+        self._state_view = None
+        self._rule_engine = None
         self._operator = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        self._event_store = EventStore()
+        self._state_view = StateView(self._event_store)
+        self._rule_engine = RuleEngine(self._event_store, self._state_view)
         self._operator = Operator(ten_env, self._event_store)
         ten_env.log_debug("MainControl on_init")
 
@@ -264,10 +302,14 @@ class MainControlExtension(AsyncExtension):
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result)
 
-    async def _on_cmd_on_user_joined(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+    async def _on_cmd_on_user_joined(
+        self, ten_env: AsyncTenEnv, cmd: Cmd
+    ) -> None:
         await self._event_store.pub_event_now(EventType.ON_USER_JOINED, {}, {})
 
-    async def _on_cmd_on_user_left(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+    async def _on_cmd_on_user_left(
+        self, ten_env: AsyncTenEnv, cmd: Cmd
+    ) -> None:
         await self._event_store.pub_event_now(EventType.ON_USER_LEFT, {}, {})
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -279,23 +321,35 @@ class MainControlExtension(AsyncExtension):
         elif data_name == "llm_result":
             await self._on_data_llm_result(ten_env, data)
 
-    async def _on_data_asr_result(self, ten_env: AsyncTenEnv, data: Data) -> None:
+    async def _on_data_asr_result(
+        self, ten_env: AsyncTenEnv, data: Data
+    ) -> None:
         json_str, _ = data.get_property_to_json(None)
         asr_result = AsrResult.model_validate_json(json_str)
 
         stream_id = int(asr_result.metadata.get("session_id", "100"))
-        event = Event(event_id=asr_result.id, name="asr_result", timestamp=int(time.time()), payload={
-            "text": asr_result.text,
-            "final": asr_result.final,
-            "stream_id": stream_id
-        })
+        event = Event(
+            event_id=asr_result.id,
+            name="asr_result",
+            timestamp=int(time.time()),
+            payload={
+                "text": asr_result.text,
+                "final": asr_result.final,
+                "stream_id": stream_id,
+            },
+        )
         await self._event_store.pub_event(event)
 
-    async def _on_data_llm_result(self, ten_env: AsyncTenEnv, data: Data) -> None:
+    async def _on_data_llm_result(
+        self, ten_env: AsyncTenEnv, data: Data
+    ) -> None:
         json_str, _ = data.get_property_to_json(None)
         llm_result = LLMResult.model_validate_json(json_str)
 
-        event = Event(event_id=str(uuid.uuid4()), name="llm_result", timestamp=int(time.time()), payload={
-            "text": llm_result.text
-        })
+        event = Event(
+            event_id=str(uuid.uuid4()),
+            name="llm_result",
+            timestamp=int(time.time()),
+            payload={"text": llm_result.text},
+        )
         await self._event_store.pub_event(event)
