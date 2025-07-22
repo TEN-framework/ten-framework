@@ -5,6 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import TypeVar, cast
+from typing_extensions import override
 from enum import IntEnum
 
 from libten_runtime_python import (
@@ -35,14 +36,14 @@ class CmdResult(_CmdResult):
     def create(cls: type[T], status_code: StatusCode, target_cmd: Cmd) -> T:
         return cast(T, cls.__new__(cls, status_code, target_cmd))
 
+    @override
     def clone(self) -> "CmdResult":
-        return cast("CmdResult", _CmdResult.clone_internal(self))
+        return cast("CmdResult", _CmdResult.clone(self))
 
+    @override
     def get_status_code(self) -> StatusCode:
-        return StatusCode(_CmdResult.get_status_code_internal(self))
+        return StatusCode(_CmdResult.get_status_code(self))
 
+    @override
     def set_final(self, is_final: bool):
-        if is_final:
-            return _CmdResult.set_final_internal(self, 1)
-        else:
-            return _CmdResult.set_final_internal(self, 0)
+        return _CmdResult.set_final(self, is_final)

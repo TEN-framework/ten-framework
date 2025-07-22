@@ -77,10 +77,10 @@ PyTypeObject *ten_py_cmd_py_type(void) {
 
 PyTypeObject *ten_py_cmd_result_py_type(void) {
   static PyMethodDef py_methods[] = {
-      {"clone_internal", ten_py_cmd_result_clone, METH_VARARGS, NULL},
-      {"get_status_code_internal", ten_py_cmd_result_get_status_code,
-       METH_VARARGS, NULL},
-      {"set_final_internal", ten_py_cmd_result_set_final, METH_VARARGS, NULL},
+      {"clone", ten_py_cmd_result_clone, METH_VARARGS, NULL},
+      {"get_status_code", ten_py_cmd_result_get_status_code, METH_VARARGS,
+       NULL},
+      {"set_final", ten_py_cmd_result_set_final, METH_VARARGS, NULL},
       {"is_final", ten_py_cmd_result_is_final, METH_VARARGS, NULL},
       {"is_completed", ten_py_cmd_result_is_completed, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
