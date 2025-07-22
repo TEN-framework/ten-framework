@@ -91,13 +91,16 @@ class Controller:
         await self._ten_env.send_data(q)
 
     async def _flush(self):
-        flush_llm = Cmd.create("flush_llm")
+        flush_llm = Cmd.create("flush")
+        flush_llm.set_dest(None, None, "llm")
         await self._ten_env.send_cmd(flush_llm)
 
-        flush_tts = Cmd.create("flush_tts")
+        flush_tts = Cmd.create("flush")
+        flush_tts.set_dest(None, None, "tts")
         await self._ten_env.send_cmd(flush_tts)
 
-        flush_rtc = Cmd.create("flush_rtc")
+        flush_rtc = Cmd.create("flush")
+        flush_rtc.set_dest(None, None, "rtc")
         await self._ten_env.send_cmd(flush_rtc)
 
         await self._view.handle_flush()

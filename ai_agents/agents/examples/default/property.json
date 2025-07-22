@@ -963,7 +963,7 @@
           "nodes": [
             {
               "type": "extension",
-              "name": "agora_rtc",
+              "name": "rtc",
               "addon": "agora_rtc",
               "extension_group": "default",
               "property": {
@@ -986,12 +986,10 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "deepgram_asr_python",
+              "addon": "speechmatics_asr_python",
               "extension_group": "stt",
               "property": {
-                "api_key": "${env:DEEPGRAM_API_KEY}",
-                "language": "en-US",
-                "model": "nova-2",
+                "key": "${env:SPEECHMATICS_API_KEY}",
                 "sample_rate": 16000
               }
             },
@@ -1020,10 +1018,10 @@
               "property": {
                 "voice_id": "male-qn-qingse",
                 "model": "speech-01-turbo",
+                "group_id": "${env:MINIMAX_TTS_GROUP_ID}",
                 "request_timeout_seconds": 10,
-                "api_key": "${env:MINIMAX_API_KEY}",
+                "api_key": "${env:MINIMAX_TTS_API_KEY}",
                 "sample_rate": 32000,
-                "group_id": "1872576106666660089",
                 "url": "https://api.minimax.chat/v1/t2a_v2"
               }
             },
@@ -1049,11 +1047,16 @@
               "property": {
                 "api_key": "${env:WEATHERAPI_API_KEY|}"
               }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter"
             }
           ],
           "connections": [
             {
-              "extension": "agora_rtc",
+              "extension": "rtc",
               "cmd": [
                 {
                   "name": "on_user_joined",
@@ -1070,16 +1073,21 @@
                       "extension": "main_control"
                     }
                   ]
-                },
+                }
+              ],
+              "audio_frame": [
                 {
-                  "name": "on_connection_failure",
+                  "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "llm"
+                      "extension": "streamid_adapter"
                     }
                   ]
                 }
-              ],
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
               "audio_frame": [
                 {
                   "name": "pcm_frame",
@@ -1108,7 +1116,23 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "name": "flush_llm",
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "llm"
+                    },
+                    {
+                      "extension": "tts"
+                    },
+                    {
+                      "extension": "rtc"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "llm_request",
                   "dest": [
                     {
                       "extension": "llm",
@@ -1116,64 +1140,13 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                          {
-                            "path": "_ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "flush"
-                          }
+                            {
+                                "path": "_ten.name",
+                                "conversion_mode": "fixed_value",
+                                "value": "text_data"
+                            }
                         ]
                       }
-                    }
-                  ]
-                },
-                {
-                  "name": "flush_tts",
-                  "dest": [
-                    {
-                      "extension": "tts",
-                      "msg_conversion": {
-                        "type": "per_property",
-                        "keep_original": true,
-                        "rules": [
-                          {
-                            "path": "_ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "flush"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                },
-                {
-                  "name": "flush_rtc",
-                  "dest": [
-                    {
-                      "extension": "agora_rtc",
-                      "msg_conversion": {
-                        "type": "per_property",
-                        "keep_original": true,
-                        "rules": [
-                          {
-                            "path": "_ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "flush"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "text_data",
-                  "dest": [
-                    {
-                      "extension": "llm"
-                    },
-                    {
-                      "extension": "message_collector"
                     }
                   ]
                 },
@@ -1186,11 +1159,30 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                          {
-                            "path": "_ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "text_data"
-                          }
+                            {
+                                "path": "_ten.name",
+                                "conversion_mode": "fixed_value",
+                                "value": "text_data"
+                            }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "pass_message",
+                  "dest": [
+                    {
+                      "extension": "message_collector",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                            {
+                                "path": "_ten.name",
+                                "conversion_mode": "fixed_value",
+                                "value": "text_data"
+                            }
                         ]
                       }
                     }
@@ -1215,15 +1207,18 @@
                   "name": "text_data",
                   "dest": [
                     {
-                      "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "content_data",
-                  "dest": [
-                    {
-                      "extension": "message_collector"
+                      "extension": "main_control",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "keep_original": true,
+                        "rules": [
+                            {
+                                "path": "_ten.name",
+                                "conversion_mode": "fixed_value",
+                                "value": "llm_result"
+                            }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -1231,22 +1226,12 @@
             },
             {
               "extension": "tts",
-              "data": [
-                {
-                  "name": "text_data",
-                  "dest": [
-                    {
-                      "extension": "message_collector"
-                    }
-                  ]
-                }
-              ],
               "audio_frame": [
                 {
                   "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "agora_rtc"
+                      "extension": "rtc"
                     }
                   ]
                 }
@@ -1259,7 +1244,7 @@
                   "name": "data",
                   "dest": [
                     {
-                      "extension": "agora_rtc"
+                      "extension": "rtc"
                     }
                   ]
                 }
