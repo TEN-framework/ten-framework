@@ -32,6 +32,8 @@ class AudioFrame(_AudioFrame):
         # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
         return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "AudioFrame":
+    def clone(  # pyright: ignore[reportImplicitOverride]
+        self,
+    ) -> "AudioFrame":
         # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
-        return cast("AudioFrame", _AudioFrame.clone_internal(self))
+        return cast("AudioFrame", _AudioFrame.clone(self))

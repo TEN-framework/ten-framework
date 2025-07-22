@@ -20,5 +20,5 @@ class Cmd(_Cmd):
     def create(cls: type[T], name: str) -> T:
         return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "Cmd":
-        return cast("Cmd", _Cmd.clone_internal(self))
+    def clone(self) -> "Cmd":  # pyright: ignore[reportImplicitOverride]
+        return cast("Cmd", _Cmd.clone(self))

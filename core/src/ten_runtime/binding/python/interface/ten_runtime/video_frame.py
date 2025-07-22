@@ -37,5 +37,5 @@ class VideoFrame(_VideoFrame):
     def create(cls: type[T], name: str) -> T:
         return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "VideoFrame":
-        return cast("VideoFrame", _VideoFrame.clone_internal(self))
+    def clone(self) -> "VideoFrame":  # pyright: ignore[reportImplicitOverride]
+        return cast("VideoFrame", _VideoFrame.clone(self))

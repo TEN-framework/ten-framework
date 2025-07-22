@@ -21,4 +21,4 @@ class Data(_Data):
         return cast(T, cls.__new__(cls, name))
 
     def clone(self) -> "Data":
-        return cast("Data", _Data.clone_internal(self))
+        return cast("Data", _Data.clone(self))
