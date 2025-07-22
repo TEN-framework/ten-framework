@@ -8,6 +8,7 @@ import asyncio
 import threading
 from asyncio import AbstractEventLoop
 from collections.abc import AsyncGenerator
+from typing import TypeVar
 
 from .cmd import Cmd
 from .data import Data
@@ -19,6 +20,9 @@ from .error import TenError
 from .ten_env_base import TenEnvBase
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
+ResultHandlerResultType = TypeVar(
+    "ResultHandlerResultType", bound=CmdResult | str | bool | int | float | None
+)
 
 
 class AsyncTenEnv(TenEnvBase):
@@ -34,13 +38,15 @@ class AsyncTenEnv(TenEnvBase):
         self._ten_loop = loop
         self._ten_thread = thread
         self._ten_all_tasks_done_event = asyncio.Event()
-        ten_env._set_release_handler(self._on_release)
+        ten_env._set_release_handler(  # pyright: ignore[reportPrivateUsage]
+            self._on_release
+        )
 
     def _result_handler(
         self,
-        result,
+        result: ResultHandlerResultType,
         error: TenError | None,
-        queue: asyncio.Queue,
+        queue: asyncio.Queue[tuple[ResultHandlerResultType, TenError | None]],
     ) -> None:
         asyncio.run_coroutine_threadsafe(
             queue.put((result, error)),
