@@ -68,17 +68,15 @@ class ExtensionTesterBasic(AsyncExtensionTester):
     async def _assertion(self, ten_env: AsyncExtensionTester):
         await asyncio.sleep(1)
         expected_cmd_names = ["flush_llm", "flush_tts", "flush_rtc"]
-        data = Data.create("text_data")
-        data.set_property_string("text", "A sample final asr result")
-        expected_data = [data]
+        expected_data_names = ["llm_request", "pass_message"]
         try:
             assert len(expected_cmd_names) == len(self.received_cmds)
             for exp, got in zip(expected_cmd_names, self.received_cmds):
                 assert exp == got.get_name()
 
-            assert len(expected_data) == len(self.received_data)
-            for exp, got in zip(expected_data, self.received_data):
-                assert exp.get_name() == got.get_name()
+            assert len(expected_data_names) == len(self.received_data)
+            for exp, got in zip(expected_data_names, self.received_data):
+                assert exp == got.get_name()
         except Exception as e:
             ten_env.log_error(str(e))
             test_result = TenError.create(
