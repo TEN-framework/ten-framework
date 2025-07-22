@@ -21,6 +21,15 @@ class Extension(_Extension):
         instance = super().__new__(cls, name)
         return instance
 
+    def __init__(  # pyright: ignore[reportMissingSuperCall]
+        self, name: str
+    ) -> None:
+        # _Extension is a C module written in C and does not have an __init__
+        # method, so we need to ignore pyright's warning.
+        #
+        # super().__init__(name)
+        pass
+
     @final
     def _proxy_on_configure(self, ten_env: TenEnv) -> None:
         if os.getenv("TEN_ENABLE_PYTHON_DEBUG") == "true":
