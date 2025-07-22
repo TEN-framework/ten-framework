@@ -1,8 +1,7 @@
 {
-  "C_Cpp.codeAnalysis.runAutomatically": false,
-  "C_Cpp.errorSquiggles": "disabled",
-  "C_Cpp.formatting": "disabled",
-  "C_Cpp.intelliSenseEngine": "disabled",
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
@@ -16,11 +15,21 @@
     "--exclude",
     "third_party"
   ],
+  "C_Cpp.codeAnalysis.runAutomatically": false,
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [
     "--background-index",
     "--clang-tidy",
     "--header-insertion=never"
   ],
+  "cursorpyright.analysis.extraPaths": [
+    "./core/src/ten_runtime/binding/python/interface",
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
+  ],
+  "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
@@ -63,12 +72,12 @@
     "ui.semanticTokens": true
   },
   "markdownlint.config": {
+    "default": true,
     "MD014": false,
     "MD024": {
       "siblings_only": true
     },
-    "MD033": false,
-    "default": true
+    "MD033": false
   },
   "pylint.args": [
     "--rcfile",
@@ -81,13 +90,10 @@
   "python.analysis.completeFunctionParens": true,
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
-    "./tests/ten_runtime/integration"
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
   ],
   "python.analysis.typeCheckingMode": "basic",
-  "cursorpyright.analysis.extraPaths": [
-    "./core/src/ten_runtime/binding/python/interface",
-    "./tests/ten_runtime/integration"
-  ],
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "${workspaceFolder}/core/src/ten_manager/Cargo.toml",
@@ -106,8 +112,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "[dockerfile]": {
-    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
   }
 }

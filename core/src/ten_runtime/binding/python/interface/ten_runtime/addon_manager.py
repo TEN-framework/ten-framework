@@ -198,7 +198,9 @@ def register_addon_as_extension(name: str, base_dir: str | None = None):
                 print(f"Failed to register addon '{name}': {e}")
 
         # Define the registration function name based on the addon name.
-        _AddonManager._set_register_handler(name, register_handler)
+        _AddonManager._set_register_handler(  # pyright: ignore[reportPrivateUsage] # noqa: E501
+            name, register_handler
+        )
 
         # Add the addon to the native addon manager.
         _add_extension_addon_to_addon_manager(name)

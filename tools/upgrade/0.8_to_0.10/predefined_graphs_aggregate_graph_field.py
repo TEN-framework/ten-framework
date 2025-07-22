@@ -9,10 +9,10 @@ import json
 import os
 import sys
 import copy
-from typing import Any, Dict, List
+from typing import Any
 
 
-def convert_property_file(old_property: Dict[str, Any]) -> Dict[str, Any]:
+def convert_property_file(old_property: dict[str, Any]) -> dict[str, Any]:
     """
     Aggregate graph field in predefined_graphs field in property.json
     """
@@ -91,7 +91,7 @@ def upgrade_json_file(file_path: str, dry_run: bool = False) -> bool:
         return False
 
 
-def is_target_json_file(json_data: Dict[str, Any]) -> bool:
+def is_target_json_file(json_data: dict[str, Any]) -> bool:
     """
     Check if a JSON file matches the criteria for processing:
     - Must have predefined_graphs field in "_ten" or "ten" field
@@ -127,7 +127,7 @@ def is_target_json_file(json_data: Dict[str, Any]) -> bool:
     return False
 
 
-def find_json_files(root_dir: str) -> List[str]:
+def find_json_files(root_dir: str) -> list[str]:
     """
     Find all JSON files recursively.
     """

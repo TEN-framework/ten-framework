@@ -5,7 +5,6 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import threading
-from typing import Optional
 from ten_runtime import (
     Extension,
     TenEnv,
@@ -104,8 +103,8 @@ class DefaultExtension(Extension):
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:

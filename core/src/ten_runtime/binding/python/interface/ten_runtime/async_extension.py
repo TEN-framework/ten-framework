@@ -11,7 +11,9 @@ import threading
 import traceback
 from typing import final
 
-from libten_runtime_python import _Extension
+from libten_runtime_python import (
+    _Extension,  # pyright: ignore[reportPrivateUsage]
+)
 from .log_level import LogLevel
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame

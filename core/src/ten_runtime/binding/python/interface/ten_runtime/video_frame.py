@@ -5,8 +5,10 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Type, TypeVar
-from libten_runtime_python import _VideoFrame
+from typing import TypeVar
+from libten_runtime_python import (
+    _VideoFrame,  # pyright: ignore[reportPrivateUsage]
+)
 
 T = TypeVar("T", bound="VideoFrame")
 
@@ -32,7 +34,7 @@ class VideoFrame(_VideoFrame):
         raise NotImplementedError("Use VideoFrame.create instead.")
 
     @classmethod
-    def create(cls: Type[T], name: str) -> T:
+    def create(cls: type[T], name: str) -> T:
         return cls.__new__(cls, name)
 
     def clone(self) -> "VideoFrame":

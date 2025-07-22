@@ -4,7 +4,6 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Optional
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
@@ -20,8 +19,8 @@ class ExtensionTesterMock(ExtensionTester):
     def check_weather(
         self,
         ten_env: TenEnvTester,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
     ):
         if error is not None:
             assert False, error
