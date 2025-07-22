@@ -9,9 +9,12 @@ import os
 import sys
 import threading
 import traceback
-from typing import AsyncGenerator, Optional, final
+from collections.abc import AsyncGenerator
+from typing import final
 
-from libten_runtime_python import _ExtensionTester
+from libten_runtime_python import (
+    _ExtensionTester,  # pyright: ignore[reportPrivateUsage]
+)
 from .cmd_result import CmdResult
 from .error import TenError
 from .cmd import Cmd
@@ -21,7 +24,7 @@ from .video_frame import VideoFrame
 from .test import TenEnvTester
 from .test_base import TenEnvTesterBase
 
-CmdResultTuple = tuple[Optional[CmdResult], Optional[TenError]]
+CmdResultTuple = tuple[CmdResult | None, TenError | None]
 
 
 class AsyncTenEnvTester(TenEnvTesterBase):
@@ -41,8 +44,8 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
     def _result_handler(
         self,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         queue: asyncio.Queue,
     ) -> None:
         asyncio.run_coroutine_threadsafe(
@@ -52,7 +55,7 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
     def _error_handler(
         self,
-        error: Optional[TenError],
+        error: TenError | None,
         queue: asyncio.Queue,
     ) -> None:
         asyncio.run_coroutine_threadsafe(
@@ -100,7 +103,7 @@ class AsyncTenEnvTester(TenEnvTesterBase):
                 # This is the final result, so break the while loop.
                 break
 
-    async def send_data(self, data: Data) -> Optional[TenError]:
+    async def send_data(self, data: Data) -> TenError | None:
         q = asyncio.Queue(maxsize=1)
         err = self._internal.send_data(
             data,
@@ -114,7 +117,7 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
     async def send_audio_frame(
         self, audio_frame: AudioFrame
-    ) -> Optional[TenError]:
+    ) -> TenError | None:
         q = asyncio.Queue(maxsize=1)
         err = self._internal.send_audio_frame(
             audio_frame,
@@ -128,7 +131,7 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
     async def send_video_frame(
         self, video_frame: VideoFrame
-    ) -> Optional[TenError]:
+    ) -> TenError | None:
         q = asyncio.Queue(maxsize=1)
         err = self._internal.send_video_frame(
             video_frame,
@@ -143,7 +146,7 @@ class AsyncTenEnvTester(TenEnvTesterBase):
     async def return_result(
         self,
         cmd_result: CmdResult,
-    ) -> Optional[TenError]:
+    ) -> TenError | None:
         q = asyncio.Queue(maxsize=1)
         err = self._internal.return_result(
             cmd_result,
@@ -379,7 +382,7 @@ class AsyncExtensionTester(_ExtensionTester):
 
     @final
     def set_test_mode_single(
-        self, addon_name: str, property_json_str: Optional[str] = None
+        self, addon_name: str, property_json_str: str | None = None
     ) -> None:
         return _ExtensionTester.set_test_mode_single(
             self, addon_name, property_json_str
@@ -390,7 +393,7 @@ class AsyncExtensionTester(_ExtensionTester):
         return _ExtensionTester.set_timeout(self, timeout_us)
 
     @final
-    def run(self) -> Optional[TenError]:
+    def run(self) -> TenError | None:
         # This is a blocking operation.
         err = _ExtensionTester.run(self)
 

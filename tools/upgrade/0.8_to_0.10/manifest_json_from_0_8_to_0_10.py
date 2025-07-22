@@ -8,10 +8,10 @@ import json
 import os
 import sys
 import argparse
-from typing import Dict, Any, Optional, List
+from typing import Any
 
 
-def is_target_json_file(json_data: Dict[str, Any]) -> bool:
+def is_target_json_file(json_data: dict[str, Any]) -> bool:
     """
     Check if a JSON file matches the criteria for processing:
     - Must have top-level fields: type, name, version, api
@@ -33,8 +33,8 @@ def is_target_json_file(json_data: Dict[str, Any]) -> bool:
 
 
 def convert_property_format(
-    old_property: Optional[Dict[str, Any]], old_required: Optional[List[str]]
-) -> Optional[Dict[str, Any]]:
+    old_property: dict[str, Any] | None, old_required: list[str] | None
+) -> dict[str, Any] | None:
     """
     Convert old property format to new format.
 
@@ -84,7 +84,7 @@ def convert_property_format(
     return new_property
 
 
-def convert_cmd_like_api(old_cmd: Dict[str, Any]) -> Dict[str, Any]:
+def convert_cmd_like_api(old_cmd: dict[str, Any]) -> dict[str, Any]:
     """
     Convert command-like API from old format to new format.
     """
@@ -113,7 +113,7 @@ def convert_cmd_like_api(old_cmd: Dict[str, Any]) -> Dict[str, Any]:
     return new_cmd
 
 
-def convert_data_like_api(old_data: Dict[str, Any]) -> Dict[str, Any]:
+def convert_data_like_api(old_data: dict[str, Any]) -> dict[str, Any]:
     """
     Convert data-like API from old format to new format.
     """
@@ -130,7 +130,7 @@ def convert_data_like_api(old_data: Dict[str, Any]) -> Dict[str, Any]:
     return new_data
 
 
-def convert_manifest_api(old_api: Dict[str, Any]) -> Dict[str, Any]:
+def convert_manifest_api(old_api: dict[str, Any]) -> dict[str, Any]:
     """
     Convert the entire API section from old format to new format.
     """
@@ -178,7 +178,7 @@ def convert_manifest_api(old_api: Dict[str, Any]) -> Dict[str, Any]:
     return new_api
 
 
-def convert_manifest_file(old_manifest: Dict[str, Any]) -> Dict[str, Any]:
+def convert_manifest_file(old_manifest: dict[str, Any]) -> dict[str, Any]:
     """
     Convert an entire manifest file from old format to new format.
     """
@@ -232,7 +232,7 @@ def upgrade_json_file(file_path: str, dry_run: bool = False) -> bool:
         return False
 
 
-def find_json_files(root_dir: str) -> List[str]:
+def find_json_files(root_dir: str) -> list[str]:
     """
     Find all JSON files recursively.
     """

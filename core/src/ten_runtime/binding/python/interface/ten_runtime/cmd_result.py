@@ -4,10 +4,12 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Type, TypeVar
+from typing import TypeVar
 from enum import IntEnum
 
-from libten_runtime_python import _CmdResult
+from libten_runtime_python import (
+    _CmdResult,  # pyright: ignore[reportPrivateUsage]
+)
 
 from .cmd import Cmd
 
@@ -29,7 +31,7 @@ class CmdResult(_CmdResult):
         raise NotImplementedError("Use CmdResult.create instead.")
 
     @classmethod
-    def create(cls: Type[T], status_code: StatusCode, target_cmd: Cmd) -> T:
+    def create(cls: type[T], status_code: StatusCode, target_cmd: Cmd) -> T:
         return cls.__new__(cls, status_code, target_cmd)
 
     def clone(self) -> "CmdResult":

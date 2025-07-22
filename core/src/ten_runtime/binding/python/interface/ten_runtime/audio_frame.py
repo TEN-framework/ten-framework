@@ -5,8 +5,10 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Type, TypeVar
-from libten_runtime_python import _AudioFrame
+from typing import TypeVar
+from libten_runtime_python import (
+    _AudioFrame,  # pyright: ignore[reportPrivateUsage]
+)
 
 T = TypeVar("T", bound="AudioFrame")
 
@@ -26,7 +28,7 @@ class AudioFrame(_AudioFrame):
         raise NotImplementedError("Use AudioFrame.create instead.")
 
     @classmethod
-    def create(cls: Type[T], name: str) -> T:
+    def create(cls: type[T], name: str) -> T:
         return cls.__new__(cls, name)
 
     def clone(self) -> "AudioFrame":

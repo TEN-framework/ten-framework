@@ -8,7 +8,6 @@ import argparse
 import sys
 import os
 import shutil
-from typing import Optional
 from dotenv import dotenv_values
 from io import StringIO
 from build.scripts import cmd_exec
@@ -43,7 +42,7 @@ def ar_create(target_library: str, target_path: str, log_level: int) -> None:
         raise RuntimeError("Failed to create static library.")
 
 
-def read_path_from_env_file(env_file: str) -> Optional[str]:
+def read_path_from_env_file(env_file: str) -> str | None:
     with open(env_file, "rb") as f:
         for line in f:
             # NUL character.

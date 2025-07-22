@@ -9,7 +9,6 @@ import json
 import shutil
 import sys
 import os
-from typing import Optional
 from build.scripts import timestamp_proxy
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -84,7 +83,7 @@ class ArgumentInfo(argparse.Namespace):
         self.target: str
         self.target_os: str
         self.target_arch: str
-        self.tg_timestamp_proxy_file: Optional[str] = None
+        self.tg_timestamp_proxy_file: str | None = None
         self.enable_asan: bool
         self.action: str
         self.disable_incremental: bool = False

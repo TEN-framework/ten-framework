@@ -1,1 +1,116 @@
-cursor/settings.json
+{
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[markdown]": {
+    "editor.wordWrap": "bounded",
+    "editor.wordWrapColumn": 80
+  },
+  "black-formatter.args": [
+    "--line-length",
+    "80",
+    "--exclude",
+    "third_party"
+  ],
+  "C_Cpp.codeAnalysis.runAutomatically": false,
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--header-insertion=never"
+  ],
+  "cursorpyright.analysis.extraPaths": [
+    "./core/src/ten_runtime/binding/python/interface",
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
+  ],
+  "cursorpyright.analysis.typeCheckingMode": "recommended",
+  "debug.allowBreakpointsEverywhere": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+  "editor.defaultFormatter": null,
+  "editor.formatOnSave": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "files.eol": "\n",
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/.git/*/**": true,
+    "**/node_modules/*/**": true,
+    "**/out/*/**": true,
+    "**/third_party/*/**": true
+  },
+  "flake8.args": [
+    "--ignore=E302,E704,E301,W503",
+    "--max-line-length=80"
+  ],
+  "git.ignoreLimitWarning": true,
+  "go.inlayHints.constantValues": true,
+  "go.inlayHints.parameterNames": true,
+  "go.inlayHints.rangeVariableTypes": true,
+  "go.lintOnSave": "file",
+  "go.useLanguageServer": true,
+  "gopls": {
+    "completeUnimported": true,
+    "deepCompletion": true,
+    "ui.semanticTokens": true
+  },
+  "markdownlint.config": {
+    "default": true,
+    "MD014": false,
+    "MD024": {
+      "siblings_only": true
+    },
+    "MD033": false
+  },
+  "pylint.args": [
+    "--rcfile",
+    "${workspaceFolder}/tools/pylint/.pylintrc"
+  ],
+  "pylint.ignorePatterns": [
+    "*/ten_runtime_python/**/*",
+    "/usr/lib/**/*"
+  ],
+  "python.analysis.completeFunctionParens": true,
+  "python.analysis.extraPaths": [
+    "./core/src/ten_runtime/binding/python/interface",
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
+  ],
+  "python.analysis.typeCheckingMode": "basic",
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.linkedProjects": [
+    "${workspaceFolder}/core/src/ten_manager/Cargo.toml",
+    "${workspaceFolder}/core/src/ten_rust/Cargo.toml"
+  ],
+  "rust-analyzer.procMacro.attributes.enable": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.rustfmt.extraArgs": [
+    "+nightly",
+    "--config",
+    "max_width=80,wrap_comments=true,wrap_comments=true,use_small_heuristics=Max,format_strings=true,style_edition=2021"
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false,
+  "search.exclude": {
+    "**/.git/*/**": true,
+    "**/node_modules/*/**": true,
+    "**/out/*/**": true,
+    "**/third_party/*/**": true
+  }
+}
