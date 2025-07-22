@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Any, TypeVar
+from typing import TypeVar, cast
 
 T = TypeVar("T", bound="Value")
 
@@ -34,9 +34,21 @@ class Value:
     """
 
     _type: ValueType
-    _data: Any
+    _data: bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]
 
-    def __init__(self, value_type: ValueType, data: Any):
+    def __init__(
+        self,
+        value_type: ValueType,
+        data: (
+            bool
+            | int
+            | float
+            | str
+            | bytes
+            | list["Value"]
+            | dict[str, "Value"]
+        ),
+    ):
         """
         Initialize a Value with the specified type and data.
 
@@ -51,7 +63,9 @@ class Value:
         """Get the type of this Value."""
         return self._type
 
-    def get_data(self) -> Any:
+    def get_data(
+        self,
+    ) -> bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]:
         """Get the underlying data of this Value."""
         return self._data
 
@@ -135,49 +149,43 @@ class Value:
         """Get the boolean value. Raises TypeError if not a boolean."""
         if not self.is_bool():
             raise TypeError(f"Value is not a boolean, got {self._type.name}")
-        return self._data
+        return cast(bool, self._data)
 
     def get_int(self) -> int:
         """Get the integer value. Raises TypeError if not an integer."""
         if not self.is_int():
             raise TypeError(f"Value is not an integer, got {self._type.name}")
-        return self._data
+        return cast(int, self._data)
 
     def get_float(self) -> float:
         """Get the float value. Raises TypeError if not a float."""
         if not self.is_float():
             raise TypeError(f"Value is not a float, got {self._type.name}")
-        return self._data
-
-    def get_number(self) -> int | float:
-        """Get the numeric value. Raises TypeError if not a number."""
-        if not self.is_number():
-            raise TypeError(f"Value is not a number, got {self._type.name}")
-        return self._data
+        return cast(float, self._data)
 
     def get_string(self) -> str:
         """Get the string value. Raises TypeError if not a string."""
         if not self.is_string():
             raise TypeError(f"Value is not a string, got {self._type.name}")
-        return self._data
+        return cast(str, self._data)
 
     def get_bytes(self) -> bytes:
         """Get the bytes value. Raises TypeError if not bytes."""
         if not self.is_bytes():
             raise TypeError(f"Value is not bytes, got {self._type.name}")
-        return self._data
+        return cast(bytes, self._data)
 
     def get_array(self) -> list["Value"]:
         """Get the array value. Raises TypeError if not an array."""
         if not self.is_array():
             raise TypeError(f"Value is not an array, got {self._type.name}")
-        return self._data
+        return cast(list["Value"], self._data)
 
     def get_object(self) -> dict[str, "Value"]:
         """Get the object value. Raises TypeError if not an object."""
         if not self.is_object():
             raise TypeError(f"Value is not an object, got {self._type.name}")
-        return self._data
+        return cast(dict[str, "Value"], self._data)
 
     def get_json_string(self) -> str:
         """Get the JSON string value. Raises TypeError if not a JSON string."""
@@ -185,4 +193,4 @@ class Value:
             raise TypeError(
                 f"Value is not a JSON string, got {self._type.name}"
             )
-        return self._data
+        return cast(str, self._data)
