@@ -199,16 +199,13 @@ export const generateRawEdges = (
         dest.forEach((connectionItemDest) => {
           const targetExtension = connectionItemDest.extension;
           const targetApp = connectionItemDest.app;
-          const edgeId = data2identifier(
-            EFlowElementIdentifier.EDGE,
-            {
-              name,
-              src: extension,
-              target: targetExtension,
-              graph: graph.uuid,
-              connectionType,
-            }
-          );
+          const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
+            name,
+            src: extension,
+            target: targetExtension,
+            graph: graph.uuid,
+            connectionType,
+          });
           // const edgeId = `edge-${extension}-${name}-${targetExtension}`;
           const edgeAddress = {
             extension: targetExtension,

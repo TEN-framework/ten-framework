@@ -13,7 +13,7 @@ import { TrulienceAvatar } from "trulience-sdk";
 import { Progress, ProgressIndicator } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store";
-import "@/components/Agent/trulience.css";
+import "./trulience.css";
 
 interface AvatarProps {
   audioTrack?: IRemoteAudioTrack;
