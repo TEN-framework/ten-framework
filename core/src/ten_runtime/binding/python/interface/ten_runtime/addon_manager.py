@@ -9,12 +9,15 @@ import os
 import sys
 import importlib.util
 from glob import glob
-from typing import Callable, Dict, Type, Optional
+from typing import Callable
 
 from .addon import Addon
+
+# Internal APIs from libten_runtime_python - these are private by design and
+# only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
-    _add_extension_addon_to_addon_manager,
-    _register_addon_as_extension,
+    _add_extension_addon_to_addon_manager,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _register_addon_as_extension,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -24,7 +27,7 @@ class _AddonManager:
     # TEN runtime. This avoids using `setattr` on the module, which may not be
     # supported in advanced environments like Cython. The global array method
     # is simple enough that it should work in all environments.
-    _registry: Dict[str, Callable[[object], None]] = {}
+    _registry: dict[str, Callable[[object], None]] = {}
 
     @classmethod
     def load_all_addons(cls):
@@ -151,8 +154,8 @@ class _AddonManager:
         )
 
 
-def register_addon_as_extension(name: str, base_dir: Optional[str] = None):
-    def decorator(cls: Type[Addon]) -> Type[Addon]:
+def register_addon_as_extension(name: str, base_dir: str | None = None):
+    def decorator(cls: type[Addon]) -> type[Addon]:
         # Resolve base_dir.
         if base_dir is None:
             try:
