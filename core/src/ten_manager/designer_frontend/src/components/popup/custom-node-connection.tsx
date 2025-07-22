@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { ArrowBigRightDashIcon, BlocksIcon, XIcon } from "lucide-react";
+import { ArrowBigRightDashIcon, PuzzleIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,14 +17,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CustomNodeConnectionButton } from "@/flow/edge/button";
+import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
 import { useFlowStore } from "@/store/flow";
-import type { EConnectionType } from "@/types/graphs";
-
+import type { EConnectionType, IGraph } from "@/types/graphs";
 import type {
   ICustomConnectionWidget,
   ICustomConnectionWidgetData,
 } from "@/types/widgets";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
 
 const SUPPORTED_FILTERS = ["type"];
 
@@ -53,15 +53,24 @@ export const CustomNodeConnPopupContent = (props: {
   widget: ICustomConnectionWidget;
 }) => {
   const { widget } = props;
-  const { source, target, filters } = widget.metadata;
+  const { source, target, filters, graph } = widget.metadata;
 
   return (
     <div className="flex h-full w-full flex-col gap-2">
       {source && target && (
-        <EdgeInfoContent source={source} target={target} filters={filters} />
+        <EdgeInfoContent
+          source={source}
+          target={target}
+          filters={filters}
+          graph={graph}
+        />
       )}
       {source && !target && (
-        <CustomNodeConnContent source={source} filters={filters} />
+        <CustomNodeConnContent
+          source={source}
+          filters={filters}
+          graph={graph}
+        />
       )}
     </div>
   );
@@ -79,8 +88,9 @@ function EdgeInfoContent(props: {
     source?: boolean;
     target?: boolean;
   };
+  graph: IGraph;
 }) {
-  const { source, target, filters: initialFilters } = props;
+  const { source, target, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {
     if (!initialFilters) return [];
     return Object.entries(initialFilters)
@@ -102,9 +112,10 @@ function EdgeInfoContent(props: {
         id: e.id,
         type: e.data?.connectionType,
         name: e.data?.name,
-        source: e.source,
-        target: e.target,
+        source: identifier2data<TCustomNodeData>(e.source).name,
+        target: identifier2data<TCustomNodeData>(e.target).name,
         _meta: e,
+        graph: e.data?.graph,
       }))
       .filter((row) => {
         const enabledFilters = filters.filter((i) =>
@@ -116,6 +127,12 @@ function EdgeInfoContent(props: {
       });
     return [relatedEdges, rows];
   }, [edges, source, target, filters]);
+  const [prettySource, prettyTarget] = React.useMemo(() => {
+    return [
+      identifier2data<TCustomNodeData>(source).name,
+      identifier2data<TCustomNodeData>(target).name,
+    ];
+  }, [source, target]);
 
   const handleRemoveFilter = (label: string) => {
     setFilters(filters.filter((f) => f.label !== label));
@@ -124,33 +141,29 @@ function EdgeInfoContent(props: {
   return (
     <>
       <div className="flex w-full items-center gap-2">
-        <Button
+        <CustomNodeConnectionButton
           variant="outline"
           size="lg"
-          onClick={() =>
-            dispatchCustomNodeActionPopup({
-              action: "connections",
-              source,
-            })
-          }
+          data={{
+            source: prettySource,
+            graph,
+          }}
         >
-          <BlocksIcon className="h-4 w-4" />
-          <span>{source}</span>
-        </Button>
+          <PuzzleIcon className="h-4 w-4" />
+          <span>{prettySource}</span>
+        </CustomNodeConnectionButton>
         <ArrowBigRightDashIcon className="h-6 w-6" />
-        <Button
+        <CustomNodeConnectionButton
           variant="outline"
           size="lg"
-          onClick={() =>
-            dispatchCustomNodeActionPopup({
-              action: "connections",
-              source: target,
-            })
-          }
+          data={{
+            source: prettyTarget,
+            graph,
+          }}
         >
-          <BlocksIcon className="h-4 w-4" />
-          <span>{target}</span>
-        </Button>
+          <PuzzleIcon className="h-4 w-4" />
+          <span>{prettyTarget}</span>
+        </CustomNodeConnectionButton>
       </div>
       <Filters
         items={filters}
@@ -172,8 +185,9 @@ function CustomNodeConnContent(props: {
     source?: boolean;
     target?: boolean;
   };
+  graph: IGraph;
 }) {
-  const { source, filters: initialFilters } = props;
+  const { source, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {
     if (!initialFilters) return [];
     return Object.entries(initialFilters)
@@ -196,9 +210,13 @@ function CustomNodeConnContent(props: {
   const { edges } = useFlowStore();
 
   const [rowsMemo] = React.useMemo(() => {
-    const relatedEdges = edges.filter((e) =>
-      flowDirection === "upstream" ? e.target === source : e.source === source
-    );
+    const relatedEdges = edges
+      .filter((e) => e.data?.graph?.uuid === graph.uuid)
+      ?.filter((e) =>
+        flowDirection === "upstream"
+          ? identifier2data<TCustomNodeData>(e.target).name === source
+          : identifier2data<TCustomNodeData>(e.source).name === source
+      );
     const rows = relatedEdges
       .map((e) => ({
         id: e.id,
@@ -217,7 +235,7 @@ function CustomNodeConnContent(props: {
         );
       });
     return [rows, relatedEdges];
-  }, [flowDirection, edges, source, filters]);
+  }, [edges, graph.uuid, flowDirection, source, filters]);
 
   const handleRemoveFilter = (label: string) => {
     setFilters(filters.filter((f) => f.label !== label));
@@ -251,6 +269,7 @@ function CustomNodeConnContent(props: {
           ...row,
           source: row.upstream,
           target: row.downstream,
+          graph: graph,
         }))}
         className="overflow-y-auto"
       />

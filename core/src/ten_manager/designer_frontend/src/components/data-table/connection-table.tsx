@@ -20,8 +20,8 @@ import {
   ArrowDownIcon,
   ArrowUpDown,
   ArrowUpIcon,
-  BlocksIcon,
   MoreHorizontal,
+  PuzzleIcon,
 } from "lucide-react";
 import * as React from "react";
 import { Translation, useTranslation } from "react-i18next";
@@ -45,12 +45,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
+import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
-import { EConnectionType } from "@/types/graphs";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
+import { EConnectionType, type IGraph } from "@/types/graphs";
 
 export type TConnection = {
   id: string;
@@ -58,6 +59,7 @@ export type TConnection = {
   target: string;
   type?: EConnectionType;
   _meta: TCustomEdge;
+  graph?: IGraph;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -271,24 +273,24 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
     ),
     cell: ({ row }) => {
       const downstream = row.getValue("downstream") as string;
-      if (!downstream) return null;
+      if (!downstream || !row.original.graph) return null;
       return (
         <div className="flex items-center">
-          <BlocksIcon className="me-1 h-4 w-4" />
+          <PuzzleIcon className="me-1 h-4 w-4" />
           <ArrowBigRightDashIcon className="me-1 h-4 w-4" />
-          <Button
+          <CustomNodeConnectionButton
             variant="outline"
             size="sm"
-            onClick={() =>
-              dispatchCustomNodeActionPopup({
-                action: "connections",
-                source: downstream,
-              })
-            }
+            data={{
+              source: identifier2data<TCustomNodeData>(downstream).name,
+              graph: row.original.graph,
+            }}
           >
-            <BlocksIcon className="me-1 h-3 w-3" />
-            <span className="text-xs">{downstream}</span>
-          </Button>
+            <PuzzleIcon className="me-1 h-3 w-3" />
+            <span className="text-xs">
+              {identifier2data<TCustomNodeData>(downstream).name}
+            </span>
+          </CustomNodeConnectionButton>
         </div>
       );
     },
@@ -321,24 +323,24 @@ export const extensionConnectionColumns2: ColumnDef<TConnection>[] = [
     ),
     cell: ({ row }) => {
       const upstream = row.getValue("upstream") as string;
-      if (!upstream) return null;
+      if (!upstream || !row.original.graph) return null;
       return (
         <div className="flex items-center">
-          <Button
+          <CustomNodeConnectionButton
             variant="outline"
             size="sm"
-            onClick={() =>
-              dispatchCustomNodeActionPopup({
-                action: "connections",
-                source: upstream,
-              })
-            }
+            data={{
+              source: identifier2data<TCustomNodeData>(upstream).name,
+              graph: row.original.graph,
+            }}
           >
-            <BlocksIcon className="me-1 h-3 w-3" />
-            <span className="text-xs">{upstream}</span>
-          </Button>
+            <PuzzleIcon className="me-1 h-3 w-3" />
+            <span className="text-xs">
+              {identifier2data<TCustomNodeData>(upstream).name}
+            </span>
+          </CustomNodeConnectionButton>
           <ArrowBigRightDashIcon className="ms-1 h-4 w-4" />
-          <BlocksIcon className="ms-1 h-4 w-4" />
+          <PuzzleIcon className="ms-1 h-4 w-4" />
         </div>
       );
     },

@@ -10,14 +10,20 @@ import type React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { postDeleteConnection, useGraphs } from "@/api/services/graphs";
+// eslint-disable-next-line max-len
+import { CustomNodeConnPopupTitle } from "@/components/popup/custom-node-connection";
+import {
+  CONTAINER_DEFAULT_ID,
+  GROUP_CUSTOM_CONNECTION_ID,
+} from "@/constants/widgets";
 import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/context-menu/base";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { useDialogStore, useFlowStore } from "@/store";
+import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
+import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 interface EdgeContextMenuProps {
   visible: boolean;
@@ -39,6 +45,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
 
   const { appendDialog, removeDialog } = useDialogStore();
   const { setNodesAndEdges } = useFlowStore();
+  const { appendWidget } = useWidgetStore();
 
   const { data: graphs = [] } = useGraphs();
 
@@ -48,11 +55,31 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
       label: t("action.viewDetails"),
       icon: <ListCollapseIcon />,
       onClick: () => {
-        dispatchCustomNodeActionPopup({
-          action: "connections",
-          source: edge.source,
-          target: edge.target,
+        console.log("View details for edge:", edge);
+        const { source, target, data } = edge;
+
+        if (!data?.graph) {
+          return;
+        }
+
+        const id = `${source}-${target ?? ""}`;
+        appendWidget({
+          container_id: CONTAINER_DEFAULT_ID,
+          group_id: GROUP_CUSTOM_CONNECTION_ID,
+          widget_id: id,
+
+          category: EWidgetCategory.CustomConnection,
+          display_type: EWidgetDisplayType.Popup,
+
+          title: <CustomNodeConnPopupTitle source={source} target={target} />,
+          metadata: {
+            id,
+            source,
+            target,
+            graph: data.graph,
+          },
         });
+
         onClose();
       },
     },
@@ -61,7 +88,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
     //   label: t("action.edit"),
     //   icon: <PencilIcon />,
     //   onClick: () => {
-    //     onClose();
+    //     onClose()
     //   },
     // },
     {

@@ -88,3 +88,38 @@ export const data2identifier = (
   }
   throw new Error(`Unknown identifier type: ${identifier}`);
 };
+
+export const identifier2data = <
+  T extends TEdgeData | THandleData | TCustomNodeData,
+>(
+  identifier: string
+): T => {
+  const parts = identifier.split(";");
+  const typePart = parts.find((p) => p.startsWith("identifier:"));
+  if (!typePart) throw new Error(`Invalid identifier: ${identifier}`);
+
+  const type = typePart.split(":")[1];
+  if (type === EFlowElementIdentifier.EDGE) {
+    return parts.reduce((acc, part) => {
+      const [key, value] = part.split(":");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (key !== "identifier") (acc as any)[key] = value;
+      return acc;
+    }, {} as TEdgeData) as T;
+  } else if (type === EFlowElementIdentifier.HANDLE) {
+    return parts.reduce((acc, part) => {
+      const [key, value] = part.split(":");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (key !== "identifier") (acc as any)[key] = value;
+      return acc;
+    }, {} as THandleData) as T;
+  } else if (type === EFlowElementIdentifier.CUSTOM_NODE) {
+    return parts.reduce((acc, part) => {
+      const [key, value] = part.split(":");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (key !== "identifier") (acc as any)[key] = value;
+      return acc;
+    }, {} as TCustomNodeData) as T;
+  }
+  throw new Error(`Unknown identifier type: ${type}`);
+};

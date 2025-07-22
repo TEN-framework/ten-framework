@@ -196,7 +196,6 @@ const ContextMenuContainer: React.FC<ContextMenuProps> = ({
         left: x,
         top: y,
       }}
-      onClick={(e) => e.stopPropagation()}
     >
       {items.map((item, index) => (
         <ContextItem key={index} {...item} />

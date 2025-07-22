@@ -123,11 +123,11 @@ export const FlowCanvas = (props: { className?: string }) => {
         }}
         onEdgeContextMenu={(event, edge) => {
           event.preventDefault();
-          console.log("Edge context menu", {
-            edge,
-            x: event.clientX,
-            y: event.clientY,
-          });
+          // console.log("Edge context menu", {
+          //   edge,
+          //   x: event.clientX,
+          //   y: event.clientY,
+          // });
           setContextMenu({
             visible: true,
             x: event.clientX,
@@ -143,7 +143,11 @@ export const FlowCanvas = (props: { className?: string }) => {
           });
         }}
         onBlur={() => {
-          setContextMenu({ visible: false, x: 0, y: 0 });
+          if (contextMenu.visible) {
+            setTimeout(() => {
+              setContextMenu({ visible: false, x: 0, y: 0 });
+            }, 300);
+          }
         }}
         fitView
         nodesDraggable

@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
+// eslint-disable-next-line max-len
+import { CustomNodeConnPopupTitle } from "@/components/popup/custom-node-connection";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -36,12 +38,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  CONTAINER_DEFAULT_ID,
+  GROUP_CUSTOM_CONNECTION_ID,
+} from "@/constants/widgets";
+import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
+import { useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
-import { EConnectionType } from "@/types/graphs";
-import { dispatchCustomNodeActionPopup } from "@/utils/events";
+import { EConnectionType, type IGraph } from "@/types/graphs";
+import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
   const { data, isConnectable } = props;
@@ -227,30 +235,35 @@ const HandleGroupItem = (props: {
 }) => {
   const { data, isConnectable, onConnect, connectionType } = props;
 
-  const handleClickDetails =
-    ({
-      type,
-      source,
-      target,
-    }: {
-      type?: EConnectionType;
-      source?: boolean;
-      target?: boolean;
-    }) =>
-    () => {
-      dispatchCustomNodeActionPopup({
-        action: "connections",
-        source: data.name,
-        target: undefined,
-        metadata: {
-          filters: {
-            type,
-            source,
-            target,
-          },
-        },
-      });
+  const { appendWidget } = useWidgetStore();
+
+  const handleLaunchConnPopup = (data: {
+    source: string;
+    target?: string;
+    graph: IGraph;
+    metadata?: {
+      filters?: {
+        type?: EConnectionType;
+        source?: boolean;
+        target?: boolean;
+      };
     };
+  }) => {
+    const { source, target, metadata, graph } = data;
+    const id = `${source}-${target ?? ""}`;
+    const filters = metadata?.filters;
+    appendWidget({
+      container_id: CONTAINER_DEFAULT_ID,
+      group_id: GROUP_CUSTOM_CONNECTION_ID,
+      widget_id: id,
+
+      category: EWidgetCategory.CustomConnection,
+      display_type: EWidgetDisplayType.Popup,
+
+      title: <CustomNodeConnPopupTitle source={source} target={target} />,
+      metadata: { id, source, target, filters, graph },
+    });
+  };
 
   return (
     <div
@@ -276,10 +289,17 @@ const HandleGroupItem = (props: {
           className={cn("size-3")}
         />
         <ConnectionCount
-          onClick={handleClickDetails({
-            type: connectionType,
-            target: true,
-          })}
+          data={{
+            source: data.name,
+            target: undefined,
+            graph: data.graph,
+            metadata: {
+              filters: {
+                type: connectionType,
+                target: true,
+              },
+            },
+          }}
         >
           {connectionType === EConnectionType.CMD && (
             <span>{data.src[connectionType]?.length || 0}</span>
@@ -302,13 +322,20 @@ const HandleGroupItem = (props: {
         className={cn(
           "flex items-center gap-x-2 px-3 py-1.5",
           "font-medium text-xs",
-          {
-            "cursor-pointer": handleClickDetails,
-          }
+          "cursor-pointer"
         )}
-        onClick={handleClickDetails({
-          type: connectionType,
-        })}
+        onClick={() => {
+          handleLaunchConnPopup({
+            source: data.name,
+            target: undefined,
+            graph: data.graph,
+            metadata: {
+              filters: {
+                type: connectionType,
+              },
+            },
+          });
+        }}
       >
         {connectionType === EConnectionType.CMD && (
           <TerminalIcon className="size-3 shrink-0 text-blue-600" />
@@ -329,10 +356,17 @@ const HandleGroupItem = (props: {
 
       <div className="flex items-center gap-x-2">
         <ConnectionCount
-          onClick={handleClickDetails({
-            type: connectionType,
-            source: true,
-          })}
+          data={{
+            source: data.name,
+            target: undefined,
+            graph: data.graph,
+            metadata: {
+              filters: {
+                type: connectionType,
+                source: true,
+              },
+            },
+          }}
         >
           {connectionType === EConnectionType.CMD && (
             <span>{data.target[connectionType]?.length || 0}</span>
@@ -345,7 +379,7 @@ const HandleGroupItem = (props: {
           )}
           {connectionType === EConnectionType.VIDEO_FRAME && (
             <span>{data.target[connectionType]?.length || 0}</span>
-          )}{" "}
+          )}
         </ConnectionCount>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}
@@ -368,20 +402,32 @@ const HandleGroupItem = (props: {
 
 const ConnectionCount = (props: {
   children: React.ReactNode;
-  onClick?: () => void;
+  data: {
+    source: string;
+    target?: string;
+    graph: IGraph;
+    metadata?: {
+      filters?: {
+        type?: EConnectionType;
+        source?: boolean;
+        target?: boolean;
+      };
+    };
+  };
 }) => {
-  const { children, onClick } = props;
+  const { children, data } = props;
 
   return (
-    <Button
+    <CustomNodeConnectionButton
+      data={data}
       size="sm"
       variant="ghost"
-      className={cn("w-8 rounded-md px-1 py-0.5 text-center text-xs", {
-        "cursor-pointer": onClick,
-      })}
-      onClick={onClick}
+      className={cn(
+        "w-8 rounded-md px-1 py-0.5 text-center text-xs",
+        "cursor-pointer"
+      )}
     >
       {children}
-    </Button>
+    </CustomNodeConnectionButton>
   );
 };
