@@ -57,7 +57,7 @@
     "**/third_party/*/**": true
   },
   "flake8.args": [
-    "--ignore=E302,E704,E301,W503",
+    "--ignore=E203,E302,E704,E301,W503",
     "--max-line-length=80"
   ],
   "git.ignoreLimitWarning": true,
