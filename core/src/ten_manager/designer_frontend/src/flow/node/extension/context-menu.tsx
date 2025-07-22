@@ -191,7 +191,9 @@ export const ContextMenuItems = (props: {
           _id: "extension-node-edit-manifest",
           children: `${t("action.edit")} manifest.json`,
           icon: <FilePenLineIcon />,
+          disabled: !node.data.url,
           onSelect: () => {
+            console.log("Editing manifest for node:", node);
             if (node.data.url)
               launchEditor({
                 title: `${node.data.name} manifest.json`,
@@ -206,6 +208,7 @@ export const ContextMenuItems = (props: {
           _id: "extension-node-edit-property",
           children: `${t("action.edit")} property.json`,
           icon: <FilePenLineIcon />,
+          disabled: !node.data.url,
           onSelect: () => {
             if (node.data.url)
               launchEditor({
@@ -227,7 +230,7 @@ export const ContextMenuItems = (props: {
       _id: "extension-node-update-properties",
       children: `${t("action.update")} ${t("popup.node.properties")}`,
       icon: <TablePropertiesIcon />,
-      disabled: !baseDir || !graphId,
+      disabled: !baseDir || !graphId || !node.data.is_installed,
       onSelect: () => {
         if (!baseDir || !graphId) return;
         appendWidget({
