@@ -48,17 +48,14 @@
         }
       },
       {
-        "name": "text_data",
+        "name": "llm_result",
         "property": {
           "properties": {
             "text": {
               "type": "string"
             },
-            "is_final": {
+            "end_of_segment": {
               "type": "bool"
-            },
-            "stream_id": {
-              "type": "uint32"
             }
           }
         }
@@ -66,7 +63,7 @@
     ],
     "data_out": [
       {
-        "name": "text_data",
+        "name": "llm_request",
         "property": {
           "properties": {
             "text": {
@@ -74,9 +71,6 @@
             },
             "is_final": {
               "type": "bool"
-            },
-            "stream_id": {
-              "type": "uint32"
             }
           }
         }
@@ -87,6 +81,25 @@
           "properties": {
             "text": {
               "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "pass_message",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            },
+            "end_of_segment": {
+              "type": "bool"
+            },
+            "stream_id": {
+              "type": "uint32"
             }
           }
         }
@@ -102,13 +115,7 @@
     ],
     "cmd_out": [
       {
-        "name": "flush_llm"
-      },
-      {
-        "name": "flush_tts"
-      },
-      {
-        "name": "flush_rtc"
+        "name": "flush"
       }
     ]
   }
