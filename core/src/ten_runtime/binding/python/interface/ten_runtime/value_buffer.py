@@ -5,6 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import struct
+from typing import cast
 
 from .value import Value, ValueType
 
@@ -287,7 +288,9 @@ def _validate_buffer_header(buffer: bytes) -> ValueBufferHeader:
     if len(buffer) < VALUE_BUFFER_HEADER_SIZE:
         assert False, "Buffer too small to contain header"
 
-    magic, version, type_id, size = struct.unpack_from("<HBBIN", buffer, 0)
+    magic, version, type_id, size = cast(
+        tuple[int, int, int, int], struct.unpack_from("<HBBIN", buffer, 0)
+    )
 
     if magic != VALUE_BUFFER_MAGIC:
         assert False, "Invalid buffer magic number"
@@ -310,30 +313,30 @@ def _deserialize_content(
     """Deserialize value content from buffer. Returns (value, new_position)."""
 
     if value_type == ValueType.INVALID:
-        return Value(ValueType.INVALID, None), pos
+        assert False, "Invalid value type"
 
     elif value_type == ValueType.BOOL:
         if pos >= len(buffer):
             assert False, "Buffer too small for bool value"
-        val = struct.unpack_from("<B", buffer, pos)[0]
+        val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
         return Value.create_bool(val != 0), pos + 1
 
     elif value_type == ValueType.INT:
         if pos + 8 > len(buffer):
             assert False, "Buffer too small for int value"
-        val = struct.unpack_from("<q", buffer, pos)[0]
+        val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
         return Value.create_int(val), pos + 8
 
     elif value_type == ValueType.FLOAT:
         if pos + 8 > len(buffer):
             assert False, "Buffer too small for float value"
-        val = struct.unpack_from("<d", buffer, pos)[0]
+        val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
         return Value.create_float(val), pos + 8
 
     elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
         if pos + 4 > len(buffer):
             assert False, "Buffer too small for string length"
-        str_len = struct.unpack_from("<I", buffer, pos)[0]
+        str_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
         pos += 4
 
         if str_len == 0:
@@ -352,7 +355,7 @@ def _deserialize_content(
     elif value_type == ValueType.BYTES:
         if pos + 4 > len(buffer):
             assert False, "Buffer too small for bytes length"
-        buf_len = struct.unpack_from("<I", buffer, pos)[0]
+        buf_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
         pos += 4
 
         if buf_len == 0:
@@ -368,14 +371,14 @@ def _deserialize_content(
     elif value_type == ValueType.ARRAY:
         if pos + 4 > len(buffer):
             assert False, "Buffer too small for array length"
-        array_len = struct.unpack_from("<I", buffer, pos)[0]
+        array_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
         pos += 4
 
-        array_data = []
+        array_data: list[Value] = []
         for _ in range(array_len):
             if pos >= len(buffer):
                 assert False, "Buffer too small for array item type"
-            item_type_id = struct.unpack_from("<B", buffer, pos)[0]
+            item_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
             pos += 1
 
             item_type = _buffer_type_to_value_type(item_type_id)
@@ -387,15 +390,15 @@ def _deserialize_content(
     elif value_type == ValueType.OBJECT:
         if pos + 4 > len(buffer):
             assert False, "Buffer too small for object size"
-        obj_size = struct.unpack_from("<I", buffer, pos)[0]
+        obj_size = cast(int, struct.unpack_from("<I", buffer, pos)[0])
         pos += 4
 
-        obj_data = {}
+        obj_data: dict[str, Value] = {}
         for _ in range(obj_size):
             # Read key
             if pos + 4 > len(buffer):
                 assert False, "Buffer too small for object key length"
-            key_len = struct.unpack_from("<I", buffer, pos)[0]
+            key_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
             pos += 4
 
             if pos + key_len > len(buffer):
@@ -406,7 +409,7 @@ def _deserialize_content(
             # Read value
             if pos >= len(buffer):
                 assert False, "Buffer too small for object value type"
-            val_type_id = struct.unpack_from("<B", buffer, pos)[0]
+            val_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
             pos += 1
 
             val_type = _buffer_type_to_value_type(val_type_id)
