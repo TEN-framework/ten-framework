@@ -79,6 +79,14 @@ class TenEnvTester(TenEnvTesterBase):
 
 class ExtensionTester(_ExtensionTester):
     @final
+    def set_test_mode_single(
+        self, addon_name: str, property_json_str: str | None = None
+    ) -> None:
+        return _ExtensionTester.set_test_mode_single_internal(
+            self, addon_name, property_json_str
+        )
+
+    @final
     def _proxy_on_init(self, ten_env_tester: TenEnvTester) -> None:
         self.on_init(ten_env_tester)
 

@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeVar, cast
 from libten_runtime_python import (
     _TenError,  # pyright: ignore[reportPrivateUsage]
 )
@@ -43,7 +43,7 @@ class TenErrorCode(IntEnum):
 
 
 class TenError(_TenError):
-    def __init__(self):
+    def __init__(self, error_code: int, error_message: str | None):
         raise NotImplementedError("Use TenError.create instead.")
 
     @classmethod
@@ -52,4 +52,4 @@ class TenError(_TenError):
         error_code: TenErrorCode,
         error_message: str | None = None,
     ) -> T:
-        return cls.__new__(cls, error_code.value, error_message)
+        return cast(T, cls.__new__(cls, error_code.value, error_message))

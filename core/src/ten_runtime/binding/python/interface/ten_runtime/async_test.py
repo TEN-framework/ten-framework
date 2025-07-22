@@ -28,6 +28,9 @@ CmdResultTuple = tuple[CmdResult | None, TenError | None]
 
 
 class AsyncTenEnvTester(TenEnvTesterBase):
+    _ten_loop: asyncio.AbstractEventLoop
+    _ten_thread: threading.Thread
+
     def __init__(
         self,
         ten_env_tester: TenEnvTester,
@@ -38,9 +41,6 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
         self._ten_loop = loop
         self._ten_thread = thread
-
-    def __del__(self) -> None:
-        pass
 
     def _result_handler(
         self,
@@ -381,18 +381,6 @@ class AsyncExtensionTester(_ExtensionTester):
             self._exit_on_exception(ten_env_tester, e)
 
     @final
-    def set_test_mode_single(
-        self, addon_name: str, property_json_str: str | None = None
-    ) -> None:
-        return _ExtensionTester.set_test_mode_single(
-            self, addon_name, property_json_str
-        )
-
-    @final
-    def set_timeout(self, timeout_us: int) -> None:
-        return _ExtensionTester.set_timeout(self, timeout_us)
-
-    @final
     def run(self) -> TenError | None:
         # This is a blocking operation.
         err = _ExtensionTester.run(self)
@@ -433,30 +421,30 @@ class AsyncExtensionTester(_ExtensionTester):
 
         return err
 
-    async def on_init(self, ten_env: AsyncTenEnvTester) -> None:
+    async def on_init(self, _ten_env: AsyncTenEnvTester) -> None:
         pass
 
-    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
+    async def on_start(self, _ten_env: AsyncTenEnvTester) -> None:
         pass
 
-    async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
+    async def on_stop(self, _ten_env: AsyncTenEnvTester) -> None:
         pass
 
-    async def on_deinit(self, ten_env: AsyncTenEnvTester) -> None:
+    async def on_deinit(self, _ten_env: AsyncTenEnvTester) -> None:
         pass
 
-    async def on_cmd(self, ten_env: AsyncTenEnvTester, cmd: Cmd) -> None:
+    async def on_cmd(self, _ten_env: AsyncTenEnvTester, _cmd: Cmd) -> None:
         pass
 
-    async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(self, _ten_env: AsyncTenEnvTester, _data: Data) -> None:
         pass
 
     async def on_audio_frame(
-        self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame
+        self, _ten_env: AsyncTenEnvTester, _audio_frame: AudioFrame
     ) -> None:
         pass
 
     async def on_video_frame(
-        self, ten_env: AsyncTenEnvTester, video_frame: VideoFrame
+        self, _ten_env: AsyncTenEnvTester, _video_frame: VideoFrame
     ) -> None:
         pass

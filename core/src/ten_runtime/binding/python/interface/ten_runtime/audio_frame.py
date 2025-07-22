@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeVar, cast
 from libten_runtime_python import (
     _AudioFrame,  # pyright: ignore[reportPrivateUsage]
 )
@@ -24,12 +24,14 @@ class AudioFrameDataFmt(IntEnum):
 
 
 class AudioFrame(_AudioFrame):
-    def __init__(self):
+    def __init__(self, name: str):
         raise NotImplementedError("Use AudioFrame.create instead.")
 
     @classmethod
     def create(cls: type[T], name: str) -> T:
-        return cls.__new__(cls, name)
+        # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
+        return cast(T, cls.__new__(cls, name))
 
     def clone(self) -> "AudioFrame":
-        return _AudioFrame.clone(self)  # type: ignore
+        # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
+        return cast("AudioFrame", _AudioFrame.clone_internal(self))

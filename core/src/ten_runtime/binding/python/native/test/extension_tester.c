@@ -522,8 +522,8 @@ static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
 
 PyTypeObject *ten_py_extension_tester_py_type(void) {
   static PyMethodDef py_methods[] = {
-      {"set_test_mode_single", ten_py_extension_tester_set_test_mode_single,
-       METH_VARARGS, NULL},
+      {"set_test_mode_single_internal",
+       ten_py_extension_tester_set_test_mode_single, METH_VARARGS, NULL},
       {"set_timeout", ten_py_extension_tester_set_timeout, METH_VARARGS, NULL},
       {"run", ten_py_extension_tester_run, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},

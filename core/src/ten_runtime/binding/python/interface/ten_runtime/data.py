@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import TypeVar
+from typing import TypeVar, cast
 from libten_runtime_python import (
     _Data,  # pyright: ignore[reportPrivateUsage]
 )
@@ -13,12 +13,12 @@ T = TypeVar("T", bound="Data")
 
 
 class Data(_Data):
-    def __init__(self):
+    def __init__(self, name: str):
         raise NotImplementedError("Use Data.create instead.")
 
     @classmethod
     def create(cls: type[T], name: str) -> T:
-        return cls.__new__(cls, name)
+        return cast(T, cls.__new__(cls, name))
 
     def clone(self) -> "Data":
-        return _Data.clone(self)  # type: ignore
+        return cast("Data", _Data.clone_internal(self))
