@@ -3,7 +3,7 @@
     "predefined_graphs": [
       {
         "name": "voice_assistant",
-        "auto_start": true,
+        "auto_start": false,
         "graph": {
           "nodes": [
             {
@@ -96,8 +96,8 @@
             {
               "type": "extension",
               "name": "adapter",
-              "extension_group": "default",
-              "addon": "data_adapter_python"
+              "addon": "data_adapter_python",
+              "extension_group": "default"
             },
             {
               "type": "extension",
@@ -1140,11 +1140,11 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                            {
-                                "path": "_ten.name",
-                                "conversion_mode": "fixed_value",
-                                "value": "text_data"
-                            }
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "text_data"
+                          }
                         ]
                       }
                     }
@@ -1159,11 +1159,11 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                            {
-                                "path": "_ten.name",
-                                "conversion_mode": "fixed_value",
-                                "value": "text_data"
-                            }
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "text_data"
+                          }
                         ]
                       }
                     }
@@ -1178,11 +1178,11 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                            {
-                                "path": "_ten.name",
-                                "conversion_mode": "fixed_value",
-                                "value": "text_data"
-                            }
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "text_data"
+                          }
                         ]
                       }
                     }
@@ -1212,11 +1212,11 @@
                         "type": "per_property",
                         "keep_original": true,
                         "rules": [
-                            {
-                                "path": "_ten.name",
-                                "conversion_mode": "fixed_value",
-                                "value": "llm_result"
-                            }
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "llm_result"
+                          }
                         ]
                       }
                     }
