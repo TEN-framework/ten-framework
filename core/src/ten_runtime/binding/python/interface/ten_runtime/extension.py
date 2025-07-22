@@ -6,7 +6,9 @@
 #
 import os
 from typing import final
-from libten_runtime_python import _Extension
+from libten_runtime_python import (
+    _Extension,  # pyright: ignore[reportPrivateUsage]
+)
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .ten_env import TenEnv
@@ -20,7 +22,7 @@ class Extension(_Extension):
         return instance
 
     def __init__(self, name: str) -> None:
-        pass
+        super().__init__(name)
 
     @final
     def _proxy_on_configure(self, ten_env: TenEnv) -> None:
@@ -69,14 +71,14 @@ class Extension(_Extension):
     def _proxy_on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         self.on_cmd(ten_env, cmd)
 
-    def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+    def on_cmd(self, _ten_env: TenEnv, _cmd: Cmd) -> None:
         pass
 
     @final
     def _proxy_on_data(self, ten_env: TenEnv, data: Data) -> None:
         self.on_data(ten_env, data)
 
-    def on_data(self, ten_env: TenEnv, data: Data) -> None:
+    def on_data(self, _ten_env: TenEnv, _data: Data) -> None:
         pass
 
     @final
@@ -85,7 +87,9 @@ class Extension(_Extension):
     ) -> None:
         self.on_video_frame(ten_env, video_frame)
 
-    def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
+    def on_video_frame(
+        self, _ten_env: TenEnv, _video_frame: VideoFrame
+    ) -> None:
         pass
 
     @final
@@ -94,5 +98,7 @@ class Extension(_Extension):
     ) -> None:
         self.on_audio_frame(ten_env, audio_frame)
 
-    def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
+    def on_audio_frame(
+        self, _ten_env: TenEnv, _audio_frame: AudioFrame
+    ) -> None:
         pass
