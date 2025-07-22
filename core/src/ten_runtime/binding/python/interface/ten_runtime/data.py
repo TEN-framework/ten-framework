@@ -22,8 +22,3 @@ class Data(_Data):
 
     def clone(self) -> "Data":
         return _Data.clone(self)  # type: ignore
-
-    alloc_buf = _Data.alloc_buf
-    lock_buf = _Data.lock_buf
-    unlock_buf = _Data.unlock_buf
-    get_buf = _Data.get_buf

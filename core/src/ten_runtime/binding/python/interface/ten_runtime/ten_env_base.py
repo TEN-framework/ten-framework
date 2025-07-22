@@ -12,6 +12,8 @@ from .error import TenError
 
 
 class TenEnvBase:
+    _internal: _TenEnv
+
     def __init__(self, internal_obj: _TenEnv) -> None:
         self._internal = internal_obj
 

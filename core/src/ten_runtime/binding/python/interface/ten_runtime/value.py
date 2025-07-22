@@ -33,6 +33,9 @@ class Value:
     native type system.
     """
 
+    _type: ValueType
+    _data: Any
+
     def __init__(self, value_type: ValueType, data: Any):
         """
         Initialize a Value with the specified type and data.

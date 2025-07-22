@@ -13,6 +13,7 @@ from .error import TenError
 
 
 class TenEnvTesterBase:
+    _internal: _TenEnvTester
 
     def __init__(self, internal_obj: _TenEnvTester) -> None:
         self._internal = internal_obj

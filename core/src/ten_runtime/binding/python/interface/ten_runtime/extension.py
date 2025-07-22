@@ -21,9 +21,6 @@ class Extension(_Extension):
         instance = super().__new__(cls, name)
         return instance
 
-    def __init__(self, name: str) -> None:
-        pass
-
     @final
     def _proxy_on_configure(self, ten_env: TenEnv) -> None:
         if os.getenv("TEN_ENABLE_PYTHON_DEBUG") == "true":

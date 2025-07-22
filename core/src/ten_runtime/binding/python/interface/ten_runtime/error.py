@@ -53,9 +53,3 @@ class TenError(_TenError):
         error_message: str | None = None,
     ) -> T:
         return cls.__new__(cls, error_code.value, error_message)
-
-    def error_code(self) -> int:
-        return _TenError.error_code(self)
-
-    def error_message(self) -> str:
-        return _TenError.error_message(self)

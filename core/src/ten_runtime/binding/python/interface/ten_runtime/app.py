@@ -17,12 +17,6 @@ class App(_App):
         else:
             _App.run_internal(self, False)
 
-    def wait(self) -> None:
-        _App.wait_internal(self)
-
-    def close(self) -> None:
-        _App.close_internal(self)
-
     def on_configure(self, ten_env: TenEnv) -> None:
         ten_env.on_configure_done()
 

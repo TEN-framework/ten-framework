@@ -28,9 +28,6 @@ ErrorHandler = Callable[["TenEnvTester", TenError | None], None]
 
 
 class TenEnvTester(TenEnvTesterBase):
-    def __del__(self) -> None:
-        pass
-
     def on_init_done(self) -> None:
         return self._internal.on_init_done()
 
@@ -82,22 +79,6 @@ class TenEnvTester(TenEnvTesterBase):
 
 class ExtensionTester(_ExtensionTester):
     @final
-    def set_test_mode_single(
-        self, addon_name: str, property_json_str: str | None = None
-    ) -> None:
-        return _ExtensionTester.set_test_mode_single(
-            self, addon_name, property_json_str
-        )
-
-    @final
-    def set_timeout(self, timeout_us: int) -> None:
-        return _ExtensionTester.set_timeout(self, timeout_us)
-
-    @final
-    def run(self) -> TenError | None:
-        return _ExtensionTester.run(self)
-
-    @final
     def _proxy_on_init(self, ten_env_tester: TenEnvTester) -> None:
         self.on_init(ten_env_tester)
 
@@ -129,14 +110,14 @@ class ExtensionTester(_ExtensionTester):
     def _proxy_on_cmd(self, ten_env_tester: TenEnvTester, cmd: Cmd) -> None:
         self.on_cmd(ten_env_tester, cmd)
 
-    def on_cmd(self, ten_env_tester: TenEnvTester, cmd: Cmd) -> None:
+    def on_cmd(self, _ten_env_tester: TenEnvTester, _cmd: Cmd) -> None:
         pass
 
     @final
     def _proxy_on_data(self, ten_env_tester: TenEnvTester, data: Data) -> None:
         self.on_data(ten_env_tester, data)
 
-    def on_data(self, ten_env_tester: TenEnvTester, data: Data) -> None:
+    def on_data(self, _ten_env_tester: TenEnvTester, _data: Data) -> None:
         pass
 
     @final
@@ -146,7 +127,7 @@ class ExtensionTester(_ExtensionTester):
         self.on_audio_frame(ten_env_tester, audio_frame)
 
     def on_audio_frame(
-        self, ten_env_tester: TenEnvTester, audio_frame: AudioFrame
+        self, _ten_env_tester: TenEnvTester, _audio_frame: AudioFrame
     ) -> None:
         pass
 
@@ -157,6 +138,6 @@ class ExtensionTester(_ExtensionTester):
         self.on_video_frame(ten_env_tester, video_frame)
 
     def on_video_frame(
-        self, ten_env_tester: TenEnvTester, video_frame: VideoFrame
+        self, _ten_env_tester: TenEnvTester, _video_frame: VideoFrame
     ) -> None:
         pass

@@ -26,13 +26,10 @@ ErrorHandler = Callable[["TenEnv", TenError | None], None]
 
 
 class TenEnv(TenEnvBase):
+    _release_handler: Callable[[], None] | None = None
 
     def __init__(self, internal_obj: _TenEnv) -> None:
         super().__init__(internal_obj)
-        self._release_handler = None
-
-    def __del__(self) -> None:
-        pass
 
     def _set_release_handler(self, handler: Callable[[], None]) -> None:
         self._release_handler = handler
@@ -56,7 +53,9 @@ class TenEnv(TenEnvBase):
     def on_deinit_done(self) -> None:
         return self._internal.on_deinit_done()
 
-    def on_create_instance_done(self, instance: _Extension, context) -> None:
+    def on_create_instance_done(
+        self, instance: _Extension, context: object
+    ) -> None:
         return self._internal.on_create_instance_done(instance, context)
 
     def get_property_to_json(
