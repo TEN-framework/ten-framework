@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeVar, cast
 from libten_runtime_python import (
     _VideoFrame,  # pyright: ignore[reportPrivateUsage]
 )
@@ -30,12 +30,12 @@ class PixelFmt(IntEnum):
 
 
 class VideoFrame(_VideoFrame):
-    def __init__(self):
+    def __init__(self, name: str):
         raise NotImplementedError("Use VideoFrame.create instead.")
 
     @classmethod
     def create(cls: type[T], name: str) -> T:
-        return cls.__new__(cls, name)
+        return cast(T, cls.__new__(cls, name))
 
     def clone(self) -> "VideoFrame":
-        return _VideoFrame.clone(self)  # type: ignore
+        return cast("VideoFrame", _VideoFrame.clone_internal(self))

@@ -257,7 +257,7 @@ class AsyncExtensionTester(_ExtensionTester):
 
         await self._wrapper_on_stop(self._async_ten_env_tester)
         # pylint: disable=protected-access
-        ten_env_tester._internal.on_stop_done()
+        ten_env_tester._internal.on_stop_done()  # pyright: ignore[reportPrivateUsage] # noqa: E501
         # pylint: enable=protected-access
 
     @final
@@ -286,7 +286,7 @@ class AsyncExtensionTester(_ExtensionTester):
 
         await self._wrapper_on_deinit(self._async_ten_env_tester)
         # pylint: disable=protected-access
-        ten_env_tester._internal.on_deinit_done()
+        ten_env_tester._internal.on_deinit_done()  # pyright: ignore[reportPrivateUsage] # noqa: E501
         # pylint: enable=protected-access
 
     @final
