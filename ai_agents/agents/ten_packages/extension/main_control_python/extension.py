@@ -18,116 +18,13 @@ from ten_runtime import (
     Data,
 )
 
-class StateView:
-    def __init__(self) -> None:
-        self.last_asr_result: str = ""
-        self.last_llm_result: str = ""
-        self.rtc_user_count: int = 0
-
-    async def handle_asr_result(self, asr_result: Data):
-        text, _ = asr_result.get_property_to_json("text")
-        self.last_asr_result = text
-
-    async def handle_llm_result(self, llm_result: Data):
-        text, _ = llm_result.get_property_to_json("text")
-        self.last_llm_result = text
-
-    async def handle_on_user_joined(self, on_user_joined: Cmd):
-        self.rtc_user_count += 1
-
-    async def handle_on_user_left(self, on_user_left: Cmd):
-        self.rtc_user_count -= 1
-
-    async def handle_flush(self):
-        self.last_asr_result = ""
-        self.last_llm_result = ""
-
-class Controller:
-    def __init__(self, ten_env: AsyncTenEnv, view: StateView) -> None:
-        self._ten_env = ten_env
-        self._view = view
-
-    async def handle_asr_result(self, asr_result: Data):
-        await self._view.handle_asr_result(asr_result)
-        asr_result_json, _ = asr_result.get_property_to_json(None)
-        asr_result_dict = json.loads(asr_result_json)
-        text = asr_result_dict.get("text", "")
-        final = asr_result_dict.get("final", False)
-        metadata = asr_result_dict.get("metadata", {})
-        stream_id = int(metadata.get("session_id", "100"))
-        if final or len(text) > 2:
-            await self._flush()
-        if final:
-            await self._request_llm(text, True)
-
-        await self._pass_message(text, final, final, stream_id)
-
-    async def handle_llm_result(self, llm_result: Data):
-        await self._view.handle_llm_result(llm_result)
-        llm_result_json, _ = llm_result.get_property_to_json(None)
-        llm_result_dict = json.loads(llm_result_json)
-        text = llm_result_dict.get("text", "")
-        end_of_segment = llm_result_dict.get("end_of_segment", False)
-        await self._request_tts(text)
-        await self._pass_message(text, end_of_segment, True, 100)
-
-    async def handle_on_user_joined(self, on_user_joined: Cmd):
-        await self._view.handle_on_user_joined(on_user_joined)
-        if self._view.rtc_user_count == 1:
-            await self._request_tts("Hello there, I'm TEN Agent")
-            await self._pass_message("Hello there, I'm TEN Agent", True, True, 100)
-
-    async def handle_on_user_left(self, on_user_left: Cmd):
-        await self._view.handle_on_user_left(on_user_left)
-
-    async def _request_llm(self, text: str, is_final: bool):
-        q = Data.create("llm_request")
-        q.set_property_string("text", text)
-        q.set_property_bool("is_final", is_final)
-        await self._ten_env.send_data(q)
-        self._ten_env.log_info("request_llm text {} is_final {}".format(text, is_final))
-
-    async def _request_tts(self, text: str):
-        q = Data.create("tts_request")
-        q.set_property_string("text", text)
-        await self._ten_env.send_data(q)
-        self._ten_env.log_info("request_tts text {}".format(text))
-
-    async def _flush(self):
-        flush_llm = Cmd.create("flush")
-        flush_llm.set_dest(None, None, "llm")
-        await self._ten_env.send_cmd(flush_llm)
-        self._ten_env.log_info("flush_llm")
-
-        flush_tts = Cmd.create("flush")
-        flush_tts.set_dest(None, None, "tts")
-        await self._ten_env.send_cmd(flush_tts)
-        self._ten_env.log_info("flush_tts")
-
-        flush_rtc = Cmd.create("flush")
-        flush_rtc.set_dest(None, None, "rtc")
-        await self._ten_env.send_cmd(flush_rtc)
-        self._ten_env.log_info("flush_rtc")
-
-        await self._view.handle_flush()
-
-    async def _pass_message(self, text: str, end_of_segment: bool, final: bool, stream_id: int):
-        pass_message = Data.create("pass_message")
-        pass_message.set_property_string("text", text)
-        pass_message.set_property_bool("is_final", final)
-        pass_message.set_property_int("stream_id", stream_id)
-        pass_message.set_property_bool("end_of_segment", end_of_segment)
-        await self._ten_env.send_data(pass_message)
-        self._ten_env.log_info("pass_message text {} is_final {} end_of_segment {} stream_id {}".format(text, final, end_of_segment, stream_id))
-
-
 class MainControlExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
+        self._rtc_user_count = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
-        self._controller = Controller(ten_env, StateView())
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
@@ -153,12 +50,15 @@ class MainControlExtension(AsyncExtension):
     async def _on_cmd_on_user_joined(
         self, ten_env: AsyncTenEnv, cmd: Cmd
     ) -> None:
-        await self._controller.handle_on_user_joined(cmd)
+        self._rtc_user_count += 1
+        if self._rtc_user_count == 1:
+            await self._request_tts(ten_env, "Hello there, I'm TEN Agent")
+            await self._send_caption(ten_env, "Hello there, I'm TEN Agent", True, True, 100)
 
     async def _on_cmd_on_user_left(
         self, ten_env: AsyncTenEnv, cmd: Cmd
     ) -> None:
-        await self._controller.handle_on_user_left(cmd)
+        self._rtc_user_count -= 1
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
@@ -172,9 +72,63 @@ class MainControlExtension(AsyncExtension):
     async def _on_data_asr_result(
         self, ten_env: AsyncTenEnv, data: Data
     ) -> None:
-        await self._controller.handle_asr_result(data)
+        asr_result_json, _ = data.get_property_to_json(None)
+        asr_result_dict = json.loads(asr_result_json)
+        text = asr_result_dict.get("text", "")
+        final = asr_result_dict.get("final", False)
+        metadata = asr_result_dict.get("metadata", {})
+        stream_id = int(metadata.get("session_id", "100"))
+        if final or len(text) > 2:
+            await self._flush(ten_env)
+        if final:
+            await self._request_llm(ten_env, text, True)
+
+        await self._send_caption(ten_env, text, final, final, stream_id)
 
     async def _on_data_llm_result(
         self, ten_env: AsyncTenEnv, data: Data
     ) -> None:
-        await self._controller.handle_llm_result(data)
+        llm_result_json, _ = data.get_property_to_json(None)
+        llm_result_dict = json.loads(llm_result_json)
+        text = llm_result_dict.get("text", "")
+        end_of_segment = llm_result_dict.get("end_of_segment", False)
+        await self._request_tts(ten_env, text)
+        await self._send_caption(ten_env, text, end_of_segment, True, 100)
+
+    async def _request_tts(self, ten_env: AsyncTenEnv, text: str):
+        q = Data.create("tts_request")
+        q.set_property_string("text", text)
+        await ten_env.send_data(q)
+        ten_env.log_info("request_tts text {}".format(text))
+
+    async def _request_llm(self, ten_env: AsyncTenEnv, text: str, is_final: bool):
+        q = Data.create("llm_request")
+        q.set_property_string("text", text)
+        q.set_property_bool("is_final", is_final)
+        await ten_env.send_data(q)
+        ten_env.log_info("request_llm text {} is_final {}".format(text, is_final))
+
+    async def _send_caption(self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool, final: bool, stream_id: int):
+        pass_message = Data.create("caption")
+        pass_message.set_property_string("text", text)
+        pass_message.set_property_bool("is_final", final)
+        pass_message.set_property_int("stream_id", stream_id)
+        pass_message.set_property_bool("end_of_segment", end_of_segment)
+        await ten_env.send_data(pass_message)
+        ten_env.log_info("pass_message text {} is_final {} end_of_segment {} stream_id {}".format(text, final, end_of_segment, stream_id))
+
+    async def _flush(self, ten_env: AsyncTenEnv):
+        flush_llm = Cmd.create("flush")
+        flush_llm.set_dest(None, None, "llm")
+        await ten_env.send_cmd(flush_llm)
+        ten_env.log_info("flush_llm")
+
+        flush_tts = Cmd.create("flush")
+        flush_tts.set_dest(None, None, "tts")
+        await ten_env.send_cmd(flush_tts)
+        ten_env.log_info("flush_tts")
+
+        flush_rtc = Cmd.create("flush")
+        flush_rtc.set_dest(None, None, "rtc")
+        await ten_env.send_cmd(flush_rtc)
+        ten_env.log_info("flush_rtc")

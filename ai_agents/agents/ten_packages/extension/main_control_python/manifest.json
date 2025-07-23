@@ -86,7 +86,7 @@
         }
       },
       {
-        "name": "pass_message",
+        "name": "caption",
         "property": {
           "properties": {
             "text": {

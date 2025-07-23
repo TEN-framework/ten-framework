@@ -1170,7 +1170,7 @@
                   ]
                 },
                 {
-                  "name": "pass_message",
+                  "name": "caption",
                   "dest": [
                     {
                       "extension": "message_collector",
