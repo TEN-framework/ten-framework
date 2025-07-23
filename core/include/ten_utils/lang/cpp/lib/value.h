@@ -8,9 +8,9 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -95,10 +95,10 @@ class value_t {
   struct is_vector<std::vector<T, A>> : public std::true_type {};
 
   template <typename T>
-  struct is_map : public std::false_type {};
+  struct is_unordered_map : public std::false_type {};
 
   template <typename T, typename A>
-  struct is_map<std::map<T, A>> : public std::true_type {};
+  struct is_unordered_map<std::unordered_map<T, A>> : public std::true_type {};
 
   /**
    * @brief This is the fallback constructor to handle all other types of C++
@@ -115,10 +115,10 @@ class value_t {
       typename std::enable_if<
           !is_vector<typename std::remove_reference<V>::type>::value,
           void>::type * = nullptr,
-      // Have specific constructors to handle std::map.
+      // Have specific constructors to handle std::unordered_map.
       typename std::enable_if<
-          !is_map<typename std::remove_reference<V>::type>::value, void>::type
-          * = nullptr,
+          !is_unordered_map<typename std::remove_reference<V>::type>::value,
+          void>::type * = nullptr,
       // Have specific constructors to handle normal pointers.
       typename std::enable_if<
           !std::is_pointer<typename std::remove_reference<V>::type>::value,
@@ -164,7 +164,7 @@ class value_t {
 
   // Create a TEN value of 'object' type.
   template <typename V>
-  explicit value_t(const std::map<std::string, V> &map) {
+  explicit value_t(const std::unordered_map<std::string, V> &map) {
     ten_list_t m = TEN_LIST_INIT_VAL;
 
     for (const auto &pair : map) {
@@ -368,8 +368,8 @@ class value_t {
     return result;
   }
 
-  std::map<std::string, value_t> get_object(
-      const std::map<std::string, value_t> &default_value) {
+  std::unordered_map<std::string, value_t> get_object(
+      const std::unordered_map<std::string, value_t> &default_value) {
     if (c_value_ == nullptr) {
       return default_value;
     }
@@ -378,7 +378,7 @@ class value_t {
       return default_value;
     }
 
-    std::map<std::string, value_t> result;
+    std::unordered_map<std::string, value_t> result;
     ten_value_object_foreach(c_value_, iter) {
       auto *kv =
           reinterpret_cast<ten_value_kv_t *>(ten_ptr_listnode_get(iter.node));

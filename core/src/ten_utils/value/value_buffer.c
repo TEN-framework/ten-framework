@@ -749,3 +749,67 @@ static ten_value_t *deserialize_value_content(const uint8_t *buffer,
 
   return value;
 }
+
+uint8_t *ten_value_serialize_to_buffer_c(ten_value_t *value,
+                                         size_t *buffer_size,
+                                         ten_error_t *err) {
+  TEN_ASSERT(value && buffer_size, "Invalid argument.");
+
+  if (!ten_value_check_integrity(value)) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC, "Invalid value integrity");
+    }
+    return NULL;
+  }
+
+  // Calculate required buffer size
+  size_t required_size = ten_value_calculate_serialize_size(value, err);
+  if (required_size == 0) {
+    return NULL;
+  }
+
+  // Allocate buffer
+  uint8_t *buffer = (uint8_t *)TEN_MALLOC(required_size);
+  if (!buffer) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC, "Failed to allocate buffer");
+    }
+    return NULL;
+  }
+
+  // Serialize to buffer
+  size_t bytes_written = 0;
+  bool success = ten_value_serialize_to_buffer(value, buffer, required_size,
+                                               &bytes_written, err);
+  if (!success) {
+    TEN_FREE(buffer);
+    return NULL;
+  }
+
+  *buffer_size = bytes_written;
+  return buffer;
+}
+
+ten_value_t *ten_value_deserialize_from_buffer_c(const uint8_t *buffer,
+                                                 size_t buffer_size,
+                                                 size_t *bytes_consumed,
+                                                 ten_error_t *err) {
+  TEN_ASSERT(buffer, "Invalid argument.");
+
+  if (buffer_size == 0) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC, "Buffer size is zero");
+    }
+    return NULL;
+  }
+
+  size_t consumed = 0;
+  ten_value_t *value =
+      ten_value_deserialize_from_buffer(buffer, buffer_size, &consumed, err);
+
+  if (bytes_consumed) {
+    *bytes_consumed = consumed;
+  }
+
+  return value;
+}
