@@ -25,6 +25,13 @@
     ]
   },
   "api": {
+    "property": {
+      "properties": {
+        "greeting": {
+          "type": "string"
+        }
+      }
+    },
     "data_in": [
       {
         "name": "asr_result",
