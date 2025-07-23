@@ -10,10 +10,12 @@
 #include "js_native_api.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/mark.h"
 
 static void tsfn_proxy_is_property_exist_callback(napi_env env,
                                                   napi_value js_cb,
-                                                  void *context, void *data) {
+                                                  TEN_UNUSED void *context,
+                                                  void *data) {
   ten_nodejs_get_property_call_ctx_t *ctx =
       (ten_nodejs_get_property_call_ctx_t *)data;
   TEN_ASSERT(ctx, "Should not happen.");

@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "ten_runtime/msg/audio_frame/audio_frame.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_audio_frame_constructor_ref = NULL;  // NOLINT
@@ -48,7 +49,7 @@ static void ten_nodejs_audio_frame_destroy(ten_nodejs_audio_frame_t *self) {
 }
 
 static void ten_nodejs_audio_frame_finalize(napi_env env, void *audio_frame,
-                                            void *hint) {
+                                            TEN_UNUSED void *hint) {
   ten_nodejs_audio_frame_t *audio_frame_bridge = audio_frame;
   TEN_ASSERT(audio_frame_bridge, "Should not happen.");
 

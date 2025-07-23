@@ -169,7 +169,7 @@ void ten_py_data_invalidate(ten_py_data_t *self) {
   Py_DECREF(self);
 }
 
-PyObject *ten_py_data_clone(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");
