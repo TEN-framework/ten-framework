@@ -96,26 +96,29 @@ class MainControlExtension(AsyncExtension):
         await self._send_caption(ten_env, text, end_of_segment, True, 100)
 
     async def _request_tts(self, ten_env: AsyncTenEnv, text: str):
-        q = Data.create("tts_request")
+        q = Data.create("text_data")
+        q.set_dest(None, None, "tts")
         q.set_property_string("text", text)
         await ten_env.send_data(q)
         ten_env.log_info("request_tts text {}".format(text))
 
     async def _request_llm(self, ten_env: AsyncTenEnv, text: str, is_final: bool):
-        q = Data.create("llm_request")
+        q = Data.create("text_data")
+        q.set_dest(None, None, "llm")
         q.set_property_string("text", text)
         q.set_property_bool("is_final", is_final)
         await ten_env.send_data(q)
         ten_env.log_info("request_llm text {} is_final {}".format(text, is_final))
 
     async def _send_caption(self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool, final: bool, stream_id: int):
-        pass_message = Data.create("caption")
-        pass_message.set_property_string("text", text)
-        pass_message.set_property_bool("is_final", final)
-        pass_message.set_property_int("stream_id", stream_id)
-        pass_message.set_property_bool("end_of_segment", end_of_segment)
-        await ten_env.send_data(pass_message)
-        ten_env.log_info("pass_message text {} is_final {} end_of_segment {} stream_id {}".format(text, final, end_of_segment, stream_id))
+        caption = Data.create("text_data")
+        caption.set_dest(None, None, "message_collector")
+        caption.set_property_string("text", text)
+        caption.set_property_bool("is_final", final)
+        caption.set_property_int("stream_id", stream_id)
+        caption.set_property_bool("end_of_segment", end_of_segment)
+        await ten_env.send_data(caption)
+        ten_env.log_info("caption text {} is_final {} end_of_segment {} stream_id {}".format(text, final, end_of_segment, stream_id))
 
     async def _flush(self, ten_env: AsyncTenEnv):
         flush_llm = Cmd.create("flush")

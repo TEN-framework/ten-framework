@@ -1052,29 +1052,29 @@
               "type": "extension",
               "name": "streamid_adapter",
               "addon": "streamid_adapter"
+            },
+            {
+              "type": "selector",
+              "name": "controlled_extensions",
+              "filter": {
+                "field": "name",
+                "operator": "regex",
+                "value": "tts|llm|rtc"
+              }
+            },
+            {
+              "type": "selector",
+              "name": "text_data_dest",
+              "filter": {
+                "field": "name",
+                "operator": "regex",
+                "value": "message_collector|llm|tts"
+              }
             }
           ],
           "connections": [
             {
               "extension": "rtc",
-              "cmd": [
-                {
-                  "name": "on_user_joined",
-                  "dest": [
-                    {
-                      "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "on_user_left",
-                  "dest": [
-                    {
-                      "extension": "main_control"
-                    }
-                  ]
-                }
-              ],
               "audio_frame": [
                 {
                   "name": "pcm_frame",
@@ -1100,30 +1100,27 @@
               ]
             },
             {
-              "extension": "stt",
-              "data": [
-                {
-                  "name": "asr_result",
-                  "dest": [
-                    {
-                      "extension": "main_control"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
               "extension": "main_control",
               "cmd": [
                 {
                   "name": "flush",
                   "dest": [
                     {
-                      "extension": "llm"
-                    },
+                      "selector": "controlled_extensions"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_user_joined",
+                  "source": [
                     {
-                      "extension": "tts"
-                    },
+                      "extension": "rtc"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_user_left",
+                  "source": [
                     {
                       "extension": "rtc"
                     }
@@ -1132,59 +1129,18 @@
               ],
               "data": [
                 {
-                  "name": "llm_request",
+                  "name": "text_data",
                   "dest": [
                     {
-                      "extension": "llm",
-                      "msg_conversion": {
-                        "type": "per_property",
-                        "keep_original": true,
-                        "rules": [
-                          {
-                            "path": "ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "text_data"
-                          }
-                        ]
-                      }
+                      "selector": "text_data_dest"
                     }
                   ]
                 },
                 {
-                  "name": "tts_request",
-                  "dest": [
+                  "name": "asr_result",
+                  "source": [
                     {
-                      "extension": "tts",
-                      "msg_conversion": {
-                        "type": "per_property",
-                        "keep_original": true,
-                        "rules": [
-                          {
-                            "path": "ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "text_data"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                },
-                {
-                  "name": "caption",
-                  "dest": [
-                    {
-                      "extension": "message_collector",
-                      "msg_conversion": {
-                        "type": "per_property",
-                        "keep_original": true,
-                        "rules": [
-                          {
-                            "path": "ten.name",
-                            "conversion_mode": "fixed_value",
-                            "value": "text_data"
-                          }
-                        ]
-                      }
+                      "extension": "stt"
                     }
                   ]
                 }
