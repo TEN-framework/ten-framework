@@ -1,64 +1,142 @@
-# Main Control Extension
+# Main Control Python Extension
 
-The Main Control extension is a central coordinator for the TEN Agent's star topology architecture. It manages the flow between ASR, LLM, and TTS components, making intelligent decisions about when to trigger each component.
+A TEN Framework extension that serves as the central control logic for AI agent interactions, managing speech recognition, language model processing, and text-to-speech coordination.
 
 ## Overview
 
-This extension replaces the linear pipeline topology with a star topology where:
-- ASR results are processed by main_control
-- main_control decides when to trigger LLM
-- LLM responses are processed by main_control  
-- main_control decides when to trigger TTS
-- Interrupts are handled centrally
+The `main_control_python` extension acts as the orchestrator for AI agent conversations, handling real-time speech processing, LLM interactions, and TTS output. It manages user session state and coordinates data flow between different components in the TEN Framework.
 
 ## Features
 
-- **Centralized Decision Making**: Controls when to trigger LLM and TTS based on input
-- **State Management**: Tracks conversation state throughout the interaction
-- **Interrupt Handling**: Manages flush commands for user interruptions
-- **Intelligent Routing**: Routes messages between components based on conversation state
+- **Real-time Speech Processing**: Handles ASR (Automatic Speech Recognition) results and manages streaming text
+- **LLM Integration**: Coordinates with language models for natural language understanding and response generation
+- **TTS Coordination**: Manages text-to-speech requests for audio output
+- **Session Management**: Tracks user presence and manages conversation state
+- **Streaming Support**: Handles both final and intermediate results for smooth user experience
+- **Caption Generation**: Provides real-time captions for accessibility and logging
 
-## API
+## API Interface
 
 ### Input Data
-- `asr_result`: Speech recognition results from ASR extensions
-- `text_data`: Responses from LLM extensions
 
-### Output Data  
-- `text_data`: Text data sent to LLM or TTS extensions
-
-### Output Commands
-- `flush`: Interrupt/flush commands sent to LLM and TTS
-
-## Decision Logic
-
-1. **ASR Processing**: Only triggers LLM when final transcription is received and system is idle
-2. **LLM Processing**: Triggers TTS when LLM response is available (including greeting messages)
-3. **Interrupt Handling**: Resets state and forwards flush to all components
-4. **Greeting Messages**: Handles LLM greeting messages on user join without requiring pending state
-
-## State Management
-
-The extension maintains conversation state:
-- `idle`: Ready for new input
-- `processing_llm`: Waiting for LLM response
-- `processing_tts`: TTS is generating speech
-
-## Usage
-
-Add the extension to your agent configuration:
-
+#### ASR Result
 ```json
 {
-  "type": "extension",
-  "name": "main_control",
-  "addon": "main_control_python",
-  "extension_group": "control",
-  "property": {}
+  "text": "string",
+  "final": "bool",
+  "metadata": {
+    "session_id": "string"
+  }
 }
 ```
 
-Configure connections to route through main_control:
-- STT → main_control
-- main_control → LLM → main_control  
-- main_control → TTS
+#### LLM Result
+```json
+{
+  "text": "string",
+  "end_of_segment": "bool"
+}
+```
+
+### Output Data
+
+#### Text Data
+```json
+{
+  "text": "string",
+  "is_final": "bool",
+  "end_of_segment": "bool",
+  "stream_id": "uint32"
+}
+```
+
+### Commands
+
+#### Input Commands
+- `on_user_joined`: Triggered when a user joins the session
+- `on_user_left`: Triggered when a user leaves the session
+
+#### Output Commands
+- `flush`: Sends flush commands to LLM, TTS, and RTC components
+
+## Configuration
+
+The extension supports the following configuration options:
+
+```json
+{
+  "greeting": "Hello there, I'm TEN Agent"
+}
+```
+
+### Configuration Parameters
+
+- `greeting` (string, default: "Hello there, I'm TEN Agent"): The greeting message to display when the first user joins
+
+## Dependencies
+
+- `ten_runtime_python` (version 0.10): Core TEN Framework runtime
+- `ten_ai_base` (version 0.6.9): AI base functionality
+
+## Usage
+
+### Installation
+
+The extension is part of the TEN Framework and can be installed through the TEN package manager:
+
+```bash
+ten install main_control_python
+```
+
+### Integration
+
+This extension is designed to work with other TEN Framework components:
+
+- **ASR Extension**: Provides speech recognition results
+- **LLM Extension**: Processes natural language and generates responses
+- **TTS Extension**: Converts text to speech
+- **RTC Extension**: Handles real-time communication
+- **Message Collector**: Captures and displays conversation data
+
+### Workflow
+
+1. **User Joins**: When a user joins, the extension sends a greeting if configured
+2. **Speech Processing**: ASR results are processed and captions are generated
+3. **LLM Processing**: Final speech segments are sent to the LLM for processing
+4. **Response Generation**: LLM responses are converted to speech and displayed as captions
+5. **Streaming**: Both intermediate and final results are handled for smooth interaction
+
+## Development
+
+### Building
+
+The extension uses the standard TEN Framework build system:
+
+```bash
+ten build main_control_python
+```
+
+### Testing
+
+Run the extension tests:
+
+```bash
+ten test main_control_python
+```
+
+## Architecture
+
+The extension implements the `AsyncExtension` interface and provides:
+
+- **Lifecycle Management**: Proper initialization, start, stop, and cleanup
+- **Event Handling**: Processes commands and data events asynchronously
+- **State Management**: Tracks user count and conversation state
+- **Data Routing**: Routes data between different framework components
+
+## License
+
+This extension is part of the TEN Framework and is licensed under the Apache License, Version 2.0.
+
+## Contributing
+
+Contributions are welcome! Please refer to the main TEN Framework documentation for contribution guidelines.

@@ -9,6 +9,7 @@ import json
 import time
 from typing import Any, Awaitable, Callable
 import uuid
+from pydantic import BaseModel
 from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
@@ -18,12 +19,18 @@ from ten_runtime import (
     Data,
 )
 
+class MainControlConfig(BaseModel):
+    greeting: str = "Hello there, I'm TEN Agent"
+
 class MainControlExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self._rtc_user_count = 0
+        self.config = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        config_json, _ = await ten_env.get_property_to_json(None)
+        self.config = MainControlConfig.model_validate_json(config_json)
         ten_env.log_debug("on_init")
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
@@ -37,7 +44,7 @@ class MainControlExtension(AsyncExtension):
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_info("on_cmd name {}".format(cmd_name))
+        ten_env.log_info(f"on_cmd name {cmd_name}")
 
         if cmd_name == "on_user_joined":
             await self._on_cmd_on_user_joined(ten_env, cmd)
@@ -50,10 +57,11 @@ class MainControlExtension(AsyncExtension):
     async def _on_cmd_on_user_joined(
         self, ten_env: AsyncTenEnv, cmd: Cmd
     ) -> None:
+        assert self.config is not None
         self._rtc_user_count += 1
-        if self._rtc_user_count == 1:
-            await self._request_tts(ten_env, "Hello there, I'm TEN Agent")
-            await self._send_caption(ten_env, "Hello there, I'm TEN Agent", True, True, 100)
+        if self._rtc_user_count == 1 and self.config.greeting:
+            await self._request_tts(ten_env, self.config.greeting)
+            await self._send_caption(ten_env, self.config.greeting, True, True, 100)
 
     async def _on_cmd_on_user_left(
         self, ten_env: AsyncTenEnv, cmd: Cmd
@@ -62,7 +70,7 @@ class MainControlExtension(AsyncExtension):
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log_info("on_data name {}".format(data_name))
+        ten_env.log_info(f"on_data name {data_name}")
 
         if data_name == "asr_result":
             await self._on_data_asr_result(ten_env, data)
@@ -100,7 +108,7 @@ class MainControlExtension(AsyncExtension):
         q.set_dest(None, None, "tts")
         q.set_property_string("text", text)
         await ten_env.send_data(q)
-        ten_env.log_info("request_tts text {}".format(text))
+        ten_env.log_info(f"request_tts: text {text}")
 
     async def _request_llm(self, ten_env: AsyncTenEnv, text: str, is_final: bool):
         q = Data.create("text_data")
@@ -108,7 +116,7 @@ class MainControlExtension(AsyncExtension):
         q.set_property_string("text", text)
         q.set_property_bool("is_final", is_final)
         await ten_env.send_data(q)
-        ten_env.log_info("request_llm text {} is_final {}".format(text, is_final))
+        ten_env.log_info(f"request_llm: text {text}, is_final {is_final}")
 
     async def _send_caption(self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool, final: bool, stream_id: int):
         caption = Data.create("text_data")
@@ -118,7 +126,7 @@ class MainControlExtension(AsyncExtension):
         caption.set_property_int("stream_id", stream_id)
         caption.set_property_bool("end_of_segment", end_of_segment)
         await ten_env.send_data(caption)
-        ten_env.log_info("caption text {} is_final {} end_of_segment {} stream_id {}".format(text, final, end_of_segment, stream_id))
+        ten_env.log_info(f"caption: text {text}, is_final {final}, end_of_segment {end_of_segment}, stream_id {stream_id}")
 
     async def _flush(self, ten_env: AsyncTenEnv):
         flush_llm = Cmd.create("flush")
