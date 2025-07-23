@@ -526,7 +526,7 @@ PyTypeObject *ten_py_extension_tester_py_type(void) {
       {"set_test_mode_single_internal",
        ten_py_extension_tester_set_test_mode_single, METH_VARARGS, NULL},
       {"set_timeout", ten_py_extension_tester_set_timeout, METH_VARARGS, NULL},
-      {"run", ten_py_extension_tester_run, METH_VARARGS, NULL},
+      {"run_internal", ten_py_extension_tester_run, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
   };
 

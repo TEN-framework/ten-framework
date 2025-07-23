@@ -87,6 +87,10 @@ class ExtensionTester(_ExtensionTester):
         )
 
     @final
+    def run(self) -> TenError | None:
+        return _ExtensionTester.run_internal(self)
+
+    @final
     def _proxy_on_init(self, ten_env_tester: TenEnvTester) -> None:
         self.on_init(ten_env_tester)
 
