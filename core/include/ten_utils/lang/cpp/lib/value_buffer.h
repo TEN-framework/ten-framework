@@ -12,6 +12,7 @@
 #include "ten_utils/lang/cpp/lib/value.h"
 
 namespace ten {
+namespace value_buffer {
 
 inline uint8_t *serialize_to_buffer(const value_t &value, size_t *buffer_size,
                                     error_t *err = nullptr) {
@@ -30,4 +31,5 @@ inline value_t deserialize_from_buffer(const uint8_t *buffer,
   return value_t();
 }
 
+}  // namespace value_buffer
 }  // namespace ten
