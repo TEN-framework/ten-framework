@@ -21,6 +21,7 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct extension_on_xxx_call_info_t {
@@ -69,7 +70,7 @@ static void ten_nodejs_extension_detach_callbacks(
 }
 
 static void ten_nodejs_extension_finalize(napi_env env, void *data,
-                                          void *hint) {
+                                          TEN_UNUSED void *hint) {
   TEN_LOGI("TEN JS extension is finalized");
 
   ten_nodejs_extension_t *extension_bridge = data;
@@ -90,10 +91,8 @@ static void ten_nodejs_extension_finalize(napi_env env, void *data,
   TEN_FREE(extension_bridge);
 }
 
-static void ten_nodejs_invoke_extension_js_on_configure(napi_env env,
-                                                        napi_value fn,
-                                                        void *context,
-                                                        void *data) {
+static void ten_nodejs_invoke_extension_js_on_configure(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   extension_on_xxx_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -148,7 +147,8 @@ done:
 }
 
 static void ten_nodejs_invoke_extension_js_on_init(napi_env env, napi_value fn,
-                                                   void *context, void *data) {
+                                                   TEN_UNUSED void *context,
+                                                   void *data) {
   extension_on_xxx_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -199,7 +199,8 @@ done:
 }
 
 static void ten_nodejs_invoke_extension_js_on_start(napi_env env, napi_value fn,
-                                                    void *context, void *data) {
+                                                    TEN_UNUSED void *context,
+                                                    void *data) {
   extension_on_xxx_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -250,7 +251,8 @@ done:
 }
 
 static void ten_nodejs_invoke_extension_js_on_stop(napi_env env, napi_value fn,
-                                                   void *context, void *data) {
+                                                   TEN_UNUSED void *context,
+                                                   void *data) {
   extension_on_xxx_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -302,7 +304,7 @@ done:
 
 static void ten_nodejs_invoke_extension_js_on_deinit(napi_env env,
                                                      napi_value fn,
-                                                     void *context,
+                                                     TEN_UNUSED void *context,
                                                      void *data) {
   extension_on_xxx_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
@@ -354,7 +356,8 @@ done:
 }
 
 static void ten_nodejs_invoke_extension_js_on_cmd(napi_env env, napi_value fn,
-                                                  void *context, void *data) {
+                                                  TEN_UNUSED void *context,
+                                                  void *data) {
   extension_on_msg_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -400,7 +403,8 @@ done:
 }
 
 static void ten_nodejs_invoke_extension_js_on_data(napi_env env, napi_value fn,
-                                                   void *context, void *data) {
+                                                   TEN_UNUSED void *context,
+                                                   void *data) {
   extension_on_msg_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -446,10 +450,8 @@ done:
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_js_on_audio_frame(napi_env env,
-                                                          napi_value fn,
-                                                          void *context,
-                                                          void *data) {
+static void ten_nodejs_invoke_extension_js_on_audio_frame(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   extension_on_msg_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 
@@ -497,10 +499,8 @@ done:
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_js_on_video_frame(napi_env env,
-                                                          napi_value fn,
-                                                          void *context,
-                                                          void *data) {
+static void ten_nodejs_invoke_extension_js_on_video_frame(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   extension_on_msg_call_info_t *call_info = data;
   TEN_ASSERT(call_info, "Should not happen.");
 

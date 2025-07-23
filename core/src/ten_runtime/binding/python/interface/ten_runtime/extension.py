@@ -21,7 +21,13 @@ class Extension(_Extension):
         instance = super().__new__(cls, name)
         return instance
 
-    def __init__(self, name: str) -> None:
+    def __init__(  # pyright: ignore[reportMissingSuperCall]
+        self, name: str
+    ) -> None:
+        # _Extension is a C module written in C and does not have an __init__
+        # method, so we need to ignore pyright's warning.
+        #
+        # super().__init__(name)
         pass
 
     @final

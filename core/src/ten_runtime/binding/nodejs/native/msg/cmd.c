@@ -12,6 +12,7 @@
 #include "ten_runtime/msg/cmd/cmd.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_cmd_constructor_ref = NULL;  // NOLINT
@@ -49,7 +50,8 @@ static void ten_nodejs_cmd_destroy(ten_nodejs_cmd_t *self) {
   TEN_FREE(self);
 }
 
-static void ten_nodejs_cmd_finalize(napi_env env, void *data, void *hint) {
+static void ten_nodejs_cmd_finalize(napi_env env, void *data,
+                                    TEN_UNUSED void *hint) {
   ten_nodejs_cmd_t *cmd_bridge = data;
   TEN_ASSERT(cmd_bridge, "Should not happen.");
 

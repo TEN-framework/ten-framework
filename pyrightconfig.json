@@ -14,5 +14,6 @@
       ]
     }
   ],
-  "reportUnusedCallResult": false
+  "reportUnusedCallResult": false,
+  "typeCheckingMode": "recommended"
 }

@@ -14,6 +14,7 @@
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 
 bool ten_py_ten_env_check_integrity(ten_py_ten_env_t *self) {
   TEN_ASSERT(self, "Should not happen.");
@@ -110,7 +111,7 @@ ten_py_ten_env_t *ten_py_ten_env_wrap(ten_env_t *ten_env) {
 }
 
 static PyObject *ten_py_ten_env_get_attach_to(ten_py_ten_env_t *self,
-                                              void *closure) {
+                                              TEN_UNUSED void *closure) {
   return PyLong_FromLong(self->c_ten_env->attach_to);
 }
 

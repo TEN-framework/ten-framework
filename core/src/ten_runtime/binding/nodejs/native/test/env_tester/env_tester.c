@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 
 #include "ten_runtime/binding/common.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_ten_env_tester_constructor_ref = NULL;  // NOLINT
@@ -66,7 +67,7 @@ static void ten_nodejs_ten_env_tester_destroy(
 }
 
 static void ten_nodejs_ten_env_tester_finalize(napi_env env, void *data,
-                                               void *hint) {
+                                               TEN_UNUSED void *hint) {
   ten_nodejs_ten_env_tester_t *self = (ten_nodejs_ten_env_tester_t *)data;
   TEN_ASSERT(self && ten_nodejs_ten_env_tester_check_integrity(self, true),
              "Should not happen.");

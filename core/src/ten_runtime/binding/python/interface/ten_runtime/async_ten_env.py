@@ -8,6 +8,7 @@ import asyncio
 import threading
 from asyncio import AbstractEventLoop
 from collections.abc import AsyncGenerator
+from typing import TypeVar
 
 from .cmd import Cmd
 from .data import Data
@@ -19,9 +20,15 @@ from .error import TenError
 from .ten_env_base import TenEnvBase
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
+ResultHandlerResultType = TypeVar(
+    "ResultHandlerResultType", bound=CmdResult | str | bool | int | float | None
+)
 
 
 class AsyncTenEnv(TenEnvBase):
+    _ten_loop: AbstractEventLoop
+    _ten_thread: threading.Thread
+    _ten_all_tasks_done_event: asyncio.Event
 
     def __init__(
         self, ten_env: TenEnv, loop: AbstractEventLoop, thread: threading.Thread
@@ -31,24 +38,25 @@ class AsyncTenEnv(TenEnvBase):
         self._ten_loop = loop
         self._ten_thread = thread
         self._ten_all_tasks_done_event = asyncio.Event()
-        ten_env._set_release_handler(self._on_release)
-
-    def __del__(self) -> None:
-        pass
+        ten_env._set_release_handler(  # pyright: ignore[reportPrivateUsage]
+            self._on_release
+        )
 
     def _result_handler(
         self,
-        result,
+        result: ResultHandlerResultType,
         error: TenError | None,
-        queue: asyncio.Queue,
+        queue: asyncio.Queue[tuple[ResultHandlerResultType, TenError | None]],
     ) -> None:
         asyncio.run_coroutine_threadsafe(
-            queue.put([result, error]),
+            queue.put((result, error)),
             self._ten_loop,
         )
 
     def _error_handler(
-        self, error: TenError | None, queue: asyncio.Queue
+        self,
+        error: TenError | None,
+        queue: asyncio.Queue[TenError | None],
     ) -> None:
         asyncio.run_coroutine_threadsafe(
             queue.put(error),
@@ -56,7 +64,7 @@ class AsyncTenEnv(TenEnvBase):
         )
 
     async def send_cmd(self, cmd: Cmd) -> CmdResultTuple:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[CmdResult | None, TenError | None]](maxsize=1)
         err = self._internal.send_cmd(
             cmd,
             lambda _, result, error: self._result_handler(result, error, q),
@@ -75,7 +83,7 @@ class AsyncTenEnv(TenEnvBase):
     async def send_cmd_ex(
         self, cmd: Cmd
     ) -> AsyncGenerator[CmdResultTuple, None]:
-        q = asyncio.Queue(maxsize=10)
+        q = asyncio.Queue[tuple[CmdResult | None, TenError | None]](maxsize=10)
         err = self._internal.send_cmd(
             cmd,
             lambda _, result, error: self._result_handler(result, error, q),
@@ -96,7 +104,7 @@ class AsyncTenEnv(TenEnvBase):
                 break
 
     async def send_data(self, data: Data) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_data(
             data,
             lambda _, error: self._error_handler(error, q),
@@ -110,7 +118,7 @@ class AsyncTenEnv(TenEnvBase):
     async def send_video_frame(
         self, video_frame: VideoFrame
     ) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_video_frame(
             video_frame,
             lambda _, error: self._error_handler(error, q),
@@ -124,7 +132,7 @@ class AsyncTenEnv(TenEnvBase):
     async def send_audio_frame(
         self, audio_frame: AudioFrame
     ) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_audio_frame(
             audio_frame,
             lambda _, error: self._error_handler(error, q),
@@ -136,7 +144,7 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def return_result(self, result: CmdResult) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.return_result(
             result,
             lambda _, error: self._error_handler(error, q),
@@ -150,7 +158,7 @@ class AsyncTenEnv(TenEnvBase):
     async def get_property_to_json(
         self, path: str | None = None
     ) -> tuple[str, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[str, TenError | None]](maxsize=1)
         err = self._internal.get_property_to_json_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -165,7 +173,7 @@ class AsyncTenEnv(TenEnvBase):
     async def set_property_from_json(
         self, path: str, json_str: str
     ) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.set_property_from_json_async(
             path,
             json_str,
@@ -178,7 +186,7 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def get_property_int(self, path: str) -> tuple[int, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[int, TenError | None]](maxsize=1)
         err = self._internal.get_property_int_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -191,7 +199,7 @@ class AsyncTenEnv(TenEnvBase):
         return result, err
 
     async def set_property_int(self, path: str, value: int) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.set_property_int_async(
             path,
             value,
@@ -206,7 +214,7 @@ class AsyncTenEnv(TenEnvBase):
     async def get_property_string(
         self, path: str
     ) -> tuple[str, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[str, TenError | None]](maxsize=1)
         err = self._internal.get_property_string_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -221,7 +229,7 @@ class AsyncTenEnv(TenEnvBase):
     async def set_property_string(
         self, path: str, value: str
     ) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.set_property_string_async(
             path,
             value,
@@ -236,7 +244,7 @@ class AsyncTenEnv(TenEnvBase):
     async def get_property_bool(
         self, path: str
     ) -> tuple[bool, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[bool, TenError | None]](maxsize=1)
         err = self._internal.get_property_bool_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -249,7 +257,7 @@ class AsyncTenEnv(TenEnvBase):
         return result, err
 
     async def set_property_bool(self, path: str, value: int) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.set_property_bool_async(
             path,
             value,
@@ -264,7 +272,7 @@ class AsyncTenEnv(TenEnvBase):
     async def get_property_float(
         self, path: str
     ) -> tuple[float, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[float, TenError | None]](maxsize=1)
         err = self._internal.get_property_float_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -279,7 +287,7 @@ class AsyncTenEnv(TenEnvBase):
     async def set_property_float(
         self, path: str, value: float
     ) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.set_property_float_async(
             path,
             value,
@@ -294,7 +302,7 @@ class AsyncTenEnv(TenEnvBase):
     async def is_property_exist(
         self, path: str
     ) -> tuple[bool, TenError | None]:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[tuple[bool, TenError | None]](maxsize=1)
         err = self._internal.is_property_exist_async(
             path,
             lambda result, error: self._result_handler(result, error, q),
@@ -306,7 +314,7 @@ class AsyncTenEnv(TenEnvBase):
         return result, err
 
     async def init_property_from_json(self, json_str: str) -> TenError | None:
-        q = asyncio.Queue(maxsize=1)
+        q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.init_property_from_json_async(
             json_str,
             lambda error: self._error_handler(error, q),

@@ -18,13 +18,27 @@ export enum ValueType {
 
 export class Value {
   private _type: ValueType;
-  private _data: any;
+  private _data:
+    | string
+    | number
+    | boolean
+    | Uint8Array
+    | Value[]
+    | Record<string, Value>;
 
-  private constructor(type: ValueType, data: any) {
+  private constructor(
+    type: ValueType,
+    data:
+      | string
+      | number
+      | boolean
+      | Uint8Array
+      | Value[]
+      | Record<string, Value>,
+  ) {
     this._type = type;
     this._data = data;
   }
-
 
   // Get the type of this Value.
   get type(): ValueType {
@@ -32,7 +46,13 @@ export class Value {
   }
 
   // Get the underlying data of this Value.
-  get data(): any {
+  get data():
+    | string
+    | number
+    | boolean
+    | Uint8Array
+    | Value[]
+    | Record<string, Value> {
     return this._data;
   }
 
@@ -111,7 +131,7 @@ export class Value {
     if (!this.isBoolean()) {
       throw new Error(`Value is not a boolean, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as boolean;
   }
 
   // Get the number value. Throws Error if not a number.
@@ -119,7 +139,7 @@ export class Value {
     if (!this.isNumber()) {
       throw new Error(`Value is not a number, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as number;
   }
 
   // Get the string value. Throws Error if not a string.
@@ -127,7 +147,7 @@ export class Value {
     if (!this.isString()) {
       throw new Error(`Value is not a string, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as string;
   }
 
   // Get the bytes value. Throws Error if not bytes.
@@ -135,7 +155,7 @@ export class Value {
     if (!this.isBytes()) {
       throw new Error(`Value is not bytes, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as Uint8Array;
   }
 
   // Get the array value. Throws Error if not an array.
@@ -143,7 +163,7 @@ export class Value {
     if (!this.isArray()) {
       throw new Error(`Value is not an array, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as Value[];
   }
 
   // Get the object value. Throws Error if not an object.
@@ -151,14 +171,16 @@ export class Value {
     if (!this.isObject()) {
       throw new Error(`Value is not an object, got ${ValueType[this._type]}`);
     }
-    return this._data;
+    return this._data as Record<string, Value>;
   }
 
   // Get the JSON string value. Throws Error if not a JSON string.
   getJsonString(): string {
     if (!this.isJsonString()) {
-      throw new Error(`Value is not a JSON string, got ${ValueType[this._type]}`);
+      throw new Error(
+        `Value is not a JSON string, got ${ValueType[this._type]}`,
+      );
     }
-    return this._data;
+    return this._data as string;
   }
 }

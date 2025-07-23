@@ -12,6 +12,7 @@
 #include "node_api.h"
 #include "ten_runtime/msg/data/data.h"
 #include "ten_utils/lib/buf.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_data_constructor_ref = NULL;  // NOLINT
@@ -49,7 +50,8 @@ static void ten_nodejs_data_destroy(ten_nodejs_data_t *self) {
   TEN_FREE(self);
 }
 
-static void ten_nodejs_data_finalize(napi_env env, void *data, void *hint) {
+static void ten_nodejs_data_finalize(napi_env env, void *data,
+                                     TEN_UNUSED void *hint) {
   ten_nodejs_data_t *data_bridge = data;
   TEN_ASSERT(data_bridge, "Should not happen.");
 

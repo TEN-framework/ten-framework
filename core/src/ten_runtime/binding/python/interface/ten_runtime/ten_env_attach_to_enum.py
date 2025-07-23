@@ -7,7 +7,7 @@
 from enum import IntEnum
 
 
-class _TenEnvAttachTo(IntEnum):
+class _TenEnvAttachTo(IntEnum):  # pyright: ignore[reportUnusedClass]
     EXTENSION = 1
     EXTENSION_GROUP = 2
     APP = 3

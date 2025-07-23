@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "ten_runtime/msg/video_frame/video_frame.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_video_frame_constructor_ref = NULL;  // NOLINT
@@ -48,7 +49,7 @@ static void ten_nodejs_video_frame_destroy(ten_nodejs_video_frame_t *self) {
 }
 
 static void ten_nodejs_video_frame_finalize(napi_env env, void *video_frame,
-                                            void *hint) {
+                                            TEN_UNUSED void *hint) {
   ten_nodejs_video_frame_t *video_frame_bridge = video_frame;
   TEN_ASSERT(video_frame_bridge, "Should not happen.");
 

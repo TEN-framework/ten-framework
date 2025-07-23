@@ -79,7 +79,7 @@ PyObject *ten_py_data_alloc_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_data_lock_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_lock_buf(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");
@@ -132,7 +132,7 @@ PyObject *ten_py_data_unlock_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_data_get_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_get_buf(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");
@@ -147,7 +147,13 @@ PyObject *ten_py_data_get_buf(PyObject *self, PyObject *args) {
 
   size_t data_size = buf->size;
 
-  return PyByteArray_FromStringAndSize((const char *)buf->data, data_size);
+  // Check for overflow when converting size_t to Py_ssize_t
+  if (data_size > PY_SSIZE_T_MAX) {
+    return ten_py_raise_py_value_error_exception("Buffer size too large.");
+  }
+
+  return PyByteArray_FromStringAndSize((const char *)buf->data,
+                                       (Py_ssize_t)data_size);
 }
 
 ten_py_data_t *ten_py_data_wrap(ten_shared_ptr_t *data) {
@@ -163,7 +169,7 @@ void ten_py_data_invalidate(ten_py_data_t *self) {
   Py_DECREF(self);
 }
 
-PyObject *ten_py_data_clone(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");

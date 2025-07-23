@@ -483,7 +483,8 @@ static PyObject *ten_py_extension_tester_set_timeout(PyObject *self,
   Py_RETURN_NONE;
 }
 
-static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
+static PyObject *ten_py_extension_tester_run(PyObject *self,
+                                             TEN_UNUSED PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
 
@@ -522,10 +523,10 @@ static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
 
 PyTypeObject *ten_py_extension_tester_py_type(void) {
   static PyMethodDef py_methods[] = {
-      {"set_test_mode_single", ten_py_extension_tester_set_test_mode_single,
-       METH_VARARGS, NULL},
+      {"set_test_mode_single_internal",
+       ten_py_extension_tester_set_test_mode_single, METH_VARARGS, NULL},
       {"set_timeout", ten_py_extension_tester_set_timeout, METH_VARARGS, NULL},
-      {"run", ten_py_extension_tester_run, METH_VARARGS, NULL},
+      {"run_internal", ten_py_extension_tester_run, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
   };
 

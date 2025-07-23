@@ -27,7 +27,8 @@ static void ten_env_proxy_notify_on_configure_done(ten_env_t *ten_env,
   ten_error_deinit(&err);
 }
 
-PyObject *ten_py_ten_env_on_configure_done(PyObject *self, PyObject *args) {
+PyObject *ten_py_ten_env_on_configure_done(PyObject *self,
+                                           TEN_UNUSED PyObject *args) {
   ten_py_ten_env_t *py_ten_env = (ten_py_ten_env_t *)self;
   TEN_ASSERT(py_ten_env && ten_py_ten_env_check_integrity(py_ten_env),
              "Invalid argument.");

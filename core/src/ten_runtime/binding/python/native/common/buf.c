@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_runtime/binding/python/common/error.h"
 #include "object.h"
+#include "ten_utils/macro/mark.h"
 
 ten_py_buf_t *ten_py_buf_wrap(ten_buf_t *buf) {
   if (!buf) {
@@ -34,7 +35,8 @@ void ten_py_buf_destroy(PyObject *self) {
   Py_TYPE(self)->tp_free(self);
 }
 
-int ten_py_buf_get_buffer(PyObject *self, Py_buffer *view, int flags) {
+int ten_py_buf_get_buffer(PyObject *self, Py_buffer *view,
+                          TEN_UNUSED int flags) {
   ten_py_buf_t *py_buf = (ten_py_buf_t *)self;
   if (!py_buf || !py_buf->c_buf) {
     return -1;

@@ -18,6 +18,7 @@
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 
 typedef struct ten_env_notify_return_result_ctx_t {
   ten_shared_ptr_t *c_cmd;
@@ -54,7 +55,7 @@ static void ten_env_notify_return_result_ctx_destroy(
 }
 
 static void proxy_handle_return_error(ten_env_t *ten_env,
-                                      ten_shared_ptr_t *c_cmd_result,
+                                      TEN_UNUSED ten_shared_ptr_t *c_cmd_result,
                                       void *user_data, ten_error_t *err) {
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
