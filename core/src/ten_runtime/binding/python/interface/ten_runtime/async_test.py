@@ -386,6 +386,14 @@ class AsyncExtensionTester(_ExtensionTester):
             self._exit_on_exception(ten_env_tester, e)
 
     @final
+    def set_test_mode_single(
+        self, addon_name: str, property_json_str: str | None = None
+    ) -> None:
+        return _ExtensionTester.set_test_mode_single_internal(
+            self, addon_name, property_json_str
+        )
+
+    @final
     def run(self) -> TenError | None:
         # This is a blocking operation.
         err = _ExtensionTester.run_internal(self)
