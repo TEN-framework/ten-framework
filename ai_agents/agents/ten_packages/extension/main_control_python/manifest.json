@@ -63,30 +63,7 @@
     ],
     "data_out": [
       {
-        "name": "llm_request",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            },
-            "is_final": {
-              "type": "bool"
-            }
-          }
-        }
-      },
-      {
-        "name": "tts_request",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      {
-        "name": "caption",
+        "name": "text_data",
         "property": {
           "properties": {
             "text": {
