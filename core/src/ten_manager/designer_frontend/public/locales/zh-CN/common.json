@@ -339,6 +339,27 @@
     },
     "messageList": {
       "noMessages": "暂无对话"
+    },
+    "node": {
+      "uninstalled": "未安装",
+      "installed": "已安装",
+      "extension": {
+        "title": "扩展节点",
+        "tag": "扩展"
+      }
+    },
+    "graph": {
+      "title": "图谱",
+      "selected-sum-count": "已选择 {{count}}/{{sum}} 个",
+      "select-all": "全选",
+      "select-only": "仅选择",
+      "auto-start": "自动启动",
+      "auto-start-enabled": "自动启动已启用",
+      "auto-start-disabled": "自动启动已禁用",
+      "enable-auto-start": "启用自动启动",
+      "disable-auto-start": "禁用自动启动",
+      "change-auto-start-success": "自动启动设置更新成功",
+      "change-auto-start-failed": "自动启动设置更新失败"
     }
   }
 }

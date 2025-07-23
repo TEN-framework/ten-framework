@@ -53,41 +53,6 @@
     0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
     0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
 }
-
-/* .react-flow__node {
-  box-shadow: var(--xy-node-boxshadow-default);
-  border-radius: var(--xy-node-border-radius-default);
-  background-color: var(--xy-node-background-color-default);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 10px;
-  font-size: 12px;
-  flex-direction: column;
-  border: var(--xy-node-border-default);
-  color: var(--xy-node-color, var(--xy-node-color-default));
-} */
-
-/* .react-flow__node.selectable:focus {
-  box-shadow: 0px 0px 0px 4px var(--xy-theme-color-focus);
-  border-color: #d9d9d9;
-} */
-
-/* .react-flow__node.selectable:focus:active {
-  box-shadow: var(--xy-node-boxshadow-default);
-} */
-
-/* .react-flow__node.selectable:hover,
-.react-flow__node.draggable:hover {
-  border-color: var(--xy-theme-hover);
-}
-
-.react-flow__node.selectable.selected {
-  border-color: var(--xy-theme-selected);
-  box-shadow: var(--xy-node-boxshadow-default);
-} */
-
 .react-flow__node-group {
   background-color: rgba(207, 182, 255, 0.4);
   border-color: #9e86ed;
@@ -145,38 +110,3 @@
     transform: translate(-50%, -50%) rotate(-360deg);
   }
 }
-
-/* .react-flow__handle {
-  opacity: 0;
-}
-
-.react-flow__handle.source {
-  right: -10px;
-}
-
-.react-flow__handle.target {
-  left: -10px;
-} */
-
-/* .react-flow__node:focus {
-  outline: none;
-}
-
-.react-flow__edge .react-flow__edge-path {
-  stroke: url(#edge-gradient);
-  stroke-width: 2;
-  stroke-opacity: 0.75;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: url(#edge-gradient);
-  stroke-width: 3;
-  stroke-opacity: 1;
-}
-
-.react-flow__edge:hover .react-flow__edge-path {
-  stroke: url(#edge-gradient);
-  stroke-width: 3;
-  stroke-opacity: 0.85;
-  cursor: pointer;
-} */

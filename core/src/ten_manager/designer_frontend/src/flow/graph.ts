@@ -9,64 +9,176 @@ import dagre from "dagre";
 
 import { retrieveAddons } from "@/api/services/addons";
 import {
+  retrieveGraphConnections,
+  retrieveGraphNodes,
+} from "@/api/services/graphs";
+import {
   postGetGraphNodeGeometry,
   postSetGraphNodeGeometry,
 } from "@/api/services/storage";
+import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import type { IExtensionAddon } from "@/types/apps";
-import type {
-  TCustomEdge,
-  TCustomEdgeAddressMap,
-  TCustomNode,
+import {
+  ECustomNodeType,
+  type TCustomEdge,
+  type TCustomEdgeAddressMap,
+  type TCustomNode,
+  type TExtensionNode,
+  type TGraphNode,
 } from "@/types/flow";
 import {
   EConnectionType,
   type IBackendConnection,
   type IBackendNode,
+  type IGraph,
 } from "@/types/graphs";
 
-const NODE_WIDTH = 172;
-const NODE_HEIGHT = 48;
+const NODE_WIDTH = 384;
+const NODE_HEIGHT = 200;
+const NODE_X_SPACING = 100;
+const NODE_Y_SPACING = 100;
+
+export const generateRawNodesFromSets = (
+  sets: {
+    backendNodes: IBackendNode[];
+    graph: IGraph;
+  }[]
+): TCustomNode[] => {
+  let currentX = 0;
+  let currentY = 100;
+
+  const results: TCustomNode[][] = [];
+
+  for (const set of sets) {
+    const { backendNodes, graph } = set;
+    const {
+      nodes: rawNodes,
+      width: graphWidth,
+      // height: graphHeight,
+    } = generateRawNodes(backendNodes, graph, {
+      startX: currentX,
+      startY: currentY,
+    });
+    currentX += graphWidth + NODE_X_SPACING;
+    currentY += 0;
+
+    results.push(rawNodes);
+  }
+
+  return results.flat();
+};
 
 export const generateRawNodes = (
-  backendNodes: IBackendNode[]
-): TCustomNode[] => {
-  return backendNodes.map((n, idx) => ({
-    id: n.name,
-    position: { x: idx * 200, y: 100 },
-    type: "customNode",
+  backendNodes: IBackendNode[],
+  graph: IGraph,
+  options?: {
+    startX?: number; // Optional starting X position for the graph node
+    startY?: number; // Optional starting Y position for the graph node
+  }
+): {
+  nodes: TCustomNode[];
+  width: number;
+  height: number;
+  startX: number;
+  startY: number;
+} => {
+  const startX = options?.startX ?? 0;
+  const startY = options?.startY ?? 0;
+  const extensionNodesLength = backendNodes.length;
+
+  // Calculate grid dimensions - try to make it roughly square
+  const cols = Math.ceil(Math.sqrt(extensionNodesLength));
+  const rows = Math.ceil(extensionNodesLength / cols);
+
+  // Calculate graph area dimensions with buffer space (2 nodes worth)
+  const bufferWidth = NODE_X_SPACING * 2;
+  const bufferHeight = NODE_Y_SPACING * 2;
+  const graphAreaWidth =
+    cols * NODE_WIDTH + NODE_X_SPACING * (cols + 1) + bufferWidth;
+  const graphAreaHeight =
+    rows * NODE_HEIGHT + NODE_Y_SPACING * (rows + 1) + bufferHeight;
+
+  const graphNode: TGraphNode = {
+    id: graph.uuid,
+    position: { x: startX, y: startY },
+    type: "graphNode",
     data: {
-      name: n.name,
-      addon: n.addon,
-      extension_group: n.extension_group,
-      app: n.app,
-      property: n.property,
-      api: n.api,
-      src: {
-        [EConnectionType.CMD]: [],
-        [EConnectionType.DATA]: [],
-        [EConnectionType.AUDIO_FRAME]: [],
-        [EConnectionType.VIDEO_FRAME]: [],
-      },
-      target: {
-        [EConnectionType.CMD]: [],
-        [EConnectionType.DATA]: [],
-        [EConnectionType.AUDIO_FRAME]: [],
-        [EConnectionType.VIDEO_FRAME]: [],
-      },
+      _type: ECustomNodeType.GRAPH,
+      graph,
     },
-  }));
+    width: graphAreaWidth,
+    height: graphAreaHeight,
+  };
+
+  const extensionNodes: TExtensionNode[] = backendNodes.map((n, idx) => {
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+
+    return {
+      // id: `${graph.uuid}-${n.name}`,
+      id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+        type: ECustomNodeType.EXTENSION,
+        graph: graph.uuid,
+        name: n.name,
+      }),
+      position: {
+        x:
+          NODE_X_SPACING + col * (NODE_WIDTH + NODE_X_SPACING) + NODE_X_SPACING,
+        y:
+          NODE_Y_SPACING +
+          row * (NODE_HEIGHT + NODE_Y_SPACING) +
+          NODE_Y_SPACING,
+      },
+      type: "extensionNode",
+      parentId: graph.uuid,
+      extent: "parent",
+      data: {
+        ...n,
+        _type: ECustomNodeType.EXTENSION,
+        graph: graph,
+        src: {
+          [EConnectionType.CMD]: [],
+          [EConnectionType.DATA]: [],
+          [EConnectionType.AUDIO_FRAME]: [],
+          [EConnectionType.VIDEO_FRAME]: [],
+        },
+        target: {
+          [EConnectionType.CMD]: [],
+          [EConnectionType.DATA]: [],
+          [EConnectionType.AUDIO_FRAME]: [],
+          [EConnectionType.VIDEO_FRAME]: [],
+        },
+      },
+    };
+  });
+
+  return {
+    nodes: [graphNode, ...extensionNodes],
+    width: graphAreaWidth,
+    height: graphAreaHeight,
+    startX,
+    startY,
+  };
 };
 
 export const generateRawEdges = (
-  backendConnections: IBackendConnection[]
+  backendConnections: IBackendConnection[],
+  graph: IGraph,
+  options?: {
+    // Optional default edges to include
+    defaultEdges?: TCustomEdge[];
+    // Optional default edge address map
+    defaultEdgeAddressMap?: TCustomEdgeAddressMap;
+  }
 ): [TCustomEdge[], TCustomEdgeAddressMap] => {
-  const edgeAddressMap: TCustomEdgeAddressMap = {
-    [EConnectionType.CMD]: [],
-    [EConnectionType.DATA]: [],
-    [EConnectionType.AUDIO_FRAME]: [],
-    [EConnectionType.VIDEO_FRAME]: [],
-  };
-  const edges: TCustomEdge[] = [];
+  const edgeAddressMap: TCustomEdgeAddressMap =
+    options?.defaultEdgeAddressMap ?? {
+      [EConnectionType.CMD]: [],
+      [EConnectionType.DATA]: [],
+      [EConnectionType.AUDIO_FRAME]: [],
+      [EConnectionType.VIDEO_FRAME]: [],
+    };
+  const edges: TCustomEdge[] = options?.defaultEdges ?? [];
 
   backendConnections.forEach((connection) => {
     const extension = connection.extension;
@@ -87,7 +199,14 @@ export const generateRawEdges = (
         dest.forEach((connectionItemDest) => {
           const targetExtension = connectionItemDest.extension;
           const targetApp = connectionItemDest.app;
-          const edgeId = `edge-${extension}-${name}-${targetExtension}`;
+          const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
+            name,
+            src: extension,
+            target: targetExtension,
+            graph: graph.uuid,
+            connectionType,
+          });
+          // const edgeId = `edge-${extension}-${name}-${targetExtension}`;
           const edgeAddress = {
             extension: targetExtension,
             app: targetApp,
@@ -99,12 +218,24 @@ export const generateRawEdges = (
             },
             target: edgeAddress,
             name,
+            graph,
           });
           edges.push({
             id: edgeId,
-            source: extension,
-            target: targetExtension,
+            // source: extension,
+            // target: targetExtension,
+            source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+              type: ECustomNodeType.EXTENSION,
+              graph: graph.uuid,
+              name: extension,
+            }),
+            target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+              type: ECustomNodeType.EXTENSION,
+              graph: graph.uuid,
+              name: targetExtension,
+            }),
             data: {
+              graph,
               name,
               connectionType,
               extension,
@@ -118,8 +249,18 @@ export const generateRawEdges = (
             },
             type: "customEdge",
             label: name,
-            sourceHandle: `source-${extension}`,
-            targetHandle: `target-${targetExtension}`,
+            sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+              type: "source",
+              extension,
+              graph: graph.uuid,
+              connectionType: connectionType,
+            }),
+            targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+              type: "target",
+              extension: targetExtension,
+              graph: graph.uuid,
+              connectionType: connectionType,
+            }),
             markerEnd: {
               type: MarkerType.ArrowClosed,
               width: 20,
@@ -139,57 +280,84 @@ export const updateNodesWithConnections = (
   nodes: TCustomNode[],
   edgeAddressMap: TCustomEdgeAddressMap
 ): TCustomNode[] => {
-  nodes.forEach((node) => {
-    [
-      EConnectionType.CMD,
-      EConnectionType.DATA,
-      EConnectionType.AUDIO_FRAME,
-      EConnectionType.VIDEO_FRAME,
-    ].forEach((connectionType) => {
-      const srcConnections = edgeAddressMap[connectionType].filter(
-        (edge) => edge.target.extension === node.data.name
-      );
-      const targetConnections = edgeAddressMap[connectionType].filter(
-        (edge) => edge.src.extension === node.data.name
-      );
-      node.data.src[connectionType].push(...srcConnections);
-      node.data.target[connectionType].push(...targetConnections);
-    });
-  });
-  return nodes;
+  // const extensionNodeNames: TExtensionNode[] = nodes.filter(
+  //   (node) => node.data._type === ECustomNodeType.EXTENSION
+  // );
+  const results: TCustomNode[] = [];
+  for (const node of nodes) {
+    if (node.data._type === ECustomNodeType.EXTENSION) {
+      [
+        EConnectionType.CMD,
+        EConnectionType.DATA,
+        EConnectionType.AUDIO_FRAME,
+        EConnectionType.VIDEO_FRAME,
+      ].forEach((connectionType) => {
+        const srcConnections = edgeAddressMap[connectionType].filter(
+          (edge) =>
+            edge.target.extension === node.data.name &&
+            edge.graph.uuid === node.data.graph.uuid
+        );
+        const targetConnections = edgeAddressMap[connectionType].filter(
+          (edge) =>
+            edge.src.extension === node.data.name &&
+            edge.graph.uuid === node.data.graph.uuid
+        );
+        (node as TExtensionNode).data.src[connectionType].push(
+          ...srcConnections
+        );
+        (node as TExtensionNode).data.target[connectionType].push(
+          ...targetConnections
+        );
+      });
+    }
+    results.push(node);
+  }
+
+  return results;
 };
 
 export const updateNodesWithAddonInfo = async (
-  baseDir: string,
   nodes: TCustomNode[]
 ): Promise<TCustomNode[]> => {
-  const nodesAddonNameList = [...new Set(nodes.map((node) => node.data.addon))];
-  const addonInfoMap = new Map<string, IExtensionAddon>();
-  for (const addonName of nodesAddonNameList) {
-    const addonInfoList: IExtensionAddon[] = await retrieveAddons({
-      base_dir: baseDir,
-      addon_name: addonName,
-    });
-    const addonInfo: IExtensionAddon | undefined = addonInfoList?.[0];
-    if (!addonInfo) {
-      console.warn(`Addon '${addonName}' not found`);
+  const graphsBaseDirList = [
+    ...new Set(nodes.map((node) => node.data.graph.base_dir)),
+  ];
+  const cache = graphsBaseDirList.reduce(
+    (acc, baseDir) => {
+      const addonInfoMap = new Map<string, IExtensionAddon>();
+      acc[baseDir] = addonInfoMap;
+      return acc;
+    },
+    {} as Record<string, Map<string, IExtensionAddon>>
+  );
+
+  for (const node of nodes) {
+    if (node.data._type !== ECustomNodeType.EXTENSION) {
       continue;
     }
-    addonInfoMap.set(addonName, addonInfo);
-  }
-  return nodes.map((node) => {
-    const addonInfo = addonInfoMap.get(node.data.addon);
-    if (!addonInfo) {
-      console.warn(
-        `Node '${node.data.name}' has addon '${node.data.addon}' not found`
-      );
-      return node;
+    const baseDir = node.data.graph.base_dir;
+    const addonName = node.data.addon;
+    const targetAddonMap = cache[baseDir];
+    if (!targetAddonMap.has(addonName)) {
+      const addonInfoList: IExtensionAddon[] = await retrieveAddons({
+        base_dir: baseDir,
+        addon_name: addonName,
+      });
+      const addonInfo: IExtensionAddon | undefined = addonInfoList?.[0];
+      if (!addonInfo) {
+        console.warn(`Addon '${addonName}' not found`);
+        targetAddonMap.set(addonName, addonInfo);
+        continue;
+      }
+      targetAddonMap.set(addonName, addonInfo);
     }
-    node.data.url = addonInfo.url;
-    return node;
-  });
+    node.data.url = cache[baseDir].get(addonName)?.url;
+  }
+
+  return nodes;
 };
 
+/** @deprecated */
 export const generateNodesAndEdges = (
   inputNodes: TCustomNode[],
   inputEdges: TCustomEdge[]
@@ -278,7 +446,6 @@ export const generateNodesAndEdges = (
 };
 
 export const syncGraphNodeGeometry = async (
-  graphId: string,
   nodes: TCustomNode[],
   options: {
     forceLocal?: boolean; // override all nodes geometry
@@ -286,21 +453,33 @@ export const syncGraphNodeGeometry = async (
 ): Promise<TCustomNode[]> => {
   const isForceLocal = options.forceLocal ?? false;
 
-  const localNodesGeometry = nodes.map((node) => ({
-    extension: node.data.name,
-    x: parseInt(String(node.position.x), 10),
-    y: parseInt(String(node.position.y), 10),
-  }));
+  const localNodesGeometryMappings = nodes.reduce(
+    (acc, node) => {
+      if (!acc[node.data.graph.uuid]) {
+        acc[node.data.graph.uuid] = [];
+      }
+      acc[node.data.graph.uuid].push({
+        id: node.id,
+        x: node.position.x,
+        y: node.position.y,
+      });
+      return acc;
+    },
+    {} as Record<string, { id: string; x: number; y: number }[]>
+  );
 
   // If forceLocal is true, set geometry to backend and return
   if (isForceLocal) {
     try {
-      await postSetGraphNodeGeometry({
-        graph_id: graphId,
-        graph_geometry: {
-          nodes_geometry: localNodesGeometry,
-        },
-      });
+      for (const graphId in localNodesGeometryMappings) {
+        const nodeGeometry = localNodesGeometryMappings[graphId];
+        await postSetGraphNodeGeometry({
+          graph_id: graphId,
+          graph_geometry: {
+            nodes_geometry: nodeGeometry,
+          },
+        });
+      }
     } catch (error) {
       console.error("Error syncing graph node geometry", error);
     }
@@ -308,60 +487,106 @@ export const syncGraphNodeGeometry = async (
   }
 
   // If force is false, merge local geometry with remote geometry
+  const updatedNodes: TCustomNode[] = [];
+
   try {
-    // Retrieve geometry from backend
-    const remoteNodesGeometry = await postGetGraphNodeGeometry(graphId);
+    for (const graphId in localNodesGeometryMappings) {
+      const localNodesGeometry = localNodesGeometryMappings[graphId];
 
-    // const mergedNodesGeometry = localNodesGeometry.reduce((prev, node) => {
-    //   const remoteNode = prev.find((g) => g.extension === node.extension);
-    //   if (remoteNode) {
-    //     remoteNode.x = parseInt(String(node.x), 10);
-    //     remoteNode.y = parseInt(String(node.y), 10);
-    //     return prev;
-    //   }
-    //   return [...prev, node];
-    // }, remoteNodesGeometry);
+      // Retrieve geometry from backend
+      const remoteNodesGeometry = await postGetGraphNodeGeometry(graphId);
 
-    const mergedNodesGeometry = localNodesGeometry.map((node) => {
-      const remoteNode = remoteNodesGeometry.find(
-        (g) => g.extension === node.extension
+      const mergedNodesGeometry = localNodesGeometry.map((node) => {
+        const remoteNode = remoteNodesGeometry.find((g) => g.id === node.id);
+        if (remoteNode) {
+          return {
+            ...node,
+            x: parseInt(String(remoteNode.x), 10),
+            y: parseInt(String(remoteNode.y), 10),
+          };
+        }
+        return node;
+      });
+
+      await postSetGraphNodeGeometry({
+        graph_id: graphId,
+        graph_geometry: {
+          nodes_geometry: mergedNodesGeometry,
+        },
+      });
+
+      // Update nodes with geometry for this graph
+      const graphNodes = nodes.filter(
+        (node) => node.data.graph.uuid === graphId
       );
-      if (remoteNode) {
-        return {
-          ...node,
-          x: parseInt(String(remoteNode.x), 10),
-          y: parseInt(String(remoteNode.y), 10),
-        };
-      }
-      return node;
-    });
+      const nodesWithGeometry = graphNodes.map((node) => {
+        const geometry = mergedNodesGeometry.find((g) => g.id === node.id);
+        if (geometry) {
+          return {
+            ...node,
+            position: {
+              x: parseInt(String(geometry.x), 10),
+              y: parseInt(String(geometry.y), 10),
+            },
+          };
+        }
+        return node;
+      });
 
-    await postSetGraphNodeGeometry({
-      graph_id: graphId,
-      graph_geometry: {
-        nodes_geometry: mergedNodesGeometry,
-      },
-    });
+      updatedNodes.push(...nodesWithGeometry);
+    }
 
-    // Update nodes with geometry
-    const nodesWithGeometry = nodes.map((node) => {
-      const geometry = mergedNodesGeometry.find(
-        (g) => g.extension === node.data.name
-      );
-      if (geometry) {
-        return {
-          ...node,
-          position: {
-            x: parseInt(String(geometry.x), 10),
-            y: parseInt(String(geometry.y), 10),
-          },
-        };
-      }
-    });
-
-    return nodesWithGeometry as TCustomNode[];
+    return updatedNodes;
   } catch (error) {
     console.error("Error syncing graph node geometry", error);
     return nodes;
   }
+};
+
+export const resetNodesAndEdgesByGraphs = async (graphs: IGraph[]) => {
+  const backendNodes = await Promise.all(
+    graphs.map(async (graph) => {
+      const nodes = await retrieveGraphNodes(graph.uuid);
+      return { graph: graph, nodes: nodes };
+    })
+  );
+  const backendConnections = await Promise.all(
+    graphs.map(async (graph) => {
+      const connections = await retrieveGraphConnections(graph.uuid);
+      return { graph: graph, connections: connections };
+    })
+  );
+  const rawNodes = generateRawNodesFromSets(
+    backendNodes.map((set) => ({
+      backendNodes: set.nodes,
+      graph: set.graph,
+    }))
+  );
+  let rawEdges: TCustomEdge[] = [];
+  let rawEdgeAddressMap: TCustomEdgeAddressMap = {
+    [EConnectionType.CMD]: [],
+    [EConnectionType.DATA]: [],
+    [EConnectionType.AUDIO_FRAME]: [],
+    [EConnectionType.VIDEO_FRAME]: [],
+  };
+  backendConnections.forEach((set) => {
+    const [edges, edgeAddressMap] = generateRawEdges(
+      set.connections,
+      set.graph,
+      {
+        defaultEdges: rawEdges,
+        defaultEdgeAddressMap: rawEdgeAddressMap,
+      }
+    );
+    rawEdges = edges;
+    rawEdgeAddressMap = edgeAddressMap;
+  });
+  const nodesWithConnections = updateNodesWithConnections(
+    rawNodes,
+    rawEdgeAddressMap
+  );
+  const nodesWithAddonInfo =
+    await updateNodesWithAddonInfo(nodesWithConnections);
+  const nodesWithGeometry = await syncGraphNodeGeometry(nodesWithAddonInfo);
+  return { nodes: nodesWithGeometry, edges: rawEdges };
 };

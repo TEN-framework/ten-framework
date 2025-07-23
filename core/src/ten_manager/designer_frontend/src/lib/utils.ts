@@ -55,3 +55,11 @@ export function compareVersions(a: string, b: string): number {
   }
   return aNum - bNum;
 }
+
+export const calcAbbreviatedBaseDir = (baseDir: string) => {
+  const parts = baseDir.split("/");
+  if (parts.length <= 2) {
+    return baseDir;
+  }
+  return `${parts[0]}/${parts[1]}/.../${parts[parts.length - 1]}`;
+};

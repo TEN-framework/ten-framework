@@ -7,12 +7,6 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import {
-  applyEdgeChanges,
-  applyNodeChanges,
-  type EdgeChange,
-  type NodeChange,
-} from "@xyflow/react";
 import * as React from "react";
 import { toast } from "sonner";
 import {
@@ -22,45 +16,42 @@ import {
   usePreferencesLogViewerLines,
 } from "@/api/services/storage";
 import { getTanstackQueryClient } from "@/api/services/utils";
-import AppBar from "@/components/AppBar";
-import { GlobalDialogs } from "@/components/GlobalDialogs";
-import { GlobalPopups } from "@/components/Popup";
-import { SpinnerLoading } from "@/components/Status/Loading";
-import StatusBar from "@/components/StatusBar";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import AppBar from "@/components/app-bar";
+import { GlobalDialogs } from "@/components/global-dialogs";
+import { GraphSelector } from "@/components/graph/graph-selector";
+import { GlobalPopups } from "@/components/popup";
+import { SpinnerLoading } from "@/components/status/loading";
+import StatusBar from "@/components/status-bar";
+import { ThemeProvider } from "@/components/theme-provider";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/Resizable";
-import { BackstageWidgets } from "@/components/Widget/BackstageWidgets";
+} from "@/components/ui/resizable";
+import { BackstageWidgets } from "@/components/widget/backstage-widgets";
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
-import FlowCanvas, { type FlowCanvasRef } from "@/flow/FlowCanvas";
-import { generateNodesAndEdges, syncGraphNodeGeometry } from "@/flow/graph";
+import { FlowCanvas } from "@/flow";
+import { generateNodesAndEdges } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-// import Dock from "@/components/Dock";
 import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
-import type { TCustomEdge, TCustomNode } from "@/types/flow";
 import { EWidgetDisplayType } from "@/types/widgets";
 
 const queryClient = getTanstackQueryClient();
 
 export default function App() {
   return (
-    <>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-        <QueryClientProvider client={queryClient}>
-          <ReactQueryDevtools initialIsOpen={false} />
-          <Main />
-        </QueryClientProvider>
-      </ThemeProvider>
-    </>
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <ReactQueryDevtools initialIsOpen={false} />
+        <Main />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
 const Main = () => {
-  const { nodes, setNodes, edges, setEdges, setNodesAndEdges } = useFlowStore();
+  const { nodes, edges, setNodesAndEdges } = useFlowStore();
   const [resizablePanelMode] = React.useState<"left" | "bottom" | "right">(
     "bottom"
   );
@@ -74,9 +65,7 @@ const Main = () => {
   } = usePreferencesLogViewerLines();
 
   const { widgets } = useWidgetStore();
-  const { setPreferences, currentWorkspace } = useAppStore();
-
-  const flowCanvasRef = React.useRef<FlowCanvasRef | null>(null);
+  const { setPreferences } = useAppStore();
 
   const dockWidgetsMemo = React.useMemo(
     () =>
@@ -90,41 +79,11 @@ const Main = () => {
     const { nodes: layoutedNodes, edges: layoutedEdges } =
       generateNodesAndEdges(nodes, edges);
     setNodesAndEdges(layoutedNodes, layoutedEdges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges]);
-
-  const handleNodesChange = React.useCallback(
-    (changes: NodeChange<TCustomNode>[]) => {
-      const newNodes = applyNodeChanges(changes, nodes);
-      const positionChanges = changes.filter(
-        (change) => change.type === "position" && change.dragging === false
-      );
-      if (positionChanges?.length > 0 && currentWorkspace?.graph?.uuid) {
-        syncGraphNodeGeometry(currentWorkspace!.graph!.uuid, newNodes, {
-          forceLocal: true,
-        });
-      }
-      setNodes(newNodes);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodes]
-  );
-
-  const handleEdgesChange = React.useCallback(
-    (changes: EdgeChange<TCustomEdge>[]) => {
-      const newEdges = applyEdgeChanges(changes, edges);
-      setEdges(newEdges);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [edges]
-  );
+  }, [nodes, edges, setNodesAndEdges]);
 
   // init preferences
   React.useEffect(() => {
-    if (
-      remotePreferencesLogViewerLines &&
-      remotePreferencesLogViewerLines?.logviewer_line_size
-    ) {
+    if (remotePreferencesLogViewerLines?.logviewer_line_size) {
       const parsedValues = PREFERENCES_SCHEMA_LOG.safeParse(
         remotePreferencesLogViewerLines
       );
@@ -136,8 +95,7 @@ const Main = () => {
         parsedValues.data.logviewer_line_size
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remotePreferencesLogViewerLines]);
+  }, [remotePreferencesLogViewerLines, setPreferences]);
 
   React.useEffect(() => {
     if (errorPreferences) {
@@ -206,19 +164,7 @@ const Main = () => {
           </>
         )}
         <ResizablePanel defaultSize={dockWidgetsMemo.length > 0 ? 60 : 100}>
-          <FlowCanvas
-            ref={flowCanvasRef}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
-            // onConnect={(connection) => {
-            //   const newEdges = addEdge(connection, edges);
-            //   setEdges(newEdges);
-            // }}
-            onConnect={() => {}}
-            className="mt-10 h-[calc(100dvh-60px)] w-full"
-          />
+          <FlowCanvas className="mt-10 h-[calc(100dvh-60px)] w-full" />
         </ResizablePanel>
         {resizablePanelMode !== "left" && dockWidgetsMemo.length > 0 && (
           <>
@@ -244,6 +190,8 @@ const Main = () => {
 
       {/* [invisible] Global backstage widgets. */}
       <BackstageWidgets />
+
+      <GraphSelector />
 
       <StatusBar className="z-9997" />
     </>
