@@ -30,3 +30,4 @@
 #include "ten_runtime/binding/cpp/detail/test/env_tester.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/test/env_tester_proxy.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/test/extension_tester.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/value_buffer.h"  // IWYU pragma: export
