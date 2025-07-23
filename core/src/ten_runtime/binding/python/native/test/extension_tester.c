@@ -483,7 +483,8 @@ static PyObject *ten_py_extension_tester_set_timeout(PyObject *self,
   Py_RETURN_NONE;
 }
 
-static PyObject *ten_py_extension_tester_run(PyObject *self, PyObject *args) {
+static PyObject *ten_py_extension_tester_run(PyObject *self,
+                                             TEN_UNUSED PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
 

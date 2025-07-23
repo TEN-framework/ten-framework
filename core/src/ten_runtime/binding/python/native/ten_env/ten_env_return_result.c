@@ -11,6 +11,7 @@
 #include "include_internal/ten_runtime/binding/python/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_env_notify_return_result_ctx_t {
@@ -51,10 +52,9 @@ static void ten_env_notify_return_result_ctx_destroy(
   TEN_FREE(ctx);
 }
 
-static void proxy_return_result_callback(ten_env_t *ten_env,
-                                         ten_shared_ptr_t *c_cmd_result,
-                                         void *callback_info,
-                                         ten_error_t *err) {
+static void proxy_return_result_callback(
+    ten_env_t *ten_env, TEN_UNUSED ten_shared_ptr_t *c_cmd_result,
+    void *callback_info, ten_error_t *err) {
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
   TEN_ASSERT(callback_info, "Should not happen.");

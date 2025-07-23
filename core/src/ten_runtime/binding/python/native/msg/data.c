@@ -79,7 +79,7 @@ PyObject *ten_py_data_alloc_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_data_lock_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_lock_buf(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");
@@ -132,7 +132,7 @@ PyObject *ten_py_data_unlock_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_data_get_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_data_get_buf(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_data_t *py_data = (ten_py_data_t *)self;
   TEN_ASSERT(py_data && ten_py_msg_check_integrity((ten_py_msg_t *)py_data),
              "Invalid argument.");
