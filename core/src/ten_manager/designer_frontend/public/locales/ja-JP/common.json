@@ -339,6 +339,27 @@
     },
     "messageList": {
       "noMessages": "メッセージがありません"
+    },
+    "node": {
+      "uninstalled": "未インストール",
+      "installed": "インストール済み",
+      "extension": {
+        "title": "拡張ノード",
+        "tag": "拡張機能"
+      }
+    },
+    "graph": {
+      "title": "グラフ",
+      "selected-sum-count": "{{sum}}個中{{count}}個を選択",
+      "select-all": "すべて選択",
+      "select-only": "のみ",
+      "auto-start": "自動開始",
+      "auto-start-enabled": "自動開始が有効",
+      "auto-start-disabled": "自動開始が無効",
+      "enable-auto-start": "自動開始を有効にする",
+      "disable-auto-start": "自動開始を無効にする",
+      "change-auto-start-success": "自動開始設定の更新に成功しました",
+      "change-auto-start-failed": "自動開始設定の更新に失敗しました"
     }
   }
 }

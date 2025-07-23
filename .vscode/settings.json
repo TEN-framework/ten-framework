@@ -9,6 +9,9 @@
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
   },
+  "biome.configurationPath": "biome.json",
+  "biome.enabled": true,
+  "biome.lsp.bin": "node_modules/.bin/biome",
   "black-formatter.args": [
     "--line-length",
     "80",

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { EConnectionType } from "@/types/graphs";
 
 export enum EEventName {
+  /** @deprecated */
   CustomNodeActionPopup = "customNodeActionPopup",
   BringToFront = "bringToFront",
 }
@@ -200,6 +201,7 @@ export const dispatchBringToFront = (
   eventPubSub.publish(EEventName.BringToFront, options);
 };
 
+/** @deprecated */
 export const dispatchCustomNodeActionPopup = (
   options: z.infer<typeof customNodeActionPopupPayloadSchema>
 ) => {
