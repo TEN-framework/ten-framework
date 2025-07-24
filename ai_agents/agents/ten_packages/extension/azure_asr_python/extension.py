@@ -472,7 +472,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> None:
+    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
         assert self.config is not None
         assert self.stream is not None
 
@@ -484,3 +484,5 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
         self.stream.write(bytes(buf))
         frame.unlock_buf(buf)
+
+        return True
