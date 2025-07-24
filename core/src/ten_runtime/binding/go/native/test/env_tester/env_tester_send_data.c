@@ -132,7 +132,8 @@ ten_go_error_t ten_go_ten_env_tester_send_data(uintptr_t bridge_addr,
              "Should not happen.");
 
   ten_go_msg_t *data = ten_go_msg_reinterpret(data_bridge_addr);
-  TEN_ASSERT(data && ten_go_msg_check_integrity(data), "Should not happen.");
+  TEN_ASSERT(data, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(data), "Should not happen.");
   TEN_ASSERT(ten_go_msg_c_msg(data), "Should not happen.");
 
   ten_go_error_t cgo_error;

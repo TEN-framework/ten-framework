@@ -28,8 +28,8 @@ static void ten_env_proxy_notify_on_configure_done(ten_env_t *ten_env,
 
 void ten_go_ten_env_on_configure_done(uintptr_t bridge_addr) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_BEGIN(self, {});
 

@@ -124,8 +124,8 @@ ten_go_error_t ten_go_ten_env_send_video_frame(
     uintptr_t bridge_addr, uintptr_t video_frame_bridge_addr,
     ten_go_handle_t handler_id) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_msg_t *video_frame = ten_go_msg_reinterpret(video_frame_bridge_addr);
   TEN_ASSERT(video_frame && ten_go_msg_check_integrity(video_frame),
