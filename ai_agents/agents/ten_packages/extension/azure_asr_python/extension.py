@@ -26,6 +26,7 @@ import azure.cognitiveservices.speech as speechsdk
 from .config import AzureASRConfig
 from .dumper import Dumper
 from .timeline import AudioTimeline
+from .reconnect_manager import ReconnectManager
 
 
 class AzureASRExtension(AsyncASRBaseExtension):
@@ -41,6 +42,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
 
+        # Reconnection manager with retry limits and backoff strategy
+        self.reconnect_manager: ReconnectManager | None = None
+
     @override
     def vendor(self) -> str:
         return "microsoft"
@@ -48,6 +52,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
+
+        # Initialize reconnection manager
+        self.reconnect_manager = ReconnectManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -400,6 +407,10 @@ class AzureASRExtension(AsyncASRBaseExtension):
             f"azure event callback on_connected, session_id: {evt.session_id}"
         )
 
+        # Notify reconnect manager that connection is successful
+        if self.reconnect_manager:
+            self.reconnect_manager.mark_connection_successful()
+
     async def _azure_event_handler_on_disconnected(
         self, evt: speechsdk.ConnectionEventArgs
     ):
@@ -434,9 +445,32 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug("finalize mute pkg completed")
 
     async def _handle_reconnect(self):
-        # TODO: implement reconnect
-        await asyncio.sleep(0.5)
-        await self.start_connection()
+        """
+        Handle a single reconnection attempt using the ReconnectManager.
+        Connection success is determined by the _azure_event_handler_on_connected callback.
+
+        This method should be called repeatedly (e.g., after session_stopped events)
+        until either connection succeeds or max attempts are reached.
+        """
+        if not self.reconnect_manager:
+            self.ten_env.log_error("ReconnectManager not initialized")
+            return
+
+        # Check if we can still retry
+        if not self.reconnect_manager.can_retry():
+            self.ten_env.log_warn("No more reconnection attempts allowed")
+            return
+
+        # Attempt a single reconnection
+        success = await self.reconnect_manager.handle_reconnect(
+            connection_func=self.start_connection, error_handler=self.send_asr_error
+        )
+
+        if success:
+            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+        else:
+            info = self.reconnect_manager.get_attempts_info()
+            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:

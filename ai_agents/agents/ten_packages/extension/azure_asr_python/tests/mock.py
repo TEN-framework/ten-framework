@@ -81,15 +81,18 @@ def patch_azure_ws():
         recognizer_instance.speech_end_detected.connect.side_effect = (
             connect_speech_end_detected_mock
         )
-        recognizer_instance.connected.connect.side_effect = connect_connected_mock
-        recognizer_instance.disconnected.connect.side_effect = connect_disconnected_mock
 
         MockRecognizer.return_value = recognizer_instance
         MockSpeechConfig.return_value = MagicMock()
         MockAudioConfig.return_value = MagicMock()
         MockStream.return_value = MagicMock()
         MockStreamFormat.return_value = MagicMock()
-        MockConnection.from_recognizer.return_value = MagicMock()
+
+        connection_instance = MagicMock()
+        connection_instance.connected.connect.side_effect = connect_connected_mock
+        connection_instance.disconnected.connect.side_effect = connect_disconnected_mock
+
+        MockConnection.from_recognizer.return_value = connection_instance
 
         fixture_obj = SimpleNamespace(
             recognizer_instance=recognizer_instance,
