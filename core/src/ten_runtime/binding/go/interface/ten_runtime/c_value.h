@@ -14,8 +14,6 @@
 typedef struct ten_value_t ten_value_t;
 typedef struct ten_go_value_t ten_go_value_t;
 
-void ten_go_value_finalize(ten_go_value_t *self);
-
 /**
  * @brief Destroy the ten_value_t instance from GO.
  *

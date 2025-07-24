@@ -13,7 +13,6 @@
 #include "ten_runtime/binding/go/interface/ten_runtime/c_value.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/common/error_code.h"
-#include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
@@ -26,13 +25,6 @@
 #include "ten_utils/value/value_get.h"
 #include "ten_utils/value/value_is.h"
 
-// @{
-// TODO(Liu): Deprecated.
-
-ten_go_handle_t tenGoCreateValue(ten_go_value_t *);
-
-void tenGoUnrefObj(ten_go_handle_t);
-
 // The definition of tenUnpinGoPointer is in GO world, and tenUnpinGoPointer is
 // exported to C. So we need to declare it, then it can be called from C to GO.
 //
@@ -43,72 +35,6 @@ void tenGoUnrefObj(ten_go_handle_t);
 // must be unpinned from the handle map to avoid memory leak. This function is
 // used to unpinned the GO pointer.
 void tenUnpinGoPointer(ten_go_handle_t);
-
-bool ten_go_value_check_integrity(ten_go_value_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-
-  if (ten_signature_get(&self->signature) != TEN_GO_VALUE_SIGNATURE) {
-    return false;
-  }
-
-  return true;
-}
-
-ten_go_handle_t ten_go_value_go_handle(ten_go_value_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-
-  return self->bridge.go_instance;
-}
-
-ten_value_t *ten_go_value_c_value(ten_go_value_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-
-  return self->c_value;
-}
-
-static void ten_go_value_destroy_v1(ten_go_value_t *self) {
-  TEN_ASSERT(self && ten_go_value_check_integrity(self), "Should not happen.");
-
-  if (self->own) {
-    ten_value_destroy(self->c_value);
-  }
-
-  TEN_FREE(self);
-}
-
-static ten_go_value_t *ten_go_create_empty_value(void) {
-  ten_go_value_t *value_bridge =
-      (ten_go_value_t *)TEN_MALLOC(sizeof(ten_go_value_t));
-  TEN_ASSERT(value_bridge, "Failed to allocate memory.");
-
-  ten_signature_set(&value_bridge->signature, TEN_GO_VALUE_SIGNATURE);
-  value_bridge->bridge.go_instance = tenGoCreateValue(value_bridge);
-
-  value_bridge->bridge.sp_ref_by_go =
-      ten_shared_ptr_create(value_bridge, ten_go_value_destroy_v1);
-  value_bridge->bridge.sp_ref_by_c = NULL;
-
-  return value_bridge;
-}
-
-ten_go_handle_t ten_go_wrap_value(ten_value_t *c_value, bool own) {
-  TEN_ASSERT(c_value && ten_value_check_integrity(c_value),
-             "Should not happen.");
-
-  ten_go_value_t *value_bridge = ten_go_create_empty_value();
-  value_bridge->c_value = c_value;
-  value_bridge->own = own;
-
-  return value_bridge->bridge.go_instance;
-}
-
-void ten_go_value_finalize(ten_go_value_t *self) {
-  TEN_ASSERT(self && ten_go_value_check_integrity(self), "Should not happen.");
-
-  ten_go_bridge_destroy_go_part(&self->bridge);
-}
-
-// @}
 
 void ten_go_ten_value_get_type_and_size(ten_value_t *self, uint8_t *type,
                                         uintptr_t *size) {

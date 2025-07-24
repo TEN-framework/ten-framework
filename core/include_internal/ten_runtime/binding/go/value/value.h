@@ -51,13 +51,3 @@ TEN_RUNTIME_PRIVATE_API bool ten_go_ten_value_to_json(ten_value_t *self,
                                                       uintptr_t *json_str_len,
                                                       const char **json_str,
                                                       ten_go_error_t *status);
-
-TEN_RUNTIME_PRIVATE_API bool ten_go_value_check_integrity(ten_go_value_t *self);
-
-TEN_RUNTIME_PRIVATE_API ten_go_handle_t
-ten_go_value_go_handle(ten_go_value_t *self);
-
-TEN_RUNTIME_PRIVATE_API ten_value_t *ten_go_value_c_value(ten_go_value_t *self);
-
-TEN_RUNTIME_PRIVATE_API ten_go_handle_t ten_go_wrap_value(ten_value_t *c_value,
-                                                          bool own);

@@ -58,8 +58,8 @@ const (
 	// ValueTypeObject - Object
 	ValueTypeObject
 
-	// TODO: Ptr type is not supported for now as it seems unnecessary
-	// ValueTypePtr
+	// ValueTypePtr - Pointer
+	ValueTypePtr
 
 	// ValueTypeInt - Go int, converted to int64 at runtime
 	ValueTypeInt
