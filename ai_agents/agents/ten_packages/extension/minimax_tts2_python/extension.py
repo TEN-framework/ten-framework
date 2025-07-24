@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 import os
 import traceback
+import uuid
 
 from ten_ai_base.helper import PCMWriter, generate_file_name
 from ten_ai_base.message import (
@@ -19,7 +20,7 @@ from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTS2Config
-from .minimax_tts import MinimaxTTS2
+from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -35,23 +36,101 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
         self.recorder: PCMWriter | None = None
         self.sent_ts: datetime | None = None
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
-            await super().on_start(ten_env)
-            ten_env.log_info("on_start 111111")
+            await super().on_init(ten_env)
+            ten_env.log_debug("on_init")
 
             if self.config is None:
                 config_json, _ = await self.ten_env.get_property_to_json("")
-                self.config = MinimaxTTS2Config.model_validate_json(config_json)
-                self.ten_env.log_info(f"config: {self.config.to_str()}")
+                self.ten_env.log_info(f"Raw config JSON: {config_json}")
+
+                # Check if config is empty or missing required fields
+                if not config_json or config_json.strip() == "{}":
+                    error_msg = "Configuration is empty. Required parameters: api_key, group_id are missing."
+                    self.ten_env.log_error(error_msg)
+
+                    # Generate a temporary request ID for error reporting during initialization
+                    temp_request_id = str(uuid.uuid4())
+                    await self.send_tts_error(
+                        temp_request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=None,
+                        ),
+                    )
+                    return
+
+                try:
+                    self.config = MinimaxTTS2Config.model_validate_json(config_json)
+                except Exception as validation_error:
+                    error_msg = f"Configuration validation failed: {str(validation_error)}"
+                    self.ten_env.log_error(error_msg)
+
+                    temp_request_id = str(uuid.uuid4())
+                    await self.send_tts_error(
+                        temp_request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=None,
+                        ),
+                    )
+                    return
+
+                self.ten_env.log_info(f"Parsed config: {self.config.to_str()}")
+
+                # Check if API key is still a placeholder
+                if self.config.api_key.startswith("${env:"):
+                    error_msg = f"Environment variable not resolved: {self.config.api_key}. Please set the MINIMAX_TTS_API_KEY environment variable."
+                    self.ten_env.log_error(error_msg)
+
+                    temp_request_id = str(uuid.uuid4())
+                    await self.send_tts_error(
+                        temp_request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=None,
+                        ),
+                    )
+                    return
 
                 if not self.config.api_key:
-                    self.ten_env.log_error("get property api_key")
-                    raise ValueError("api_key is required")
+                    error_msg = "Required parameter 'api_key' is missing or empty."
+                    self.ten_env.log_error(error_msg)
+
+                    temp_request_id = str(uuid.uuid4())
+                    await self.send_tts_error(
+                        temp_request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=None,
+                        ),
+                    )
+                    return
 
                 if not self.config.group_id:
-                    self.ten_env.log_error("get property group_id")
-                    raise ValueError("group_id is required")
+                    error_msg = "Required parameter 'group_id' is missing or empty."
+                    self.ten_env.log_error(error_msg)
+
+                    temp_request_id = str(uuid.uuid4())
+                    await self.send_tts_error(
+                        temp_request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=None,
+                        ),
+                    )
+                    return
 
                 # extract audio_params and additions from config
                 self.config.update_params()
@@ -61,16 +140,24 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     self.config.dump_path, generate_file_name("agent_dump")
                 )
             )
-            ten_env.log_info("on_start 22222")
             self.client = MinimaxTTS2(self.config, ten_env, self.vendor())
             # Preheat websocket connection
             await self.client.start()
             ten_env.log_info("MinimaxTTS2 client initialized and preheated successfully")
         except Exception as e:
-            ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
-            # Don't call send_tts_error here as we don't have a request yet
-            # Just log the error and let the framework handle it
-            raise e
+            ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
+
+            # Send FATAL ERROR for unexpected exceptions during initialization
+            temp_request_id = str(uuid.uuid4())
+            await self.send_tts_error(
+                temp_request_id,
+                ModuleError(
+                    message=f"Unexpected error during initialization: {str(e)}",
+                    module_name=ModuleType.TTS,
+                    code=ModuleErrorCode.FATAL_ERROR,
+                    vendor_info=None,
+                ),
+            )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Clean up client if exists
@@ -154,6 +241,19 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     # Send audio data - this corresponds to on_audio_bytes in copy.py
                     await self.send_tts_audio_data(audio_chunk)
 
+        except MinimaxTTSTaskFailedException as e:
+            self.ten_env.log_error(
+                f"MinimaxTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}"
+            )
+            await self.send_tts_error(
+                self.current_request_id,
+                ModuleError(
+                    message=e.error_msg,
+                    module_name=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=f"Minimax API error code: {e.error_code}",
+                ),
+            )
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"

@@ -11,6 +11,14 @@ from ten_runtime.async_ten_env import AsyncTenEnv
 from .config import MinimaxTTS2Config
 
 
+class MinimaxTTSTaskFailedException(Exception):
+    """Exception raised when Minimax TTS task fails"""
+    def __init__(self, error_msg: str, error_code: int):
+        self.error_msg = error_msg
+        self.error_code = error_code
+        super().__init__(f"TTS task failed: {error_msg} (code: {error_code})")
+
+
 class MinimaxTTS2:
     def __init__(
         self,
@@ -182,7 +190,8 @@ class MinimaxTTS2:
                         self.ten_env.log_error(f"TTS task failed: {error_code}")
                     # close websocket
                     await self.close()
-                    break
+                    # Raise exception to let extension.py handle the error
+                    raise MinimaxTTSTaskFailedException(error_msg, error_code)
                 elif tts_response_event == "task_finished":
                     if self.ten_env:
                         self.ten_env.log_debug("tts gracefully finished")

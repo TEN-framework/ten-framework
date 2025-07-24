@@ -42,10 +42,6 @@ class MinimaxTTS2Config(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict)
     black_list_params: List[str] = Field(default_factory=list)
 
-    # For backward compatibility
-    @property
-    def api_key(self) -> str:
-        return self.api_key
 
     def is_black_list_params(self, key: str) -> bool:
         return key in self.black_list_params
