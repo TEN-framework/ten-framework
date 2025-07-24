@@ -91,6 +91,7 @@ void ten_go_ten_env_on_create_instance_done(uintptr_t bridge_addr,
 
   ctx->addon_host = addon_host;
   ctx->instance = c_extension;
+  // NOLINTNEXTLINE(performance-no-int-to-ptr)
   ctx->context = (void *)context_addr;
 
   int post_task_rc = ten_runloop_post_task_tail(

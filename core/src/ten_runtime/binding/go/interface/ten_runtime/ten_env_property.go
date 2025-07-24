@@ -8,7 +8,7 @@
 package ten_runtime
 
 // #include "ten_env.h"
-// #include "value.h"
+// #include "c_value.h"
 import "C"
 
 import (

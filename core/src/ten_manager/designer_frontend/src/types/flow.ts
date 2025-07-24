@@ -5,20 +5,33 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import type { Edge, Node } from "@xyflow/react";
+import type { EConnectionType, IBackendNode, IGraph } from "@/types/graphs";
 
-import type { EConnectionType, IBackendNode } from "@/types/graphs";
+export enum ECustomNodeType {
+  GRAPH = "graph",
+  EXTENSION = "extension",
+  SELECTOR = "selector",
+  SUB_GRAPH = "sub-graph",
+}
 
-export type TCustomNodeData = Partial<IBackendNode> & {
-  addon: string;
-  name: string;
-  extension_group?: string;
-  app?: string;
-  url?: string;
+export interface IExtensionNodeData extends IBackendNode {
+  _type: ECustomNodeType.EXTENSION;
+  graph: IGraph;
   src: Record<EConnectionType, TCustomEdgeAddressData[]>;
   target: Record<EConnectionType, TCustomEdgeAddressData[]>;
-};
+  url?: string; // ? need to be removed(ws)
+  [key: string]: unknown;
+}
+export type TExtensionNode = Node<IExtensionNodeData, "extensionNode">;
 
-export type TCustomNode = Node<TCustomNodeData, "customNode">;
+export interface IGraphNodeData {
+  _type: ECustomNodeType.GRAPH;
+  graph: IGraph;
+  [key: string]: unknown;
+}
+export type TGraphNode = Node<IGraphNodeData, "graphNode">;
+
+export type TCustomNode = TGraphNode | TExtensionNode;
 
 export type TCustomEdgeAddress = {
   extension: string;
@@ -34,12 +47,14 @@ export type TCustomEdgeData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
+  graph: IGraph;
 };
 
 export type TCustomEdgeAddressData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
+  graph: IGraph;
 };
 
 export type TCustomEdgeAddressMap = Record<

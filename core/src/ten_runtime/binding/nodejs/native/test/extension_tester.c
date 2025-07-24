@@ -17,6 +17,7 @@
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/test/env_tester.h"
 #include "ten_runtime/test/env_tester_proxy.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_nodejs_extension_tester_async_run_data_t {
@@ -82,7 +83,7 @@ static void ten_nodejs_extension_tester_destroy(
 }
 
 static void ten_nodejs_extension_tester_finalize(napi_env env, void *data,
-                                                 void *hint) {
+                                                 TEN_UNUSED void *hint) {
   TEN_ASSERT(env && data, "Should not happen.");
 
   TEN_LOGD("ten_nodejs_extension_tester_finalize()");
@@ -466,10 +467,8 @@ static void proxy_on_video_frame(ten_extension_tester_t *extension_tester,
   }
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_init(napi_env env,
-                                                          napi_value fn,
-                                                          void *context,
-                                                          void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_init(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -520,10 +519,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_init(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
-                                                           napi_value fn,
-                                                           void *context,
-                                                           void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_start(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -568,10 +565,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_start(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_stop(napi_env env,
-                                                          napi_value fn,
-                                                          void *context,
-                                                          void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_stop(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -619,10 +614,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_stop(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_deinit(napi_env env,
-                                                            napi_value fn,
-                                                            void *context,
-                                                            void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_deinit(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_xxx_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_xxx_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -670,10 +663,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_deinit(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_cmd(napi_env env,
-                                                         napi_value fn,
-                                                         void *context,
-                                                         void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_cmd(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_msg_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_msg_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -714,10 +705,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_cmd(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_data(napi_env env,
-                                                          napi_value fn,
-                                                          void *context,
-                                                          void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_data(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_msg_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_msg_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -758,10 +747,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_data(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_audio_frame(napi_env env,
-                                                                 napi_value fn,
-                                                                 void *context,
-                                                                 void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_audio_frame(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_msg_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_msg_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -803,10 +790,8 @@ static void ten_nodejs_invoke_extension_tester_js_on_audio_frame(napi_env env,
   TEN_FREE(call_info);
 }
 
-static void ten_nodejs_invoke_extension_tester_js_on_video_frame(napi_env env,
-                                                                 napi_value fn,
-                                                                 void *context,
-                                                                 void *data) {
+static void ten_nodejs_invoke_extension_tester_js_on_video_frame(
+    napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   ten_nodejs_extension_tester_on_msg_call_info_t *call_info =
       (ten_nodejs_extension_tester_on_msg_call_info_t *)data;
   TEN_ASSERT(call_info, "Invalid argument.");
@@ -1006,9 +991,8 @@ static void ten_nodejs_extension_tester_release_js_on_xxx_tsfn(
   ten_nodejs_tsfn_release(extension_tester_bridge->js_on_video_frame);
 }
 
-static void ten_nodejs_extension_tester_async_run_complete(napi_env env,
-                                                           napi_status status,
-                                                           void *data) {
+static void ten_nodejs_extension_tester_async_run_complete(
+    napi_env env, TEN_UNUSED napi_status status, void *data) {
   TEN_ASSERT(env, "Should not happen.");
 
   ten_nodejs_extension_tester_async_run_data_t *async_run_data =

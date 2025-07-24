@@ -9,11 +9,13 @@
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
 
 static void tsfn_proxy_set_property_number_callback(napi_env env,
                                                     napi_value js_cb,
-                                                    void *context, void *data) {
+                                                    TEN_UNUSED void *context,
+                                                    void *data) {
   ten_nodejs_set_property_call_ctx_t *ctx =
       (ten_nodejs_set_property_call_ctx_t *)data;
   TEN_ASSERT(ctx, "Should not happen.");

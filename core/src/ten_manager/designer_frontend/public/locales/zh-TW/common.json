@@ -339,6 +339,27 @@
     },
     "messageList": {
       "noMessages": "無訊息"
+    },
+    "node": {
+      "uninstalled": "未安裝",
+      "installed": "已安裝",
+      "extension": {
+        "title": "擴充功能節點",
+        "tag": "擴充功能"
+      }
+    },
+    "graph": {
+      "title": "圖譜",
+      "selected-sum-count": "已選擇 {{count}} / {{sum}} 個",
+      "select-all": "全選",
+      "select-only": "僅選擇",
+      "auto-start": "自動啟動",
+      "auto-start-enabled": "自動啟動已啟用",
+      "auto-start-disabled": "自動啟動已停用",
+      "enable-auto-start": "啟用自動啟動",
+      "disable-auto-start": "停用自動啟動",
+      "change-auto-start-success": "自動啟動設定更新成功",
+      "change-auto-start-failed": "自動啟動設定更新失敗"
     }
   }
 }

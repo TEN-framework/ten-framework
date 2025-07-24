@@ -8,6 +8,7 @@
 
 #include "gtest/gtest.h"
 #include "ten_utils/lib/json.h"
+#include "ten_utils/macro/memory.h"
 
 TEST(JsonTest, Create) {  // NOLINT
   ten_json_t *json = ten_json_create(ten_json_create_new_ctx(), true);
@@ -144,6 +145,39 @@ TEST(JsonTest, ObjectSetString) {  // NOLINT
 
   bool success = ten_json_object_set_string(json, "a", "hello");
   EXPECT_TRUE(success);
+
+  ten_json_destroy(json);
+}
+
+TEST(JsonTest, ObjectPeekInt64) {  // NOLINT
+  ten_json_t *json =
+      ten_json_from_string(R"({"big_number": 1752825784960})", nullptr);
+  EXPECT_NE(json, nullptr);
+
+  ten_json_t value = TEN_JSON_INIT_VAL(json->ctx, false);
+  bool success = ten_json_object_peek(json, "big_number", &value);
+  EXPECT_TRUE(success);
+  EXPECT_TRUE(ten_json_is_integer(&value));
+  EXPECT_EQ(ten_json_get_integer_value(&value), 1752825784960);
+
+  ten_json_deinit(&value);
+  ten_json_destroy(json);
+}
+
+TEST(JsonTest, FromToInt64) {  // NOLINT
+  ten_json_t *json = ten_json_from_string(R"({"a": 1752825784960})", nullptr);
+  EXPECT_NE(json, nullptr);
+
+  bool must_free = false;
+  const char *out = ten_json_to_string(json, nullptr, &must_free);
+  EXPECT_NE(out, nullptr);
+
+  // Make sure the output include the number 1752825784960
+  EXPECT_NE(strstr(out, "1752825784960"), nullptr);
+
+  if (must_free) {
+    TEN_FREE(out);
+  }
 
   ten_json_destroy(json);
 }

@@ -97,4 +97,28 @@ const (
 
 	// ErrorCodeTimeout means timed out.
 	ErrorCodeTimeout TenErrorCode = 8
+
+	// Value buffer protocol error codes
+
+	// ErrorCodeInvalidBufferSize means the buffer is too small to contain valid
+	// data.
+	ErrorCodeInvalidBufferSize TenErrorCode = 9
+
+	// ErrorCodeInvalidMagicNumber means the buffer magic number is invalid.
+	ErrorCodeInvalidMagicNumber TenErrorCode = 10
+
+	// ErrorCodeUnsupportedVersion means the buffer protocol version is not
+	// supported.
+	ErrorCodeUnsupportedVersion TenErrorCode = 11
+
+	// ErrorCodeInvalidBufferType means the buffer type is invalid or unknown.
+	ErrorCodeInvalidBufferType TenErrorCode = 12
+
+	// ErrorCodeBufferSizeMismatch means the buffer size doesn't match the
+	// header.
+	ErrorCodeBufferSizeMismatch TenErrorCode = 13
+
+	// ErrorCodeUnsupportedValueType means the value type is not supported for
+	// serialization.
+	ErrorCodeUnsupportedValueType TenErrorCode = 14
 )

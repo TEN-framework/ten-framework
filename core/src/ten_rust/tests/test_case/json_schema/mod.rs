@@ -980,6 +980,47 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_additional_properties() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "interface": []
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Additional properties are not allowed"));
+    }
+
+    #[test]
+    fn test_validate_interface_wrong_type() {
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "default_extension_cpp",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "interface": "interface.json"
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+
+        assert!(result.unwrap_err().to_string().contains("is not of type"));
+    }
+
+    #[test]
     fn test_validate_interface_with_relative_path_import_uri() {
         let manifest = r#"
         {

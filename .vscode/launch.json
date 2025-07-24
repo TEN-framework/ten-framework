@@ -398,12 +398,11 @@
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/ten_manager/bin/tman",
-      "cwd": "${workspaceFolder}/out/linux/x64/ten_packages/extension/default_extension_cpp",
+      "cwd": "${workspaceFolder}//out/linux/x64/tests/ten_manager/install_all/extension_api_interface_not_found/test_app",
       "args": [
         "--verbose",
         "--config-file=${workspaceFolder}/out/linux/x64/tests/local_registry/config.json",
         "install",
-        "--standalone"
       ],
       "preRunCommands": [
         "script import pathlib;import subprocess;import lldb;rustc_sysroot = subprocess.getoutput(\"rustc --print sysroot\");rustlib_etc = pathlib.Path(rustc_sysroot) / \"lib\" / \"rustlib\" / \"etc\";lldb.debugger.HandleCommand(f'command script import \"{rustlib_etc / \"lldb_lookup.py\"}\"');lldb.debugger.HandleCommand(f'command source -s 0 \"{rustlib_etc / \"lldb_commands\"}\"')"

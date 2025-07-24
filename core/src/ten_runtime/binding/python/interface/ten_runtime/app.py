@@ -4,22 +4,18 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from libten_runtime_python import _App
+from libten_runtime_python import (
+    _App,  # pyright: ignore[reportPrivateUsage]
+)
 from .ten_env import TenEnv
 
 
 class App(_App):
     def run(self, run_in_background: bool) -> None:
         if run_in_background:
-            _App.run(self, 1)
+            _App.run_internal(self, True)
         else:
-            _App.run(self, 0)
-
-    def wait(self) -> None:
-        _App.wait(self)
-
-    def close(self) -> None:
-        _App.close(self)
+            _App.run_internal(self, False)
 
     def on_configure(self, ten_env: TenEnv) -> None:
         ten_env.on_configure_done()

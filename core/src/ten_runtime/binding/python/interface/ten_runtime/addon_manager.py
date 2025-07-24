@@ -9,12 +9,15 @@ import os
 import sys
 import importlib.util
 from glob import glob
-from typing import Callable, Dict, Type, Optional
+from typing import Callable
 
 from .addon import Addon
+
+# Internal APIs from libten_runtime_python - these are private by design and
+# only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
-    _add_extension_addon_to_addon_manager,
-    _register_addon_as_extension,
+    _add_extension_addon_to_addon_manager,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _register_addon_as_extension,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -24,7 +27,7 @@ class _AddonManager:
     # TEN runtime. This avoids using `setattr` on the module, which may not be
     # supported in advanced environments like Cython. The global array method
     # is simple enough that it should work in all environments.
-    _registry: Dict[str, Callable[[object], None]] = {}
+    _registry: dict[str, Callable[[object], None]] = {}
 
     @classmethod
     def load_all_addons(cls):
@@ -36,7 +39,7 @@ class _AddonManager:
             raise FileNotFoundError("manifest.json not found in base_dir")
 
         with open(manifest_path, "r", encoding="utf-8") as f:
-            manifest = json.load(f)
+            manifest = json.load(f)  # pyright: ignore[reportAny]
 
         # Note: The logic for loading extensions based on the `dependencies`
         # specified in the app's `manifest.json` is currently implemented
@@ -49,11 +52,15 @@ class _AddonManager:
         # cost-effective.
 
         # Collect names of extensions from dependencies.
-        extension_names = []
-        dependencies = manifest.get("dependencies", [])
-        for dep in dependencies:
-            if dep.get("type") == "extension":
-                extension_names.append(dep.get("name"))
+        extension_names: list[str] = []
+        dependencies = manifest.get(  # pyright: ignore[reportAny]
+            "dependencies", []
+        )
+        for dep in dependencies:  # pyright: ignore[reportAny]
+            if dep.get("type") == "extension":  # pyright: ignore[reportAny]
+                extension_names.append(
+                    dep.get("name")  # pyright: ignore[reportAny]
+                )
 
         for module in glob(os.path.join(base_dir, "ten_packages/extension/*")):
             if os.path.isdir(module):
@@ -139,8 +146,15 @@ class _AddonManager:
                     manifest_path, "r", encoding="utf-8"
                 ) as manifest_file:
                     try:
-                        manifest_data = json.load(manifest_file)
-                        if manifest_data.get("type") == "app":
+                        manifest_data = json.load(  # pyright: ignore[reportAny]
+                            manifest_file
+                        )
+                        if (
+                            manifest_data.get(  # pyright: ignore[reportAny]
+                                "type"
+                            )
+                            == "app"
+                        ):
                             return current_dir
                     except json.JSONDecodeError:
                         pass
@@ -151,13 +165,15 @@ class _AddonManager:
         )
 
 
-def register_addon_as_extension(name: str, base_dir: Optional[str] = None):
-    def decorator(cls: Type[Addon]) -> Type[Addon]:
+def register_addon_as_extension(name: str, base_dir: str | None = None):
+    def decorator(cls: type[Addon]) -> type[Addon]:
         # Resolve base_dir.
         if base_dir is None:
             try:
                 # Attempt to get the caller's file path using sys._getframe()
-                caller_frame = sys._getframe(1)
+                caller_frame = sys._getframe(  # pyright: ignore[reportPrivateUsage] # noqa: E501
+                    1
+                )
                 resolved_base_dir = os.path.dirname(
                     caller_frame.f_code.co_filename
                 )
@@ -170,7 +186,7 @@ def register_addon_as_extension(name: str, base_dir: Optional[str] = None):
             resolved_base_dir = os.path.dirname(base_dir)
 
         # Define the register_handler that will be called by the Addon manager.
-        def register_handler(register_ctx):
+        def register_handler(register_ctx: object):
             # Instantiate the addon class.
             addon_instance = cls()
 
@@ -182,7 +198,9 @@ def register_addon_as_extension(name: str, base_dir: Optional[str] = None):
                 print(f"Failed to register addon '{name}': {e}")
 
         # Define the registration function name based on the addon name.
-        _AddonManager._set_register_handler(name, register_handler)
+        _AddonManager._set_register_handler(  # pyright: ignore[reportPrivateUsage] # noqa: E501
+            name, register_handler
+        )
 
         # Add the addon to the native addon manager.
         _add_extension_addon_to_addon_manager(name)

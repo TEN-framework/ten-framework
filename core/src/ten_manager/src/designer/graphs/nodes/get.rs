@@ -128,8 +128,18 @@ pub async fn get_graph_nodes_endpoint(
             &extension_graph_node.addon,
         );
         if let Some(pkg_info) = pkg_info {
-            let manifest_api =
-                pkg_info.manifest.get_flattened_api().await.unwrap();
+            let manifest_api = pkg_info.manifest.get_flattened_api().await;
+            if manifest_api.is_err() {
+                let error_response = ErrorResponse::from_error(
+                    &manifest_api.err().unwrap(),
+                    "Failed to flatten API for extension",
+                );
+                return Ok(
+                    HttpResponse::InternalServerError().json(error_response)
+                );
+            }
+
+            let manifest_api = manifest_api.unwrap();
 
             resp_extensions.push(GraphNodesSingleResponseData {
                 addon: extension_graph_node.addon.clone(),

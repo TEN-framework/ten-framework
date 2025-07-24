@@ -71,6 +71,7 @@ static void ten_go_addon_destroy(ten_go_addon_t *self) {
 void ten_go_addon_finalize(uintptr_t bridge_addr) {
   TEN_ASSERT(bridge_addr, "Invalid argument.");
 
+  // NOLINTNEXTLINE(performance-no-int-to-ptr)
   ten_go_addon_t *addon_bridge = (ten_go_addon_t *)bridge_addr;
   TEN_ASSERT(addon_bridge, "Invalid argument.");
   TEN_ASSERT(ten_go_addon_check_integrity(addon_bridge), "Invalid argument.");

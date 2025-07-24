@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { buildZodFieldConfig } from "@autoform/react";
-import type { FieldTypes } from "./AutoForm";
+import type { FieldTypes } from "./auto-form";
 
 export const fieldConfig = buildZodFieldConfig<
   FieldTypes,

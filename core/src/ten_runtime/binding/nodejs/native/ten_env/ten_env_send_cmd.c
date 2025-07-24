@@ -11,6 +11,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_env_notify_send_cmd_ctx_t {
@@ -83,7 +84,7 @@ static void ten_nodejs_send_cmd_callback_call_ctx_destroy(
 }
 
 static void tsfn_proxy_send_cmd_callback(napi_env env, napi_value js_cb,
-                                         void *context, void *data) {
+                                         TEN_UNUSED void *context, void *data) {
   ten_nodejs_send_cmd_callback_call_ctx_t *ctx = data;
   TEN_ASSERT(ctx, "Should not happen.");
 
