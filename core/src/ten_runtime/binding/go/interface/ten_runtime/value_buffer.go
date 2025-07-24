@@ -132,7 +132,9 @@ func bufferTypeToValueType(bt uint8) ValueType {
 	case bufferTypeObject:
 		return ValueTypeObject
 	case bufferTypeJSONString:
-		return valueTypeInvalid // JSON string is not supported for deserialization
+		// Normally, the runtime should not return this type, so map it to the
+		// invalid type
+		return valueTypeInvalid
 	default:
 		return valueTypeInvalid
 	}
@@ -148,31 +150,22 @@ func (v *Value) calculateContentSize() int {
 	switch v.Type {
 	case valueTypeInvalid:
 		return 0
-
 	case ValueTypeBool:
 		return 1
-
 	case ValueTypeInt8, ValueTypeUint8:
 		return 1
-
 	case ValueTypeInt16, ValueTypeUint16:
 		return 2
-
 	case ValueTypeInt32, ValueTypeUint32:
 		return 4
-
 	case ValueTypeInt64, ValueTypeUint64, ValueTypeInt, ValueTypeUint:
 		return 8
-
 	case ValueTypeFloat32:
 		return 4
-
 	case ValueTypeFloat64:
 		return 8
-
 	case ValueTypeString, ValueTypeJSONString:
 		return 4 + len(v.stringVal) // length(4) + data
-
 	case ValueTypeBytes:
 		return 4 + len(v.bytesVal) // length(4) + data
 
@@ -235,7 +228,7 @@ func (v *Value) serializeToBuffer() ([]byte, error) {
 func (v *Value) serializeContent(buffer []byte, pos *int) error {
 	switch v.Type {
 	case valueTypeInvalid:
-		// No additional data
+		panic("unsupported value type for serialization")
 
 	case ValueTypeBool:
 		val := uint8(0)
@@ -355,8 +348,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		}
 
 	default:
-		return newBufferProtocolError(ErrorCodeUnsupportedValueType,
-			"unsupported value type for serialization")
+		panic("unsupported value type for serialization")
 	}
 
 	return nil
@@ -365,8 +357,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 // validateBufferHeader validates the buffer header and returns header info
 func validateBufferHeader(buffer []byte) (*valueBufferHeader, error) {
 	if len(buffer) < valueBufferHeaderSize {
-		return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
-			"buffer too small to contain header")
+		panic("buffer too small to contain header")
 	}
 
 	header := &valueBufferHeader{}
@@ -381,22 +372,22 @@ func validateBufferHeader(buffer []byte) (*valueBufferHeader, error) {
 	header.size = binary.LittleEndian.Uint32(buffer[pos:])
 
 	if header.magic != valueBufferMagic {
-		return nil, newBufferProtocolError(ErrorCodeInvalidMagicNumber,
+		return nil, newBufferProtocolError(ErrorCodeGeneric,
 			"invalid buffer magic number")
 	}
 
 	if header.version != valueBufferVersion {
-		return nil, newBufferProtocolError(ErrorCodeUnsupportedVersion,
+		return nil, newBufferProtocolError(ErrorCodeGeneric,
 			"unsupported buffer protocol version")
 	}
 
 	if bufferTypeToValueType(header.typeName) == valueTypeInvalid {
-		return nil, newBufferProtocolError(ErrorCodeInvalidBufferType,
+		return nil, newBufferProtocolError(ErrorCodeGeneric,
 			"invalid or unknown buffer type")
 	}
 
 	if uint32(len(buffer)) < uint32(valueBufferHeaderSize)+header.size {
-		return nil, newBufferProtocolError(ErrorCodeBufferSizeMismatch,
+		return nil, newBufferProtocolError(ErrorCodeGeneric,
 			"buffer size doesn't match header specification")
 	}
 
@@ -404,10 +395,10 @@ func validateBufferHeader(buffer []byte) (*valueBufferHeader, error) {
 }
 
 // deserializeFromBuffer deserializes a Value from buffer
-func deserializeFromBuffer(buffer []byte) (*Value, int, error) {
+func deserializeFromBuffer(buffer []byte) (*Value, error) {
 	header, err := validateBufferHeader(buffer)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	pos := valueBufferHeaderSize
@@ -417,10 +408,10 @@ func deserializeFromBuffer(buffer []byte) (*Value, int, error) {
 		bufferTypeToValueType(header.typeName),
 	)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return value, pos, nil
+	return value, nil
 }
 
 // deserializeContent deserializes value content from buffer
@@ -433,11 +424,11 @@ func deserializeContent(
 
 	switch valueType {
 	case valueTypeInvalid:
-		// No additional data
+		panic("unsupported value type for deserialization")
 
 	case ValueTypeBool:
 		if *pos >= len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for bool value")
 		}
 		value.boolVal = buffer[*pos] != 0
@@ -445,7 +436,7 @@ func deserializeContent(
 
 	case ValueTypeInt8:
 		if *pos >= len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for int8 value")
 		}
 		value.int8Val = int8(buffer[*pos])
@@ -453,7 +444,7 @@ func deserializeContent(
 
 	case ValueTypeInt16:
 		if *pos+2 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for int16 value")
 		}
 		value.int16Val = int16(binary.LittleEndian.Uint16(buffer[*pos:]))
@@ -461,7 +452,7 @@ func deserializeContent(
 
 	case ValueTypeInt32:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for int32 value")
 		}
 		value.int32Val = int32(binary.LittleEndian.Uint32(buffer[*pos:]))
@@ -469,7 +460,7 @@ func deserializeContent(
 
 	case ValueTypeInt64, ValueTypeInt:
 		if *pos+8 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for int64 value")
 		}
 		value.int64Val = int64(binary.LittleEndian.Uint64(buffer[*pos:]))
@@ -477,7 +468,7 @@ func deserializeContent(
 
 	case ValueTypeUint8:
 		if *pos >= len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for uint8 value")
 		}
 		value.uint8Val = buffer[*pos]
@@ -485,7 +476,7 @@ func deserializeContent(
 
 	case ValueTypeUint16:
 		if *pos+2 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for uint16 value")
 		}
 		value.uint16Val = binary.LittleEndian.Uint16(buffer[*pos:])
@@ -493,7 +484,7 @@ func deserializeContent(
 
 	case ValueTypeUint32:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for uint32 value")
 		}
 		value.uint32Val = binary.LittleEndian.Uint32(buffer[*pos:])
@@ -501,7 +492,7 @@ func deserializeContent(
 
 	case ValueTypeUint64, ValueTypeUint:
 		if *pos+8 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for uint64 value")
 		}
 		value.uint64Val = binary.LittleEndian.Uint64(buffer[*pos:])
@@ -509,7 +500,7 @@ func deserializeContent(
 
 	case ValueTypeFloat32:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for float32 value")
 		}
 		value.float32Val = math.Float32frombits(
@@ -519,7 +510,7 @@ func deserializeContent(
 
 	case ValueTypeFloat64:
 		if *pos+8 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for float64 value")
 		}
 		value.float64Val = math.Float64frombits(
@@ -529,7 +520,7 @@ func deserializeContent(
 
 	case ValueTypeString, ValueTypeJSONString:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for string length")
 		}
 		strLen := binary.LittleEndian.Uint32(buffer[*pos:])
@@ -539,7 +530,7 @@ func deserializeContent(
 			value.stringVal = ""
 		} else {
 			if *pos+int(strLen) > len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for string data")
 			}
 			value.stringVal = string(buffer[*pos : *pos+int(strLen)])
@@ -548,7 +539,7 @@ func deserializeContent(
 
 	case ValueTypeBytes:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for bytes length")
 		}
 		bufLen := binary.LittleEndian.Uint32(buffer[*pos:])
@@ -558,7 +549,7 @@ func deserializeContent(
 			value.bytesVal = nil
 		} else {
 			if *pos+int(bufLen) > len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for bytes data")
 			}
 			value.bytesVal = make([]byte, bufLen)
@@ -568,7 +559,7 @@ func deserializeContent(
 
 	case ValueTypeArray:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for array length")
 		}
 		arrayLen := binary.LittleEndian.Uint32(buffer[*pos:])
@@ -577,7 +568,7 @@ func deserializeContent(
 		value.arrayVal = make([]Value, arrayLen)
 		for i := uint32(0); i < arrayLen; i++ {
 			if *pos >= len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for array item type")
 			}
 			itemType := bufferTypeToValueType(buffer[*pos])
@@ -592,7 +583,7 @@ func deserializeContent(
 
 	case ValueTypeObject:
 		if *pos+4 > len(buffer) {
-			return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+			return nil, newBufferProtocolError(ErrorCodeGeneric,
 				"buffer too small for object size")
 		}
 		objSize := binary.LittleEndian.Uint32(buffer[*pos:])
@@ -602,14 +593,14 @@ func deserializeContent(
 		for i := uint32(0); i < objSize; i++ {
 			// Read key
 			if *pos+4 > len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for object key length")
 			}
 			keyLen := binary.LittleEndian.Uint32(buffer[*pos:])
 			*pos += 4
 
 			if *pos+int(keyLen) > len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for object key data")
 			}
 			key := string(buffer[*pos : *pos+int(keyLen)])
@@ -617,7 +608,7 @@ func deserializeContent(
 
 			// Read value
 			if *pos >= len(buffer) {
-				return nil, newBufferProtocolError(ErrorCodeInvalidBufferSize,
+				return nil, newBufferProtocolError(ErrorCodeGeneric,
 					"buffer too small for object value type")
 			}
 			valType := bufferTypeToValueType(buffer[*pos])
@@ -631,8 +622,7 @@ func deserializeContent(
 		}
 
 	default:
-		return nil, newBufferProtocolError(ErrorCodeUnsupportedValueType,
-			"unsupported value type for deserialization")
+		panic("unsupported value type for deserialization")
 	}
 
 	return value, nil
