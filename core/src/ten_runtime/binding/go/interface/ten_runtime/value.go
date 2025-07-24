@@ -74,98 +74,98 @@ type Value struct {
 	data any
 }
 
-// NewBool creates a new boolean Value.
-func NewBool(b bool) Value {
+// NewBoolValue creates a new boolean Value.
+func NewBoolValue(b bool) Value {
 	return Value{Type: ValueTypeBool, data: b}
 }
 
-// NewInt8 creates a new int8 Value.
-func NewInt8(i int8) Value {
+// NewInt8Value creates a new int8 Value.
+func NewInt8Value(i int8) Value {
 	return Value{Type: ValueTypeInt8, data: i}
 }
 
-// NewInt16 creates a new int16 Value.
-func NewInt16(i int16) Value {
+// NewInt16Value creates a new int16 Value.
+func NewInt16Value(i int16) Value {
 	return Value{Type: ValueTypeInt16, data: i}
 }
 
-// NewInt32 creates a new int32 Value.
-func NewInt32(i int32) Value {
+// NewInt32Value creates a new int32 Value.
+func NewInt32Value(i int32) Value {
 	return Value{Type: ValueTypeInt32, data: i}
 }
 
-// NewInt64 creates a new int64 Value.
-func NewInt64(i int64) Value {
+// NewInt64Value creates a new int64 Value.
+func NewInt64Value(i int64) Value {
 	return Value{Type: ValueTypeInt64, data: i}
 }
 
-// NewUint8 creates a new uint8 Value.
-func NewUint8(i uint8) Value {
+// NewUint8Value creates a new uint8 Value.
+func NewUint8Value(i uint8) Value {
 	return Value{Type: ValueTypeUint8, data: i}
 }
 
-// NewUint16 creates a new uint16 Value.
-func NewUint16(i uint16) Value {
+// NewUint16Value creates a new uint16 Value.
+func NewUint16Value(i uint16) Value {
 	return Value{Type: ValueTypeUint16, data: i}
 }
 
-// NewUint32 creates a new uint32 Value.
-func NewUint32(i uint32) Value {
+// NewUint32Value creates a new uint32 Value.
+func NewUint32Value(i uint32) Value {
 	return Value{Type: ValueTypeUint32, data: i}
 }
 
-// NewUint64 creates a new uint64 Value.
-func NewUint64(i uint64) Value {
+// NewUint64Value creates a new uint64 Value.
+func NewUint64Value(i uint64) Value {
 	return Value{Type: ValueTypeUint64, data: i}
 }
 
-// NewFloat32 creates a new float32 Value.
-func NewFloat32(f float32) Value {
+// NewFloat32Value creates a new float32 Value.
+func NewFloat32Value(f float32) Value {
 	return Value{Type: ValueTypeFloat32, data: f}
 }
 
-// NewFloat64 creates a new float64 Value.
-func NewFloat64(f float64) Value {
+// NewFloat64Value creates a new float64 Value.
+func NewFloat64Value(f float64) Value {
 	return Value{Type: ValueTypeFloat64, data: f}
 }
 
-// NewString creates a new string Value.
-func NewString(s string) Value {
+// NewStringValue creates a new string Value.
+func NewStringValue(s string) Value {
 	return Value{Type: ValueTypeString, data: s}
 }
 
-// NewBytes creates a new []byte Value.
-func NewBytes(b []byte) Value {
+// NewBytesValue creates a new []byte Value.
+func NewBytesValue(b []byte) Value {
 	return Value{Type: ValueTypeBytes, data: b}
 }
 
-// NewArray creates a new array Value.
-func NewArray(arr []Value) Value {
+// NewArrayValue creates a new array Value.
+func NewArrayValue(arr []Value) Value {
 	return Value{Type: ValueTypeArray, data: arr}
 }
 
-// NewObject creates a new object Value.
-func NewObject(m map[string]Value) Value {
+// NewObjectValue creates a new object Value.
+func NewObjectValue(m map[string]Value) Value {
 	return Value{Type: ValueTypeObject, data: m}
 }
 
-// NewPtr creates a new pointer Value.
-func NewPtr(p unsafe.Pointer) Value {
+// NewPtrValue creates a new pointer Value.
+func NewPtrValue(p unsafe.Pointer) Value {
 	return Value{Type: ValueTypePtr, data: p}
 }
 
-// NewJSONString creates a new JSON string Value.
-func NewJSONString(s string) Value {
+// NewJSONStringValue creates a new JSON string Value.
+func NewJSONStringValue(s string) Value {
 	return Value{Type: ValueTypeJSONString, data: s}
 }
 
-// NewInt creates a new int Value.
-func NewInt(i int) Value {
+// NewIntValue creates a new int Value.
+func NewIntValue(i int) Value {
 	return Value{Type: ValueTypeInt64, data: int64(i)}
 }
 
-// NewUint creates a new uint Value.
-func NewUint(i uint) Value {
+// NewUintValue creates a new uint Value.
+func NewUintValue(i uint) Value {
 	return Value{Type: ValueTypeUint64, data: uint64(i)}
 }
 
