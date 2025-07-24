@@ -42,6 +42,10 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.last_finalize_timestamp: int = 0
 
     @override
+    def vendor(self) -> str:
+        return "microsoft"
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
 
@@ -208,7 +212,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 self._azure_event_handler_on_speech_end_detected(evt),
             )
         )
-        assert self.client is not None
+
         self.connection = speechsdk.Connection.from_recognizer(self.client)
         self.connection.connected.connect(
             lambda evt: loop.call_soon_threadsafe(
