@@ -1,42 +1,50 @@
 import asyncio
-import os
+import threading
+from types import SimpleNamespace
 from typing_extensions import override
-from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, AudioFrame, TenError, TenErrorCode
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    Data,
+    AudioFrame,
+    TenError,
+    TenErrorCode,
+)
 import json
+
+# We must import it, which means this test fixture will be automatically executed
+from .mock import patch_azure_ws  # noqa: F401
 
 
 class AzureAsrExtensionTester(AsyncExtensionTester):
 
-    def __init__(self, audio_file_path: str):
+    def __init__(self):
         super().__init__()
         self.sender_task: asyncio.Task[None] | None = None
-        self.audio_file_path: str = audio_file_path
+        self.stopped = False
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
-        print(f"audio_file_path: {self.audio_file_path}")
-        with open(self.audio_file_path, "rb") as audio_file:
-            chunk_size = 320
-            while True:
-                chunk = audio_file.read(chunk_size)
-                if not chunk:
-                    break
-                audio_frame = AudioFrame.create("pcm_frame")
-                audio_frame.set_property_int("stream_id", 123)
-                audio_frame.set_property_string("remote_user_id", "123")
-                audio_frame.alloc_buf(len(chunk))
-                buf = audio_frame.lock_buf()
-                buf[:] = chunk
-                audio_frame.unlock_buf(buf)
-                _ = await ten_env.send_audio_frame(audio_frame)
-                await asyncio.sleep(0.01)
+        while not self.stopped:
+            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
+            if not chunk:
+                break
+            audio_frame = AudioFrame.create("pcm_frame")
+            metadata = {"session_id": "123"}
+            audio_frame.set_property_from_json("metadata", json.dumps(metadata))
+            audio_frame.alloc_buf(len(chunk))
+            buf = audio_frame.lock_buf()
+            buf[:] = chunk
+            audio_frame.unlock_buf(buf)
+            await ten_env.send_audio_frame(audio_frame)
+            await asyncio.sleep(0.1)
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        ten_env_tester.log_info("on_start")
-        self.sender_task = asyncio.create_task(
-            self.audio_sender(ten_env_tester))
+        self.sender_task = asyncio.create_task(self.audio_sender(ten_env_tester))
 
-    def stop_test_if_checking_failed(self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str) -> None:
+    def stop_test_if_checking_failed(
+        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+    ) -> None:
         if not success:
             err = TenError.create(
                 error_code=TenErrorCode.ErrorCodeGeneric,
@@ -56,22 +64,53 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
             ten_env_tester.log_info(f"tester on_data, data_dict: {data_dict}")
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "id" in data_dict, f"id is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "id" in data_dict,
+                f"id is not in data_dict: {data_dict}",
+            )
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "text" in data_dict, f"text is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "text" in data_dict,
+                f"text is not in data_dict: {data_dict}",
+            )
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "final" in data_dict, f"final is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "final" in data_dict,
+                f"final is not in data_dict: {data_dict}",
+            )
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "start_ms" in data_dict, f"start_ms is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "start_ms" in data_dict,
+                f"start_ms is not in data_dict: {data_dict}",
+            )
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "duration_ms" in data_dict, f"duration_ms is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "duration_ms" in data_dict,
+                f"duration_ms is not in data_dict: {data_dict}",
+            )
 
             self.stop_test_if_checking_failed(
-                ten_env_tester, "language" in data_dict, f"language is not in data_dict: {data_dict}")
+                ten_env_tester,
+                "language" in data_dict,
+                f"language is not in data_dict: {data_dict}",
+            )
+
+            self.stop_test_if_checking_failed(
+                ten_env_tester,
+                "metadata" in data_dict,
+                f"metadata is not in data_dict: {data_dict}",
+            )
+
+            session_id = data_dict.get("metadata", {}).get("session_id", "")
+            self.stop_test_if_checking_failed(
+                ten_env_tester,
+                session_id == "123",
+                f"session_id is not 123: {session_id}",
+            )
 
             if data_dict["final"] == True:
                 ten_env_tester.stop_test()
@@ -86,17 +125,73 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
                 pass
 
 
-def test_asr_result():
-    property_json = {
-        "key": os.getenv("AZURE_ASR_API_KEY", ""),
-        "region": os.getenv("AZURE_ASR_REGION", ""),
-        "language": "zh-CN",
-        "sample_rate": 16000,
-    }
-    audio_file_path = os.path.join(
-        os.path.dirname(__file__), f"test_data/16k_zh_CN.pcm"
+def test_asr_result(patch_azure_ws):
+    def fake_start_continuous_recognition():
+        def triggerSessionStarted():
+            event = SimpleNamespace(session_id="123")
+            patch_azure_ws.event_handlers["session_started"](event)
+            threading.Timer(1.0, triggerRecognizing).start()
+            threading.Timer(2.0, triggerRecognized).start()
+
+        def triggerRecognizing():
+            evt = SimpleNamespace(
+                result=SimpleNamespace(
+                    text="goodbye",
+                    offset=0,
+                    duration=1000000,
+                    no_match_details=None,
+                    json=json.dumps(
+                        {
+                            "DisplayText": "goodbye",
+                            "Offset": 0,
+                            "Duration": 1000000,
+                        }
+                    ),
+                )
+            )
+            patch_azure_ws.event_handlers["recognizing"](evt)
+
+        def triggerRecognized():
+            evt = SimpleNamespace(
+                result=SimpleNamespace(
+                    text="goodbye world",
+                    offset=0,
+                    duration=5000000,
+                    no_match_details=None,
+                    json=json.dumps(
+                        {
+                            "DisplayText": "goodbye world",
+                            "Offset": 0,
+                            "Duration": 5000000,
+                        }
+                    ),
+                )
+            )
+            patch_azure_ws.event_handlers["recognized"](evt)
+
+        threading.Timer(0.2, triggerSessionStarted).start()
+        return None
+
+    def fake_stop_continuous_recognition():
+        return None
+
+    # Inject into recognizer
+    patch_azure_ws.recognizer_instance.start_continuous_recognition.side_effect = (
+        fake_start_continuous_recognition
     )
-    tester = AzureAsrExtensionTester(audio_file_path)
+
+    patch_azure_ws.recognizer_instance.stop_continuous_recognition.side_effect = (
+        fake_stop_continuous_recognition
+    )
+
+    property_json = {
+        "params": {
+            "key": "fake_key",
+            "region": "fake_region",
+        }
+    }
+
+    tester = AzureAsrExtensionTester()
     tester.set_test_mode_single("azure_asr_python", json.dumps(property_json))
     err = tester.run()
-    assert err is None, f"err: {err}"
+    assert err is None, f"test_asr_result err: {err}"
