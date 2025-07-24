@@ -13,6 +13,7 @@ import "unsafe"
 type ValueType uint8
 
 const (
+	// In theory, users should not see this value, so it is not exported
 	valueTypeInvalid ValueType = iota
 
 	// ValueTypeBool - Boolean
@@ -175,12 +176,15 @@ func NewObject(m map[string]Value) Value {
 	return Value{Type: ValueTypeObject, objectVal: m}
 }
 
-// TODO: Ptr type is not supported for now as it seems unnecessary
 // NewPtr creates a new pointer Value.
-//
-// func NewPtr(p unsafe.Pointer) Value {
-//    return Value{Type: ValueTypePtr, ptrVal: p}
-// }
+func NewPtr(p unsafe.Pointer) Value {
+	return Value{Type: ValueTypePtr, ptrVal: p}
+}
+
+// NewJSONString creates a new JSON string Value.
+func NewJSONString(s string) Value {
+	return Value{Type: ValueTypeJSONString, stringVal: s}
+}
 
 // NewInt creates a new int Value.
 func NewInt(i int) Value {
@@ -192,97 +196,7 @@ func NewUint(i uint) Value {
 	return Value{Type: ValueTypeUint, uint64Val: uint64(i)}
 }
 
-// NewJSONString creates a new JSON string Value.
-func NewJSONString(s string) Value {
-	return Value{Type: ValueTypeJSONString, stringVal: s}
-}
-
-// IsBool returns true if the Value is a boolean.
-func (v *Value) IsBool() bool {
-	return v.Type == ValueTypeBool
-}
-
-// IsInt8 returns true if the Value is an int8.
-func (v *Value) IsInt8() bool {
-	return v.Type == ValueTypeInt8
-}
-
-// IsInt16 returns true if the Value is an int16.
-func (v *Value) IsInt16() bool {
-	return v.Type == ValueTypeInt16
-}
-
-// IsInt32 returns true if the Value is an int32.
-func (v *Value) IsInt32() bool {
-	return v.Type == ValueTypeInt32
-}
-
-// IsInt64 returns true if the Value is an int64.
-func (v *Value) IsInt64() bool {
-	return v.Type == ValueTypeInt64
-}
-
-// IsUint8 returns true if the Value is an uint8.
-func (v *Value) IsUint8() bool {
-	return v.Type == ValueTypeUint8
-}
-
-// IsUint16 returns true if the Value is an uint16.
-func (v *Value) IsUint16() bool {
-	return v.Type == ValueTypeUint16
-}
-
-// IsUint32 returns true if the Value is an uint32.
-func (v *Value) IsUint32() bool {
-	return v.Type == ValueTypeUint32
-}
-
-// IsUint64 returns true if the Value is an uint64.
-func (v *Value) IsUint64() bool {
-	return v.Type == ValueTypeUint64
-}
-
-// IsFloat32 returns true if the Value is a float32.
-func (v *Value) IsFloat32() bool {
-	return v.Type == ValueTypeFloat32
-}
-
-// IsFloat64 returns true if the Value is a float64.
-func (v *Value) IsFloat64() bool {
-	return v.Type == ValueTypeFloat64
-}
-
-// IsString returns true if the Value is a string.
-func (v *Value) IsString() bool {
-	return v.Type == ValueTypeString
-}
-
-// IsBytes returns true if the Value is a []byte.
-func (v *Value) IsBytes() bool {
-	return v.Type == ValueTypeBytes
-}
-
-// IsArray returns true if the Value is an array.
-func (v *Value) IsArray() bool {
-	return v.Type == ValueTypeArray
-}
-
-// IsObject returns true if the Value is an object.
-func (v *Value) IsObject() bool {
-	return v.Type == ValueTypeObject
-}
-
-// IsInt returns true if the Value is an int.
-func (v *Value) IsInt() bool {
-	return v.Type == ValueTypeInt
-}
-
-// IsUint returns true if the Value is an uint.
-func (v *Value) IsUint() bool {
-	return v.Type == ValueTypeUint
-}
-
-// IsJSONString returns true if the Value is a JSON string.
-func (v *Value) IsJSONString() bool {
-	return v.Type == ValueTypeJSONString
+// GetType returns the ValueType of the Value.
+func (v *Value) GetType() ValueType {
+	return v.Type
 }
