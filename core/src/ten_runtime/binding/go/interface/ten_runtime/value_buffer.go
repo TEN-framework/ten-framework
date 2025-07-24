@@ -133,85 +133,110 @@ func bufferTypeToValueType(bt uint8) ValueType {
 	case bufferTypePtr:
 		return ValueTypePtr
 	case bufferTypeJSONString:
-		// Normally, the runtime should not return this type, so map it to the
-		// invalid type
-		return valueTypeInvalid
+		return ValueTypeJSONString
 	default:
 		return valueTypeInvalid
 	}
 }
 
 // calculateSerializeSize calculates the total size needed for serialization
-func (v *Value) calculateSerializeSize() int {
-	return valueBufferHeaderSize + v.calculateContentSize()
+func (v *Value) calculateSerializeSize() (int, error) {
+	contentSize, err := v.calculateContentSize()
+	if err != nil {
+		return 0, err
+	}
+	return valueBufferHeaderSize + contentSize, nil
 }
 
 // calculateContentSize calculates the size of the value content
-func (v *Value) calculateContentSize() int {
+func (v *Value) calculateContentSize() (int, error) {
 	switch v.Type {
 	case valueTypeInvalid:
-		panic("unsupported value type for size calculation")
+		return 0, NewTenError(
+			ErrorCodeInvalidType,
+			"unsupported value type for size calculation",
+		)
 	case ValueTypeBool, ValueTypeInt8, ValueTypeUint8:
-		return 1
+		return 1, nil
 	case ValueTypeInt16, ValueTypeUint16:
-		return 2
+		return 2, nil
 	case ValueTypeInt32, ValueTypeUint32:
-		return 4
+		return 4, nil
 	case ValueTypeInt64, ValueTypeUint64:
-		return 8
+		return 8, nil
 	case ValueTypeFloat32:
-		return 4
+		return 4, nil
 	case ValueTypeFloat64:
-		return 8
+		return 8, nil
 	case ValueTypeString, ValueTypeJSONString:
 		str, err := v.GetString()
-		if err != nil && v.Type == ValueTypeJSONString {
-			str, err = v.GetJSONString()
-		}
 		if err != nil {
-			panic(fmt.Sprintf("failed to get string value: %v", err))
+			return 0, fmt.Errorf("failed to get string value: %w", err)
 		}
-		return 4 + len(str) // length(4) + data
+		return 4 + len(str), nil // length(4) + data
 	case ValueTypeBytes:
 		bytes, err := v.GetBytes()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get bytes value: %v", err))
+			return 0, fmt.Errorf("failed to get bytes value: %w", err)
 		}
-		return 4 + len(bytes) // length(4) + data
+		return 4 + len(bytes), nil // length(4) + data
 
 	case ValueTypeArray:
 		arr, err := v.GetArray()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get array value: %v", err))
+			return 0, fmt.Errorf("failed to get array value: %w", err)
 		}
 		size := 4 // array length
 		for _, item := range arr {
 			size++ // item type
-			size += item.calculateContentSize()
+			itemSize, err := item.calculateContentSize()
+			if err != nil {
+				return 0, fmt.Errorf(
+					"failed to calculate array item size: %w",
+					err,
+				)
+			}
+			size += itemSize
 		}
-		return size
+		return size, nil
 
 	case ValueTypeObject:
 		obj, err := v.GetObject()
 		if err != nil {
-			panic(fmt.Sprintf("failed to get object value: %v", err))
+			return 0, fmt.Errorf("failed to get object value: %w", err)
 		}
 		size := 4 // object size
 		for key, val := range obj {
 			size += 4 + len(key) // key length + key data
 			size++               // value type
-			size += val.calculateContentSize()
+			valSize, err := val.calculateContentSize()
+			if err != nil {
+				return 0, fmt.Errorf(
+					"failed to calculate object value size: %w",
+					err,
+				)
+			}
+			size += valSize
 		}
-		return size
+		return size, nil
 
 	default:
-		return 0
+		return 0, NewTenError(
+			ErrorCodeInvalidType,
+			"unknown value type for size calculation",
+		)
 	}
 }
 
 // serializeToBuffer serializes the Value to a buffer using only Go operations
 func (v *Value) serializeToBuffer() ([]byte, error) {
-	totalSize := v.calculateSerializeSize()
+	totalSize, sizeErr := v.calculateSerializeSize()
+	if sizeErr != nil {
+		return nil, fmt.Errorf(
+			"failed to calculate serialize size: %w",
+			sizeErr,
+		)
+	}
 	buffer := make([]byte, totalSize)
 
 	pos := 0
@@ -285,17 +310,9 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 	case ValueTypeInt64:
-		var int64Val int64
-		var err error
-		if v.Type == ValueTypeInt64 {
-			int64Val, err = v.GetInt64()
-		} else {
-			intVal, intErr := v.GetInt()
-			int64Val = int64(intVal)
-			err = intErr
-		}
+		int64Val, err := v.GetInt64()
 		if err != nil {
-			return fmt.Errorf("failed to get int64/int value: %w", err)
+			return fmt.Errorf("failed to get int64 value: %w", err)
 		}
 		binary.LittleEndian.PutUint64(buffer[*pos:], uint64(int64Val))
 		*pos += 8
@@ -325,17 +342,9 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 	case ValueTypeUint64:
-		var uint64Val uint64
-		var err error
-		if v.Type == ValueTypeUint64 {
-			uint64Val, err = v.GetUint64()
-		} else {
-			uintVal, uintErr := v.GetUint()
-			uint64Val = uint64(uintVal)
-			err = uintErr
-		}
+		uint64Val, err := v.GetUint64()
 		if err != nil {
-			return fmt.Errorf("failed to get uint64/uint value: %w", err)
+			return fmt.Errorf("failed to get uint64 value: %w", err)
 		}
 		binary.LittleEndian.PutUint64(buffer[*pos:], uint64Val)
 		*pos += 8
