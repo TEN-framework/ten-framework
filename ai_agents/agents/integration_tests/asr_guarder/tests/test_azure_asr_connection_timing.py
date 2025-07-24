@@ -44,7 +44,11 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
         audio_frame.set_property_int("stream_id", DEFAULT_STREAM_ID)
         audio_frame.set_property_string(
             "remote_user_id", DEFAULT_REMOTE_USER_ID)
-        audio_frame.set_property_string("session_id", session_id)
+
+        # Set session_id in metadata according to API specification
+        metadata = {"session_id": session_id}
+        audio_frame.set_property_from_json("metadata", json.dumps(metadata))
+
         audio_frame.alloc_buf(len(data))
         buf = audio_frame.lock_buf()
         buf[:] = data
@@ -57,7 +61,11 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
         silence_frame.set_property_int("stream_id", DEFAULT_STREAM_ID)
         silence_frame.set_property_string(
             "remote_user_id", DEFAULT_REMOTE_USER_ID)
-        silence_frame.set_property_string("session_id", session_id)
+
+        # Set session_id in metadata according to API specification
+        metadata = {"session_id": session_id}
+        silence_frame.set_property_from_json("metadata", json.dumps(metadata))
+
         silence_frame.alloc_buf(size)
         buf = silence_frame.lock_buf()
         buf[:] = b'\x00' * size
@@ -202,7 +210,7 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
             return
 
         # Parse ASR result
-        json_str, metadata = data.get_property_to_json(None)
+        json_str, _ = data.get_property_to_json(None)
         json_data = json.loads(json_str)
 
         # Validate required fields first
@@ -219,10 +227,11 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 
         # For final results, log complete structure and validate
         ten_env.log_info("Received final ASR result, validating...")
-        self._log_asr_result_structure(ten_env, json_str, json_data, metadata)
+        self._log_asr_result_structure(
+            ten_env, json_str, json_data, json_data.get("metadata"))
 
-        # Validate final result
-        metadata_dict = metadata if isinstance(metadata, dict) else None
+        # Validate final result - metadata is part of json_data according to API spec
+        metadata_dict = json_data.get("metadata")
         if self._validate_final_result(ten_env, json_data, metadata_dict):
             ten_env.log_info(
                 "✅ Azure ASR integration test passed with final result")

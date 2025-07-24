@@ -142,8 +142,8 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
     def _validate_error_format(self, ten_env: AsyncTenEnvTester, json_data: Dict[str, Any]) -> bool:
         """Validate error format and extract reconnection information."""
 
-        # Validate required fields (code and message are required)
-        required_fields = ["code", "message"]
+        # Validate required fields (module, code, and message are required)
+        required_fields = ["module", "code", "message"]
         missing_fields = [
             field for field in required_fields if field not in json_data]
 
@@ -153,17 +153,16 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
             return False
 
         # Validate field types
+        if not isinstance(json_data.get("module"), str):
+            ten_env.log_error("Field 'module' must be string type")
+            return False
+
         if not isinstance(json_data.get("code"), int):
             ten_env.log_error("Field 'code' must be int64 type")
             return False
 
         if not isinstance(json_data.get("message"), str):
             ten_env.log_error("Field 'message' must be string type")
-            return False
-
-        # Validate optional module field if present
-        if "module" in json_data and not isinstance(json_data.get("module"), str):
-            ten_env.log_error("Field 'module' must be string type")
             return False
 
         # Validate vendor_info structure if present
