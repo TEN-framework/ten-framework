@@ -96,7 +96,7 @@ class TranscribeASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
             )
             asyncio.create_task(self._handle_reconnect())

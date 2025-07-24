@@ -96,7 +96,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -151,7 +151,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -189,7 +189,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 code=-1,
                 message="received on_canceled event from Azure ASR",
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             ),
             ErrorMessageVendorInfo(
                 vendor="azure",
@@ -296,7 +296,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -342,7 +342,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 f"KEYPOINT azure drain end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
-            await self.send_asr_finalize_end(latency)
+            await self.send_asr_finalize_end()
 
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate

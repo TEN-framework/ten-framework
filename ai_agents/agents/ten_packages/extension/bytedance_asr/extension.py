@@ -119,7 +119,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
             await self.send_asr_error(error_message, None)
             if not self.stopped:

@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "gladia_asr_python",
+  "name": "bytedance_tts_duplex",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -14,20 +14,36 @@
       "version": "=0.6.16"
     }
   ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
   "api": {
     "interface": [{
-      "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
     }],
     "property": {
       "properties": {
-        "api_key": {
+        "appid": {
           "type": "string"
         },
-        "language": {
+        "token": {
+          "type": "string"
+        },
+        "voice_type": {
           "type": "string"
         },
         "sample_rate": {
           "type": "int64"
+        },
+        "api_url": {
+          "type": "string"
         }
       }
     }
