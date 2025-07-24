@@ -11,7 +11,7 @@
 #include "common.h"
 #include "msg.h"
 
-typedef struct ten_go_value_t ten_go_value_t;
+typedef struct ten_go_c_value_t ten_go_c_value_t;
 
 /**
  * @brief Create a cmd based on the cmd name.

@@ -128,12 +128,12 @@ ten_go_error_t ten_go_ten_env_return_result(uintptr_t bridge_addr,
                                             uintptr_t cmd_result_bridge_addr,
                                             ten_go_handle_t handler_id) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_msg_t *cmd_result = ten_go_msg_reinterpret(cmd_result_bridge_addr);
-  TEN_ASSERT(cmd_result && ten_go_msg_check_integrity(cmd_result),
-             "Should not happen.");
+  TEN_ASSERT(cmd_result, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(cmd_result), "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);

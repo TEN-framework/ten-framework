@@ -135,7 +135,7 @@ ten_go_error_t ten_go_msg_property_get_type_and_size(uintptr_t bridge_addr,
     return cgo_error;
   }
 
-  ten_go_ten_value_get_type_and_size(value, type, size);
+  ten_go_ten_c_value_get_type_and_size(value, type, size);
 
   return cgo_error;
 }
@@ -465,7 +465,7 @@ ten_go_error_t ten_go_msg_property_get_string(uintptr_t bridge_addr,
     return cgo_error;
   }
 
-  ten_go_ten_value_get_string(c_value, value, &cgo_error);
+  ten_go_ten_c_value_get_string(c_value, value, &cgo_error);
   return cgo_error;
 }
 
@@ -486,7 +486,7 @@ ten_go_error_t ten_go_msg_property_get_buf(uintptr_t bridge_addr,
     return cgo_error;
   }
 
-  ten_go_ten_value_get_buf(c_value, value, &cgo_error);
+  ten_go_ten_c_value_get_buf(c_value, value, &cgo_error);
   return cgo_error;
 }
 
@@ -507,7 +507,7 @@ ten_go_error_t ten_go_msg_property_get_ptr(uintptr_t bridge_addr,
     return cgo_error;
   }
 
-  ten_go_ten_value_get_ptr(c_value, value, &cgo_error);
+  ten_go_ten_c_value_get_ptr(c_value, value, &cgo_error);
   return cgo_error;
 }
 
@@ -747,7 +747,7 @@ ten_go_error_t ten_go_msg_property_set_buf(uintptr_t bridge_addr,
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_value_t *c_value = ten_go_ten_value_create_buf(value, value_len);
+  ten_value_t *c_value = ten_go_ten_c_value_create_buf(value, value_len);
   ten_go_msg_set_property(self, path, path_len, c_value);
 
   return cgo_error;
@@ -763,7 +763,7 @@ ten_go_error_t ten_go_msg_property_set_ptr(uintptr_t bridge_addr,
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_value_t *c_value = ten_go_ten_value_create_ptr(value);
+  ten_value_t *c_value = ten_go_ten_c_value_create_ptr(value);
   ten_go_msg_set_property(self, path, path_len, c_value);
 
   return cgo_error;
@@ -788,7 +788,7 @@ ten_go_error_t ten_go_msg_property_get_json_and_size(uintptr_t bridge_addr,
     return cgo_error;
   }
 
-  ten_go_ten_value_to_json(value, json_str_len, json_str, &cgo_error);
+  ten_go_ten_c_value_to_json(value, json_str_len, json_str, &cgo_error);
 
   return cgo_error;
 }
@@ -800,7 +800,8 @@ ten_go_error_t ten_go_msg_property_set_json_bytes(uintptr_t bridge_addr,
                                                   int json_str_len) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
   TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(json_str && json_str_len > 0, "Should not happen.");
+  TEN_ASSERT(json_str, "Should not happen.");
+  TEN_ASSERT(json_str_len > 0, "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
