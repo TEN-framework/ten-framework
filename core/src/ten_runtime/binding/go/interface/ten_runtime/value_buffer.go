@@ -169,20 +169,20 @@ func (v *Value) calculateContentSize() (int, error) {
 	case ValueTypeFloat64:
 		return 8, nil
 	case ValueTypeString, ValueTypeJSONString:
-		str, err := v.GetString()
+		str, err := v.String()
 		if err != nil {
 			return 0, fmt.Errorf("failed to get string value: %w", err)
 		}
 		return 4 + len(str), nil // length(4) + data
 	case ValueTypeBytes:
-		bytes, err := v.GetBytes()
+		bytes, err := v.Bytes()
 		if err != nil {
 			return 0, fmt.Errorf("failed to get bytes value: %w", err)
 		}
 		return 4 + len(bytes), nil // length(4) + data
 
 	case ValueTypeArray:
-		arr, err := v.GetArray()
+		arr, err := v.Array()
 		if err != nil {
 			return 0, fmt.Errorf("failed to get array value: %w", err)
 		}
@@ -201,7 +201,7 @@ func (v *Value) calculateContentSize() (int, error) {
 		return size, nil
 
 	case ValueTypeObject:
-		obj, err := v.GetObject()
+		obj, err := v.Object()
 		if err != nil {
 			return 0, fmt.Errorf("failed to get object value: %w", err)
 		}
@@ -274,7 +274,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		panic("unsupported value type for serialization")
 
 	case ValueTypeBool:
-		boolVal, err := v.GetBool()
+		boolVal, err := v.Bool()
 		if err != nil {
 			return fmt.Errorf("failed to get bool value: %w", err)
 		}
@@ -286,7 +286,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos++
 
 	case ValueTypeInt8:
-		int8Val, err := v.GetInt8()
+		int8Val, err := v.Int8()
 		if err != nil {
 			return fmt.Errorf("failed to get int8 value: %w", err)
 		}
@@ -294,7 +294,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos++
 
 	case ValueTypeInt16:
-		int16Val, err := v.GetInt16()
+		int16Val, err := v.Int16()
 		if err != nil {
 			return fmt.Errorf("failed to get int16 value: %w", err)
 		}
@@ -302,7 +302,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 2
 
 	case ValueTypeInt32:
-		int32Val, err := v.GetInt32()
+		int32Val, err := v.Int32()
 		if err != nil {
 			return fmt.Errorf("failed to get int32 value: %w", err)
 		}
@@ -310,7 +310,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 	case ValueTypeInt64:
-		int64Val, err := v.GetInt64()
+		int64Val, err := v.Int64()
 		if err != nil {
 			return fmt.Errorf("failed to get int64 value: %w", err)
 		}
@@ -318,7 +318,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 8
 
 	case ValueTypeUint8:
-		uint8Val, err := v.GetUint8()
+		uint8Val, err := v.Uint8()
 		if err != nil {
 			return fmt.Errorf("failed to get uint8 value: %w", err)
 		}
@@ -326,7 +326,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos++
 
 	case ValueTypeUint16:
-		uint16Val, err := v.GetUint16()
+		uint16Val, err := v.Uint16()
 		if err != nil {
 			return fmt.Errorf("failed to get uint16 value: %w", err)
 		}
@@ -334,7 +334,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 2
 
 	case ValueTypeUint32:
-		uint32Val, err := v.GetUint32()
+		uint32Val, err := v.Uint32()
 		if err != nil {
 			return fmt.Errorf("failed to get uint32 value: %w", err)
 		}
@@ -342,7 +342,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 	case ValueTypeUint64:
-		uint64Val, err := v.GetUint64()
+		uint64Val, err := v.Uint64()
 		if err != nil {
 			return fmt.Errorf("failed to get uint64 value: %w", err)
 		}
@@ -350,7 +350,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 8
 
 	case ValueTypeFloat32:
-		float32Val, err := v.GetFloat32()
+		float32Val, err := v.Float32()
 		if err != nil {
 			return fmt.Errorf("failed to get float32 value: %w", err)
 		}
@@ -361,7 +361,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 	case ValueTypeFloat64:
-		float64Val, err := v.GetFloat64()
+		float64Val, err := v.Float64()
 		if err != nil {
 			return fmt.Errorf("failed to get float64 value: %w", err)
 		}
@@ -375,9 +375,9 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		var stringVal string
 		var err error
 		if v.typ == ValueTypeString {
-			stringVal, err = v.GetString()
+			stringVal, err = v.String()
 		} else {
-			stringVal, err = v.GetJSONString()
+			stringVal, err = v.JSONString()
 		}
 		if err != nil {
 			return fmt.Errorf("failed to get string value: %w", err)
@@ -395,7 +395,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		}
 
 	case ValueTypeBytes:
-		bytesVal, err := v.GetBytes()
+		bytesVal, err := v.Bytes()
 		if err != nil {
 			return fmt.Errorf("failed to get bytes value: %w", err)
 		}
@@ -411,7 +411,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		}
 
 	case ValueTypeArray:
-		arrayVal, err := v.GetArray()
+		arrayVal, err := v.Array()
 		if err != nil {
 			return fmt.Errorf("failed to get array value: %w", err)
 		}
@@ -431,7 +431,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		}
 
 	case ValueTypeObject:
-		objectVal, err := v.GetObject()
+		objectVal, err := v.Object()
 		if err != nil {
 			return fmt.Errorf("failed to get object value: %w", err)
 		}
