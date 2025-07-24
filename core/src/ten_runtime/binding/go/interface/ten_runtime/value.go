@@ -7,6 +7,8 @@
 
 package ten_runtime
 
+import "unsafe"
+
 // ValueType represents the type of a Value.
 type ValueType uint8
 
@@ -61,14 +63,14 @@ const (
 	// ValueTypePtr - Pointer
 	ValueTypePtr
 
+	// ValueTypeJSONString - JSON string
+	ValueTypeJSONString
+
 	// ValueTypeInt - Go int, converted to int64 at runtime
 	ValueTypeInt
 
 	// ValueTypeUint - Go uint, converted to uint64 at runtime
 	ValueTypeUint
-
-	// ValueTypeJSONString - JSON string
-	ValueTypeJSONString
 )
 
 // Value represents a value that can hold different types of data.
@@ -95,8 +97,7 @@ type Value struct {
 	arrayVal  []Value
 	objectVal map[string]Value
 
-	// TODO: Ptr type is not supported for now as it seems unnecessary
-	// ptrVal unsafe.Pointer
+	ptrVal unsafe.Pointer
 }
 
 // NewBool creates a new boolean Value.
