@@ -776,7 +776,8 @@ ten_go_error_t ten_go_msg_property_get_json_and_size(uintptr_t bridge_addr,
                                                      const char **json_str) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
   TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(json_str_len && json_str, "Should not happen.");
+  TEN_ASSERT(json_str_len, "Should not happen.");
+  TEN_ASSERT(json_str, "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);

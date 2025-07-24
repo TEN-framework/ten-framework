@@ -566,7 +566,8 @@ ten_go_error_t ten_go_value_to_json(uintptr_t value_addr,
   ten_value_t *self = ten_go_value_reinterpret(value_addr);
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_value_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(json_str_len && json_str, "Should not happen.");
+  TEN_ASSERT(json_str_len, "Should not happen.");
+  TEN_ASSERT(json_str, "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
