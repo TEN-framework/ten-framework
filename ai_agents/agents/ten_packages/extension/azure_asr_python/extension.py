@@ -3,7 +3,7 @@ import json
 import os
 
 from typing_extensions import override
-from const import (
+from .const import (
     FINALIZE_MODE_DISCONNECT,
     FINALIZE_MODE_MUTE_PKG,
     DUMP_FILE_NAME,

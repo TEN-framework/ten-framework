@@ -71,14 +71,26 @@ def global_setup_and_teardown():
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add command line options for the test."""
     parser.addoption(
         "--extension_name",
         action="store",
         required=True,
         help="name of the extension to test",
     )
+    parser.addoption(
+        "--config_dir",
+        action="store",
+        required=True,
+        help="path to the config directory",
+    )
 
 
 @pytest.fixture
 def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
     return request.config.getoption("--extension_name")
+
+
+@pytest.fixture
+def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
+    return request.config.getoption("--config_dir")

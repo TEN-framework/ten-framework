@@ -5,9 +5,14 @@
 # See the LICENSE file for more information.
 #
 
-from typing import Dict, Any
+from typing import Any
 from typing_extensions import override
-from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, AudioFrame, TenError, TenErrorCode
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    Data,
+    AudioFrame,
+)
 import json
 import asyncio
 import os
@@ -19,37 +24,34 @@ FRAME_INTERVAL_MS = 100
 
 # Test configuration constants
 DEFAULT_SESSION_ID = "test_session_123"
-DEFAULT_STREAM_ID = 1
-DEFAULT_REMOTE_USER_ID = "test_user"
 
 # Reconnection test constants
 TEST_DURATION_SECONDS = 15  # Total test duration
 TEST_TIMEOUT_SECONDS = 30
 
+DEFAULT_CONFIG_FILE = "invalid.json"
 
-class AzureAsrReconnectionTester(AsyncExtensionTester):
-    """Test Azure ASR extension reconnection mechanism using invalid credentials."""
+
+class AsrReconnectionTester(AsyncExtensionTester):
+    """Test ASR extension reconnection mechanism using invalid credentials."""
 
     def __init__(self, audio_file_path: str):
         super().__init__()
 
         # Test configuration
-        self.audio_file_path = audio_file_path
+        self.audio_file_path: str = audio_file_path
 
         # Test state tracking
-        self.start_time = None
-        self.sender_task = None
+        self.start_time: float | None = None
+        self.sender_task: asyncio.Task[None] | None = None
 
         # Statistics tracking
-        self.errors_received = 0
-        self.reconnection_attempts = 0
+        self.errors_received: int = 0
+        self.reconnection_attempts: int = 0
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data."""
         audio_frame = AudioFrame.create("pcm_frame")
-        audio_frame.set_property_int("stream_id", DEFAULT_STREAM_ID)
-        audio_frame.set_property_string(
-            "remote_user_id", DEFAULT_REMOTE_USER_ID)
 
         # Set session_id in metadata
         metadata = {"session_id": session_id}
@@ -65,7 +67,7 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
 
     def _create_silence_frame(self, size: int, session_id: str) -> AudioFrame:
         """Create a silence audio frame."""
-        silence_data = b'\x00' * size
+        silence_data = b"\x00" * size
         return self._create_audio_frame(silence_data, session_id)
 
     async def _send_audio_file(self, ten_env: AsyncTenEnvTester) -> None:
@@ -76,16 +78,16 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
 
         ten_env.log_info(f"Sending audio file: {self.audio_file_path}")
 
-        with open(self.audio_file_path, 'rb') as f:
+        with open(self.audio_file_path, "rb") as f:
             audio_data = f.read()
 
         # Send audio in chunks
         chunk_size = AUDIO_CHUNK_SIZE
         for i in range(0, len(audio_data), chunk_size):
-            chunk = audio_data[i:i + chunk_size]
+            chunk = audio_data[i : i + chunk_size]
             if len(chunk) < chunk_size:
                 # Pad the last chunk with silence
-                chunk += b'\x00' * (chunk_size - len(chunk))
+                chunk += b"\x00" * (chunk_size - len(chunk))
 
             audio_frame = self._create_audio_frame(chunk, DEFAULT_SESSION_ID)
             await ten_env.send_audio_frame(audio_frame)
@@ -94,7 +96,8 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
     async def _send_continuous_audio(self, ten_env: AsyncTenEnvTester) -> None:
         """Send continuous audio frames to test reconnection."""
         ten_env.log_info(
-            "Starting continuous audio transmission to test reconnection...")
+            "Starting continuous audio transmission to test reconnection..."
+        )
 
         # Send initial audio file
         await self._send_audio_file(ten_env)
@@ -105,7 +108,8 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
 
         while True:
             silence_frame = self._create_silence_frame(
-                AUDIO_CHUNK_SIZE, DEFAULT_SESSION_ID)
+                AUDIO_CHUNK_SIZE, DEFAULT_SESSION_ID
+            )
             await ten_env.send_audio_frame(silence_frame)
             await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
 
@@ -135,21 +139,26 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         """Start the Azure ASR reconnection test."""
         ten_env.log_info(
-            "Starting Azure ASR reconnection test with invalid credentials")
+            "Starting Azure ASR reconnection test with invalid credentials"
+        )
         self.start_time = asyncio.get_event_loop().time()
         self.sender_task = asyncio.create_task(self.audio_sender(ten_env))
 
-    def _validate_error_format(self, ten_env: AsyncTenEnvTester, json_data: Dict[str, Any]) -> bool:
+    def _validate_error_format(
+        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
+    ) -> bool:
         """Validate error format and extract reconnection information."""
 
         # Validate required fields (module, code, and message are required)
-        required_fields = ["module", "code", "message"]
-        missing_fields = [
-            field for field in required_fields if field not in json_data]
+        required_fields: list[str] = ["module", "code", "message"]
+        missing_fields: list[str] = [
+            field for field in required_fields if field not in json_data
+        ]
 
         if missing_fields:
             ten_env.log_error(
-                f"Missing required error fields: {missing_fields}")
+                f"Missing required error fields: {missing_fields}"
+            )
             return False
 
         # Validate field types
@@ -166,47 +175,49 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
             return False
 
         # Validate vendor_info structure if present
-        vendor_info = json_data.get("vendor_info")
+        vendor_info: dict[str, Any] | None = json_data.get("vendor_info")
         if vendor_info is not None:
-            if not isinstance(vendor_info, dict):
-                ten_env.log_error("Field 'vendor_info' must be object type")
-                return False
-
             vendor_required_fields = ["vendor", "code", "message"]
             vendor_missing_fields = [
-                field for field in vendor_required_fields if field not in vendor_info]
+                field
+                for field in vendor_required_fields
+                if field not in vendor_info
+            ]
 
             if vendor_missing_fields:
                 ten_env.log_error(
-                    f"Missing required vendor_info fields: {vendor_missing_fields}")
+                    f"Missing required vendor_info fields: {vendor_missing_fields}"
+                )
                 return False
 
             # Validate vendor_info field types
             if not isinstance(vendor_info.get("vendor"), str):
                 ten_env.log_error(
-                    "Field 'vendor_info.vendor' must be string type")
+                    "Field 'vendor_info.vendor' must be string type"
+                )
                 return False
 
             if not isinstance(vendor_info.get("code"), str):
                 ten_env.log_error(
-                    "Field 'vendor_info.code' must be string type")
+                    "Field 'vendor_info.code' must be string type"
+                )
                 return False
 
             if not isinstance(vendor_info.get("message"), str):
                 ten_env.log_error(
-                    "Field 'vendor_info.message' must be string type")
+                    "Field 'vendor_info.message' must be string type"
+                )
                 return False
 
         # Validate metadata structure if present
-        metadata = json_data.get("metadata")
+        metadata: dict[str, Any] | None = json_data.get("metadata")
         if metadata is not None:
-            if not isinstance(metadata, dict):
-                ten_env.log_error("Field 'metadata' must be object type")
-                return False
-
-            if "session_id" in metadata and not isinstance(metadata.get("session_id"), str):
+            if "session_id" in metadata and not isinstance(
+                metadata.get("session_id"), str
+            ):
                 ten_env.log_error(
-                    "Field 'metadata.session_id' must be string type")
+                    "Field 'metadata.session_id' must be string type"
+                )
                 return False
 
         # Validate optional id field if present
@@ -215,20 +226,27 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
             return False
 
         # Extract error information
-        error_message = json_data.get("message", "")
+        error_message: str = json_data.get("message", "")
 
         # Check for reconnection-related keywords in error messages
-        reconnection_keywords = [
-            "reconnect", "reconnection", "retry", "retrying",
-            "connection", "disconnect", "timeout", "network"
+        reconnection_keywords: list[str] = [
+            "reconnect",
+            "reconnection",
+            "retry",
+            "retrying",
+            "connection",
+            "disconnect",
+            "timeout",
+            "network",
         ]
 
-        error_lower = error_message.lower()
+        error_lower: str = error_message.lower()
         for keyword in reconnection_keywords:
             if keyword in error_lower:
                 self.reconnection_attempts += 1
                 ten_env.log_info(
-                    f"🔗 Detected reconnection-related error: {error_message}")
+                    f"🔗 Detected reconnection-related error: {error_message}"
+                )
                 break
 
         return True
@@ -236,7 +254,7 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
     @override
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
         """Handle received data from ASR extension."""
-        name = data.get_name()
+        name: str = data.get_name()
 
         if name == "error":
             self.errors_received += 1
@@ -244,7 +262,7 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
 
             # Parse error
             json_str, _ = data.get_property_to_json(None)
-            json_data = json.loads(json_str)
+            json_data: dict[str, Any] = json.loads(json_str)
 
             # Validate error format and extract reconnection info
             if not self._validate_error_format(ten_env, json_data):
@@ -258,24 +276,15 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
             ten_env.log_info(f"  Message: {json_data.get('message', 'N/A')}")
             ten_env.log_info(f"  Module: {json_data.get('module', 'N/A')}")
             ten_env.log_info(
-                f"  Timestamp: {json_data.get('timestamp', 'N/A')}")
+                f"  Timestamp: {json_data.get('timestamp', 'N/A')}"
+            )
             ten_env.log_info(
-                f"  Session ID: {json_data.get('session_id', 'N/A')}")
+                f"  Session ID: {json_data.get('session_id', 'N/A')}"
+            )
             ten_env.log_info(
-                f"  Connection ID: {json_data.get('connection_id', 'N/A')}")
+                f"  Connection ID: {json_data.get('connection_id', 'N/A')}"
+            )
             ten_env.log_info("=== END ERROR DETAILS ===")
-
-        elif name == "azure_connection_event":
-            # Parse connection event
-            json_str, _ = data.get_property_to_json(None)
-            json_data = json.loads(json_str)
-
-            # Log connection event
-            event_type = json_data.get("event_type", "unknown")
-            session_id = json_data.get("session_id", "unknown")
-            ten_env.log_info(
-                f"🔗 Azure connection event: {event_type}, session_id: {session_id}")
-
         else:
             ten_env.log_info(f"Received data type: {name}")
 
@@ -296,51 +305,33 @@ class AzureAsrReconnectionTester(AsyncExtensionTester):
         ten_env.log_info(f"Test summary:")
         ten_env.log_info(f"  - Errors received: {self.errors_received}")
         ten_env.log_info(
-            f"  - Reconnection attempts detected: {self.reconnection_attempts}")
+            f"  - Reconnection attempts detected: {self.reconnection_attempts}"
+        )
 
 
-def load_environment_variables() -> None:
-    """Load environment variables from .env file if it exists."""
-    env_file = os.path.join(os.path.dirname(__file__), "../.env")
-    if os.path.exists(env_file):
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key] = value
-
-
-def get_required_env_var(var_name: str) -> str:
-    """Get required environment variable or raise error."""
-    value = os.getenv(var_name)
-    if not value:
-        raise ValueError(f"{var_name} environment variable is required")
-    return value
-
-
-def test_azure_asr_reconnection(extension_name: str) -> None:
-    """Test Azure ASR extension reconnection mechanism using invalid credentials."""
-    # Load environment variables
-    load_environment_variables()
+def test_reconnection(extension_name: str, config_dir: str) -> None:
+    """Test ASR extension reconnection mechanism using invalid credentials."""
 
     # Audio file path
     audio_file_path = os.path.join(
         os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
     )
 
-    # Test configuration (use invalid credentials to trigger reconnection)
-    test_config = {
-        "key": "invalid_key_for_testing",
-        "region": "invalid-region-for-testing",
-        "language": "en-US",
-        "sample_rate": AUDIO_SAMPLE_RATE
-    }
+    # Get config file path
+    config_file_path = os.path.join(config_dir, DEFAULT_CONFIG_FILE)
+    if not os.path.exists(config_file_path):
+        raise FileNotFoundError(f"Config file not found: {config_file_path}")
+
+    # Load config file
+    with open(config_file_path, "r") as f:
+        config: dict[str, Any] = json.load(f)
 
     # Create and run tester
-    tester = AzureAsrReconnectionTester(audio_file_path=audio_file_path)
-    tester.set_test_mode_single(extension_name, json.dumps(test_config))
+    tester = AsrReconnectionTester(audio_file_path=audio_file_path)
+    tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()
 
     # Verify test results
-    assert error is None, f"Test failed: {error.error_message() if error else 'Unknown error'}"
+    assert (
+        error is None
+    ), f"Test failed: {error.error_message() if error else 'Unknown error'}"

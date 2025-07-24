@@ -123,9 +123,10 @@ tasks:
     desc: run tests for asr guarder
     vars:
       EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
     dotenv: [".env"]
     cmds:
-      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} {{ .CLI_ARGS }}
+      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
 
   format:
     desc: format code
