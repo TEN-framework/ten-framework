@@ -8,7 +8,6 @@ import argparse
 import json
 import sys
 import os
-from typing import Optional
 from build.scripts import cmd_exec, fs_utils, timestamp_proxy
 
 
@@ -23,8 +22,8 @@ class ArgumentInfo(argparse.Namespace):
         self.env: list[str]
         self.log_level: int
         self.test_output_dir: str
-        self.tg_timestamp_proxy_file: Optional[str] = None
-        self.integration_test_output_name: Optional[str] = None
+        self.tg_timestamp_proxy_file: str | None = None
+        self.integration_test_output_name: str | None = None
 
 
 def get_crate_test_output_name(log_level: int) -> str:

@@ -13,6 +13,7 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 
 static ten_py_error_t *ten_py_error_create_internal(PyTypeObject *py_type) {
   if (!py_type) {
@@ -28,7 +29,7 @@ static ten_py_error_t *ten_py_error_create_internal(PyTypeObject *py_type) {
 }
 
 PyObject *ten_py_error_create(PyTypeObject *type, PyObject *args,
-                              PyObject *kwds) {
+                              TEN_UNUSED PyObject *kwds) {
   if (PyTuple_GET_SIZE(args) != 2) {
     return ten_py_raise_py_value_error_exception(
         "Invalid argument count when TenError.create.");
@@ -88,7 +89,8 @@ void ten_py_error_destroy(PyObject *self) {
   Py_TYPE(self)->tp_free(self);
 }
 
-PyObject *ten_py_error_get_error_code(PyObject *self, PyObject *args) {
+PyObject *ten_py_error_get_error_code(PyObject *self,
+                                      TEN_UNUSED PyObject *args) {
   ten_py_error_t *py_error = (ten_py_error_t *)self;
   if (!py_error) {
     return ten_py_raise_py_value_error_exception("Invalid argument.");
@@ -97,7 +99,8 @@ PyObject *ten_py_error_get_error_code(PyObject *self, PyObject *args) {
   return PyLong_FromLong(ten_error_code(&py_error->c_error));
 }
 
-PyObject *ten_py_error_get_error_message(PyObject *self, PyObject *args) {
+PyObject *ten_py_error_get_error_message(PyObject *self,
+                                         TEN_UNUSED PyObject *args) {
   ten_py_error_t *py_error = (ten_py_error_t *)self;
   if (!py_error) {
     return ten_py_raise_py_value_error_exception("Invalid argument.");

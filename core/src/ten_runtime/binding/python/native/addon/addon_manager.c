@@ -13,8 +13,8 @@
 #include "ten_runtime/addon/extension/extension.h"
 #include "ten_utils/macro/mark.h"
 
-PyObject *ten_py_addon_manager_register_addon_as_extension(PyObject *self,
-                                                           PyObject *args) {
+PyObject *ten_py_addon_manager_register_addon_as_extension(
+    TEN_UNUSED PyObject *self, PyObject *args) {
   const char *name = NULL;
   PyObject *base_dir = NULL;
   PyObject *py_addon_object = NULL;
@@ -109,7 +109,7 @@ static void ten_py_addon_register_func(TEN_ADDON_TYPE addon_type,
   ten_py_gil_state_release_internal(prev_state);
 }
 
-PyObject *ten_py_addon_manager_add_extension_addon(PyObject *self,
+PyObject *ten_py_addon_manager_add_extension_addon(TEN_UNUSED PyObject *self,
                                                    PyObject *args) {
   const char *name = NULL;
   if (!PyArg_ParseTuple(args, "s", &name)) {

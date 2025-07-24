@@ -4,7 +4,6 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Optional
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
@@ -19,8 +18,8 @@ class ExtensionTesterBasic(ExtensionTester):
     def on_register_response(
         self,
         ten_env: TenEnvTester,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
     ):
         ten_env.log(LogLevel.INFO, "received register response")
         ten_env.stop_test()
@@ -28,8 +27,8 @@ class ExtensionTesterBasic(ExtensionTester):
     def on_unregister_response(
         self,
         ten_env: TenEnvTester,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
     ):
         # All ten_env_tester methods will return error because on_deinit_done()
         # of the extension tester is called.

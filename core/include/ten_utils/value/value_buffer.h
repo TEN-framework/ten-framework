@@ -12,8 +12,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "ten_utils/lib/error.h"
+
 typedef struct ten_value_t ten_value_t;
 typedef struct ten_buf_t ten_buf_t;
+typedef struct ten_error_t ten_error_t;
 
 // Magic number for validation
 #define TEN_VALUE_BUFFER_MAGIC 0x10E
@@ -56,3 +59,11 @@ typedef struct ten_value_buffer_header_t {
   uint8_t type;     // Value type
   uint32_t size;    // Size of serialized data following this header
 } ten_value_buffer_header_t;
+
+TEN_UTILS_API uint8_t *ten_value_serialize_to_buffer_c(ten_value_t *value,
+                                                       size_t *buffer_size,
+                                                       ten_error_t *err);
+
+TEN_UTILS_API ten_value_t *ten_value_deserialize_from_buffer_c(
+    const uint8_t *buffer, size_t buffer_size, size_t *bytes_consumed,
+    ten_error_t *err);

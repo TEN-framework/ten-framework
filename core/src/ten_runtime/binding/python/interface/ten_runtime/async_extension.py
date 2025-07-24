@@ -11,7 +11,9 @@ import threading
 import traceback
 from typing import final
 
-from libten_runtime_python import _Extension
+from libten_runtime_python import (
+    _Extension,  # pyright: ignore[reportPrivateUsage]
+)
 from .log_level import LogLevel
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
@@ -22,11 +24,24 @@ from .async_ten_env import AsyncTenEnv
 
 
 class AsyncExtension(_Extension):
+    name: str
+    _ten_stop_event: asyncio.Event
+    _ten_loop: asyncio.AbstractEventLoop | None
+    _async_ten_env: AsyncTenEnv | None
+    _ten_thread: threading.Thread | None
+
     def __new__(cls, name: str):
         instance = super().__new__(cls, name)
         return instance
 
-    def __init__(self, name: str) -> None:
+    def __init__(  # pyright: ignore[reportMissingSuperCall]
+        self, name: str
+    ) -> None:
+        # _Extension is a C module written in C and does not have an __init__
+        # method, so we need to ignore pyright's warning.
+        #
+        # super().__init__(name)
+
         self.name = name
         self._ten_stop_event = asyncio.Event()
 
@@ -57,7 +72,7 @@ class AsyncExtension(_Extension):
         await self._wrapper_on_deinit(self._async_ten_env)
 
         # pylint: disable=protected-access
-        self._async_ten_env._internal.on_deinit_done()
+        self._async_ten_env._internal.on_deinit_done()  # pyright: ignore[reportPrivateUsage] # noqa: E501
 
         # The completion of async `on_deinit()` (i.e.,
         # `await self._wrapper_on_deinit(...)`) means that all subsequent
@@ -65,7 +80,7 @@ class AsyncExtension(_Extension):
         # `await ten_env.xxx` before this point may not have finished executing
         # yet. We need to wait for these tasks to complete before stopping the
         # event loop.
-        await self._async_ten_env._ten_all_tasks_done_event.wait()
+        await self._async_ten_env._ten_all_tasks_done_event.wait()  # pyright: ignore[reportPrivateUsage] # noqa: E501
         # pylint: enable=protected-access
 
     async def _stop_thread(self):
@@ -262,33 +277,33 @@ class AsyncExtension(_Extension):
 
     # Override these methods in your extension
 
-    async def on_configure(self, ten_env: AsyncTenEnv) -> None:
+    async def on_configure(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+    async def on_init(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+    async def on_start(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+    async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+    async def on_deinit(self, _ten_env: AsyncTenEnv) -> None:
         pass
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, _ten_env: AsyncTenEnv, _cmd: Cmd) -> None:
         pass
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+    async def on_data(self, _ten_env: AsyncTenEnv, _data: Data) -> None:
         pass
 
     async def on_video_frame(
-        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
+        self, _ten_env: AsyncTenEnv, _video_frame: VideoFrame
     ) -> None:
         pass
 
     async def on_audio_frame(
-        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+        self, _ten_env: AsyncTenEnv, _audio_frame: AudioFrame
     ) -> None:
         pass

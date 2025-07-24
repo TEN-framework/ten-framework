@@ -119,7 +119,8 @@ PyObject *ten_py_audio_frame_alloc_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_lock_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_lock_buf(PyObject *self,
+                                      TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -173,7 +174,8 @@ PyObject *ten_py_audio_frame_unlock_buf(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_get_buf(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_get_buf(PyObject *self,
+                                     TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -191,7 +193,8 @@ PyObject *ten_py_audio_frame_get_buf(PyObject *self, PyObject *args) {
                                        (Py_ssize_t)data->size);
 }
 
-PyObject *ten_py_audio_frame_get_timestamp(PyObject *self, PyObject *unused) {
+PyObject *ten_py_audio_frame_get_timestamp(PyObject *self,
+                                           TEN_UNUSED PyObject *unused) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -217,7 +220,8 @@ PyObject *ten_py_audio_frame_set_timestamp(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_get_sample_rate(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_get_sample_rate(PyObject *self,
+                                             TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -243,8 +247,8 @@ PyObject *ten_py_audio_frame_set_sample_rate(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_get_samples_per_channel(PyObject *self,
-                                                     PyObject *args) {
+PyObject *ten_py_audio_frame_get_samples_per_channel(
+    PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -273,7 +277,7 @@ PyObject *ten_py_audio_frame_set_samples_per_channel(PyObject *self,
 }
 
 PyObject *ten_py_audio_frame_get_bytes_per_sample(PyObject *self,
-                                                  PyObject *args) {
+                                                  TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -301,7 +305,7 @@ PyObject *ten_py_audio_frame_set_bytes_per_sample(PyObject *self,
 }
 
 PyObject *ten_py_audio_frame_get_number_of_channels(PyObject *self,
-                                                    PyObject *args) {
+                                                    TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -328,7 +332,8 @@ PyObject *ten_py_audio_frame_set_number_of_channels(PyObject *self,
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_get_data_fmt(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_get_data_fmt(PyObject *self,
+                                          TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -354,7 +359,8 @@ PyObject *ten_py_audio_frame_set_data_fmt(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_get_line_size(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_get_line_size(PyObject *self,
+                                           TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -380,7 +386,7 @@ PyObject *ten_py_audio_frame_set_line_size(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_is_eof(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_is_eof(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),
@@ -405,7 +411,7 @@ PyObject *ten_py_audio_frame_set_eof(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
-PyObject *ten_py_audio_frame_clone(PyObject *self, PyObject *args) {
+PyObject *ten_py_audio_frame_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_audio_frame_t *py_audio_frame = (ten_py_audio_frame_t *)self;
   TEN_ASSERT(py_audio_frame &&
                  ten_py_msg_check_integrity((ten_py_msg_t *)py_audio_frame),

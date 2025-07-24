@@ -4,7 +4,6 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Optional
 from ten_runtime import (
     Extension,
     TenEnv,
@@ -33,7 +32,7 @@ class DefaultExtension(Extension):
         ten_env.init_property_from_json('{"testKey": "testValue"}')
         ten_env.on_configure_done()
 
-    def handle_error(self, ten_env: TenEnv, error: Optional[TenError]) -> None:
+    def handle_error(self, ten_env: TenEnv, error: TenError | None) -> None:
         assert error is not None
         ten_env.log(
             LogLevel.ERROR,
@@ -93,8 +92,8 @@ class DefaultExtension(Extension):
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:

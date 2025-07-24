@@ -5,13 +5,14 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import TypeVar, cast
 
 T = TypeVar("T", bound="Value")
 
 
 class ValueType(IntEnum):
     """Enum representing the different types a Value can hold."""
+
     INVALID = 0
     BOOL = 1
     INT = 2
@@ -32,7 +33,22 @@ class Value:
     native type system.
     """
 
-    def __init__(self, value_type: ValueType, data: Any):
+    _type: ValueType
+    _data: bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]
+
+    def __init__(
+        self,
+        value_type: ValueType,
+        data: (
+            bool
+            | int
+            | float
+            | str
+            | bytes
+            | list["Value"]
+            | dict[str, "Value"]
+        ),
+    ):
         """
         Initialize a Value with the specified type and data.
 
@@ -43,53 +59,53 @@ class Value:
         self._type = value_type
         self._data = data
 
-    @property
-    def type(self) -> ValueType:
+    def get_type(self) -> ValueType:
         """Get the type of this Value."""
         return self._type
 
-    @property
-    def data(self) -> Any:
+    def get_data(
+        self,
+    ) -> bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]:
         """Get the underlying data of this Value."""
         return self._data
 
     @classmethod
-    def create_bool(cls: Type[T], value: bool) -> T:
+    def create_bool(cls: type[T], value: bool) -> T:
         """Create a boolean Value."""
         return cls(ValueType.BOOL, value)
 
     @classmethod
-    def create_int(cls: Type[T], value: int) -> T:
+    def create_int(cls: type[T], value: int) -> T:
         """Create an integer Value."""
         return cls(ValueType.INT, value)
 
     @classmethod
-    def create_float(cls: Type[T], value: float) -> T:
+    def create_float(cls: type[T], value: float) -> T:
         """Create a float Value."""
         return cls(ValueType.FLOAT, value)
 
     @classmethod
-    def create_string(cls: Type[T], value: str) -> T:
+    def create_string(cls: type[T], value: str) -> T:
         """Create a string Value."""
         return cls(ValueType.STRING, value)
 
     @classmethod
-    def create_bytes(cls: Type[T], value: bytes) -> T:
+    def create_bytes(cls: type[T], value: bytes) -> T:
         """Create a bytes Value."""
         return cls(ValueType.BYTES, value)
 
     @classmethod
-    def create_array(cls: Type[T], value: List["Value"]) -> T:
+    def create_array(cls: type[T], value: list["Value"]) -> T:
         """Create an array Value."""
         return cls(ValueType.ARRAY, value)
 
     @classmethod
-    def create_object(cls: Type[T], value: Dict[str, "Value"]) -> T:
+    def create_object(cls: type[T], value: dict[str, "Value"]) -> T:
         """Create an object Value."""
         return cls(ValueType.OBJECT, value)
 
     @classmethod
-    def create_json_string(cls: Type[T], value: str) -> T:
+    def create_json_string(cls: type[T], value: str) -> T:
         """Create a JSON string Value."""
         return cls(ValueType.JSON_STRING, value)
 
@@ -133,52 +149,48 @@ class Value:
         """Get the boolean value. Raises TypeError if not a boolean."""
         if not self.is_bool():
             raise TypeError(f"Value is not a boolean, got {self._type.name}")
-        return self._data
+        return cast(bool, self._data)
 
     def get_int(self) -> int:
         """Get the integer value. Raises TypeError if not an integer."""
         if not self.is_int():
             raise TypeError(f"Value is not an integer, got {self._type.name}")
-        return self._data
+        return cast(int, self._data)
 
     def get_float(self) -> float:
         """Get the float value. Raises TypeError if not a float."""
         if not self.is_float():
             raise TypeError(f"Value is not a float, got {self._type.name}")
-        return self._data
-
-    def get_number(self) -> Union[int, float]:
-        """Get the numeric value. Raises TypeError if not a number."""
-        if not self.is_number():
-            raise TypeError(f"Value is not a number, got {self._type.name}")
-        return self._data
+        return cast(float, self._data)
 
     def get_string(self) -> str:
         """Get the string value. Raises TypeError if not a string."""
         if not self.is_string():
             raise TypeError(f"Value is not a string, got {self._type.name}")
-        return self._data
+        return cast(str, self._data)
 
     def get_bytes(self) -> bytes:
         """Get the bytes value. Raises TypeError if not bytes."""
         if not self.is_bytes():
             raise TypeError(f"Value is not bytes, got {self._type.name}")
-        return self._data
+        return cast(bytes, self._data)
 
-    def get_array(self) -> List["Value"]:
+    def get_array(self) -> list["Value"]:
         """Get the array value. Raises TypeError if not an array."""
         if not self.is_array():
             raise TypeError(f"Value is not an array, got {self._type.name}")
-        return self._data
+        return cast(list["Value"], self._data)
 
-    def get_object(self) -> Dict[str, "Value"]:
+    def get_object(self) -> dict[str, "Value"]:
         """Get the object value. Raises TypeError if not an object."""
         if not self.is_object():
             raise TypeError(f"Value is not an object, got {self._type.name}")
-        return self._data
+        return cast(dict[str, "Value"], self._data)
 
     def get_json_string(self) -> str:
         """Get the JSON string value. Raises TypeError if not a JSON string."""
         if not self.is_json_string():
-            raise TypeError(f"Value is not a JSON string, got {self._type.name}")
-        return self._data
+            raise TypeError(
+                f"Value is not a JSON string, got {self._type.name}"
+            )
+        return cast(str, self._data)

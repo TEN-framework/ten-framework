@@ -13,6 +13,7 @@
 #include "js_native_api_types.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_cmd_result_constructor_ref = NULL;  // NOLINT
@@ -53,7 +54,7 @@ static void ten_nodejs_cmd_result_destroy(ten_nodejs_msg_t *self) {
 }
 
 static void ten_nodejs_cmd_result_finalize(napi_env env, void *data,
-                                           void *hint) {
+                                           TEN_UNUSED void *hint) {
   ten_nodejs_cmd_result_t *cmd_result_bridge = data;
   TEN_ASSERT(cmd_result_bridge, "Should not happen.");
 

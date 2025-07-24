@@ -11,7 +11,7 @@ from .async_ten_env import AsyncTenEnv
 from .addon import Addon
 from .addon_manager import (
     register_addon_as_extension,
-    _AddonManager,
+    _AddonManager,  # pyright: ignore[reportPrivateUsage]
 )
 from .ten_env import TenEnv
 from .cmd import Cmd

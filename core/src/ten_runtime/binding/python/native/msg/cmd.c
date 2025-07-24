@@ -69,7 +69,7 @@ void ten_py_cmd_invalidate(ten_py_cmd_t *self) {
   Py_DECREF(self);
 }
 
-PyObject *ten_py_cmd_clone(PyObject *self, PyObject *args) {
+PyObject *ten_py_cmd_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_cmd_t *py_cmd = (ten_py_cmd_t *)self;
   TEN_ASSERT(py_cmd && ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
              "Invalid argument.");

@@ -131,7 +131,7 @@ export const UpdateNodePropertyPayloadSchema = z.object({
 
 export const GraphUiNodeGeometrySchema = z.object({
   app: z.string().optional(),
-  extension: z.string(),
+  id: z.string(),
   x: z.number(),
   y: z.number(),
 });

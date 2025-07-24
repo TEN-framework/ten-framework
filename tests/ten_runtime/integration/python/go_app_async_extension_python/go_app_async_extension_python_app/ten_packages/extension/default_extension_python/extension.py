@@ -10,7 +10,6 @@
 # debugpy.wait_for_client()
 
 import asyncio
-from typing import Optional
 from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
@@ -51,7 +50,7 @@ class DefaultExtension(AsyncExtension):
 
         await asyncio.sleep(0.5)
 
-    async def greeting(self, ten_env: AsyncTenEnv) -> Optional[CmdResult]:
+    async def greeting(self, ten_env: AsyncTenEnv) -> CmdResult | None:
         await asyncio.sleep(1)
 
         new_cmd = Cmd.create("greeting")

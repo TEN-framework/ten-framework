@@ -3,7 +3,6 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from typing import Optional
 from ten_runtime import (
     ExtensionTester,
     LogLevel,
@@ -19,8 +18,8 @@ class ExtensionTesterBasic(ExtensionTester):
     def check_hello(
         self,
         ten_env: TenEnvTester,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
     ):
         if error is not None:
             assert False, error.error_message()
