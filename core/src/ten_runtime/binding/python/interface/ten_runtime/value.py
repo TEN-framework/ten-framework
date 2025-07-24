@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import TypeVar, cast
+from typing import TypeVar, cast, TypeAlias
 
 T = TypeVar("T", bound="Value")
 
@@ -24,59 +24,39 @@ class ValueType(IntEnum):
     JSON_STRING = 8
 
 
+ValueDataType: TypeAlias = (
+    bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]
+)
+
+
 class Value:
     """
     A flexible value container that can hold different types of data.
-
-    This class provides a unified interface for handling various data types
-    efficiently across the Python-C boundary while maintaining Python's
-    native type system.
     """
 
     _type: ValueType
-    _data: bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]
+    _data: ValueDataType
 
     def __init__(
         self,
         value_type: ValueType,
-        data: (
-            bool
-            | int
-            | float
-            | str
-            | bytes
-            | list["Value"]
-            | dict[str, "Value"]
-        ),
+        data: ValueDataType,
     ):
-        """
-        Initialize a Value with the specified type and data.
-
-        Args:
-            value_type: The type of the value
-            data: The actual data to store
-        """
         self._type = value_type
         self._data = data
 
     def get_type(self) -> ValueType:
-        """Get the type of this Value."""
         return self._type
 
-    def get_data(
-        self,
-    ) -> bool | int | float | str | bytes | list["Value"] | dict[str, "Value"]:
-        """Get the underlying data of this Value."""
+    def get_data(self) -> ValueDataType:
         return self._data
 
     @classmethod
     def create_bool(cls: type[T], value: bool) -> T:
-        """Create a boolean Value."""
         return cls(ValueType.BOOL, value)
 
     @classmethod
     def create_int(cls: type[T], value: int) -> T:
-        """Create an integer Value."""
         return cls(ValueType.INT, value)
 
     @classmethod
