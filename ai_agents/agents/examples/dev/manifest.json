@@ -105,6 +105,11 @@
     },
     {
       "type": "extension",
+      "name": "minimax_tts2_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
       "name": "minimax_v2v_python",
       "version": "=0.1.0"
     },
