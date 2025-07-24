@@ -70,114 +70,114 @@ const (
 
 // Value represents a value that can hold different types of data.
 type Value struct {
-	Type ValueType
+	typ  ValueType
 	data any
 }
 
 // NewBoolValue creates a new boolean Value.
 func NewBoolValue(b bool) Value {
-	return Value{Type: ValueTypeBool, data: b}
+	return Value{typ: ValueTypeBool, data: b}
 }
 
 // NewInt8Value creates a new int8 Value.
 func NewInt8Value(i int8) Value {
-	return Value{Type: ValueTypeInt8, data: i}
+	return Value{typ: ValueTypeInt8, data: i}
 }
 
 // NewInt16Value creates a new int16 Value.
 func NewInt16Value(i int16) Value {
-	return Value{Type: ValueTypeInt16, data: i}
+	return Value{typ: ValueTypeInt16, data: i}
 }
 
 // NewInt32Value creates a new int32 Value.
 func NewInt32Value(i int32) Value {
-	return Value{Type: ValueTypeInt32, data: i}
+	return Value{typ: ValueTypeInt32, data: i}
 }
 
 // NewInt64Value creates a new int64 Value.
 func NewInt64Value(i int64) Value {
-	return Value{Type: ValueTypeInt64, data: i}
+	return Value{typ: ValueTypeInt64, data: i}
 }
 
 // NewUint8Value creates a new uint8 Value.
 func NewUint8Value(i uint8) Value {
-	return Value{Type: ValueTypeUint8, data: i}
+	return Value{typ: ValueTypeUint8, data: i}
 }
 
 // NewUint16Value creates a new uint16 Value.
 func NewUint16Value(i uint16) Value {
-	return Value{Type: ValueTypeUint16, data: i}
+	return Value{typ: ValueTypeUint16, data: i}
 }
 
 // NewUint32Value creates a new uint32 Value.
 func NewUint32Value(i uint32) Value {
-	return Value{Type: ValueTypeUint32, data: i}
+	return Value{typ: ValueTypeUint32, data: i}
 }
 
 // NewUint64Value creates a new uint64 Value.
 func NewUint64Value(i uint64) Value {
-	return Value{Type: ValueTypeUint64, data: i}
+	return Value{typ: ValueTypeUint64, data: i}
 }
 
 // NewFloat32Value creates a new float32 Value.
 func NewFloat32Value(f float32) Value {
-	return Value{Type: ValueTypeFloat32, data: f}
+	return Value{typ: ValueTypeFloat32, data: f}
 }
 
 // NewFloat64Value creates a new float64 Value.
 func NewFloat64Value(f float64) Value {
-	return Value{Type: ValueTypeFloat64, data: f}
+	return Value{typ: ValueTypeFloat64, data: f}
 }
 
 // NewStringValue creates a new string Value.
 func NewStringValue(s string) Value {
-	return Value{Type: ValueTypeString, data: s}
+	return Value{typ: ValueTypeString, data: s}
 }
 
 // NewBytesValue creates a new []byte Value.
 func NewBytesValue(b []byte) Value {
-	return Value{Type: ValueTypeBytes, data: b}
+	return Value{typ: ValueTypeBytes, data: b}
 }
 
 // NewArrayValue creates a new array Value.
 func NewArrayValue(arr []Value) Value {
-	return Value{Type: ValueTypeArray, data: arr}
+	return Value{typ: ValueTypeArray, data: arr}
 }
 
 // NewObjectValue creates a new object Value.
 func NewObjectValue(m map[string]Value) Value {
-	return Value{Type: ValueTypeObject, data: m}
+	return Value{typ: ValueTypeObject, data: m}
 }
 
 // NewPtrValue creates a new pointer Value.
 func NewPtrValue(p unsafe.Pointer) Value {
-	return Value{Type: ValueTypePtr, data: p}
+	return Value{typ: ValueTypePtr, data: p}
 }
 
 // NewJSONStringValue creates a new JSON string Value.
 func NewJSONStringValue(s string) Value {
-	return Value{Type: ValueTypeJSONString, data: s}
+	return Value{typ: ValueTypeJSONString, data: s}
 }
 
 // NewIntValue creates a new int Value.
 func NewIntValue(i int) Value {
-	return Value{Type: ValueTypeInt64, data: int64(i)}
+	return Value{typ: ValueTypeInt64, data: int64(i)}
 }
 
 // NewUintValue creates a new uint Value.
 func NewUintValue(i uint) Value {
-	return Value{Type: ValueTypeUint64, data: uint64(i)}
+	return Value{typ: ValueTypeUint64, data: uint64(i)}
 }
 
 // GetType returns the ValueType of the Value.
 func (v *Value) GetType() ValueType {
-	return v.Type
+	return v.typ
 }
 
 // GetBool returns the boolean value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetBool() (bool, error) {
-	if v.Type != ValueTypeBool {
+	if v.typ != ValueTypeBool {
 		return false, NewTenError(ErrorCodeInvalidType, "value is not a bool")
 	}
 	if val, ok := v.data.(bool); ok {
@@ -189,7 +189,7 @@ func (v *Value) GetBool() (bool, error) {
 // GetInt8 returns the int8 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetInt8() (int8, error) {
-	if v.Type != ValueTypeInt8 {
+	if v.typ != ValueTypeInt8 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int8")
 	}
 	if val, ok := v.data.(int8); ok {
@@ -201,7 +201,7 @@ func (v *Value) GetInt8() (int8, error) {
 // GetInt16 returns the int16 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetInt16() (int16, error) {
-	if v.Type != ValueTypeInt16 {
+	if v.typ != ValueTypeInt16 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int16")
 	}
 	if val, ok := v.data.(int16); ok {
@@ -213,7 +213,7 @@ func (v *Value) GetInt16() (int16, error) {
 // GetInt32 returns the int32 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetInt32() (int32, error) {
-	if v.Type != ValueTypeInt32 {
+	if v.typ != ValueTypeInt32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int32")
 	}
 	if val, ok := v.data.(int32); ok {
@@ -225,7 +225,7 @@ func (v *Value) GetInt32() (int32, error) {
 // GetInt64 returns the int64 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetInt64() (int64, error) {
-	if v.Type != ValueTypeInt64 {
+	if v.typ != ValueTypeInt64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int64")
 	}
 	if val, ok := v.data.(int64); ok {
@@ -237,7 +237,7 @@ func (v *Value) GetInt64() (int64, error) {
 // GetUint8 returns the uint8 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetUint8() (uint8, error) {
-	if v.Type != ValueTypeUint8 {
+	if v.typ != ValueTypeUint8 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint8")
 	}
 	if val, ok := v.data.(uint8); ok {
@@ -249,7 +249,7 @@ func (v *Value) GetUint8() (uint8, error) {
 // GetUint16 returns the uint16 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetUint16() (uint16, error) {
-	if v.Type != ValueTypeUint16 {
+	if v.typ != ValueTypeUint16 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint16")
 	}
 	if val, ok := v.data.(uint16); ok {
@@ -261,7 +261,7 @@ func (v *Value) GetUint16() (uint16, error) {
 // GetUint32 returns the uint32 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetUint32() (uint32, error) {
-	if v.Type != ValueTypeUint32 {
+	if v.typ != ValueTypeUint32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint32")
 	}
 	if val, ok := v.data.(uint32); ok {
@@ -273,7 +273,7 @@ func (v *Value) GetUint32() (uint32, error) {
 // GetUint64 returns the uint64 value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetUint64() (uint64, error) {
-	if v.Type != ValueTypeUint64 {
+	if v.typ != ValueTypeUint64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint64")
 	}
 	if val, ok := v.data.(uint64); ok {
@@ -285,7 +285,7 @@ func (v *Value) GetUint64() (uint64, error) {
 // GetFloat32 returns the float32 value if the type matches, otherwise returns
 // an error.
 func (v *Value) GetFloat32() (float32, error) {
-	if v.Type != ValueTypeFloat32 {
+	if v.typ != ValueTypeFloat32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float32")
 	}
 	if val, ok := v.data.(float32); ok {
@@ -297,7 +297,7 @@ func (v *Value) GetFloat32() (float32, error) {
 // GetFloat64 returns the float64 value if the type matches, otherwise returns
 // an error.
 func (v *Value) GetFloat64() (float64, error) {
-	if v.Type != ValueTypeFloat64 {
+	if v.typ != ValueTypeFloat64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float64")
 	}
 	if val, ok := v.data.(float64); ok {
@@ -309,7 +309,7 @@ func (v *Value) GetFloat64() (float64, error) {
 // GetString returns the string value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetString() (string, error) {
-	if v.Type != ValueTypeString && v.Type != ValueTypeJSONString {
+	if v.typ != ValueTypeString && v.typ != ValueTypeJSONString {
 		return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
 	}
 	if val, ok := v.data.(string); ok {
@@ -321,7 +321,7 @@ func (v *Value) GetString() (string, error) {
 // GetBytes returns the []byte value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetBytes() ([]byte, error) {
-	if v.Type != ValueTypeBytes {
+	if v.typ != ValueTypeBytes {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
 	}
 	if val, ok := v.data.([]byte); ok {
@@ -333,7 +333,7 @@ func (v *Value) GetBytes() ([]byte, error) {
 // GetArray returns the []Value value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetArray() ([]Value, error) {
-	if v.Type != ValueTypeArray {
+	if v.typ != ValueTypeArray {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not an array")
 	}
 	if val, ok := v.data.([]Value); ok {
@@ -345,7 +345,7 @@ func (v *Value) GetArray() ([]Value, error) {
 // GetObject returns the map[string]Value value if the type matches, otherwise
 // returns an error.
 func (v *Value) GetObject() (map[string]Value, error) {
-	if v.Type != ValueTypeObject {
+	if v.typ != ValueTypeObject {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not an object")
 	}
 	if val, ok := v.data.(map[string]Value); ok {
@@ -357,7 +357,7 @@ func (v *Value) GetObject() (map[string]Value, error) {
 // GetPtr returns the unsafe.Pointer value if the type matches, otherwise
 // returns an error.
 func (v *Value) GetPtr() (unsafe.Pointer, error) {
-	if v.Type != ValueTypePtr {
+	if v.typ != ValueTypePtr {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not a pointer")
 	}
 	if val, ok := v.data.(unsafe.Pointer); ok {
@@ -369,7 +369,7 @@ func (v *Value) GetPtr() (unsafe.Pointer, error) {
 // GetJSONString returns the JSON string value if the type matches, otherwise
 // returns an error.
 func (v *Value) GetJSONString() (string, error) {
-	if v.Type != ValueTypeJSONString {
+	if v.typ != ValueTypeJSONString {
 		return "", NewTenError(
 			ErrorCodeInvalidType,
 			"value is not a JSON string",
@@ -383,7 +383,7 @@ func (v *Value) GetJSONString() (string, error) {
 
 // GetInt returns the int value if the type matches, otherwise returns an error.
 func (v *Value) GetInt() (int, error) {
-	if v.Type != ValueTypeInt64 {
+	if v.typ != ValueTypeInt64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int")
 	}
 	if val, ok := v.data.(int64); ok {
@@ -395,7 +395,7 @@ func (v *Value) GetInt() (int, error) {
 // GetUint returns the uint value if the type matches, otherwise returns an
 // error.
 func (v *Value) GetUint() (uint, error) {
-	if v.Type != ValueTypeUint64 {
+	if v.typ != ValueTypeUint64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint")
 	}
 	if val, ok := v.data.(uint64); ok {

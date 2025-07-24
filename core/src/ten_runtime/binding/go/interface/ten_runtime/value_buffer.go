@@ -150,7 +150,7 @@ func (v *Value) calculateSerializeSize() (int, error) {
 
 // calculateContentSize calculates the size of the value content
 func (v *Value) calculateContentSize() (int, error) {
-	switch v.Type {
+	switch v.typ {
 	case valueTypeInvalid:
 		return 0, NewTenError(
 			ErrorCodeInvalidType,
@@ -245,7 +245,7 @@ func (v *Value) serializeToBuffer() ([]byte, error) {
 	header := valueBufferHeader{
 		magic:    valueBufferMagic,
 		version:  valueBufferVersion,
-		typeName: valueTypeToBufferType(v.Type),
+		typeName: valueTypeToBufferType(v.typ),
 		size:     uint32(totalSize - valueBufferHeaderSize),
 	}
 
@@ -269,7 +269,7 @@ func (v *Value) serializeToBuffer() ([]byte, error) {
 
 // serializeContent serializes the value content to buffer
 func (v *Value) serializeContent(buffer []byte, pos *int) error {
-	switch v.Type {
+	switch v.typ {
 	case valueTypeInvalid:
 		panic("unsupported value type for serialization")
 
@@ -374,7 +374,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 	case ValueTypeString, ValueTypeJSONString:
 		var stringVal string
 		var err error
-		if v.Type == ValueTypeString {
+		if v.typ == ValueTypeString {
 			stringVal, err = v.GetString()
 		} else {
 			stringVal, err = v.GetJSONString()
@@ -421,7 +421,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		*pos += 4
 
 		for _, item := range arrayVal {
-			buffer[*pos] = valueTypeToBufferType(item.Type)
+			buffer[*pos] = valueTypeToBufferType(item.typ)
 			*pos++
 
 			err := item.serializeContent(buffer, pos)
@@ -451,7 +451,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 			*pos += int(keyLen)
 
 			// Write value type and content
-			buffer[*pos] = valueTypeToBufferType(val.Type)
+			buffer[*pos] = valueTypeToBufferType(val.typ)
 			*pos++
 
 			err := val.serializeContent(buffer, pos)
@@ -517,7 +517,7 @@ func deserializeFromBuffer(buffer []byte) (*Value, error) {
 	valueType := bufferTypeToValueType(header.typeName)
 	pos := valueBufferHeaderSize
 
-	value := &Value{Type: valueType}
+	value := &Value{typ: valueType}
 
 	err = value.deserializeContent(buffer, &pos)
 	if err != nil {
@@ -529,7 +529,7 @@ func deserializeFromBuffer(buffer []byte) (*Value, error) {
 
 // deserializeContent deserializes the value content from buffer
 func (v *Value) deserializeContent(buffer []byte, pos *int) error {
-	switch v.Type {
+	switch v.typ {
 	case valueTypeInvalid:
 		panic("unsupported value type for deserialization")
 
@@ -640,7 +640,7 @@ func (v *Value) deserializeContent(buffer []byte, pos *int) error {
 			itemType := bufferTypeToValueType(buffer[*pos])
 			*pos++
 
-			item := &Value{Type: itemType}
+			item := &Value{typ: itemType}
 			err := item.deserializeContent(buffer, pos)
 			if err != nil {
 				return err
@@ -683,7 +683,7 @@ func (v *Value) deserializeContent(buffer []byte, pos *int) error {
 			valType := bufferTypeToValueType(buffer[*pos])
 			*pos++
 
-			val := &Value{Type: valType}
+			val := &Value{typ: valType}
 			err := val.deserializeContent(buffer, pos)
 			if err != nil {
 				return err
