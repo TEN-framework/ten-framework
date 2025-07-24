@@ -43,8 +43,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6.9",
-      "hash": "eac2d3546673b651ce8558925f9c0cce856e51124984d2abb5c3bc7c32b46c35",
+      "version": "0.6.17",
+      "hash": "0960073e621f13602c0ca4b74858940f0700feb38421eba4277dd0bd153e7127",
       "dependencies": [
         {
           "type": "system",
