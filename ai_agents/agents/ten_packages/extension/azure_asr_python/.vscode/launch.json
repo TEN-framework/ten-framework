@@ -9,7 +9,7 @@
             "module": "pytest",
             "args": [
                 "-s",
-                "${workspaceFolder}/tests/test_invalid_params.py",
+                "${workspaceFolder}/tests/test_dump.py",
             ],
             "envFile": "${workspaceFolder}/tests/.env",
             "env": {
