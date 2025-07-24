@@ -70,8 +70,8 @@ static void ten_env_proxy_notify_init_property_from_json(ten_env_t *ten_env,
 ten_go_error_t ten_go_ten_env_init_property_from_json_bytes(
     uintptr_t bridge_addr, const void *json_str, int json_str_len) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);

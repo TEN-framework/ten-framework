@@ -13,7 +13,7 @@
 
 typedef struct ten_go_msg_t ten_go_msg_t;
 typedef struct ten_smart_ptr_t ten_shared_ptr_t;
-typedef struct ten_go_value_t ten_go_value_t;
+typedef struct ten_go_c_value_t ten_go_c_value_t;
 
 /**
  * @brief Get the type and size of a property of the msg. This function is
