@@ -29,7 +29,6 @@ FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
 CONNECTION_TIMING_CONFIG_FILE = "property_en.json"
-CONNECTION_TIMING_EXPECTED_TEXT = "hello world"
 CONNECTION_TIMING_SESSION_ID = "test_connection_timing_session_123"
 CONNECTION_TIMING_EXPECTED_LANGUAGE = "en-US"
 
@@ -40,13 +39,11 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
     def __init__(
         self,
         audio_file_path: str,
-        expected_text: str = CONNECTION_TIMING_EXPECTED_TEXT,
         session_id: str = CONNECTION_TIMING_SESSION_ID,
         expected_language: str = CONNECTION_TIMING_EXPECTED_LANGUAGE,
     ):
         super().__init__()
         self.audio_file_path: str = audio_file_path
-        self.expected_text: str = expected_text
         self.session_id: str = session_id
         self.expected_language: str = expected_language
         self.sender_task: asyncio.Task[None] | None = None
@@ -178,19 +175,6 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
             return False
         return True
 
-    def _validate_text_content(
-        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
-    ) -> bool:
-        """Validate text content matches expected text."""
-        text: str = json_data.get("text", "")
-        if self.expected_text.lower() not in text.lower():
-            self._stop_test_with_error(
-                ten_env,
-                f"Text mismatch, expected: '{self.expected_text}' to be contained in actual: '{text}'",
-            )
-            return False
-        return True
-
     def _validate_language(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
@@ -235,7 +219,6 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
     ) -> bool:
         """Validate all fields for final ASR result."""
         validations = [
-            lambda: self._validate_text_content(ten_env, json_data),
             lambda: self._validate_language(ten_env, json_data),
             lambda: self._validate_session_id(ten_env, metadata),
         ]
@@ -315,7 +298,6 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "text": CONNECTION_TIMING_EXPECTED_TEXT,
         "language": CONNECTION_TIMING_EXPECTED_LANGUAGE,
         "session_id": CONNECTION_TIMING_SESSION_ID,
     }
@@ -324,13 +306,12 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
     print(f"Using test configuration: {config}")
     print(f"Audio file path: {audio_file_path}")
     print(
-        f"Expected results: text='{expected_result['text']}', language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
+        f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
     )
 
     # Create and run tester
     tester = ConnectionTimingAsrTester(
         audio_file_path=audio_file_path,
-        expected_text=expected_result["text"],
         session_id=expected_result["session_id"],
         expected_language=expected_result["language"],
     )

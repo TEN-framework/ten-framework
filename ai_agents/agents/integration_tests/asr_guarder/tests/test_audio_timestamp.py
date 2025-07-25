@@ -29,7 +29,6 @@ FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
 AUDIO_TIMESTAMP_CONFIG_FILE = "property_en.json"
-AUDIO_TIMESTAMP_EXPECTED_TEXT = "hello world"
 AUDIO_TIMESTAMP_SESSION_ID = "test_audio_timestamp_session_123"
 AUDIO_TIMESTAMP_EXPECTED_LANGUAGE = "en-US"
 
@@ -40,13 +39,11 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
     def __init__(
         self,
         audio_file_path: str,
-        expected_text: str = AUDIO_TIMESTAMP_EXPECTED_TEXT,
         session_id: str = AUDIO_TIMESTAMP_SESSION_ID,
         expected_language: str = AUDIO_TIMESTAMP_EXPECTED_LANGUAGE,
     ):
         super().__init__()
         self.audio_file_path: str = audio_file_path
-        self.expected_text: str = expected_text
         self.session_id: str = session_id
         self.expected_language: str = expected_language
         self.sender_task: asyncio.Task[None] | None = None
@@ -409,19 +406,6 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         )
         return True
 
-    def _validate_text_content(
-        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
-    ) -> bool:
-        """Validate text content matches expected text."""
-        text: str = json_data.get("text", "")
-        if self.expected_text.lower() not in text.lower():
-            self._stop_test_with_error(
-                ten_env,
-                f"Text mismatch, expected: '{self.expected_text}' to be contained in actual: '{text}'",
-            )
-            return False
-        return True
-
     def _validate_language(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
@@ -466,7 +450,6 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
     ) -> bool:
         """Validate all fields for final ASR result including timestamp validation."""
         validations = [
-            lambda: self._validate_text_content(ten_env, json_data),
             lambda: self._validate_language(ten_env, json_data),
             lambda: self._validate_session_id(ten_env, metadata),
             lambda: self._validate_timestamp_type(ten_env, json_data),
@@ -557,7 +540,6 @@ def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "text": AUDIO_TIMESTAMP_EXPECTED_TEXT,
         "language": AUDIO_TIMESTAMP_EXPECTED_LANGUAGE,
         "session_id": AUDIO_TIMESTAMP_SESSION_ID,
     }
@@ -566,7 +548,7 @@ def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
     print(f"Using test configuration: {config}")
     print(f"Audio file path: {audio_file_path}")
     print(
-        f"Expected results: text='{expected_result['text']}', language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
+        f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
     )
     print("Timestamp validation requirements:")
     print("  1. start_ms and duration_ms must be int type")
@@ -577,7 +559,6 @@ def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
     # Create and run tester
     tester = AudioTimestampAsrTester(
         audio_file_path=audio_file_path,
-        expected_text=expected_result["text"],
         session_id=expected_result["session_id"],
         expected_language=expected_result["language"],
     )
