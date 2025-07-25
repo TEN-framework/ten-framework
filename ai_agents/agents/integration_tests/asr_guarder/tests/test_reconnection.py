@@ -26,8 +26,10 @@ FRAME_INTERVAL_MS = 100
 DEFAULT_SESSION_ID = "test_session_123"
 
 # Reconnection test constants
-TEST_DURATION_SECONDS = 15  # Total test duration
-TEST_TIMEOUT_SECONDS = 30
+TEST_DURATION_SECONDS = (
+    12  # Total test duration (slightly longer than max reconnection time ~9.3s)
+)
+TEST_TIMEOUT_SECONDS = 20  # Reduced timeout
 
 DEFAULT_CONFIG_FILE = "invalid.json"
 
