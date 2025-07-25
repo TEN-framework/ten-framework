@@ -76,9 +76,6 @@ class Value:
     def get_type(self) -> ValueType:
         return self._type
 
-    def get_data(self) -> ValueDataType:
-        return self._data
-
     def get_bool(self) -> bool:
         if self._type != ValueType.BOOL:
             raise TypeError(f"Value is not a boolean, got {self._type.name}")
