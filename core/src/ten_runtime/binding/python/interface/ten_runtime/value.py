@@ -37,19 +37,9 @@ class Value:
     _type: ValueType
     _data: ValueDataType
 
-    def __init__(
-        self,
-        value_type: ValueType,
-        data: ValueDataType,
-    ):
-        self._type = value_type
+    def __init__(self, type: ValueType, data: ValueDataType):
+        self._type = type
         self._data = data
-
-    def get_type(self) -> ValueType:
-        return self._type
-
-    def get_data(self) -> ValueDataType:
-        return self._data
 
     @classmethod
     def create_bool(cls: type[T], value: bool) -> T:
@@ -88,6 +78,12 @@ class Value:
     def create_json_string(cls: type[T], value: str) -> T:
         """Create a JSON string Value."""
         return cls(ValueType.JSON_STRING, value)
+
+    def get_type(self) -> ValueType:
+        return self._type
+
+    def get_data(self) -> ValueDataType:
+        return self._data
 
     def get_bool(self) -> bool:
         if self._type != ValueType.BOOL:

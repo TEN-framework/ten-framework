@@ -72,7 +72,7 @@ class vosk_asr_cpp_t : public ten::extension_t {
     TEN_ASSERT(rc, "Should not happen.");
   }
 
-  void on_stop(ten::ten_env_t &ten_env) override {
+  void on_deinit(ten::ten_env_t &ten_env) override {
     if (vosk_recognizer) {
       vosk_recognizer_free(vosk_recognizer);
       vosk_recognizer = nullptr;
@@ -81,7 +81,7 @@ class vosk_asr_cpp_t : public ten::extension_t {
       vosk_model_free(vosk_model);
       vosk_model = nullptr;
     }
-    ten_env.on_stop_done();
+    ten_env.on_deinit_done();
   }
 
  private:
