@@ -129,93 +129,100 @@ def _calculate_content_size(value: Value) -> int:
                 size += 1  # value type
                 size += _calculate_content_size(val)
             return size
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), "Invalid value type"
 
 
 def _serialize_content(value: Value, buffer: bytearray, pos: int) -> int:
     """Serialize the value content to buffer. Returns new position."""
     value_type = value.get_type()
 
-    if value_type == ValueType.INVALID:
-        assert False, "Invalid value type"
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
 
-    elif value_type == ValueType.BOOL:
-        val = 1 if value.get_bool()[0] else 0
-        struct.pack_into("<B", buffer, pos, val)
-        pos += 1
-
-    elif value_type == ValueType.INT:
-        # Always serialize as int64
-        val = value.get_int()[0]
-        struct.pack_into("<q", buffer, pos, val)
-        pos += 8
-
-    elif value_type == ValueType.FLOAT:
-        # Always serialize as float64
-        val = value.get_float()[0]
-        struct.pack_into("<d", buffer, pos, val)
-        pos += 8
-
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        data = value.get_string()[0]
-        encoded = data.encode("utf-8")
-        data_len = len(encoded)
-
-        struct.pack_into("<I", buffer, pos, data_len)
-        pos += 4
-
-        if data_len > 0:
-            buffer[pos : pos + data_len] = encoded
-            pos += data_len
-
-    elif value_type == ValueType.BYTES:
-        data = value.get_bytes()[0]
-        data_len = len(data)
-
-        struct.pack_into("<I", buffer, pos, data_len)
-        pos += 4
-
-        if data_len > 0:
-            buffer[pos : pos + data_len] = data
-            pos += data_len
-
-    elif value_type == ValueType.ARRAY:
-        array_data = value.get_array()[0]
-        array_len = len(array_data)
-        struct.pack_into("<I", buffer, pos, array_len)
-        pos += 4
-
-        for item in array_data:
-            item_type = _value_type_to_buffer_type(item.get_type())
-            struct.pack_into("<B", buffer, pos, item_type)
+        case ValueType.BOOL:
+            val = 1 if value.get_bool()[0] else 0
+            struct.pack_into("<B", buffer, pos, val)
             pos += 1
 
-            pos = _serialize_content(item, buffer, pos)
+        case ValueType.INT:
+            # Always serialize as int64
+            val = value.get_int()[0]
+            struct.pack_into("<q", buffer, pos, val)
+            pos += 8
 
-    elif value_type == ValueType.OBJECT:
-        obj_data = value.get_object()[0]
-        obj_size = len(obj_data)
-        struct.pack_into("<I", buffer, pos, obj_size)
-        pos += 4
+        case ValueType.FLOAT:
+            # Always serialize as float64
+            val = value.get_float()[0]
+            struct.pack_into("<d", buffer, pos, val)
+            pos += 8
 
-        for key, val in obj_data.items():
-            # Write key
-            key_bytes = key.encode("utf-8")
-            key_len = len(key_bytes)
-
-            struct.pack_into("<I", buffer, pos, key_len)
+        case ValueType.STRING:
+            data = value.get_string()[0]
+            encoded = data.encode("utf-8")
+            data_len = len(encoded)
+            struct.pack_into("<I", buffer, pos, data_len)
             pos += 4
-            buffer[pos : pos + key_len] = key_bytes
-            pos += key_len
+            if data_len > 0:
+                buffer[pos : pos + data_len] = encoded
+                pos += data_len
 
-            # Write value type and content
-            val_type = _value_type_to_buffer_type(val.get_type())
-            struct.pack_into("<B", buffer, pos, val_type)
-            pos += 1
+        case ValueType.JSON_STRING:
+            data = value.get_json_string()[0]
+            encoded = data.encode("utf-8")
+            data_len = len(encoded)
+            struct.pack_into("<I", buffer, pos, data_len)
+            pos += 4
+            if data_len > 0:
+                buffer[pos : pos + data_len] = encoded
+                pos += data_len
 
-            pos = _serialize_content(val, buffer, pos)
+        case ValueType.BYTES:
+            data = value.get_bytes()[0]
+            data_len = len(data)
+            struct.pack_into("<I", buffer, pos, data_len)
+            pos += 4
+            if data_len > 0:
+                buffer[pos : pos + data_len] = data
+                pos += data_len
 
-    else:
-        assert False, f"Unsupported value type for serialization: {value_type}"
+        case ValueType.ARRAY:
+            array_data = value.get_array()[0]
+            array_len = len(array_data)
+            struct.pack_into("<I", buffer, pos, array_len)
+            pos += 4
+            for item in array_data:
+                item_type = _value_type_to_buffer_type(item.get_type())
+                struct.pack_into("<B", buffer, pos, item_type)
+                pos += 1
+                pos = _serialize_content(item, buffer, pos)
+
+        case ValueType.OBJECT:
+            obj_data = value.get_object()[0]
+            obj_size = len(obj_data)
+            struct.pack_into("<I", buffer, pos, obj_size)
+            pos += 4
+            for key, val in obj_data.items():
+                # Write key
+                key_bytes = key.encode("utf-8")
+                key_len = len(key_bytes)
+                struct.pack_into("<I", buffer, pos, key_len)
+                pos += 4
+                buffer[pos : pos + key_len] = key_bytes
+                pos += key_len
+                # Write value type and content
+                val_type = _value_type_to_buffer_type(val.get_type())
+                struct.pack_into("<B", buffer, pos, val_type)
+                pos += 1
+                pos = _serialize_content(val, buffer, pos)
+
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), f"Unsupported value type for serialization: {value_type}"
 
     return pos
 
