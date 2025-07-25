@@ -31,7 +31,7 @@ TEST_DURATION_SECONDS = (
 )
 TEST_TIMEOUT_SECONDS = 20  # Reduced timeout
 
-DEFAULT_CONFIG_FILE = "invalid.json"
+DEFAULT_CONFIG_FILE = "property_invalid.json"
 
 
 class AsrReconnectionTester(AsyncExtensionTester):

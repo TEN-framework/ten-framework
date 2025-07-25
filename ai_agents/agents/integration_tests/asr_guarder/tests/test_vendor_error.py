@@ -21,7 +21,7 @@ FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
 DEFAULT_SESSION_ID = "test_session_123"
-DEFAULT_CONFIG_FILE = "invalid.json"
+DEFAULT_CONFIG_FILE = "property_invalid.json"
 
 # Error validation constants
 REQUIRED_ERROR_FIELDS = ["id", "module", "code", "message"]

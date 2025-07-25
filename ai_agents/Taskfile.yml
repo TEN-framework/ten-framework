@@ -124,8 +124,11 @@ tasks:
     vars:
       EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
       CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
     dotenv: [".env"]
     cmds:
+      - cd agents/integration_tests/asr_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
       - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
 
   format:

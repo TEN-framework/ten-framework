@@ -1,3 +1,5 @@
 ten_packages
 .env
 tests/test_data
+manifest.json
+manifest-lock.json

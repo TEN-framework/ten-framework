@@ -71,7 +71,7 @@ main() {
 
   # Install all dependencies specified in manifest.json.
   echo "install dependencies..."
-  tman install
+  tman -y install
 
   # install python requirements
   echo "install_python_requirements..."
