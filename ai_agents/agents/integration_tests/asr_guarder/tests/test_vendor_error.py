@@ -202,7 +202,7 @@ class VendorErrorTester(AsyncExtensionTester):
     def _validate_error_code_types(
         self, ten_env: AsyncTenEnvTester, json_data
     ) -> bool:
-        """Validate that error codes distinguish different types of service problems."""
+        """Validate that error code must be exactly 1000."""
         error_code = json_data.get("code")
         if error_code is None:
             ten_env.log_error("Error code is missing")
@@ -215,30 +215,16 @@ class VendorErrorTester(AsyncExtensionTester):
             )
             return False
 
-        # Log different error code types for analysis
-        error_categories = {
-            "authentication": [1001, 1002, 1003],
-            "network": [2001, 2002, 2003],
-            "service": [3001, 3002, 3003],
-            "quota": [4001, 4002, 4003],
-            "configuration": [5001, 5002, 5003],
-        }
-
-        category_found = None
-        for category, codes in error_categories.items():
-            if error_code in codes:
-                category_found = category
-                break
-
-        if category_found:
-            ten_env.log_info(
-                f"✅ Error code {error_code} categorized as: {category_found}"
+        # Validate that error code must be exactly NON_FATAL_ERROR
+        if error_code != 1000:
+            ten_env.log_error(
+                f"Error code must be NON_FATAL_ERROR, got: {error_code}"
             )
-        else:
-            ten_env.log_info(
-                f"⚠️ Error code {error_code} not in predefined categories"
-            )
+            return False
 
+        ten_env.log_info(
+            f"✅ Error code {error_code} validated (must be NON_FATAL_ERROR)"
+        )
         return True
 
     def _validate_session_id_consistency(
