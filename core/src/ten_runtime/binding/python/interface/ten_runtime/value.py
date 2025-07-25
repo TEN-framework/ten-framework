@@ -7,6 +7,8 @@
 from enum import IntEnum
 from typing import TypeVar, cast, TypeAlias
 
+from .error import TenError, TenErrorCode
+
 T = TypeVar("T", bound="Value")
 
 
@@ -76,44 +78,77 @@ class Value:
     def get_type(self) -> ValueType:
         return self._type
 
-    def get_bool(self) -> bool:
+    def get_bool(self) -> tuple[bool, TenError | None]:
         if self._type != ValueType.BOOL:
-            raise TypeError(f"Value is not a boolean, got {self._type.name}")
-        return cast(bool, self._data)
-
-    def get_int(self) -> int:
-        if self._type != ValueType.INT:
-            raise TypeError(f"Value is not an integer, got {self._type.name}")
-        return cast(int, self._data)
-
-    def get_float(self) -> float:
-        if self._type != ValueType.FLOAT:
-            raise TypeError(f"Value is not a float, got {self._type.name}")
-        return cast(float, self._data)
-
-    def get_string(self) -> str:
-        if self._type != ValueType.STRING:
-            raise TypeError(f"Value is not a string, got {self._type.name}")
-        return cast(str, self._data)
-
-    def get_bytes(self) -> bytes:
-        if self._type != ValueType.BYTES:
-            raise TypeError(f"Value is not bytes, got {self._type.name}")
-        return cast(bytes, self._data)
-
-    def get_array(self) -> list["Value"]:
-        if self._type != ValueType.ARRAY:
-            raise TypeError(f"Value is not an array, got {self._type.name}")
-        return cast(list["Value"], self._data)
-
-    def get_object(self) -> dict[str, "Value"]:
-        if self._type != ValueType.OBJECT:
-            raise TypeError(f"Value is not an object, got {self._type.name}")
-        return cast(dict[str, "Value"], self._data)
-
-    def get_json_string(self) -> str:
-        if self._type != ValueType.JSON_STRING:
-            raise TypeError(
-                f"Value is not a JSON string, got {self._type.name}"
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not a boolean, got {self._type.name}",
             )
-        return cast(str, self._data)
+            return (False, error)
+        return (cast(bool, self._data), None)
+
+    def get_int(self) -> tuple[int, TenError | None]:
+        if self._type != ValueType.INT:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not an integer, got {self._type.name}",
+            )
+            return (0, error)
+        return (cast(int, self._data), None)
+
+    def get_float(self) -> tuple[float, TenError | None]:
+        if self._type != ValueType.FLOAT:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not a float, got {self._type.name}",
+            )
+            return (0.0, error)
+        return (cast(float, self._data), None)
+
+    def get_string(self) -> tuple[str, TenError | None]:
+        if (
+            self._type != ValueType.STRING
+            and self._type != ValueType.JSON_STRING
+        ):
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not a string, got {self._type.name}",
+            )
+            return ("", error)
+        return (cast(str, self._data), None)
+
+    def get_bytes(self) -> tuple[bytes, TenError | None]:
+        if self._type != ValueType.BYTES:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not bytes, got {self._type.name}",
+            )
+            return (b"", error)
+        return (cast(bytes, self._data), None)
+
+    def get_array(self) -> tuple[list["Value"], TenError | None]:
+        if self._type != ValueType.ARRAY:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not an array, got {self._type.name}",
+            )
+            return ([], error)
+        return (cast(list["Value"], self._data), None)
+
+    def get_object(self) -> tuple[dict[str, "Value"], TenError | None]:
+        if self._type != ValueType.OBJECT:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not an object, got {self._type.name}",
+            )
+            return ({}, error)
+        return (cast(dict[str, "Value"], self._data), None)
+
+    def get_json_string(self) -> tuple[str, TenError | None]:
+        if self._type != ValueType.JSON_STRING:
+            error = TenError.create(
+                TenErrorCode.ErrorCodeInvalidType,
+                f"Value is not a JSON string, got {self._type.name}",
+            )
+            return ("", error)
+        return (cast(str, self._data), None)
