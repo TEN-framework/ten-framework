@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { TenError, TenErrorCode } from "../error/error.js";
+import { TenError, TenErrorCode } from "./error.js";
 
 export enum ValueType {
   INVALID = 0,
