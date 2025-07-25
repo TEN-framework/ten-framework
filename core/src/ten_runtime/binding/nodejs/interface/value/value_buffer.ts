@@ -502,7 +502,7 @@ export function deserializeFromBuffer(buffer: Buffer): Value {
   const pos = VALUE_BUFFER_HEADER_SIZE;
   const valueType = bufferTypeToValueType(header.typeId);
 
-  const [value, _] = deserializeContent(buffer, pos, valueType);
+  const [value] = deserializeContent(buffer, pos, valueType);
 
   return value;
 }
