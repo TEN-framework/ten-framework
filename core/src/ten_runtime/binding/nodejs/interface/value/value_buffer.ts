@@ -81,7 +81,7 @@ function bufferTypeToValueType(bufferType: number): ValueType {
 
 // Calculate the size needed for the value content.
 function calculateContentSize(value: Value): number {
-  const valueType = value.type;
+  const valueType = value.getType();
 
   if (valueType === ValueType.INVALID) {
     return 0;
@@ -97,7 +97,7 @@ function calculateContentSize(value: Value): number {
 
   if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
     const data =
-      value.type === ValueType.STRING
+      value.getType() === ValueType.STRING
         ? value.getString()
         : value.getJsonString();
     const encoded = Buffer.from(data, "utf-8");
@@ -106,7 +106,7 @@ function calculateContentSize(value: Value): number {
 
   if (valueType === ValueType.BYTES) {
     const data = value.getBytes();
-    return 4 + data.length; // length(4) + data
+    return 4 + data.byteLength; // length(4) + data
   }
 
   if (valueType === ValueType.ARRAY) {
@@ -137,7 +137,7 @@ function calculateContentSize(value: Value): number {
 
 // Serialize the value content to buffer. Returns new position.
 function serializeContent(value: Value, buffer: Buffer, pos: number): number {
-  const valueType = value.type;
+  const valueType = value.getType();
 
   if (valueType === ValueType.INVALID) {
     // No additional data
@@ -178,13 +178,14 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
 
   if (valueType === ValueType.BYTES) {
     const data = value.getBytes();
-    const dataLen = data.length;
+    const dataLen = data.byteLength;
 
     buffer.writeUInt32LE(dataLen, pos);
     pos += 4;
 
     if (dataLen > 0) {
-      buffer.set(data, pos);
+      const uint8Array = new Uint8Array(data);
+      buffer.set(uint8Array, pos);
       pos += dataLen;
     }
 
@@ -198,7 +199,7 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
     pos += 4;
 
     for (const item of arrayData) {
-      const itemType = valueTypeToBufferType(item.type);
+      const itemType = valueTypeToBufferType(item.getType());
       buffer.writeUInt8(itemType, pos);
       pos += 1;
 
@@ -225,7 +226,7 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
       pos += keyLen;
 
       // Write value type and content
-      const valType = valueTypeToBufferType(val.type);
+      const valType = valueTypeToBufferType(val.getType());
       buffer.writeUInt8(valType, pos);
       pos += 1;
 
@@ -253,7 +254,7 @@ export function serializeToBuffer(value: Value): Buffer {
   const header: ValueBufferHeader = {
     magic: VALUE_BUFFER_MAGIC,
     version: VALUE_BUFFER_VERSION,
-    typeId: valueTypeToBufferType(value.type),
+    typeId: valueTypeToBufferType(value.getType()),
     size: contentSize,
   };
 
@@ -324,7 +325,7 @@ function deserializeContent(
       assert(false, "Buffer too small for bool value");
     }
     const val = buffer.readUInt8(pos);
-    return [Value.createBoolean(val !== 0), pos + 1];
+    return [Value.fromBoolean(val !== 0), pos + 1];
   }
 
   if (valueType === ValueType.NUMBER) {
@@ -332,7 +333,7 @@ function deserializeContent(
       assert(false, "Buffer too small for number value");
     }
     const val = buffer.readDoubleLE(pos);
-    return [Value.createNumber(val), pos + 8];
+    return [Value.fromNumber(val), pos + 8];
   }
 
   if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
@@ -354,9 +355,9 @@ function deserializeContent(
     }
 
     if (valueType === ValueType.STRING) {
-      return [Value.createString(data), pos];
+      return [Value.fromString(data), pos];
     } else {
-      return [Value.createJsonString(data), pos];
+      return [Value.fromJsonString(data), pos];
     }
   }
 
@@ -367,18 +368,22 @@ function deserializeContent(
     const bufLen = buffer.readUInt32LE(pos);
     pos += 4;
 
-    let data: Uint8Array;
+    let data: ArrayBuffer;
     if (bufLen === 0) {
-      data = new Uint8Array(0);
+      data = new ArrayBuffer(0);
     } else {
       if (pos + bufLen > buffer.length) {
         assert(false, "Buffer too small for bytes data");
       }
-      data = new Uint8Array(buffer.subarray(pos, pos + bufLen));
+      const uint8Array = new Uint8Array(buffer.subarray(pos, pos + bufLen));
+      data = uint8Array.buffer.slice(
+        uint8Array.byteOffset,
+        uint8Array.byteOffset + uint8Array.byteLength,
+      );
       pos += bufLen;
     }
 
-    return [Value.createBytes(data), pos];
+    return [Value.fromBytes(data), pos];
   }
 
   if (valueType === ValueType.ARRAY) {
@@ -402,7 +407,7 @@ function deserializeContent(
       pos = newPos;
     }
 
-    return [Value.createArray(arrayData), pos];
+    return [Value.fromArray(arrayData), pos];
   }
 
   if (valueType === ValueType.OBJECT) {
@@ -440,7 +445,7 @@ function deserializeContent(
       pos = newPos;
     }
 
-    return [Value.createObject(objData), pos];
+    return [Value.fromObject(objData), pos];
   }
 
   assert(

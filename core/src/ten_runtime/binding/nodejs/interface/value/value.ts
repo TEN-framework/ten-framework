@@ -20,7 +20,7 @@ type ValueDataType =
   | string
   | number
   | boolean
-  | Uint8Array
+  | ArrayBuffer
   | Value[]
   | Record<string, Value>;
 
@@ -34,42 +34,42 @@ export class Value {
   }
 
   // Create a boolean Value.
-  static createBoolean(value: boolean): Value {
+  static fromBoolean(value: boolean): Value {
     return new Value(ValueType.BOOLEAN, value);
   }
 
   // Create a number Value.
-  static createNumber(value: number): Value {
+  static fromNumber(value: number): Value {
     return new Value(ValueType.NUMBER, value);
   }
 
   // Create a string Value.
-  static createString(value: string): Value {
+  static fromString(value: string): Value {
     return new Value(ValueType.STRING, value);
   }
 
-  // Create a bytes Value from Uint8Array.
-  static createBytes(value: Uint8Array): Value {
+  // Create a bytes Value from ArrayBuffer.
+  static fromBytes(value: ArrayBuffer): Value {
     return new Value(ValueType.BYTES, value);
   }
 
   // Create an array Value.
-  static createArray(value: Value[]): Value {
+  static fromArray(value: Value[]): Value {
     return new Value(ValueType.ARRAY, value);
   }
 
   // Create an object Value.
-  static createObject(value: Record<string, Value>): Value {
+  static fromObject(value: Record<string, Value>): Value {
     return new Value(ValueType.OBJECT, value);
   }
 
   // Create a JSON string Value.
-  static createJsonString(value: string): Value {
+  static fromJsonString(value: string): Value {
     return new Value(ValueType.JSON_STRING, value);
   }
 
   // Get the type of this Value.
-  get type(): ValueType {
+  getType(): ValueType {
     return this._type;
   }
 
@@ -98,11 +98,11 @@ export class Value {
   }
 
   // Get the bytes value. Throws Error if not bytes.
-  getBytes(): Uint8Array {
+  getBytes(): ArrayBuffer {
     if (this._type !== ValueType.BYTES) {
       throw new Error(`Value is not bytes, got ${ValueType[this._type]}`);
     }
-    return this._data as Uint8Array;
+    return this._data as ArrayBuffer;
   }
 
   // Get the array value. Throws Error if not an array.
