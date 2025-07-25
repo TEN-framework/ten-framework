@@ -309,7 +309,7 @@ func (v *Value) Float64() (float64, error) {
 // String returns the string value if the type matches, otherwise returns an
 // error.
 func (v *Value) String() (string, error) {
-	if v.typ != ValueTypeString && v.typ != ValueTypeJSONString {
+	if v.typ != ValueTypeString {
 		return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
 	}
 	if val, ok := v.data.(string); ok {
