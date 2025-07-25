@@ -963,7 +963,7 @@
           "nodes": [
             {
               "type": "extension",
-              "name": "rtc",
+              "name": "agora_rtc",
               "addon": "agora_rtc",
               "extension_group": "default",
               "property": {
@@ -986,10 +986,12 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "speechmatics_asr_python",
+              "addon": "deepgram_asr_python",
               "extension_group": "stt",
               "property": {
-                "key": "${env:SPEECHMATICS_API_KEY}",
+                "api_key": "${env:DEEPGRAM_API_KEY}",
+                "language": "en-US",
+                "model": "nova-2",
                 "sample_rate": 16000
               }
             },
@@ -1059,7 +1061,7 @@
               "filter": {
                 "field": "name",
                 "operator": "regex",
-                "value": "tts|llm|rtc"
+                "value": "tts|llm|agora_rtc"
               }
             },
             {
@@ -1074,7 +1076,7 @@
           ],
           "connections": [
             {
-              "extension": "rtc",
+              "extension": "agora_rtc",
               "audio_frame": [
                 {
                   "name": "pcm_frame",
@@ -1114,7 +1116,7 @@
                   "name": "on_user_joined",
                   "source": [
                     {
-                      "extension": "rtc"
+                      "extension": "agora_rtc"
                     }
                   ]
                 },
@@ -1122,7 +1124,7 @@
                   "name": "on_user_left",
                   "source": [
                     {
-                      "extension": "rtc"
+                      "extension": "agora_rtc"
                     }
                   ]
                 }
@@ -1187,7 +1189,7 @@
                   "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "rtc"
+                      "extension": "agora_rtc"
                     }
                   ]
                 }
@@ -1200,7 +1202,7 @@
                   "name": "data",
                   "dest": [
                     {
-                      "extension": "rtc"
+                      "extension": "agora_rtc"
                     }
                   ]
                 }
