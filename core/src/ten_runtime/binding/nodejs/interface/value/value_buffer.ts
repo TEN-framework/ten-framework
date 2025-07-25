@@ -10,7 +10,8 @@ import { Value, ValueType } from "./value.js";
 // Buffer protocol constants - must match C layer
 export const VALUE_BUFFER_MAGIC = 0x010e;
 export const VALUE_BUFFER_VERSION = 1;
-export const VALUE_BUFFER_HEADER_SIZE = 8; // magic(2) + version(1) + type(1) + size(4)
+// magic(2) + version(1) + type(1) + size(4)
+export const VALUE_BUFFER_HEADER_SIZE = 8;
 
 // Buffer type constants - must match TEN_VALUE_BUFFER_TYPE in C
 export const BUFFER_TYPE_INVALID = 0;
@@ -29,7 +30,7 @@ export const BUFFER_TYPE_STRING = 12;
 export const BUFFER_TYPE_BUF = 13;
 export const BUFFER_TYPE_ARRAY = 14;
 export const BUFFER_TYPE_OBJECT = 15;
-export const BUFFER_TYPE_PTR = 16;
+// export const BUFFER_TYPE_PTR = 16;
 export const BUFFER_TYPE_JSON_STRING = 17;
 
 // Represents the buffer header structure.
@@ -45,7 +46,8 @@ function valueTypeToBufferType(valueType: ValueType): number {
   const mapping: Record<ValueType, number> = {
     [ValueType.INVALID]: BUFFER_TYPE_INVALID,
     [ValueType.BOOLEAN]: BUFFER_TYPE_BOOL,
-    [ValueType.NUMBER]: BUFFER_TYPE_FLOAT64, // JavaScript number maps to float64
+    // JavaScript number maps to float64
+    [ValueType.NUMBER]: BUFFER_TYPE_FLOAT64,
     [ValueType.STRING]: BUFFER_TYPE_STRING,
     [ValueType.BYTES]: BUFFER_TYPE_BUF,
     [ValueType.ARRAY]: BUFFER_TYPE_ARRAY,
@@ -96,22 +98,32 @@ function calculateContentSize(value: Value): number {
   }
 
   if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
-    const data =
+    const [data, error] =
       value.getType() === ValueType.STRING
         ? value.getString()
         : value.getJsonString();
+    if (error) {
+      throw new Error(`Failed to get string value: ${error.errorMessage}`);
+    }
     const encoded = Buffer.from(data, "utf-8");
     return 4 + encoded.length; // length(4) + data
   }
 
   if (valueType === ValueType.BYTES) {
-    const data = value.getBytes();
+    const [data, error] = value.getBytes();
+    if (error) {
+      throw new Error(`Failed to get bytes value: ${error.errorMessage}`);
+    }
     return 4 + data.byteLength; // length(4) + data
   }
 
   if (valueType === ValueType.ARRAY) {
     let size = 4; // array length
-    for (const item of value.getArray()) {
+    const [array, error] = value.getArray();
+    if (error) {
+      throw new Error(`Failed to get array value: ${error.errorMessage}`);
+    }
+    for (const item of array) {
       size += 1; // item type
       size += calculateContentSize(item);
     }
@@ -120,10 +132,11 @@ function calculateContentSize(value: Value): number {
 
   if (valueType === ValueType.OBJECT) {
     let size = 4; // object size
-    for (const [key, val] of Object.entries(value.getObject()) as [
-      string,
-      Value,
-    ][]) {
+    const [object, error] = value.getObject();
+    if (error) {
+      throw new Error(`Failed to get object value: ${error.errorMessage}`);
+    }
+    for (const [key, val] of Object.entries(object)) {
       const keyBytes = Buffer.from(key, "utf-8");
       size += 4 + keyBytes.length; // key length + key data
       size += 1; // value type
@@ -145,23 +158,33 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
   }
 
   if (valueType === ValueType.BOOLEAN) {
-    const val = value.getBoolean() ? 1 : 0;
+    const [boolVal, error] = value.getBoolean();
+    if (error) {
+      throw new Error(`Failed to get boolean value: ${error.errorMessage}`);
+    }
+    const val = boolVal ? 1 : 0;
     buffer.writeUInt8(val, pos);
     return pos + 1;
   }
 
   if (valueType === ValueType.NUMBER) {
     // Always serialize as float64
-    const val = value.getNumber();
+    const [val, error] = value.getNumber();
+    if (error) {
+      throw new Error(`Failed to get number value: ${error.errorMessage}`);
+    }
     buffer.writeDoubleLE(val, pos);
     return pos + 8;
   }
 
   if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
-    const data =
+    const [data, error] =
       valueType === ValueType.STRING
         ? value.getString()
         : value.getJsonString();
+    if (error) {
+      throw new Error(`Failed to get string value: ${error.errorMessage}`);
+    }
     const encoded = Buffer.from(data, "utf-8");
     const dataLen = encoded.length;
 
@@ -177,7 +200,10 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
   }
 
   if (valueType === ValueType.BYTES) {
-    const data = value.getBytes();
+    const [data, error] = value.getBytes();
+    if (error) {
+      throw new Error(`Failed to get bytes value: ${error.errorMessage}`);
+    }
     const dataLen = data.byteLength;
 
     buffer.writeUInt32LE(dataLen, pos);
@@ -193,7 +219,10 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
   }
 
   if (valueType === ValueType.ARRAY) {
-    const arrayData = value.getArray();
+    const [arrayData, error] = value.getArray();
+    if (error) {
+      throw new Error(`Failed to get array value: ${error.errorMessage}`);
+    }
     const arrayLen = arrayData.length;
     buffer.writeUInt32LE(arrayLen, pos);
     pos += 4;
@@ -210,7 +239,10 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
   }
 
   if (valueType === ValueType.OBJECT) {
-    const objData = value.getObject();
+    const [objData, error] = value.getObject();
+    if (error) {
+      throw new Error(`Failed to get object value: ${error.errorMessage}`);
+    }
     const objSize = Object.keys(objData).length;
     buffer.writeUInt32LE(objSize, pos);
     pos += 4;

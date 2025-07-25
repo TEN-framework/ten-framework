@@ -20,6 +20,7 @@ export default await tseslint.config({
   rules: {
     "@typescript-eslint/no-unused-vars": "warn",
     "prettier/prettier": "warn",
+    "max-len": ["error", { code: 80 }],
   },
   plugins: {
     "@typescript-eslint": tseslint.plugin,

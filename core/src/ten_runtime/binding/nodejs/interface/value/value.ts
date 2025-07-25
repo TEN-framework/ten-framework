@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+import { TenError, TenErrorCode } from "../error/error.js";
+
 export enum ValueType {
   INVALID = 0,
   BOOLEAN = 1,
@@ -33,101 +35,126 @@ export class Value {
     this._data = data;
   }
 
-  // Create a boolean Value.
   static fromBoolean(value: boolean): Value {
     return new Value(ValueType.BOOLEAN, value);
   }
 
-  // Create a number Value.
   static fromNumber(value: number): Value {
     return new Value(ValueType.NUMBER, value);
   }
 
-  // Create a string Value.
   static fromString(value: string): Value {
     return new Value(ValueType.STRING, value);
   }
 
-  // Create a bytes Value from ArrayBuffer.
   static fromBytes(value: ArrayBuffer): Value {
     return new Value(ValueType.BYTES, value);
   }
 
-  // Create an array Value.
   static fromArray(value: Value[]): Value {
     return new Value(ValueType.ARRAY, value);
   }
 
-  // Create an object Value.
   static fromObject(value: Record<string, Value>): Value {
     return new Value(ValueType.OBJECT, value);
   }
 
-  // Create a JSON string Value.
   static fromJsonString(value: string): Value {
     return new Value(ValueType.JSON_STRING, value);
   }
 
-  // Get the type of this Value.
   getType(): ValueType {
     return this._type;
   }
 
-  // Get the boolean value. Throws Error if not a boolean.
-  getBoolean(): boolean {
+  getBoolean(): [boolean, TenError | null] {
     if (this._type !== ValueType.BOOLEAN) {
-      throw new Error(`Value is not a boolean, got ${ValueType[this._type]}`);
+      return [
+        false,
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not a boolean, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as boolean;
+    return [this._data as boolean, null];
   }
 
-  // Get the number value. Throws Error if not a number.
-  getNumber(): number {
+  getNumber(): [number, TenError | null] {
     if (this._type !== ValueType.NUMBER) {
-      throw new Error(`Value is not a number, got ${ValueType[this._type]}`);
+      return [
+        0,
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not a number, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as number;
+    return [this._data as number, null];
   }
 
-  // Get the string value. Throws Error if not a string.
-  getString(): string {
+  getString(): [string, TenError | null] {
     if (this._type !== ValueType.STRING) {
-      throw new Error(`Value is not a string, got ${ValueType[this._type]}`);
+      return [
+        "",
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not a string, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as string;
+    return [this._data as string, null];
   }
 
-  // Get the bytes value. Throws Error if not bytes.
-  getBytes(): ArrayBuffer {
+  getBytes(): [ArrayBuffer, TenError | null] {
     if (this._type !== ValueType.BYTES) {
-      throw new Error(`Value is not bytes, got ${ValueType[this._type]}`);
+      return [
+        new ArrayBuffer(0),
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not bytes, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as ArrayBuffer;
+    return [this._data as ArrayBuffer, null];
   }
 
-  // Get the array value. Throws Error if not an array.
-  getArray(): Value[] {
+  getArray(): [Value[], TenError | null] {
     if (this._type !== ValueType.ARRAY) {
-      throw new Error(`Value is not an array, got ${ValueType[this._type]}`);
+      return [
+        [],
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not an array, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as Value[];
+    return [this._data as Value[], null];
   }
 
-  // Get the object value. Throws Error if not an object.
-  getObject(): Record<string, Value> {
+  getObject(): [Record<string, Value>, TenError | null] {
     if (this._type !== ValueType.OBJECT) {
-      throw new Error(`Value is not an object, got ${ValueType[this._type]}`);
+      return [
+        {},
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not an object, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as Record<string, Value>;
+    return [this._data as Record<string, Value>, null];
   }
 
-  // Get the JSON string value. Throws Error if not a JSON string.
-  getJsonString(): string {
+  getJsonString(): [string, TenError | null] {
     if (this._type !== ValueType.JSON_STRING) {
-      throw new Error(
-        `Value is not a JSON string, got ${ValueType[this._type]}`,
-      );
+      return [
+        "",
+        new TenError(
+          TenErrorCode.ErrorCodeInvalidType,
+          `Value is not a JSON string, got ${ValueType[this._type]}`,
+        ),
+      ];
     }
-    return this._data as string;
+    return [this._data as string, null];
   }
 }
