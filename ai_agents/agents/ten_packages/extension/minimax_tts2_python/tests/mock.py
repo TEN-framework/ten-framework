@@ -98,6 +98,103 @@ def create_mock_websocket():
     return mock_ws
 
 
+def create_mock_websocket_with_voice_id_error():
+    """Create a websocket mock that simulates voice_id error (code 2054)"""
+    mock_ws = MagicMock()
+
+    # Mock response object with headers
+    mock_response = MagicMock()
+    mock_response.headers = {
+        "Trace-Id": "test-trace-id",
+        "alb_request_id": "test-alb-id"
+    }
+    mock_ws.response = mock_response
+
+    # Mock send and recv methods - use MagicMock instead of AsyncMock
+    mock_ws.send = MagicMock()
+    mock_ws.recv = MagicMock()
+    mock_ws.close = MagicMock()
+
+    # Setup recv to return voice_id error responses
+    mock_ws.recv.side_effect = [
+        # Initial connection response
+        json.dumps({
+            "event": "connected_success",
+            "session_id": "test-session-id"
+        }),
+        # Task start response
+        json.dumps({
+            "event": "task_started"
+        }),
+        # Task failed response with voice_id error
+        json.dumps({
+            "event": "task_failed",
+            "base_resp": {
+                "status_code": 2054,
+                "status_msg": "voice id not exist"
+            }
+        })
+    ]
+
+    return mock_ws
+
+
+def create_mock_websocket_with_audio_data():
+    """Create a websocket mock that returns simulated audio data"""
+    mock_ws = MagicMock()
+
+    # Mock response object with headers
+    mock_response = MagicMock()
+    mock_response.headers = {
+        "Trace-Id": "test-trace-id",
+        "alb_request_id": "test-alb-id"
+    }
+    mock_ws.response = mock_response
+
+    # Mock send and recv methods
+    mock_ws.send = MagicMock()
+    mock_ws.recv = MagicMock()
+    mock_ws.close = MagicMock()
+
+    # Create fake audio data (simple PCM-like data)
+    fake_audio_hex = "".join([f"{i:02x}" for i in range(256)])  # 256 bytes of fake audio data
+
+    # Setup recv to return audio data responses
+    mock_ws.recv.side_effect = [
+        # Initial connection response
+        json.dumps({
+            "event": "connected_success",
+            "session_id": "test-session-id"
+        }),
+        # Task start response
+        json.dumps({
+            "event": "task_started"
+        }),
+        # First audio chunk
+        json.dumps({
+            "event": "audio_chunk",
+            "data": {
+                "audio": fake_audio_hex[:128]  # First half of audio data
+            },
+            "is_final": False
+        }),
+        # Second audio chunk
+        json.dumps({
+            "event": "audio_chunk",
+            "data": {
+                "audio": fake_audio_hex[128:]  # Second half of audio data
+            },
+            "is_final": False
+        }),
+        # Task finished
+        json.dumps({
+            "event": "task_finished"
+        })
+    ]
+
+    return mock_ws
+
+
 @pytest.fixture(scope="function", autouse=True)
 def patch_all_external_dependencies():
     """Mock all external dependencies automatically for all tests"""
@@ -183,7 +280,7 @@ def empty_config_json():
 def missing_key_config_json():
     """Configuration missing API key that should trigger FATAL ERROR"""
     return json.dumps({
-        "group_id": "1837474834917900459",
+        "group_id": "12345",
         "voice_id": "male-qn-qingse"
     })
 
@@ -202,9 +299,36 @@ def valid_config_json():
     """Valid configuration that should not trigger error"""
     return json.dumps({
         "api_key": "test-api-key-value",
-        "group_id": "1837474834917900459",
+        "group_id": "12345",
         "voice_id": "male-qn-qingse",
         "url": "wss://api.minimax.chat/v1/t2a_v2/stream",
         "sample_rate": 32000,
         "dump_path": "/tmp/ten_logs"
+    })
+
+
+@pytest.fixture
+def invalid_voice_id_config_json():
+    """Configuration with invalid voice_id that should trigger voice id error"""
+    return json.dumps({
+        "api_key": "test-api-key-value",
+        "group_id": "12345",
+        "voice_id": "invalid-voice-id",
+        "url": "wss://api.minimax.chat/v1/t2a_v2/stream",
+        "sample_rate": 32000,
+        "dump_path": "/tmp/ten_logs"
+    })
+
+
+@pytest.fixture
+def dump_enabled_config_json():
+    """Configuration with dump enabled for testing audio dump functionality"""
+    return json.dumps({
+        "api_key": "test-api-key-value",
+        "group_id": "12345",
+        "voice_id": "male-qn-qingse",
+        "url": "wss://api.minimax.chat/v1/t2a_v2/stream",
+        "sample_rate": 32000,
+        "dump": True,
+        "dump_path": "./dump/"
     })

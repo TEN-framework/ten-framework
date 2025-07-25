@@ -13,6 +13,7 @@ from ten_ai_base.helper import PCMWriter, generate_file_name
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
+    ModuleErrorVendorInfo,
     ModuleType,
     ModuleVendorException,
 )
@@ -235,7 +236,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
 
                     # Write to dump file if needed
                     if self.config and self.config.dump and self.recorder:
-                        self.ten_env.log_info(f"writing to dump file")
+                        #self.ten_env.log_info(f"writing to dump file")
                         asyncio.create_task(self.recorder.write(audio_chunk))
 
                     # Send audio data - this corresponds to on_audio_bytes in copy.py
@@ -245,15 +246,34 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"MinimaxTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}"
             )
-            await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
-                    message=e.error_msg,
-                    module_name=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=f"Minimax API error code: {e.error_code}",
-                ),
-            )
+            if e.error_code == 2054:
+                await self.send_tts_error(
+                    self.current_request_id,
+                    ModuleError(
+                        message=e.error_msg,
+                        module_name=ModuleType.TTS,
+                        code=ModuleErrorCode.FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code=str(e.error_code),
+                            message=e.error_msg,
+                        ),
+                    ),
+                )
+            else:
+                await self.send_tts_error(
+                    self.current_request_id,
+                    ModuleError(
+                        message=e.error_msg,
+                        module_name=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code=str(e.error_code),
+                            message=e.error_msg,
+                        ),
+                    ),
+                )
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"

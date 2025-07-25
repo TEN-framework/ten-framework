@@ -122,7 +122,10 @@ class MinimaxTTS2:
 
         if init_response.get("event") != "connected_success":
             error_msg = init_response.get("base_resp", {}).get("status_msg", "unknown error")
-            raise RuntimeError(f"Websocket connection failed: {error_msg}")
+            error_code = init_response.get("base_resp", {}).get("status_code", 0)
+            self.ten_env.log_error(f"Websocket connection failed: {error_msg}")
+            self.ten_env.log_error(f"Websocket connection failed: {error_code}")
+            raise MinimaxTTSTaskFailedException(error_msg, error_code)
 
         self.session_id = init_response.get("session_id", "")
         if self.ten_env:
@@ -142,7 +145,10 @@ class MinimaxTTS2:
 
         if start_task_response.get("event") != "task_started":
             error_msg = start_task_response.get("base_resp", {}).get("status_msg", "unknown error")
-            raise RuntimeError(f"Task start failed: {error_msg}")
+            error_code = start_task_response.get("base_resp", {}).get("status_code", 0)
+            self.ten_env.log_error(f"Task start failed: {error_msg}")
+            self.ten_env.log_error(f"Task start failed: {error_code}")
+            raise MinimaxTTSTaskFailedException(error_msg, error_code)
 
         if self.ten_env:
             self.ten_env.log_debug(f"websocket session ready: {self.session_id}")
@@ -179,7 +185,7 @@ class MinimaxTTS2:
                 tts_response_for_print = tts_response.copy()
                 tts_response_for_print.pop("data", None)
                 if self.ten_env:
-                    self.ten_env.log_debug(f"recv from websocket: {tts_response_for_print}")
+                    self.ten_env.log_info(f"recv from websocket: {tts_response_for_print}")
 
                 tts_response_event = tts_response.get("event")
                 if tts_response_event == "task_failed":
@@ -248,7 +254,7 @@ class MinimaxTTS2:
             except Exception as e:
                 if self.ten_env:
                     self.ten_env.log_error(f"Error processing TTS response: {e}")
-                break
+                raise
 
     async def close(self):
         """Close the websocket connection"""
