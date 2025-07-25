@@ -59,6 +59,20 @@ export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   readme: TenCloudStorePackageSchemaI18nField.optional(),
 });
 
+export const TenPackageQueryFilterSchema = z.object({
+  field: z.string(),
+  operator: z.string(),
+  value: z.string(),
+});
+
+export const TenPackageQueryOptionsSchema = z.object({
+  page: z.number().min(1).optional(),
+  page_size: z.number().min(1).optional(),
+  sort_by: z.string().optional(),
+  sort_order: z.string().optional(),
+  scope: z.string().optional(),
+});
+
 export enum EPackageSource {
   Local = "local", // means the package is for local only
   Default = "default", // means the package is from the cloud store
