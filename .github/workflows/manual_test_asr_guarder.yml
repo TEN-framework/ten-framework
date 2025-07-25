@@ -1,4 +1,4 @@
-name: ASR Guarder Test (Manual)
+name: 🔧 Manual - ASR Guarder Test
 
 on:
   workflow_dispatch:
