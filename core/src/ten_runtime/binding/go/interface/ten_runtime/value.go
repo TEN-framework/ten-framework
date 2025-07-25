@@ -169,14 +169,14 @@ func NewUintValue(i uint) Value {
 	return Value{typ: ValueTypeUint64, data: uint64(i)}
 }
 
-// Type returns the ValueType of the Value.
-func (v *Value) Type() ValueType {
+// GetType returns the ValueType of the Value.
+func (v *Value) GetType() ValueType {
 	return v.typ
 }
 
-// Bool returns the boolean value if the type matches, otherwise returns an
+// GetBool returns the boolean value if the type matches, otherwise returns an
 // error.
-func (v *Value) Bool() (bool, error) {
+func (v *Value) GetBool() (bool, error) {
 	if v.typ != ValueTypeBool {
 		return false, NewTenError(ErrorCodeInvalidType, "value is not a bool")
 	}
@@ -186,9 +186,9 @@ func (v *Value) Bool() (bool, error) {
 	return false, NewTenError(ErrorCodeInvalidType, "value is not a bool")
 }
 
-// Int8 returns the int8 value if the type matches, otherwise returns an
+// GetInt8 returns the int8 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Int8() (int8, error) {
+func (v *Value) GetInt8() (int8, error) {
 	if v.typ != ValueTypeInt8 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int8")
 	}
@@ -198,9 +198,9 @@ func (v *Value) Int8() (int8, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int8")
 }
 
-// Int16 returns the int16 value if the type matches, otherwise returns an
+// GetInt16 returns the int16 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Int16() (int16, error) {
+func (v *Value) GetInt16() (int16, error) {
 	if v.typ != ValueTypeInt16 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int16")
 	}
@@ -210,9 +210,9 @@ func (v *Value) Int16() (int16, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int16")
 }
 
-// Int32 returns the int32 value if the type matches, otherwise returns an
+// GetInt32 returns the int32 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Int32() (int32, error) {
+func (v *Value) GetInt32() (int32, error) {
 	if v.typ != ValueTypeInt32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int32")
 	}
@@ -222,9 +222,9 @@ func (v *Value) Int32() (int32, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int32")
 }
 
-// Int64 returns the int64 value if the type matches, otherwise returns an
+// GetInt64 returns the int64 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Int64() (int64, error) {
+func (v *Value) GetInt64() (int64, error) {
 	if v.typ != ValueTypeInt64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int64")
 	}
@@ -234,9 +234,9 @@ func (v *Value) Int64() (int64, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int64")
 }
 
-// Uint8 returns the uint8 value if the type matches, otherwise returns an
+// GetUint8 returns the uint8 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Uint8() (uint8, error) {
+func (v *Value) GetUint8() (uint8, error) {
 	if v.typ != ValueTypeUint8 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint8")
 	}
@@ -246,9 +246,9 @@ func (v *Value) Uint8() (uint8, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint8")
 }
 
-// Uint16 returns the uint16 value if the type matches, otherwise returns an
+// GetUint16 returns the uint16 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Uint16() (uint16, error) {
+func (v *Value) GetUint16() (uint16, error) {
 	if v.typ != ValueTypeUint16 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint16")
 	}
@@ -258,9 +258,9 @@ func (v *Value) Uint16() (uint16, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint16")
 }
 
-// Uint32 returns the uint32 value if the type matches, otherwise returns an
+// GetUint32 returns the uint32 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Uint32() (uint32, error) {
+func (v *Value) GetUint32() (uint32, error) {
 	if v.typ != ValueTypeUint32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint32")
 	}
@@ -270,9 +270,9 @@ func (v *Value) Uint32() (uint32, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint32")
 }
 
-// Uint64 returns the uint64 value if the type matches, otherwise returns an
+// GetUint64 returns the uint64 value if the type matches, otherwise returns an
 // error.
-func (v *Value) Uint64() (uint64, error) {
+func (v *Value) GetUint64() (uint64, error) {
 	if v.typ != ValueTypeUint64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint64")
 	}
@@ -282,9 +282,9 @@ func (v *Value) Uint64() (uint64, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint64")
 }
 
-// Float32 returns the float32 value if the type matches, otherwise returns
+// GetFloat32 returns the float32 value if the type matches, otherwise returns
 // an error.
-func (v *Value) Float32() (float32, error) {
+func (v *Value) GetFloat32() (float32, error) {
 	if v.typ != ValueTypeFloat32 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float32")
 	}
@@ -294,9 +294,9 @@ func (v *Value) Float32() (float32, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a float32")
 }
 
-// Float64 returns the float64 value if the type matches, otherwise returns
+// GetFloat64 returns the float64 value if the type matches, otherwise returns
 // an error.
-func (v *Value) Float64() (float64, error) {
+func (v *Value) GetFloat64() (float64, error) {
 	if v.typ != ValueTypeFloat64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float64")
 	}
@@ -306,9 +306,9 @@ func (v *Value) Float64() (float64, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not a float64")
 }
 
-// String returns the string value if the type matches, otherwise returns an
+// GetString returns the string value if the type matches, otherwise returns an
 // error.
-func (v *Value) String() (string, error) {
+func (v *Value) GetString() (string, error) {
 	if v.typ != ValueTypeString {
 		return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
 	}
@@ -318,9 +318,9 @@ func (v *Value) String() (string, error) {
 	return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
 }
 
-// Bytes returns the []byte value if the type matches, otherwise returns an
+// GetBytes returns the []byte value if the type matches, otherwise returns an
 // error.
-func (v *Value) Bytes() ([]byte, error) {
+func (v *Value) GetBytes() ([]byte, error) {
 	if v.typ != ValueTypeBytes {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
 	}
@@ -330,9 +330,9 @@ func (v *Value) Bytes() ([]byte, error) {
 	return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
 }
 
-// Array returns the []Value value if the type matches, otherwise returns an
+// GetArray returns the []Value value if the type matches, otherwise returns an
 // error.
-func (v *Value) Array() ([]Value, error) {
+func (v *Value) GetArray() ([]Value, error) {
 	if v.typ != ValueTypeArray {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not an array")
 	}
@@ -342,9 +342,9 @@ func (v *Value) Array() ([]Value, error) {
 	return nil, NewTenError(ErrorCodeInvalidType, "value is not an array")
 }
 
-// Object returns the map[string]Value value if the type matches, otherwise
+// GetObject returns the map[string]Value value if the type matches, otherwise
 // returns an error.
-func (v *Value) Object() (map[string]Value, error) {
+func (v *Value) GetObject() (map[string]Value, error) {
 	if v.typ != ValueTypeObject {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not an object")
 	}
@@ -354,9 +354,9 @@ func (v *Value) Object() (map[string]Value, error) {
 	return nil, NewTenError(ErrorCodeInvalidType, "value is not an object")
 }
 
-// Ptr returns the unsafe.Pointer value if the type matches, otherwise
+// GetPtr returns the unsafe.Pointer value if the type matches, otherwise
 // returns an error.
-func (v *Value) Ptr() (unsafe.Pointer, error) {
+func (v *Value) GetPtr() (unsafe.Pointer, error) {
 	if v.typ != ValueTypePtr {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not a pointer")
 	}
@@ -366,9 +366,9 @@ func (v *Value) Ptr() (unsafe.Pointer, error) {
 	return nil, NewTenError(ErrorCodeInvalidType, "value is not a pointer")
 }
 
-// JSONString returns the JSON string value if the type matches, otherwise
+// GetJSONString returns the JSON string value if the type matches, otherwise
 // returns an error.
-func (v *Value) JSONString() (string, error) {
+func (v *Value) GetJSONString() (string, error) {
 	if v.typ != ValueTypeJSONString {
 		return "", NewTenError(
 			ErrorCodeInvalidType,
@@ -381,8 +381,8 @@ func (v *Value) JSONString() (string, error) {
 	return "", NewTenError(ErrorCodeInvalidType, "value is not a JSON string")
 }
 
-// Int returns the int value if the type matches, otherwise returns an error.
-func (v *Value) Int() (int, error) {
+// GetInt returns the int value if the type matches, otherwise returns an error.
+func (v *Value) GetInt() (int, error) {
 	if v.typ != ValueTypeInt64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int")
 	}
@@ -392,9 +392,9 @@ func (v *Value) Int() (int, error) {
 	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int")
 }
 
-// Uint returns the uint value if the type matches, otherwise returns an
+// GetUint returns the uint value if the type matches, otherwise returns an
 // error.
-func (v *Value) Uint() (uint, error) {
+func (v *Value) GetUint() (uint, error) {
 	if v.typ != ValueTypeUint64 {
 		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint")
 	}
