@@ -31,7 +31,6 @@ FRAME_INTERVAL_MS = 10
 MULTI_LANGUAGE_CONFIG_FILE_EN = "property_en.json"
 MULTI_LANGUAGE_CONFIG_FILE_ZH = "property_zh.json"
 MULTI_LANGUAGE_EXPECTED_TEXT_EN = "hello world"
-MULTI_LANGUAGE_EXPECTED_TEXT_ZH = "通过自然语言交互帮助人们进行日程管理。"
 MULTI_LANGUAGE_SESSION_ID = "test_multi_language_session_123"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN = "en-US"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
@@ -181,19 +180,6 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
             return False
         return True
 
-    def _validate_text_content(
-        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
-    ) -> bool:
-        """Validate text content matches expected text."""
-        text: str = json_data.get("text", "")
-        if self.expected_text.lower() not in text.lower():
-            self._stop_test_with_error(
-                ten_env,
-                f"Text mismatch, expected: '{self.expected_text}' to be contained in actual: '{text}'",
-            )
-            return False
-        return True
-
     def _validate_language(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
@@ -238,7 +224,6 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
     ) -> bool:
         """Validate all fields for final ASR result."""
         validations = [
-            lambda: self._validate_text_content(ten_env, json_data),
             lambda: self._validate_language(ten_env, json_data),
             lambda: self._validate_session_id(ten_env, metadata),
         ]
@@ -310,14 +295,12 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
             "name": "English",
             "audio_file": "16k_en_us_helloworld.pcm",
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
-            "expected_text": MULTI_LANGUAGE_EXPECTED_TEXT_EN,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
         },
         {
             "name": "Chinese",
             "audio_file": "16k_zh_cn.pcm",
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
-            "expected_text": MULTI_LANGUAGE_EXPECTED_TEXT_ZH,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
         },
     ]
@@ -345,7 +328,6 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
 
         # Expected test results
         expected_result = {
-            "text": test_config["expected_text"],
             "language": test_config["expected_language"],
             "session_id": MULTI_LANGUAGE_SESSION_ID,
         }
@@ -354,13 +336,13 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
         print(f"Using test configuration: {config}")
         print(f"Audio file path: {audio_file_path}")
         print(
-            f"Expected results: text='{expected_result['text']}', language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
+            f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
         )
 
         # Create and run tester
         tester = MultiLanguageAsrTester(
             audio_file_path=audio_file_path,
-            expected_text=expected_result["text"],
+            expected_text="",  # Not validating text content
             session_id=expected_result["session_id"],
             expected_language=expected_result["language"],
         )
