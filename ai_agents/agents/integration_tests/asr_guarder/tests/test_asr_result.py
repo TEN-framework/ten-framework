@@ -28,21 +28,21 @@ SILENCE_DURATION_SECONDS = 5
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
-CONNECTION_TIMING_CONFIG_FILE = "property_en.json"
-CONNECTION_TIMING_EXPECTED_TEXT = "hello world"
-CONNECTION_TIMING_SESSION_ID = "test_connection_timing_session_123"
-CONNECTION_TIMING_EXPECTED_LANGUAGE = "en-US"
+DEFAULT_CONFIG_FILE = "property_en.json"
+DEFAULT_EXPECTED_TEXT = "hello world"
+DEFAULT_SESSION_ID = "test_asr_result_session_123"
+DEFAULT_EXPECTED_LANGUAGE = "en-US"
 
 
-class ConnectionTimingAsrTester(AsyncExtensionTester):
-    """Test class for ASR extension connection timing testing."""
+class AsrExtensionTester(AsyncExtensionTester):
+    """Test class for ASR extension integration testing."""
 
     def __init__(
         self,
         audio_file_path: str,
-        expected_text: str = CONNECTION_TIMING_EXPECTED_TEXT,
-        session_id: str = CONNECTION_TIMING_SESSION_ID,
-        expected_language: str = CONNECTION_TIMING_EXPECTED_LANGUAGE,
+        expected_text: str = DEFAULT_EXPECTED_TEXT,
+        session_id: str = DEFAULT_SESSION_ID,
+        expected_language: str = DEFAULT_EXPECTED_LANGUAGE,
     ):
         super().__init__()
         self.audio_file_path: str = audio_file_path
@@ -50,6 +50,15 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
         self.session_id: str = session_id
         self.expected_language: str = expected_language
         self.sender_task: asyncio.Task[None] | None = None
+        # Track state for two audio sends
+        self.first_final_id: str | None = None
+        self.second_final_id: str | None = None
+        self.current_audio_send: int = 0  # 0 for first send, 1 for second send
+        self.waiting_for_final: bool = False
+
+        # Track non-final and final results for validation (only for first audio send)
+        self.non_final_results: list[dict[str, Any]] = []
+        self.final_result: dict[str, Any] | None = None
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data and session ID."""
@@ -114,13 +123,29 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
         )
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
-        """Send audio data and silence packets to ASR extension."""
+        """Send audio data and silence packets to ASR extension twice."""
         try:
-            # Send audio file
+            # First audio send
+            ten_env.log_info("=== Starting first audio send ===")
+            self.current_audio_send = 0
             await self._send_audio_file(ten_env)
-
-            # Send silence packets to trigger final results
             await self._send_silence_packets(ten_env)
+
+            # Wait for first final result
+            self.waiting_for_final = True
+            ten_env.log_info("Waiting for first final ASR result...")
+            await asyncio.sleep(2)  # Give some time for processing
+
+            # Second audio send
+            ten_env.log_info("=== Starting second audio send ===")
+            self.current_audio_send = 1
+            await self._send_audio_file(ten_env)
+            await self._send_silence_packets(ten_env)
+
+            # Wait for second final result
+            self.waiting_for_final = True
+            ten_env.log_info("Waiting for second final ASR result...")
+            await asyncio.sleep(2)  # Give some time for processing
 
         except Exception as e:
             ten_env.log_error(f"Error in audio sender: {e}")
@@ -128,8 +153,8 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        """Start the ASR integration test."""
-        ten_env.log_info("Starting ASR integration test")
+        """Start the ASR integration test with two audio sends."""
+        ten_env.log_info("Starting ASR integration test with two audio sends")
         await self.audio_sender(ten_env)
 
     def _stop_test_with_error(
@@ -242,6 +267,99 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
 
         return all(validation() for validation in validations)
 
+    def _validate_non_final_and_final_results(
+        self, ten_env: AsyncTenEnvTester
+    ) -> bool:
+        """Validate non-final and final results for the first audio send."""
+        # Check if we have both non-final and final results
+        if not self.non_final_results:
+            self._stop_test_with_error(
+                ten_env, "No non-final results received for first audio send"
+            )
+            return False
+
+        if not self.final_result:
+            self._stop_test_with_error(
+                ten_env, "No final result received for first audio send"
+            )
+            return False
+
+        ten_env.log_info(
+            f"✅ Received {len(self.non_final_results)} non-final results and 1 final result"
+        )
+
+        # Validate data format consistency
+        if not self._validate_data_format_consistency(ten_env):
+            return False
+
+        # Validate ID consistency
+        if not self._validate_id_consistency(ten_env):
+            return False
+
+        return True
+
+    def _validate_data_format_consistency(
+        self, ten_env: AsyncTenEnvTester
+    ) -> bool:
+        """Validate that intermediate and final results have the same data format."""
+        required_fields = [
+            "id",
+            "text",
+            "final",
+            "start_ms",
+            "duration_ms",
+            "language",
+        ]
+
+        # Check final result format
+        if self.final_result is None:
+            self._stop_test_with_error(ten_env, "Final result is None")
+            return False
+
+        for field in required_fields:
+            if field not in self.final_result:
+                self._stop_test_with_error(
+                    ten_env, f"Final result missing required field: {field}"
+                )
+                return False
+
+        # Check non-final results format
+        for i, non_final in enumerate(self.non_final_results):
+            for field in required_fields:
+                if field not in non_final:
+                    self._stop_test_with_error(
+                        ten_env,
+                        f"Non-final result {i} missing required field: {field}",
+                    )
+                    return False
+
+        ten_env.log_info(
+            "✅ Data format consistency validated - all results have required fields"
+        )
+        return True
+
+    def _validate_id_consistency(self, ten_env: AsyncTenEnvTester) -> bool:
+        """Validate that all intermediate and final results have the same ID."""
+        if self.final_result is None:
+            self._stop_test_with_error(ten_env, "Final result is None")
+            return False
+
+        final_id = self.final_result.get("id", "")
+
+        for i, non_final in enumerate(self.non_final_results):
+            non_final_id = non_final.get("id", "")
+            if non_final_id != final_id:
+                self._stop_test_with_error(
+                    ten_env,
+                    f"ID inconsistency: Non-final result {i} has id '{non_final_id}' but final result has id '{final_id}'",
+                )
+                return False
+
+        ten_env.log_info(
+            f"✅ ID consistency validated - all results have the same id: '{final_id}'"
+        )
+        return True
+
     @override
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
         """Handle received data from ASR extension."""
@@ -261,23 +379,89 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
 
         # Check if this is a final result
         is_final: bool = json_data.get("final", False)
-        ten_env.log_info(f"Received ASR result - final: {is_final}")
-
-        if not is_final:
-            ten_env.log_info("Received intermediate ASR result, continuing...")
-            return
-
-        # For final results, log complete structure and validate
-        ten_env.log_info("Received final ASR result, validating...")
-        self._log_asr_result_structure(
-            ten_env, json_str, json_data.get("metadata")
+        result_id: str = json_data.get("id", "")
+        ten_env.log_info(
+            f"Received ASR result - final: {is_final}, id: {result_id}"
         )
 
-        # Validate final result - metadata is part of json_data according to API spec
-        metadata_dict: dict[str, Any] | None = json_data.get("metadata")
-        if self._validate_final_result(ten_env, json_data, metadata_dict):
-            ten_env.log_info("✅ ASR integration test passed with final result")
-            ten_env.stop_test()
+        # Store results based on audio send and final status
+        if self.current_audio_send == 0:
+            if not is_final:
+                # Store non-final result for first audio send
+                self.non_final_results.append(json_data)
+                ten_env.log_info(
+                    f"Stored non-final result {len(self.non_final_results)} for first audio send"
+                )
+            else:
+                # Store final result for first audio send
+                self.final_result = json_data
+                ten_env.log_info("Stored final result for first audio send")
+
+                # Log complete structure for final result
+                ten_env.log_info(
+                    "Received final ASR result for first audio send, validating..."
+                )
+                self._log_asr_result_structure(
+                    ten_env, json_str, json_data.get("metadata")
+                )
+
+                # Validate final result - metadata is part of json_data according to API spec
+                metadata_dict: dict[str, Any] | None = json_data.get("metadata")
+                if not self._validate_final_result(
+                    ten_env, json_data, metadata_dict
+                ):
+                    return
+
+                # Validate non-final and final results for first audio send
+                if not self._validate_non_final_and_final_results(ten_env):
+                    return
+
+                # Store the ID for comparison with second audio send
+                if self.first_final_id is None:
+                    self.first_final_id = result_id
+                    ten_env.log_info(
+                        f"✅ First final ASR result received with id: {result_id}"
+                    )
+                    self.waiting_for_final = False
+                else:
+                    ten_env.log_info(
+                        f"Received additional final result for first send with id: {result_id}"
+                    )
+        elif self.current_audio_send == 1:
+            if not is_final:
+                # For second audio send, we only care about final results
+                ten_env.log_info(
+                    "Received intermediate result for second audio send, continuing..."
+                )
+                return
+            else:
+                # Store the ID for second audio send
+                if self.second_final_id is None:
+                    self.second_final_id = result_id
+                    ten_env.log_info(
+                        f"✅ Second final ASR result received with id: {result_id}"
+                    )
+                    self.waiting_for_final = False
+
+                    # Now validate that the two IDs are different
+                    if self.first_final_id == self.second_final_id:
+                        self._stop_test_with_error(
+                            ten_env,
+                            f"ID validation failed: Both final results have the same id '{self.first_final_id}'",
+                        )
+                        return
+                    else:
+                        ten_env.log_info(
+                            f"✅ ID validation passed: First id '{self.first_final_id}' != Second id '{self.second_final_id}'"
+                        )
+                        ten_env.log_info(
+                            "✅ ASR integration test passed with two different final results"
+                        )
+                        ten_env.stop_test()
+                else:
+                    ten_env.log_info(
+                        f"Received additional final result for second send with id: {result_id}"
+                    )
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -296,8 +480,8 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
                 ten_env.log_info("Audio sender task cleanup completed")
 
 
-def test_connection_timing(extension_name: str, config_dir: str) -> None:
-    """Verify extension establishes connection after startup."""
+def test_asr_result(extension_name: str, config_dir: str) -> None:
+    """Verify ASR extension processes two audio sends and returns different IDs for final results."""
 
     # Audio file path
     audio_file_path = os.path.join(
@@ -305,7 +489,7 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
     )
 
     # Get config file path
-    config_file_path = os.path.join(config_dir, CONNECTION_TIMING_CONFIG_FILE)
+    config_file_path = os.path.join(config_dir, DEFAULT_CONFIG_FILE)
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Config file not found: {config_file_path}")
 
@@ -315,9 +499,9 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "text": CONNECTION_TIMING_EXPECTED_TEXT,
-        "language": CONNECTION_TIMING_EXPECTED_LANGUAGE,
-        "session_id": CONNECTION_TIMING_SESSION_ID,
+        "text": DEFAULT_EXPECTED_TEXT,
+        "language": DEFAULT_EXPECTED_LANGUAGE,
+        "session_id": DEFAULT_SESSION_ID,
     }
 
     # Log test configuration
@@ -328,7 +512,7 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
     )
 
     # Create and run tester
-    tester = ConnectionTimingAsrTester(
+    tester = AsrExtensionTester(
         audio_file_path=audio_file_path,
         expected_text=expected_result["text"],
         session_id=expected_result["session_id"],

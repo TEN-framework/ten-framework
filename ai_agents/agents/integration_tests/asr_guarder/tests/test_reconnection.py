@@ -23,11 +23,13 @@ AUDIO_SAMPLE_RATE = 16000
 FRAME_INTERVAL_MS = 100
 
 # Test configuration constants
-DEFAULT_SESSION_ID = "test_session_123"
+DEFAULT_SESSION_ID = "test_reconnection_session_123"
 
 # Reconnection test constants
-TEST_DURATION_SECONDS = 15  # Total test duration
-TEST_TIMEOUT_SECONDS = 30
+TEST_DURATION_SECONDS = (
+    12  # Total test duration (slightly longer than max reconnection time ~9.3s)
+)
+TEST_TIMEOUT_SECONDS = 20  # Reduced timeout
 
 DEFAULT_CONFIG_FILE = "property_invalid.json"
 
@@ -275,15 +277,6 @@ class AsrReconnectionTester(AsyncExtensionTester):
             ten_env.log_info(f"  Code: {json_data.get('code', 'N/A')}")
             ten_env.log_info(f"  Message: {json_data.get('message', 'N/A')}")
             ten_env.log_info(f"  Module: {json_data.get('module', 'N/A')}")
-            ten_env.log_info(
-                f"  Timestamp: {json_data.get('timestamp', 'N/A')}"
-            )
-            ten_env.log_info(
-                f"  Session ID: {json_data.get('session_id', 'N/A')}"
-            )
-            ten_env.log_info(
-                f"  Connection ID: {json_data.get('connection_id', 'N/A')}"
-            )
             ten_env.log_info("=== END ERROR DETAILS ===")
         else:
             ten_env.log_info(f"Received data type: {name}")

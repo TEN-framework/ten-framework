@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+
 from typing import Any
 from typing_extensions import override
 from ten_runtime import (
@@ -20,7 +27,7 @@ AUDIO_BYTES_PER_SAMPLE = 2
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
-DEFAULT_SESSION_ID = "test_session_123"
+DEFAULT_SESSION_ID = "test_vendor_error_session_123"
 DEFAULT_CONFIG_FILE = "property_invalid.json"
 
 # Error validation constants
