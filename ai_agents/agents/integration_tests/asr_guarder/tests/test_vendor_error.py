@@ -20,7 +20,7 @@ AUDIO_BYTES_PER_SAMPLE = 2
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
-DEFAULT_SESSION_ID = "test_session_123"
+DEFAULT_SESSION_ID = "test_vendor_error_session_123"
 DEFAULT_CONFIG_FILE = "property_invalid.json"
 
 # Error validation constants

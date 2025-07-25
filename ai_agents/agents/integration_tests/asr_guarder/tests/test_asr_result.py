@@ -23,7 +23,7 @@ FRAME_INTERVAL_MS = 10
 # Constants for test configuration
 DEFAULT_CONFIG_FILE = "property_en.json"
 DEFAULT_EXPECTED_TEXT = "hello world"
-DEFAULT_SESSION_ID = "test_session_123"
+DEFAULT_SESSION_ID = "test_asr_result_session_123"
 DEFAULT_EXPECTED_LANGUAGE = "en-US"
 
 

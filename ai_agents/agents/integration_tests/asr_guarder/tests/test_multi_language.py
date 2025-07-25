@@ -21,21 +21,24 @@ SILENCE_DURATION_SECONDS = 5
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
-CONNECTION_TIMING_CONFIG_FILE = "property_en.json"
-CONNECTION_TIMING_EXPECTED_TEXT = "hello world"
-CONNECTION_TIMING_SESSION_ID = "test_connection_timing_session_123"
-CONNECTION_TIMING_EXPECTED_LANGUAGE = "en-US"
+MULTI_LANGUAGE_CONFIG_FILE_EN = "property_en.json"
+MULTI_LANGUAGE_CONFIG_FILE_ZH = "property_zh.json"
+MULTI_LANGUAGE_EXPECTED_TEXT_EN = "hello world"
+MULTI_LANGUAGE_EXPECTED_TEXT_ZH = "通过自然语言交互帮助人们进行日程管理。"
+MULTI_LANGUAGE_SESSION_ID = "test_multi_language_session_123"
+MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN = "en-US"
+MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
 
 
-class ConnectionTimingAsrTester(AsyncExtensionTester):
-    """Test class for ASR extension connection timing testing."""
+class MultiLanguageAsrTester(AsyncExtensionTester):
+    """Test class for multi-language ASR extension integration testing."""
 
     def __init__(
         self,
         audio_file_path: str,
-        expected_text: str = CONNECTION_TIMING_EXPECTED_TEXT,
-        session_id: str = CONNECTION_TIMING_SESSION_ID,
-        expected_language: str = CONNECTION_TIMING_EXPECTED_LANGUAGE,
+        expected_text: str = MULTI_LANGUAGE_EXPECTED_TEXT_EN,
+        session_id: str = MULTI_LANGUAGE_SESSION_ID,
+        expected_language: str = MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
     ):
         super().__init__()
         self.audio_file_path: str = audio_file_path
@@ -121,8 +124,8 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        """Start the ASR integration test."""
-        ten_env.log_info("Starting ASR integration test")
+        """Start the multi-language ASR integration test."""
+        ten_env.log_info("Starting multi-language ASR integration test")
         await self.audio_sender(ten_env)
 
     def _stop_test_with_error(
@@ -269,7 +272,9 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
         # Validate final result - metadata is part of json_data according to API spec
         metadata_dict: dict[str, Any] | None = json_data.get("metadata")
         if self._validate_final_result(ten_env, json_data, metadata_dict):
-            ten_env.log_info("✅ ASR integration test passed with final result")
+            ten_env.log_info(
+                "✅ Multi-language ASR integration test passed with final result"
+            )
             ten_env.stop_test()
 
     @override
@@ -289,49 +294,80 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
                 ten_env.log_info("Audio sender task cleanup completed")
 
 
-def test_connection_timing(extension_name: str, config_dir: str) -> None:
-    """Verify extension establishes connection after startup."""
+def test_multi_language(extension_name: str, config_dir: str) -> None:
+    """Verify multi-language ASR extension functionality."""
 
-    # Audio file path
-    audio_file_path = os.path.join(
-        os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
-    )
+    # Test configurations for different languages
+    test_configs = [
+        {
+            "name": "English",
+            "audio_file": "16k_en_us_helloworld.pcm",
+            "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
+            "expected_text": MULTI_LANGUAGE_EXPECTED_TEXT_EN,
+            "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
+        },
+        {
+            "name": "Chinese",
+            "audio_file": "16k_zh_cn.pcm",
+            "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
+            "expected_text": MULTI_LANGUAGE_EXPECTED_TEXT_ZH,
+            "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
+        },
+    ]
 
-    # Get config file path
-    config_file_path = os.path.join(config_dir, CONNECTION_TIMING_CONFIG_FILE)
-    if not os.path.exists(config_file_path):
-        raise FileNotFoundError(f"Config file not found: {config_file_path}")
+    for test_config in test_configs:
+        print(f"\n{'='*60}")
+        print(f"Testing {test_config['name']} language")
+        print(f"{'='*60}")
 
-    # Load config file
-    with open(config_file_path, "r") as f:
-        config: dict[str, Any] = json.load(f)
+        # Audio file path
+        audio_file_path = os.path.join(
+            os.path.dirname(__file__), f"test_data/{test_config['audio_file']}"
+        )
 
-    # Expected test results
-    expected_result = {
-        "text": CONNECTION_TIMING_EXPECTED_TEXT,
-        "language": CONNECTION_TIMING_EXPECTED_LANGUAGE,
-        "session_id": CONNECTION_TIMING_SESSION_ID,
-    }
+        # Get config file path
+        config_file_path = os.path.join(config_dir, test_config["config_file"])
+        if not os.path.exists(config_file_path):
+            raise FileNotFoundError(
+                f"Config file not found: {config_file_path}"
+            )
 
-    # Log test configuration
-    print(f"Using test configuration: {config}")
-    print(f"Audio file path: {audio_file_path}")
-    print(
-        f"Expected results: text='{expected_result['text']}', language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
-    )
+        # Load config file
+        with open(config_file_path, "r") as f:
+            config: dict[str, Any] = json.load(f)
 
-    # Create and run tester
-    tester = ConnectionTimingAsrTester(
-        audio_file_path=audio_file_path,
-        expected_text=expected_result["text"],
-        session_id=expected_result["session_id"],
-        expected_language=expected_result["language"],
-    )
+        # Expected test results
+        expected_result = {
+            "text": test_config["expected_text"],
+            "language": test_config["expected_language"],
+            "session_id": MULTI_LANGUAGE_SESSION_ID,
+        }
 
-    tester.set_test_mode_single(extension_name, json.dumps(config))
-    error = tester.run()
+        # Log test configuration
+        print(f"Using test configuration: {config}")
+        print(f"Audio file path: {audio_file_path}")
+        print(
+            f"Expected results: text='{expected_result['text']}', language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
+        )
 
-    # Verify test results
-    assert (
-        error is None
-    ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
+        # Create and run tester
+        tester = MultiLanguageAsrTester(
+            audio_file_path=audio_file_path,
+            expected_text=expected_result["text"],
+            session_id=expected_result["session_id"],
+            expected_language=expected_result["language"],
+        )
+
+        tester.set_test_mode_single(extension_name, json.dumps(config))
+        error = tester.run()
+
+        # Verify test results
+        assert (
+            error is None
+        ), f"{test_config['name']} test failed: {error.error_message() if error else 'Unknown error'}"
+
+        print(f"✅ {test_config['name']} test passed")
+
+    print(f"\n{'='*60}")
+    print("✅ All multi-language tests passed")
+    print(f"{'='*60}")
