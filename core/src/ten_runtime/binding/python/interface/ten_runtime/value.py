@@ -51,32 +51,26 @@ class Value:
 
     @classmethod
     def from_float(cls: type[T], value: float) -> T:
-        """Create a float Value from a float."""
         return cls(ValueType.FLOAT, value)
 
     @classmethod
     def from_string(cls: type[T], value: str) -> T:
-        """Create a string Value from a string."""
         return cls(ValueType.STRING, value)
 
     @classmethod
     def from_bytes(cls: type[T], value: bytes) -> T:
-        """Create a bytes Value from bytes."""
         return cls(ValueType.BYTES, value)
 
     @classmethod
     def from_array(cls: type[T], value: list["Value"]) -> T:
-        """Create an array Value from a list."""
         return cls(ValueType.ARRAY, value)
 
     @classmethod
     def from_object(cls: type[T], value: dict[str, "Value"]) -> T:
-        """Create an object Value from a dict."""
         return cls(ValueType.OBJECT, value)
 
     @classmethod
     def from_json_string(cls: type[T], value: str) -> T:
-        """Create a JSON string Value from a string."""
         return cls(ValueType.JSON_STRING, value)
 
     def get_type(self) -> ValueType:
