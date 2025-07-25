@@ -37,9 +37,9 @@ class Value:
     _type: ValueType
     _data: ValueDataType
 
-    def __init__(self, type: ValueType, data: ValueDataType):
-        self._type = type
-        self._data = data
+    def __init__(self, value_type: ValueType, value_data: ValueDataType):
+        self._type = value_type
+        self._data = value_data
 
     @classmethod
     def create_bool(cls: type[T], value: bool) -> T:
