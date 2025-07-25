@@ -98,29 +98,37 @@ def _calculate_content_size(value: Value) -> int:
     match value_type:
         case ValueType.INVALID:
             assert False, "Invalid value type"
+
         case ValueType.BOOL:
             return 1
+
         case ValueType.INT:
             return 8  # Always serialize as int64
+
         case ValueType.FLOAT:
             return 8  # Always serialize as float64
+
         case ValueType.STRING:
             data = value.get_string()[0]
             encoded = data.encode("utf-8")
             return 4 + len(encoded)  # length(4) + data
+
         case ValueType.JSON_STRING:
             data = value.get_json_string()[0]
             encoded = data.encode("utf-8")
             return 4 + len(encoded)  # length(4) + data
+
         case ValueType.BYTES:
             data = value.get_bytes()[0]
             return 4 + len(data)  # length(4) + data
+
         case ValueType.ARRAY:
             size = 4  # array length
             for item in value.get_array()[0]:
                 size += 1  # item type
                 size += _calculate_content_size(item)
             return size
+
         case ValueType.OBJECT:
             size = 4  # object size
             for key, val in value.get_object()[0].items():
@@ -129,6 +137,7 @@ def _calculate_content_size(value: Value) -> int:
                 size += 1  # value type
                 size += _calculate_content_size(val)
             return size
+
         case _:  # pyright: ignore[reportUnnecessaryComparison]
             assert (  # pyright: ignore[reportUnreachable]
                 False
@@ -294,111 +303,123 @@ def _deserialize_content(
 ) -> tuple[Value, int]:
     """Deserialize value content from buffer. Returns (value, new_position)."""
 
-    if value_type == ValueType.INVALID:
-        assert False, "Invalid value type"
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
 
-    elif value_type == ValueType.BOOL:
-        if pos >= len(buffer):
-            assert False, "Buffer too small for bool value"
-        val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
-        return Value.from_bool(val != 0), pos + 1
-
-    elif value_type == ValueType.INT:
-        if pos + 8 > len(buffer):
-            assert False, "Buffer too small for int value"
-        val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
-        return Value.from_int(val), pos + 8
-
-    elif value_type == ValueType.FLOAT:
-        if pos + 8 > len(buffer):
-            assert False, "Buffer too small for float value"
-        val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
-        return Value.from_float(val), pos + 8
-
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for string length"
-        str_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        if str_len == 0:
-            data = ""
-        else:
-            if pos + str_len > len(buffer):
-                assert False, "Buffer too small for string data"
-            data = buffer[pos : pos + str_len].decode("utf-8")
-            pos += str_len
-
-        if value_type == ValueType.STRING:
-            return Value.from_string(data), pos
-        else:
-            return Value.from_json_string(data), pos
-
-    elif value_type == ValueType.BYTES:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for bytes length"
-        buf_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        if buf_len == 0:
-            data = b""
-        else:
-            if pos + buf_len > len(buffer):
-                assert False, "Buffer too small for bytes data"
-            data = bytes(buffer[pos : pos + buf_len])
-            pos += buf_len
-
-        return Value.from_bytes(data), pos
-
-    elif value_type == ValueType.ARRAY:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for array length"
-        array_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        array_data: list[Value] = []
-        for _ in range(array_len):
+        case ValueType.BOOL:
             if pos >= len(buffer):
-                assert False, "Buffer too small for array item type"
-            item_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
-            pos += 1
+                assert False, "Buffer too small for bool value"
+            val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
+            return Value.from_bool(val != 0), pos + 1
 
-            item_type = _buffer_type_to_value_type(item_type_id)
-            item, pos = _deserialize_content(buffer, pos, item_type)
-            array_data.append(item)
+        case ValueType.INT:
+            if pos + 8 > len(buffer):
+                assert False, "Buffer too small for int value"
+            val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
+            return Value.from_int(val), pos + 8
 
-        return Value.from_array(array_data), pos
+        case ValueType.FLOAT:
+            if pos + 8 > len(buffer):
+                assert False, "Buffer too small for float value"
+            val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
+            return Value.from_float(val), pos + 8
 
-    elif value_type == ValueType.OBJECT:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for object size"
-        obj_size = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        obj_data: dict[str, Value] = {}
-        for _ in range(obj_size):
-            # Read key
+        case ValueType.STRING | ValueType.JSON_STRING:
             if pos + 4 > len(buffer):
-                assert False, "Buffer too small for object key length"
-            key_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+                assert False, "Buffer too small for string length"
+            str_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
             pos += 4
 
-            if pos + key_len > len(buffer):
-                assert False, "Buffer too small for object key data"
-            key = buffer[pos : pos + key_len].decode("utf-8")
-            pos += key_len
+            if str_len == 0:
+                data = ""
+            else:
+                if pos + str_len > len(buffer):
+                    assert False, "Buffer too small for string data"
+                data_bytes = buffer[pos : pos + str_len]
+                data = data_bytes.decode("utf-8")
+                pos += str_len
 
-            # Read value
-            if pos >= len(buffer):
-                assert False, "Buffer too small for object value type"
-            val_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
-            pos += 1
+            if value_type == ValueType.STRING:
+                return Value.from_string(data), pos
+            else:
+                return Value.from_json_string(data), pos
 
-            val_type = _buffer_type_to_value_type(val_type_id)
-            val, pos = _deserialize_content(buffer, pos, val_type)
-            obj_data[key] = val
+        case ValueType.BYTES:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for bytes length"
+            buf_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
 
-        return Value.from_object(obj_data), pos
+            if buf_len == 0:
+                data = b""
+            else:
+                if pos + buf_len > len(buffer):
+                    assert False, "Buffer too small for bytes data"
+                data = bytes(buffer[pos : pos + buf_len])
+                pos += buf_len
+
+            return Value.from_bytes(data), pos
+
+        case ValueType.ARRAY:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for array length"
+            array_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
+
+            array_data: list[Value] = []
+            for _ in range(array_len):
+                if pos >= len(buffer):
+                    assert False, "Buffer too small for array item type"
+                item_type_id = cast(
+                    int, struct.unpack_from("<B", buffer, pos)[0]
+                )
+                pos += 1
+
+                item_type = _buffer_type_to_value_type(item_type_id)
+                item, pos = _deserialize_content(buffer, pos, item_type)
+                array_data.append(item)
+
+            return Value.from_array(array_data), pos
+
+        case ValueType.OBJECT:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for object size"
+            obj_size = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
+
+            obj_data: dict[str, Value] = {}
+            for _ in range(obj_size):
+                # Read key
+                if pos + 4 > len(buffer):
+                    assert False, "Buffer too small for object key length"
+                key_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+                pos += 4
+
+                if pos + key_len > len(buffer):
+                    assert False, "Buffer too small for object key data"
+                key_bytes = buffer[pos : pos + key_len]
+                key = key_bytes.decode("utf-8")
+                pos += key_len
+
+                # Read value
+                if pos >= len(buffer):
+                    assert False, "Buffer too small for object value type"
+                val_type_id = cast(
+                    int, struct.unpack_from("<B", buffer, pos)[0]
+                )
+                pos += 1
+
+                val_type = _buffer_type_to_value_type(val_type_id)
+                val, pos = _deserialize_content(buffer, pos, val_type)
+                obj_data[key] = val
+
+            return Value.from_object(obj_data), pos
+
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), f"Unknown value type: {value_type}"
 
 
 def deserialize_from_buffer(buffer: bytes) -> Value:
