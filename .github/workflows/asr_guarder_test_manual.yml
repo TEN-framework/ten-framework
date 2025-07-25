@@ -1,0 +1,137 @@
+name: ASR Guarder Test (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: 'Extension name (required)'
+        required: true
+        type: string
+        default: 'azure_asr_python'
+      config_dir:
+        description: 'Config directory (optional)'
+        required: false
+        type: string
+        default: 'tests/configs'
+      branch:
+        description: 'Branch to test (optional, defaults to current branch)'
+        required: false
+        type: string
+        default: ''
+      env_vars:
+        description: 'Environment variables (one per line, format: KEY=VALUE)'
+        required: false
+        type: string
+        default: |
+          # Example:
+          # AZURE_ASR_API_KEY=your_key
+          # AZURE_ASR_REGION=your_region
+
+permissions:
+  contents: read
+
+jobs:
+  asr-guarder-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory $(pwd)
+
+      - name: Setup environment
+        run: |
+          echo "EXTENSION=${{ github.event.inputs.extension }}" >> $GITHUB_ENV
+          echo "CONFIG_DIR=${{ github.event.inputs.config_dir }}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Parse and set custom environment variables
+        run: |
+          echo "Setting up custom environment variables..."
+
+          # Write user input environment variables to a temporary file
+          cat << 'EOF' > /tmp/user_env_vars.txt
+          ${{ github.event.inputs.env_vars }}
+          EOF
+
+          # Parse and set environment variables
+          echo "Custom environment variables:"
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Skip empty lines and comment lines
+            if [[ -z "$line" ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
+              continue
+            fi
+
+            # Check if it is in KEY=VALUE format
+            if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*=.* ]]; then
+              key=$(echo "$line" | cut -d'=' -f1 | xargs)
+              value=$(echo "$line" | cut -d'=' -f2- | xargs)
+
+              # Set environment variable
+              echo "${key}=${value}" >> $GITHUB_ENV
+
+              # Display in log (hide sensitive values)
+              if [[ "$key" =~ (KEY|TOKEN|SECRET|PASSWORD|PASS) ]]; then
+                echo "  ✅ ${key}=*** (hidden for security)"
+              else
+                echo "  ✅ ${key}=${value}"
+              fi
+            else
+              echo "  ⚠️  Skipping invalid format: $line"
+            fi
+          done < /tmp/user_env_vars.txt
+
+          # Clean up temporary file
+          rm -f /tmp/user_env_vars.txt
+
+      - name: Display test parameters
+        run: |
+          echo "==================== Test Parameters ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "Config Directory: ${{ github.event.inputs.config_dir }}"
+          echo ""
+          echo "Custom Environment Variables:"
+          if [[ -n "${{ github.event.inputs.env_vars }}" ]]; then
+            echo "✅ Custom environment variables have been set (see above for details)"
+          else
+            echo "ℹ️  No custom environment variables provided"
+          fi
+          echo "========================================================"
+
+      - name: Run ASR Guarder Test
+        run: |
+          cd ai_agents
+          echo "Starting ASR Guarder Test..."
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "Config Directory: ${{ github.event.inputs.config_dir }}"
+          echo ""
+
+          # Display current environment variables (only non-sensitive or for debugging)
+          echo "Environment check:"
+          env | grep -E "^(EXTENSION|CONFIG_DIR|BRANCH)=" | sort || echo "  Basic variables set"
+          echo ""
+
+          # Run the test with specified parameters
+          echo "Executing test command..."
+          task asr-guarder-test EXTENSION="${{ github.event.inputs.extension }}" CONFIG_DIR="${{ github.event.inputs.config_dir }}" -- -v
+
+      - name: Show test completion
+        if: always()
+        run: |
+          echo "==================== Test Completed ===================="
+          echo "Branch tested: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension tested: ${{ github.event.inputs.extension }}"
+          echo "Config directory used: ${{ github.event.inputs.config_dir }}"
+          echo "Check the logs above for detailed test results."
+          echo "========================================================"
