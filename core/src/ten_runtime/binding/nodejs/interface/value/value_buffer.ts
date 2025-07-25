@@ -85,67 +85,69 @@ function bufferTypeToValueType(bufferType: number): ValueType {
 function calculateContentSize(value: Value): number {
   const valueType = value.getType();
 
-  if (valueType === ValueType.INVALID) {
-    return 0;
-  }
+  switch (valueType) {
+    case ValueType.INVALID:
+      assert(false, "Invalid value type");
+      return 0;
 
-  if (valueType === ValueType.BOOLEAN) {
-    return 1;
-  }
+    case ValueType.BOOLEAN:
+      return 1;
 
-  if (valueType === ValueType.NUMBER) {
-    return 8; // Always serialize as float64
-  }
+    case ValueType.NUMBER:
+      return 8; // Always serialize as float64
 
-  if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
-    const [data, error] =
-      value.getType() === ValueType.STRING
-        ? value.getString()
-        : value.getJsonString();
-    if (error) {
-      throw new Error(`Failed to get string value: ${error.errorMessage}`);
+    case ValueType.STRING:
+    case ValueType.JSON_STRING: {
+      const [data, error] =
+        valueType === ValueType.STRING
+          ? value.getString()
+          : value.getJsonString();
+      if (error) {
+        assert(false, `Failed to get string value: ${error.errorMessage}`);
+      }
+      const encoded = Buffer.from(data, "utf-8");
+      return 4 + encoded.length; // length(4) + data
     }
-    const encoded = Buffer.from(data, "utf-8");
-    return 4 + encoded.length; // length(4) + data
-  }
 
-  if (valueType === ValueType.BYTES) {
-    const [data, error] = value.getBytes();
-    if (error) {
-      throw new Error(`Failed to get bytes value: ${error.errorMessage}`);
+    case ValueType.BYTES: {
+      const [data, error] = value.getBytes();
+      if (error) {
+        assert(false, `Failed to get bytes value: ${error.errorMessage}`);
+      }
+      return 4 + data.byteLength; // length(4) + data
     }
-    return 4 + data.byteLength; // length(4) + data
-  }
 
-  if (valueType === ValueType.ARRAY) {
-    let size = 4; // array length
-    const [array, error] = value.getArray();
-    if (error) {
-      throw new Error(`Failed to get array value: ${error.errorMessage}`);
+    case ValueType.ARRAY: {
+      let size = 4; // array length
+      const [array, error] = value.getArray();
+      if (error) {
+        assert(false, `Failed to get array value: ${error.errorMessage}`);
+      }
+      for (const item of array) {
+        size += 1; // item type
+        size += calculateContentSize(item);
+      }
+      return size;
     }
-    for (const item of array) {
-      size += 1; // item type
-      size += calculateContentSize(item);
-    }
-    return size;
-  }
 
-  if (valueType === ValueType.OBJECT) {
-    let size = 4; // object size
-    const [object, error] = value.getObject();
-    if (error) {
-      throw new Error(`Failed to get object value: ${error.errorMessage}`);
+    case ValueType.OBJECT: {
+      let size = 4; // object size
+      const [object, error] = value.getObject();
+      if (error) {
+        assert(false, `Failed to get object value: ${error.errorMessage}`);
+      }
+      for (const [key, val] of Object.entries(object)) {
+        const keyBytes = Buffer.from(key, "utf-8");
+        size += 4 + keyBytes.length; // key length + key data
+        size += 1; // value type
+        size += calculateContentSize(val);
+      }
+      return size;
     }
-    for (const [key, val] of Object.entries(object)) {
-      const keyBytes = Buffer.from(key, "utf-8");
-      size += 4 + keyBytes.length; // key length + key data
-      size += 1; // value type
-      size += calculateContentSize(val);
-    }
-    return size;
-  }
 
-  return 0;
+    default:
+      return 0;
+  }
 }
 
 // Serialize the value content to buffer. Returns new position.
