@@ -95,42 +95,40 @@ def _calculate_content_size(value: Value) -> int:
     """Calculate the size needed for the value content."""
     value_type = value.get_type()
 
-    if value_type == ValueType.INVALID:
-        assert False, "Invalid value type"
-    elif value_type == ValueType.BOOL:
-        return 1
-    elif value_type == ValueType.INT:
-        return 8  # Always serialize as int64
-    elif value_type == ValueType.FLOAT:
-        return 8  # Always serialize as float64
-
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        data = value.get_string()[0]
-        encoded = data.encode("utf-8")
-        return 4 + len(encoded)  # length(4) + data
-
-    elif value_type == ValueType.BYTES:
-        data = value.get_bytes()[0]
-        return 4 + len(data)  # length(4) + data
-
-    elif value_type == ValueType.ARRAY:
-        size = 4  # array length
-        for item in value.get_array()[0]:
-            size += 1  # item type
-            size += _calculate_content_size(item)
-        return size
-
-    elif value_type == ValueType.OBJECT:
-        size = 4  # object size
-        for key, val in value.get_object()[0].items():
-            key_bytes = key.encode("utf-8")
-            size += 4 + len(key_bytes)  # key length + key data
-            size += 1  # value type
-            size += _calculate_content_size(val)
-        return size
-
-    else:
-        return 0
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
+        case ValueType.BOOL:
+            return 1
+        case ValueType.INT:
+            return 8  # Always serialize as int64
+        case ValueType.FLOAT:
+            return 8  # Always serialize as float64
+        case ValueType.STRING:
+            data = value.get_string()[0]
+            encoded = data.encode("utf-8")
+            return 4 + len(encoded)  # length(4) + data
+        case ValueType.JSON_STRING:
+            data = value.get_json_string()[0]
+            encoded = data.encode("utf-8")
+            return 4 + len(encoded)  # length(4) + data
+        case ValueType.BYTES:
+            data = value.get_bytes()[0]
+            return 4 + len(data)  # length(4) + data
+        case ValueType.ARRAY:
+            size = 4  # array length
+            for item in value.get_array()[0]:
+                size += 1  # item type
+                size += _calculate_content_size(item)
+            return size
+        case ValueType.OBJECT:
+            size = 4  # object size
+            for key, val in value.get_object()[0].items():
+                key_bytes = key.encode("utf-8")
+                size += 4 + len(key_bytes)  # key length + key data
+                size += 1  # value type
+                size += _calculate_content_size(val)
+            return size
 
 
 def _serialize_content(value: Value, buffer: bytearray, pos: int) -> int:

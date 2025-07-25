@@ -106,10 +106,7 @@ class Value:
         return (cast(float, self._data), None)
 
     def get_string(self) -> tuple[str, TenError | None]:
-        if (
-            self._type != ValueType.STRING
-            and self._type != ValueType.JSON_STRING
-        ):
+        if self._type != ValueType.STRING:
             error = TenError.create(
                 TenErrorCode.ErrorCodeInvalidType,
                 f"Value is not a string, got {self._type.name}",
