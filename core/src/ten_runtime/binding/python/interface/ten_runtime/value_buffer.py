@@ -319,19 +319,19 @@ def _deserialize_content(
         if pos >= len(buffer):
             assert False, "Buffer too small for bool value"
         val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
-        return Value.create_bool(val != 0), pos + 1
+        return Value.from_bool(val != 0), pos + 1
 
     elif value_type == ValueType.INT:
         if pos + 8 > len(buffer):
             assert False, "Buffer too small for int value"
         val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
-        return Value.create_int(val), pos + 8
+        return Value.from_int(val), pos + 8
 
     elif value_type == ValueType.FLOAT:
         if pos + 8 > len(buffer):
             assert False, "Buffer too small for float value"
         val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
-        return Value.create_float(val), pos + 8
+        return Value.from_float(val), pos + 8
 
     elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
         if pos + 4 > len(buffer):
@@ -348,9 +348,9 @@ def _deserialize_content(
             pos += str_len
 
         if value_type == ValueType.STRING:
-            return Value.create_string(data), pos
+            return Value.from_string(data), pos
         else:
-            return Value.create_json_string(data), pos
+            return Value.from_json_string(data), pos
 
     elif value_type == ValueType.BYTES:
         if pos + 4 > len(buffer):
@@ -366,7 +366,7 @@ def _deserialize_content(
             data = bytes(buffer[pos : pos + buf_len])
             pos += buf_len
 
-        return Value.create_bytes(data), pos
+        return Value.from_bytes(data), pos
 
     elif value_type == ValueType.ARRAY:
         if pos + 4 > len(buffer):
@@ -385,7 +385,7 @@ def _deserialize_content(
             item, pos = _deserialize_content(buffer, pos, item_type)
             array_data.append(item)
 
-        return Value.create_array(array_data), pos
+        return Value.from_array(array_data), pos
 
     elif value_type == ValueType.OBJECT:
         if pos + 4 > len(buffer):
@@ -416,7 +416,7 @@ def _deserialize_content(
             val, pos = _deserialize_content(buffer, pos, val_type)
             obj_data[key] = val
 
-        return Value.create_object(obj_data), pos
+        return Value.from_object(obj_data), pos
 
 
 def deserialize_from_buffer(buffer: bytes) -> tuple[Value, int]:

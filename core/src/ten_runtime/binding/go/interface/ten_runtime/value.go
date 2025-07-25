@@ -66,137 +66,340 @@ const (
 
 	// ValueTypeJSONString - JSON string
 	ValueTypeJSONString
-
-	// ValueTypeInt - Go int, converted to int64 at runtime
-	ValueTypeInt
-
-	// ValueTypeUint - Go uint, converted to uint64 at runtime
-	ValueTypeUint
 )
 
 // Value represents a value that can hold different types of data.
 type Value struct {
-	Type ValueType
-
-	boolVal bool
-
-	int8Val  int8
-	int16Val int16
-	int32Val int32
-	int64Val int64
-
-	uint8Val  uint8
-	uint16Val uint16
-	uint32Val uint32
-	uint64Val uint64
-
-	float32Val float32
-	float64Val float64
-
-	stringVal string
-	bytesVal  []byte
-	arrayVal  []Value
-	objectVal map[string]Value
-
-	ptrVal unsafe.Pointer
+	typ  ValueType
+	data any
 }
 
-// NewBool creates a new boolean Value.
-func NewBool(b bool) Value {
-	return Value{Type: ValueTypeBool, boolVal: b}
+// NewBoolValue creates a new boolean Value.
+func NewBoolValue(b bool) Value {
+	return Value{typ: ValueTypeBool, data: b}
 }
 
-// NewInt8 creates a new int8 Value.
-func NewInt8(i int8) Value {
-	return Value{Type: ValueTypeInt8, int8Val: i}
+// NewInt8Value creates a new int8 Value.
+func NewInt8Value(i int8) Value {
+	return Value{typ: ValueTypeInt8, data: i}
 }
 
-// NewInt16 creates a new int16 Value.
-func NewInt16(i int16) Value {
-	return Value{Type: ValueTypeInt16, int16Val: i}
+// NewInt16Value creates a new int16 Value.
+func NewInt16Value(i int16) Value {
+	return Value{typ: ValueTypeInt16, data: i}
 }
 
-// NewInt32 creates a new int32 Value.
-func NewInt32(i int32) Value {
-	return Value{Type: ValueTypeInt32, int32Val: i}
+// NewInt32Value creates a new int32 Value.
+func NewInt32Value(i int32) Value {
+	return Value{typ: ValueTypeInt32, data: i}
 }
 
-// NewInt64 creates a new int64 Value.
-func NewInt64(i int64) Value {
-	return Value{Type: ValueTypeInt64, int64Val: i}
+// NewInt64Value creates a new int64 Value.
+func NewInt64Value(i int64) Value {
+	return Value{typ: ValueTypeInt64, data: i}
 }
 
-// NewUint8 creates a new uint8 Value.
-func NewUint8(i uint8) Value {
-	return Value{Type: ValueTypeUint8, uint8Val: i}
+// NewUint8Value creates a new uint8 Value.
+func NewUint8Value(i uint8) Value {
+	return Value{typ: ValueTypeUint8, data: i}
 }
 
-// NewUint16 creates a new uint16 Value.
-func NewUint16(i uint16) Value {
-	return Value{Type: ValueTypeUint16, uint16Val: i}
+// NewUint16Value creates a new uint16 Value.
+func NewUint16Value(i uint16) Value {
+	return Value{typ: ValueTypeUint16, data: i}
 }
 
-// NewUint32 creates a new uint32 Value.
-func NewUint32(i uint32) Value {
-	return Value{Type: ValueTypeUint32, uint32Val: i}
+// NewUint32Value creates a new uint32 Value.
+func NewUint32Value(i uint32) Value {
+	return Value{typ: ValueTypeUint32, data: i}
 }
 
-// NewUint64 creates a new uint64 Value.
-func NewUint64(i uint64) Value {
-	return Value{Type: ValueTypeUint64, uint64Val: i}
+// NewUint64Value creates a new uint64 Value.
+func NewUint64Value(i uint64) Value {
+	return Value{typ: ValueTypeUint64, data: i}
 }
 
-// NewFloat32 creates a new float32 Value.
-func NewFloat32(f float32) Value {
-	return Value{Type: ValueTypeFloat32, float32Val: f}
+// NewFloat32Value creates a new float32 Value.
+func NewFloat32Value(f float32) Value {
+	return Value{typ: ValueTypeFloat32, data: f}
 }
 
-// NewFloat64 creates a new float64 Value.
-func NewFloat64(f float64) Value {
-	return Value{Type: ValueTypeFloat64, float64Val: f}
+// NewFloat64Value creates a new float64 Value.
+func NewFloat64Value(f float64) Value {
+	return Value{typ: ValueTypeFloat64, data: f}
 }
 
-// NewString creates a new string Value.
-func NewString(s string) Value {
-	return Value{Type: ValueTypeString, stringVal: s}
+// NewStringValue creates a new string Value.
+func NewStringValue(s string) Value {
+	return Value{typ: ValueTypeString, data: s}
 }
 
-// NewBytes creates a new []byte Value.
-func NewBytes(b []byte) Value {
-	return Value{Type: ValueTypeBytes, bytesVal: b}
+// NewBytesValue creates a new []byte Value.
+func NewBytesValue(b []byte) Value {
+	return Value{typ: ValueTypeBytes, data: b}
 }
 
-// NewArray creates a new array Value.
-func NewArray(arr []Value) Value {
-	return Value{Type: ValueTypeArray, arrayVal: arr}
+// NewArrayValue creates a new array Value.
+func NewArrayValue(arr []Value) Value {
+	return Value{typ: ValueTypeArray, data: arr}
 }
 
-// NewObject creates a new object Value.
-func NewObject(m map[string]Value) Value {
-	return Value{Type: ValueTypeObject, objectVal: m}
+// NewObjectValue creates a new object Value.
+func NewObjectValue(m map[string]Value) Value {
+	return Value{typ: ValueTypeObject, data: m}
 }
 
-// NewPtr creates a new pointer Value.
-func NewPtr(p unsafe.Pointer) Value {
-	return Value{Type: ValueTypePtr, ptrVal: p}
+// NewPtrValue creates a new pointer Value.
+func NewPtrValue(p unsafe.Pointer) Value {
+	return Value{typ: ValueTypePtr, data: p}
 }
 
-// NewJSONString creates a new JSON string Value.
-func NewJSONString(s string) Value {
-	return Value{Type: ValueTypeJSONString, stringVal: s}
+// NewJSONStringValue creates a new JSON string Value.
+func NewJSONStringValue(s string) Value {
+	return Value{typ: ValueTypeJSONString, data: s}
 }
 
-// NewInt creates a new int Value.
-func NewInt(i int) Value {
-	return Value{Type: ValueTypeInt, int64Val: int64(i)}
+// NewIntValue creates a new int Value.
+func NewIntValue(i int) Value {
+	return Value{typ: ValueTypeInt64, data: int64(i)}
 }
 
-// NewUint creates a new uint Value.
-func NewUint(i uint) Value {
-	return Value{Type: ValueTypeUint, uint64Val: uint64(i)}
+// NewUintValue creates a new uint Value.
+func NewUintValue(i uint) Value {
+	return Value{typ: ValueTypeUint64, data: uint64(i)}
 }
 
-// GetType returns the ValueType of the Value.
-func (v *Value) GetType() ValueType {
-	return v.Type
+// Type returns the ValueType of the Value.
+func (v *Value) Type() ValueType {
+	return v.typ
+}
+
+// Bool returns the boolean value if the type matches, otherwise returns an
+// error.
+func (v *Value) Bool() (bool, error) {
+	if v.typ != ValueTypeBool {
+		return false, NewTenError(ErrorCodeInvalidType, "value is not a bool")
+	}
+	if val, ok := v.data.(bool); ok {
+		return val, nil
+	}
+	return false, NewTenError(ErrorCodeInvalidType, "value is not a bool")
+}
+
+// Int8 returns the int8 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Int8() (int8, error) {
+	if v.typ != ValueTypeInt8 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int8")
+	}
+	if val, ok := v.data.(int8); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int8")
+}
+
+// Int16 returns the int16 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Int16() (int16, error) {
+	if v.typ != ValueTypeInt16 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int16")
+	}
+	if val, ok := v.data.(int16); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int16")
+}
+
+// Int32 returns the int32 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Int32() (int32, error) {
+	if v.typ != ValueTypeInt32 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int32")
+	}
+	if val, ok := v.data.(int32); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int32")
+}
+
+// Int64 returns the int64 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Int64() (int64, error) {
+	if v.typ != ValueTypeInt64 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int64")
+	}
+	if val, ok := v.data.(int64); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int64")
+}
+
+// Uint8 returns the uint8 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Uint8() (uint8, error) {
+	if v.typ != ValueTypeUint8 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint8")
+	}
+	if val, ok := v.data.(uint8); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint8")
+}
+
+// Uint16 returns the uint16 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Uint16() (uint16, error) {
+	if v.typ != ValueTypeUint16 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint16")
+	}
+	if val, ok := v.data.(uint16); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint16")
+}
+
+// Uint32 returns the uint32 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Uint32() (uint32, error) {
+	if v.typ != ValueTypeUint32 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint32")
+	}
+	if val, ok := v.data.(uint32); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint32")
+}
+
+// Uint64 returns the uint64 value if the type matches, otherwise returns an
+// error.
+func (v *Value) Uint64() (uint64, error) {
+	if v.typ != ValueTypeUint64 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint64")
+	}
+	if val, ok := v.data.(uint64); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint64")
+}
+
+// Float32 returns the float32 value if the type matches, otherwise returns
+// an error.
+func (v *Value) Float32() (float32, error) {
+	if v.typ != ValueTypeFloat32 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float32")
+	}
+	if val, ok := v.data.(float32); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a float32")
+}
+
+// Float64 returns the float64 value if the type matches, otherwise returns
+// an error.
+func (v *Value) Float64() (float64, error) {
+	if v.typ != ValueTypeFloat64 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a float64")
+	}
+	if val, ok := v.data.(float64); ok {
+		return val, nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a float64")
+}
+
+// String returns the string value if the type matches, otherwise returns an
+// error.
+func (v *Value) String() (string, error) {
+	if v.typ != ValueTypeString && v.typ != ValueTypeJSONString {
+		return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
+	}
+	if val, ok := v.data.(string); ok {
+		return val, nil
+	}
+	return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
+}
+
+// Bytes returns the []byte value if the type matches, otherwise returns an
+// error.
+func (v *Value) Bytes() ([]byte, error) {
+	if v.typ != ValueTypeBytes {
+		return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
+	}
+	if val, ok := v.data.([]byte); ok {
+		return val, nil
+	}
+	return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
+}
+
+// Array returns the []Value value if the type matches, otherwise returns an
+// error.
+func (v *Value) Array() ([]Value, error) {
+	if v.typ != ValueTypeArray {
+		return nil, NewTenError(ErrorCodeInvalidType, "value is not an array")
+	}
+	if val, ok := v.data.([]Value); ok {
+		return val, nil
+	}
+	return nil, NewTenError(ErrorCodeInvalidType, "value is not an array")
+}
+
+// Object returns the map[string]Value value if the type matches, otherwise
+// returns an error.
+func (v *Value) Object() (map[string]Value, error) {
+	if v.typ != ValueTypeObject {
+		return nil, NewTenError(ErrorCodeInvalidType, "value is not an object")
+	}
+	if val, ok := v.data.(map[string]Value); ok {
+		return val, nil
+	}
+	return nil, NewTenError(ErrorCodeInvalidType, "value is not an object")
+}
+
+// Ptr returns the unsafe.Pointer value if the type matches, otherwise
+// returns an error.
+func (v *Value) Ptr() (unsafe.Pointer, error) {
+	if v.typ != ValueTypePtr {
+		return nil, NewTenError(ErrorCodeInvalidType, "value is not a pointer")
+	}
+	if val, ok := v.data.(unsafe.Pointer); ok {
+		return val, nil
+	}
+	return nil, NewTenError(ErrorCodeInvalidType, "value is not a pointer")
+}
+
+// JSONString returns the JSON string value if the type matches, otherwise
+// returns an error.
+func (v *Value) JSONString() (string, error) {
+	if v.typ != ValueTypeJSONString {
+		return "", NewTenError(
+			ErrorCodeInvalidType,
+			"value is not a JSON string",
+		)
+	}
+	if val, ok := v.data.(string); ok {
+		return val, nil
+	}
+	return "", NewTenError(ErrorCodeInvalidType, "value is not a JSON string")
+}
+
+// Int returns the int value if the type matches, otherwise returns an error.
+func (v *Value) Int() (int, error) {
+	if v.typ != ValueTypeInt64 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not an int")
+	}
+	if val, ok := v.data.(int64); ok {
+		return int(val), nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not an int")
+}
+
+// Uint returns the uint value if the type matches, otherwise returns an
+// error.
+func (v *Value) Uint() (uint, error) {
+	if v.typ != ValueTypeUint64 {
+		return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint")
+	}
+	if val, ok := v.data.(uint64); ok {
+		return uint(val), nil
+	}
+	return 0, NewTenError(ErrorCodeInvalidType, "value is not a uint")
 }
