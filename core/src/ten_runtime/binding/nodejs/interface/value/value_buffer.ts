@@ -154,126 +154,129 @@ function calculateContentSize(value: Value): number {
 function serializeContent(value: Value, buffer: Buffer, pos: number): number {
   const valueType = value.getType();
 
-  if (valueType === ValueType.INVALID) {
-    // No additional data
-    return pos;
-  }
+  switch (valueType) {
+    case ValueType.INVALID:
+      assert(false, "Invalid value type");
+      return pos;
 
-  if (valueType === ValueType.BOOLEAN) {
-    const [boolVal, error] = value.getBoolean();
-    if (error) {
-      throw new Error(`Failed to get boolean value: ${error.errorMessage}`);
-    }
-    const val = boolVal ? 1 : 0;
-    buffer.writeUInt8(val, pos);
-    return pos + 1;
-  }
-
-  if (valueType === ValueType.NUMBER) {
-    // Always serialize as float64
-    const [val, error] = value.getNumber();
-    if (error) {
-      throw new Error(`Failed to get number value: ${error.errorMessage}`);
-    }
-    buffer.writeDoubleLE(val, pos);
-    return pos + 8;
-  }
-
-  if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
-    const [data, error] =
-      valueType === ValueType.STRING
-        ? value.getString()
-        : value.getJsonString();
-    if (error) {
-      throw new Error(`Failed to get string value: ${error.errorMessage}`);
-    }
-    const encoded = Buffer.from(data, "utf-8");
-    const dataLen = encoded.length;
-
-    buffer.writeUInt32LE(dataLen, pos);
-    pos += 4;
-
-    if (dataLen > 0) {
-      encoded.copy(buffer, pos);
-      pos += dataLen;
+    case ValueType.BOOLEAN: {
+      const [boolVal, error] = value.getBoolean();
+      if (error) {
+        assert(false, `Failed to get boolean value: ${error.errorMessage}`);
+      }
+      const val = boolVal ? 1 : 0;
+      buffer.writeUInt8(val, pos);
+      return pos + 1;
     }
 
-    return pos;
-  }
-
-  if (valueType === ValueType.BYTES) {
-    const [data, error] = value.getBytes();
-    if (error) {
-      throw new Error(`Failed to get bytes value: ${error.errorMessage}`);
-    }
-    const dataLen = data.byteLength;
-
-    buffer.writeUInt32LE(dataLen, pos);
-    pos += 4;
-
-    if (dataLen > 0) {
-      const uint8Array = new Uint8Array(data);
-      buffer.set(uint8Array, pos);
-      pos += dataLen;
+    case ValueType.NUMBER: {
+      // Always serialize as float64
+      const [val, error] = value.getNumber();
+      if (error) {
+        assert(false, `Failed to get number value: ${error.errorMessage}`);
+      }
+      buffer.writeDoubleLE(val, pos);
+      return pos + 8;
     }
 
-    return pos;
-  }
+    case ValueType.STRING:
+    case ValueType.JSON_STRING: {
+      const [data, error] =
+        valueType === ValueType.STRING
+          ? value.getString()
+          : value.getJsonString();
+      if (error) {
+        assert(false, `Failed to get string value: ${error.errorMessage}`);
+      }
+      const encoded = Buffer.from(data, "utf-8");
+      const dataLen = encoded.length;
 
-  if (valueType === ValueType.ARRAY) {
-    const [arrayData, error] = value.getArray();
-    if (error) {
-      throw new Error(`Failed to get array value: ${error.errorMessage}`);
-    }
-    const arrayLen = arrayData.length;
-    buffer.writeUInt32LE(arrayLen, pos);
-    pos += 4;
-
-    for (const item of arrayData) {
-      const itemType = valueTypeToBufferType(item.getType());
-      buffer.writeUInt8(itemType, pos);
-      pos += 1;
-
-      pos = serializeContent(item, buffer, pos);
-    }
-
-    return pos;
-  }
-
-  if (valueType === ValueType.OBJECT) {
-    const [objData, error] = value.getObject();
-    if (error) {
-      throw new Error(`Failed to get object value: ${error.errorMessage}`);
-    }
-    const objSize = Object.keys(objData).length;
-    buffer.writeUInt32LE(objSize, pos);
-    pos += 4;
-
-    for (const [key, val] of Object.entries(objData)) {
-      // Write key
-      const keyBytes = Buffer.from(key, "utf-8");
-      const keyLen = keyBytes.length;
-
-      buffer.writeUInt32LE(keyLen, pos);
+      buffer.writeUInt32LE(dataLen, pos);
       pos += 4;
-      keyBytes.copy(buffer, pos);
-      pos += keyLen;
 
-      // Write value type and content
-      const valType = valueTypeToBufferType(val.getType());
-      buffer.writeUInt8(valType, pos);
-      pos += 1;
+      if (dataLen > 0) {
+        encoded.copy(buffer, pos);
+        pos += dataLen;
+      }
 
-      pos = serializeContent(val, buffer, pos);
+      return pos;
     }
 
-    return pos;
-  }
+    case ValueType.BYTES: {
+      const [data, error] = value.getBytes();
+      if (error) {
+        assert(false, `Failed to get bytes value: ${error.errorMessage}`);
+      }
+      const dataLen = data.byteLength;
 
-  assert(
-    false,
-    `Unsupported value type for serialization: ${ValueType[valueType]}`,
-  );
+      buffer.writeUInt32LE(dataLen, pos);
+      pos += 4;
+
+      if (dataLen > 0) {
+        const uint8Array = new Uint8Array(data);
+        buffer.set(uint8Array, pos);
+        pos += dataLen;
+      }
+
+      return pos;
+    }
+
+    case ValueType.ARRAY: {
+      const [arrayData, error] = value.getArray();
+      if (error) {
+        assert(false, `Failed to get array value: ${error.errorMessage}`);
+      }
+      const arrayLen = arrayData.length;
+      buffer.writeUInt32LE(arrayLen, pos);
+      pos += 4;
+
+      for (const item of arrayData) {
+        const itemType = valueTypeToBufferType(item.getType());
+        buffer.writeUInt8(itemType, pos);
+        pos += 1;
+
+        pos = serializeContent(item, buffer, pos);
+      }
+
+      return pos;
+    }
+
+    case ValueType.OBJECT: {
+      const [objData, error] = value.getObject();
+      if (error) {
+        assert(false, `Failed to get object value: ${error.errorMessage}`);
+      }
+      const objSize = Object.keys(objData).length;
+      buffer.writeUInt32LE(objSize, pos);
+      pos += 4;
+
+      for (const [key, val] of Object.entries(objData)) {
+        // Write key
+        const keyBytes = Buffer.from(key, "utf-8");
+        const keyLen = keyBytes.length;
+
+        buffer.writeUInt32LE(keyLen, pos);
+        pos += 4;
+        keyBytes.copy(buffer, pos);
+        pos += keyLen;
+
+        // Write value type and content
+        const valType = valueTypeToBufferType(val.getType());
+        buffer.writeUInt8(valType, pos);
+        pos += 1;
+
+        pos = serializeContent(val, buffer, pos);
+      }
+
+      return pos;
+    }
+
+    default:
+      assert(
+        false,
+        `Unsupported value type for serialization: ${ValueType[valueType]}`,
+      );
+  }
 }
 
 // Serialize a Value to a buffer using only Node.js operations.
