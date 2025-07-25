@@ -85,6 +85,7 @@ class AsrExtensionTester(AsyncExtensionTester):
                 audio_frame = self._create_audio_frame(chunk, self.session_id)
                 await ten_env.send_audio_frame(audio_frame)
                 await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
+                # test comment
 
     async def _send_silence_packets(self, ten_env: AsyncTenEnvTester) -> None:
         """Send silence packets to trigger final ASR results."""
