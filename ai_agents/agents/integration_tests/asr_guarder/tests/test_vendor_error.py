@@ -142,7 +142,7 @@ class VendorErrorTester(AsyncExtensionTester):
             return False, error_details
 
         # 4. Validate vendor_info structure if present
-        vendor_info = json_data.get("vendor_info")
+        vendor_info: dict[str, str] | None = json_data.get("vendor_info")
         if vendor_info is not None:
             if not isinstance(vendor_info, dict):
                 error_details = "Field 'vendor_info' must be object type"
@@ -180,7 +180,7 @@ class VendorErrorTester(AsyncExtensionTester):
             ten_env.log_info(f"✅ Vendor info validated: {vendor_info}")
 
         # 5. Validate metadata structure if present
-        metadata = json_data.get("metadata")
+        metadata: dict[str, str] | None = json_data.get("metadata")
         if metadata is not None:
             if not isinstance(metadata, dict):
                 error_details = "Field 'metadata' must be object type"
@@ -200,10 +200,10 @@ class VendorErrorTester(AsyncExtensionTester):
         return True, ""
 
     def _validate_error_code_types(
-        self, ten_env: AsyncTenEnvTester, json_data
+        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
         """Validate that error code must be exactly 1000."""
-        error_code = json_data.get("code")
+        error_code: int | None = json_data.get("code")
         if error_code is None:
             ten_env.log_error("Error code is missing")
             return False
@@ -228,11 +228,11 @@ class VendorErrorTester(AsyncExtensionTester):
         return True
 
     def _validate_session_id_consistency(
-        self, ten_env: AsyncTenEnvTester, json_data
+        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
         """Validate that session_id is correctly passed through the error."""
         metadata = json_data.get("metadata", {})
-        session_id = metadata.get("session_id")
+        session_id: str | None = metadata.get("session_id")
 
         if session_id is None:
             ten_env.log_info("No session_id found in error metadata")
