@@ -42,41 +42,41 @@ class Value:
         self._data = value_data
 
     @classmethod
-    def create_bool(cls: type[T], value: bool) -> T:
+    def from_bool(cls: type[T], value: bool) -> T:
         return cls(ValueType.BOOL, value)
 
     @classmethod
-    def create_int(cls: type[T], value: int) -> T:
+    def from_int(cls: type[T], value: int) -> T:
         return cls(ValueType.INT, value)
 
     @classmethod
-    def create_float(cls: type[T], value: float) -> T:
-        """Create a float Value."""
+    def from_float(cls: type[T], value: float) -> T:
+        """Create a float Value from a float."""
         return cls(ValueType.FLOAT, value)
 
     @classmethod
-    def create_string(cls: type[T], value: str) -> T:
-        """Create a string Value."""
+    def from_string(cls: type[T], value: str) -> T:
+        """Create a string Value from a string."""
         return cls(ValueType.STRING, value)
 
     @classmethod
-    def create_bytes(cls: type[T], value: bytes) -> T:
-        """Create a bytes Value."""
+    def from_bytes(cls: type[T], value: bytes) -> T:
+        """Create a bytes Value from bytes."""
         return cls(ValueType.BYTES, value)
 
     @classmethod
-    def create_array(cls: type[T], value: list["Value"]) -> T:
-        """Create an array Value."""
+    def from_array(cls: type[T], value: list["Value"]) -> T:
+        """Create an array Value from a list."""
         return cls(ValueType.ARRAY, value)
 
     @classmethod
-    def create_object(cls: type[T], value: dict[str, "Value"]) -> T:
-        """Create an object Value."""
+    def from_object(cls: type[T], value: dict[str, "Value"]) -> T:
+        """Create an object Value from a dict."""
         return cls(ValueType.OBJECT, value)
 
     @classmethod
-    def create_json_string(cls: type[T], value: str) -> T:
-        """Create a JSON string Value."""
+    def from_json_string(cls: type[T], value: str) -> T:
+        """Create a JSON string Value from a string."""
         return cls(ValueType.JSON_STRING, value)
 
     def get_type(self) -> ValueType:
