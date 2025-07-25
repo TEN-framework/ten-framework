@@ -401,6 +401,8 @@ ten_go_error_t ten_go_extension_tester_run(
 
   ten_go_error_set_from_error(&cgo_error, &error);
 
+  ten_error_deinit(&error);
+
   return cgo_error;
 }
 

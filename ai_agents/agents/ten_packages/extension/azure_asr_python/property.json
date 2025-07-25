@@ -1,7 +1,6 @@
 {
-    "key": "${env:AZURE_STT_KEY}",
-    "region": "${env:AZURE_STT_REGION}",
-    "language": "en-US",
-    "model": "nova-2",
-    "sample_rate": 16000
+    "params": {
+        "key": "${env:AZURE_ASR_API_KEY}",
+        "region": "${env:AZURE_ASR_REGION}"
+    }
 }

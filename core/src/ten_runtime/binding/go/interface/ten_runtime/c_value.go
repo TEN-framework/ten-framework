@@ -10,33 +10,10 @@ package ten_runtime
 // #include "c_value.h"
 import "C"
 
-import (
-	"runtime"
-)
-
-type value struct {
-	baseTenObject[*C.ten_go_value_t]
+type cValue struct {
+	baseTenObject[*C.ten_go_c_value_t]
 }
 
-func tenValueDestroy(cValue C.uintptr_t) {
-	C.ten_go_value_destroy(cValue)
-}
-
-//export tenGoCreateValue
-func tenGoCreateValue(cInstance *C.ten_go_value_t) C.uintptr_t {
-	valueInstance := &value{}
-	valueInstance.cPtr = cInstance
-	runtime.SetFinalizer(valueInstance, func(p *value) {
-		C.ten_go_value_finalize(p.cPtr)
-	})
-
-	id := newhandle(valueInstance)
-	valueInstance.goObjID = id
-
-	return C.uintptr_t(id)
-}
-
-//export tenGoUnrefObj
-func tenGoUnrefObj(id C.uintptr_t) {
-	handle(id).free()
+func tenCValueDestroy(cValue C.uintptr_t) {
+	C.ten_go_c_value_destroy(cValue)
 }
