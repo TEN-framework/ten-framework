@@ -353,152 +353,156 @@ function deserializeContent(
   pos: number,
   valueType: ValueType,
 ): [Value, number] {
-  if (valueType === ValueType.INVALID) {
-    assert(false, "Invalid value type");
-  }
+  switch (valueType) {
+    case ValueType.INVALID:
+      assert(false, "Invalid value type");
+      break;
 
-  if (valueType === ValueType.BOOLEAN) {
-    if (pos >= buffer.length) {
-      assert(false, "Buffer too small for bool value");
-    }
-    const val = buffer.readUInt8(pos);
-    return [Value.fromBoolean(val !== 0), pos + 1];
-  }
-
-  if (valueType === ValueType.NUMBER) {
-    if (pos + 8 > buffer.length) {
-      assert(false, "Buffer too small for number value");
-    }
-    const val = buffer.readDoubleLE(pos);
-    return [Value.fromNumber(val), pos + 8];
-  }
-
-  if (valueType === ValueType.STRING || valueType === ValueType.JSON_STRING) {
-    if (pos + 4 > buffer.length) {
-      assert(false, "Buffer too small for string length");
-    }
-    const strLen = buffer.readUInt32LE(pos);
-    pos += 4;
-
-    let data: string;
-    if (strLen === 0) {
-      data = "";
-    } else {
-      if (pos + strLen > buffer.length) {
-        assert(false, "Buffer too small for string data");
-      }
-      data = buffer.subarray(pos, pos + strLen).toString("utf-8");
-      pos += strLen;
-    }
-
-    if (valueType === ValueType.STRING) {
-      return [Value.fromString(data), pos];
-    } else {
-      return [Value.fromJsonString(data), pos];
-    }
-  }
-
-  if (valueType === ValueType.BYTES) {
-    if (pos + 4 > buffer.length) {
-      assert(false, "Buffer too small for bytes length");
-    }
-    const bufLen = buffer.readUInt32LE(pos);
-    pos += 4;
-
-    let data: ArrayBuffer;
-    if (bufLen === 0) {
-      data = new ArrayBuffer(0);
-    } else {
-      if (pos + bufLen > buffer.length) {
-        assert(false, "Buffer too small for bytes data");
-      }
-      const uint8Array = new Uint8Array(buffer.subarray(pos, pos + bufLen));
-      data = uint8Array.buffer.slice(
-        uint8Array.byteOffset,
-        uint8Array.byteOffset + uint8Array.byteLength,
-      );
-      pos += bufLen;
-    }
-
-    return [Value.fromBytes(data), pos];
-  }
-
-  if (valueType === ValueType.ARRAY) {
-    if (pos + 4 > buffer.length) {
-      assert(false, "Buffer too small for array length");
-    }
-    const arrayLen = buffer.readUInt32LE(pos);
-    pos += 4;
-
-    const arrayData: Value[] = [];
-    for (let i = 0; i < arrayLen; i++) {
+    case ValueType.BOOLEAN: {
       if (pos >= buffer.length) {
-        assert(false, "Buffer too small for array item type");
+        assert(false, "Buffer too small for bool value");
       }
-      const itemTypeId = buffer.readUInt8(pos);
-      pos += 1;
-
-      const itemType = bufferTypeToValueType(itemTypeId);
-      const [item, newPos] = deserializeContent(buffer, pos, itemType);
-      arrayData.push(item);
-      pos = newPos;
+      const val = buffer.readUInt8(pos);
+      return [Value.fromBoolean(val !== 0), pos + 1];
     }
 
-    return [Value.fromArray(arrayData), pos];
-  }
-
-  if (valueType === ValueType.OBJECT) {
-    if (pos + 4 > buffer.length) {
-      assert(false, "Buffer too small for object size");
+    case ValueType.NUMBER: {
+      if (pos + 8 > buffer.length) {
+        assert(false, "Buffer too small for number value");
+      }
+      const val = buffer.readDoubleLE(pos);
+      return [Value.fromNumber(val), pos + 8];
     }
-    const objSize = buffer.readUInt32LE(pos);
-    pos += 4;
 
-    const objData: Record<string, Value> = {};
-    for (let i = 0; i < objSize; i++) {
-      // Read key
+    case ValueType.STRING:
+    case ValueType.JSON_STRING: {
       if (pos + 4 > buffer.length) {
-        assert(false, "Buffer too small for object key length");
+        assert(false, "Buffer too small for string length");
       }
-      const keyLen = buffer.readUInt32LE(pos);
+      const strLen = buffer.readUInt32LE(pos);
       pos += 4;
 
-      if (pos + keyLen > buffer.length) {
-        assert(false, "Buffer too small for object key data");
+      let data: string;
+      if (strLen === 0) {
+        data = "";
+      } else {
+        if (pos + strLen > buffer.length) {
+          assert(false, "Buffer too small for string data");
+        }
+        data = buffer.subarray(pos, pos + strLen).toString("utf-8");
+        pos += strLen;
       }
-      const key = buffer.subarray(pos, pos + keyLen).toString("utf-8");
-      pos += keyLen;
 
-      // Read value
-      if (pos >= buffer.length) {
-        assert(false, "Buffer too small for object value type");
+      if (valueType === ValueType.STRING) {
+        return [Value.fromString(data), pos];
+      } else {
+        return [Value.fromJsonString(data), pos];
       }
-      const valTypeId = buffer.readUInt8(pos);
-      pos += 1;
-
-      const valType = bufferTypeToValueType(valTypeId);
-      const [val, newPos] = deserializeContent(buffer, pos, valType);
-      objData[key] = val;
-      pos = newPos;
     }
 
-    return [Value.fromObject(objData), pos];
-  }
+    case ValueType.BYTES: {
+      if (pos + 4 > buffer.length) {
+        assert(false, "Buffer too small for bytes length");
+      }
+      const bufLen = buffer.readUInt32LE(pos);
+      pos += 4;
 
-  assert(
-    false,
-    `Unsupported value type for deserialization: ${ValueType[valueType]}`,
-  );
+      let data: ArrayBuffer;
+      if (bufLen === 0) {
+        data = new ArrayBuffer(0);
+      } else {
+        if (pos + bufLen > buffer.length) {
+          assert(false, "Buffer too small for bytes data");
+        }
+        const uint8Array = new Uint8Array(buffer.subarray(pos, pos + bufLen));
+        data = uint8Array.buffer.slice(
+          uint8Array.byteOffset,
+          uint8Array.byteOffset + uint8Array.byteLength,
+        );
+        pos += bufLen;
+      }
+
+      return [Value.fromBytes(data), pos];
+    }
+
+    case ValueType.ARRAY: {
+      if (pos + 4 > buffer.length) {
+        assert(false, "Buffer too small for array length");
+      }
+      const arrayLen = buffer.readUInt32LE(pos);
+      pos += 4;
+
+      const arrayData: Value[] = [];
+      for (let i = 0; i < arrayLen; i++) {
+        if (pos >= buffer.length) {
+          assert(false, "Buffer too small for array item type");
+        }
+        const itemTypeId = buffer.readUInt8(pos);
+        pos += 1;
+
+        const itemType = bufferTypeToValueType(itemTypeId);
+        const [item, newPos] = deserializeContent(buffer, pos, itemType);
+        arrayData.push(item);
+        pos = newPos;
+      }
+
+      return [Value.fromArray(arrayData), pos];
+    }
+
+    case ValueType.OBJECT: {
+      if (pos + 4 > buffer.length) {
+        assert(false, "Buffer too small for object size");
+      }
+      const objSize = buffer.readUInt32LE(pos);
+      pos += 4;
+
+      const objData: Record<string, Value> = {};
+      for (let i = 0; i < objSize; i++) {
+        // Read key
+        if (pos + 4 > buffer.length) {
+          assert(false, "Buffer too small for object key length");
+        }
+        const keyLen = buffer.readUInt32LE(pos);
+        pos += 4;
+
+        if (pos + keyLen > buffer.length) {
+          assert(false, "Buffer too small for object key data");
+        }
+        const key = buffer.subarray(pos, pos + keyLen).toString("utf-8");
+        pos += keyLen;
+
+        // Read value
+        if (pos >= buffer.length) {
+          assert(false, "Buffer too small for object value type");
+        }
+        const valTypeId = buffer.readUInt8(pos);
+        pos += 1;
+
+        const valType = bufferTypeToValueType(valTypeId);
+        const [val, newPos] = deserializeContent(buffer, pos, valType);
+        objData[key] = val;
+        pos = newPos;
+      }
+
+      return [Value.fromObject(objData), pos];
+    }
+
+    default:
+      assert(
+        false,
+        `Unsupported value type for deserialization: ${ValueType[valueType]}`,
+      );
+  }
 }
 
 // Deserialize a Value from buffer.
-export function deserializeFromBuffer(buffer: Buffer): [Value, number] {
+export function deserializeFromBuffer(buffer: Buffer): Value {
   const header = validateBufferHeader(buffer);
 
   const pos = VALUE_BUFFER_HEADER_SIZE;
   const valueType = bufferTypeToValueType(header.typeId);
 
-  const [value, finalPos] = deserializeContent(buffer, pos, valueType);
+  const [value, _] = deserializeContent(buffer, pos, valueType);
 
-  return [value, finalPos];
+  return value;
 }
