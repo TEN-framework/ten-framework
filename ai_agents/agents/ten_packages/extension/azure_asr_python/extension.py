@@ -73,7 +73,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.config = AzureASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
-                    module="asr",
+                    module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message=str(e),
                 ),
