@@ -58,6 +58,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.last_finalize_timestamp: int = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_init(ten_env)
         ten_env.log_info("DeepgramASRExtension on_init")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -97,7 +98,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 code=-1,
                 message=error.to_json(),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
 
             await self.send_asr_error(
@@ -146,7 +147,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -217,6 +218,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> None:
+        self.session_id = session_id
         frame_buf = frame.get_buf()
         return await self.client.send(frame_buf)
 
@@ -238,7 +240,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 f"KEYPOINT deepgram drain end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
-            await self.send_asr_finalize_end(latency)
+            await self.send_asr_finalize_end()
 
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate

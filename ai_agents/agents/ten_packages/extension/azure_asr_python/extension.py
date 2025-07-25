@@ -96,7 +96,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -151,16 +151,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
 
     async def _on_session_started(self, evt):
         """Handle the session started event from Azure ASR."""
-        self.ten_env.log_debug(
-            f"azure event callback on_session_started: {evt}"
-        )
+        self.ten_env.log_info(f"azure event callback on_session_started: {evt}")
         self.connected = True
 
     async def _on_session_stopped(self, evt):
@@ -189,7 +187,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 code=-1,
                 message="received on_canceled event from Azure ASR",
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             ),
             ErrorMessageVendorInfo(
                 vendor="azure",
@@ -296,7 +294,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 ),
                 None,
             )
@@ -317,6 +315,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> None:
+        self.session_id = session_id
         frame_buf = frame.get_buf()
         self.stream.write(bytes(frame_buf))
 
@@ -342,7 +341,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 f"KEYPOINT azure drain end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
-            await self.send_asr_finalize_end(latency)
+            await self.send_asr_finalize_end()
 
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate

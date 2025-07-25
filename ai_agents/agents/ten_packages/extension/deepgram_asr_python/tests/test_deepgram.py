@@ -25,30 +25,24 @@ from .mock import patch_deepgram_ws  # noqa: F401
 class ExtensionTesterDeepgram(AsyncExtensionTester):
     def __init__(self):
         super().__init__()
+        self.stopped = False
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
         # audio file path: ../test_data/test.pcm
-        audio_file_path = os.path.join(
-            os.path.dirname(__file__), "test_data/16k_en_US.pcm"
-        )
-
-        print(f"audio_file_path: {audio_file_path}")
-
-        with open(audio_file_path, "rb") as audio_file:
-            chunk_size = 320
-            while True:
-                chunk = audio_file.read(chunk_size)
-                if not chunk:
-                    break
-                audio_frame = AudioFrame.create("pcm_frame")
-                audio_frame.set_property_int("stream_id", 123)
-                audio_frame.set_property_string("remote_user_id", "123")
-                audio_frame.alloc_buf(len(chunk))
-                buf = audio_frame.lock_buf()
-                buf[:] = chunk
-                audio_frame.unlock_buf(buf)
-                await ten_env.send_audio_frame(audio_frame)
-                await asyncio.sleep(0.01)
+        while not self.stopped:
+            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
+            if not chunk:
+                break
+            audio_frame = AudioFrame.create("pcm_frame")
+            audio_frame.set_property_from_json(
+                None, json.dumps({"metadata": {"session_id": "test"}})
+            )
+            audio_frame.alloc_buf(len(chunk))
+            buf = audio_frame.lock_buf()
+            buf[:] = chunk
+            audio_frame.unlock_buf(buf)
+            await ten_env.send_audio_frame(audio_frame)
+            await asyncio.sleep(0.1)
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         # Create a task to read pcm file and send to extension
@@ -90,6 +84,7 @@ class ExtensionTesterDeepgram(AsyncExtensionTester):
 
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
         ten_env.log_info("Stopping audio sender task...")
+        self.stopped = True
         self.sender_task.cancel()
         try:
             await self.sender_task
@@ -107,6 +102,10 @@ class ExtensionTesterDeepgram(AsyncExtensionTester):
 
 def test_deepgram(patch_deepgram_ws):
     async def fake_start(*args, **kwargs):
+        await asyncio.sleep(0.1)
+        handler = patch_deepgram_ws._handlers.get("Open")
+        if handler:
+            await handler(None, SimpleNamespace())
         await asyncio.sleep(1)
         handler = patch_deepgram_ws._handlers.get("Results")
         if handler:
@@ -124,7 +123,12 @@ def test_deepgram(patch_deepgram_ws):
             )
         return True
 
-    patch_deepgram_ws.start.side_effect = fake_start
+    async def fake_run(*args, **kwargs):
+        await asyncio.sleep(1)
+        asyncio.create_task(fake_start(*args, **kwargs))
+        return True
+
+    patch_deepgram_ws.start.side_effect = fake_run
 
     tester = ExtensionTesterDeepgram()
     tester.set_test_mode_single(
@@ -149,6 +153,10 @@ def test_deepgram(patch_deepgram_ws):
 
 def test_deepgram_unexpected_result(patch_deepgram_ws):
     async def fake_start(*args, **kwargs):
+        await asyncio.sleep(0.1)
+        handler = patch_deepgram_ws._handlers.get("Open")
+        if handler:
+            await handler(None, SimpleNamespace())
         await asyncio.sleep(1)
         handler = patch_deepgram_ws._handlers.get("Results")
         if handler:
@@ -168,7 +176,12 @@ def test_deepgram_unexpected_result(patch_deepgram_ws):
             )
         return True
 
-    patch_deepgram_ws.start.side_effect = fake_start
+    async def fake_run(*args, **kwargs):
+        await asyncio.sleep(1)
+        asyncio.create_task(fake_start(*args, **kwargs))
+        return True
+
+    patch_deepgram_ws.start.side_effect = fake_run
 
     tester = ExtensionTesterDeepgram()
     tester.set_test_mode_single(

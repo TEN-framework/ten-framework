@@ -1,0 +1,1 @@
+elevenlabs>=1.50.0
