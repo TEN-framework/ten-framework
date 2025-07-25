@@ -21,7 +21,7 @@ SILENCE_DURATION_SECONDS = 5
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
-DEFAULT_CONFIG_FILE = "en.json"
+DEFAULT_CONFIG_FILE = "property_en.json"
 DEFAULT_EXPECTED_TEXT = "hello world"
 DEFAULT_SESSION_ID = "test_session_123"
 DEFAULT_EXPECTED_LANGUAGE = "en-US"
