@@ -9,6 +9,7 @@
 #include "ten_runtime/ten_config.h"
 
 #include <string>
+#include <tuple>
 
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/msg.h"
@@ -54,6 +55,26 @@ class msg_t {
     }
 
     return ten_msg_get_name(c_msg);
+  }
+
+  std::tuple<const char *, const char *, const char *> get_source(
+      error_t *err = nullptr) const {
+    TEN_ASSERT(c_msg, "Should not happen.");
+
+    if (c_msg == nullptr) {
+      if (err != nullptr && err->get_c_error() != nullptr) {
+        ten_error_set(err->get_c_error(), TEN_ERROR_CODE_INVALID_ARGUMENT,
+                      "Invalid TEN message.");
+      }
+      return std::make_tuple(nullptr, nullptr, nullptr);
+    }
+
+    ten_loc_t *loc = ten_msg_get_src_loc(c_msg);
+    TEN_ASSERT(loc, "Should not happen.");
+
+    return std::make_tuple(ten_string_get_raw_str(&loc->app_uri),
+                           ten_string_get_raw_str(&loc->graph_id),
+                           ten_string_get_raw_str(&loc->extension_name));
   }
 
   bool set_dest(const char *app_uri, const char *graph_id,
