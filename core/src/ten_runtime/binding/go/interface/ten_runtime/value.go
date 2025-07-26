@@ -134,8 +134,8 @@ func NewStringValue(s string) Value {
 	return Value{typ: ValueTypeString, data: s}
 }
 
-// NewBytesValue creates a new []byte Value.
-func NewBytesValue(b []byte) Value {
+// NewBufValue creates a new []byte Value.
+func NewBufValue(b []byte) Value {
 	return Value{typ: ValueTypeBytes, data: b}
 }
 
@@ -318,9 +318,9 @@ func (v *Value) GetString() (string, error) {
 	return "", NewTenError(ErrorCodeInvalidType, "value is not a string")
 }
 
-// GetBytes returns the []byte value if the type matches, otherwise returns an
+// GetBuf returns the []byte value if the type matches, otherwise returns an
 // error.
-func (v *Value) GetBytes() ([]byte, error) {
+func (v *Value) GetBuf() ([]byte, error) {
 	if v.typ != ValueTypeBytes {
 		return nil, NewTenError(ErrorCodeInvalidType, "value is not bytes")
 	}

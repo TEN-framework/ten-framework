@@ -181,7 +181,7 @@ func (v *Value) calculateContentSize() (int, error) {
 		}
 		return 4 + len(str), nil // length(4) + data
 	case ValueTypeBytes:
-		bytes, err := v.GetBytes()
+		bytes, err := v.GetBuf()
 		if err != nil {
 			return 0, fmt.Errorf("failed to get bytes value: %w", err)
 		}
@@ -401,7 +401,7 @@ func (v *Value) serializeContent(buffer []byte, pos *int) error {
 		}
 
 	case ValueTypeBytes:
-		bytesVal, err := v.GetBytes()
+		bytesVal, err := v.GetBuf()
 		if err != nil {
 			return fmt.Errorf("failed to get bytes value: %w", err)
 		}
