@@ -29,6 +29,9 @@ class _TenError:
 class _Msg:
     def get_name(self) -> str: ...
     def set_name(self, name: str) -> None: ...
+    def get_source(
+        self,
+    ) -> tuple[str | None, str | None, str | None, TenError | None]: ...
     def set_dest(
         self,
         app_uri: str | None,
