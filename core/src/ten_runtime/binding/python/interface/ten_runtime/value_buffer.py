@@ -119,7 +119,7 @@ def _calculate_content_size(value: Value) -> int:
             return 4 + len(encoded)  # length(4) + data
 
         case ValueType.BYTES:
-            data = value.get_bytes()[0]
+            data = value.get_buf()[0]
             return 4 + len(data)  # length(4) + data
 
         case ValueType.ARRAY:
@@ -190,7 +190,7 @@ def _serialize_content(value: Value, buffer: bytearray, pos: int) -> int:
                 pos += data_len
 
         case ValueType.BYTES:
-            data = value.get_bytes()[0]
+            data = value.get_buf()[0]
             data_len = len(data)
             struct.pack_into("<I", buffer, pos, data_len)
             pos += 4
@@ -359,7 +359,7 @@ def _deserialize_content(
                 data = bytes(buffer[pos : pos + buf_len])
                 pos += buf_len
 
-            return Value.from_bytes(data), pos
+            return Value.from_buf(data), pos
 
         case ValueType.ARRAY:
             if pos + 4 > len(buffer):

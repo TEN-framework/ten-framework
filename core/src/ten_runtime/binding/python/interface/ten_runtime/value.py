@@ -60,7 +60,7 @@ class Value:
         return cls(ValueType.STRING, value)
 
     @classmethod
-    def from_bytes(cls: type[T], value: bytes) -> T:
+    def from_buf(cls: type[T], value: bytes) -> T:
         return cls(ValueType.BYTES, value)
 
     @classmethod
@@ -114,7 +114,7 @@ class Value:
             return ("", error)
         return (cast(str, self._data), None)
 
-    def get_bytes(self) -> tuple[bytes, TenError | None]:
+    def get_buf(self) -> tuple[bytes, TenError | None]:
         if self._type != ValueType.BYTES:
             error = TenError.create(
                 TenErrorCode.ErrorCodeInvalidType,
