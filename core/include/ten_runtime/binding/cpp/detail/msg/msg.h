@@ -69,12 +69,18 @@ class msg_t {
       return std::make_tuple(nullptr, nullptr, nullptr);
     }
 
-    ten_loc_t *loc = ten_msg_get_src_loc(c_msg);
-    TEN_ASSERT(loc, "Should not happen.");
+    const char *app_uri = nullptr;
+    const char *graph_id = nullptr;
+    const char *extension_name = nullptr;
 
-    return std::make_tuple(ten_string_get_raw_str(&loc->app_uri),
-                           ten_string_get_raw_str(&loc->graph_id),
-                           ten_string_get_raw_str(&loc->extension_name));
+    bool success =
+        ten_msg_get_source(c_msg, app_uri, graph_id, extension_name,
+                           err != nullptr ? err->get_c_error() : nullptr);
+    if (!success) {
+      return std::make_tuple(nullptr, nullptr, nullptr);
+    }
+
+    return std::make_tuple(*app_uri, *graph_id, *extension_name);
   }
 
   bool set_dest(const char *app_uri, const char *graph_id,

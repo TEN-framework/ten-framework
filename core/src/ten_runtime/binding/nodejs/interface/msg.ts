@@ -20,6 +20,16 @@ export class Msg {
     ten_addon.ten_nodejs_msg_set_dest(this, appUri, graphId, extension);
   }
 
+  getSource(): [string | null, string | null, string | null, TenError | null] {
+    const arr = ten_addon.ten_nodejs_msg_get_source(this);
+    return [0, 1, 2, 3].map((i) => (arr[i] === "" ? null : arr[i])) as [
+      string | null,
+      string | null,
+      string | null,
+      TenError | null,
+    ];
+  }
+
   setPropertyFromJson(path: string, jsonStr: string): TenError | null {
     return ten_addon.ten_nodejs_msg_set_property_from_json(this, path, jsonStr);
   }

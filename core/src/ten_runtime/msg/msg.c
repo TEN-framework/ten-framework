@@ -476,6 +476,27 @@ ten_loc_t *ten_msg_get_src_loc(ten_shared_ptr_t *self) {
   return ten_raw_msg_get_src_loc(ten_shared_ptr_get_data(self));
 }
 
+bool ten_msg_get_source(ten_shared_ptr_t *self, const char **app_uri,
+                        const char **graph_id, const char **extension_name,
+                        TEN_UNUSED ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
+  ten_loc_t *loc = ten_msg_get_src_loc(self);
+  TEN_ASSERT(loc, "Should not happen.");
+
+  if (app_uri) {
+    *app_uri = ten_string_get_raw_str(&loc->app_uri);
+  }
+  if (graph_id) {
+    *graph_id = ten_string_get_raw_str(&loc->graph_id);
+  }
+  if (extension_name) {
+    *extension_name = ten_string_get_raw_str(&loc->extension_name);
+  }
+  return true;
+}
+
 /**
  * @brief Retrieves the first destination location from a message.
  *
