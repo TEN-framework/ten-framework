@@ -8,7 +8,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 import { Addon } from "./addon.js";
-import ten_addon from "../ten_addon.js";
+import ten_addon from "./ten_addon.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 

@@ -50,7 +50,8 @@ ten_shared_ptr_t *ten_py_msg_move_c_msg(ten_py_msg_t *self) {
 PyObject *ten_py_msg_get_name(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -68,7 +69,8 @@ PyObject *ten_py_msg_get_name(PyObject *self, TEN_UNUSED PyObject *args) {
 PyObject *ten_py_msg_set_name(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -102,7 +104,8 @@ PyObject *ten_py_msg_set_name(PyObject *self, TEN_UNUSED PyObject *args) {
 PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   if (PyTuple_GET_SIZE(args) != 3) {
     return ten_py_raise_py_value_error_exception(
@@ -144,7 +147,8 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
 PyObject *ten_py_msg_set_property_string(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -184,7 +188,8 @@ PyObject *ten_py_msg_set_property_string(PyObject *self, PyObject *args) {
 PyObject *ten_py_msg_get_property_string(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -232,7 +237,8 @@ error: {
 PyObject *ten_py_msg_set_property_from_json(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -278,7 +284,8 @@ error: {
 PyObject *ten_py_msg_get_property_to_json(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -333,7 +340,8 @@ error: {
 PyObject *ten_py_msg_get_property_int(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -380,7 +388,8 @@ error: {
 PyObject *ten_py_msg_set_property_int(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -418,7 +427,8 @@ PyObject *ten_py_msg_set_property_int(PyObject *self, PyObject *args) {
 PyObject *ten_py_msg_get_property_bool(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -469,7 +479,8 @@ error: {
 PyObject *ten_py_msg_set_property_bool(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -508,7 +519,8 @@ PyObject *ten_py_msg_set_property_bool(PyObject *self, PyObject *args) {
 PyObject *ten_py_msg_get_property_float(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -555,7 +567,8 @@ error: {
 PyObject *ten_py_msg_set_property_float(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -592,7 +605,8 @@ PyObject *ten_py_msg_set_property_float(PyObject *self, PyObject *args) {
 
 PyObject *ten_py_msg_get_property_buf(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
@@ -645,7 +659,8 @@ error: {
 PyObject *ten_py_msg_set_property_buf(PyObject *self, PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
-  TEN_ASSERT(py_msg && ten_py_msg_check_integrity(py_msg), "Invalid argument.");
+  TEN_ASSERT(py_msg, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {

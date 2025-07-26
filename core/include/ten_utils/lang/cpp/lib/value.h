@@ -11,7 +11,6 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -183,25 +182,10 @@ class value_t {
 
   // Create a TEN value of 'array' type.
   template <typename V>
-  explicit value_t(const std::vector<V> &list) {
+  explicit value_t(const std::vector<V> &array) {
     ten_list_t m = TEN_LIST_INIT_VAL;
 
-    for (const auto &v : list) {
-      ten_list_push_ptr_back(
-          &m, create_c_value_from_cpp_concept(v),
-          reinterpret_cast<ten_ptr_listnode_destroy_func_t>(ten_value_destroy));
-    }
-
-    c_value_ = ten_value_create_array_with_move(&m);
-    ten_list_clear(&m);
-  }
-
-  // Create a TEN value of 'array' type.
-  template <typename V>
-  explicit value_t(const std::unordered_set<V> &list) {
-    ten_list_t m = TEN_LIST_INIT_VAL;
-
-    for (const auto &v : list) {
+    for (const auto &v : array) {
       ten_list_push_ptr_back(
           &m, create_c_value_from_cpp_concept(v),
           reinterpret_cast<ten_ptr_listnode_destroy_func_t>(ten_value_destroy));
