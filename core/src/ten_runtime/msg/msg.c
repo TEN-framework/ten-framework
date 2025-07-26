@@ -670,7 +670,7 @@ bool ten_raw_msg_get_one_field_from_json_include_internal_field(
 
 static bool ten_raw_msg_put_one_field_to_json_internal(
     ten_msg_t *self, ten_msg_field_process_data_t *field, void *user_data,
-    bool include_internal_field, ten_error_t *err) {
+    bool include_internal_field, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(field, "Should not happen.");
