@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.9"
+      "version": "=0.6.19"
     }
   ],
   "interface": "../../system/ten_ai_base/api/asr-interface.json",
