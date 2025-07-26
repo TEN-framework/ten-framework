@@ -44,7 +44,10 @@ type Msg interface {
 	free()
 	keepAlive()
 
-	GetName() (string, error)
+	GetName() (name string, err error)
+
+	GetSource() (appURI, graphID, extensionName *string, err error)
+
 	SetDest(
 		appURI string,
 		graphID string,
@@ -225,4 +228,36 @@ func (p *msg) SetDest(
 	})
 
 	return err
+}
+
+// GetSource returns the source location (appURI, graphID, extensionName) of the
+// message.
+func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
+	defer p.keepAlive()
+
+	var cAppURI, cGraphID, cExtensionName *C.char
+	err = withCGOLimiter(func() error {
+		apiStatus := C.ten_go_msg_get_source(p.cPtr,
+			(**C.char)(unsafe.Pointer(&cAppURI)),
+			(**C.char)(unsafe.Pointer(&cGraphID)),
+			(**C.char)(unsafe.Pointer(&cExtensionName)),
+		)
+		return withCGoError(&apiStatus)
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if cAppURI != nil {
+		goAppURI := C.GoString(cAppURI)
+		appURI = &goAppURI
+	}
+	if cGraphID != nil {
+		goGraphID := C.GoString(cGraphID)
+		graphID = &goGraphID
+	}
+	if cExtensionName != nil {
+		goExtensionName := C.GoString(cExtensionName)
+		extensionName = &goExtensionName
+	}
+	return appURI, graphID, extensionName, nil
 }

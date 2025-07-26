@@ -48,7 +48,8 @@ ten_go_error_t ten_go_audio_frame_set_timestamp(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_timestamp(c_audio_frame, timestamp);
@@ -64,7 +65,8 @@ ten_go_error_t ten_go_audio_frame_get_timestamp(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *timestamp = ten_audio_frame_get_timestamp(c_audio_frame);
@@ -80,7 +82,8 @@ ten_go_error_t ten_go_audio_frame_set_sample_rate(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_sample_rate(c_audio_frame, sample_rate);
@@ -96,7 +99,8 @@ ten_go_error_t ten_go_audio_frame_get_sample_rate(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *sample_rate = ten_audio_frame_get_sample_rate(c_audio_frame);
@@ -112,7 +116,8 @@ ten_go_error_t ten_go_audio_frame_set_channel_layout(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_channel_layout(c_audio_frame, channel_layout);
@@ -128,7 +133,8 @@ ten_go_error_t ten_go_audio_frame_get_channel_layout(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *channel_layout = ten_audio_frame_get_channel_layout(c_audio_frame);
@@ -144,7 +150,8 @@ ten_go_error_t ten_go_audio_frame_set_samples_per_channel(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_samples_per_channel(c_audio_frame, samples_per_channel);
@@ -160,7 +167,8 @@ ten_go_error_t ten_go_audio_frame_get_samples_per_channel(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *samples_per_channel = ten_audio_frame_get_samples_per_channel(c_audio_frame);
@@ -176,7 +184,8 @@ ten_go_error_t ten_go_audio_frame_set_bytes_per_sample(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_bytes_per_sample(c_audio_frame, bytes_per_sample);
@@ -192,7 +201,8 @@ ten_go_error_t ten_go_audio_frame_get_bytes_per_sample(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *bytes_per_sample = ten_audio_frame_get_bytes_per_sample(c_audio_frame);
@@ -208,7 +218,8 @@ ten_go_error_t ten_go_audio_frame_set_number_of_channels(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_number_of_channel(c_audio_frame, number_of_channels);
@@ -224,7 +235,8 @@ ten_go_error_t ten_go_audio_frame_get_number_of_channels(
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *number_of_channels = ten_audio_frame_get_number_of_channel(c_audio_frame);
@@ -240,7 +252,8 @@ ten_go_error_t ten_go_audio_frame_set_data_fmt(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_data_fmt(c_audio_frame, (TEN_AUDIO_FRAME_DATA_FMT)fmt);
@@ -258,7 +271,8 @@ ten_go_error_t ten_go_audio_frame_get_data_fmt(uintptr_t bridge_addr,
   TEN_ASSERT(fmt, "Invalid argument.");
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *fmt = (uint8_t)ten_audio_frame_get_data_fmt(c_audio_frame);
@@ -274,7 +288,8 @@ ten_go_error_t ten_go_audio_frame_set_line_size(uintptr_t bridge_addr,
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   ten_audio_frame_set_line_size(c_audio_frame, line_size);
@@ -292,7 +307,8 @@ ten_go_error_t ten_go_audio_frame_get_line_size(uintptr_t bridge_addr,
   TEN_ASSERT(line_size, "Invalid argument.");
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_shared_ptr_t *c_audio_frame = ten_go_msg_c_msg(self);
   *line_size = ten_audio_frame_get_line_size(c_audio_frame);
@@ -307,7 +323,8 @@ ten_go_error_t ten_go_audio_frame_set_eof(uintptr_t bridge_addr, bool is_eof) {
   TEN_GO_ERROR_INIT(cgo_error);
 
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   ten_audio_frame_set_eof(ten_go_msg_c_msg(self), is_eof);
 
