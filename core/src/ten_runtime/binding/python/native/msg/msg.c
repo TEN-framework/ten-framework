@@ -724,21 +724,47 @@ PyObject *ten_py_msg_get_source(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
     TEN_ASSERT(0, "Should not happen.");
-    return ten_py_raise_py_value_error_exception("Msg is invalidated.");
+    ten_error_t err;
+    TEN_ERROR_INIT(err);
+
+    ten_error_set_error_code(&err, TEN_ERROR_CODE_INVALID_ARGUMENT);
+    ten_error_set_error_message(&err, "Msg is invalidated.");
+
+    PyObject *py_err = (PyObject *)ten_py_error_wrap(&err);
+    return Py_BuildValue("(NNNO)", Py_None, Py_None, Py_None, py_err);
   }
 
   ten_loc_t *loc = ten_msg_get_src_loc(c_msg);
   TEN_ASSERT(loc, "Should not happen.");
+  if (!loc) {
+    ten_error_t err;
+    TEN_ERROR_INIT(err);
+
+    ten_error_set_error_code(&err, TEN_ERROR_CODE_GENERIC);
+    ten_error_set_error_message(&err, "Failed to get msg source location.");
+
+    PyObject *py_err = (PyObject *)ten_py_error_wrap(&err);
+    return Py_BuildValue("(NNNO)", Py_None, Py_None, Py_None, py_err);
+  }
 
   const char *app_uri = ten_string_get_raw_str(&loc->app_uri);
   const char *graph_id = ten_string_get_raw_str(&loc->graph_id);
   const char *extension_name = ten_string_get_raw_str(&loc->extension_name);
 
-  PyObject *res = Py_BuildValue(
-      "(zzz)", app_uri && app_uri[0] ? app_uri : NULL,
-      graph_id && graph_id[0] ? graph_id : NULL,
-      extension_name && extension_name[0] ? extension_name : NULL);
-  return res;
+  PyObject *py_app_uri =
+      (app_uri && app_uri[0]) ? PyUnicode_FromString(app_uri) : Py_None;
+  PyObject *py_graph_id =
+      (graph_id && graph_id[0]) ? PyUnicode_FromString(graph_id) : Py_None;
+  PyObject *py_extension_name = (extension_name && extension_name[0])
+                                    ? PyUnicode_FromString(extension_name)
+                                    : Py_None;
+
+  Py_INCREF(py_app_uri);
+  Py_INCREF(py_graph_id);
+  Py_INCREF(py_extension_name);
+
+  return Py_BuildValue("(OOON)", py_app_uri, py_graph_id, py_extension_name,
+                       Py_None);
 }
 
 bool ten_py_msg_init_for_module(PyObject *module) {
