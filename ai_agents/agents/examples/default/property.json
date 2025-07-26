@@ -60,12 +60,14 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "azure_tts",
+              "addon": "fish_audio_tts",
               "extension_group": "tts",
               "property": {
-                "azure_subscription_key": "${env:AZURE_TTS_KEY}",
-                "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+                "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+                "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+                "optimize_streaming_latency": true,
+                "request_timeout_seconds": 30,
+                "base_url": "https://api.fish.audio"
               }
             },
             {
