@@ -47,7 +47,7 @@ export class Value {
     return new Value(ValueType.STRING, value);
   }
 
-  static fromBytes(value: ArrayBuffer): Value {
+  static fromBuf(value: ArrayBuffer): Value {
     return new Value(ValueType.BYTES, value);
   }
 
@@ -106,7 +106,7 @@ export class Value {
     return [this._data as string, null];
   }
 
-  getBytes(): [ArrayBuffer, TenError | null] {
+  getBuf(): [ArrayBuffer, TenError | null] {
     if (this._type !== ValueType.BYTES) {
       return [
         new ArrayBuffer(0),

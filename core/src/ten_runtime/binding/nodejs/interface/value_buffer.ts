@@ -110,7 +110,7 @@ function calculateContentSize(value: Value): number {
     }
 
     case ValueType.BYTES: {
-      const [data, error] = value.getBytes();
+      const [data, error] = value.getBuf();
       if (error) {
         assert(false, `Failed to get bytes value: ${error.errorMessage}`);
       }
@@ -203,7 +203,7 @@ function serializeContent(value: Value, buffer: Buffer, pos: number): number {
     }
 
     case ValueType.BYTES: {
-      const [data, error] = value.getBytes();
+      const [data, error] = value.getBuf();
       if (error) {
         assert(false, `Failed to get bytes value: ${error.errorMessage}`);
       }
@@ -422,7 +422,7 @@ function deserializeContent(
         pos += bufLen;
       }
 
-      return [Value.fromBytes(data), pos];
+      return [Value.fromBuf(data), pos];
     }
 
     case ValueType.ARRAY: {
