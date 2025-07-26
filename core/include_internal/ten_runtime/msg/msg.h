@@ -278,7 +278,7 @@ TEN_RUNTIME_PRIVATE_API bool ten_raw_msg_process_field(
 TEN_RUNTIME_PRIVATE_API const char *ten_msg_get_src_app_uri(
     ten_shared_ptr_t *self);
 
-TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_msg_get_src_loc(ten_shared_ptr_t *self);
+TEN_RUNTIME_API ten_loc_t *ten_msg_get_src_loc(ten_shared_ptr_t *self);
 
 TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_msg_get_first_dest_loc(
     ten_shared_ptr_t *self);
