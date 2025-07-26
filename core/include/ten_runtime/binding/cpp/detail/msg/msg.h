@@ -80,7 +80,7 @@ class msg_t {
       return std::make_tuple(nullptr, nullptr, nullptr);
     }
 
-    return std::make_tuple(*app_uri, *graph_id, *extension_name);
+    return std::make_tuple(app_uri, graph_id, extension_name);
   }
 
   bool set_dest(const char *app_uri, const char *graph_id,
