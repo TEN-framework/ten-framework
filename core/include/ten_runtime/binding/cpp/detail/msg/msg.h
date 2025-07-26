@@ -74,7 +74,7 @@ class msg_t {
     const char *extension_name = nullptr;
 
     bool success =
-        ten_msg_get_source(c_msg, app_uri, graph_id, extension_name,
+        ten_msg_get_source(c_msg, &app_uri, &graph_id, &extension_name,
                            err != nullptr ? err->get_c_error() : nullptr);
     if (!success) {
       return std::make_tuple(nullptr, nullptr, nullptr);
