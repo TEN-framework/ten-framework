@@ -1,14 +1,25 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 import asyncio
 import copy
 import json
 import ssl
 import time
-from typing import AsyncIterator
-
 import websockets
-from ten_runtime.async_ten_env import AsyncTenEnv
+from typing import AsyncIterator
+from dataclasses import dataclass
 
+from ten_runtime import AsyncTenEnv
 from .config import MinimaxTTS2Config
+
+# TTS Events
+EVENT_TTSSentenceStart = 350
+EVENT_TTSSentenceEnd = 351
+EVENT_TTSResponse = 352
+EVENT_TTSTaskFinished = 353
 
 
 class MinimaxTTSTaskFailedException(Exception):
@@ -50,8 +61,8 @@ class MinimaxTTS2:
         """Stop and cleanup websocket connection"""
         await self.close()
 
-    async def get(self, text: str) -> AsyncIterator[bytes]:
-        """Generate TTS audio for the given text"""
+    async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
+        """Generate TTS audio for the given text, returns (audio_data, event_status)"""
         if not text or text.strip() == "":
             return
 
@@ -60,9 +71,9 @@ class MinimaxTTS2:
             if not await self._ensure_connection():
                 return
 
-            # Send TTS request and yield audio chunks
-            async for audio_chunk in self._process_single_tts(text):
-                yield audio_chunk
+            # Send TTS request and yield audio chunks with event status
+            async for audio_chunk, event_status in self._process_single_tts(text):
+                yield audio_chunk, event_status
 
         except Exception as e:
             if self.ten_env:
@@ -159,7 +170,7 @@ class MinimaxTTS2:
         start_msg["event"] = "task_start"
         return start_msg
 
-    async def _process_single_tts(self, text: str) -> AsyncIterator[bytes]:
+    async def _process_single_tts(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
         """Process a single TTS request in serial manner (like minimax copy.py)"""
         if not self.ws:
             return
@@ -201,11 +212,15 @@ class MinimaxTTS2:
                 elif tts_response_event == "task_finished":
                     if self.ten_env:
                         self.ten_env.log_debug("tts gracefully finished")
+                    # Return event status for task finished
+                    yield None, EVENT_TTSTaskFinished
                     break
 
                 if tts_response.get("is_final", False):
                     if self.ten_env:
                         self.ten_env.log_debug("tts is_final received")
+                    # Return event status for is_final
+                    yield None, EVENT_TTSSentenceEnd
                     break
 
                 # Process audio data
@@ -235,7 +250,7 @@ class MinimaxTTS2:
 
                     chunk_counter += 1
                     if len(audio_bytes) > 0:
-                        yield audio_bytes
+                        yield audio_bytes, EVENT_TTSResponse
                 else:
                     if self.ten_env:
                         self.ten_env.log_warn(f"tts response no audio data, full response: {tts_response}")

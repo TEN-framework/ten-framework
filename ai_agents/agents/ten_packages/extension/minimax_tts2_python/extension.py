@@ -21,7 +21,7 @@ from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTS2Config
-from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException
+from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -194,8 +194,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             self.current_request_id = t.request_id
 
             if t.metadata is not None:
-                self.session_id = t.metadata.session_id
-                self.current_turn_id = t.metadata.turn_id
+                self.session_id = t.metadata.get("session_id", "")
+                self.current_turn_id = t.metadata.get("turn_id", -1)
 
             # Check if client is initialized
             if self.client is None:
@@ -214,33 +214,49 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
 
             self.ten_env.log_info("Starting async for loop to process audio chunks")
             chunk_count = 0
-            async for audio_chunk in data:
-                chunk_count += 1
-                self.ten_env.log_info(f"Received audio chunk #{chunk_count}, size: {len(audio_chunk) if audio_chunk else 0} bytes")
+            async for audio_chunk, event_status in data:
+                self.ten_env.log_info(f"Received event_status: {event_status}")
+                if event_status == EVENT_TTSResponse:
+                    if audio_chunk is not None and len(audio_chunk) > 0:
+                        chunk_count += 1
+                        self.ten_env.log_info(f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes")
 
-                # Process audio chunk similar to copy.py logic
-                if audio_chunk and len(audio_chunk) > 0:
-                    # Send TTFB metrics for first chunk
-                    if first_chunk and self.sent_ts is not None:
-                        elapsed_time = datetime.now() - self.sent_ts
-                        await self.send_tts_ttfb_metrics(
+                        # Send TTS audio start on first chunk
+                        if first_chunk:
+                            if self.sent_ts:
+                                # await self.send_tts_audio_start(self.current_request_id)
+                                ttfb = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
+                                await self.send_tts_ttfb_metrics(
+                                    self.current_request_id, ttfb, self.current_turn_id
+                                )
+                                self.ten_env.log_info(f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms")
+                            first_chunk = False
+
+                        # Write to dump file if enabled
+                        if self.config and self.config.dump and self.recorder:
+                            asyncio.create_task(self.recorder.write(audio_chunk))
+
+                        # Send audio data
+                        await self.send_tts_audio_data(audio_chunk)
+                    else:
+                        self.ten_env.log_error("Received empty payload for TTS response")
+
+                elif event_status == EVENT_TTSSentenceEnd:
+                    self.ten_env.log_info("Received TTSSentenceEnd event from Minimax TTS")
+                    # Send TTS audio end event
+                    if self.sent_ts:
+                        request_event_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
+                        await self.send_tts_audio_end(
                             self.current_request_id,
-                            elapsed_time,
+                            request_event_interval,
+                            0,  # total_audio_duration will be calculated by framework
                             self.current_turn_id,
                         )
-                        self.sent_ts = None
-                        self.ten_env.log_info(
-                            f"Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}"
-                        )
-                        first_chunk = False
+                        self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms")
+                    break
 
-                    # Write to dump file if needed
-                    if self.config and self.config.dump and self.recorder:
-                        #self.ten_env.log_info(f"writing to dump file")
-                        asyncio.create_task(self.recorder.write(audio_chunk))
-
-                    # Send audio data - this corresponds to on_audio_bytes in copy.py
-                    await self.send_tts_audio_data(audio_chunk)
+            self.ten_env.log_info(f"TTS processing completed, total chunks: {chunk_count}")
+            self.sent_ts = None  # Reset for next request
 
         except MinimaxTTSTaskFailedException as e:
             self.ten_env.log_error(
