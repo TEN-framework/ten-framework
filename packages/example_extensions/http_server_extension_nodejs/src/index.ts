@@ -17,8 +17,8 @@ import {
 } from "ten-runtime-nodejs";
 
 class HttpServerExtension extends Extension {
-  tenEnv: TenEnv | null = null;
-  httpServer: http.Server | null = null;
+  tenEnv: TenEnv | undefined = undefined;
+  httpServer: http.Server | undefined = undefined;
 
   constructor(name: string) {
     super(name);
@@ -152,7 +152,7 @@ class HttpServerExtension extends Extension {
   }
 
   async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    this.tenEnv = null;
+    this.tenEnv = undefined;
     console.log("HttpServerExtension onDeinit");
   }
 }

@@ -15,8 +15,8 @@ import {
 } from "ten-runtime-nodejs";
 
 class WebsocketServerExtension extends Extension {
-  tenEnv: TenEnv | null = null;
-  httpServer: http.Server | null = null;
+  tenEnv: TenEnv | undefined = undefined;
+  httpServer: http.Server | undefined = undefined;
 
   constructor(name: string) {
     super(name);
@@ -36,7 +36,7 @@ class WebsocketServerExtension extends Extension {
 
     const hostname = "127.0.0.1";
     let [port, err] = await tenEnv.getPropertyNumber("server_port");
-    if (err != null) {
+    if (err != undefined) {
       // Use default port.
       port = 8001;
     }
@@ -74,7 +74,7 @@ class WebsocketServerExtension extends Extension {
   }
 
   async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    this.tenEnv = null;
+    this.tenEnv = undefined;
     console.log("WebsocketServerExtension onDeinit");
   }
 }

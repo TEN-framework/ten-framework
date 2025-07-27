@@ -29,7 +29,7 @@ const test_addon_name = "default_extension_nodejs";
 
 class FakeApp extends App {
   private initPromise: Promise<void>;
-  private resolveInit: (() => void) | null = null;
+  private resolveInit: (() => void) | undefined = undefined;
 
   constructor() {
     super();
@@ -72,7 +72,7 @@ async function main() {
     `{"greetingMsg": "${greetingMsg}"}`,
   );
   const result = await greetingTester.run();
-  assert(result === null, "result should be null");
+  assert(result === undefined, "result should be undefined");
 
   const greetingFailedTest = new GreetingTester(greetingMsg);
   greetingFailedTest.setTestModeSingle(
@@ -80,7 +80,7 @@ async function main() {
     `{"greetingMsg": "xxx"}`,
   );
   const result2 = await greetingFailedTest.run();
-  assert(result2 !== null, "result2 should not be null");
+  assert(result2 !== undefined, "result2 should not be undefined");
   assert(
     result2.errorCode === TenErrorCode.ErrorCodeGeneric,
     "result2 should be TenErrorCode.ErrorCodeGeneric",
@@ -93,28 +93,28 @@ async function main() {
   const cmdTester = new CmdTester();
   cmdTester.setTestModeSingle(test_addon_name, "{}");
   const result3 = await cmdTester.run();
-  assert(result3 === null, "result3 should be null");
+  assert(result3 === undefined, "result3 should be undefined");
 
   const dataTester = new DataTester();
   dataTester.setTestModeSingle(test_addon_name, "{}");
   const result4 = await dataTester.run();
-  assert(result4 === null, "result4 should be null");
+  assert(result4 === undefined, "result4 should be undefined");
 
   const videoFrameTester = new VideoFrameTester();
   videoFrameTester.setTestModeSingle(test_addon_name, "{}");
   const result5 = await videoFrameTester.run();
-  assert(result5 === null, "result5 should be null");
+  assert(result5 === undefined, "result5 should be undefined");
 
   const audioFrameTester = new AudioFrameTester();
   audioFrameTester.setTestModeSingle(test_addon_name, "{}");
   const result6 = await audioFrameTester.run();
-  assert(result6 === null, "result6 should be null");
+  assert(result6 === undefined, "result6 should be undefined");
 
   const timeoutTester = new TimeoutTester();
   timeoutTester.setTestModeSingle(test_addon_name, "{}");
   timeoutTester.setTimeout(1000 * 1000); // 1 second
   const result7 = await timeoutTester.run();
-  assert(result7 !== null, "result7 should not be null");
+  assert(result7 !== undefined, "result7 should not be undefined");
   assert(
     result7.errorCode === TenErrorCode.ErrorCodeTimeout,
     "result7 should be TenErrorCode.ErrorCodeTimeout",
