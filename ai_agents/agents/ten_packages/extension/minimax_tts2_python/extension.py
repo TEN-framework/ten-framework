@@ -140,6 +140,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 os.path.join(
                     self.config.dump_path, generate_file_name("agent_dump")
                 )
+                # TODO based on request id
             )
             self.client = MinimaxTTS2(self.config, ten_env, self.vendor())
             # Preheat websocket connection
@@ -167,6 +168,11 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             await self.client.stop()
             self.client = None
 
+        # Flush the recorder to ensure all buffered data is written to the dump file.
+        if self.recorder:
+            await self.recorder.flush()
+            self.recorder = None
+
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
@@ -186,21 +192,29 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
         This is called when the TTS request is made.
         """
         try:
+            # If client is None, it means the connection was dropped or never initialized.
+            # Attempt to re-establish the connection.
+            self.ten_env.log_info(
+                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
+            )
+            if self.client is None:
+                self.ten_env.log_info("TTS client is not initialized, attempting to reconnect...")
+                self.client = MinimaxTTS2(self.config, self.ten_env, self.vendor())
+                await self.client.start()
+                self.ten_env.log_info("TTS client reconnected successfully.")
+
+            if t.request_id != self.current_request_id:
+                self.ten_env.log_info(
+                    f"KEYPOINT New TTS request with ID: {t.request_id}"
+                )
+                self.current_request_id = t.request_id
+                if t.metadata is not None:
+                    self.session_id = t.metadata.get("session_id", "")
+                    self.current_turn_id = t.metadata.get("turn_id", -1)
+
             if t.text.strip() == "":
                 self.ten_env.log_info("Received empty text for TTS request")
                 return
-
-            self.ten_env.log_info(f"TTS request with ID: {t.request_id}, text: {t.text}")
-            self.current_request_id = t.request_id
-
-            if t.metadata is not None:
-                self.session_id = t.metadata.get("session_id", "")
-                self.current_turn_id = t.metadata.get("turn_id", -1)
-
-            # Check if client is initialized
-            if self.client is None:
-                self.ten_env.log_error("TTS client is not initialized")
-                raise RuntimeError("TTS client is not initialized")
 
             # Record TTFB timing
             if self.sent_ts is None:
@@ -224,7 +238,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                         # Send TTS audio start on first chunk
                         if first_chunk:
                             if self.sent_ts:
-                                # await self.send_tts_audio_start(self.current_request_id)
+                                await self.send_tts_audio_start(self.current_request_id)
                                 ttfb = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
                                 await self.send_tts_ttfb_metrics(
                                     self.current_request_id, ttfb, self.current_turn_id
@@ -234,7 +248,9 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
 
                         # Write to dump file if enabled
                         if self.config and self.config.dump and self.recorder:
-                            asyncio.create_task(self.recorder.write(audio_chunk))
+                            self.ten_env.log_info(f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}")
+                            # asyncio.create_task(self.recorder.write(audio_chunk))
+                            await self.recorder.write(audio_chunk)
 
                         # Send audio data
                         await self.send_tts_audio_data(audio_chunk)
@@ -257,6 +273,11 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
 
             self.ten_env.log_info(f"TTS processing completed, total chunks: {chunk_count}")
             self.sent_ts = None  # Reset for next request
+
+            if t.text_input_end:
+                self.ten_env.log_info(
+                    f"KEYPOINT finish session for request ID: {t.request_id}"
+                )
 
         except MinimaxTTSTaskFailedException as e:
             self.ten_env.log_error(
@@ -313,6 +334,14 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     message=str(e),
                     module_name=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=None,
+                    vendor_info=ModuleErrorVendorInfo(
+                        vendor=self.vendor()
+                    )
                 ),
             )
+            # When a connection error occurs, destroy the client instance.
+            # It will be recreated on the next request.
+            if isinstance(e, ConnectionRefusedError) and self.client:
+                await self.client.stop()
+                self.client = None
+                self.ten_env.log_info("Client connection dropped, instance destroyed. Will attempt to reconnect on next request.")

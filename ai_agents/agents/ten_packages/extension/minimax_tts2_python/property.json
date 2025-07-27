@@ -1,6 +1,6 @@
 {
-    "api_key": "${env:MINIMAX_TTS_API_KEY}",
-    "group_id": "${env:MINIMAX_TTS_GROUP_ID}",
+    "api_key": "",
+    "group_id": "",
     "model": "speech-02-hd",
     "voice_id": "male-qn-qingse",
     "sample_rate": 24000,
