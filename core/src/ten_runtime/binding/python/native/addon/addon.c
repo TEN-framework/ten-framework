@@ -51,8 +51,8 @@ static void proxy_on_create_instance_async(ten_addon_t *addon,
   TEN_ASSERT(name && strlen(name), "Invalid argument.");
 
   ten_py_addon_t *py_addon = addon->binding_handle.me_in_target_lang;
-  TEN_ASSERT(py_addon && ten_py_addon_check_integrity(py_addon),
-             "Should not happen.");
+  TEN_ASSERT(py_addon, "Should not happen.");
+  TEN_ASSERT(ten_py_addon_check_integrity(py_addon), "Should not happen.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -101,8 +101,8 @@ static void proxy_on_destroy_instance_async(ten_addon_t *addon,
   PyObject *py_instance = NULL;
   ten_py_addon_t *py_addon =
       (ten_py_addon_t *)addon->binding_handle.me_in_target_lang;
-  TEN_ASSERT(py_addon && ten_py_addon_check_integrity(py_addon),
-             "Should not happen.");
+  TEN_ASSERT(py_addon, "Should not happen.");
+  TEN_ASSERT(ten_py_addon_check_integrity(py_addon), "Should not happen.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
