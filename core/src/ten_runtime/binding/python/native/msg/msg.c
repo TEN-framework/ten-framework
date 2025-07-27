@@ -142,7 +142,20 @@ PyObject *ten_py_msg_get_source(PyObject *self, TEN_UNUSED PyObject *args) {
                             : Py_None;
   }
 
-  return Py_BuildValue("(OOO)", py_app_uri, py_graph_id, py_extension_name);
+  PyObject *res =
+      Py_BuildValue("(OOO)", py_app_uri, py_graph_id, py_extension_name);
+
+  if (py_app_uri != Py_None) {
+    Py_DECREF(py_app_uri);
+  }
+  if (py_graph_id != Py_None) {
+    Py_DECREF(py_graph_id);
+  }
+  if (py_extension_name != Py_None) {
+    Py_DECREF(py_extension_name);
+  }
+
+  return res;
 }
 
 PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
