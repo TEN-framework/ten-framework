@@ -133,8 +133,8 @@ ten_go_error_t ten_go_ten_env_tester_send_audio_frame(
              "Should not happen.");
 
   ten_go_msg_t *audio_frame = ten_go_msg_reinterpret(audio_frame_bridge_addr);
-  TEN_ASSERT(audio_frame && ten_go_msg_check_integrity(audio_frame),
-             "Should not happen.");
+  TEN_ASSERT(audio_frame, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(audio_frame), "Should not happen.");
   TEN_ASSERT(ten_go_msg_c_msg(audio_frame), "Should not happen.");
 
   ten_go_error_t cgo_error;

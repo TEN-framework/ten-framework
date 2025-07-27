@@ -13,7 +13,7 @@
 #include "ten_utils/macro/mark.h"
 
 static void ten_py_ten_env_tester_on_init_done_proxy_notify(
-    ten_env_tester_t *ten_env_tester, void *user_data) {
+    ten_env_tester_t *ten_env_tester, TEN_UNUSED void *user_data) {
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Invalid argument.");

@@ -5,8 +5,10 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Optional, Type, TypeVar
-from libten_runtime_python import _TenError
+from typing import TypeVar, cast
+from libten_runtime_python import (
+    _TenError,  # pyright: ignore[reportPrivateUsage]
+)
 
 T = TypeVar("T", bound="TenError")
 
@@ -41,19 +43,13 @@ class TenErrorCode(IntEnum):
 
 
 class TenError(_TenError):
-    def __init__(self):
+    def __init__(self, error_code: int, error_message: str | None):
         raise NotImplementedError("Use TenError.create instead.")
 
     @classmethod
     def create(
-        cls: Type[T],
+        cls: type[T],
         error_code: TenErrorCode,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> T:
-        return cls.__new__(cls, error_code.value, error_message)
-
-    def error_code(self) -> int:
-        return _TenError.error_code(self)
-
-    def error_message(self) -> str:
-        return _TenError.error_message(self)
+        return cast(T, cls.__new__(cls, error_code.value, error_message))

@@ -39,7 +39,7 @@ PyObject *ten_py_ten_env_tester_stop_test(PyObject *self, PyObject *args) {
         "Invalid argument count when ten_env_tester.stop_test.");
   }
 
-  // Parse arguments (Optional[TenError]).
+  // Parse arguments (TenError | None).
   PyObject *py_error = NULL;
   ten_error_t *test_result = NULL;
 

@@ -60,7 +60,7 @@ export function RemotePropertyCfgSheet() {
   const selectedAddonModule = addonModules.find(
     (module) => module.name === selectedExtensionNode?.addon,
   )
-  const hasProperty = !!selectedAddonModule?.api?.property && Object.keys(selectedAddonModule?.api?.property).length > 0
+  const hasProperty = !!selectedAddonModule?.api?.property?.properties && Object.keys(selectedAddonModule?.api?.property?.properties).length > 0
 
   return (
     <Sheet>
@@ -111,7 +111,7 @@ export function RemotePropertyCfgSheet() {
             metadata={
               addonModules.find(
                 (module) => module.name === selectedExtensionNode?.addon,
-              )?.api?.property || {}
+              )?.api?.property?.properties || {}
             }
             onUpdate={async (data) => {
               // clone the overridenProperties
@@ -161,7 +161,7 @@ export function RemotePropertyAddCfgSheet({
   const selectedAddonModule = addonModules.find(
     (module) => module.name === selectedExtensionNode?.addon,
   )
-  const allProperties = Object.keys(selectedAddonModule?.api?.property || {})
+  const allProperties = Object.keys(selectedAddonModule?.api?.property?.properties || {})
   const usedProperties = Object.keys(extensionNodeData)
   const remainingProperties = allProperties.filter(
     (prop) => !usedProperties.includes(prop),
@@ -377,7 +377,7 @@ const GraphCfgForm = ({
               let defaultValue = defaultProperty[key]
 
               if (defaultValue === undefined) {
-                let schema = selectedAddonModule?.api?.property || {}
+                let schema = selectedAddonModule?.api?.property?.properties || {}
                 let schemaType = schema[key]?.type
                 if (schemaType === "bool") {
                   defaultValue = false

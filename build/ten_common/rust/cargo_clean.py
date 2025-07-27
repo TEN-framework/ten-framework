@@ -7,7 +7,6 @@
 import argparse
 import sys
 import os
-from typing import Optional
 from build.scripts import cmd_exec, timestamp_proxy
 
 
@@ -19,7 +18,7 @@ class ArgumentInfo(argparse.Namespace):
         self.target_path: str
         self.target: str
         self.log_level: int
-        self.tg_timestamp_proxy_file: Optional[str] = None
+        self.tg_timestamp_proxy_file: str | None = None
 
 
 if __name__ == "__main__":

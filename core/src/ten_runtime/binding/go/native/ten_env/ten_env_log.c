@@ -79,8 +79,8 @@ ten_go_error_t ten_go_ten_env_log(uintptr_t bridge_addr, int level,
                                   const void *file_name, int file_name_len,
                                   int line_no, const void *msg, int msg_len) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);

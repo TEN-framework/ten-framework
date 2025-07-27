@@ -9,7 +9,6 @@
 # debugpy.listen(5678)
 # debugpy.wait_for_client()
 
-from typing import Optional
 from ten_runtime import Extension, TenEnv, Cmd, StatusCode, CmdResult, TenError, LogLevel
 
 
@@ -41,8 +40,8 @@ class DefaultExtension(Extension):
     def check_greeting(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:
@@ -62,8 +61,8 @@ class DefaultExtension(Extension):
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:

@@ -3,14 +3,13 @@
 
 import argparse
 import os
-from typing import Union, Tuple
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
 
-def parse_log_header(data: bytes) -> Tuple[bool, int]:
+def parse_log_header(data: bytes) -> tuple[bool, int]:
     """
     Parse the header (5 bytes) of a single log entry
 
@@ -70,10 +69,10 @@ def create_decryptor(key: bytes, nonce: bytes):
 
 
 def decrypt_log_file(
-    input_file: Union[str, Path],
-    output_file: Union[str, Path],
-    key: Union[str, bytes],
-    nonce: Union[str, bytes],
+    input_file: str | Path,
+    output_file: str | Path,
+    key: str | bytes,
+    nonce: str | bytes,
 ) -> None:
     """
     Decrypt a file containing multiple encrypted log entries, each with its own

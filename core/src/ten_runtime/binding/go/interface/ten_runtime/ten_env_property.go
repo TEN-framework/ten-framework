@@ -8,7 +8,7 @@
 package ten_runtime
 
 // #include "ten_env.h"
-// #include "value.h"
+// #include "c_value.h"
 import "C"
 
 import (
@@ -82,7 +82,7 @@ func (p *tenEnv) GetPropertyInt8(path string) (int8, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_int8(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_int8(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -117,7 +117,7 @@ func (p *tenEnv) GetPropertyInt16(path string) (int16, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_int16(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_int16(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -152,7 +152,7 @@ func (p *tenEnv) GetPropertyInt32(path string) (int32, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_int32(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_int32(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -187,7 +187,7 @@ func (p *tenEnv) GetPropertyInt64(path string) (int64, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_int64(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_int64(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -222,7 +222,7 @@ func (p *tenEnv) GetPropertyUint8(path string) (uint8, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_uint8(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_uint8(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -257,7 +257,7 @@ func (p *tenEnv) GetPropertyUint16(path string) (uint16, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_uint16(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_uint16(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -292,7 +292,7 @@ func (p *tenEnv) GetPropertyUint32(path string) (uint32, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_uint32(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_uint32(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -327,7 +327,7 @@ func (p *tenEnv) GetPropertyUint64(path string) (uint64, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_uint64(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_uint64(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -362,7 +362,7 @@ func (p *tenEnv) GetPropertyFloat32(path string) (float32, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_float32(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_float32(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -397,7 +397,7 @@ func (p *tenEnv) GetPropertyFloat64(path string) (float64, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_float64(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_float64(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -432,7 +432,7 @@ func (p *tenEnv) GetPropertyBool(path string) (bool, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_bool(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_bool(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -467,7 +467,7 @@ func (p *tenEnv) GetPropertyPtr(path string) (any, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_get_ptr(cValue, &cv)
+		apiStatus := C.ten_go_c_value_get_ptr(cValue, &cv)
 		return withCGoError(&apiStatus)
 	})
 
@@ -512,7 +512,7 @@ func (p *tenEnv) GetPropertyString(path string) (string, error) {
 
 	if realPt != propTypeStr {
 		// The ten_value_t is cloned in TEN runtime, so we have to destroy it.
-		tenValueDestroy(cValue)
+		tenCValueDestroy(cValue)
 		return "", NewTenError(
 			ErrorCodeInvalidType,
 			fmt.Sprintf("expected: %s, actual: %s", propTypeStr, realPt),
@@ -520,7 +520,7 @@ func (p *tenEnv) GetPropertyString(path string) (string, error) {
 	}
 
 	if pSize == 0 {
-		tenValueDestroy(cValue)
+		tenCValueDestroy(cValue)
 
 		// We can not allocate a []byte with size 0, so just return "".
 		return "", nil
@@ -530,7 +530,7 @@ func (p *tenEnv) GetPropertyString(path string) (string, error) {
 		uintptr(pSize),
 		func(v unsafe.Pointer) C.ten_go_error_t {
 			defer p.keepAlive()
-			return C.ten_go_value_get_string(cValue, v)
+			return C.ten_go_c_value_get_string(cValue, v)
 		},
 	)
 }
@@ -569,7 +569,7 @@ func (p *tenEnv) GetPropertyBytes(path string) ([]byte, error) {
 
 	if realPt != propTypeBuf {
 		// The ten_value_t is cloned in TEN runtime, so we have to destroy it.
-		tenValueDestroy(cValue)
+		tenCValueDestroy(cValue)
 		return nil, NewTenError(
 			ErrorCodeInvalidType,
 			fmt.Sprintf("expected: %s, actual: %s", propTypeBuf, realPt),
@@ -577,7 +577,7 @@ func (p *tenEnv) GetPropertyBytes(path string) ([]byte, error) {
 	}
 
 	if pSize == 0 {
-		tenValueDestroy(cValue)
+		tenCValueDestroy(cValue)
 
 		// We can not allocate a []byte with size 0, so just return nil.
 		return nil, nil
@@ -587,7 +587,7 @@ func (p *tenEnv) GetPropertyBytes(path string) ([]byte, error) {
 		uintptr(pSize),
 		func(v unsafe.Pointer) C.ten_go_error_t {
 			defer p.keepAlive()
-			return C.ten_go_value_get_buf(cValue, v)
+			return C.ten_go_c_value_get_buf(cValue, v)
 		},
 	)
 }
@@ -1013,7 +1013,7 @@ func (p *tenEnv) GetPropertyToJSONBytes(path string) ([]byte, error) {
 	}
 
 	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_value_to_json(
+		apiStatus := C.ten_go_c_value_to_json(
 			cValue,
 			&cJSONStrLen,
 			&cJSONStr,

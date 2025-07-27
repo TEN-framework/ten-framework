@@ -10,9 +10,9 @@
 #include "include_internal/ten_runtime/binding/go/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/binding/go/ten_env/ten_env_internal.h"
 #include "include_internal/ten_runtime/binding/go/value/value.h"
+#include "ten_runtime/binding/go/interface/ten_runtime/c_value.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/ten_env.h"
-#include "ten_runtime/binding/go/interface/ten_runtime/value.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/ten_env_proxy/ten_env_proxy.h"
 #include "ten_utils/lib/alloc.h"
@@ -109,7 +109,7 @@ static void ten_env_proxy_notify_peek_property(ten_env_t *ten_env,
     // are used to avoid thread safety issues.
     ten_value_t *cloned_value = ten_value_clone(c_value);
 
-    ten_go_ten_value_get_type_and_size(cloned_value, ctx->type, ctx->size);
+    ten_go_ten_c_value_get_type_and_size(cloned_value, ctx->type, ctx->size);
     *ctx->value_addr = (uintptr_t)cloned_value;
   }
 
@@ -124,8 +124,8 @@ static void ten_env_proxy_notify_peek_property(ten_env_t *ten_env,
 static ten_go_error_t ten_go_ten_env_peek_property(
     ten_go_ten_env_t *self, const void *path, int path_len, uint8_t *type,
     uintptr_t *size, uintptr_t *value_addr, uintptr_t callback_handle) {
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
@@ -161,8 +161,8 @@ ten_go_error_t ten_go_ten_env_get_property_type_and_size(
     uintptr_t bridge_addr, const void *path, int path_len, uint8_t *type,
     uintptr_t *size, uintptr_t *value_addr, uintptr_t callback_handle) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
   TEN_ASSERT(type && size, "Should not happen.");
 
   ten_go_error_t cgo_error;

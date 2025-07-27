@@ -1,8 +1,7 @@
 {
-  "C_Cpp.codeAnalysis.runAutomatically": false,
-  "C_Cpp.errorSquiggles": "disabled",
-  "C_Cpp.formatting": "disabled",
-  "C_Cpp.intelliSenseEngine": "disabled",
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
+  },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
@@ -10,17 +9,30 @@
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
   },
+  "biome.configurationPath": "biome.json",
+  "biome.enabled": true,
+  "biome.lsp.bin": "node_modules/.bin/biome",
   "black-formatter.args": [
     "--line-length",
     "80",
     "--exclude",
     "third_party"
   ],
+  "C_Cpp.codeAnalysis.runAutomatically": false,
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.formatting": "disabled",
+  "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.arguments": [
     "--background-index",
     "--clang-tidy",
     "--header-insertion=never"
   ],
+  "cursorpyright.analysis.extraPaths": [
+    "./core/src/ten_runtime/binding/python/interface",
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
+  ],
+  "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
@@ -48,7 +60,7 @@
     "**/third_party/*/**": true
   },
   "flake8.args": [
-    "--ignore=E302,E704,E301,W503",
+    "--ignore=E203,E302,E704,E301,W503",
     "--max-line-length=80"
   ],
   "git.ignoreLimitWarning": true,
@@ -63,12 +75,12 @@
     "ui.semanticTokens": true
   },
   "markdownlint.config": {
+    "default": true,
     "MD014": false,
     "MD024": {
       "siblings_only": true
     },
-    "MD033": false,
-    "default": true
+    "MD033": false
   },
   "pylint.args": [
     "--rcfile",
@@ -81,7 +93,8 @@
   "python.analysis.completeFunctionParens": true,
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
-    "./tests/ten_runtime/integration"
+    "./tests/ten_runtime/integration",
+    "./core/ten_gn/.gnfiles",
   ],
   "python.analysis.typeCheckingMode": "basic",
   "rust-analyzer.check.command": "clippy",
@@ -102,8 +115,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "[dockerfile]": {
-    "editor.defaultFormatter": "ms-azuretools.vscode-containers"
   }
 }
