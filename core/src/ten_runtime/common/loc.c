@@ -91,6 +91,10 @@ void ten_loc_init_empty(ten_loc_t *self) {
 
   ten_signature_set(&self->signature, TEN_LOC_SIGNATURE);
 
+  self->has_app_uri = true;
+  self->has_graph_id = true;
+  self->has_extension_name = true;
+
   TEN_STRING_INIT(self->app_uri);
   TEN_STRING_INIT(self->graph_id);
   TEN_STRING_INIT(self->extension_name);

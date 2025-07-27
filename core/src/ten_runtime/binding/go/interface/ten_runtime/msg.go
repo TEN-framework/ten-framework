@@ -47,12 +47,7 @@ type Msg interface {
 	GetName() (name string, err error)
 
 	GetSource() (appURI, graphID, extensionName *string, err error)
-
-	SetDest(
-		appURI string,
-		graphID string,
-		extension string,
-	) error
+	SetDest(appURI, graphID, extension string) (err error)
 
 	iProperty
 }
@@ -206,32 +201,6 @@ func (p *msg) GetName() (string, error) {
 	return C.GoString(msgName), nil
 }
 
-func (p *msg) SetDest(
-	appURI string,
-	graphID string,
-	extension string,
-) error {
-	defer p.keepAlive()
-
-	err := withCGOLimiter(func() error {
-		apiStatus := C.ten_go_msg_set_dest(
-			p.cPtr,
-			unsafe.Pointer(unsafe.StringData(appURI)),
-			C.int(len(appURI)),
-			unsafe.Pointer(unsafe.StringData(graphID)),
-			C.int(len(graphID)),
-			unsafe.Pointer(unsafe.StringData(extension)),
-			C.int(len(extension)),
-		)
-
-		return withCGoError(&apiStatus)
-	})
-
-	return err
-}
-
-// GetSource returns the source location (appURI, graphID, extensionName) of the
-// message.
 func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
 	defer p.keepAlive()
 
@@ -247,6 +216,7 @@ func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	if cAppURI != nil {
 		goAppURI := C.GoString(cAppURI)
 		appURI = &goAppURI
@@ -260,4 +230,26 @@ func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
 		extensionName = &goExtensionName
 	}
 	return appURI, graphID, extensionName, nil
+}
+
+func (p *msg) SetDest(
+	appURI, graphID, extension string,
+) (err error) {
+	defer p.keepAlive()
+
+	err = withCGOLimiter(func() error {
+		apiStatus := C.ten_go_msg_set_dest(
+			p.cPtr,
+			unsafe.Pointer(unsafe.StringData(appURI)),
+			C.int(len(appURI)),
+			unsafe.Pointer(unsafe.StringData(graphID)),
+			C.int(len(graphID)),
+			unsafe.Pointer(unsafe.StringData(extension)),
+			C.int(len(extension)),
+		)
+
+		return withCGoError(&apiStatus)
+	})
+
+	return
 }
