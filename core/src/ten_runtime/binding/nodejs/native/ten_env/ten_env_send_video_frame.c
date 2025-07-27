@@ -219,5 +219,5 @@ napi_value ten_nodejs_ten_env_send_video_frame(napi_env env,
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

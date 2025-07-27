@@ -36,7 +36,7 @@ class DefaultExtension extends Extension {
     assert(aaaExist, "aaa not exist");
     assert(!bbbExist, "bbb exist");
 
-    let err: TenError | null = null;
+    let err: TenError | undefined = undefined;
     let intValue: number;
     let floatValue: number;
     let nonExistNumValue: number;

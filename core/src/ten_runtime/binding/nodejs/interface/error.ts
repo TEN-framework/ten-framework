@@ -46,7 +46,7 @@ export class TenError {
     return this._errorCode;
   }
 
-  get errorMessage(): string | null {
+  get errorMessage(): string | undefined {
     return this._errorMessage;
   }
 }

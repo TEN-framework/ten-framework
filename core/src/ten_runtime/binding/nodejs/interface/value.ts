@@ -67,7 +67,7 @@ export class Value {
     return this._type;
   }
 
-  getBoolean(): [boolean, TenError | null] {
+  getBoolean(): [boolean, TenError | undefined] {
     if (this._type !== ValueType.BOOLEAN) {
       return [
         false,
@@ -77,10 +77,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as boolean, null];
+    return [this._data as boolean, undefined];
   }
 
-  getNumber(): [number, TenError | null] {
+  getNumber(): [number, TenError | undefined] {
     if (this._type !== ValueType.NUMBER) {
       return [
         0,
@@ -90,10 +90,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as number, null];
+    return [this._data as number, undefined];
   }
 
-  getString(): [string, TenError | null] {
+  getString(): [string, TenError | undefined] {
     if (this._type !== ValueType.STRING) {
       return [
         "",
@@ -103,10 +103,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as string, null];
+    return [this._data as string, undefined];
   }
 
-  getBuf(): [ArrayBuffer, TenError | null] {
+  getBuf(): [ArrayBuffer, TenError | undefined] {
     if (this._type !== ValueType.BYTES) {
       return [
         new ArrayBuffer(0),
@@ -116,10 +116,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as ArrayBuffer, null];
+    return [this._data as ArrayBuffer, undefined];
   }
 
-  getArray(): [Value[], TenError | null] {
+  getArray(): [Value[], TenError | undefined] {
     if (this._type !== ValueType.ARRAY) {
       return [
         [],
@@ -129,10 +129,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as Value[], null];
+    return [this._data as Value[], undefined];
   }
 
-  getObject(): [Record<string, Value>, TenError | null] {
+  getObject(): [Record<string, Value>, TenError | undefined] {
     if (this._type !== ValueType.OBJECT) {
       return [
         {},
@@ -142,10 +142,10 @@ export class Value {
         ),
       ];
     }
-    return [this._data as Record<string, Value>, null];
+    return [this._data as Record<string, Value>, undefined];
   }
 
-  getJsonString(): [string, TenError | null] {
+  getJsonString(): [string, TenError | undefined] {
     if (this._type !== ValueType.JSON_STRING) {
       return [
         "",
@@ -155,6 +155,6 @@ export class Value {
         ),
       ];
     }
-    return [this._data as string, null];
+    return [this._data as string, undefined];
   }
 }

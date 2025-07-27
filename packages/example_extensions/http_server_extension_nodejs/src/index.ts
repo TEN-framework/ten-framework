@@ -87,7 +87,10 @@ class HttpServerExtension extends Extension {
           cmd.setPropertyString("url", req.url!);
 
           this.tenEnv!.sendCmd(cmd).then(
-            ([cmdResult, error]: [CmdResult | null, TenError | null]) => {
+            ([cmdResult, error]: [
+              CmdResult | undefined,
+              TenError | undefined,
+            ]) => {
               if (error) {
                 res.writeHead(500, { "Content-Type": "text/plain" });
                 res.end("Error: " + error.errorMessage);
@@ -119,7 +122,7 @@ class HttpServerExtension extends Extension {
 
     const hostname = "127.0.0.1";
     let [port, err] = await tenEnv.getPropertyNumber("server_port");
-    if (err != null) {
+    if (err != undefined) {
       // Use default port.
       port = 8001;
     }

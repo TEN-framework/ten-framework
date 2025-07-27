@@ -60,14 +60,14 @@ export class ExtensionTester {
     // Stub for override.
   }
 
-  async run(): Promise<TenError | null> {
+  async run(): Promise<TenError | undefined> {
     return ten_addon.ten_nodejs_extension_tester_run(this);
   }
 
   setTestModeSingle(
     addonName: string,
     propertyJsonStr: string,
-  ): TenError | null {
+  ): TenError | undefined {
     return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(
       this,
       addonName,
@@ -75,7 +75,7 @@ export class ExtensionTester {
     );
   }
 
-  setTimeout(usec: number): TenError | null {
+  setTimeout(usec: number): TenError | undefined {
     return ten_addon.ten_nodejs_extension_tester_set_timeout(this, usec);
   }
 
