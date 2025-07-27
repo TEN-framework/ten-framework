@@ -37,6 +37,10 @@ typedef struct ten_extension_t ten_extension_t;
 typedef struct ten_loc_t {
   ten_signature_t signature;
 
+  bool has_app_uri;         // If false, app_uri is useless.
+  bool has_graph_id;        // If false, graph_id is useless.
+  bool has_extension_name;  // If false, extension_name is useless.
+
   ten_string_t app_uri;
   ten_string_t graph_id;
   ten_string_t extension_name;

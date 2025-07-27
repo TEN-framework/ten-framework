@@ -20,53 +20,52 @@ export class Msg {
     ten_addon.ten_nodejs_msg_set_dest(this, appUri, graphId, extension);
   }
 
-  getSource(): [string | null, string | null, string | null, TenError | null] {
+  getSource(): [string | undefined, string | undefined, string | undefined] {
     const arr = ten_addon.ten_nodejs_msg_get_source(this);
-    return [0, 1, 2, 3].map((i) => (arr[i] === "" ? null : arr[i])) as [
-      string | null,
-      string | null,
-      string | null,
-      TenError | null,
+    return [0, 1, 2].map((i) => (arr[i] === "" ? undefined : arr[i])) as [
+      string | undefined,
+      string | undefined,
+      string | undefined,
     ];
   }
 
-  setPropertyFromJson(path: string, jsonStr: string): TenError | null {
+  setPropertyFromJson(path: string, jsonStr: string): TenError | undefined {
     return ten_addon.ten_nodejs_msg_set_property_from_json(this, path, jsonStr);
   }
 
-  getPropertyToJson(path: string): [string, TenError | null] {
+  getPropertyToJson(path: string): [string, TenError | undefined] {
     return ten_addon.ten_nodejs_msg_get_property_to_json(this, path);
   }
 
-  setPropertyNumber(path: string, value: number): TenError | null {
+  setPropertyNumber(path: string, value: number): TenError | undefined {
     return ten_addon.ten_nodejs_msg_set_property_number(this, path, value);
   }
 
-  getPropertyNumber(path: string): [number, TenError | null] {
+  getPropertyNumber(path: string): [number, TenError | undefined] {
     return ten_addon.ten_nodejs_msg_get_property_number(this, path);
   }
 
-  setPropertyString(path: string, value: string): TenError | null {
+  setPropertyString(path: string, value: string): TenError | undefined {
     return ten_addon.ten_nodejs_msg_set_property_string(this, path, value);
   }
 
-  getPropertyString(path: string): [string, TenError | null] {
+  getPropertyString(path: string): [string, TenError | undefined] {
     return ten_addon.ten_nodejs_msg_get_property_string(this, path);
   }
 
-  setPropertyBool(path: string, value: boolean): TenError | null {
+  setPropertyBool(path: string, value: boolean): TenError | undefined {
     return ten_addon.ten_nodejs_msg_set_property_bool(this, path, value);
   }
 
-  getPropertyBool(path: string): [boolean, TenError | null] {
+  getPropertyBool(path: string): [boolean, TenError | undefined] {
     return ten_addon.ten_nodejs_msg_get_property_bool(this, path);
   }
 
-  setPropertyBuf(path: string, value: ArrayBuffer): TenError | null {
+  setPropertyBuf(path: string, value: ArrayBuffer): TenError | undefined {
     return ten_addon.ten_nodejs_msg_set_property_buf(this, path, value);
   }
 
-  getPropertyBuf(path: string): [ArrayBuffer, TenError | null] {
+  getPropertyBuf(path: string): [ArrayBuffer, TenError | undefined] {
     return ten_addon.ten_nodejs_msg_get_property_buf(this, path);
   }
 }

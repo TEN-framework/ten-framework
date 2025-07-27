@@ -1007,10 +1007,10 @@ static void ten_nodejs_extension_tester_async_run_complete(
       napi_resolve_deferred(env, async_run_data->deferred, js_error);
       ten_error_destroy(async_run_data->test_result);
     } else {
-      napi_resolve_deferred(env, async_run_data->deferred, js_null(env));
+      napi_resolve_deferred(env, async_run_data->deferred, js_undefined(env));
     }
   } else {
-    napi_reject_deferred(env, async_run_data->deferred, js_null(env));
+    napi_reject_deferred(env, async_run_data->deferred, js_undefined(env));
   }
 
   // From now on, the JS on_xxx callback(s) are useless, so release them all.
@@ -1135,7 +1135,7 @@ static napi_value ten_nodejs_extension_tester_set_test_mode_single(
   ten_string_deinit(&mode);
   ten_string_deinit(&property_json_str);
 
-  return js_null(env);
+  return js_undefined(env);
 }
 
 static napi_value ten_nodejs_extension_tester_set_timeout(
@@ -1171,7 +1171,7 @@ static napi_value ten_nodejs_extension_tester_set_timeout(
   ten_extension_tester_set_timeout(extension_tester_bridge->c_extension_tester,
                                    usec);
 
-  return js_null(env);
+  return js_undefined(env);
 }
 
 static napi_value ten_nodejs_extension_tester_on_end_of_life(

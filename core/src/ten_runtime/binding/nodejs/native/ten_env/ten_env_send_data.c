@@ -216,5 +216,5 @@ napi_value ten_nodejs_ten_env_send_data(napi_env env, napi_callback_info info) {
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

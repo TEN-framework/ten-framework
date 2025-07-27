@@ -57,8 +57,8 @@ class msg_t {
     return ten_msg_get_name(c_msg);
   }
 
-  std::tuple<const char *, const char *, const char *> get_source(
-      error_t *err = nullptr) const {
+  bool get_source(const char **app_uri, const char **graph_id,
+                  const char **extension_name, error_t *err = nullptr) const {
     TEN_ASSERT(c_msg, "Should not happen.");
 
     if (c_msg == nullptr) {
@@ -66,21 +66,21 @@ class msg_t {
         ten_error_set(err->get_c_error(), TEN_ERROR_CODE_INVALID_ARGUMENT,
                       "Invalid TEN message.");
       }
-      return std::make_tuple(nullptr, nullptr, nullptr);
+      if (app_uri) {
+        *app_uri = nullptr;
+      }
+      if (graph_id) {
+        *graph_id = nullptr;
+      }
+      if (extension_name) {
+        *extension_name = nullptr;
+      }
+      return false;
     }
 
-    const char *app_uri = nullptr;
-    const char *graph_id = nullptr;
-    const char *extension_name = nullptr;
-
-    bool success =
-        ten_msg_get_source(c_msg, &app_uri, &graph_id, &extension_name,
-                           err != nullptr ? err->get_c_error() : nullptr);
-    if (!success) {
-      return std::make_tuple(nullptr, nullptr, nullptr);
-    }
-
-    return std::make_tuple(app_uri, graph_id, extension_name);
+    ten_msg_get_source(c_msg, app_uri, graph_id, extension_name,
+                       err != nullptr ? err->get_c_error() : nullptr);
+    return true;
   }
 
   bool set_dest(const char *app_uri, const char *graph_id,
