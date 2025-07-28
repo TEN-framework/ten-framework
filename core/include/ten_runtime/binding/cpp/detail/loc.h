@@ -21,6 +21,9 @@ struct loc_t {
         const optional<std::string> &graph_id,
         const optional<std::string> &extension_name)
       : app_uri(app_uri), graph_id(graph_id), extension_name(extension_name) {}
+
+  loc_t(const char *app_uri, const char *graph_id, const char *extension_name)
+      : app_uri(app_uri), graph_id(graph_id), extension_name(extension_name) {}
 };
 
 }  // namespace ten

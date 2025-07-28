@@ -93,8 +93,6 @@ TEN_RUNTIME_PRIVATE_API void ten_raw_msg_add_dest(ten_msg_t *self,
                                                   const char *graph_id,
                                                   const char *extension_name);
 
-TEN_RUNTIME_PRIVATE_API void ten_raw_msg_clear_dest(ten_msg_t *self);
-
 TEN_RUNTIME_PRIVATE_API bool ten_msg_src_is_empty(ten_shared_ptr_t *self);
 
 TEN_RUNTIME_PRIVATE_API const char *ten_msg_get_src_graph_id(
@@ -286,8 +284,6 @@ TEN_RUNTIME_PRIVATE_API ten_loc_t *ten_msg_get_first_dest_loc(
 TEN_RUNTIME_PRIVATE_API ten_list_t *ten_msg_get_dest(ten_shared_ptr_t *self);
 
 TEN_RUNTIME_API size_t ten_msg_get_dest_cnt(ten_shared_ptr_t *self);
-
-TEN_RUNTIME_PRIVATE_API void ten_msg_clear_dest(ten_shared_ptr_t *self);
 
 TEN_RUNTIME_API ten_shared_ptr_t *ten_msg_create_from_msg_type(
     TEN_MSG_TYPE msg_type);
