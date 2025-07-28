@@ -95,8 +95,8 @@ TEST(PredefinedGraphTest, PredefinedGraphNoAutoStart) {  // NOLINT
   // The 'graph_id' MUST be "default" (a special string) if we want to send the
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "predefined_graph");
+  test_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "default", "predefined_graph"}});
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_json(cmd_result, R"({"id": 1, "name": "a"})");
