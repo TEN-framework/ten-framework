@@ -29,8 +29,8 @@ from deepgram import (
 )
 import deepgram
 from .config import DeepgramASRConfig
-from .dumper import Dumper
-from .timeline import AudioTimeline
+from ten_ai_base.dumper import Dumper
+from ten_ai_base.timeline import AudioTimeline
 from .reconnect_manager import ReconnectManager
 
 
@@ -242,12 +242,12 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         print(f"deepgram event callback on_transcript")
         assert self.config is not None
 
-        # 添加对SimpleNamespace对象的兼容处理
+        # SimpleNamespace
         try:
             result_json = result.to_json()
             print(f"deepgram event callback on_transcript: {result_json}")
         except AttributeError:
-            # 如果是SimpleNamespace对象，没有to_json方法，则跳过打印
+            # SimpleNamespace no have to_json
             print("deepgram event callback on_transcript: SimpleNamespace object (no to_json method)")
 
         try:
