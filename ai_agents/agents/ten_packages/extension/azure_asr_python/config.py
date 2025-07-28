@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Any
 
 from .const import FINALIZE_MODE_MUTE_PKG
-from .utils import encrypt
+from ten_ai_base.utils import encrypt
 
 
 class AzureASRConfig(BaseModel):

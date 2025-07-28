@@ -43,6 +43,22 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         expected_language: str = AUDIO_TIMESTAMP_EXPECTED_LANGUAGE,
     ):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: Audio Timestamp ASR Test")
+        print("=" * 80)
+        print(
+            "📋 Test Description: Validate ASR result timestamp fields and accuracy"
+        )
+        print("🎯 Test Objectives:")
+        print("   - Verify timestamp fields are int type")
+        print("   - Validate time unit is milliseconds")
+        print("   - Check timestamps are non-negative integers")
+        print("   - Ensure duration is positive integer")
+        print("   - Validate start_ms reflects audio start position")
+        print("   - Verify duration_ms represents audio segment length")
+        print("   - Check timestamp precision is milliseconds")
+        print("=" * 80)
+        
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language

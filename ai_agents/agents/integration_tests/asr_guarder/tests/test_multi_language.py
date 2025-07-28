@@ -47,6 +47,23 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         expected_language: str = MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
     ):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: Multi-Language ASR Test")
+        print("=" * 80)
+        print(
+            "📋 Test Description: Validate ASR extension multi-language support"
+        )
+        print("🎯 Test Objectives:")
+        print(
+            "   - Verify ASR extension can process audio in different languages"
+        )
+        print("   - Test English language detection and processing")
+        print("   - Validate Chinese language detection and processing")
+        print("   - Check language-specific configuration handling")
+        print("   - Ensure proper language identification in results")
+        print("   - Test multi-language audio file processing")
+        print("=" * 80)
+
         self.audio_file_path: str = audio_file_path
         self.expected_text: str = expected_text
         self.session_id: str = session_id

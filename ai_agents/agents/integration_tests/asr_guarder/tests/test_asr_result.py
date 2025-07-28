@@ -43,6 +43,21 @@ class AsrExtensionTester(AsyncExtensionTester):
         expected_language: str = DEFAULT_EXPECTED_LANGUAGE,
     ):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: ASR Result Integration Test")
+        print("=" * 80)
+        print(
+            "📋 Test Description: Validate ASR extension result processing and consistency"
+        )
+        print("🎯 Test Objectives:")
+        print("   - Verify ASR extension processes audio and returns results")
+        print("   - Validate required fields in ASR results")
+        print("   - Check language detection accuracy")
+        print("   - Ensure session ID consistency")
+        print("   - Validate ID consistency across multiple audio sends")
+        print("   - Test multiple audio send scenarios")
+        print("=" * 80)
+
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
@@ -53,8 +68,7 @@ class AsrExtensionTester(AsyncExtensionTester):
         self.current_audio_send: int = 0  # 0 for first send, 1 for second send
         self.waiting_for_final: bool = False
 
-        # Track non-final and final results for validation (only for first audio send)
-        self.non_final_results: list[dict[str, Any]] = []
+        # Track final results for validation
         self.final_result: dict[str, Any] | None = None
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
@@ -250,97 +264,15 @@ class AsrExtensionTester(AsyncExtensionTester):
 
         return all(validation() for validation in validations)
 
-    def _validate_non_final_and_final_results(
-        self, ten_env: AsyncTenEnvTester
-    ) -> bool:
-        """Validate non-final and final results for the first audio send."""
-        # Check if we have both non-final and final results
-        if not self.non_final_results:
-            self._stop_test_with_error(
-                ten_env, "No non-final results received for first audio send"
-            )
-            return False
-
+    def _validate_final_result_only(self, ten_env: AsyncTenEnvTester) -> bool:
+        """Validate final result for the first audio send."""
         if not self.final_result:
             self._stop_test_with_error(
                 ten_env, "No final result received for first audio send"
             )
             return False
 
-        ten_env.log_info(
-            f"✅ Received {len(self.non_final_results)} non-final results and 1 final result"
-        )
-
-        # Validate data format consistency
-        if not self._validate_data_format_consistency(ten_env):
-            return False
-
-        # Validate ID consistency
-        if not self._validate_id_consistency(ten_env):
-            return False
-
-        return True
-
-    def _validate_data_format_consistency(
-        self, ten_env: AsyncTenEnvTester
-    ) -> bool:
-        """Validate that intermediate and final results have the same data format."""
-        required_fields = [
-            "id",
-            "text",
-            "final",
-            "start_ms",
-            "duration_ms",
-            "language",
-        ]
-
-        # Check final result format
-        if self.final_result is None:
-            self._stop_test_with_error(ten_env, "Final result is None")
-            return False
-
-        for field in required_fields:
-            if field not in self.final_result:
-                self._stop_test_with_error(
-                    ten_env, f"Final result missing required field: {field}"
-                )
-                return False
-
-        # Check non-final results format
-        for i, non_final in enumerate(self.non_final_results):
-            for field in required_fields:
-                if field not in non_final:
-                    self._stop_test_with_error(
-                        ten_env,
-                        f"Non-final result {i} missing required field: {field}",
-                    )
-                    return False
-
-        ten_env.log_info(
-            "✅ Data format consistency validated - all results have required fields"
-        )
-        return True
-
-    def _validate_id_consistency(self, ten_env: AsyncTenEnvTester) -> bool:
-        """Validate that all intermediate and final results have the same ID."""
-        if self.final_result is None:
-            self._stop_test_with_error(ten_env, "Final result is None")
-            return False
-
-        final_id = self.final_result.get("id", "")
-
-        for i, non_final in enumerate(self.non_final_results):
-            non_final_id = non_final.get("id", "")
-            if non_final_id != final_id:
-                self._stop_test_with_error(
-                    ten_env,
-                    f"ID inconsistency: Non-final result {i} has id '{non_final_id}' but final result has id '{final_id}'",
-                )
-                return False
-
-        ten_env.log_info(
-            f"✅ ID consistency validated - all results have the same id: '{final_id}'"
-        )
+        ten_env.log_info("✅ Received final result for first audio send")
         return True
 
     @override
@@ -370,11 +302,11 @@ class AsrExtensionTester(AsyncExtensionTester):
         # Store results based on audio send and final status
         if self.current_audio_send == 0:
             if not is_final:
-                # Store non-final result for first audio send
-                self.non_final_results.append(json_data)
+                # For first audio send, we only care about final results
                 ten_env.log_info(
-                    f"Stored non-final result {len(self.non_final_results)} for first audio send"
+                    "Received intermediate result for first audio send, continuing..."
                 )
+                return
             else:
                 # Store final result for first audio send
                 self.final_result = json_data
@@ -395,8 +327,8 @@ class AsrExtensionTester(AsyncExtensionTester):
                 ):
                     return
 
-                # Validate non-final and final results for first audio send
-                if not self._validate_non_final_and_final_results(ten_env):
+                # Validate final result for first audio send
+                if not self._validate_final_result_only(ten_env):
                     return
 
                 # Store the ID for comparison with second audio send

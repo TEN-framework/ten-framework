@@ -24,8 +24,8 @@ from ten_runtime import (
 import asyncio
 import azure.cognitiveservices.speech as speechsdk
 from .config import AzureASRConfig
-from .dumper import Dumper
-from .timeline import AudioTimeline
+from ten_ai_base.dumper import Dumper
+from ten_ai_base.timeline import AudioTimeline
 from .reconnect_manager import ReconnectManager
 
 
