@@ -129,25 +129,6 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
 
 
 def test_asr_result(patch_deepgram_ws):
-    # def schedule_delayed_async(delay_seconds, coro):
-    #     """延迟指定秒数后执行异步方法"""
-    #     # 创建线程，目标函数是执行异步方法的包装函数
-    #     threading.Timer(
-    #         delay_seconds,
-    #         run_async_task,
-    #         args=(coro,)  # 传递异步方法作为参数
-    #     ).start()
-
-    # def run_async_task(coro):
-    #     """在新线程中运行事件循环以执行异步方法"""
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     try:
-    #         loop.run_until_complete(coro)
-    #     finally:
-    #         print("KEYPOINT loop.close")
-    #         loop.close()
-
     async def trigger_transcript_events():
         async def trigger_open_event():
             print("KEYPOINT trigger_open_event")
