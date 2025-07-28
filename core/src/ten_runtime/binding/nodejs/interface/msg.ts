@@ -15,15 +15,16 @@ export class Msg {
 
   getSource(): Loc {
     const arr = ten_addon.ten_nodejs_msg_get_source(this);
-    return new Loc(arr[0], arr[1], arr[2]);
+    return new Loc({
+      appUri: arr[0],
+      graphId: arr[1],
+      extensionName: arr[2],
+    });
   }
 
-  setDest(
-    appUri: string | undefined = undefined,
-    graphId: string | undefined = undefined,
-    extension: string | undefined = undefined,
-  ) {
-    ten_addon.ten_nodejs_msg_set_dest(this, appUri, graphId, extension);
+  setDests(dests: Partial<Loc>[]) {
+    const locs: Loc[] = dests.map((d) => new Loc(d));
+    ten_addon.ten_nodejs_msg_set_dests(this, locs);
   }
 
   setPropertyFromJson(path: string, jsonStr: string): TenError | undefined {

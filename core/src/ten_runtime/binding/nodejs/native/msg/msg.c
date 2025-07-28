@@ -73,10 +73,10 @@ static napi_value ten_nodejs_msg_get_name(napi_env env,
   return js_msg_name;
 }
 
-static napi_value ten_nodejs_msg_set_dest(napi_env env,
-                                          napi_callback_info info) {
-  const size_t argc = 4;
-  napi_value args[argc];  // this, app_uri, graph_id, extension
+static napi_value ten_nodejs_msg_set_dests(napi_env env,
+                                           napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, dests
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -91,51 +91,78 @@ static napi_value ten_nodejs_msg_set_dest(napi_env env,
                                 "Failed to get msg bridge: %d", status);
   TEN_ASSERT(msg_bridge, "Should not happen.");
 
-  ten_error_t err;
-  TEN_ERROR_INIT(err);
+  napi_value dests_array = args[1];
 
-  ten_string_t app_uri;
-  TEN_STRING_INIT(app_uri);
+  // Check if dests is an array
+  bool is_array = false;
+  status = napi_is_array(env, dests_array, &is_array);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && is_array,
+                                "dests parameter must be an array", NULL);
 
-  ten_string_t graph_id;
-  TEN_STRING_INIT(graph_id);
+  // Get array length
+  uint32_t array_length = 0;
+  status = napi_get_array_length(env, dests_array, &array_length);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to get array length: %d", status);
 
-  ten_string_t extension;
-  TEN_STRING_INIT(extension);
+  // Clear all existing destinations
+  ten_msg_clear_dest(msg_bridge->msg);
 
-  if (!is_js_undefined(env, args[1])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[1], &app_uri);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get app URI", NULL);
+  // Process each Loc object in the array
+  for (uint32_t i = 0; i < array_length; i++) {
+    napi_value loc_element = NULL;
+    status = napi_get_element(env, dests_array, i, &loc_element);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && loc_element != NULL,
+                                  "Failed to get array element %d: %d", i,
+                                  status);
+
+    // Extract appUri property
+    napi_value app_uri_val =
+        ten_nodejs_get_property(env, loc_element, "appUri");
+    ten_string_t app_uri;
+    TEN_STRING_INIT(app_uri);
+    const char *app_uri_str = NULL;
+    if (!is_js_undefined(env, app_uri_val)) {
+      bool rc = ten_nodejs_get_str_from_js(env, app_uri_val, &app_uri);
+      RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get appUri from Loc %d", i);
+      app_uri_str = ten_string_get_raw_str(&app_uri);
+    }
+
+    // Extract graphId property
+    napi_value graph_id_val =
+        ten_nodejs_get_property(env, loc_element, "graphId");
+    ten_string_t graph_id;
+    TEN_STRING_INIT(graph_id);
+    const char *graph_id_str = NULL;
+    if (!is_js_undefined(env, graph_id_val)) {
+      bool rc = ten_nodejs_get_str_from_js(env, graph_id_val, &graph_id);
+      RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get graphId from Loc %d", i);
+      graph_id_str = ten_string_get_raw_str(&graph_id);
+    }
+
+    // Extract extensionName property
+    napi_value extension_name_val =
+        ten_nodejs_get_property(env, loc_element, "extensionName");
+    ten_string_t extension_name;
+    TEN_STRING_INIT(extension_name);
+    const char *extension_name_str = NULL;
+    if (!is_js_undefined(env, extension_name_val)) {
+      bool rc =
+          ten_nodejs_get_str_from_js(env, extension_name_val, &extension_name);
+      RETURN_UNDEFINED_IF_NAPI_FAIL(
+          rc, "Failed to get extensionName from Loc %d", i);
+      extension_name_str = ten_string_get_raw_str(&extension_name);
+    }
+
+    // Add this destination
+    ten_msg_add_dest(msg_bridge->msg, app_uri_str, graph_id_str,
+                     extension_name_str);
+
+    // Clean up strings
+    ten_string_deinit(&app_uri);
+    ten_string_deinit(&graph_id);
+    ten_string_deinit(&extension_name);
   }
-
-  if (!is_js_undefined(env, args[2])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[2], &graph_id);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get graph ID", NULL);
-  }
-
-  if (!is_js_undefined(env, args[3])) {
-    bool rc = ten_nodejs_get_str_from_js(env, args[3], &extension);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get extension", NULL);
-  }
-
-  bool rc = ten_msg_clear_and_set_dest(
-      msg_bridge->msg, ten_string_get_raw_str(&app_uri),
-      ten_string_get_raw_str(&graph_id), ten_string_get_raw_str(&extension),
-      &err);
-  if (!rc) {
-    ten_string_t code_str;
-    ten_string_init_formatted(&code_str, "%d", ten_error_code(&err));
-
-    napi_throw_error(env, ten_string_get_raw_str(&code_str),
-                     ten_error_message(&err));
-
-    ten_string_deinit(&code_str);
-  }
-
-  ten_string_deinit(&app_uri);
-  ten_string_deinit(&graph_id);
-  ten_string_deinit(&extension);
-  ten_error_deinit(&err);
 
   return js_undefined(env);
 }
@@ -860,7 +887,7 @@ static napi_value ten_nodejs_msg_get_source(napi_env env,
 napi_value ten_nodejs_msg_module_init(napi_env env, napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_msg_get_name);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_get_source);
-  EXPORT_FUNC(env, exports, ten_nodejs_msg_set_dest);
+  EXPORT_FUNC(env, exports, ten_nodejs_msg_set_dests);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_set_property_from_json);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_get_property_to_json);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_set_property_number);

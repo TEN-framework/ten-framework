@@ -5,9 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 export class Loc {
-  constructor(
-    public readonly appUri: string | undefined,
-    public readonly graphId: string | undefined,
-    public readonly extensionName: string | undefined,
-  ) {}
+  public readonly appUri?: string;
+  public readonly graphId?: string;
+  public readonly extensionName?: string;
+
+  constructor(init: Partial<Loc> = {}) {
+    // Copy the fields from init if present; otherwise, keep them as undefined.
+    Object.assign(this, init);
+  }
 }
