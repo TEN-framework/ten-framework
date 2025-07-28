@@ -70,6 +70,14 @@ class DefaultExtension extends Extension {
     const cmdName = cmd.getName();
     tenEnv.log(LogLevel.INFO, "cmdName:" + cmdName);
 
+    const source = cmd.getSource();
+    tenEnv.log(LogLevel.INFO, "getSource: appUri:" + source.appUri);
+    tenEnv.log(LogLevel.INFO, "getSource: graphId:" + source.graphId);
+    tenEnv.log(
+      LogLevel.INFO,
+      "getSource: extensionName:" + source.extensionName,
+    );
+
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result === undefined, "result is not undefined");

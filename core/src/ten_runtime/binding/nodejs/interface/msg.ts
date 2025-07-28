@@ -5,11 +5,17 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { TenError } from "./error.js";
+import { Loc } from "./loc.js";
 import ten_addon from "./ten_addon.js";
 
 export class Msg {
   getName(): string {
     return ten_addon.ten_nodejs_msg_get_name(this);
+  }
+
+  getSource(): Loc {
+    const arr = ten_addon.ten_nodejs_msg_get_source(this);
+    return new Loc(arr[0], arr[1], arr[2]);
   }
 
   setDest(
@@ -18,15 +24,6 @@ export class Msg {
     extension: string | undefined = undefined,
   ) {
     ten_addon.ten_nodejs_msg_set_dest(this, appUri, graphId, extension);
-  }
-
-  getSource(): [string | undefined, string | undefined, string | undefined] {
-    const arr = ten_addon.ten_nodejs_msg_get_source(this);
-    return [0, 1, 2].map((i) => (arr[i] === "" ? undefined : arr[i])) as [
-      string | undefined,
-      string | undefined,
-      string | undefined,
-    ];
   }
 
   setPropertyFromJson(path: string, jsonStr: string): TenError | undefined {
