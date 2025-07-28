@@ -1,0 +1,10 @@
+{
+  "api_key": "test_api_key",
+  "language": "en",
+  "model": "nova-2",
+  "smart_format": true,
+  "interim_results": true,
+  "punctuate": true,
+  "profanity_filter": false,
+  "keywords": ["TEN:3", "framework:2", "agent:1"]
+}
