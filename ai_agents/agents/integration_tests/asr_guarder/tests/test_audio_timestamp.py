@@ -58,7 +58,7 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         print("   - Verify duration_ms represents audio segment length")
         print("   - Check timestamp precision is milliseconds")
         print("=" * 80)
-
+        
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
