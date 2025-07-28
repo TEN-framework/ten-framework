@@ -400,7 +400,7 @@ def test_asr_result(extension_name: str, config_dir: str) -> None:
 
     # Audio file path
     audio_file_path = os.path.join(
-        os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
+        os.path.dirname(__file__), "test_data/16k_en_us.pcm"
     )
 
     # Get config file path

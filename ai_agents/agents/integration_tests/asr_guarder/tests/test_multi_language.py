@@ -310,7 +310,7 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
     test_configs = [
         {
             "name": "English",
-            "audio_file": "16k_en_us_helloworld.pcm",
+            "audio_file": "16k_en_us.pcm",
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
         },

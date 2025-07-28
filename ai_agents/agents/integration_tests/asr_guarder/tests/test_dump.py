@@ -89,7 +89,7 @@ class DumpTester(AsyncExtensionTester):
 
         # Audio file path
         audio_file_path = os.path.join(
-            os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
+            os.path.dirname(__file__), "test_data/16k_en_us.pcm"
         )
 
         if not os.path.exists(audio_file_path):
@@ -162,7 +162,7 @@ class DumpTester(AsyncExtensionTester):
 
             # Read the original audio file to compare with dump file
             audio_file_path = os.path.join(
-                os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
+                os.path.dirname(__file__), "test_data/16k_en_us.pcm"
             )
 
             if os.path.exists(audio_file_path):
@@ -321,7 +321,7 @@ def test_dump(extension_name: str, config_dir: str) -> None:
 
     # Read the original audio file to compare with dump file
     audio_file_path = os.path.join(
-        os.path.dirname(__file__), "test_data/16k_en_us_helloworld.pcm"
+        os.path.dirname(__file__), "test_data/16k_en_us.pcm"
     )
 
     if os.path.exists(audio_file_path):
