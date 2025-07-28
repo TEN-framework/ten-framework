@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 
 # Add project root to sys.path to allow running tests from this directory
-# The project root is 5 levels up from the parent directory of this file.
-project_root = str(Path(__file__).resolve().parents[5])
+# The project root is 6 levels up from the parent directory of this file.
+project_root = str(Path(__file__).resolve().parents[6])
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -15,6 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
+from typing import Any
 from unittest.mock import patch, AsyncMock
 import tempfile
 import os
@@ -29,6 +30,7 @@ from ten_runtime import (
     CmdResult,
     StatusCode,
     Data,
+    TenError,
 )
 from ten_ai_base.struct import TTSTextInput
 from minimax_tts2_python.minimax_tts import (
@@ -39,7 +41,10 @@ from minimax_tts2_python.minimax_tts import (
 
 
 class ExtensionTesterBasic(ExtensionTester):
-    def check_hello(self, ten_env: TenEnvTester, result: CmdResult):
+    def check_hello(self, ten_env: TenEnvTester, result: CmdResult | None):
+        if result is None:
+            ten_env.stop_test(TenError(1, "CmdResult is None"))
+            return
         statusCode = result.get_status_code()
         print("receive hello_world, status:" + str(statusCode))
 
@@ -47,17 +52,17 @@ class ExtensionTesterBasic(ExtensionTester):
             # TODO: move stop_test() to where the test passes
             ten_env.stop_test()
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
 
         print("send hello_world")
-        ten_env.send_cmd(
+        ten_env_tester.send_cmd(
             new_cmd,
             lambda ten_env, result, _: self.check_hello(ten_env, result),
         )
 
         print("tester on_start_done")
-        ten_env.on_start_done()
+        ten_env_tester.on_start_done()
 
 
 class ExtensionTesterEmptyParams(ExtensionTester):
@@ -68,10 +73,10 @@ class ExtensionTesterEmptyParams(ExtensionTester):
         self.error_message = None
         self.error_module = None
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts"""
-        ten_env.log_info("Test started")
-        ten_env.on_start_done()
+        ten_env_tester.log_info("Test started")
+        ten_env_tester.on_start_done()
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
@@ -102,9 +107,9 @@ class ExtensionTesterInvalidParams(ExtensionTester):
         self.error_module = None
         self.vendor_info = None
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request to trigger the logic."""
-        ten_env.log_info("Test started, sending TTS request to trigger mocked error")
+        ten_env_tester.log_info("Test started, sending TTS request to trigger mocked error")
 
         tts_input = TTSTextInput(
             request_id="test-request-for-invalid-params",
@@ -112,9 +117,9 @@ class ExtensionTesterInvalidParams(ExtensionTester):
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
-        ten_env.send_data(data)
+        ten_env_tester.send_data(data)
 
-        ten_env.on_start_done()
+        ten_env_tester.on_start_done()
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
@@ -149,9 +154,9 @@ class ExtensionTesterDump(ExtensionTester):
         self.audio_end_received = False
         self.received_audio_chunks = []
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
-        ten_env.log_info("Dump test started, sending TTS request.")
+        ten_env_tester.log_info("Dump test started, sending TTS request.")
 
         tts_input = TTSTextInput(
             request_id="tts_request_1",
@@ -159,8 +164,8 @@ class ExtensionTesterDump(ExtensionTester):
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
-        ten_env.send_data(data)
-        ten_env.on_start_done()
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
@@ -203,7 +208,10 @@ class ExtensionTesterDump(ExtensionTester):
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""
 
-    def check_hello(self, ten_env: TenEnvTester, result: CmdResult):
+    def check_hello(self, ten_env: TenEnvTester, result: CmdResult | None):
+        if result is None:
+            ten_env.stop_test(TenError(1, "CmdResult is None"))
+            return
         statusCode = result.get_status_code()
         print("receive hello_world, status:" + str(statusCode))
 
@@ -211,17 +219,17 @@ class ExtensionTesterForPassthrough(ExtensionTester):
             # TODO: move stop_test() to where the test passes
             ten_env.stop_test()
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
 
         print("send hello_world")
-        ten_env.send_cmd(
+        ten_env_tester.send_cmd(
             new_cmd,
             lambda ten_env, result, _: self.check_hello(ten_env, result),
         )
 
         print("tester on_start_done")
-        ten_env.on_start_done()
+        ten_env_tester.on_start_done()
 
 
 class ExtensionTesterMetrics(ExtensionTester):
@@ -232,9 +240,9 @@ class ExtensionTesterMetrics(ExtensionTester):
         self.audio_frame_received = False
         self.audio_end_received = False
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
-        ten_env.log_info("Metrics test started, sending TTS request.")
+        ten_env_tester.log_info("Metrics test started, sending TTS request.")
 
         tts_input = TTSTextInput(
             request_id="tts_request_for_metrics",
@@ -242,8 +250,8 @@ class ExtensionTesterMetrics(ExtensionTester):
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
-        ten_env.send_data(data)
-        ten_env.on_start_done()
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
@@ -277,14 +285,14 @@ class ExtensionTesterMetrics(ExtensionTester):
 class ExtensionTesterRobustness(ExtensionTester):
     def __init__(self):
         super().__init__()
-        self.first_request_error: dict | None = None
+        self.first_request_error: dict[str, Any] | None = None
         self.second_request_successful = False
         self.ten_env: TenEnvTester | None = None
 
-    def on_start(self, ten_env: TenEnvTester) -> None:
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends the first TTS request."""
-        self.ten_env = ten_env
-        ten_env.log_info("Robustness test started, sending first TTS request.")
+        self.ten_env = ten_env_tester
+        ten_env_tester.log_info("Robustness test started, sending first TTS request.")
 
         # First request, expected to fail
         tts_input_1 = TTSTextInput(
@@ -293,11 +301,14 @@ class ExtensionTesterRobustness(ExtensionTester):
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
-        ten_env.send_data(data)
-        ten_env.on_start_done()
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
 
     def send_second_request(self):
         """Sends the second TTS request to verify reconnection."""
+        if self.ten_env is None:
+            print("Error: ten_env is not initialized.")
+            return
         self.ten_env.log_info("Sending second TTS request to verify reconnection.")
         tts_input_2 = TTSTextInput(
             request_id="tts_request_to_succeed",
@@ -613,9 +624,10 @@ def test_reconnect_after_connection_drop(MockMinimaxTTS2):
         f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
 
     # 2. Verify that vendor_info was included in the error
-    assert tester.first_request_error.get("vendor_info") is not None, "Error message did not contain vendor_info."
-    assert tester.first_request_error.get("vendor_info").get("vendor") == "minimax", \
-        f"Expected vendor 'minimax', got {tester.first_request_error.get('vendor_info').get('vendor')}"
+    vendor_info = tester.first_request_error.get("vendor_info")
+    assert vendor_info is not None, "Error message did not contain vendor_info."
+    assert vendor_info.get("vendor") == "minimax", \
+        f"Expected vendor 'minimax', got {vendor_info.get('vendor')}"
 
     # 3. Verify that the client's start method was called twice (initial + reconnect)
     # This assertion is tricky because the reconnection logic might be inside the client.
@@ -687,3 +699,113 @@ def test_params_passthrough(MockMinimaxTTS2):
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")
+
+
+class ExtensionTesterTextInputEnd(ExtensionTester):
+    def __init__(self):
+        super().__init__()
+        self.ten_env: TenEnvTester | None = None
+        self.first_request_audio_end_received = False
+        self.second_request_error_received = False
+        self.error_code = None
+        self.error_message = None
+        self.error_module = None
+
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
+        self.ten_env = ten_env_tester
+        ten_env_tester.log_info("TextInputEnd test started, sending first TTS request.")
+
+        # 1. Send first request with text_input_end=True
+        tts_input_1 = TTSTextInput(
+            request_id="tts_request_1",
+            text="hello word, hello agora",
+            text_input_end=True
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(None, tts_input_1.model_dump_json())
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
+
+    def send_second_request(self):
+        """Sends the second TTS request that should be ignored."""
+        if self.ten_env is None:
+            return
+
+        self.ten_env.log_info("Sending second TTS request, expecting an error.")
+        # 2. Send second request with text_input_end=False
+        tts_input_2 = TTSTextInput(
+            request_id="tts_request_1",
+            text="this should be ignored",
+            text_input_end=False
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(None, tts_input_2.model_dump_json())
+        self.ten_env.send_data(data)
+
+
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        name = data.get_name()
+        ten_env.log_info(f"Received data: {name}")
+
+        if name == "tts_audio_end":
+            if not self.first_request_audio_end_received:
+                ten_env.log_info("Received tts_audio_end for the first request.")
+                self.first_request_audio_end_received = True
+                self.send_second_request()
+            return
+
+        json_str, _ = data.get_property_to_json(None)
+        ten_env.log_info(f"Received data: {json_str}")
+
+        if not json_str:
+            return
+
+        payload = json.loads(json_str)
+        request_id = payload.get("id")
+
+        if name == "error" and request_id == "tts_request_1":
+            ten_env.log_info(f"Received expected error for the second request: {payload}")
+            self.second_request_error_received = True
+            self.error_code = payload.get("code")
+            self.error_message = payload.get("message")
+            self.error_module = payload.get("module")
+            ten_env.stop_test()
+
+@patch('minimax_tts2_python.extension.MinimaxTTS2')
+def test_text_input_end_logic(MockMinimaxTTS2):
+    """
+    Tests that after a request with text_input_end=True is processed,
+    subsequent requests with the same request_id and text_input_end=False are ignored and trigger an error.
+    """
+    print("Starting test_text_input_end_logic with mock...")
+
+    # --- Mock Configuration ---
+    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
+
+    async def mock_get_audio_stream(text: str):
+        yield (b'\x11\x22\x33', EVENT_TTSResponse)
+        yield (None, EVENT_TTSSentenceEnd)
+
+    mock_instance.get.side_effect = mock_get_audio_stream
+
+    # --- Test Setup ---
+    config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
+    tester = ExtensionTesterTextInputEnd()
+    tester.set_test_mode_single(
+        "minimax_tts2_python",
+        json.dumps(config)
+    )
+
+    print("Running text_input_end logic test...")
+    tester.run()
+    print("text_input_end logic test completed.")
+
+    # --- Assertions ---
+    assert tester.first_request_audio_end_received, "Did not receive tts_audio_end for the first request."
+    assert tester.second_request_error_received, "Did not receive the expected error for the second request."
+    assert tester.error_code == 1000, f"Expected error code 1000, but got {tester.error_code}"
+    assert tester.error_message is not None and "Received a message for a finished request_id" in tester.error_message, "Error message is not as expected."
+
+    print("✅ Text input end logic test passed successfully.")

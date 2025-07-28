@@ -36,6 +36,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
         self.current_turn_id: int = -1
         self.recorder: PCMWriter | None = None
         self.sent_ts: datetime | None = None
+        self.current_request_finished: bool = False
+        self.finished_request_ids: set[str] = set()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -208,12 +210,29 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
                 self.current_request_id = t.request_id
+                self.current_request_finished = False
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+            elif self.current_request_finished:
+                if not t.text_input_end:
+                    error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                    self.ten_env.log_error(error_msg)
+                    await self.send_tts_error(
+                        t.request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.NON_FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                        ),
+                    )
+                return
 
             if t.text.strip() == "":
                 self.ten_env.log_info("Received empty text for TTS request")
+                if t.text_input_end:
+                    self.current_request_finished = True
                 return
 
             # Record TTFB timing
@@ -278,6 +297,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT finish session for request ID: {t.request_id}"
                 )
+                self.current_request_finished = True
 
         except MinimaxTTSTaskFailedException as e:
             self.ten_env.log_error(
