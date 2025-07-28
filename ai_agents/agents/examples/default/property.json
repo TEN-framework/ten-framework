@@ -1015,16 +1015,12 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "minimax_tts_python",
+              "addon": "azure_tts",
               "extension_group": "tts",
               "property": {
-                "voice_id": "male-qn-qingse",
-                "model": "speech-01-turbo",
-                "group_id": "${env:MINIMAX_TTS_GROUP_ID}",
-                "request_timeout_seconds": 10,
-                "api_key": "${env:MINIMAX_TTS_API_KEY}",
-                "sample_rate": 32000,
-                "url": "https://api.minimax.chat/v1/t2a_v2"
+                "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+                "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
               }
             },
             {
@@ -1105,14 +1101,6 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "selector": "controlled_extensions"
-                    }
-                  ]
-                },
-                {
                   "name": "on_user_joined",
                   "source": [
                     {
@@ -1130,14 +1118,6 @@
                 }
               ],
               "data": [
-                {
-                  "name": "text_data",
-                  "dest": [
-                    {
-                      "selector": "text_data_dest"
-                    }
-                  ]
-                },
                 {
                   "name": "asr_result",
                   "source": [
@@ -1187,6 +1167,16 @@
               "audio_frame": [
                 {
                   "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "cmd": [
+                {
+                  "name": "flush",
                   "dest": [
                     {
                       "extension": "agora_rtc"
