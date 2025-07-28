@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
+from ten_ai_base.utils import encrypt
 
 
 @dataclass
@@ -42,13 +43,16 @@ class DeepgramASRConfig(BaseModel):
     def to_json(self, sensitive_handling: bool = False) -> str:
         """Convert config to JSON string with optional sensitive data handling."""
         config_dict = self.model_dump()
-        # print(f"Config to JSON: {config_dict}")
         if sensitive_handling and self.api_key:
-            config_dict["api_key"] = "***"
+            config_dict["api_key"] = encrypt(config_dict["api_key"])
+        if config_dict["params"]:
+            for key, value in config_dict["params"].items():
+                if key == "api_key":
+                    config_dict["params"][key] = encrypt(value)
         return str(config_dict)
 
     @property
-    def real_language(self):
+    def normalized_language(self):
         if self.language == "zh-CN":
             return "zh-CN"
         elif self.language == "en-US":
