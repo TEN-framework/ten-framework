@@ -5,7 +5,7 @@
 #
 import asyncio
 import json
-from typing import Any, Awaitable, Optional, Tuple
+from typing import Any, Optional, Tuple
 from pydantic import BaseModel
 from ten_runtime import (
     AsyncExtension,
@@ -68,9 +68,25 @@ class MainControlExtension(AsyncExtension):
                 data_name, data = await self.data_events.get()
                 match data_name:
                     case "asr_result":
-                        await self._on_data_asr_result(self.ten_env, data)
+                        asr_result_json, _ = data.get_property_to_json(None)
+                        asr_result_dict = json.loads(asr_result_json)
+                        text = asr_result_dict.get("text", "")
+                        final = asr_result_dict.get("final", False)
+                        metadata = asr_result_dict.get("metadata", {})
+                        stream_id = int(metadata.get("session_id", "100"))
+                        if final or len(text) > 2:
+                            await self._interrupt(self.ten_env)
+                        if final:
+                            await self._send_to_llm(self.ten_env, text, True)
+
+                        await self._send_transcript(self.ten_env, text, final, final, stream_id)
                     case "llm_result":
-                        await self._on_data_llm_result(self.ten_env, data)
+                        llm_result_json, _ = data.get_property_to_json(None)
+                        llm_result_dict = json.loads(llm_result_json)
+                        text = llm_result_dict.get("text", "")
+                        end_of_segment = llm_result_dict.get("end_of_segment", False)
+                        await self._send_to_tts(self.ten_env, text)
+                        await self._send_transcript(self.ten_env, text, end_of_segment, True, 100)
                     case _:
                         self.ten_env.log_info(f"Unknown data: {data_name}")
             except Exception as e:
@@ -94,33 +110,6 @@ class MainControlExtension(AsyncExtension):
             except Exception as e:
                 self.ten_env.log_error(f"Error processing command: {e}")
 
-
-
-    async def _on_data_asr_result(
-        self, ten_env: AsyncTenEnv, data: Data
-    ) -> None:
-        asr_result_json, _ = data.get_property_to_json(None)
-        asr_result_dict = json.loads(asr_result_json)
-        text = asr_result_dict.get("text", "")
-        final = asr_result_dict.get("final", False)
-        metadata = asr_result_dict.get("metadata", {})
-        stream_id = int(metadata.get("session_id", "100"))
-        if final or len(text) > 2:
-            await self._interrupt(ten_env)
-        if final:
-            await self._send_to_llm(ten_env, text, True)
-
-        await self._send_transcript(ten_env, text, final, final, stream_id)
-
-    async def _on_data_llm_result(
-        self, ten_env: AsyncTenEnv, data: Data
-    ) -> None:
-        llm_result_json, _ = data.get_property_to_json(None)
-        llm_result_dict = json.loads(llm_result_json)
-        text = llm_result_dict.get("text", "")
-        end_of_segment = llm_result_dict.get("end_of_segment", False)
-        await self._send_to_tts(ten_env, text)
-        await self._send_transcript(ten_env, text, end_of_segment, True, 100)
 
     async def _send_to_tts(self, ten_env: AsyncTenEnv, text: str):
         await self._send_data(ten_env, "text_data", "tts", {"text": text})
