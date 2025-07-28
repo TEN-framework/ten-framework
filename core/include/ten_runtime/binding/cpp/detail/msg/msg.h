@@ -9,7 +9,6 @@
 #include "ten_runtime/ten_config.h"
 
 #include <string>
-#include <tuple>
 
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/msg.h"
@@ -66,13 +65,13 @@ class msg_t {
         ten_error_set(err->get_c_error(), TEN_ERROR_CODE_INVALID_ARGUMENT,
                       "Invalid TEN message.");
       }
-      if (app_uri) {
+      if (app_uri != nullptr) {
         *app_uri = nullptr;
       }
-      if (graph_id) {
+      if (graph_id != nullptr) {
         *graph_id = nullptr;
       }
-      if (extension_name) {
+      if (extension_name != nullptr) {
         *extension_name = nullptr;
       }
       return false;
