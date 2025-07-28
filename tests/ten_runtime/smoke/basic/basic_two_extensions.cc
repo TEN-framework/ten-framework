@@ -35,13 +35,13 @@ class test_extension_2 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_world") {
-      const char *app_uri = nullptr;
-      const char *graph_id = nullptr;
-      const char *extension_name = nullptr;
-      cmd->get_source(&app_uri, &graph_id, &extension_name);
-      TEN_LOGI("app_uri: %s", app_uri);
-      TEN_LOGI("graph_id: %s", graph_id);
-      TEN_LOGI("extension_name: %s", extension_name);
+      auto loc = cmd->get_source();
+      TEN_LOGI("get_source: app_uri: %s",
+               loc.app_uri ? loc.app_uri->c_str() : "");
+      TEN_LOGI("get_source: graph_id: %s",
+               loc.graph_id ? loc.graph_id->c_str() : "");
+      TEN_LOGI("get_source: extension_name: %s",
+               loc.extension_name ? loc.extension_name->c_str() : "");
 
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
