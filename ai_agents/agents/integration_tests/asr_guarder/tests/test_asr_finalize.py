@@ -18,6 +18,7 @@ from ten_runtime import (
 import json
 import asyncio
 import os
+from .id_group_manager import AsrIdGroupManager, AsrResultGroup
 
 
 # Constants for audio configuration
@@ -67,9 +68,8 @@ class AsrFinalizeTester(AsyncExtensionTester):
         self.final_id: str | None = None
         self.waiting_for_final: bool = False
 
-        # Track non-final and final results for validation
-        self.non_final_results: list[dict[str, Any]] = []
-        self.final_result: dict[str, Any] | None = None
+        # Track ASR results using ID group manager
+        self.id_group_manager = AsrIdGroupManager()
 
         # Track finalize state
         self.finalize_id: str | None = None
@@ -307,38 +307,36 @@ class AsrFinalizeTester(AsyncExtensionTester):
     def _validate_non_final_and_final_results(
         self, ten_env: AsyncTenEnvTester
     ) -> bool:
-        """Validate non-final and final results for the first audio send."""
-        # Check if we have both non-final and final results
-        if not self.non_final_results:
+        """Validate non-final and final results using ID group manager."""
+        # Get complete groups
+        complete_groups = self.id_group_manager.get_complete_groups()
+        
+        if not complete_groups:
             self._stop_test_with_error(
-                ten_env, "No non-final results received for first audio send"
-            )
-            return False
-
-        if not self.final_result:
-            self._stop_test_with_error(
-                ten_env, "No final result received for first audio send"
+                ten_env, "No complete groups received"
             )
             return False
 
         ten_env.log_info(
-            f"✅ Received {len(self.non_final_results)} non-final results and 1 final result"
+            f"✅ Received {len(complete_groups)} complete groups"
         )
 
-        # Validate data format consistency
-        if not self._validate_data_format_consistency(ten_env):
-            return False
-
-        # Validate ID consistency
-        if not self._validate_id_consistency(ten_env):
-            return False
+        # Validate each complete group
+        for i, group in enumerate(complete_groups):
+            ten_env.log_info(
+                f"Validating group {i}: {len(group.non_final_results)} non-final, 1 final"
+            )
+            
+            # Validate data format consistency for this group
+            if not self._validate_group_data_format_consistency(ten_env, group):
+                return False
 
         return True
 
-    def _validate_data_format_consistency(
-        self, ten_env: AsyncTenEnvTester
+    def _validate_group_data_format_consistency(
+        self, ten_env: AsyncTenEnvTester, group: AsrResultGroup
     ) -> bool:
-        """Validate that intermediate and final results have the same data format."""
+        """Validate that a group has consistent data format."""
         required_fields = [
             "id",
             "text",
@@ -349,51 +347,69 @@ class AsrFinalizeTester(AsyncExtensionTester):
         ]
 
         # Check final result format
-        if self.final_result is None:
-            self._stop_test_with_error(ten_env, "Final result is None")
+        if group.final_result is None:
+            self._stop_test_with_error(ten_env, f"Group {group.group_id} final result is None")
             return False
 
         for field in required_fields:
-            if field not in self.final_result:
+            if field not in group.final_result:
                 self._stop_test_with_error(
-                    ten_env, f"Final result missing required field: {field}"
+                    ten_env, f"Group {group.group_id} final result missing required field: {field}"
                 )
                 return False
 
         # Check non-final results format
-        for i, non_final in enumerate(self.non_final_results):
+        for i, non_final in enumerate(group.non_final_results):
             for field in required_fields:
                 if field not in non_final:
                     self._stop_test_with_error(
                         ten_env,
-                        f"Non-final result {i} missing required field: {field}",
+                        f"Group {group.group_id} non-final result {i} missing required field: {field}",
                     )
                     return False
 
         ten_env.log_info(
-            "✅ Data format consistency validated - all results have required fields"
+            f"✅ Group {group.group_id} data format consistency validated"
+        )
+        return True
+
+    def _validate_data_format_consistency(
+        self, ten_env: AsyncTenEnvTester
+    ) -> bool:
+        """Validate that all groups have consistent data format."""
+        complete_groups = self.id_group_manager.get_complete_groups()
+        
+        for group in complete_groups:
+            if not self._validate_group_data_format_consistency(ten_env, group):
+                return False
+
+        ten_env.log_info(
+            "✅ Data format consistency validated - all groups have required fields"
         )
         return True
 
     def _validate_id_consistency(self, ten_env: AsyncTenEnvTester) -> bool:
-        """Validate that all intermediate and final results have the same ID."""
-        if self.final_result is None:
-            self._stop_test_with_error(ten_env, "Final result is None")
-            return False
-
-        final_id = self.final_result.get("id", "")
-
-        for i, non_final in enumerate(self.non_final_results):
-            non_final_id = non_final.get("id", "")
-            if non_final_id != final_id:
-                self._stop_test_with_error(
-                    ten_env,
-                    f"ID inconsistency: Non-final result {i} has id '{non_final_id}' but final result has id '{final_id}'",
-                )
+        """Validate that all groups have consistent IDs within each group."""
+        complete_groups = self.id_group_manager.get_complete_groups()
+        
+        for group in complete_groups:
+            if group.final_result is None:
+                self._stop_test_with_error(ten_env, f"Group {group.group_id} final result is None")
                 return False
 
+            group_id = group.final_result.get("id", "")
+
+            for i, non_final in enumerate(group.non_final_results):
+                non_final_id = non_final.get("id", "")
+                if non_final_id != group_id:
+                    self._stop_test_with_error(
+                        ten_env,
+                        f"Group {group.group_id} ID inconsistency: Non-final result {i} has id '{non_final_id}' but final result has id '{group_id}'",
+                    )
+                    return False
+
         ten_env.log_info(
-            f"✅ ID consistency validated - all results have the same id: '{final_id}'"
+            f"✅ ID consistency validated - all groups have consistent IDs"
         )
         return True
 
@@ -478,18 +494,20 @@ class AsrFinalizeTester(AsyncExtensionTester):
             f"Received ASR result - final: {is_final}, id: {result_id}"
         )
 
-        # Store results based on final status
-        if not is_final:
-            # Store non-final result
-            self.non_final_results.append(json_data)
-            ten_env.log_info(
-                f"Stored non-final result {len(self.non_final_results)}"
-            )
-        else:
-            # Store final result
-            self.final_result = json_data
-            ten_env.log_info("Stored final result")
+        # Add result to ID group manager
+        group_id = self.id_group_manager.add_result(json_data)
+        ten_env.log_info(f"Added result to group: {group_id}")
 
+        # Get the group this result was added to
+        group = self.id_group_manager.get_group_by_id(group_id)
+        if group:
+            ten_env.log_info(
+                f"Group {group_id}: {len(group.non_final_results)} non-final, "
+                f"final: {group.final_result is not None}"
+            )
+
+        # If this is a final result, validate it
+        if is_final:
             # Log complete structure for final result
             ten_env.log_info("Received final ASR result, validating...")
             self._log_asr_result_structure(
@@ -503,30 +521,26 @@ class AsrFinalizeTester(AsyncExtensionTester):
             ):
                 return
 
-            # Validate non-final and final results
-            if not self._validate_non_final_and_final_results(ten_env):
+            # Validate group consistency
+            if not self.id_group_manager.validate_group_consistency():
+                self._stop_test_with_error(
+                    ten_env,
+                    "ID group consistency validation failed"
+                )
                 return
 
-            # Store the ID
-            if self.final_id is None:
-                self.final_id = result_id
-                ten_env.log_info(
-                    f"✅ Final ASR result received with id: {result_id}"
-                )
-                self.waiting_for_final = False
+            # Log group summary
+            summary = self.id_group_manager.get_group_summary()
+            ten_env.log_info(f"Group summary: {summary}")
 
-                # Check if we have received finalize_end signal
-                if self.finalize_end_received:
-                    ten_env.log_info(
-                        "✅ ASR finalize test passed with finalize validation"
-                    )
-                    ten_env.stop_test()
-                else:
-                    ten_env.log_info("Waiting for asr_finalize_end signal...")
-            else:
+            # Check if we have received finalize_end signal
+            if self.finalize_end_received:
                 ten_env.log_info(
-                    f"Received additional final result with id: {result_id}"
+                    "✅ ASR finalize test passed with finalize validation"
                 )
+                ten_env.stop_test()
+            else:
+                ten_env.log_info("Waiting for asr_finalize_end signal...")
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -594,3 +608,4 @@ def test_asr_finalize(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
+

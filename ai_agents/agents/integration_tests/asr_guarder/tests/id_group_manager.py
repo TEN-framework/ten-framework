@@ -136,4 +136,4 @@ class AsrIdGroupManager:
                 }
                 for group_id, group in self.groups.items()
             },
-        } 
+        }

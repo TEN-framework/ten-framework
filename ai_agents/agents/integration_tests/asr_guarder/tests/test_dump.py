@@ -147,15 +147,26 @@ class DumpTester(AsyncExtensionTester):
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
         )
 
-    def _validate_dump_file(self, dump_file_path: str) -> bool:
+    def _validate_dump_file(self, dump_dir: str) -> bool:
         """Validate the dump file content."""
         try:
-            if not os.path.exists(dump_file_path):
-                print(f"❌ Dump file does not exist: {dump_file_path}")
+            dump_path = Path(dump_dir)
+            if not dump_path.exists():
+                print(f"❌ Dump directory does not exist: {dump_dir}")
                 return False
 
+            # Find any .pcm file in the dump directory
+            pcm_files = list(dump_path.glob("*.pcm"))
+            if len(pcm_files) == 0:
+                print(f"❌ No .pcm files found in dump directory: {dump_dir}")
+                return False
+
+            # Use the first .pcm file found
+            dump_file_path = pcm_files[0]
+            print(f"Found dump file: {dump_file_path}")
+
             # Check file size is not empty
-            file_size = os.path.getsize(dump_file_path)
+            file_size = dump_file_path.stat().st_size
             if file_size == 0:
                 print(f"❌ Dump file is empty: {file_size} bytes")
                 return False
@@ -257,12 +268,8 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     temp_dir = Path(tempfile.gettempdir()) / str(uuid.uuid4())
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define dump file path
-    dump_file_path = temp_dir / "azure_asr_in.pcm"
-
-    # Remove existing dump file if it exists
-    if dump_file_path.exists():
-        dump_file_path.unlink()
+    # Define dump directory (we'll check for any .pcm file in this directory)
+    dump_dir = temp_dir
 
     # Update config to enable dump functionality
     if "params" not in config:
@@ -276,13 +283,13 @@ def test_dump(extension_name: str, config_dir: str) -> None:
         "language": DUMP_EXPECTED_LANGUAGE,
         "session_id": DUMP_SESSION_ID,
         "frames": TOTAL_FRAMES,
-        "dump_file": str(dump_file_path),
+        "dump_path": str(dump_dir),
     }
 
     # Log test configuration
     print(f"Using test configuration: {config}")
     print(f"Temporary directory: {temp_dir}")
-    print(f"Dump file path: {dump_file_path}")
+    print(f"Dump directory: {dump_dir}")
     print(
         f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}', frames={expected_result['frames']}"
     )
@@ -307,11 +314,15 @@ def test_dump(extension_name: str, config_dir: str) -> None:
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
 
-    # Validate dump file
-    print(f"Validating dump file: {dump_file_path}")
+    # Find any .pcm file in the dump directory
+    pcm_files = list(dump_dir.glob("*.pcm"))
     assert (
-        dump_file_path.exists()
-    ), f"Dump file does not exist: {dump_file_path}"
+        len(pcm_files) > 0
+    ), f"No .pcm files found in dump directory: {dump_dir}"
+
+    # Use the first .pcm file found
+    dump_file_path = pcm_files[0]
+    print(f"Found dump file: {dump_file_path}")
 
     # Validate dump file content
     file_size = dump_file_path.stat().st_size

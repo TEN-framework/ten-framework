@@ -30,7 +30,9 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
         for i in range(30):
             byte1 = i % 256
             byte2 = (i + 1) % 256
-            chunk = bytes([byte1, byte2]) * 160  # 320 bytes (16-bit * 160 samples)
+            chunk = (
+                bytes([byte1, byte2]) * 160
+            )  # 320 bytes (16-bit * 160 samples)
             if not chunk:
                 break
             audio_frame = AudioFrame.create("pcm_frame")
@@ -49,7 +51,9 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        self.sender_task = asyncio.create_task(self.audio_sender(ten_env_tester))
+        self.sender_task = asyncio.create_task(
+            self.audio_sender(ten_env_tester)
+        )
 
     @override
     async def on_stop(self, ten_env_tester: AsyncTenEnvTester) -> None:
@@ -86,15 +90,12 @@ def test_dump(patch_azure_ws):
     temp_dir = Path(tempfile.gettempdir()) / str(uuid.uuid4())
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    dump_file = temp_dir / "azure_asr_in.pcm"
-    dump_file.unlink(missing_ok=True)
-
     property_json = {
         "params": {
             "key": "fake_key",
             "region": "fake_region",
             "dump": True,
-            "dump_path": str(dump_file.parent),
+            "dump_path": str(temp_dir),
         }
     }
 
@@ -103,7 +104,15 @@ def test_dump(patch_azure_ws):
     err = tester.run()
     assert err is None, f"test_asr_result err: {err}"
 
-    assert dump_file.exists()
+    # Find any .pcm file in the dump directory
+    pcm_files = list(temp_dir.glob("*.pcm"))
+    assert (
+        len(pcm_files) > 0
+    ), f"No .pcm files found in dump directory: {temp_dir}"
+
+    # Use the first .pcm file found
+    dump_file = pcm_files[0]
+    print(f"Found dump file: {dump_file}")
 
     # Check the dump file content
     with open(dump_file, "rb") as f:

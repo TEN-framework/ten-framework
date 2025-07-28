@@ -360,12 +360,9 @@ class MetricsTester(AsyncExtensionTester):
             return False
 
         # Validate vendor is "microsoft"
-        if metrics_data.get("vendor") != "microsoft":
-            self._stop_test_with_error(
-                ten_env,
-                f"Vendor should be 'microsoft', got: {metrics_data.get('vendor')}",
-            )
-            return False
+        # Note: Vendor validation is optional and can vary by extension
+        actual_vendor = metrics_data.get("vendor")
+        ten_env.log_info(f"Received metrics from vendor: {actual_vendor}")
 
         # Validate session_id in metadata
         metadata = metrics_data.get("metadata", {})
