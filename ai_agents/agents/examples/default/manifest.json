@@ -110,6 +110,11 @@
     },
     {
       "type": "extension",
+      "name": "cloudsway_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
       "name": "minimax_v2v_python",
       "version": "=0.1.0"
     },
