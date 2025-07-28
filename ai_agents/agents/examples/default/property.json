@@ -36,7 +36,7 @@
               "property": {
                 "api_key": "${env:DEEPGRAM_API_KEY}",
                 "language": "en-US",
-                "model": "nova-2",
+                "model": "nova-3",
                 "sample_rate": 16000
               }
             },

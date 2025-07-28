@@ -9,6 +9,7 @@
 #include "ten_runtime/ten_config.h"
 
 #include <string>
+#include <tuple>
 
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/msg.h"
@@ -54,6 +55,32 @@ class msg_t {
     }
 
     return ten_msg_get_name(c_msg);
+  }
+
+  bool get_source(const char **app_uri, const char **graph_id,
+                  const char **extension_name, error_t *err = nullptr) const {
+    TEN_ASSERT(c_msg, "Should not happen.");
+
+    if (c_msg == nullptr) {
+      if (err != nullptr && err->get_c_error() != nullptr) {
+        ten_error_set(err->get_c_error(), TEN_ERROR_CODE_INVALID_ARGUMENT,
+                      "Invalid TEN message.");
+      }
+      if (app_uri) {
+        *app_uri = nullptr;
+      }
+      if (graph_id) {
+        *graph_id = nullptr;
+      }
+      if (extension_name) {
+        *extension_name = nullptr;
+      }
+      return false;
+    }
+
+    ten_msg_get_source(c_msg, app_uri, graph_id, extension_name,
+                       err != nullptr ? err->get_c_error() : nullptr);
+    return true;
   }
 
   bool set_dest(const char *app_uri, const char *graph_id,

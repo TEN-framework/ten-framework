@@ -64,8 +64,8 @@ void ten_py_video_frame_destroy(PyObject *self) {
 }
 
 ten_py_video_frame_t *ten_py_video_frame_wrap(ten_shared_ptr_t *video_frame) {
-  TEN_ASSERT(video_frame && ten_msg_check_integrity(video_frame),
-             "Invalid argument.");
+  TEN_ASSERT(video_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(video_frame), "Invalid argument.");
 
   ten_py_video_frame_t *py_video_frame =
       ten_py_video_frame_create_internal(NULL);

@@ -44,12 +44,10 @@ type Msg interface {
 	free()
 	keepAlive()
 
-	GetName() (string, error)
-	SetDest(
-		appURI string,
-		graphID string,
-		extension string,
-	) error
+	GetName() (name string, err error)
+
+	GetSource() (appURI, graphID, extensionName *string, err error)
+	SetDest(appURI, graphID, extension string) (err error)
 
 	iProperty
 }
@@ -203,14 +201,43 @@ func (p *msg) GetName() (string, error) {
 	return C.GoString(msgName), nil
 }
 
-func (p *msg) SetDest(
-	appURI string,
-	graphID string,
-	extension string,
-) error {
+func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
 	defer p.keepAlive()
 
-	err := withCGOLimiter(func() error {
+	var cAppURI, cGraphID, cExtensionName *C.char
+	err = withCGOLimiter(func() error {
+		apiStatus := C.ten_go_msg_get_source(p.cPtr,
+			(**C.char)(unsafe.Pointer(&cAppURI)),
+			(**C.char)(unsafe.Pointer(&cGraphID)),
+			(**C.char)(unsafe.Pointer(&cExtensionName)),
+		)
+		return withCGoError(&apiStatus)
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if cAppURI != nil {
+		goAppURI := C.GoString(cAppURI)
+		appURI = &goAppURI
+	}
+	if cGraphID != nil {
+		goGraphID := C.GoString(cGraphID)
+		graphID = &goGraphID
+	}
+	if cExtensionName != nil {
+		goExtensionName := C.GoString(cExtensionName)
+		extensionName = &goExtensionName
+	}
+	return appURI, graphID, extensionName, nil
+}
+
+func (p *msg) SetDest(
+	appURI, graphID, extension string,
+) (err error) {
+	defer p.keepAlive()
+
+	err = withCGOLimiter(func() error {
 		apiStatus := C.ten_go_msg_set_dest(
 			p.cPtr,
 			unsafe.Pointer(unsafe.StringData(appURI)),
@@ -224,5 +251,5 @@ func (p *msg) SetDest(
 		return withCGoError(&apiStatus)
 	})
 
-	return err
+	return
 }

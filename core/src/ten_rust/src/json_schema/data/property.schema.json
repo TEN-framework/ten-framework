@@ -112,8 +112,12 @@
             "selector"
           ],
           "properties": {
-            "selector": {},
-            "msg_conversion": {}
+            "selector": {}
+            // If the selector feature is used, the msg_conversion feature is
+            // not supported. This is because selector represents multiple
+            // connections, making it difficult for users to specify on which
+            // connection to perform msg_conversion. Therefore, if need to use
+            // the msg_conversion feature, do not use the selector feature.
           },
           "additionalProperties": false
         }
@@ -135,6 +139,10 @@
         "selector": {
           "$ref": "#/$defs/alphanumericCharacters"
         }
+        // If the source field is used, the msg_conversion feature is not
+        // supported. This is because the msg_conversion feature is not easily
+        // understood under the source field. If need to use the msg_conversion
+        // feature, use the dest field.
       },
       "oneOf": [
         {

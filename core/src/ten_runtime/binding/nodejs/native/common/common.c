@@ -43,7 +43,7 @@ napi_value js_null(napi_env env) {
  *
  * This function creates a JavaScript array where:
  * - The first element (index 0) contains the result value.
- * - The second element (index 1) contains the error value (or null if no
+ * - The second element (index 1) contains the error value (or undefined if no
  * error).
  */
 napi_value ten_nodejs_create_result_tuple(napi_env env, napi_value res,

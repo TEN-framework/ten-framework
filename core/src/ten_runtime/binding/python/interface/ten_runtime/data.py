@@ -20,5 +20,5 @@ class Data(_Data):
     def create(cls: type[T], name: str) -> T:
         return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "Data":
+    def clone(self) -> "Data":  # pyright: ignore[reportImplicitOverride]
         return cast("Data", _Data.clone(self))

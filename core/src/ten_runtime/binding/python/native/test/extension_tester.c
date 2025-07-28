@@ -69,8 +69,8 @@ static void proxy_on_init(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   ten_py_ten_env_tester_t *py_ten_env_tester =
@@ -110,8 +110,8 @@ static void proxy_on_start(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   ten_py_ten_env_tester_t *py_ten_env_tester =
@@ -142,8 +142,8 @@ static void proxy_on_stop(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   ten_py_ten_env_tester_t *py_ten_env_tester =
@@ -178,8 +178,8 @@ static void proxy_on_deinit(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   ten_py_ten_env_tester_t *py_ten_env_tester =
@@ -229,8 +229,8 @@ static void proxy_on_cmd(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   PyObject *py_ten_env_tester = py_extension_tester->py_ten_env_tester;
@@ -273,8 +273,8 @@ static void proxy_on_data(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   PyObject *py_ten_env_tester = py_extension_tester->py_ten_env_tester;
@@ -308,8 +308,8 @@ static void proxy_on_audio_frame(ten_extension_tester_t *extension_tester,
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Invalid argument.");
-  TEN_ASSERT(audio_frame && ten_msg_check_integrity(audio_frame),
-             "Invalid argument.");
+  TEN_ASSERT(audio_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(audio_frame), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -318,8 +318,8 @@ static void proxy_on_audio_frame(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   PyObject *py_ten_env_tester = py_extension_tester->py_ten_env_tester;
@@ -353,8 +353,8 @@ static void proxy_on_video_frame(ten_extension_tester_t *extension_tester,
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Invalid argument.");
-  TEN_ASSERT(video_frame && ten_msg_check_integrity(video_frame),
-             "Invalid argument.");
+  TEN_ASSERT(video_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(video_frame), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -363,8 +363,8 @@ static void proxy_on_video_frame(ten_extension_tester_t *extension_tester,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)ten_binding_handle_get_me_in_target_lang(
           (ten_binding_handle_t *)extension_tester);
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   PyObject *py_ten_env_tester = py_extension_tester->py_ten_env_tester;
@@ -392,9 +392,9 @@ static void proxy_on_video_frame(ten_extension_tester_t *extension_tester,
 static ten_py_extension_tester_t *ten_py_extension_tester_init(
     ten_py_extension_tester_t *py_extension_tester, TEN_UNUSED PyObject *args,
     TEN_UNUSED PyObject *kw) {
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(
-                     (ten_py_extension_tester_t *)py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(
+                 (ten_py_extension_tester_t *)py_extension_tester),
              "Invalid argument.");
 
   py_extension_tester->c_extension_tester = ten_extension_tester_create(
@@ -421,9 +421,9 @@ PyObject *ten_py_extension_tester_create(PyTypeObject *type,
 void ten_py_extension_tester_destroy(PyObject *self) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(
-                     (ten_py_extension_tester_t *)py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(
+                 (ten_py_extension_tester_t *)py_extension_tester),
              "Invalid argument.");
 
   ten_extension_tester_destroy(py_extension_tester->c_extension_tester);
@@ -434,8 +434,8 @@ static PyObject *ten_py_extension_tester_set_test_mode_single(PyObject *self,
                                                               PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   if (PyTuple_GET_SIZE(args) != 2) {
@@ -461,8 +461,8 @@ static PyObject *ten_py_extension_tester_set_timeout(PyObject *self,
                                                      PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   if (PyTuple_GET_SIZE(args) != 1) {
@@ -488,8 +488,8 @@ static PyObject *ten_py_extension_tester_run(PyObject *self,
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)self;
 
-  TEN_ASSERT(py_extension_tester &&
-                 ten_py_extension_tester_check_integrity(py_extension_tester),
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
              "Invalid argument.");
 
   TEN_LOGI("ten_py_extension_tester_run");

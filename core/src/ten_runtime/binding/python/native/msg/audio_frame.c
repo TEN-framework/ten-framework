@@ -65,8 +65,8 @@ void ten_py_audio_frame_destroy(PyObject *self) {
 }
 
 ten_py_audio_frame_t *ten_py_audio_frame_wrap(ten_shared_ptr_t *audio_frame) {
-  TEN_ASSERT(audio_frame && ten_msg_check_integrity(audio_frame),
-             "Invalid argument.");
+  TEN_ASSERT(audio_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(audio_frame), "Invalid argument.");
 
   ten_py_audio_frame_t *py_audio_frame =
       ten_py_audio_frame_create_internal(NULL);
