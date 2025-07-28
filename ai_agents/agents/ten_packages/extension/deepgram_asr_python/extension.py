@@ -4,8 +4,6 @@ import os
 
 from typing_extensions import override
 from .const import (
-    FINALIZE_MODE_DISCONNECT,
-    FINALIZE_MODE_MUTE_PKG,
     DUMP_FILE_NAME,
     MODULE_NAME_ASR,
 )
@@ -173,14 +171,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug(
             f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
         )
-        if self.config.finalize_mode == FINALIZE_MODE_DISCONNECT:
-            await self._handle_finalize_disconnect()
-        elif self.config.finalize_mode == FINALIZE_MODE_MUTE_PKG:
-            await self._handle_finalize_mute_pkg()
-        else:
-            _ = self.ten_env.log_error(
-                f"Unknown finalize mode: {self.config.finalize_mode}"
-            )
+        self._handle_finalize_api()
 
     async def _register_deepgram_event_handlers(self):
         """Register event handlers for Deepgram WebSocket client."""
@@ -291,39 +282,22 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 message=error.to_json(),
             ),
             ModuleErrorVendorInfo(
-                vendor="deepgram",
+                vendor=self.vendor(),
                 code=str(error.code) if hasattr(error, 'code') else "unknown",
                 message=error.message if hasattr(error, 'message') else error.to_json(),
             ),
         )
 
-    async def _handle_finalize_disconnect(self):
-        """Handle finalize with disconnect mode."""
+    async def _handle_finalize_api(self):
+        """Handle finalize with api mode."""
         assert self.config is not None
 
         if self.client is None:
-            _ = self.ten_env.log_debug("finalize disconnect: client is not connected")
+            _ = self.ten_env.log_debug("finalize api: client is not connected")
             return
 
         await self.client.finalize()
-        _ = self.ten_env.log_debug("finalize disconnect completed")
-
-    async def _handle_finalize_mute_pkg(self):
-        """Handle finalize with mute package mode."""
-        assert self.config is not None
-
-        if self.client is None:
-            _ = self.ten_env.log_debug("finalize mute pkg: client is not initialized")
-            return
-
-        # Send empty audio data for mute duration
-        empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms * self.config.sample_rate / 1000 * 2
-        )
-        frame = bytearray(empty_audio_bytes_len)
-        await self.client.send(bytes(frame))
-        self.timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
-        self.ten_env.log_debug("finalize mute pkg completed")
+        _ = self.ten_env.log_debug("finalize api completed")
 
     async def _handle_reconnect(self):
         """
