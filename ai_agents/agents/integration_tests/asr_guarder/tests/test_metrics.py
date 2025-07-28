@@ -359,7 +359,6 @@ class MetricsTester(AsyncExtensionTester):
             )
             return False
 
-        # Validate vendor is "microsoft"
         # Note: Vendor validation is optional and can vary by extension
         actual_vendor = metrics_data.get("vendor")
         ten_env.log_info(f"Received metrics from vendor: {actual_vendor}")

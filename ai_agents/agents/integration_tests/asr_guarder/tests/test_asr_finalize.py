@@ -310,23 +310,19 @@ class AsrFinalizeTester(AsyncExtensionTester):
         """Validate non-final and final results using ID group manager."""
         # Get complete groups
         complete_groups = self.id_group_manager.get_complete_groups()
-        
+
         if not complete_groups:
-            self._stop_test_with_error(
-                ten_env, "No complete groups received"
-            )
+            self._stop_test_with_error(ten_env, "No complete groups received")
             return False
 
-        ten_env.log_info(
-            f"✅ Received {len(complete_groups)} complete groups"
-        )
+        ten_env.log_info(f"✅ Received {len(complete_groups)} complete groups")
 
         # Validate each complete group
         for i, group in enumerate(complete_groups):
             ten_env.log_info(
                 f"Validating group {i}: {len(group.non_final_results)} non-final, 1 final"
             )
-            
+
             # Validate data format consistency for this group
             if not self._validate_group_data_format_consistency(ten_env, group):
                 return False
@@ -348,13 +344,16 @@ class AsrFinalizeTester(AsyncExtensionTester):
 
         # Check final result format
         if group.final_result is None:
-            self._stop_test_with_error(ten_env, f"Group {group.group_id} final result is None")
+            self._stop_test_with_error(
+                ten_env, f"Group {group.group_id} final result is None"
+            )
             return False
 
         for field in required_fields:
             if field not in group.final_result:
                 self._stop_test_with_error(
-                    ten_env, f"Group {group.group_id} final result missing required field: {field}"
+                    ten_env,
+                    f"Group {group.group_id} final result missing required field: {field}",
                 )
                 return False
 
@@ -378,7 +377,7 @@ class AsrFinalizeTester(AsyncExtensionTester):
     ) -> bool:
         """Validate that all groups have consistent data format."""
         complete_groups = self.id_group_manager.get_complete_groups()
-        
+
         for group in complete_groups:
             if not self._validate_group_data_format_consistency(ten_env, group):
                 return False
@@ -391,10 +390,12 @@ class AsrFinalizeTester(AsyncExtensionTester):
     def _validate_id_consistency(self, ten_env: AsyncTenEnvTester) -> bool:
         """Validate that all groups have consistent IDs within each group."""
         complete_groups = self.id_group_manager.get_complete_groups()
-        
+
         for group in complete_groups:
             if group.final_result is None:
-                self._stop_test_with_error(ten_env, f"Group {group.group_id} final result is None")
+                self._stop_test_with_error(
+                    ten_env, f"Group {group.group_id} final result is None"
+                )
                 return False
 
             group_id = group.final_result.get("id", "")
@@ -524,8 +525,7 @@ class AsrFinalizeTester(AsyncExtensionTester):
             # Validate group consistency
             if not self.id_group_manager.validate_group_consistency():
                 self._stop_test_with_error(
-                    ten_env,
-                    "ID group consistency validation failed"
+                    ten_env, "ID group consistency validation failed"
                 )
                 return
 
@@ -608,4 +608,3 @@ def test_asr_finalize(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
-
