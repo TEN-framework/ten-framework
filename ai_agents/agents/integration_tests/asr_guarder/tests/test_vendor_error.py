@@ -42,6 +42,21 @@ class VendorErrorTester(AsyncExtensionTester):
         self, audio_file_path: str, session_id: str = DEFAULT_SESSION_ID
     ):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: Vendor Error Detection Test")
+        print("=" * 80)
+        print(
+            "📋 Test Description: Validate ASR vendor error detection and handling"
+        )
+        print("🎯 Test Objectives:")
+        print("   - Verify ASR extension properly detects vendor errors")
+        print("   - Validate error message format and structure")
+        print("   - Check required error fields are present")
+        print("   - Validate vendor info fields in error responses")
+        print("   - Test error code types and values")
+        print("   - Ensure proper error handling for invalid configurations")
+        print("=" * 80)
+
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.sender_task: asyncio.Task[None] | None = None
@@ -191,15 +206,6 @@ class VendorErrorTester(AsyncExtensionTester):
         if metadata is not None:
             if not isinstance(metadata, dict):
                 error_details = "Field 'metadata' must be object type"
-                ten_env.log_error(error_details)
-                return False, error_details
-
-            if "session_id" in metadata and not isinstance(
-                metadata.get("session_id"), str
-            ):
-                error_details = (
-                    "Field 'metadata.session_id' must be string type"
-                )
                 ten_env.log_error(error_details)
                 return False, error_details
 

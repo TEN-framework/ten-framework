@@ -39,6 +39,19 @@ class AsrReconnectionTester(AsyncExtensionTester):
 
     def __init__(self, audio_file_path: str):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: ASR Reconnection Test")
+        print("=" * 80)
+        print("📋 Test Description: Validate ASR extension reconnection mechanism")
+        print("🎯 Test Objectives:")
+        print("   - Test ASR extension reconnection with invalid credentials")
+        print("   - Verify error handling during connection failures")
+        print("   - Validate reconnection attempt tracking")
+        print("   - Check error message format and structure")
+        print("   - Test continuous audio sending during reconnection")
+        print("   - Validate reconnection timeout behavior")
+        print("   - Ensure proper error statistics collection")
+        print("=" * 80)
 
         # Test configuration
         self.audio_file_path: str = audio_file_path

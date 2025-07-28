@@ -43,6 +43,19 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
         expected_language: str = CONNECTION_TIMING_EXPECTED_LANGUAGE,
     ):
         super().__init__()
+        print("=" * 80)
+        print("🧪 TEST CASE: Connection Timing ASR Test")
+        print("=" * 80)
+        print(
+            "📋 Test Description: Validate ASR extension connection timing and basic functionality"
+        )
+        print("🎯 Test Objectives:")
+        print("   - Verify ASR extension can process audio and return results")
+        print("   - Validate required fields in ASR results")
+        print("   - Check language detection accuracy")
+        print("   - Ensure session ID consistency")
+        print("=" * 80)
+
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
