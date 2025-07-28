@@ -1,4 +1,4 @@
-# minimax_tts_python
+# cloudsway_tts_python
 
 <!-- brief introduction for the extension -->
 

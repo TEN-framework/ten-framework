@@ -26,7 +26,7 @@ class CloudswayTTS:
         self, ten_env: AsyncTenEnv, text: str
     ) -> AsyncIterator[bytes]:
         payload = {
-            "api_key": "",
+            "api_key": self.config.api_key,
             "model": self.config.model,
             "text": text,
             "voice_id": self.config.voice_id,
