@@ -7,14 +7,16 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "extension_group": "default",
-            "addon": "default_extension_go",
-            "name": "exit_signal"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "extension_group": "default",
+              "addon": "default_extension_go",
+              "name": "exit_signal"
+            }
+          ]
+        }
       }
     ]
   }

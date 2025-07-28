@@ -6,15 +6,14 @@
 //
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-
+import type { TCustomEdge, TCustomNode } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
-
-import type { TCustomNode } from "@/types/flow";
-import type { TCustomEdge } from "@/types/flow";
 
 export interface IFlowStore {
   nodes: TCustomNode[];
   edges: TCustomEdge[];
+  displayedNodes: TCustomNode[];
+  displayedEdges: TCustomEdge[];
   cdavInfo: Map<
     string,
     {
@@ -33,12 +32,16 @@ export interface IFlowStore {
   setNodes: (nodes: TCustomNode[]) => void;
   setEdges: (edges: TCustomEdge[]) => void;
   setNodesAndEdges: (nodes: TCustomNode[], edges: TCustomEdge[]) => void;
+  setDisplayedNodes: (nodes: TCustomNode[]) => void;
+  setDisplayedEdges: (edges: TCustomEdge[]) => void;
 }
 
 export const useFlowStore = create<IFlowStore>()(
   devtools((set, get) => ({
     nodes: [],
     edges: [],
+    displayedNodes: [],
+    displayedEdges: [],
     cdavInfo: new Map(),
 
     setNodes: (nodes: TCustomNode[]) => {
@@ -61,6 +64,13 @@ export const useFlowStore = create<IFlowStore>()(
       set({ nodes, edges });
       const cdavInfo = calculateCDAVInfo(nodes, edges);
       set({ cdavInfo });
+    },
+
+    setDisplayedNodes: (nodes: TCustomNode[]) => {
+      set({ displayedNodes: nodes });
+    },
+    setDisplayedEdges: (edges: TCustomEdge[]) => {
+      set({ displayedEdges: edges });
     },
   }))
 );

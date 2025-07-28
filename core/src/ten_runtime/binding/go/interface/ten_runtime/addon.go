@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "addon.h"
 import "C"
@@ -43,7 +43,7 @@ func (p *ExtensionAddon) OnCreateInstance(
 	if ext != nil {
 		extWrapper = wrapExtension(ext, name)
 	} else {
-		tenEnv.LogError("Failed to create extension " + name)
+		tenEnv.Log(LogLevelError, "Failed to create extension "+name)
 	}
 
 	tenEnv.OnCreateInstanceDone(extWrapper, context)

@@ -10,11 +10,12 @@
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value_json.h"
 
 static void tsfn_proxy_set_property_from_json_callback(napi_env env,
                                                        napi_value js_cb,
-                                                       void *context,
+                                                       TEN_UNUSED void *context,
                                                        void *data) {
   ten_nodejs_set_property_call_ctx_t *ctx =
       (ten_nodejs_set_property_call_ctx_t *)data;
@@ -144,5 +145,5 @@ napi_value ten_nodejs_ten_env_set_property_from_json(napi_env env,
   ten_string_deinit(&path);
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

@@ -36,7 +36,7 @@ describe("MyExtensionTester", () => {
       `{"greetingMsg": "xxx"}`,
     );
     const result = await extensionTester.run();
-    assert(result !== null, "result should not be null");
+    assert(result !== undefined, "result should not be undefined");
     assert(
       result.errorCode === TenErrorCode.ErrorCodeGeneric,
       "result should be TenErrorCode.ErrorCodeGeneric",
@@ -76,7 +76,7 @@ describe("MyExtensionTester", () => {
     extensionTester.setTestModeSingle(test_addon_name, "{}");
     extensionTester.setTimeout(1000 * 1000); // 1 second
     const result = await extensionTester.run();
-    assert(result !== null, "result should not be null");
+    assert(result !== undefined, "result should not be undefined");
     assert(
       result.errorCode === TenErrorCode.ErrorCodeTimeout,
       "result should be TenErrorCode.ErrorCodeTimeout",

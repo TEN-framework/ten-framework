@@ -11,15 +11,22 @@
 
 import threading
 import time
-from typing import Optional
-from ten_runtime import Extension, TenEnv, Cmd, StatusCode, CmdResult, TenError
+from ten_runtime import (
+    Extension,
+    TenEnv,
+    Cmd,
+    StatusCode,
+    CmdResult,
+    TenError,
+    LogLevel,
+)
 
 
 class DefaultExtension(Extension):
     def on_configure(self, ten_env: TenEnv) -> None:
         self.stop_flag = False
         self.log_count = 0
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
 
         ten_env.init_property_from_json('{"testKey": "testValue"}')
         ten_env.on_configure_done()
@@ -27,16 +34,18 @@ class DefaultExtension(Extension):
     def log_routine(self, ten_env: TenEnv) -> None:
         while not self.stop_flag:
             self.log_count += 1
-            ten_env.log_info(f"log message {self.log_count}")
+            ten_env.log(LogLevel.INFO, f"log message {self.log_count}")
             time.sleep(0.05)
 
     def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         ten_env.set_property_from_json("testKey2", '"testValue2"')
         testValue, _ = ten_env.get_property_to_json("testKey")
         testValue2, _ = ten_env.get_property_to_json("testKey2")
-        ten_env.log_info(f"testValue: {testValue}, testValue2: {testValue2}")
+        ten_env.log(
+            LogLevel.INFO, f"testValue: {testValue}, testValue2: {testValue2}"
+        )
 
         # Start a thread to log messages.
         self.log_thread = threading.Thread(
@@ -53,7 +62,7 @@ class DefaultExtension(Extension):
         ten_env.on_stop_done()
 
     def on_stop(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         # Because `stop_routine` is a blocking function, and to avoid blocking
         # the extension thread, we need to create a new thread to stop the log
@@ -64,7 +73,7 @@ class DefaultExtension(Extension):
         self.stop_thread.start()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        ten_env.log(LogLevel.DEBUG, "on_deinit")
         self.stop_thread.join()
 
         ten_env.on_deinit_done()
@@ -72,8 +81,8 @@ class DefaultExtension(Extension):
     def check_greeting(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:
@@ -82,19 +91,19 @@ class DefaultExtension(Extension):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info(f"check_greeting: status: {str(statusCode)}")
+        ten_env.log(LogLevel.INFO, f"check_greeting: status: {str(statusCode)}")
 
         respCmd = CmdResult.create(StatusCode.OK, receivedCmd)
         respCmd.set_property_string("detail", "received response")
-        ten_env.log_info("create respCmd")
+        ten_env.log(LogLevel.INFO, "create respCmd")
 
         ten_env.return_result(respCmd)
 
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:
@@ -103,8 +112,9 @@ class DefaultExtension(Extension):
         assert result is not None
         statusCode = result.get_status_code()
         detail, _ = result.get_property_string("detail")
-        ten_env.log_info(
-            f"check_hello: status: {str(statusCode)}, detail: {detail}"
+        ten_env.log(
+            LogLevel.INFO,
+            f"check_hello: status: {str(statusCode)}, detail: {detail}",
         )
 
         # Send a command to go extension.
@@ -118,12 +128,12 @@ class DefaultExtension(Extension):
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_debug("on_cmd: " + cmd_json)
+        ten_env.log(LogLevel.DEBUG, "on_cmd: " + cmd_json)
 
         new_cmd = Cmd.create("hello")
         new_cmd.set_property_from_json("test", '"testValue2"')
         test_value, _ = new_cmd.get_property_to_json("test")
-        ten_env.log_info(f"on_cmd test_value: {test_value}")
+        ten_env.log(LogLevel.INFO, f"on_cmd test_value: {test_value}")
 
         # Send command to a cpp extension.
         ten_env.send_cmd(

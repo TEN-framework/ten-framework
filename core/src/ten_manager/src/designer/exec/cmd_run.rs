@@ -44,11 +44,11 @@ impl WsRunCmd {
         command
             .arg("-c")
             .arg(format!("exec {cmd}"))
-            // Set TEN_LOG_FORMATTER to default if any output is log content.
+            // Set TEN_LOG_FORMATTER to json if any output is log content.
             .env(
                 "TEN_LOG_FORMATTER",
                 if self.stdout_is_log || self.stderr_is_log {
-                    "default"
+                    "json"
                 } else {
                     ""
                 },

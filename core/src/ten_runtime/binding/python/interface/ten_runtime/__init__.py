@@ -11,7 +11,7 @@ from .async_ten_env import AsyncTenEnv
 from .addon import Addon
 from .addon_manager import (
     register_addon_as_extension,
-    _AddonManager,
+    _AddonManager,  # pyright: ignore[reportPrivateUsage]
 )
 from .ten_env import TenEnv
 from .cmd import Cmd
@@ -21,6 +21,7 @@ from .audio_frame import AudioFrame, AudioFrameDataFmt
 from .data import Data
 from .log_level import LogLevel
 from .error import TenError, TenErrorCode
+from .value import Value, ValueType
 from .test import ExtensionTester, TenEnvTester
 from .async_test import AsyncExtensionTester, AsyncTenEnvTester
 
@@ -48,6 +49,8 @@ __all__ = [
     "ExtensionTester",
     "TenEnvTester",
     "TenError",
+    "Value",
+    "ValueType",
     "AsyncExtensionTester",
     "AsyncTenEnvTester",
 ]

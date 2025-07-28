@@ -37,7 +37,7 @@ class test_extension_1 : public ten::extension_t {
       ASSERT_EQ(rc, false);
       ASSERT_EQ(err.is_success(), false);
 
-      TEN_ENV_LOG_ERROR(ten_env, err.error_message());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, err.error_message());
 
       auto audio_frame = ten::audio_frame_t::create("audio_frame");
       rc = ten_env.send_audio_frame(std::move(audio_frame));

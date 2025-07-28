@@ -4,8 +4,15 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Optional
-from ten_runtime import Extension, TenEnv, Cmd, StatusCode, CmdResult, TenError
+from ten_runtime import (
+    Extension,
+    TenEnv,
+    Cmd,
+    StatusCode,
+    CmdResult,
+    TenError,
+    LogLevel,
+)
 
 
 class DefaultExtension(Extension):
@@ -16,14 +23,14 @@ class DefaultExtension(Extension):
         self.__counter = 0
 
     def on_init(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
         ten_env.on_init_done()
 
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:
@@ -35,10 +42,10 @@ class DefaultExtension(Extension):
 
         if self.__counter == 1:
             assert result.is_completed() is False
-            ten_env.log_info("receive 1 cmd result")
+            ten_env.log(LogLevel.INFO, "receive 1 cmd result")
         elif self.__counter == 2:
             assert result.is_completed() is True
-            ten_env.log_info("receive 2 cmd result")
+            ten_env.log(LogLevel.INFO, "receive 2 cmd result")
 
             respCmd = CmdResult.create(StatusCode.OK, receivedCmd)
             respCmd.set_property_string("detail", "nbnb")
@@ -48,7 +55,7 @@ class DefaultExtension(Extension):
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_debug(f"on_cmd json: {cmd_json}")
+        ten_env.log(LogLevel.DEBUG, f"on_cmd json: {cmd_json}")
 
         if self.name == "default_extension_python_1":
             new_cmd = Cmd.create("hello")
@@ -59,10 +66,10 @@ class DefaultExtension(Extension):
                 ),
             )
         elif self.name == "default_extension_python_2":
-            ten_env.log_info("create respCmd")
+            ten_env.log(LogLevel.INFO, "create respCmd")
             respCmd = CmdResult.create(StatusCode.OK, cmd)
             ten_env.return_result(respCmd)
         elif self.name == "default_extension_python_3":
-            ten_env.log_info("create respCmd")
+            ten_env.log(LogLevel.INFO, "create respCmd")
             respCmd = CmdResult.create(StatusCode.OK, cmd)
             ten_env.return_result(respCmd)

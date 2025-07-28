@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "ten_env_tester.h"
 import "C"
@@ -45,6 +45,7 @@ type TenEnvTester interface {
 	LogWarn(msg string) error
 	LogError(msg string) error
 	LogFatal(msg string) error
+	Log(level LogLevel, msg string) error
 }
 
 var (
@@ -331,6 +332,10 @@ func (p *tenEnvTester) LogError(msg string) error {
 
 func (p *tenEnvTester) LogFatal(msg string) error {
 	return p.logInternal(LogLevelFatal, msg, 2)
+}
+
+func (p *tenEnvTester) Log(level LogLevel, msg string) error {
+	return p.logInternal(level, msg, 2)
 }
 
 func (p *tenEnvTester) logInternal(level LogLevel, msg string, skip int) error {

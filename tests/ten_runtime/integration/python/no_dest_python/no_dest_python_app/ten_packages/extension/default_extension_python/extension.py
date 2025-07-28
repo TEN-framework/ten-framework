@@ -4,7 +4,6 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Optional
 from ten_runtime import (
     Extension,
     TenEnv,
@@ -15,6 +14,7 @@ from ten_runtime import (
     StatusCode,
     CmdResult,
     TenError,
+    LogLevel,
 )
 
 
@@ -24,16 +24,19 @@ class DefaultExtension(Extension):
         self.name = name
 
     def on_configure(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug(f"DefaultExtension on_init, name: {self.name}")
+        ten_env.log(
+            LogLevel.DEBUG, f"DefaultExtension on_init, name: {self.name}"
+        )
         assert self.name == "default_extension_python"
 
         ten_env.init_property_from_json('{"testKey": "testValue"}')
         ten_env.on_configure_done()
 
-    def handle_error(self, ten_env: TenEnv, error: Optional[TenError]) -> None:
+    def handle_error(self, ten_env: TenEnv, error: TenError | None) -> None:
         assert error is not None
-        ten_env.log_error(
-            "DefaultExtension handle_error: " + error.error_message()
+        ten_env.log(
+            LogLevel.ERROR,
+            "DefaultExtension handle_error: " + error.error_message(),
         )
 
         self.no_dest_error_recv_count += 1
@@ -41,7 +44,7 @@ class DefaultExtension(Extension):
             ten_env.on_start_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         self.no_dest_error_recv_count = 0
 
@@ -89,8 +92,8 @@ class DefaultExtension(Extension):
     def check_hello(
         self,
         ten_env: TenEnv,
-        result: Optional[CmdResult],
-        error: Optional[TenError],
+        result: CmdResult | None,
+        error: TenError | None,
         receivedCmd: Cmd,
     ):
         if error is not None:

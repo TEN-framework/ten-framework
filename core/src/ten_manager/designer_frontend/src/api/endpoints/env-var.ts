@@ -4,8 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { API_DESIGNER_V1, ENDPOINT_METHOD } from "./constant";
+
 import { z } from "zod";
+import { API_DESIGNER_V1, ENDPOINT_METHOD } from "./constant";
 
 export const ENDPOINT_ENV_VAR = {
   getEnvVar: {

@@ -9,10 +9,12 @@
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/error.h"
+#include "ten_utils/macro/mark.h"
 
 static void tsfn_proxy_get_property_number_callback(napi_env env,
                                                     napi_value js_cb,
-                                                    void *context, void *data) {
+                                                    TEN_UNUSED void *context,
+                                                    void *data) {
   ten_nodejs_get_property_call_ctx_t *ctx =
       (ten_nodejs_get_property_call_ctx_t *)data;
   TEN_ASSERT(ctx, "Should not happen.");
@@ -130,5 +132,5 @@ napi_value ten_nodejs_ten_env_get_property_number(napi_env env,
   ten_error_deinit(&err);
   ten_string_deinit(&name);
 
-  return js_null(env);
+  return js_undefined(env);
 }

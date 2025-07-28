@@ -11,12 +11,13 @@ from ten_runtime import (
     Data,
     StatusCode,
     CmdResult,
+    LogLevel,
 )
 
 
 class DefaultExtension(Extension):
     def on_configure(self, ten_env: TenEnv) -> None:
-        ten_env.log_debug("on_init")
+        ten_env.log(LogLevel.DEBUG, "on_init")
         ten_env.init_property_from_json('{"testKey": "testValue"}')
         ten_env.on_configure_done()
 

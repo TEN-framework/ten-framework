@@ -285,7 +285,7 @@ class extension_t : public binding_handle_t {
     // exceptions thrown by user code that are not already caught, serving as a
     // kind of fallback.
     auto handle_exception = [&](const std::string &msg) {
-      TEN_ENV_LOG_WARN(ten_env, msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN, msg.c_str());
       issue_stop_graph_cmd(ten_env);
       ten_env.on_configure_done();
     };
@@ -312,7 +312,7 @@ class extension_t : public binding_handle_t {
     // exceptions thrown by user code that are not already caught, serving as a
     // kind of fallback.
     auto handle_exception = [&](const std::string &msg) {
-      TEN_ENV_LOG_WARN(ten_env, msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN, msg.c_str());
       issue_stop_graph_cmd(ten_env);
       ten_env.on_init_done();
     };
@@ -339,7 +339,7 @@ class extension_t : public binding_handle_t {
     // exceptions thrown by user code that are not already caught, serving as a
     // kind of fallback.
     auto handle_exception = [&](const std::string &msg) {
-      TEN_ENV_LOG_WARN(ten_env, msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN, msg.c_str());
       issue_stop_graph_cmd(ten_env);
       ten_env.on_start_done();
     };
@@ -366,7 +366,7 @@ class extension_t : public binding_handle_t {
     // exceptions thrown by user code that are not already caught, serving as a
     // kind of fallback.
     auto handle_exception = [&](const std::string &msg) {
-      TEN_ENV_LOG_WARN(ten_env, msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN, msg.c_str());
       ten_env.on_stop_done();
     };
 
@@ -392,7 +392,7 @@ class extension_t : public binding_handle_t {
     // exceptions thrown by user code that are not already caught, serving as a
     // kind of fallback.
     auto handle_exception = [&](const std::string &msg) {
-      TEN_ENV_LOG_WARN(ten_env, msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN, msg.c_str());
       ten_env.on_deinit_done();
     };
 
@@ -422,15 +422,17 @@ class extension_t : public binding_handle_t {
     try {
       (this->*on_cmd_func)(ten_env, std::move(cmd));
     } catch (std::exception &e) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception '") +
-                                 e.what() + "' in on_cmd()")
-                                    .c_str());
+      TEN_ENV_LOG(
+          ten_env, TEN_LOG_LEVEL_WARN,
+          (std::string("Caught an exception '") + e.what() + "' in on_cmd()")
+              .c_str());
 
       issue_stop_graph_cmd(ten_env);
     } catch (...) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception of type '") +
-                                 curr_exception_type_name() + "in on_cmd().")
-                                    .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception of type '") +
+                   curr_exception_type_name() + "in on_cmd().")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     }
@@ -450,15 +452,17 @@ class extension_t : public binding_handle_t {
     try {
       on_data(ten_env, std::move(data));
     } catch (std::exception &e) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception '") +
-                                 e.what() + "' in on_data()")
-                                    .c_str());
+      TEN_ENV_LOG(
+          ten_env, TEN_LOG_LEVEL_WARN,
+          (std::string("Caught an exception '") + e.what() + "' in on_data()")
+              .c_str());
 
       issue_stop_graph_cmd(ten_env);
     } catch (...) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception of type '") +
-                                 curr_exception_type_name() + "in on_data().")
-                                    .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception of type '") +
+                   curr_exception_type_name() + "in on_data().")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     }
@@ -478,16 +482,17 @@ class extension_t : public binding_handle_t {
     try {
       on_audio_frame(ten_env, std::move(frame));
     } catch (std::exception &e) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception '") +
-                                 e.what() + "' in on_audio_frame()")
-                                    .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception '") + e.what() +
+                   "' in on_audio_frame()")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     } catch (...) {
-      TEN_ENV_LOG_WARN(ten_env,
-                       (std::string("Caught an exception of type '") +
-                        curr_exception_type_name() + "in on_audio_frame().")
-                           .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception of type '") +
+                   curr_exception_type_name() + "in on_audio_frame().")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     }
@@ -507,16 +512,17 @@ class extension_t : public binding_handle_t {
     try {
       on_video_frame(ten_env, std::move(frame));
     } catch (std::exception &e) {
-      TEN_ENV_LOG_WARN(ten_env, (std::string("Caught an exception '") +
-                                 e.what() + "' in on_video_frame()")
-                                    .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception '") + e.what() +
+                   "' in on_video_frame()")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     } catch (...) {
-      TEN_ENV_LOG_WARN(ten_env,
-                       (std::string("Caught an exception of type '") +
-                        curr_exception_type_name() + "in on_video_frame().")
-                           .c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_WARN,
+                  (std::string("Caught an exception of type '") +
+                   curr_exception_type_name() + "in on_video_frame().")
+                      .c_str());
 
       issue_stop_graph_cmd(ten_env);
     }

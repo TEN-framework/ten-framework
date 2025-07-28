@@ -4,9 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { defineConfig } from "vite";
+
+import path from "node:path";
 import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({

@@ -52,12 +52,14 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "migration",
-                            "addon": "batch_send_msgs_in_migration__extension",
-                            "extension_group": "migration_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "migration",
+                              "addon": "batch_send_msgs_in_migration__extension",
+                              "extension_group": "migration_group"
+                            }]
+                          }
                         }]
                       }
                     })"

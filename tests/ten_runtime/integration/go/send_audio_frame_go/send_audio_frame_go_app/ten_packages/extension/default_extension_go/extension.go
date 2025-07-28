@@ -19,7 +19,7 @@ type defaultExtension struct {
 }
 
 func (ext *defaultExtension) OnConfigure(tenEnv ten.TenEnv) {
-	tenEnv.LogDebug("OnConfigure")
+	tenEnv.Log(ten.LogLevelDebug, "OnConfigure")
 	tenEnv.OnConfigureDone()
 }
 
@@ -32,7 +32,7 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to get cmd name.")
 	}
 
-	tenEnv.LogDebug("OnCmd" + cmdName)
+	tenEnv.Log(ten.LogLevelDebug, "OnCmd" + cmdName)
 
 	ext.cachedCmd = cmd
 
@@ -85,7 +85,7 @@ func (ext *defaultExtension) OnAudioFrame(
 		panic("Failed to get audioFrame name.")
 	}
 
-	tenEnv.LogDebug("OnAudioFrame" + frameName)
+	tenEnv.Log(ten.LogLevelDebug, "OnAudioFrame" + frameName)
 
 	dataFmt, err := frame.GetDataFmt()
 	if err != nil || dataFmt != ten.AudioFrameDataFmtInterleave {

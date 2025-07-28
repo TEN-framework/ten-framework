@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import AsyncGenerator
 
 import aiohttp
-from ten import (
+from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
     Cmd,
@@ -133,9 +133,9 @@ class DifyExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
@@ -144,7 +144,7 @@ class DifyExtension(AsyncLLMBaseExtension):
         is_final = False
         input_text = ""
         try:
-            is_final = data.get_property_bool(
+            is_final, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
             )
         except Exception as err:
@@ -153,7 +153,7 @@ class DifyExtension(AsyncLLMBaseExtension):
             )
 
         try:
-            input_text = data.get_property_string(
+            input_text, _ = data.get_property_string(
                 DATA_IN_TEXT_DATA_PROPERTY_TEXT
             )
         except Exception as err:

@@ -67,19 +67,19 @@ export const ENDPOINT_COMMON = {
   },
 };
 
-export { ENDPOINT_GRAPHS, ENDPOINT_GRAPH_UI } from "@/api/endpoints/graphs";
+export {
+  ENDPOINT_ADDONS,
+  ENDPOINT_APPS,
+  ENDPOINT_TEMPLATES,
+} from "@/api/endpoints/apps";
+export { ENDPOINT_DOC_LINK } from "@/api/endpoints/doc";
 export {
   ENDPOINT_FILE_SYSTEM,
   ENDPOINT_FILE_VALIDATE,
 } from "@/api/endpoints/file-system";
-export {
-  ENDPOINT_APPS,
-  ENDPOINT_ADDONS,
-  ENDPOINT_TEMPLATES,
-} from "@/api/endpoints/apps";
 export { ENDPOINT_GH } from "@/api/endpoints/github";
-export { ENDPOINT_HELP_TEXT, EHelpTextKey } from "@/api/endpoints/help-text";
-export { ENDPOINT_DOC_LINK } from "@/api/endpoints/doc";
+export { ENDPOINT_GRAPH_UI, ENDPOINT_GRAPHS } from "@/api/endpoints/graphs";
+export { EHelpTextKey, ENDPOINT_HELP_TEXT } from "@/api/endpoints/help-text";
 export { ENDPOINT_MESSAGES } from "@/api/endpoints/messages";
 export {
   ENDPOINT_PREFERENCES,

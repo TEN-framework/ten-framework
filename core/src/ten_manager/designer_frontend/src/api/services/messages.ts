@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { z } from "zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
 
-import { makeAPIRequest, getTanstackQueryClient } from "@/api/services/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { z } from "zod";
 import { ENDPOINT_MESSAGES } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
-import { MsgCompatiblePayloadSchema } from "@/types/graphs";
+import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
+import type { MsgCompatiblePayloadSchema } from "@/types/graphs";
 
 export const retrieveCompatibleMessages = async (
   payload?: z.infer<typeof MsgCompatiblePayloadSchema> | null

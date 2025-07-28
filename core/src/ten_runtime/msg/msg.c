@@ -260,8 +260,10 @@ void ten_msg_set_src_to_engine(ten_shared_ptr_t *self, ten_engine_t *engine) {
 
 void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
                                   ten_extension_t *extension) {
-  TEN_ASSERT(self && ten_msg_check_integrity(self) && extension &&
-                 ten_extension_check_integrity(extension, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(extension, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(extension, true),
              "Should not happen.");
 
   ten_extension_group_t *extension_group =
@@ -476,6 +478,40 @@ ten_loc_t *ten_msg_get_src_loc(ten_shared_ptr_t *self) {
   return ten_raw_msg_get_src_loc(ten_shared_ptr_get_data(self));
 }
 
+void ten_msg_get_source(ten_shared_ptr_t *self, const char **app_uri,
+                        const char **graph_id, const char **extension_name,
+                        TEN_UNUSED ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
+  ten_loc_t *loc = ten_msg_get_src_loc(self);
+  TEN_ASSERT(loc, "Should not happen.");
+
+  if (app_uri) {
+    if (loc->has_app_uri) {
+      *app_uri = ten_string_get_raw_str(&loc->app_uri);
+    } else {
+      *app_uri = NULL;
+    }
+  }
+
+  if (graph_id) {
+    if (loc->has_graph_id) {
+      *graph_id = ten_string_get_raw_str(&loc->graph_id);
+    } else {
+      *graph_id = NULL;
+    }
+  }
+
+  if (extension_name) {
+    if (loc->has_extension_name) {
+      *extension_name = ten_string_get_raw_str(&loc->extension_name);
+    } else {
+      *extension_name = NULL;
+    }
+  }
+}
+
 /**
  * @brief Retrieves the first destination location from a message.
  *
@@ -670,7 +706,7 @@ bool ten_raw_msg_get_one_field_from_json_include_internal_field(
 
 static bool ten_raw_msg_put_one_field_to_json_internal(
     ten_msg_t *self, ten_msg_field_process_data_t *field, void *user_data,
-    bool include_internal_field, ten_error_t *err) {
+    bool include_internal_field, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(field, "Should not happen.");

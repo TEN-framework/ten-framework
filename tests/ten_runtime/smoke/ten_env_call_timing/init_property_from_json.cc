@@ -37,8 +37,8 @@ class test_extension : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG_DEBUG(ten_env,
-                      (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
+                (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);

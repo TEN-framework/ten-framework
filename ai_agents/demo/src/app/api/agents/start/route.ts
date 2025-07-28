@@ -3,7 +3,7 @@ import { getGraphProperties } from './graph';
 import axios from 'axios';
 /**
  * Handles the POST request to start an agent.
- * 
+ *
  * @param request - The NextRequest object representing the incoming request.
  * @returns A NextResponse object representing the response to be sent back to the client.
  */
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       coze_bot_id,
       coze_base_url,
       dify_api_key,
+      dify_base_url,
     } = body;
 
     let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting);
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
     }
     if (graph_name.includes("dify")) {
       properties["llm"]["api_key"] = dify_api_key;
+      properties["llm"]["base_url"] = dify_base_url;
     }
 
     console.log(`Starting agent for request ID: ${JSON.stringify({

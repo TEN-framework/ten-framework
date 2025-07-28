@@ -3,7 +3,7 @@ import requests
 from openai import AsyncOpenAI
 from ten_ai_base.config import BaseConfig
 from dataclasses import dataclass
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 
 
 @dataclass

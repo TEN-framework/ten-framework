@@ -10,6 +10,7 @@ from ten_runtime import (
     Addon,
     register_addon_as_extension,
     TenEnv,
+    LogLevel,
 )
 from .extension import ServerExtension, ClientExtension
 
@@ -31,7 +32,7 @@ class DefaultExtensionAddon(Addon):
             assert False
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        ten_env.log_info("on_create_instance" + name)
+        ten_env.log(LogLevel.INFO, "on_create_instance" + name)
 
         # Create a new thread to call the on_create_instance_done function.
         threading.Thread(

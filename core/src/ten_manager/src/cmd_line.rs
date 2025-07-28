@@ -29,7 +29,7 @@ pub struct ParsedCmd {
     pub show_version: bool,
 }
 
-fn get_args_cfg() -> ArgsCfg {
+pub fn get_args_cfg() -> ArgsCfg {
     ArgsCfg {
         pkg_type: ArgCfg {
             possible_values: [
@@ -109,6 +109,7 @@ fn create_cmd() -> clap::ArgMatches {
         .subcommand(crate::cmd::cmd_check::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_modify::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_run::create_sub_cmd(&args_cfg))
+        .subcommand(crate::cmd::cmd_completion::create_sub_cmd(&args_cfg))
         // Hidden subcommands.
         .subcommand(crate::cmd::cmd_delete::create_sub_cmd(&args_cfg))
         .get_matches()
@@ -212,6 +213,9 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
                 ),
                 "run" => crate::cmd::CommandData::Run(
                     crate::cmd::cmd_run::parse_sub_cmd(sub_cmd_args)?,
+                ),
+                "completion" => crate::cmd::CommandData::Completion(
+                    crate::cmd::cmd_completion::parse_sub_cmd(sub_cmd_args)?,
                 ),
                 // Hidden commands.
                 "delete" => crate::cmd::CommandData::Delete(

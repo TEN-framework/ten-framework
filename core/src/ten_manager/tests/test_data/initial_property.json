@@ -3,23 +3,25 @@
     "predefined_graphs": [
       {
         "name": "test_graph",
-        "connections": [
-          {
-            "app": "http://example.com:8000",
-            "extension": "extension_1",
-            "cmd": [
-              {
-                "dest": [
-                  {
-                    "app": "http://example.com:8000",
-                    "extension": "extension_2"
-                  }
-                ],
-                "name": "existing_cmd"
-              }
-            ]
-          }
-        ]
+        "graph": {
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ],
+                  "name": "existing_cmd"
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

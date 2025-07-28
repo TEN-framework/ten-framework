@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "package": {
@@ -23,124 +23,102 @@
   },
   "api": {
     "property": {
-      "base_uri": {
-        "type": "string"
-      },
-      "api_key": {
-        "type": "string"
-      },
-      "path": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
-      "language": {
-        "type": "string"
-      },
-      "prompt": {
-        "type": "string"
-      },
-      "temperature": {
-        "type": "float32"
-      },
-      "max_tokens": {
-        "type": "int32"
-      },
-      "voice": {
-        "type": "string"
-      },
-      "server_vad": {
-        "type": "bool"
-      },
-      "audio_out": {
-        "type": "bool"
-      },
-      "input_transcript": {
-        "type": "bool"
-      },
-      "sample_rate": {
-        "type": "int32"
-      },
-      "vendor": {
-        "type": "string"
-      },
-      "stream_id": {
-        "type": "int32"
-      },
-      "dump": {
-        "type": "bool"
-      },
-      "greeting": {
-        "type": "string"
-      },
-      "max_history": {
-        "type": "int32"
-      },
-      "enable_storage": {
-        "type": "bool"
+      "properties": {
+        "base_uri": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "float32"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "server_vad": {
+          "type": "bool"
+        },
+        "audio_out": {
+          "type": "bool"
+        },
+        "input_transcript": {
+          "type": "bool"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "max_history": {
+          "type": "int32"
+        },
+        "enable_storage": {
+          "type": "bool"
+        }
       }
     },
-    "audio_frame_in": [
-      {
-        "name": "pcm_frame",
-        "property": {
-          "stream_id": {
-            "type": "int64"
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      },
-      {
-        "name": "append",
-        "property": {
-          "text": {
-            "type": "string"
-          }
-        }
-      }
-    ],
     "cmd_in": [
       {
         "name": "tool_register",
         "property": {
-          "tool": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "parameters": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {}
+          "properties": {
+            "tool": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {}
+                  }
                 }
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "parameters"
-            ]
+              },
+              "required": [
+                "name",
+                "description",
+                "parameters"
+              ]
+            }
           }
         },
         "result": {
           "property": {
-            "response": {
-              "type": "string"
+            "properties": {
+              "response": {
+                "type": "string"
+              }
             }
           }
         }
@@ -153,16 +131,52 @@
       {
         "name": "tool_call",
         "property": {
-          "name": {
-            "type": "string"
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
           },
-          "args": {
-            "type": "string"
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
           }
-        },
-        "required": [
-          "name"
-        ]
+        }
+      },
+      {
+        "name": "append",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "properties": {
+            "stream_id": {
+              "type": "int64"
+            }
+          }
+        }
       }
     ],
     "audio_frame_out": [

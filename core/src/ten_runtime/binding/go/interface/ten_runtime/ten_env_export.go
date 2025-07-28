@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-package ten
+package ten_runtime
 
 // #include "ten_env.h"
 import "C"
@@ -256,7 +256,7 @@ func tenGoGetPropertyCallback(
 		)
 	}
 
-	handlerObj, ok := handle(handlerObjID).free().(func(TenEnv, *value, error))
+	handlerObj, ok := handle(handlerObjID).free().(func(TenEnv, *cValue, error))
 	if !ok {
 		panic(
 			fmt.Sprintf(
@@ -266,7 +266,7 @@ func tenGoGetPropertyCallback(
 		)
 	}
 
-	valueObj, ok := handle(valueObjID).get().(*value)
+	valueObj, ok := handle(valueObjID).get().(*cValue)
 	if !ok {
 		handlerObj(tenEnvObj, nil, NewTenError(
 			ErrorCodeGeneric,

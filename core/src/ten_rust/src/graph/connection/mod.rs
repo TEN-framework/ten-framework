@@ -57,6 +57,11 @@ impl GraphLoc {
         &self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
+        if self.selector.is_some() || self.subgraph.is_some() {
+            // Selector and subgraph do not have app field.
+            return Ok(());
+        }
+
         if let Some(app) = &self.app {
             // Disallow 'localhost' as an app URI in graph definitions.
             if app.as_str() == localhost() {

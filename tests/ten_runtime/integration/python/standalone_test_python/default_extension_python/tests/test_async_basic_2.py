@@ -13,6 +13,7 @@ from ten_runtime import (
     StatusCode,
     AsyncExtensionTester,
     AsyncTenEnvTester,
+    LogLevel,
 )
 
 
@@ -24,7 +25,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
 
         new_cmd = Cmd.create("hello_world")
 
-        ten_env.log_info("send hello_world")
+        ten_env.log(LogLevel.INFO, "send hello_world")
         result, error = await ten_env.send_cmd(
             new_cmd,
         )
@@ -34,9 +35,11 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+        ten_env.log(
+            LogLevel.INFO, "receive hello_world, status:" + str(statusCode)
+        )
 
-        ten_env.log_info("tester on_start_done")
+        ten_env.log(LogLevel.INFO, "tester on_start_done")
 
         if statusCode == StatusCode.OK:
             ten_env.stop_test()

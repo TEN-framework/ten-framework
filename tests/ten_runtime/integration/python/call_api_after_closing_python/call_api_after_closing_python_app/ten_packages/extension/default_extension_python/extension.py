@@ -11,6 +11,7 @@ from ten_runtime import (
     Cmd,
     CmdResult,
     StatusCode,
+    LogLevel,
 )
 
 
@@ -49,7 +50,7 @@ class ServerExtension(AsyncExtension):
         while self.register_count > 0:
             await asyncio.sleep(0.5)
 
-        ten_env.log_info("server extension is stopped")
+        ten_env.log(LogLevel.INFO, "server extension is stopped")
 
 
 class ClientExtension(AsyncExtension):
@@ -83,7 +84,9 @@ class ClientExtension(AsyncExtension):
             assert cancel_exception_caught
 
             # Call ten_env api will return error.
-            err = ten_env.log_info("call ten_env api will return error")
+            err = ten_env.log(
+                LogLevel.INFO, "call ten_env api will return error"
+            )
             assert err is not None
 
         err = await ten_env.set_property_string("test", "ok")
@@ -97,7 +100,7 @@ class ClientExtension(AsyncExtension):
         assert cmd_result is not None
         assert cmd_result.get_status_code() == StatusCode.OK
 
-        ten_env.log_info("client extension is de-initialized")
+        ten_env.log(LogLevel.INFO, "client extension is de-initialized")
 
         self.task_after_deinited = asyncio.create_task(
             self.call_api_after_deinited(ten_env)

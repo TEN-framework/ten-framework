@@ -6,7 +6,7 @@
 
 import asyncio
 from enum import Enum
-from ten import AsyncTenEnv
+from ten_runtime import AsyncTenEnv
 from .config import SpeechmaticsASRConfig
 from .timeline import AudioTimeline
 

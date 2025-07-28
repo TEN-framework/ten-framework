@@ -36,6 +36,9 @@ mod tests {
         let mut graph1 = Map::new();
         graph1.insert("name".to_string(), json!("test-graph"));
 
+        // Create graph field to contain nodes and connections.
+        let mut graph_content = Map::new();
+
         // Create nodes.
         let mut nodes = Vec::new();
         nodes.push(json!({
@@ -48,7 +51,7 @@ mod tests {
             "name": "node2",
             "addon": "addon2"
         }));
-        graph1.insert("nodes".to_string(), Value::Array(nodes));
+        graph_content.insert("nodes".to_string(), Value::Array(nodes));
 
         // Create connections where node1 and node2 both connect to each other.
         let mut connections = Vec::new();
@@ -70,7 +73,10 @@ mod tests {
                 }]
             }]
         }));
-        graph1.insert("connections".to_string(), Value::Array(connections));
+        graph_content
+            .insert("connections".to_string(), Value::Array(connections));
+
+        graph1.insert("graph".to_string(), Value::Object(graph_content));
 
         graphs.push(Value::Object(graph1));
         ten_obj.insert("predefined_graphs".to_string(), Value::Array(graphs));
@@ -115,7 +121,8 @@ mod tests {
             serde_json::from_str(&updated_property_json)?;
 
         // Verify nodes were removed.
-        let updated_graph = &updated_property["ten"]["predefined_graphs"][0];
+        let updated_graph =
+            &updated_property["ten"]["predefined_graphs"][0]["graph"];
         let updated_nodes = updated_graph["nodes"].as_array().unwrap();
         assert_eq!(updated_nodes.len(), 0);
 

@@ -25,7 +25,7 @@ mod tests {
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
         },
         graph::{
-            node::{GraphNode, PatternType},
+            node::{FilterOperator, GraphNode},
             Graph,
         },
         pkg_info::property::parse_property_from_str,
@@ -49,7 +49,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = graph.static_check();
+        let result = graph.graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -74,7 +74,7 @@ mod tests {
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
-        let result = graph.static_check();
+        let result = graph.graph.static_check();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -111,7 +111,7 @@ mod tests {
         .await
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let result = graph_info.graph.check_connection_extensions_exist();
+        let result = graph_info.graph.graph.check_connection_extensions_exist();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -135,7 +135,7 @@ mod tests {
         .await
         .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
-        let result = graph_info.graph.check_connection_extensions_exist();
+        let result = graph_info.graph.graph.check_connection_extensions_exist();
 
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -582,34 +582,67 @@ mod tests {
 
         let graph = serde_json::from_str::<Graph>(graph_str).unwrap();
 
-        // Get the selector node
-        let selector_node = graph
+        // Get all selector nodes
+        let selector_nodes = graph
             .nodes
             .iter()
-            .find(|node| matches!(node, GraphNode::Selector { .. }))
+            .filter(|node| matches!(node, GraphNode::Selector { .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(selector_nodes.len(), 3);
+
+        // Find the selector node with name selector_for_ext_1_and_2
+        let selector_node = selector_nodes
+            .iter()
+            .find(|node| node.get_name() == "selector_for_ext_1_and_2")
             .unwrap();
-        assert_eq!(selector_node.get_name(), "selector_for_ext_1_and_2");
 
         let selector_node = selector_node.as_selector_node().unwrap();
+        let filter = &selector_node.filter.as_and_filter().unwrap();
 
-        // Get the selector node's children
-        let selector = &selector_node.selector;
+        assert_eq!(filter.len(), 2);
+        // and[0] is an atomic filter
+        let atomic_filter = filter[0].as_atomic_filter().unwrap();
+        assert_eq!(atomic_filter.field, "name");
+        assert_eq!(atomic_filter.operator, FilterOperator::Regex);
+        assert_eq!(atomic_filter.value, "test_extension_[1-2]");
 
-        assert_eq!(
-            selector.extension.as_ref().unwrap().type_,
-            PatternType::Regex
-        );
+        // and[1] is an atomic filter
+        let atomic_filter = filter[1].as_atomic_filter().unwrap();
+        assert_eq!(atomic_filter.field, "app");
+        assert_eq!(atomic_filter.operator, FilterOperator::Exact);
+        assert_eq!(atomic_filter.value, "msgpack://127.0.0.1:8001/");
 
-        assert_eq!(
-            selector.extension.as_ref().unwrap().pattern,
-            "test_extension_[1-2]"
-        );
+        // Find the selector node with name selector_for_ext_1_and_2_and_3
+        let selector_node = selector_nodes
+            .iter()
+            .find(|node| node.get_name() == "selector_for_ext_1_and_2_and_3")
+            .unwrap();
 
-        assert_eq!(selector.app.as_ref().unwrap().type_, PatternType::Exact);
+        let selector_node = selector_node.as_selector_node().unwrap();
+        let filter = &selector_node.filter.as_atomic_filter().unwrap();
+        assert_eq!(filter.field, "name");
+        assert_eq!(filter.operator, FilterOperator::Regex);
+        assert_eq!(filter.value, "test_extension_[1-3]");
 
-        assert_eq!(
-            selector.app.as_ref().unwrap().pattern,
-            "msgpack://127.0.0.1:8001/"
-        );
+        // Find the selector node with name selector_for_ext_1_or_3
+        let selector_node = selector_nodes
+            .iter()
+            .find(|node| node.get_name() == "selector_for_ext_1_or_3")
+            .unwrap();
+
+        let selector_node = selector_node.as_selector_node().unwrap();
+        let filter = &selector_node.filter.as_or_filter().unwrap();
+        assert_eq!(filter.len(), 2);
+        // or[0] is an atomic filter
+        let atomic_filter = filter[0].as_atomic_filter().unwrap();
+        assert_eq!(atomic_filter.field, "name");
+        assert_eq!(atomic_filter.operator, FilterOperator::Regex);
+        assert_eq!(atomic_filter.value, "test_extension_1");
+
+        // or[1] is an atomic filter
+        let atomic_filter = filter[1].as_atomic_filter().unwrap();
+        assert_eq!(atomic_filter.field, "name");
+        assert_eq!(atomic_filter.operator, FilterOperator::Regex);
+        assert_eq!(atomic_filter.value, "test_extension_3");
     }
 }

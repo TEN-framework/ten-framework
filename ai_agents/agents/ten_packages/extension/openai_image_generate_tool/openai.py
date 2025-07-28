@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import requests
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 
 

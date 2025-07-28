@@ -30,6 +30,7 @@ use crate::constants::{
 };
 use crate::home::config::{is_verbose, TmanConfig};
 use crate::output::TmanOutput;
+use crate::registry::search::{matches_filter, PkgSearchFilter};
 
 pub async fn upload_package(
     base_url: &str,
@@ -523,6 +524,65 @@ pub async fn get_package_list(
         // If no page is specified, return all results.
         Ok(all_results)
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn search_packages(
+    _tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    base_url: &str,
+    filter: &PkgSearchFilter,
+    page_size: Option<u32>,
+    page: Option<u32>,
+    sort_by: Option<&str>,
+    sort_order: Option<&str>,
+    _scope: Option<&str>,
+    _out: &Arc<Box<dyn TmanOutput>>,
+) -> Result<(u32, Vec<PkgRegistryInfo>)> {
+    let mut path_url = url::Url::parse(base_url)
+        .map_err(|e| anyhow!("Invalid file URL: {}", e))?
+        .to_file_path()
+        .map_err(|_| anyhow!("Failed to convert file URL to path"))?
+        .to_string_lossy()
+        .into_owned();
+    path_url =
+        if path_url.ends_with('/') { path_url } else { format!("{path_url}/") };
+    let base_path = Path::new(&path_url);
+    let all_packages =
+        find_file_with_criteria(base_path, None, None, None, None).await?;
+    let mut filtered = all_packages
+        .into_iter()
+        .filter(|p| matches_filter(p, &filter.filter))
+        .collect::<Vec<_>>();
+    // Sort
+    if sort_by.is_some_and(|s| s == "name") {
+        filtered.sort_by(|a, b| {
+            let cmp = a
+                .basic_info
+                .type_and_name
+                .name
+                .cmp(&b.basic_info.type_and_name.name);
+            if sort_order.is_some_and(|s| s == "asc") {
+                cmp
+            } else {
+                cmp.reverse()
+            }
+        });
+    } // add more sort fields if needed
+
+    // For local registry, we always return all fields of a package no matter
+    // what the scope is.
+
+    let total = filtered.len() as u32;
+    // Paginate
+    let page_size = page_size.unwrap_or(10);
+    let page = page.unwrap_or(1);
+    let start = ((page - 1) * page_size) as usize;
+    if start >= filtered.len() {
+        return Ok((total, vec![]));
+    }
+    let end = std::cmp::min(start + page_size as usize, filtered.len());
+    let results = filtered[start..end].to_vec();
+    Ok((total, results))
 }
 
 pub async fn delete_package(

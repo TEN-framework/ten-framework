@@ -509,79 +509,96 @@ bool ten_app_get_predefined_graphs_from_property(ten_app_t *self) {
           ten_value_get_bool(predefined_graph_info_singleton_value, &err);
     }
 
-    // Parse 'nodes'.
-    ten_value_t *predefined_graph_info_nodes_value =
-        ten_value_object_peek(predefined_graph_info_value, TEN_STR_NODES);
-    if (predefined_graph_info_nodes_value &&
-        ten_value_is_array(predefined_graph_info_nodes_value)) {
-      ten_value_array_foreach(predefined_graph_info_nodes_value,
-                              predefined_graph_info_node_iter) {
-        ten_value_t *predefined_graph_info_node_item_value =
-            ten_ptr_listnode_get(predefined_graph_info_node_iter.node);
-        TEN_ASSERT(predefined_graph_info_node_item_value &&
-                       ten_value_check_integrity(
-                           predefined_graph_info_node_item_value),
-                   "Invalid argument.");
+    // Parse 'graph' field which contains import_uri or
+    // nodes/connections/exposed_messages/exposed_properties.
+    ten_value_t *predefined_graph_info_graph_value =
+        ten_value_object_peek(predefined_graph_info_value, TEN_STR_GRAPH);
+    if (predefined_graph_info_graph_value &&
+        ten_value_is_object(predefined_graph_info_graph_value)) {
+      // Check if this is an import_uri graph
+      ten_value_t *import_uri_value = ten_value_object_peek(
+          predefined_graph_info_graph_value, TEN_STR_IMPORT_URI);
+      if (import_uri_value && ten_value_is_string(import_uri_value)) {
+        TEN_LOGD("Found import_uri graph: %s, which has been flattened.",
+                 ten_value_peek_raw_str(import_uri_value, &err));
+      }
 
-        if (!predefined_graph_info_node_item_value ||
-            !ten_value_is_object(predefined_graph_info_node_item_value)) {
-          goto invalid_graph;
-        }
+      // Parse 'nodes'.
+      ten_value_t *predefined_graph_info_nodes_value = ten_value_object_peek(
+          predefined_graph_info_graph_value, TEN_STR_NODES);
+      if (predefined_graph_info_nodes_value &&
+          ten_value_is_array(predefined_graph_info_nodes_value)) {
+        ten_value_array_foreach(predefined_graph_info_nodes_value,
+                                predefined_graph_info_node_iter) {
+          ten_value_t *predefined_graph_info_node_item_value =
+              ten_ptr_listnode_get(predefined_graph_info_node_iter.node);
+          TEN_ASSERT(predefined_graph_info_node_item_value &&
+                         ten_value_check_integrity(
+                             predefined_graph_info_node_item_value),
+                     "Invalid argument.");
 
-        ten_value_t *type_value = ten_value_object_peek(
-            predefined_graph_info_node_item_value, TEN_STR_TYPE);
-        if (!type_value || !ten_value_is_string(type_value)) {
-          goto invalid_graph;
-        }
-
-        const char *type = ten_value_peek_raw_str(type_value, &err);
-
-        // Only the extension node is preferred.
-        result = ten_c_string_is_equal(type, TEN_STR_EXTENSION);
-        if (result) {
-          ten_shared_ptr_t *extension_info = ten_extension_info_node_from_value(
-              predefined_graph_info_node_item_value,
-              &predefined_graph_info->extensions_info, &err);
-          if (!extension_info) {
-            result = false;
+          if (!predefined_graph_info_node_item_value ||
+              !ten_value_is_object(predefined_graph_info_node_item_value)) {
+            goto invalid_graph;
           }
-        }
 
-        if (!result) {
-          goto invalid_graph;
+          ten_value_t *type_value = ten_value_object_peek(
+              predefined_graph_info_node_item_value, TEN_STR_TYPE);
+          if (!type_value || !ten_value_is_string(type_value)) {
+            goto invalid_graph;
+          }
+
+          const char *type = ten_value_peek_raw_str(type_value, &err);
+
+          // Only the extension node is preferred.
+          result = ten_c_string_is_equal(type, TEN_STR_EXTENSION);
+          if (result) {
+            ten_shared_ptr_t *extension_info =
+                ten_extension_info_node_from_value(
+                    predefined_graph_info_node_item_value,
+                    &predefined_graph_info->extensions_info, &err);
+            if (!extension_info) {
+              result = false;
+            }
+          }
+
+          if (!result) {
+            goto invalid_graph;
+          }
         }
       }
-    }
 
-    // Parse 'connections'.
-    ten_value_t *predefined_graph_info_connections_value =
-        ten_value_object_peek(predefined_graph_info_value, TEN_STR_CONNECTIONS);
-    if (predefined_graph_info_connections_value &&
-        ten_value_is_array(predefined_graph_info_connections_value)) {
-      ten_value_array_foreach(predefined_graph_info_connections_value,
-                              predefined_graph_info_connection_iter) {
-        ten_value_t *predefined_graph_info_connection_item_value =
-            ten_ptr_listnode_get(predefined_graph_info_connection_iter.node);
-        TEN_ASSERT(predefined_graph_info_connection_item_value &&
-                       ten_value_check_integrity(
-                           predefined_graph_info_connection_item_value),
-                   "Invalid argument.");
+      // Parse 'connections'.
+      ten_value_t *predefined_graph_info_connections_value =
+          ten_value_object_peek(predefined_graph_info_graph_value,
+                                TEN_STR_CONNECTIONS);
+      if (predefined_graph_info_connections_value &&
+          ten_value_is_array(predefined_graph_info_connections_value)) {
+        ten_value_array_foreach(predefined_graph_info_connections_value,
+                                predefined_graph_info_connection_iter) {
+          ten_value_t *predefined_graph_info_connection_item_value =
+              ten_ptr_listnode_get(predefined_graph_info_connection_iter.node);
+          TEN_ASSERT(predefined_graph_info_connection_item_value &&
+                         ten_value_check_integrity(
+                             predefined_graph_info_connection_item_value),
+                     "Invalid argument.");
 
-        result =
-            predefined_graph_info_connection_item_value &&
-            ten_value_is_object(predefined_graph_info_connection_item_value);
-        if (result) {
-          ten_shared_ptr_t *src_extension_in_connection =
-              ten_extension_info_parse_connection_src_part_from_value(
-                  predefined_graph_info_connection_item_value,
-                  &predefined_graph_info->extensions_info, &err);
-          if (!src_extension_in_connection) {
-            result = false;
+          result =
+              predefined_graph_info_connection_item_value &&
+              ten_value_is_object(predefined_graph_info_connection_item_value);
+          if (result) {
+            ten_shared_ptr_t *src_extension_in_connection =
+                ten_extension_info_parse_connection_src_part_from_value(
+                    predefined_graph_info_connection_item_value,
+                    &predefined_graph_info->extensions_info, &err);
+            if (!src_extension_in_connection) {
+              result = false;
+            }
           }
-        }
 
-        if (!result) {
-          goto invalid_graph;
+          if (!result) {
+            goto invalid_graph;
+          }
         }
       }
     }

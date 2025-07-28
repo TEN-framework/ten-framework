@@ -72,7 +72,8 @@ static void ten_nodejs_send_data_callback_call_ctx_destroy(
 }
 
 static void tsfn_proxy_send_data_callback(napi_env env, napi_value js_cb,
-                                          void *context, void *data) {
+                                          TEN_UNUSED void *context,
+                                          void *data) {
   ten_nodejs_send_data_callback_call_ctx_t *ctx = data;
   TEN_ASSERT(ctx, "Should not happen.");
 
@@ -215,5 +216,5 @@ napi_value ten_nodejs_ten_env_send_data(napi_env env, napi_callback_info info) {
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

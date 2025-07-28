@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-react";
+import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-react";
 import React from "react";
 
 export const normalizeFrequencies = (frequencies: Float32Array) => {

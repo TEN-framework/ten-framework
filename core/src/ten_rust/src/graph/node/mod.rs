@@ -58,33 +58,49 @@ pub struct GraphContent {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum PatternType {
-    #[serde(rename = "regex")]
-    Regex,
-
+pub enum FilterOperator {
     #[serde(rename = "exact")]
     Exact,
+    #[serde(rename = "regex")]
+    Regex,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SelectorPattern {
-    #[serde(rename = "type")]
-    pub type_: PatternType,
-
-    #[serde(rename = "pattern")]
-    pub pattern: String,
+pub struct AtomicFilter {
+    pub field: String,
+    pub operator: FilterOperator,
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Selector {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extension: Option<SelectorPattern>,
+#[serde(untagged)]
+pub enum Filter {
+    Atomic(AtomicFilter),
+    And { and: Vec<Filter> },
+    Or { or: Vec<Filter> },
+}
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app: Option<SelectorPattern>,
+impl Filter {
+    pub fn as_atomic_filter(&self) -> Option<&AtomicFilter> {
+        match self {
+            Filter::Atomic(atomic) => Some(atomic),
+            _ => None,
+        }
+    }
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subgraph: Option<SelectorPattern>,
+    pub fn as_and_filter(&self) -> Option<&[Filter]> {
+        match self {
+            Filter::And { and } => Some(and),
+            _ => None,
+        }
+    }
+
+    pub fn as_or_filter(&self) -> Option<&[Filter]> {
+        match self {
+            Filter::Or { or } => Some(or),
+            _ => None,
+        }
+    }
 }
 
 /// Represents a subgraph node in the graph
@@ -92,7 +108,7 @@ pub struct Selector {
 pub struct SelectorNode {
     pub name: String,
 
-    pub selector: Selector,
+    pub filter: Filter,
 }
 
 /// Represents a node in a graph. This enum represents different types of nodes
@@ -206,6 +222,28 @@ impl GraphNode {
             GraphNode::Extension { content } => content.name = name,
             GraphNode::Subgraph { content } => content.name = name,
             GraphNode::Selector { content } => content.name = name,
+        }
+    }
+
+    pub fn get_field(&self, field: &str) -> Option<&str> {
+        match self {
+            GraphNode::Extension { content } => match field {
+                "name" => Some(&content.name),
+                "type" => Some("extension"),
+                "app" => content.app.as_deref(),
+                "addon" => Some(&content.addon),
+                _ => None,
+            },
+            GraphNode::Subgraph { content } => match field {
+                "name" => Some(&content.name),
+                "type" => Some("subgraph"),
+                _ => None,
+            },
+            GraphNode::Selector { content } => match field {
+                "name" => Some(&content.name),
+                "type" => Some("selector"),
+                _ => None,
+            },
         }
     }
 

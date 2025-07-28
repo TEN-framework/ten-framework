@@ -218,7 +218,7 @@ static void ten_engine_handle_in_msgs_task(void *engine_,
   TEN_ASSERT(ten_engine_check_integrity(engine, true),
              "Engine integrity check failed or wrong thread access");
 
-  TEN_LOGD("[%s] Handle incoming messages", ten_engine_get_id(engine, true));
+  TEN_LOGV("[%s] Handle incoming messages", ten_engine_get_id(engine, true));
 
   ten_engine_handle_in_msgs_sync(engine);
 

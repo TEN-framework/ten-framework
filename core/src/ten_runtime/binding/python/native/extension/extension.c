@@ -302,8 +302,8 @@ static void proxy_on_audio_frame(ten_extension_t *extension, ten_env_t *ten_env,
              "Invalid argument.");
   TEN_ASSERT(ten_env, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Invalid argument.");
-  TEN_ASSERT(audio_frame && ten_msg_check_integrity(audio_frame),
-             "Invalid argument.");
+  TEN_ASSERT(audio_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(audio_frame), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -340,8 +340,8 @@ static void proxy_on_video_frame(ten_extension_t *extension, ten_env_t *ten_env,
              "Invalid argument.");
   TEN_ASSERT(ten_env, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Invalid argument.");
-  TEN_ASSERT(video_frame && ten_msg_check_integrity(video_frame),
-             "Invalid argument.");
+  TEN_ASSERT(video_frame, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(video_frame), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.

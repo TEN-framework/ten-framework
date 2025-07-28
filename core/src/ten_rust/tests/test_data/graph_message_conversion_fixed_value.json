@@ -1,6 +1,5 @@
 {
   "type": "start_graph",
-  "seq_id": "55",
   "nodes": [
     {
       "type": "extension",

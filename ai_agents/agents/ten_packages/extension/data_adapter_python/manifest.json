@@ -1,0 +1,41 @@
+{
+  "type": "extension",
+  "name": "data_adapter_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            },
+            "stream_id": {
+              "type": "uint32"
+            }
+        }
+      }
+    }]
+  }
+}

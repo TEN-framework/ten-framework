@@ -6,26 +6,28 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "api": {
-    "data_in": [
-      {
-        "name": "data"
-      }
-    ],
     "cmd_out": [
       {
         "name": "publish",
         "property": {
-          "message": {
-            "type": "buf"
+          "properties": {
+            "message": {
+              "type": "buf"
+            }
           }
         }
       },
       {
         "name": "set_presence_state"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data"
       }
     ]
   }

@@ -29,9 +29,9 @@ class test_extension_1 : public ten::extension_t {
             ++received_result_cnt;
 
             if (received_result_cnt == 1) {
-              TEN_ENV_LOG_INFO(ten_env, "receives 1 cmd result");
+              TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "receives 1 cmd result");
             } else if (received_result_cnt == 2) {
-              TEN_ENV_LOG_INFO(ten_env, "receives 2 cmd result");
+              TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "receives 2 cmd result");
               ten_env.return_result(std::move(cmd_result));
             }
           });

@@ -24,13 +24,13 @@ class test_extension_1 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_world") {
-      TEN_ENV_LOG_INFO(ten_env, "on_cmd: hello_world");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "on_cmd: hello_world");
       ten_env.send_cmd(std::move(cmd));
     }
   }
 
   void on_stop(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG_INFO(ten_env, "on_stop");
+    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "on_stop");
 
     auto cmd = ten::cmd_t::create("extension_1_stop");
     ten_env.send_cmd(std::move(cmd));
@@ -54,7 +54,8 @@ class test_extension_2 : public ten::extension_t {
 
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
-      TEN_ENV_LOG_INFO(ten_env, "on_cmd: hello_world, return result.");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                  "on_cmd: hello_world, return result.");
       ten_env.return_result(std::move(cmd_result));
     } else if (cmd->get_name() == "extension_1_stop") {
       // Ensure that extension 2 receives the `extension_1_stop` command and
@@ -64,7 +65,7 @@ class test_extension_2 : public ten::extension_t {
 
       ten_sleep_ms(500);
 
-      TEN_ENV_LOG_INFO(ten_env, "got extension_1_stop.");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "got extension_1_stop.");
 
       received_extension_1_stop_cmd = true;
 
@@ -100,7 +101,8 @@ class test_extension_3 : public ten::extension_t {
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
-      TEN_ENV_LOG_INFO(ten_env, "on_cmd: hello_world, return result.");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                  "on_cmd: hello_world, return result.");
       ten_env.return_result(std::move(cmd_result));
     } else if (cmd->get_name() == "extension_1_stop") {
       // It's possible that the `extension_1_stop` command was received, but

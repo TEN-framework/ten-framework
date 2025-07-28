@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod cmd_check;
+pub mod cmd_completion;
 pub mod cmd_create;
 pub mod cmd_delete;
 pub mod cmd_designer;
@@ -37,6 +38,7 @@ pub enum CommandData {
     Check(self::cmd_check::CheckCommandData),
     Modify(self::cmd_modify::ModifyCommandData),
     Run(self::cmd_run::RunCommand),
+    Completion(self::cmd_completion::CompletionCommand),
 }
 
 pub async fn execute_cmd(
@@ -138,6 +140,15 @@ pub async fn execute_cmd(
         }
         CommandData::Run(cmd) => {
             crate::cmd::cmd_run::execute_cmd(
+                tman_config,
+                tman_storage_in_memory,
+                cmd,
+                out,
+            )
+            .await
+        }
+        CommandData::Completion(cmd) => {
+            crate::cmd::cmd_completion::execute_cmd(
                 tman_config,
                 tman_storage_in_memory,
                 cmd,

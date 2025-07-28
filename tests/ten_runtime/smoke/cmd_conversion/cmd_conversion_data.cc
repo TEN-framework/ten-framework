@@ -100,50 +100,52 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "cmd_mapping_data_extension_1",
-                            "extension_group": "cmd_mapping_data_extension_group"
-                          },{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "cmd_mapping_data_extension_2",
-                            "extension_group": "cmd_mapping_data_extension_group"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "test_extension_1",
-                            "data": [{
-                              "name": "aaa",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8001/",
-                                "extension": "test_extension_2",
-                                "msg_conversion": {
-                                  "type": "per_property",
-                                  "rules": [{
-                                    "path": "ten.name",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "bbb"
-                                  },{
-                                    "path": "test_prop_string",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "hello"
-                                  },{
-                                    "path": "test_prop_bool_fixed",
-                                    "conversion_mode": "fixed_value",
-                                    "value": true
-                                  },{
-                                    "path": "test_prop_bool_from_origin",
-                                    "conversion_mode": "from_original",
-                                    "original_path": "prop_bool"
-                                  }]
-                                }
+                          "graph": {
+                            "nodes": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "cmd_mapping_data_extension_1",
+                              "extension_group": "cmd_mapping_data_extension_group"
+                            },{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "cmd_mapping_data_extension_2",
+                              "extension_group": "cmd_mapping_data_extension_group"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "test_extension_1",
+                              "data": [{
+                                "name": "aaa",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8001/",
+                                  "extension": "test_extension_2",
+                                  "msg_conversion": {
+                                    "type": "per_property",
+                                    "rules": [{
+                                      "path": "ten.name",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "bbb"
+                                    },{
+                                      "path": "test_prop_string",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "hello"
+                                    },{
+                                      "path": "test_prop_bool_fixed",
+                                      "conversion_mode": "fixed_value",
+                                      "value": true
+                                    },{
+                                      "path": "test_prop_bool_from_origin",
+                                      "conversion_mode": "from_original",
+                                      "original_path": "prop_bool"
+                                    }]
+                                  }
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })###"

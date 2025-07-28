@@ -548,7 +548,7 @@ async fn create_input_str_for_pkg_info_dependencies(
                     }
                 }
 
-                if max_latest_versions < 0 && !found_matched {
+                if !found_matched {
                     return Err(anyhow!(
                         "Failed to find candidates for {}",
                         match dependency {

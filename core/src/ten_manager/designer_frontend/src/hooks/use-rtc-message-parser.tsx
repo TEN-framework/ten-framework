@@ -4,9 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import { type UID, useClientEvent } from "agora-rtc-react";
 import { useCallback, useRef, useState } from "react";
-import { EMessageDataType, EMessageType, IChatItem } from "@/types/rtc";
-import { UID, useClientEvent } from "agora-rtc-react";
+import { EMessageDataType, EMessageType, type IChatItem } from "@/types/rtc";
 
 interface TextDataChunk {
   message_id: string;

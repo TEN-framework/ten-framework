@@ -133,7 +133,7 @@ pub async fn add_graph_connection_endpoint(
     };
 
     if let Err(e) = graph_add_connection(
-        &mut graph_info.graph,
+        graph_info.graph.graph_mut(),
         &graph_info.app_base_dir,
         request_payload.src_app.clone(),
         request_payload.src_extension.clone(),

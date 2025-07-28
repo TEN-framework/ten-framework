@@ -13,7 +13,7 @@
 
 typedef struct ten_go_msg_t ten_go_msg_t;
 typedef struct ten_smart_ptr_t ten_shared_ptr_t;
-typedef struct ten_go_value_t ten_go_value_t;
+typedef struct ten_go_c_value_t ten_go_c_value_t;
 
 /**
  * @brief Get the type and size of a property of the msg. This function is
@@ -304,6 +304,15 @@ ten_go_error_t ten_go_msg_property_set_json_bytes(uintptr_t bridge_addr,
 void ten_go_msg_finalize(uintptr_t bridge_addr);
 
 ten_go_error_t ten_go_msg_get_name(uintptr_t bridge_addr, const char **name);
+
+/**
+ * @brief Get the source location (app_uri, graph_id, extension_name) of the
+ * msg.
+ */
+ten_go_error_t ten_go_msg_get_source(uintptr_t bridge_addr,
+                                     const char **app_uri,
+                                     const char **graph_id,
+                                     const char **extension_name);
 
 ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
                                    int app_uri_len, const void *graph_id,

@@ -4,18 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import type { z } from "zod";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { z } from "zod";
-
+import { type LogLineInfoSchema, PREFERENCES_SCHEMA_LOG } from "@/types/apps";
 import {
   EWidgetCategory,
-  EWidgetDisplayType,
-  TWidgetCustomAction,
+  type EWidgetDisplayType,
   type IWidget,
+  type TWidgetCustomAction,
 } from "@/types/widgets";
 import { getZodDefaults } from "@/utils";
-import { PREFERENCES_SCHEMA_LOG, LogLineInfoSchema } from "@/types/apps";
 import { dispatchBringToFront } from "@/utils/events";
 
 export const useWidgetStore = create<{

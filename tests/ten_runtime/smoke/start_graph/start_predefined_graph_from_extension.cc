@@ -57,8 +57,7 @@ class test_predefined_graph : public ten::extension_t {
                 // Shut down the graph; otherwise, the app won't be able to
                 // close because there is still a running engine/graph.
                 auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-                stop_graph_cmd->set_dest(nullptr, nullptr, nullptr,
-                                         nullptr);
+                stop_graph_cmd->set_dest(nullptr, nullptr, nullptr, nullptr);
                 stop_graph_cmd->set_graph_id(graph_id.c_str());
 
                 ten_env.send_cmd(
@@ -134,21 +133,25 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "addon": "start_predefined_graph_from_extension__predefined_graph_extension",
-                            "extension_group": "start_predefined_graph_from_extension__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "addon": "start_predefined_graph_from_extension__predefined_graph_extension",
+                              "extension_group": "start_predefined_graph_from_extension__predefined_graph_group"
+                            }]
+                          }
                         },{
                           "name": "graph_1",
                           "auto_start": false,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "normal_extension",
-                            "addon": "start_predefined_graph_from_extension__normal_extension",
-                            "extension_group": "start_predefined_graph_from_extension__normal_extension_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "normal_extension",
+                              "addon": "start_predefined_graph_from_extension__normal_extension",
+                              "extension_group": "start_predefined_graph_from_extension__normal_extension_group"
+                            }]
+                          }
                         }]
                       }
                     })"

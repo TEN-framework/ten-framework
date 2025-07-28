@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "ten_utils/lib/buf.h"
+#include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
@@ -206,7 +207,7 @@ done:
     ten_json_destroy(c_json);
   }
 
-  return js_error ? js_error : js_null(env);
+  return js_error ? js_error : js_undefined(env);
 }
 
 static napi_value ten_nodejs_msg_get_property_to_json(napi_env env,
@@ -277,7 +278,7 @@ done:
   }
 
   if (!js_error) {
-    js_error = js_null(env);
+    js_error = js_undefined(env);
   }
 
   return ten_nodejs_create_result_tuple(env, js_res, js_error);
@@ -329,7 +330,7 @@ static napi_value ten_nodejs_msg_set_property_number(napi_env env,
   ten_string_deinit(&path);
   ten_error_deinit(&err);
 
-  return js_error ? js_error : js_null(env);
+  return js_error ? js_error : js_undefined(env);
 }
 
 static napi_value ten_nodejs_msg_get_property_number(napi_env env,
@@ -394,7 +395,7 @@ done:
   }
 
   if (!js_error) {
-    js_error = js_null(env);
+    js_error = js_undefined(env);
   }
 
   return ten_nodejs_create_result_tuple(env, js_res, js_error);
@@ -450,7 +451,7 @@ static napi_value ten_nodejs_msg_set_property_string(napi_env env,
   ten_string_deinit(&value_str);
   ten_error_deinit(&err);
 
-  return js_error ? js_error : js_null(env);
+  return js_error ? js_error : js_undefined(env);
 }
 
 static napi_value ten_nodejs_msg_get_property_string(napi_env env,
@@ -514,7 +515,7 @@ done:
   }
 
   if (!js_error) {
-    js_error = js_null(env);
+    js_error = js_undefined(env);
   }
 
   return ten_nodejs_create_result_tuple(env, js_res, js_error);
@@ -567,7 +568,7 @@ static napi_value ten_nodejs_msg_set_property_bool(napi_env env,
   ten_string_deinit(&path);
   ten_error_deinit(&err);
 
-  return js_error ? js_error : js_null(env);
+  return js_error ? js_error : js_undefined(env);
 }
 
 static napi_value ten_nodejs_msg_get_property_bool(napi_env env,
@@ -632,7 +633,7 @@ done:
   }
 
   if (!js_error) {
-    js_error = js_null(env);
+    js_error = js_undefined(env);
   }
 
   return ten_nodejs_create_result_tuple(env, js_res, js_error);
@@ -690,7 +691,7 @@ static napi_value ten_nodejs_msg_set_property_buf(napi_env env,
   ten_string_deinit(&path);
   ten_error_deinit(&err);
 
-  return js_error ? js_error : js_null(env);
+  return js_error ? js_error : js_undefined(env);
 }
 
 static napi_value ten_nodejs_msg_get_property_buf(napi_env env,
@@ -763,14 +764,102 @@ done:
   }
 
   if (!js_error) {
-    js_error = js_null(env);
+    js_error = js_undefined(env);
   }
 
   return ten_nodejs_create_result_tuple(env, js_res, js_error);
 }
 
+static napi_value ten_nodejs_msg_get_source(napi_env env,
+                                            napi_callback_info info) {
+  const size_t argc = 1;
+  napi_value args[argc];  // this
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  ten_nodejs_msg_t *msg_bridge = NULL;
+  napi_status status = napi_unwrap(env, args[0], (void **)&msg_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && msg_bridge != NULL,
+                                "Failed to get msg bridge: %d", status);
+  TEN_ASSERT(msg_bridge, "Should not happen.");
+
+  ten_shared_ptr_t *msg = msg_bridge->msg;
+  TEN_ASSERT(msg, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
+
+  ten_loc_t *loc = ten_msg_get_src_loc(msg);
+  TEN_ASSERT(loc, "Should not happen.");
+  if (!loc) {
+    napi_throw_error(env, NULL, "Failed to get msg source location");
+    return js_undefined(env);
+  }
+
+  const char *app_uri = ten_string_get_raw_str(&loc->app_uri);
+  const char *graph_id = ten_string_get_raw_str(&loc->graph_id);
+  const char *extension_name = ten_string_get_raw_str(&loc->extension_name);
+
+  napi_value js_app_uri = NULL;
+  napi_value js_graph_id = NULL;
+  napi_value js_extension_name = NULL;
+
+  if (loc->has_app_uri) {
+    status = napi_create_string_utf8(env, app_uri ? app_uri : "",
+                                     NAPI_AUTO_LENGTH, &js_app_uri);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && js_app_uri != NULL,
+                                  "Failed to create JS string for app_uri: %d",
+                                  status);
+  } else {
+    js_app_uri = js_undefined(env);
+  }
+
+  if (loc->has_graph_id) {
+    status = napi_create_string_utf8(env, graph_id ? graph_id : "",
+                                     NAPI_AUTO_LENGTH, &js_graph_id);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && js_graph_id != NULL,
+                                  "Failed to create JS string for graph_id: %d",
+                                  status);
+  } else {
+    js_graph_id = js_undefined(env);
+  }
+
+  if (loc->has_extension_name) {
+    status = napi_create_string_utf8(env, extension_name ? extension_name : "",
+                                     NAPI_AUTO_LENGTH, &js_extension_name);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(
+        status == napi_ok && js_extension_name != NULL,
+        "Failed to create JS string for extension_name: %d", status);
+  } else {
+    js_extension_name = js_undefined(env);
+  }
+
+  napi_value js_array = NULL;
+  status = napi_create_array_with_length(env, 3, &js_array);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && js_array != NULL,
+                                "Failed to create JS array: %d", status);
+
+  status = napi_set_element(env, js_array, 0, js_app_uri);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to set JS array element 0: %d", status);
+
+  status = napi_set_element(env, js_array, 1, js_graph_id);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to set JS array element 1: %d", status);
+
+  status = napi_set_element(env, js_array, 2, js_extension_name);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to set JS array element 2: %d", status);
+
+  return js_array;
+}
+
 napi_value ten_nodejs_msg_module_init(napi_env env, napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_msg_get_name);
+  EXPORT_FUNC(env, exports, ten_nodejs_msg_get_source);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_set_dest);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_set_property_from_json);
   EXPORT_FUNC(env, exports, ten_nodejs_msg_get_property_to_json);

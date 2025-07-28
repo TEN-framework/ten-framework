@@ -5,12 +5,12 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+import type { FieldError, FieldErrors, FieldValues } from "react-hook-form";
 //
 // For zodResolver in @hookform/resolvers/zod currently not support zod/v4
 // so we need to implement our own resolver
 //
-import { ZodError, ZodType } from "zod/v4";
-import { FieldError, FieldErrors, FieldValues } from "react-hook-form";
+import type { ZodError, ZodType } from "zod/v4";
 
 // Utility to convert ZodError to Hook Form-compatible FieldErrors
 const zodToHookFormErrors = (zodError: ZodError): FieldErrors => {

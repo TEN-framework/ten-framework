@@ -40,6 +40,7 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
 
 export const DEFAULT_DIFY_SETTINGS: IDifySettings = {
   api_key: "",
+  base_url: "https://api.dify.ai/v1",
 }
 
 export const DESCRIPTION = "A Realtime Conversational AI Agent powered by TEN"
@@ -65,6 +66,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
     label: "Voice Agent with Azure Voice AI API",
     value: "va_azure_v2v"
+  },
+  {
+    label: "Voice Agent with Grok 4",
+    value: "grok4",
   },
   {
     label: "Voice Agent with Llama4",

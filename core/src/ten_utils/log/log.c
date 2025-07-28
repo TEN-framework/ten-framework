@@ -219,9 +219,9 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
     self->formatter.on_format(&buf, level, func_name, func_name_len, file_name,
                               file_name_len, line_no, msg, msg_len);
   } else {
-    // Use default formatter if none is set.
-    ten_log_default_formatter(&buf, level, func_name, func_name_len, file_name,
-                              file_name_len, line_no, msg, msg_len);
+    // Use default plain formatter if none is set.
+    ten_log_plain_formatter(&buf, level, func_name, func_name_len, file_name,
+                            file_name_len, line_no, msg, msg_len);
   }
 
   ten_string_append_formatted(&buf, "%s", TEN_LOG_EOL);

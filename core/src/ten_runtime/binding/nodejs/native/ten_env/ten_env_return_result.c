@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_runtime/ten_env/internal/return.h"
 #include "ten_utils/lib/error.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_env_notify_return_result_ctx_t {
@@ -75,7 +76,8 @@ static void ten_nodejs_return_result_callback_call_ctx_destroy(
 }
 
 static void tsfn_proxy_return_result_callback(napi_env env, napi_value js_cb,
-                                              void *context, void *data) {
+                                              TEN_UNUSED void *context,
+                                              void *data) {
   ten_nodejs_return_result_callback_call_ctx_t *ctx =
       (ten_nodejs_return_result_callback_call_ctx_t *)data;
   TEN_ASSERT(ctx, "Should not happen.");
@@ -102,10 +104,9 @@ static void tsfn_proxy_return_result_callback(napi_env env, napi_value js_cb,
   ten_nodejs_return_result_callback_call_ctx_destroy(ctx);
 }
 
-static void proxy_return_result_error_callback(ten_env_t *self,
-                                               ten_shared_ptr_t *c_cmd_result,
-                                               void *user_data,
-                                               ten_error_t *err) {
+static void proxy_return_result_error_callback(
+    ten_env_t *self, TEN_UNUSED ten_shared_ptr_t *c_cmd_result, void *user_data,
+    ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(self, true), "Should not happen.");
 
@@ -224,5 +225,5 @@ napi_value ten_nodejs_ten_env_return_result(napi_env env,
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

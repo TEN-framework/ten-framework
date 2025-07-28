@@ -214,14 +214,16 @@ mod tests {
                     "predefined_graphs": [
                       {
                         "name": "default",
-                        "nodes": [
-                          {
-                            "type": "extension",
-                            "name": "default_extension_cpp",
-                            "addon": "default_extension_cpp",
-                            "extension_group": "default_extension_group"
-                          }
-                        ]
+                        "graph": {
+                          "nodes": [
+                            {
+                              "type": "extension",
+                              "name": "default_extension_cpp",
+                              "addon": "default_extension_cpp",
+                              "extension_group": "default_extension_group"
+                            }
+                          ]
+                        }
                       }
                     ]
                   }
@@ -330,15 +332,17 @@ mod tests {
                     "predefined_graphs": [
                       {
                         "name": "default",
-                        "nodes": [
-                          {
-                            "type": "extension",
-                            "name": "default_extension_cpp",
-                            "addon": "default_extension_cpp",
-                            "extension_group": "default_extension_group",
-                            "should_not_present": "aa"
-                          }
-                        ]
+                        "graph": {
+                          "nodes": [
+                            {
+                              "type": "extension",
+                              "name": "default_extension_cpp",
+                              "addon": "default_extension_cpp",
+                              "extension_group": "default_extension_group",
+                              "should_not_present": "aa"
+                            }
+                          ]
+                        }
                       }
                     ]
                   }
@@ -395,27 +399,29 @@ mod tests {
                     "predefined_graphs": [
                       {
                         "name": "default",
-                        "nodes": [{
-                          "type": "extension",
-                          "name": "default_extension_cpp",
-                          "addon": "default_extension_cpp",
-                          "extension_group": "default_extension_group"
-                        }],
-                        "connections": [
-                          {
-                            "extension": "default_extension_cpp",
-                            "cmd": [
-                              {
-                                "name": "invalid command",
-                                "dest": [
-                                  {
-                                    "extension": "default_extension_cpp"
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
+                        "graph": {
+                          "nodes": [{
+                            "type": "extension",
+                            "name": "default_extension_cpp",
+                            "addon": "default_extension_cpp",
+                            "extension_group": "default_extension_group"
+                          }],
+                          "connections": [
+                            {
+                              "extension": "default_extension_cpp",
+                              "cmd": [
+                                {
+                                  "name": "invalid command",
+                                  "dest": [
+                                    {
+                                      "extension": "default_extension_cpp"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
                       }
                     ]
                   }
@@ -471,13 +477,15 @@ mod tests {
                   "ten": {
                     "predefined_graphs": [
                       {
-                        "nodes": [
-                          {
-                            "type": "extension",
-                            "addon": "default_extension_cpp",
-                            "extension_group": "default_extension_group"
-                          }
-                        ]
+                        "graph": {
+                          "nodes": [
+                            {
+                              "type": "extension",
+                              "addon": "default_extension_cpp",
+                              "extension_group": "default_extension_group"
+                            }
+                          ]
+                        }
                       }
                     ]
                   }

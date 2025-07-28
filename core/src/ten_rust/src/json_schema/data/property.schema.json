@@ -112,8 +112,12 @@
             "selector"
           ],
           "properties": {
-            "selector": {},
-            "msg_conversion": {}
+            "selector": {}
+            // If the selector feature is used, the msg_conversion feature is
+            // not supported. This is because selector represents multiple
+            // connections, making it difficult for users to specify on which
+            // connection to perform msg_conversion. Therefore, if need to use
+            // the msg_conversion feature, do not use the selector feature.
           },
           "additionalProperties": false
         }
@@ -135,6 +139,10 @@
         "selector": {
           "$ref": "#/$defs/alphanumericCharacters"
         }
+        // If the source field is used, the msg_conversion feature is not
+        // supported. This is because the msg_conversion feature is not easily
+        // understood under the source field. If need to use the msg_conversion
+        // feature, use the dest field.
       },
       "oneOf": [
         {
@@ -229,51 +237,8 @@
             }
           }
         },
-        "selector": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "app": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "extension": {
-              "$ref": "#/$defs/selectorPattern"
-            },
-            "subgraph": {
-              "$ref": "#/$defs/selectorPattern"
-            }
-          },
-          "oneOf": [
-            {
-              "required": [
-                "extension"
-              ],
-              "not": {
-                "required": [
-                  "subgraph"
-                ]
-              }
-            },
-            {
-              "required": [
-                "subgraph"
-              ],
-              "not": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "extension"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "app"
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
+        "filter": {
+          "$ref": "#/$defs/filter"
         },
         "property": {
           "type": "object",
@@ -357,12 +322,12 @@
                   "const": "selector"
                 },
                 "name": {},
-                "selector": {}
+                "filter": {}
               },
               "required": [
                 "type",
                 "name",
-                "selector"
+                "filter"
               ],
               "additionalProperties": false
             }
@@ -832,163 +797,233 @@
                 "type": "boolean",
                 "default": false
               },
-              "import_uri": {
-                "type": "string",
-                "format": "uri-reference",
-                "minLength": 1
-              },
-              "nodes": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/graphNode"
-                }
-              },
-              "connections": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/graphConnection"
-                }
-              },
-              "exposed_messages": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "type",
-                    "name"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "cmd_in",
-                        "cmd_out",
-                        "data_in",
-                        "data_out",
-                        "audio_frame_in",
-                        "audio_frame_out",
-                        "video_frame_in",
-                        "video_frame_out"
-                      ]
-                    },
-                    "name": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "extension": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "subgraph": {
-                      "$ref": "#/$defs/alphanumericCharacters"
+              "graph": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "import_uri": {
+                    "type": "string",
+                    "format": "uri-reference",
+                    "minLength": 1
+                  },
+                  "nodes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/graphNode"
                     }
                   },
-                  "oneOf": [
-                    {
-                      "required": [
-                        "extension"
-                      ],
-                      "not": {
-                        "required": [
-                          "subgraph"
-                        ]
-                      }
-                    },
-                    {
-                      "required": [
-                        "subgraph"
-                      ],
-                      "not": {
-                        "required": [
-                          "extension"
-                        ]
-                      }
-                    }
-                  ]
-                }
-              },
-              "exposed_properties": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "name"
-                  ],
-                  "properties": {
-                    "extension": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "subgraph": {
-                      "$ref": "#/$defs/alphanumericCharacters"
-                    },
-                    "name": {
-                      "$ref": "#/$defs/alphanumericCharacters"
+                  "connections": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/graphConnection"
                     }
                   },
-                  "oneOf": [
-                    {
+                  "exposed_messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
                       "required": [
-                        "extension"
+                        "type",
+                        "name"
                       ],
-                      "not": {
-                        "required": [
-                          "subgraph"
-                        ]
-                      }
-                    },
-                    {
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "cmd_in",
+                            "cmd_out",
+                            "data_in",
+                            "data_out",
+                            "audio_frame_in",
+                            "audio_frame_out",
+                            "video_frame_in",
+                            "video_frame_out"
+                          ]
+                        },
+                        "name": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "extension": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "subgraph": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        }
+                      },
+                      "oneOf": [
+                        {
+                          "required": [
+                            "extension"
+                          ],
+                          "not": {
+                            "required": [
+                              "subgraph"
+                            ]
+                          }
+                        },
+                        {
+                          "required": [
+                            "subgraph"
+                          ],
+                          "not": {
+                            "required": [
+                              "extension"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "exposed_properties": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
                       "required": [
-                        "subgraph"
+                        "name"
                       ],
-                      "not": {
-                        "required": [
-                          "extension"
-                        ]
-                      }
-                    }
-                  ]
-                }
-              }
-            },
-            "oneOf": [
-              {
-                "required": [
-                  "import_uri"
-                ],
-                "not": {
-                  "anyOf": [
-                    {
-                      "required": [
-                        "nodes"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "connections"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "exposed_messages"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "exposed_properties"
+                      "properties": {
+                        "extension": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "subgraph": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        },
+                        "name": {
+                          "$ref": "#/$defs/alphanumericCharacters"
+                        }
+                      },
+                      "oneOf": [
+                        {
+                          "required": [
+                            "extension"
+                          ],
+                          "not": {
+                            "required": [
+                              "subgraph"
+                            ]
+                          }
+                        },
+                        {
+                          "required": [
+                            "subgraph"
+                          ],
+                          "not": {
+                            "required": [
+                              "extension"
+                            ]
+                          }
+                        }
                       ]
                     }
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "required": [
-                    "import_uri"
-                  ]
-                }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "import_uri"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "nodes"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "connections"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "exposed_messages"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "exposed_properties"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "not": {
+                      "required": [
+                        "import_uri"
+                      ]
+                    }
+                  }
+                ]
               }
-            ]
+            }
           }
+        }
+      }
+    },
+    "filter": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/atomicFilter"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "and"
+          ],
+          "properties": {
+            "and": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "or"
+          ],
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/filter"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "atomicFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "regex"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }

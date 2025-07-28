@@ -273,7 +273,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info.graph.nodes.first().unwrap().get_name().to_string()
+            graph_info.graph.nodes().first().unwrap().get_name().to_string()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -434,7 +434,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info.graph.nodes.first().unwrap().get_name().to_string()
+            graph_info.graph.nodes().first().unwrap().get_name().to_string()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -554,7 +554,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            let node = graph_info.graph.nodes.first().unwrap();
+            let node = graph_info.graph.nodes().first().unwrap();
             let app = match node {
                 GraphNode::Extension { content } => content.app.clone(),
                 _ => None,
@@ -600,7 +600,7 @@ mod tests {
         let graph_info = graphs_cache.get(&graph_id).unwrap();
         let updated_node = graph_info
             .graph
-            .nodes
+            .nodes()
             .iter()
             .find(|node| match node {
                 GraphNode::Extension { content } => {

@@ -12,10 +12,9 @@ from enum import Enum
 import traceback
 import time
 import numpy as np
-from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Literal
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
     Cmd,
@@ -23,7 +22,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten.audio_frame import AudioFrameDataFmt
+from ten_runtime.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
@@ -74,6 +73,8 @@ from .realtime.struct import (
     ContentType,
     FunctionCallOutputItemParam,
     ResponseCreate,
+    ServerVADUpdateParams,
+    SemanticVADUpdateParams,
 )
 
 CMD_IN_FLUSH = "flush"
@@ -102,7 +103,11 @@ class OpenAIRealtimeConfig(BaseConfig):
     audio_out: bool = True
     input_transcript: bool = True
     sample_rate: int = 24000
-
+    vad_type: Literal["server_vad", "semantic_vad"] = "server_vad"
+    vad_eagerness: Literal["low", "medium", "high", "auto"] = "auto"
+    vad_threshold: float = 0.5
+    vad_prefix_padding_ms: int = 300
+    vad_silence_duration_ms: int = 500
     vendor: str = ""
     stream_id: int = 0
     dump: bool = False
@@ -173,9 +178,8 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
                 if result.get_status_code() == StatusCode.OK:
                     try:
-                        history = json.loads(
-                            result.get_property_string("response")
-                        )
+                        response, _ = result.get_property_string("response")
+                        history = json.loads(response)
                         for i in history:
                             self.memory.put(i)
                         ten_env.log_info(f"on retrieve context {history}")
@@ -217,9 +221,11 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         self, _: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         try:
-            stream_id = audio_frame.get_property_int("stream_id")
+            stream_id, _ = audio_frame.get_property_int("stream_id")
             if self.channel_name == "":
-                self.channel_name = audio_frame.get_property_string("channel")
+                self.channel_name, _ = audio_frame.get_property_string(
+                    "channel"
+                )
 
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
@@ -260,19 +266,15 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             await super().on_cmd(ten_env, cmd)
             return
 
-        cmd_result = CmdResult.create(status)
+        cmd_result = CmdResult.create(status, cmd)
         cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass
 
     async def _loop(self):
-        def get_time_ms() -> int:
-            current_time = datetime.now()
-            return current_time.microsecond // 1000
-
         try:
             start_time = time.time()
             await self.conn.connect()
@@ -280,7 +282,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             item_id = ""  # For truncate
             response_id = ""
             content_index = 0
-            relative_start_ms = get_time_ms()
+            session_start_ms = int(
+                time.time() * 1000
+            )  # Use proper timestamp in milliseconds
             flushed = set()
 
             self.ten_env.log_info("Client loop started")
@@ -460,9 +464,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On server listening, in response {response_id}, last item {item_id}"
                             )
-                            # Tuncate the on-going audio stream
-                            end_ms = get_time_ms() - relative_start_ms
-                            if item_id:
+                            # Calculate proper truncation time - elapsed milliseconds since session start
+                            current_ms = int(time.time() * 1000)
+                            end_ms = current_ms - session_start_ms
+                            if (
+                                item_id and end_ms > 0
+                            ):  # Only truncate if we have a valid positive timestamp
                                 truncate = ItemTruncate(
                                     item_id=item_id,
                                     content_index=content_index,
@@ -483,11 +490,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                         case InputAudioBufferSpeechStopped():
                             # Only for server vad
                             self.input_end = time.time()
-                            relative_start_ms = (
-                                get_time_ms() - message.audio_end_ms
+                            # Update session start to properly track relative timing
+                            session_start_ms = (
+                                int(time.time() * 1000) - message.audio_end_ms
                             )
                             self.ten_env.log_info(
-                                f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}"
+                                f"On server stop listening, audio_end_ms: {message.audio_end_ms}, session_start_ms updated to: {session_start_ms}"
                             )
                         case ResponseFunctionCallArgumentsDone():
                             tool_call_id = message.call_id
@@ -605,12 +613,23 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         prompt = self._replace(self.config.prompt)
 
         self.ten_env.log_info(f"update session {prompt} {tools}")
+        if self.config.vad_type == "server_vad":
+            vad_params = ServerVADUpdateParams(
+                threshold=self.config.vad_threshold,
+                prefix_padding_ms=self.config.vad_prefix_padding_ms,
+                silence_duration_ms=self.config.vad_silence_duration_ms,
+            )
+        else:  # semantic vad
+            vad_params = SemanticVADUpdateParams(
+                eagerness=self.config.vad_eagerness,
+            )
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
+                turn_detection=vad_params,
             )
         )
         if self.config.audio_out:
@@ -744,9 +763,8 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             )
         )
         if result.get_status_code() == StatusCode.OK:
-            tool_result: LLMToolResult = json.loads(
-                result.get_property_to_json(CMD_PROPERTY_RESULT)
-            )
+            r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
+            tool_result: LLMToolResult = json.loads(r)
 
             result_content = tool_result["content"]
             tool_response.item.output = json.dumps(

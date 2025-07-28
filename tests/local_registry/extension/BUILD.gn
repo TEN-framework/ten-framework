@@ -13,5 +13,6 @@ group("extension") {
     "ext_b",
     "ext_c",
     "ext_d",
+    "ext_e",
   ]
 }

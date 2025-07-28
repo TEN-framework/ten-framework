@@ -8,6 +8,7 @@ from ten_runtime import (
     Addon,
     register_addon_as_extension,
     TenEnv,
+    LogLevel,
 )
 from .extension import (
     PowerExtension,
@@ -20,7 +21,7 @@ from .extension import (
 @register_addon_as_extension("default_extension_python")
 class DefaultExtensionAddon(Addon):
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        ten_env.log_info("on_create_instance" + name)
+        ten_env.log(LogLevel.INFO, "on_create_instance" + name)
 
         # function_entry, power, multi, substract
 

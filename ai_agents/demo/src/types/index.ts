@@ -28,6 +28,7 @@ export interface ICozeSettings {
 
 export interface IDifySettings {
   api_key: string
+  base_url: string
 }
 
 export enum EMessageType {

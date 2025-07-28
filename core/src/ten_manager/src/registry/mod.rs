@@ -9,6 +9,7 @@ pub mod local;
 mod pkg_cache;
 pub mod pkg_list_cache;
 mod remote;
+pub mod search;
 
 use std::sync::Arc;
 
@@ -22,6 +23,7 @@ use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 use super::constants::DEFAULT;
 use super::home::config::TmanConfig;
 use crate::output::TmanOutput;
+use crate::registry::search::PkgSearchFilter;
 
 pub async fn upload_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
@@ -210,6 +212,71 @@ pub async fn get_package_list(
         .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
 
     Ok(sorted_results)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn search_packages(
+    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    filter: &PkgSearchFilter,
+    page_size: Option<u32>,
+    page: Option<u32>,
+    sort_by: Option<&str>,
+    sort_order: Option<&str>,
+    scope: Option<&str>,
+    out: &Arc<Box<dyn TmanOutput>>,
+) -> Result<(u32, Vec<PkgRegistryInfo>)> {
+    // Retrieve the default registry URL from configuration.
+    let default_registry_url = tman_config
+        .read()
+        .await
+        .registry
+        .get(DEFAULT)
+        .ok_or_else(|| anyhow!("Default registry not found"))?
+        .index
+        .clone();
+
+    // Parse the registry URL to determine the scheme (file or https).
+    let parsed_registry_url = url::Url::parse(&default_registry_url)
+        .map_err(|_| anyhow!("Invalid URL: {}", default_registry_url))?;
+
+    // Delegate to the appropriate handler based on the URL scheme.
+    let results = match parsed_registry_url.scheme() {
+        "file" => {
+            local::search_packages(
+                tman_config.clone(),
+                &default_registry_url,
+                filter,
+                page_size,
+                page,
+                sort_by,
+                sort_order,
+                scope,
+                out,
+            )
+            .await?
+        }
+        "https" => {
+            remote::search_packages(
+                tman_config.clone(),
+                &default_registry_url,
+                filter,
+                page_size,
+                page,
+                sort_by,
+                sort_order,
+                scope,
+                out,
+            )
+            .await?
+        }
+        _ => {
+            return Err(anyhow!(
+                "Unsupported URL scheme: {}",
+                parsed_registry_url.scheme()
+            ));
+        }
+    };
+    Ok(results)
 }
 
 pub async fn delete_package(

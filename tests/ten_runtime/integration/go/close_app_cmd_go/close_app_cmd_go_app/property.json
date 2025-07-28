@@ -7,38 +7,40 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "simple_http_server_cpp",
-            "addon": "simple_http_server_cpp",
-            "extension_group": "default_extension_group",
-            "property": {
-              "server_port": 8002
-            }
-          },
-          {
-            "type": "extension",
-            "name": "default_extension_go",
-            "addon": "default_extension_go",
-            "extension_group": "default_extension_group"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "simple_http_server_cpp",
-            "cmd": [
-              {
-                "name": "close",
-                "dest": [
-                  {
-                    "extension": "default_extension_go"
-                  }
-                ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
               }
-            ]
-          }
-        ]
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_go",
+              "addon": "default_extension_go",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "close",
+                  "dest": [
+                    {
+                      "extension": "default_extension_go"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

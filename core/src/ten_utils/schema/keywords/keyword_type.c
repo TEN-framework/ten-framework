@@ -134,12 +134,15 @@ static bool ten_schema_keyword_type_adjust_value(
 // Type compatibility:
 // The target type has a larger range of values than the source type.
 //
-// Note that the `self` and `target` type keyword should not be NULL, otherwise
-// their schemas are invalid.
+// Note that if one of the `self` and `target` type keyword is NULL, it also
+// means it's compatible.
 static bool ten_schema_keyword_type_is_compatible(
     ten_schema_keyword_t *self_, ten_schema_keyword_t *target_,
     ten_schema_error_t *schema_err) {
-  TEN_ASSERT(self_ && target_, "Invalid argument.");
+  if (!self_ || !target_) {
+    return true;
+  }
+
   TEN_ASSERT(schema_err && ten_schema_error_check_integrity(schema_err),
              "Invalid argument.");
 

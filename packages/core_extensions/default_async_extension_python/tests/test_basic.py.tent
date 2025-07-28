@@ -8,6 +8,7 @@ from ten_runtime import (
     AsyncTenEnvTester,
     Cmd,
     StatusCode,
+    LogLevel,
     TenError,
     TenErrorCode,
 )
@@ -17,7 +18,7 @@ class ExtensionTesterBasic(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
 
-        ten_env.log_debug("send hello_world")
+        ten_env.log(LogLevel.DEBUG, "send hello_world")
         result, err = await ten_env.send_cmd(new_cmd)
         if (
             err is not None
@@ -33,7 +34,7 @@ class ExtensionTesterBasic(AsyncExtensionTester):
         else:
             ten_env.stop_test()
 
-        ten_env.log_debug("tester on_start_done")
+        ten_env.log(LogLevel.DEBUG, "tester on_start_done")
 
 
 def test_basic():

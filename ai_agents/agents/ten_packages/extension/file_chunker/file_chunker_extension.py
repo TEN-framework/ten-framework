@@ -5,7 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from ten import (
+from ten_runtime import (
     Extension,
     TenEnv,
     Cmd,
@@ -108,7 +108,7 @@ class FileChunkerExtension(Extension):
     ):
         ten.log_info(f"vector store start for one splitting of the file {path}")
         file_name = path.split("/")[-1]
-        embed_output_json = result.get_property_string("embeddings")
+        embed_output_json, _ = result.get_property_string("embeddings")
         embed_output = json.loads(embed_output_json)
         cmd_out = Cmd.create(UPSERT_VECTOR_CMD)
         cmd_out.set_property_string("collection_name", self.new_collection_name)
@@ -155,11 +155,11 @@ class FileChunkerExtension(Extension):
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         if cmd_name == CMD_FILE_CHUNK:
-            path = cmd.get_property_string("path")
+            path, _ = cmd.get_property_string("path")
 
             collection = None
             try:
-                collection = cmd.get_property_string("collection")
+                collection, _ = cmd.get_property_string("collection")
             except Exception:
                 ten.log_warn(f"missing collection property in cmd {cmd_name}")
 
@@ -169,9 +169,9 @@ class FileChunkerExtension(Extension):
         else:
             ten.log_info(f"unknown cmd {cmd_name}")
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "ok")
-        ten.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result)
 
     def async_handler(self, ten: TenEnv) -> None:
         while not self.stop:

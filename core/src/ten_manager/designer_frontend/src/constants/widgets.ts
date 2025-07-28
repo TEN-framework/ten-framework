@@ -10,6 +10,7 @@ export const WIDGET_ID_PREFIX = "widget-";
 
 export const EXTENSION_WIDGET_ID = WIDGET_ID_PREFIX + "extension";
 export const EXTENSION_STORE_WIDGET_ID = WIDGET_ID_PREFIX + "extension-store";
+/** @deprecated */
 export const GRAPH_SELECT_WIDGET_ID = WIDGET_ID_PREFIX + "graph-select";
 export const APP_FOLDER_WIDGET_ID = WIDGET_ID_PREFIX + "app-folder";
 export const APP_CREATE_WIDGET_ID = WIDGET_ID_PREFIX + "app-create";
@@ -37,6 +38,7 @@ export const GROUP_LOG_VIEWER_ID = "group-log-viewer";
 export const GROUP_EDITOR_ID = "group-editor";
 
 export const EXTENSION_STORE_POPUP_ID = EXTENSION_STORE_WIDGET_ID + "-popup";
+/** @deprecated */
 export const GRAPH_SELECT_POPUP_ID = GRAPH_SELECT_WIDGET_ID + "-popup";
 export const APP_FOLDER_POPUP_ID = APP_FOLDER_WIDGET_ID + "-popup";
 export const APP_CREATE_POPUP_ID = APP_CREATE_WIDGET_ID + "-popup";

@@ -5,7 +5,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.retrievers import BaseRetriever
 
 from .llama_embedding import LlamaEmbedding
-from ten import (
+from ten_runtime import (
     TenEnv,
     Cmd,
     StatusCode,
@@ -19,7 +19,7 @@ def format_node_result(
     ten.log_info(f"LlamaRetriever retrieve response {cmd_result.to_json()}")
     status = cmd_result.get_status_code()
     try:
-        contents_json = cmd_result.get_property_to_json("response")
+        contents_json, _ = cmd_result.get_property_to_json("response")
     except Exception as e:
         ten.log_warn(f"Failed to get response from cmd_result: {e}")
         return [

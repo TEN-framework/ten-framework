@@ -604,6 +604,11 @@ class ten_env_t {
     (ten_env).log(TEN_LOG_LEVEL_FATAL, __func__, __FILE__, __LINE__, (msg)); \
   } while (0)
 
+#define TEN_ENV_LOG(ten_env, level, msg)                       \
+  do {                                                         \
+    (ten_env).log(level, __func__, __FILE__, __LINE__, (msg)); \
+  } while (0)
+
   void log(TEN_LOG_LEVEL level, const char *func_name, const char *file_name,
            size_t line_no, const char *msg) {
     TEN_ASSERT(c_ten_env, "Should not happen.");

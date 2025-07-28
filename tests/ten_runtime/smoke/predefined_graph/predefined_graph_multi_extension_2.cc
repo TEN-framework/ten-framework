@@ -70,26 +70,28 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": true,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "predefined_graph_multi_extension_2__extension_1",
-                            "extension_group": "predefined_graph_multi_extension_2"
-                          },{
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "predefined_graph_multi_extension_2__extension_2",
-                            "extension_group": "predefined_graph_multi_extension_2"
-                          }],
-                          "connections": [{
-                            "extension": "test_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "extension": "test_extension_2"
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "predefined_graph_multi_extension_2__extension_1",
+                              "extension_group": "predefined_graph_multi_extension_2"
+                            },{
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "predefined_graph_multi_extension_2__extension_2",
+                              "extension_group": "predefined_graph_multi_extension_2"
+                            }],
+                            "connections": [{
+                              "extension": "test_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "extension": "test_extension_2"
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })"

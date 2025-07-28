@@ -1,103 +1,69 @@
-from ten import (
-    AsyncExtension,
+import asyncio
+from typing import Any, Dict, List
+from pydantic import BaseModel
+from ten_ai_base.asr import AsyncASRBaseExtension
+from ten_ai_base.message import ErrorMessage, ModuleType
+from ten_ai_base.transcription import UserTranscription
+from ten_runtime import (
     AsyncTenEnv,
     Cmd,
-    Data,
     AudioFrame,
     StatusCode,
     CmdResult,
 )
-
-import asyncio
-
 from .bytedance_asr import AsrWsClient
-
-from dataclasses import dataclass
-
-from ten_ai_base.config import BaseConfig
-
-DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
-DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
-DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
-DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
+from dataclasses import dataclass, field
 
 
 @dataclass
-class BytedanceASRConfig(BaseConfig):
+class BytedanceASRConfig(BaseModel):
     # Refer to: https://www.volcengine.com/docs/6561/80818.
-    # 根据 https://www.volcengine.com/docs/6561/111522, agora_rtc subscribe_audio_samples_per_frame 需要设置为3200
+    # agora_rtc subscribe_audio_samples_per_frame needs to be set to 3200 according to https://www.volcengine.com/docs/6561/111522
     appid: str = ""
     token: str = ""
     api_url: str = "wss://openspeech.bytedance.com/api/v2/asr"
     cluster: str = "volcengine_streaming_common"
+    params: Dict[str, Any] = field(default_factory=dict)
+    black_list_params: List[str] = field(default_factory=lambda: [])
+
+    def is_black_list_params(self, key: str) -> bool:
+        return key in self.black_list_params
 
 
-class BytedanceASRExtension(AsyncExtension):
+class BytedanceASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
 
-        self.stopped = False
         self.connected = False
         self.client = None
         self.config: BytedanceASRConfig = None
-        self.ten_env: AsyncTenEnv = None
-        self.loop = None
-        self.stream_id = -1
-
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("BytedanceASRExtension on_init")
-
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_start")
-        self.loop = asyncio.get_event_loop()
-        self.ten_env = ten_env
-
-        self.config = await BytedanceASRConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"config: {self.config}")
-
-        if not self.config.appid:
-            raise ValueError("appid is required")
-
-        if not self.config.token:
-            raise ValueError("token is required")
-
-        self.loop.create_task(self._start_listen())
-
-        ten_env.log_info("starting bytedance_asr thread")
-
-    async def on_audio_frame(self, _: AsyncTenEnv, frame: AudioFrame) -> None:
-        frame_buf = frame.get_buf()
-
-        if not frame_buf:
-            self.ten_env.log_warn("send_frame: empty pcm_frame detected.")
-            return
-
-        if not self.connected:
-            self.ten_env.log_debug("send_frame: bytedance_asr not connected.")
-            return
-
-        self.stream_id = frame.get_property_int("stream_id")
-        if self.client:
-            await self.client.send(frame_buf)
-
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_stop")
-
-        self.stopped = True
-
-        if self.client:
-            await self.client.finish()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json = cmd.to_json()
         ten_env.log_info(f"on_cmd json: {cmd_json}")
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
         cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result)
 
-    async def _start_listen(self) -> None:
+    async def _handle_reconnect(self):
+        await asyncio.sleep(0.2)  # Adjust the sleep time as needed
+
+        await self.stop_connection()
+        await self.start_connection()
+
+    async def start_connection(self) -> None:
         self.ten_env.log_info("start and listen bytedance_asr")
+
+        if not self.config:
+            config_json, _ = await self.ten_env.get_property_to_json("")
+            self.config = BytedanceASRConfig.model_validate_json(config_json)
+            self.ten_env.log_info(f"config: {self.config}")
+
+            if not self.config.appid:
+                raise ValueError("appid is required")
+            if not self.config.token:
+                raise ValueError("token is required")
 
         async def on_message(result):
             if (
@@ -117,38 +83,69 @@ class BytedanceASRExtension(AsyncExtension):
                 "definite", False
             )  # Use get to avoid KeyError
             self.ten_env.log_info(
-                f"bytedance_asr got sentence: [{sentence}], is_final: {is_final}, stream_id: {self.stream_id}"
+                f"bytedance_asr got sentence: [{sentence}], is_final: {is_final}"
             )
 
-            await self._send_text(
-                text=sentence, is_final=is_final, stream_id=self.stream_id
+            transcription = UserTranscription(
+                text=sentence,
+                is_final=is_final,
+                start_ms=0,
+                duration_ms=0,  # Duration is not provided in the result
+                language="zh-CN",
+                metadata={
+                    "session_id": self.session_id,
+                },
+                words=[],
             )
 
-        self.client = AsrWsClient(
-            ten_env=self.ten_env,
-            cluster=self.config.cluster,
-            appid=self.config.appid,
-            token=self.config.token,
-            api_url=self.config.api_url,
-            handle_received_message=on_message,
+            await self.send_asr_transcription(transcription)
+
+        try:
+            self.client = AsrWsClient(
+                ten_env=self.ten_env,
+                cluster=self.config.cluster,
+                appid=self.config.appid,
+                token=self.config.token,
+                api_url=self.config.api_url,
+                handle_received_message=on_message,
+            )
+
+            # connect to websocket
+            await self.client.start()
+            self.connected = True
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to start Bytedance ASR client: {e}")
+            error_message = ErrorMessage(
+                code=1,
+                message=str(e),
+                turn_id=0,
+                module=ModuleType.STT,
+            )
+            await self.send_asr_error(error_message, None)
+            if not self.stopped:
+                # If the extension is not stopped, attempt to reconnect
+                await self._handle_reconnect()
+
+    async def stop_connection(self) -> None:
+        if self.client:
+            await self.client.finish()
+            self.client = None
+            self.connected = False
+
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
+        self.session_id = session_id
+        if self.client:
+            await self.client.send(frame.get_buf())
+
+    async def finalize(self, session_id: str | None) -> None:
+        raise NotImplementedError(
+            "Bytedance ASR does not support finalize operation yet."
         )
 
-        # connect to websocket
-        await self.client.start()
-        self.connected = True
+    def is_connected(self) -> bool:
+        return self.connected
 
-    async def _send_text(
-        self, text: str, is_final: bool, stream_id: str
-    ) -> None:
-        stable_data = Data.create("text_data")
-        stable_data.set_property_bool(
-            DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final
-        )
-        stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        stable_data.set_property_int(
-            DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id
-        )
-        stable_data.set_property_bool(
-            DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final
-        )
-        asyncio.create_task(self.ten_env.send_data(stable_data))
+    def input_audio_sample_rate(self) -> int:
+        return 16000

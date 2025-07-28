@@ -76,15 +76,20 @@ pub async fn get_extension_schema_endpoint(
     };
 
     // Success case.
+    let schema = match extension_pkg_info.manifest.get_flattened_api().await {
+        Ok(api) => api,
+        Err(err) => {
+            let error_response = ErrorResponse::from_error(
+                &err,
+                "Flatten api interface failed.",
+            );
+            return Ok(HttpResponse::InternalServerError().json(error_response));
+        }
+    };
+
     let response = ApiResponse {
         status: Status::Ok,
-        data: GetExtensionSchemaResponseData {
-            schema: extension_pkg_info
-                .manifest
-                .get_flattened_api()
-                .await
-                .unwrap(),
-        },
+        data: GetExtensionSchemaResponseData { schema },
         meta: None,
     };
 

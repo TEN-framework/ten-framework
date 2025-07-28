@@ -4,30 +4,32 @@
       {
         "name": "default",
         "auto_start": false,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "some_extension",
-            "addon": "default_extension_go",
-            "extension_group": "some_group",
-            "app": "localhost"
-          }
-        ],
-        "connections": [
-          {
-            "extension": "some_extension",
-            "cmd": [
-              {
-                "name": "hello",
-                "dest": [
-                  {
-                    "extension": "some_extension"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "some_extension",
+              "addon": "default_extension_go",
+              "extension_group": "some_group",
+              "app": "localhost"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "some_extension",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "some_extension"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }

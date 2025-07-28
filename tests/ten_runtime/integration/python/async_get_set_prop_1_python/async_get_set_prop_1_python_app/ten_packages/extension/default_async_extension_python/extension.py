@@ -6,7 +6,7 @@
 #
 import asyncio
 import json
-from ten_runtime import AsyncExtension, AsyncTenEnv, Cmd, CmdResult
+from ten_runtime import AsyncExtension, AsyncTenEnv, Cmd, CmdResult, LogLevel
 
 
 class DefaultAsyncExtension(AsyncExtension):
@@ -20,11 +20,13 @@ class DefaultAsyncExtension(AsyncExtension):
         await ten_env.set_property_int("int_field", 1)
         await ten_env.set_property_float("float_field", 1.0)
         await ten_env.set_property_string("string_field", "hello")
-        await ten_env.set_property_from_json("json_field", '{"testKey": "testValue2"}')
+        await ten_env.set_property_from_json(
+            "json_field", '{"testKey": "testValue2"}'
+        )
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
         assert (await ten_env.is_property_exist("unknown_field"))[0] is False
         assert (await ten_env.is_property_exist("string_field"))[0] is True
@@ -69,7 +71,7 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_debug(f"on_cmd: {cmd_json}")
+        ten_env.log(LogLevel.DEBUG, f"on_cmd: {cmd_json}")
 
         # Mock async operation, e.g. network, file I/O.
         await asyncio.sleep(0.5)
@@ -88,6 +90,6 @@ class DefaultAsyncExtension(AsyncExtension):
         await ten_env.return_result(new_result)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         await asyncio.sleep(0.5)

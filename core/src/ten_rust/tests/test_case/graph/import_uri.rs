@@ -10,7 +10,11 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode, Graph};
+    use ten_rust::graph::{
+        graph_info::{GraphContent, GraphInfo},
+        node::GraphNode,
+        Graph,
+    };
 
     #[tokio::test]
     async fn test_graph_import_uri() {
@@ -57,13 +61,15 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: Vec::new(),
-                connections: None,
-                exposed_messages: None,
-                exposed_properties: None,
+            graph: GraphContent {
+                import_uri: Some(import_uri),
+                graph: Graph {
+                    nodes: Vec::new(),
+                    connections: None,
+                    exposed_messages: None,
+                    exposed_properties: None,
+                },
             },
-            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -73,16 +79,16 @@ mod tests {
         graph_info.validate_and_complete_and_flatten().await.unwrap();
 
         // Verify that the graph was loaded correctly.
-        assert_eq!(graph_info.graph.nodes.len(), 1);
+        assert_eq!(graph_info.graph.nodes().len(), 1);
 
-        if let GraphNode::Extension { content } = &graph_info.graph.nodes[0] {
+        if let GraphNode::Extension { content } = &graph_info.graph.nodes()[0] {
             assert_eq!(content.addon, "test_addon");
         } else {
             panic!("Unexpected non-extension node in graph");
         }
 
-        assert!(graph_info.graph.connections.is_some());
-        let connections = graph_info.graph.connections.as_ref().unwrap();
+        assert!(graph_info.graph.connections().is_some());
+        let connections = graph_info.graph.connections().as_ref().unwrap();
         assert_eq!(connections.len(), 1);
         assert_eq!(connections[0].loc.extension, Some("test_ext".to_string()));
     }
@@ -94,19 +100,21 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: vec![GraphNode::new_extension_node(
-                    "test_ext".to_string(),
-                    "test_addon".to_string(),
-                    Some("test_group".to_string()),
-                    None,
-                    None,
-                )],
-                connections: None,
-                exposed_messages: None,
-                exposed_properties: None,
+            graph: GraphContent {
+                import_uri: Some("test_uri".to_string()),
+                graph: Graph {
+                    nodes: vec![GraphNode::new_extension_node(
+                        "test_ext".to_string(),
+                        "test_addon".to_string(),
+                        Some("test_group".to_string()),
+                        None,
+                        None,
+                    )],
+                    connections: None,
+                    exposed_messages: None,
+                    exposed_properties: None,
+                },
             },
-            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -132,28 +140,30 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: Vec::new(),
-                connections: Some(vec![GraphConnection {
-                    loc: GraphLoc {
-                        app: None,
-                        extension: Some("test_ext".to_string()),
-                        subgraph: None,
-                        selector: None,
-                    },
-                    cmd: Some(vec![GraphMessageFlow::new(
-                        "test_cmd".to_string(),
-                        vec![],
-                        vec![],
-                    )]),
-                    data: None,
-                    audio_frame: None,
-                    video_frame: None,
-                }]),
-                exposed_messages: None,
-                exposed_properties: None,
+            graph: GraphContent {
+                import_uri: Some("test_uri".to_string()),
+                graph: Graph {
+                    nodes: Vec::new(),
+                    connections: Some(vec![GraphConnection {
+                        loc: GraphLoc {
+                            app: None,
+                            extension: Some("test_ext".to_string()),
+                            subgraph: None,
+                            selector: None,
+                        },
+                        cmd: Some(vec![GraphMessageFlow::new(
+                            "test_cmd".to_string(),
+                            vec![],
+                            vec![],
+                        )]),
+                        data: None,
+                        audio_frame: None,
+                        video_frame: None,
+                    }]),
+                    exposed_messages: None,
+                    exposed_properties: None,
+                },
             },
-            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -178,18 +188,20 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: Vec::new(),
-                connections: None,
-                exposed_messages: Some(vec![GraphExposedMessage {
-                    msg_type: GraphExposedMessageType::CmdIn,
-                    name: "test_msg".to_string(),
-                    extension: Some("test_ext".to_string()),
-                    subgraph: None,
-                }]),
-                exposed_properties: None,
+            graph: GraphContent {
+                import_uri: Some("test_uri".to_string()),
+                graph: Graph {
+                    nodes: Vec::new(),
+                    connections: None,
+                    exposed_messages: Some(vec![GraphExposedMessage {
+                        msg_type: GraphExposedMessageType::CmdIn,
+                        name: "test_msg".to_string(),
+                        extension: Some("test_ext".to_string()),
+                        subgraph: None,
+                    }]),
+                    exposed_properties: None,
+                },
             },
-            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -214,17 +226,19 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: Vec::new(),
-                connections: None,
-                exposed_messages: None,
-                exposed_properties: Some(vec![GraphExposedProperty {
-                    extension: Some("test_ext".to_string()),
-                    subgraph: None,
-                    name: "test_prop".to_string(),
-                }]),
+            graph: GraphContent {
+                import_uri: Some("test_uri".to_string()),
+                graph: Graph {
+                    nodes: Vec::new(),
+                    connections: None,
+                    exposed_messages: None,
+                    exposed_properties: Some(vec![GraphExposedProperty {
+                        extension: Some("test_ext".to_string()),
+                        subgraph: None,
+                        name: "test_prop".to_string(),
+                    }]),
+                },
             },
-            import_uri: Some("test_uri".to_string()),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -269,13 +283,15 @@ mod tests {
             name: Some("test_graph".to_string()),
             auto_start: Some(true),
             singleton: None,
-            graph: Graph {
-                nodes: Vec::new(),
-                connections: None,
-                exposed_messages: None,
-                exposed_properties: None,
+            graph: GraphContent {
+                import_uri: Some(import_uri),
+                graph: Graph {
+                    nodes: Vec::new(),
+                    connections: None,
+                    exposed_messages: None,
+                    exposed_properties: None,
+                },
             },
-            import_uri: Some(import_uri),
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
@@ -286,7 +302,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify that the graph was loaded from import_uri
-        assert_eq!(graph_info.graph.nodes.len(), 1);
-        assert_eq!(graph_info.graph.nodes[0].get_name(), "test_ext");
+        assert_eq!(graph_info.graph.nodes().len(), 1);
+        assert_eq!(graph_info.graph.nodes()[0].get_name(), "test_ext");
     }
 }

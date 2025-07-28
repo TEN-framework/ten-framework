@@ -6,6 +6,7 @@
 #
 group("install_all") {
   deps = [
+    "extension_api_interface_not_found",
     "extension_not_listed_in_app",
     "install_a_before_install_all",
     "install_all_fail_with_local_unsupported_pkg",

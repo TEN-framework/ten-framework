@@ -9,9 +9,9 @@ import z from "zod";
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
 import type {
-  IFileContentResponse,
   IBaseDirResponse,
-} from "@/types/fileSystem";
+  IFileContentResponse,
+} from "@/types/file-system";
 
 export const ENDPOINT_FILE_SYSTEM = {
   fileContent: {

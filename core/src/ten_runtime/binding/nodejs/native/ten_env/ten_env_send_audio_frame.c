@@ -73,7 +73,7 @@ static void ten_nodejs_send_audio_frame_callback_call_ctx_destroy(
 }
 
 static void tsfn_proxy_send_audio_frame_callback(napi_env env, napi_value js_cb,
-                                                 void *context,
+                                                 TEN_UNUSED void *context,
                                                  void *audio_frame) {
   ten_nodejs_send_audio_frame_callback_call_ctx_t *ctx = audio_frame;
   TEN_ASSERT(ctx, "Should not happen.");
@@ -219,5 +219,5 @@ napi_value ten_nodejs_ten_env_send_audio_frame(napi_env env,
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

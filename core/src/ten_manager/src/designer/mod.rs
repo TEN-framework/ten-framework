@@ -180,7 +180,11 @@ pub fn configure_routes(
             // Registry endpoints.
             .service(
                 web::scope("/registry")
-                    .service(web::resource("/packages").route(web::get().to(registry::packages::get_packages_endpoint)))
+                    .service(
+                        web::scope("/packages")
+                            .service(web::resource("").route(web::get().to(registry::packages::get_packages_endpoint)))
+                            .service(web::resource("/search").route(web::post().to(registry::search::search_packages_endpoint)))
+                    )
             )
             // Environment endpoints.
             .service(web::resource("/env").route(web::get().to(env::get_env_endpoint)))

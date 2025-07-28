@@ -83,50 +83,52 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "result_mapping_1__test_extension_1",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension_group": "result_mapping_1__extension_group"
-                          },{
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "result_mapping_1__test_extension_2",
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension_group": "result_mapping_1__extension_group"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "test_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8001/",
-                                "extension": "test_extension_2",
-                                "msg_conversion": {
-                                  "type": "per_property",
-                                  "rules": [{
-                                    "path": "ten.name",
-                                    "conversion_mode": "fixed_value",
-                                    "value": "hello_mapping"
-                                  },{
-                                    "path": "test_group.test_property_name",
-                                    "conversion_mode": "from_original",
-                                    "original_path": "test_property"
-                                  }],
-                                  "result": {
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "result_mapping_1__test_extension_1",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension_group": "result_mapping_1__extension_group"
+                            },{
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "result_mapping_1__test_extension_2",
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension_group": "result_mapping_1__extension_group"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "test_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8001/",
+                                  "extension": "test_extension_2",
+                                  "msg_conversion": {
                                     "type": "per_property",
                                     "rules": [{
-                                      "path": "resp_group.resp_property_name",
+                                      "path": "ten.name",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "hello_mapping"
+                                    },{
+                                      "path": "test_group.test_property_name",
                                       "conversion_mode": "from_original",
-                                      "original_path": "resp_property"
-                                    }]
+                                      "original_path": "test_property"
+                                    }],
+                                    "result": {
+                                      "type": "per_property",
+                                      "rules": [{
+                                        "path": "resp_group.resp_property_name",
+                                        "conversion_mode": "from_original",
+                                        "original_path": "resp_property"
+                                      }]
+                                    }
                                   }
-                                }
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })###"

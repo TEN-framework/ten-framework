@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from ten_runtime import AsyncExtension, AsyncTenEnv, Data, Cmd
+from ten_runtime import AsyncExtension, AsyncTenEnv, Data, Cmd, LogLevel
 from ten_runtime.cmd_result import CmdResult, StatusCode
 
 
@@ -15,11 +15,13 @@ class FunctionEntryExtension(AsyncExtension):
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_info(f"function entry extension received cmd: {cmd_name}")
+        ten_env.log(
+            LogLevel.INFO, f"function entry extension received cmd: {cmd_name}"
+        )
 
         base, error = await ten_env.get_property_int("base")
         if error is not None:
-            ten_env.log_error(f"failed to get base: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get base: {error}")
             await ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
             return
 
@@ -32,11 +34,11 @@ class FunctionEntryExtension(AsyncExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         number, error = data.get_property_int("data")
         if error is not None:
-            ten_env.log_error(f"failed to get data: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get data: {error}")
             return
 
         if self.received_cmd is None:
-            ten_env.log_error("received data but no cmd received")
+            ten_env.log(LogLevel.ERROR, "received data but no cmd received")
             return
 
         cmd_result = CmdResult.create(StatusCode.OK, self.received_cmd)
@@ -48,12 +50,12 @@ class PowerExtension(AsyncExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         number, error = data.get_property_int("data")
         if error is not None:
-            ten_env.log_error(f"failed to get data: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get data: {error}")
             return
 
         power, error = await ten_env.get_property_int("power")
         if error is not None:
-            ten_env.log_error(f"failed to get power: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get power: {error}")
             return
 
         result = number**power
@@ -66,12 +68,12 @@ class MultiExtension(AsyncExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         number, error = data.get_property_int("data")
         if error is not None:
-            ten_env.log_error(f"failed to get data: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get data: {error}")
             return
 
         multi, error = await ten_env.get_property_int("multi")
         if error is not None:
-            ten_env.log_error(f"failed to get multi: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get multi: {error}")
             return
 
         result = number * multi
@@ -83,12 +85,12 @@ class SubstractExtension(AsyncExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         number, error = data.get_property_int("data")
         if error is not None:
-            ten_env.log_error(f"failed to get data: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get data: {error}")
             return
 
         substract, error = await ten_env.get_property_int("substract")
         if error is not None:
-            ten_env.log_error(f"failed to get substract: {error}")
+            ten_env.log(LogLevel.ERROR, f"failed to get substract: {error}")
             return
 
         result = number - substract

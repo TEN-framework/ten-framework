@@ -37,7 +37,7 @@ class test_normal_extension_2 : public ten::extension_t {
       auto error_msg =
           "test_normal_extension_2 received unexpected cmd: " + cmd_name;
 
-      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -57,7 +57,7 @@ class test_normal_extension_3 : public ten::extension_t {
       auto error_msg =
           "test_normal_extension_3 received unexpected cmd: " + cmd_name;
 
-      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -203,12 +203,14 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "type": "extension",
-                            "name": "predefined_graph",
-                            "addon": "start_graph_with_msg_conversion__predefined_graph_extension",
-                            "extension_group": "start_graph_with_msg_conversion__predefined_graph_group"
-                          }]
+                          "graph": {
+                            "nodes": [{
+                              "type": "extension",
+                              "name": "predefined_graph",
+                              "addon": "start_graph_with_msg_conversion__predefined_graph_extension",
+                              "extension_group": "start_graph_with_msg_conversion__predefined_graph_group"
+                            }]
+                          }
                         }]
                       }
                     })"

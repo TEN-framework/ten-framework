@@ -7,26 +7,28 @@
       {
         "name": "default",
         "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "aio_http_server_python",
-            "addon": "aio_http_server_python",
-            "extension_group": "test",
-            "property": {
-              "server_port": 8002
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "aio_http_server_python",
+              "addon": "aio_http_server_python",
+              "extension_group": "test",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "websocket_server_python",
+              "addon": "websocket_server_python",
+              "extension_group": "test",
+              "property": {
+                "server_port": 8003
+              }
             }
-          },
-          {
-            "type": "extension",
-            "name": "websocket_server_python",
-            "addon": "websocket_server_python",
-            "extension_group": "test",
-            "property": {
-              "server_port": 8003
-            }
-          }
-        ]
+          ]
+        }
       }
     ]
   }

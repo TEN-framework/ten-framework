@@ -10,6 +10,7 @@ from ten_runtime import (
     StatusCode,
     AsyncExtensionTester,
     AsyncTenEnvTester,
+    LogLevel,
 )
 
 
@@ -24,7 +25,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         handshake_cmd = Cmd.create("sync")
 
-        ten_env.log_info("send sync cmd")
+        ten_env.log(LogLevel.INFO, "send sync cmd")
         result, error = await ten_env.send_cmd(
             handshake_cmd,
         )

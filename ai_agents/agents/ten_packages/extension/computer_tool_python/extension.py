@@ -23,7 +23,7 @@ from ten_ai_base.types import (
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 
 from PIL import Image
-from ten import AsyncTenEnv, AudioFrame, VideoFrame, Data
+from ten_runtime import AsyncTenEnv, AudioFrame, VideoFrame, Data
 
 OPEN_WEBSITE_TOOL_NAME = "open_website"
 OPEN_WEBSITE_TOOL_DESCRIPTION = "Open a website with given site name"

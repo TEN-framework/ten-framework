@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import (
+from ten_runtime import (
     AudioFrame,
     AudioFrameDataFmt,
     AsyncExtension,
@@ -48,7 +48,7 @@ class TENVADPythonExtension(AsyncExtension):
         self.silence_window_size: int = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        config_json = await ten_env.get_property_to_json("")
+        config_json, _ = await ten_env.get_property_to_json("")
         self.config = TENVADConfig.model_validate_json(config_json)
         ten_env.log_debug(f"config: {self.config}")
 
@@ -84,8 +84,8 @@ class TENVADPythonExtension(AsyncExtension):
 
         # TODO: process cmd
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass

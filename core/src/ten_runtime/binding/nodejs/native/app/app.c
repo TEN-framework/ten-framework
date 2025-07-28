@@ -367,7 +367,8 @@ static void ten_nodejs_app_destroy(ten_nodejs_app_t *self) {
 }
 
 // Invoked when the JS app finalizes.
-static void ten_nodejs_app_finalize(napi_env env, void *data, void *hint) {
+static void ten_nodejs_app_finalize(napi_env env, void *data,
+                                    TEN_UNUSED void *hint) {
   TEN_LOGI("TEN JS app is finalized");
 
   ten_nodejs_app_t *app_bridge = data;

@@ -69,30 +69,32 @@ class test_app : public ten::app_t {
                           "name": "default",
                           "auto_start": false,
                           "singleton": true,
-                          "nodes": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_1",
-                            "addon": "predefined_graph_multi_extension_1__extension_1",
-                            "extension_group": "predefined_graph_multi_extension_1"
-                          },{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "type": "extension",
-                            "name": "test_extension_2",
-                            "addon": "predefined_graph_multi_extension_1__extension_2",
-                            "extension_group": "predefined_graph_multi_extension_1"
-                          }],
-                          "connections": [{
-                            "app": "msgpack://127.0.0.1:8001/",
-                            "extension": "test_extension_1",
-                            "cmd": [{
-                              "name": "hello_world",
-                              "dest": [{
-                                "app": "msgpack://127.0.0.1:8001/",
-                                "extension": "test_extension_2"
+                          "graph": {
+                            "nodes": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_1",
+                              "addon": "predefined_graph_multi_extension_1__extension_1",
+                              "extension_group": "predefined_graph_multi_extension_1"
+                            },{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "type": "extension",
+                              "name": "test_extension_2",
+                              "addon": "predefined_graph_multi_extension_1__extension_2",
+                              "extension_group": "predefined_graph_multi_extension_1"
+                            }],
+                            "connections": [{
+                              "app": "msgpack://127.0.0.1:8001/",
+                              "extension": "test_extension_1",
+                              "cmd": [{
+                                "name": "hello_world",
+                                "dest": [{
+                                  "app": "msgpack://127.0.0.1:8001/",
+                                  "extension": "test_extension_2"
+                                }]
                               }]
                             }]
-                          }]
+                          }
                         }]
                       }
                     })"

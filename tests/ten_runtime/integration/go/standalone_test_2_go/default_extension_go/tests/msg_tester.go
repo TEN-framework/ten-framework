@@ -18,7 +18,7 @@ type CmdTester struct {
 
 // OnStart is called when the test starts.
 func (tester *CmdTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStart")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
 
 	pingCmd, _ := ten.NewCmd("ping")
 	tenEnvTester.SendCmd(pingCmd, nil)
@@ -31,11 +31,11 @@ func (tester *CmdTester) OnCmd(
 	tenEnv ten.TenEnvTester,
 	cmd ten.Cmd,
 ) {
-	tenEnv.LogInfo("OnCmd")
+	tenEnv.Log(ten.LogLevelInfo, "OnCmd")
 
 	cmdName, _ := cmd.GetName()
 	if cmdName == "pong" {
-		tenEnv.LogInfo("pong cmd received")
+		tenEnv.Log(ten.LogLevelInfo, "pong cmd received")
 
 		err := tenEnv.StopTest(nil)
 		if err != nil {
@@ -51,7 +51,7 @@ type DataTester struct {
 
 // OnStart is called when the test starts.
 func (tester *DataTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStart")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
 
 	// Send ping data
 	pingData, _ := ten.NewData("ping")
@@ -65,11 +65,11 @@ func (tester *DataTester) OnData(
 	tenEnv ten.TenEnvTester,
 	data ten.Data,
 ) {
-	tenEnv.LogInfo("OnData")
+	tenEnv.Log(ten.LogLevelInfo, "OnData")
 
 	dataName, _ := data.GetName()
 	if dataName == "pong" {
-		tenEnv.LogInfo("pong data received")
+		tenEnv.Log(ten.LogLevelInfo, "pong data received")
 
 		err := tenEnv.StopTest(nil)
 		if err != nil {
@@ -87,7 +87,7 @@ type VideoFrameTester struct {
 
 // OnStart is called when the test starts.
 func (tester *VideoFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStart")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
 
 	pingVideoFrame, _ := ten.NewVideoFrame("ping")
 	tenEnvTester.SendVideoFrame(pingVideoFrame, nil)
@@ -100,11 +100,11 @@ func (tester *VideoFrameTester) OnVideoFrame(
 	tenEnv ten.TenEnvTester,
 	videoFrame ten.VideoFrame,
 ) {
-	tenEnv.LogInfo("OnVideoFrame")
+	tenEnv.Log(ten.LogLevelInfo, "OnVideoFrame")
 
 	videoFrameName, _ := videoFrame.GetName()
 	if videoFrameName == "pong" {
-		tenEnv.LogInfo("pong video frame received")
+		tenEnv.Log(ten.LogLevelInfo, "pong video frame received")
 
 		err := tenEnv.StopTest(nil)
 		if err != nil {
@@ -120,7 +120,7 @@ type AudioFrameTester struct {
 
 // OnStart is called when the test starts.
 func (tester *AudioFrameTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo("OnStart")
+	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
 
 	pingAudioFrame, _ := ten.NewAudioFrame("ping")
 	tenEnvTester.SendAudioFrame(pingAudioFrame, nil)
@@ -133,11 +133,11 @@ func (tester *AudioFrameTester) OnAudioFrame(
 	tenEnv ten.TenEnvTester,
 	audioFrame ten.AudioFrame,
 ) {
-	tenEnv.LogInfo("OnAudioFrame")
+	tenEnv.Log(ten.LogLevelInfo, "OnAudioFrame")
 
 	audioFrameName, _ := audioFrame.GetName()
 	if audioFrameName == "pong" {
-		tenEnv.LogInfo("pong audio frame received")
+		tenEnv.Log(ten.LogLevelInfo, "pong audio frame received")
 
 		err := tenEnv.StopTest(nil)
 		if err != nil {

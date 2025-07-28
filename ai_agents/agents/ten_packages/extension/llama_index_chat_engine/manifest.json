@@ -6,44 +6,20 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8"
+      "version": "0.10"
     }
   ],
   "api": {
     "property": {
-      "chat_memory_token_limit": {
-        "type": "int32"
-      },
-      "greeting": {
-        "type": "string"
+      "properties": {
+        "chat_memory_token_limit": {
+          "type": "int32"
+        },
+        "greeting": {
+          "type": "string"
+        }
       }
     },
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          },
-          "is_final": {
-            "type": "bool"
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "text": {
-            "type": "string"
-          },
-          "end_of_segment": {
-            "type": "bool"
-          }
-        }
-      }
-    ],
     "cmd_in": [
       {
         "name": "flush"
@@ -54,28 +30,32 @@
       {
         "name": "file_chunked",
         "property": {
-          "collection": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "collection"
-        ]
+          "properties": {
+            "collection": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection"
+          ]
+        }
       },
       {
         "name": "update_querying_collection",
         "property": {
-          "filename": {
-            "type": "string"
+          "properties": {
+            "filename": {
+              "type": "string"
+            },
+            "collection": {
+              "type": "string"
+            }
           },
-          "collection": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "filename",
-          "collection"
-        ]
+          "required": [
+            "filename",
+            "collection"
+          ]
+        }
       }
     ],
     "cmd_out": [
@@ -85,43 +65,51 @@
       {
         "name": "call_chat",
         "property": {
-          "messages": {
-            "type": "string"
-          },
-          "stream": {
-            "type": "bool"
-          }
-        },
-        "required": [
-          "messages"
-        ],
-        "result": {
-          "property": {
-            "text": {
+          "properties": {
+            "messages": {
               "type": "string"
+            },
+            "stream": {
+              "type": "bool"
             }
           },
           "required": [
-            "text"
+            "messages"
           ]
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ]
+          }
         }
       },
       {
         "name": "embed",
         "property": {
-          "input": {
-            "type": "string"
-          }
+          "properties": {
+            "input": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "input"
+          ]
         },
-        "required": [
-          "input"
-        ],
         "result": {
           "property": {
-            "embedding": {
-              "type": "array",
-              "items": {
-                "type": "float64"
+            "properties": {
+              "embedding": {
+                "type": "array",
+                "items": {
+                  "type": "float64"
+                }
               }
             }
           }
@@ -130,39 +118,73 @@
       {
         "name": "query_vector",
         "property": {
-          "collection_name": {
-            "type": "string"
-          },
-          "top_k": {
-            "type": "int64"
-          },
-          "embedding": {
-            "type": "array",
-            "items": {
-              "type": "float64"
-            }
-          }
-        },
-        "required": [
-          "collection_name",
-          "top_k",
-          "embedding"
-        ],
-        "result": {
-          "property": {
-            "response": {
+          "properties": {
+            "collection_name": {
+              "type": "string"
+            },
+            "top_k": {
+              "type": "int64"
+            },
+            "embedding": {
               "type": "array",
               "items": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "score": {
-                    "type": "float64"
+                "type": "float64"
+              }
+            }
+          },
+          "required": [
+            "collection_name",
+            "top_k",
+            "embedding"
+          ]
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "response": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "float64"
+                    }
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "end_of_segment": {
+              "type": "bool"
             }
           }
         }

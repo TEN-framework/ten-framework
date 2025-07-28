@@ -10,6 +10,7 @@ from ten_runtime import (
     AsyncTenEnvTester,
     CmdResult,
     StatusCode,
+    LogLevel,
 )
 
 
@@ -26,7 +27,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
 
     async def on_cmd(self, ten_env: AsyncTenEnvTester, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_info("tester on_cmd name {}".format(cmd_name))
+        ten_env.log(LogLevel.INFO, "tester on_cmd name {}".format(cmd_name))
 
         if cmd_name == "flush":
             self.recv_flush_cmd = True

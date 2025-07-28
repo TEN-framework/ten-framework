@@ -62,20 +62,22 @@ class test_app : public ten::app_t {
                            "name": "default",
                            "auto_start": true,
                            "singleton": true,
-                           "nodes": [{
-                             "type": "extension",
-                             "name": "property_in_graph_use_env_2",
-                             "addon": "property_in_graph_use_env_2__extension",
-                             "extension_group": "property_in_graph_use_env_2",
-                             "property": {
-                               "from_env": "${env:TEST_ENV_VAR|}"
-                             }
-                           },{
-                             "type": "extension",
-                             "name": "property_in_graph_use_env_2_no_prop",
-                             "addon": "property_in_graph_use_env_2__extension",
-                             "extension_group": "property_in_graph_use_env_2"
-                           }]
+                           "graph": {
+                             "nodes": [{
+                               "type": "extension",
+                               "name": "property_in_graph_use_env_2",
+                               "addon": "property_in_graph_use_env_2__extension",
+                               "extension_group": "property_in_graph_use_env_2",
+                               "property": {
+                                 "from_env": "${env:TEST_ENV_VAR|}"
+                               }
+                             },{
+                               "type": "extension",
+                               "name": "property_in_graph_use_env_2_no_prop",
+                               "addon": "property_in_graph_use_env_2__extension",
+                               "extension_group": "property_in_graph_use_env_2"
+                             }]
+                           }
                          }]
                         }
                     })###"

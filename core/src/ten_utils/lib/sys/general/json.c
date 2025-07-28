@@ -647,7 +647,7 @@ const char *ten_json_peek_string_value(ten_json_t *self) {
 
 int64_t ten_json_get_integer_value(ten_json_t *self) {
   TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
-  return yyjson_mut_get_int((yyjson_mut_val *)self->json);
+  return yyjson_mut_get_sint((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_get_boolean_value(ten_json_t *self) {

@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AudioFrameDataFmt,
@@ -51,16 +51,16 @@ class MinimaxV2VConfig:
             try:
                 match field.type:
                     case builtins.str:
-                        val = await ten_env.get_property_string(field.name)
+                        val, _ = await ten_env.get_property_string(field.name)
                         if val:
                             setattr(self, field.name, val)
                             ten_env.log_info(f"{field.name}={val}")
                     case builtins.int:
-                        val = await ten_env.get_property_int(field.name)
+                        val, _ = await ten_env.get_property_int(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case builtins.bool:
-                        val = await ten_env.get_property_bool(field.name)
+                        val, _ = await ten_env.get_property_bool(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case _:
@@ -133,10 +133,10 @@ class MinimaxV2VExtension(AsyncExtension):
                     ten_env.log_debug("flush done")
                 case _:
                     pass
-            await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.OK, cmd))
         except asyncio.CancelledError:
             ten_env.log_warn(f"cmd {cmd_name} cancelled")
-            await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
             raise
         except Exception as e:
             ten_env.log_warn(f"cmd {cmd_name} failed, err {e}")
@@ -152,7 +152,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
         try:
             ts = datetime.now()
-            stream_id = audio_frame.get_property_int("stream_id")
+            stream_id, _ = audio_frame.get_property_int("stream_id")
             if not self.remote_stream_id:
                 self.remote_stream_id = stream_id
 

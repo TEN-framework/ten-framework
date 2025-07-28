@@ -18,14 +18,14 @@ from llama_index.core.llms.callbacks import (
 )
 
 from llama_index.core.llms.custom import CustomLLM
-from ten import Cmd, StatusCode, CmdResult, TenEnv
+from ten_runtime import Cmd, StatusCode, CmdResult, TenEnv
 
 
 def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse | None:
     status = cmd_result.get_status_code()
     if status != StatusCode.OK:
         return None
-    text_data = cmd_result.get_property_string("text")
+    text_data, _ = cmd_result.get_property_string("text")
     return ChatResponse(message=ChatMessage(content=text_data))
 
 
@@ -126,7 +126,7 @@ class LlamaLLM(CustomLLM):
                 resp_queue.put(None)
                 return
 
-            cur_tokens = result.get_property_string("text")
+            cur_tokens, _ = result.get_property_string("text")
             self.ten.log_debug(
                 f"LlamaLLM stream_chat callback text [{cur_tokens}]"
             )

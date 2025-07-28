@@ -11,6 +11,7 @@ from ten_runtime import (
     Cmd,
     CmdResult,
     StatusCode,
+    LogLevel,
 )
 
 
@@ -42,7 +43,7 @@ class ServerExtension(AsyncExtension):
         while self.register_count > 0:
             await asyncio.sleep(0.5)
 
-        ten_env.log_info("server extension is stopped")
+        ten_env.log(LogLevel.INFO, "server extension is stopped")
 
 
 class ClientExtension(AsyncExtension):
@@ -65,7 +66,7 @@ class ClientExtension(AsyncExtension):
         assert cmd_result is not None
         assert cmd_result.get_status_code() == StatusCode.OK
 
-        ten_env.log_info("client extension is de-initialized")
+        ten_env.log(LogLevel.INFO, "client extension is de-initialized")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         # bypass the cmd to the next extension

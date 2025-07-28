@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import asyncio
-from ten_runtime import AsyncExtension, AsyncTenEnv, Cmd, CmdResult
+from ten_runtime import AsyncExtension, AsyncTenEnv, Cmd, CmdResult, LogLevel
 
 
 class DefaultExtension(AsyncExtension):
@@ -21,7 +21,7 @@ class DefaultExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)
-        ten_env.log_debug("on_start")
+        ten_env.log(LogLevel.DEBUG, "on_start")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await asyncio.sleep(0.5)
@@ -31,6 +31,11 @@ class DefaultExtension(AsyncExtension):
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json, _ = cmd.get_property_to_json()
         ten_env.log_debug(f"on_cmd: {cmd_json}")
+
+        app_uri, graph_id, extension_name = cmd.get_source()
+        ten_env.log_info(f"app_uri: {app_uri}")
+        ten_env.log_info(f"graph_id: {graph_id}")
+        ten_env.log_info(f"extension_name: {extension_name}")
 
         # Mock async operation, e.g. network, file I/O.
         await asyncio.sleep(0.5)
@@ -49,6 +54,6 @@ class DefaultExtension(AsyncExtension):
         await ten_env.return_result(new_result)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        ten_env.log(LogLevel.DEBUG, "on_stop")
 
         await asyncio.sleep(0.5)

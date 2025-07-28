@@ -10,7 +10,7 @@ import time
 import uuid
 import asyncio
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     AsyncExtension,
@@ -63,12 +63,12 @@ class MessageCollectorRTMExtension(AsyncExtension):
             else:
                 ten_env.log_warn(f"unsupported cmd {cmd_name}")
 
-            cmd_result = CmdResult.create(StatusCode.OK)
-            await ten_env.return_result(cmd_result, cmd)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
+            await ten_env.return_result(cmd_result)
         except Exception as e:
             ten_env.log_error(f"on_cmd error: {e}")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
-            await ten_env.return_result(cmd_result, cmd)
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         """
@@ -106,24 +106,24 @@ class MessageCollectorRTMExtension(AsyncExtension):
         end_of_segment = False
 
         try:
-            text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+            text, _ = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
             self.ten_env.log_error(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
             )
 
         try:
-            final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
+            final, _ = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception:
             pass
 
         try:
-            stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
+            stream_id, _ = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
         except Exception:
             pass
 
         try:
-            end_of_segment = data.get_property_bool(
+            end_of_segment, _ = data.get_property_bool(
                 TEXT_DATA_END_OF_SEGMENT_FIELD
             )
         except Exception as e:
@@ -164,7 +164,7 @@ class MessageCollectorRTMExtension(AsyncExtension):
     async def on_rtm_message_event(self, data: Data) -> None:
         self.ten_env.log_debug("on_data rtm_message_event")
         try:
-            text = data.get_property_string("message")
+            text, _ = data.get_property_string("message")
             data = Data.create("text_data")
             data.set_property_string("text", text)
             data.set_property_bool("is_final", True)
@@ -176,9 +176,9 @@ class MessageCollectorRTMExtension(AsyncExtension):
 
     async def handle_user_state_changed(self, cmd: Cmd) -> None:
         try:
-            remote_user_id = cmd.get_property_string("remote_user_id")
-            state = cmd.get_property_int("state")
-            reason = cmd.get_property_int("reason")
+            remote_user_id, _ = cmd.get_property_string("remote_user_id")
+            state, _ = cmd.get_property_int("state")
+            reason, _ = cmd.get_property_int("reason")
             self.ten_env.log_info(
                 f"handle_user_state_changed user_id: {remote_user_id} state: {state} reason: {reason}"
             )

@@ -85,7 +85,27 @@ fn find_and_update_graph(
         }
 
         // Found the matching graph, update its connections.
-        match graph_obj.get_mut("connections") {
+        // Get or create the graph field.
+        let graph_content_obj = match graph_obj.get_mut("graph") {
+            Some(Value::Object(graph_content)) => graph_content,
+            Some(_) => {
+                // graph field exists but is not an object, skip this graph
+                continue;
+            }
+            None => {
+                // Create graph field if it doesn't exist
+                graph_obj.insert(
+                    "graph".to_string(),
+                    Value::Object(serde_json::Map::new()),
+                );
+                match graph_obj.get_mut("graph") {
+                    Some(Value::Object(graph_content)) => graph_content,
+                    _ => continue, // This should not happen
+                }
+            }
+        };
+
+        match graph_content_obj.get_mut("connections") {
             Some(Value::Array(connections_array)) => {
                 // Process existing connections.
                 update_existing_connections(
@@ -97,12 +117,15 @@ fn find_and_update_graph(
 
                 // Remove the connections array if it's empty.
                 if connections_array.is_empty() {
-                    graph_obj.remove("connections");
+                    graph_content_obj.remove("connections");
                 }
             }
             _ => {
                 // No connections array, create one if needed.
-                create_connections_if_needed(graph_obj, connections_to_add);
+                create_connections_if_needed(
+                    graph_content_obj,
+                    connections_to_add,
+                );
             }
         }
 
@@ -502,10 +525,94 @@ fn update_message_field(
 
     match conn_obj.get_mut(field_name) {
         Some(Value::Array(existing_field)) => {
-            // Append to existing field array.
+            // For each new message in the field array
             if let Some(new_messages) = field_value.as_array() {
-                for msg in new_messages {
-                    existing_field.push(msg.clone());
+                for new_msg in new_messages {
+                    // Get the name of the new message
+                    let new_msg_name =
+                        new_msg.get("name").and_then(|n| n.as_str());
+
+                    // Try to find an existing message with the same name
+                    let existing_msg_idx =
+                        existing_field.iter().position(|msg| {
+                            msg.get("name").and_then(|n| n.as_str())
+                                == new_msg_name
+                        });
+
+                    match existing_msg_idx {
+                        Some(idx) => {
+                            // Found existing message with same name, merge
+                            // destinations
+                            if let Some(existing_msg) =
+                                existing_field.get_mut(idx)
+                            {
+                                if let (Some(existing_dests), Some(new_dests)) = (
+                                    existing_msg
+                                        .get_mut("dest")
+                                        .and_then(|d| d.as_array_mut()),
+                                    new_msg
+                                        .get("dest")
+                                        .and_then(|d| d.as_array()),
+                                ) {
+                                    // Add each new destination if it doesn't
+                                    // already exist
+                                    for new_dest in new_dests {
+                                        let new_dest_ext = new_dest
+                                            .get("extension")
+                                            .and_then(|e| e.as_str());
+                                        let new_dest_app = new_dest
+                                            .get("app")
+                                            .and_then(|a| a.as_str());
+
+                                        let exists =
+                                            existing_dests.iter().any(|dest| {
+                                                // Check both extension and app
+                                                // fields
+                                                let ext_match = match (
+                                                    dest.get("extension")
+                                                        .and_then(|e| {
+                                                            e.as_str()
+                                                        }),
+                                                    new_dest_ext,
+                                                ) {
+                                                    (
+                                                        Some(ext1),
+                                                        Some(ext2),
+                                                    ) => ext1 == ext2,
+                                                    (None, None) => true,
+                                                    _ => false,
+                                                };
+
+                                                let app_match = match (
+                                                    dest.get("app").and_then(
+                                                        |a| a.as_str(),
+                                                    ),
+                                                    new_dest_app,
+                                                ) {
+                                                    (
+                                                        Some(app1),
+                                                        Some(app2),
+                                                    ) => app1 == app2,
+                                                    (None, None) => true,
+                                                    _ => false,
+                                                };
+
+                                                ext_match && app_match
+                                            });
+
+                                        if !exists {
+                                            existing_dests
+                                                .push(new_dest.clone());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        None => {
+                            // No existing message with this name, add as new
+                            existing_field.push(new_msg.clone());
+                        }
+                    }
                 }
             }
         }
@@ -622,14 +729,14 @@ fn update_destinations(
                 _ => false,
             };
 
-            let extension_match = match (Some(dest_ext), &modify_dest.loc.extension)
-            {
-                (Some(dest_ext_str), Some(modify_ext)) => {
-                    dest_ext_str == modify_ext
-                }
-                (None, None) => true,
-                _ => false,
-            };
+            let extension_match =
+                match (Some(dest_ext), &modify_dest.loc.extension) {
+                    (Some(dest_ext_str), Some(modify_ext)) => {
+                        dest_ext_str == modify_ext
+                    }
+                    (None, None) => true,
+                    _ => false,
+                };
 
             if !app_match || !extension_match {
                 continue;

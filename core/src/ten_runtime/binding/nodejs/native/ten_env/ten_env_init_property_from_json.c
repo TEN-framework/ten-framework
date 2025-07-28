@@ -9,6 +9,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 typedef struct ten_env_notify_init_property_from_json_ctx_t {
@@ -43,10 +44,8 @@ static void ten_env_notify_init_property_from_json_ctx_destroy(
   TEN_FREE(ctx);
 }
 
-static void tsfn_proxy_init_property_from_json_callback(napi_env env,
-                                                        napi_value js_cb,
-                                                        void *context,
-                                                        void *data) {
+static void tsfn_proxy_init_property_from_json_callback(
+    napi_env env, napi_value js_cb, TEN_UNUSED void *context, void *data) {
   ten_nodejs_init_property_from_json_call_ctx_t *call_info =
       (ten_nodejs_init_property_from_json_call_ctx_t *)data;
   TEN_ASSERT(call_info, "Should not happen.");
@@ -187,5 +186,5 @@ napi_value ten_nodejs_ten_env_init_property_from_json(napi_env env,
 
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

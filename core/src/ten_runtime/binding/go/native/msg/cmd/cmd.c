@@ -100,7 +100,8 @@ uintptr_t ten_go_cmd_create_cmd_result(int status_code, uintptr_t target_cmd) {
 
 int ten_go_cmd_result_get_status_code(uintptr_t bridge_addr) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
 
   return ten_cmd_result_get_status_code(ten_go_msg_c_msg(self));
 }

@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "ten_runtime/binding/common.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 #include "ten_utils/sanitizer/thread_check.h"
 
@@ -48,7 +49,8 @@ static void ten_nodejs_ten_env_destroy(ten_nodejs_ten_env_t *self) {
   TEN_FREE(self);
 }
 
-static void ten_nodejs_ten_env_finalize(napi_env env, void *data, void *hint) {
+static void ten_nodejs_ten_env_finalize(napi_env env, void *data,
+                                        TEN_UNUSED void *hint) {
   ten_nodejs_ten_env_t *ten_env_bridge = data;
   TEN_ASSERT(ten_env_bridge, "Should not happen.");
   TEN_ASSERT(ten_nodejs_ten_env_check_integrity(ten_env_bridge, true),

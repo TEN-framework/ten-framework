@@ -54,7 +54,7 @@ class test_extension_2 : public ten::extension_t {
     } else if (cmd->get_name() == "extension_1_stop") {
       ten_sleep_ms(500);
 
-      TEN_ENV_LOG_INFO(ten_env, "got extension_1_stop.");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "got extension_1_stop.");
 
       received_extension_1_stop_cmd = true;
 
@@ -94,7 +94,7 @@ class test_extension_3 : public ten::extension_t {
     } else if (cmd->get_name() == "extension_1_stop") {
       ten_sleep_ms(500);
 
-      TEN_ENV_LOG_INFO(ten_env, "got extension_1_stop.");
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "got extension_1_stop.");
 
       received_extension_1_stop_cmd = true;
 

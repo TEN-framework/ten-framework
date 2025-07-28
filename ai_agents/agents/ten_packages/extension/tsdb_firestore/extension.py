@@ -6,7 +6,7 @@
 #
 #
 
-from ten import (
+from ten_runtime import (
     AudioFrame,
     VideoFrame,
     Extension,
@@ -119,7 +119,7 @@ class TSDBFirestoreExtension(Extension):
         ten_env.log_info("TSDBFirestoreExtension on_start")
 
         try:
-            self.credentials = ten_env.get_property_to_json(
+            self.credentials, _ = ten_env.get_property_to_json(
                 PROPERTY_CREDENTIALS
             )
         except Exception as err:
@@ -129,7 +129,7 @@ class TSDBFirestoreExtension(Extension):
             return
 
         try:
-            self.channel_name = ten_env.get_property_string(
+            self.channel_name, _ = ten_env.get_property_string(
                 PROPERTY_CHANNEL_NAME
             )
         except Exception as err:
@@ -139,7 +139,7 @@ class TSDBFirestoreExtension(Extension):
             return
 
         try:
-            self.collection_name = ten_env.get_property_string(
+            self.collection_name, _ = ten_env.get_property_string(
                 PROPERTY_COLLECTION_NAME
             )
         except Exception as err:
@@ -244,10 +244,10 @@ class TSDBFirestoreExtension(Extension):
                 )
             else:
                 ten_env.log_info(f"unknown cmd name {cmd_name}")
-                cmd_result = CmdResult.create(StatusCode.ERROR)
-                ten_env.return_result(cmd_result, cmd)
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+                ten_env.return_result(cmd_result)
         except Exception:
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     async def retrieve(self, ten_env: TenEnv, cmd: Cmd):
         try:
@@ -257,21 +257,21 @@ class TSDBFirestoreExtension(Extension):
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ten_env.log_info(f"after retrieve {contents}")
-                ret = CmdResult.create(StatusCode.OK)
+                ret = CmdResult.create(StatusCode.OK, cmd)
                 ret.set_property_string(
                     CMD_OUT_PROPERTY_RESPONSE, json.dumps(order_by_ts(contents))
                 )
-                ten_env.return_result(ret, cmd)
+                ten_env.return_result(ret)
             else:
                 ten_env.log_info(
                     f"no contents for the channel {self.channel_name} yet"
                 )
-                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
         except Exception:
             ten_env.log_error(
                 f"Failed to read the document for the channel {self.channel_name}"
             )
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR, cmd))
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         ten_env.log_info("TSDBFirestoreExtension on_data")
@@ -279,7 +279,7 @@ class TSDBFirestoreExtension(Extension):
         # assume 'data' is an object from which we can get properties
         is_final = False
         try:
-            is_final = data.get_property_bool(
+            is_final, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
             )
             if not is_final:
@@ -292,7 +292,7 @@ class TSDBFirestoreExtension(Extension):
 
         stream_id = 0
         try:
-            stream_id = data.get_property_bool(
+            stream_id, _ = data.get_property_bool(
                 DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID
             )
         except Exception as err:
@@ -302,7 +302,7 @@ class TSDBFirestoreExtension(Extension):
 
         # get input text
         try:
-            input_text = data.get_property_string(
+            input_text, _ = data.get_property_string(
                 DATA_IN_TEXT_DATA_PROPERTY_TEXT
             )
             if not input_text:
@@ -316,7 +316,7 @@ class TSDBFirestoreExtension(Extension):
             return
         # get stream id
         try:
-            role = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_ROLE)
+            role, _ = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_ROLE)
             if not role:
                 ten_env.log_warn("ignore empty role")
                 return

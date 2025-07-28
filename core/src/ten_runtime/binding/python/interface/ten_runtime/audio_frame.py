@@ -5,8 +5,10 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import Type, TypeVar
-from libten_runtime_python import _AudioFrame
+from typing import TypeVar, cast
+from libten_runtime_python import (
+    _AudioFrame,  # pyright: ignore[reportPrivateUsage]
+)
 
 T = TypeVar("T", bound="AudioFrame")
 
@@ -22,33 +24,16 @@ class AudioFrameDataFmt(IntEnum):
 
 
 class AudioFrame(_AudioFrame):
-    def __init__(self):
+    def __init__(self, name: str):
         raise NotImplementedError("Use AudioFrame.create instead.")
 
     @classmethod
-    def create(cls: Type[T], name: str) -> T:
-        return cls.__new__(cls, name)
+    def create(cls: type[T], name: str) -> T:
+        # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
+        return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "AudioFrame":
-        return _AudioFrame.clone(self)  # type: ignore
-
-    alloc_buf = _AudioFrame.alloc_buf
-    lock_buf = _AudioFrame.lock_buf
-    unlock_buf = _AudioFrame.unlock_buf
-    get_buf = _AudioFrame.get_buf
-    get_timestamp = _AudioFrame.get_timestamp
-    set_timestamp = _AudioFrame.set_timestamp
-    get_sample_rate = _AudioFrame.get_sample_rate
-    set_sample_rate = _AudioFrame.set_sample_rate
-    get_samples_per_channel = _AudioFrame.get_samples_per_channel
-    set_samples_per_channel = _AudioFrame.set_samples_per_channel
-    get_bytes_per_sample = _AudioFrame.get_bytes_per_sample
-    set_bytes_per_sample = _AudioFrame.set_bytes_per_sample
-    get_number_of_channels = _AudioFrame.get_number_of_channels
-    set_number_of_channels = _AudioFrame.set_number_of_channels
-    get_data_fmt = _AudioFrame.get_data_fmt
-    set_data_fmt = _AudioFrame.set_data_fmt
-    get_line_size = _AudioFrame.get_line_size
-    set_line_size = _AudioFrame.set_line_size
-    is_eof = _AudioFrame.is_eof
-    set_eof = _AudioFrame.set_eof
+    def clone(  # pyright: ignore[reportImplicitOverride]
+        self,
+    ) -> "AudioFrame":
+        # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
+        return cast("AudioFrame", _AudioFrame.clone(self))

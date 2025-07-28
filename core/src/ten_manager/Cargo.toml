@@ -22,7 +22,8 @@ actix-rt = { version = "2.10", default-features = false, features = ["macros"] }
 actix-web = { version = "4.8", default-features = false, features = ["macros"] }
 actix-web-actors = { version = "4.3.1", default-features = false }
 anyhow = { version = "1.0" }
-clap = { version = "4.5" }
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = { version = "4.5" }
 clingo = { version = "0.8" }
 console = { version = "0.15" }
 dirs = { version = "6.0" }

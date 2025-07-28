@@ -3,7 +3,8 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten import (
+from ten_ai_base.transcription import AssistantTranscription
+from ten_runtime import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
@@ -43,11 +44,11 @@ class DubverseTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(
-        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+        self, ten_env: AsyncTenEnv, t: AssistantTranscription
     ) -> None:
         skip_bytes = 44
         header_skipped = False
-        audio_stream = self.client.text_to_speech_stream(input_text)
+        audio_stream = self.client.text_to_speech_stream(t.text)
         for chunk in audio_stream.iter_content(chunk_size=1024 * 8):
             if not header_skipped:
                 chunk = chunk[skip_bytes:]
@@ -55,7 +56,7 @@ class DubverseTTSExtension(AsyncTTSBaseExtension):
                 if not chunk:
                     continue  # in case the first chunk was less than 44 bytes
             await self.send_audio_out(ten_env, chunk)
-        ten_env.log_info(f"on_request_tts: {input_text} done")
+        ten_env.log_info(f"on_request_tts: {t.text} done")
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)

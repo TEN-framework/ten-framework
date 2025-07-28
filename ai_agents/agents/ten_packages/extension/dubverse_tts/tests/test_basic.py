@@ -6,7 +6,7 @@
 #
 from pathlib import Path
 from typing import Optional
-from ten import (
+from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Cmd,

@@ -13,6 +13,7 @@
 #include "js_native_api_types.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_cmd_result_constructor_ref = NULL;  // NOLINT
@@ -53,7 +54,7 @@ static void ten_nodejs_cmd_result_destroy(ten_nodejs_msg_t *self) {
 }
 
 static void ten_nodejs_cmd_result_finalize(napi_env env, void *data,
-                                           void *hint) {
+                                           TEN_UNUSED void *hint) {
   ten_nodejs_cmd_result_t *cmd_result_bridge = data;
   TEN_ASSERT(cmd_result_bridge, "Should not happen.");
 
@@ -263,8 +264,8 @@ static napi_value ten_nodejs_cmd_result_is_completed(napi_env env,
 
 napi_value ten_nodejs_cmd_result_wrap(napi_env env,
                                       ten_shared_ptr_t *cmd_result) {
-  TEN_ASSERT(cmd_result && ten_msg_check_integrity(cmd_result),
-             "Should not happen.");
+  TEN_ASSERT(cmd_result, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd_result), "Should not happen.");
 
   ten_nodejs_cmd_result_t *cmd_result_bridge =
       TEN_MALLOC(sizeof(ten_nodejs_cmd_result_t));
@@ -281,7 +282,7 @@ napi_value ten_nodejs_cmd_result_wrap(napi_env env,
       napi_create_uint32(env, (uint32_t)status_code, &js_status_code);
   ASSERT_IF_NAPI_FAIL(status == napi_ok, "Failed to create status_code.");
 
-  status = napi_get_null(env, &js_target_cmd);
+  status = napi_get_undefined(env, &js_target_cmd);
   ASSERT_IF_NAPI_FAIL(status == napi_ok, "Failed to create target_cmd.");
 
   status = napi_get_boolean(env, true, &js_create_shell_only_flag);

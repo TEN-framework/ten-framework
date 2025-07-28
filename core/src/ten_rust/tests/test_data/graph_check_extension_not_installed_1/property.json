@@ -4,14 +4,16 @@
       {
         "name": "default",
         "auto_start": false,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "some_extension",
-            "addon": "default_extension_go",
-            "extension_group": "some_group"
-          }
-        ]
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "some_extension",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            }
+          ]
+        }
       }
     ]
   }

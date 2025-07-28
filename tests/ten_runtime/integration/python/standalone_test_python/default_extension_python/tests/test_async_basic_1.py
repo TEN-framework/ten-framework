@@ -13,6 +13,7 @@ from ten_runtime import (
     StatusCode,
     AsyncExtensionTester,
     AsyncTenEnvTester,
+    LogLevel,
 )
 from ten_runtime.error import TenError, TenErrorCode
 
@@ -25,7 +26,7 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
 
         new_cmd = Cmd.create("hello_world")
 
-        ten_env.log_info("send hello_world")
+        ten_env.log(LogLevel.INFO, "send hello_world")
         result, error = await ten_env.send_cmd(
             new_cmd,
         )
@@ -35,22 +36,24 @@ class AsyncExtensionTesterBasic(AsyncExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+        ten_env.log(
+            LogLevel.INFO, "receive hello_world, status:" + str(statusCode)
+        )
 
-        ten_env.log_info("tester on_start_done")
+        ten_env.log(LogLevel.INFO, "tester on_start_done")
 
         if statusCode == StatusCode.OK:
             ten_env.stop_test()
 
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
-        ten_env.log_info("tester on_stop")
+        ten_env.log(LogLevel.INFO, "tester on_stop")
 
 
 class AsyncExtensionTesterFail(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         unknown_cmd = Cmd.create("unknown_cmd")
 
-        ten_env.log_info("send unknown_cmd")
+        ten_env.log(LogLevel.INFO, "send unknown_cmd")
         result, error = await ten_env.send_cmd(
             unknown_cmd,
         )
@@ -60,9 +63,11 @@ class AsyncExtensionTesterFail(AsyncExtensionTester):
         assert result is not None
 
         statusCode = result.get_status_code()
-        ten_env.log_info("receive hello_world, status:" + str(statusCode))
+        ten_env.log(
+            LogLevel.INFO, "receive hello_world, status:" + str(statusCode)
+        )
 
-        ten_env.log_info("tester on_start_done")
+        ten_env.log(LogLevel.INFO, "tester on_start_done")
 
         if statusCode == StatusCode.OK:
             ten_env.stop_test()
@@ -73,7 +78,7 @@ class AsyncExtensionTesterFail(AsyncExtensionTester):
             ten_env.stop_test(test_result)
 
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
-        ten_env.log_info("tester on_stop")
+        ten_env.log(LogLevel.INFO, "tester on_stop")
 
 
 class AsyncExtensionTesterTimeout(AsyncExtensionTester):

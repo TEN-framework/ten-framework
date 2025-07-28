@@ -5,7 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from ten import (
+from ten_runtime import (
     Addon,
     register_addon_as_extension,
     TenEnv,
