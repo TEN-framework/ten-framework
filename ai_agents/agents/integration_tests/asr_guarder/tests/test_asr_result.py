@@ -23,8 +23,6 @@ import os
 # Constants for audio configuration
 AUDIO_CHUNK_SIZE = 320
 AUDIO_SAMPLE_RATE = 16000
-AUDIO_BYTES_PER_SAMPLE = 2
-SILENCE_DURATION_SECONDS = 5
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
@@ -61,12 +59,10 @@ class AsrExtensionTester(AsyncExtensionTester):
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
-        self.sender_task: asyncio.Task[None] | None = None
         # Track state for two audio sends
         self.first_final_id: str | None = None
         self.second_final_id: str | None = None
         self.current_audio_send: int = 0  # 0 for first send, 1 for second send
-        self.waiting_for_final: bool = False
 
         # Track final results for validation
         self.final_result: dict[str, Any] | None = None
@@ -85,20 +81,6 @@ class AsrExtensionTester(AsyncExtensionTester):
         audio_frame.unlock_buf(buf)
         return audio_frame
 
-    def _create_silence_frame(self, size: int, session_id: str) -> AudioFrame:
-        """Create a silence frame filled with zeros."""
-        silence_frame = AudioFrame.create("pcm_frame")
-
-        # Set session_id in metadata according to API specification
-        metadata = {"session_id": session_id}
-        silence_frame.set_property_from_json("metadata", json.dumps(metadata))
-
-        silence_frame.alloc_buf(size)
-        buf = silence_frame.lock_buf()
-        buf[:] = b"\x00" * size
-        silence_frame.unlock_buf(buf)
-        return silence_frame
-
     async def _send_audio_file(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio file data to ASR extension."""
         ten_env.log_info(f"Sending audio file: {self.audio_file_path}")
@@ -113,37 +95,57 @@ class AsrExtensionTester(AsyncExtensionTester):
                 await ten_env.send_audio_frame(audio_frame)
                 await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
 
-    async def _send_silence_packets(self, ten_env: AsyncTenEnvTester) -> None:
-        """Send silence packets to trigger final ASR results."""
-        ten_env.log_info("Sending silence packets to trigger final results...")
+    async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
+        """Send asr_finalize signal to trigger finalization."""
+        ten_env.log_info("Sending asr_finalize signal...")
 
-        # Calculate silence packet parameters
-        samples_per_chunk = AUDIO_CHUNK_SIZE // AUDIO_BYTES_PER_SAMPLE
-        chunks_per_second = AUDIO_SAMPLE_RATE // samples_per_chunk
-        total_chunks = SILENCE_DURATION_SECONDS * chunks_per_second
+        # Create finalize data according to protocol
+        finalize_data = {
+            "finalize_id": f"finalize_{self.session_id}_{int(asyncio.get_event_loop().time())}",
+            "metadata": {"session_id": self.session_id},
+        }
 
-        for i in range(total_chunks):
-            silence_frame = self._create_silence_frame(
-                AUDIO_CHUNK_SIZE, self.session_id
-            )
-            await ten_env.send_audio_frame(silence_frame)
-            await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
+        # Create Data object for asr_finalize
+        finalize_data_obj = Data.create("asr_finalize")
+        finalize_data_obj.set_property_from_json(
+            None, json.dumps(finalize_data)
+        )
+
+        # Send the finalize signal
+        await ten_env.send_data(finalize_data_obj)
 
         ten_env.log_info(
-            "Silence packets sent, waiting for final ASR results..."
+            f"✅ asr_finalize signal sent with ID: {finalize_data['finalize_id']}"
         )
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
-        """Send audio data and silence packets to ASR extension twice."""
+        """Send audio data to ASR extension twice."""
         try:
             # First audio send
             ten_env.log_info("=== Starting first audio send ===")
             self.current_audio_send = 0
+
             await self._send_audio_file(ten_env)
-            await self._send_silence_packets(ten_env)
+
+            # Wait 1.5 seconds after sending audio
+            ten_env.log_info(
+                "=== Waiting 1.5 seconds after first audio send ==="
+            )
+            await asyncio.sleep(1.5)
+
+            # Send finalize signal after first audio send
+            ten_env.log_info(
+                "=== Sending finalize signal after first audio send ==="
+            )
+            await self._send_finalize_signal(ten_env)
+
+            # Wait 1.5 seconds after sending finalize signal
+            ten_env.log_info(
+                "=== Waiting 1.5 seconds after first finalize signal ==="
+            )
+            await asyncio.sleep(1.5)
 
             # Wait for first final result
-            self.waiting_for_final = True
             ten_env.log_info("Waiting for first final ASR result...")
             await asyncio.sleep(2)  # Give some time for processing
 
@@ -151,10 +153,26 @@ class AsrExtensionTester(AsyncExtensionTester):
             ten_env.log_info("=== Starting second audio send ===")
             self.current_audio_send = 1
             await self._send_audio_file(ten_env)
-            await self._send_silence_packets(ten_env)
+
+            # Wait 1.5 seconds after sending second audio
+            ten_env.log_info(
+                "=== Waiting 1.5 seconds after second audio send ==="
+            )
+            await asyncio.sleep(1.5)
+
+            # Send finalize signal after second audio send
+            ten_env.log_info(
+                "=== Sending finalize signal after second audio send ==="
+            )
+            await self._send_finalize_signal(ten_env)
+
+            # Wait 1.5 seconds after sending second finalize signal
+            ten_env.log_info(
+                "=== Waiting 1.5 seconds after second finalize signal ==="
+            )
+            await asyncio.sleep(1.5)
 
             # Wait for second final result
-            self.waiting_for_final = True
             ten_env.log_info("Waiting for second final ASR result...")
             await asyncio.sleep(2)  # Give some time for processing
 
@@ -337,7 +355,6 @@ class AsrExtensionTester(AsyncExtensionTester):
                     ten_env.log_info(
                         f"✅ First final ASR result received with id: {result_id}"
                     )
-                    self.waiting_for_final = False
                 else:
                     ten_env.log_info(
                         f"Received additional final result for first send with id: {result_id}"
@@ -356,7 +373,6 @@ class AsrExtensionTester(AsyncExtensionTester):
                     ten_env.log_info(
                         f"✅ Second final ASR result received with id: {result_id}"
                     )
-                    self.waiting_for_final = False
 
                     # Now validate that the two IDs are different
                     if self.first_final_id == self.second_final_id:
@@ -381,18 +397,7 @@ class AsrExtensionTester(AsyncExtensionTester):
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
         """Clean up resources when test stops."""
-        ten_env.log_info("Stopping audio sender task...")
-
-        if self.sender_task:
-            self.sender_task.cancel()
-            try:
-                await self.sender_task
-            except asyncio.CancelledError:
-                ten_env.log_info("Audio sender task cancelled")
-            except Exception as e:
-                ten_env.log_error(f"Error cancelling audio sender task: {e}")
-            finally:
-                ten_env.log_info("Audio sender task cleanup completed")
+        ten_env.log_info("Test stopped")
 
 
 def test_asr_result(extension_name: str, config_dir: str) -> None:
