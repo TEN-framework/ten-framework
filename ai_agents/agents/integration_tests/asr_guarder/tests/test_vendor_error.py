@@ -23,7 +23,6 @@ import os
 # Constants for audio configuration
 AUDIO_CHUNK_SIZE = 320
 AUDIO_SAMPLE_RATE = 16000
-AUDIO_BYTES_PER_SAMPLE = 2
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration

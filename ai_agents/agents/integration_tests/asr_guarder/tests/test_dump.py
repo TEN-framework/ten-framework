@@ -26,7 +26,6 @@ from pathlib import Path
 # Constants for audio configuration
 AUDIO_CHUNK_SIZE = 320
 AUDIO_SAMPLE_RATE = 16000
-AUDIO_BYTES_PER_SAMPLE = 2
 FRAME_INTERVAL_MS = 10
 TOTAL_FRAMES = 30
 
@@ -61,7 +60,6 @@ class DumpTester(AsyncExtensionTester):
 
         self.session_id: str = session_id
         self.expected_language: str = expected_language
-        self.sender_task: asyncio.Task[None] | None = None
 
         # Track dump state
         self.dump_file_path: str | None = None
@@ -238,18 +236,7 @@ class DumpTester(AsyncExtensionTester):
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
         """Clean up resources when test stops."""
-        ten_env.log_info("Stopping audio sender task...")
-
-        if self.sender_task:
-            self.sender_task.cancel()
-            try:
-                await self.sender_task
-            except asyncio.CancelledError:
-                ten_env.log_info("Audio sender task cancelled")
-            except Exception as e:
-                ten_env.log_error(f"Error cancelling audio sender task: {e}")
-            finally:
-                ten_env.log_info("Audio sender task cleanup completed")
+        ten_env.log_info("Test stopped")
 
 
 def test_dump(extension_name: str, config_dir: str) -> None:
