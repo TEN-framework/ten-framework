@@ -204,7 +204,7 @@ TEST(CloseAppTest, CallTenApiAfterOnDeinitDone) {  // NOLINT
   // Send a return_after_3_second command.
   auto return_after_3_second_cmd = ten::cmd_t::create("return_after_3_second");
   return_after_3_second_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "test_extension_2"}});
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_2"}});
   client->send_cmd(std::move(return_after_3_second_cmd));
 
   // Wait some seconds to make sure the return_after_3_second command is
@@ -214,7 +214,7 @@ TEST(CloseAppTest, CallTenApiAfterOnDeinitDone) {  // NOLINT
   // Send a close_app command.
   auto close_app_cmd = ten::cmd_t::create("close_app");
   close_app_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "test_extension_1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   client->send_cmd(std::move(close_app_cmd));
 
   ten_thread_join(app_thread, -1);

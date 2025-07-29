@@ -211,7 +211,7 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
   // result.
   auto send_message_cmd = ten::cmd_t::create("send_message");
   send_message_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "extension1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension1"}});
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(send_message_cmd));

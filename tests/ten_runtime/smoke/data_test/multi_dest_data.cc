@@ -207,7 +207,7 @@ TEST(DataTest, MultiDestData) {  // NOLINT
   // Send a user-defined 'dispatch_data' command.
   auto dispatch_data_cmd = ten::cmd_t::create("dispatch_data");
   dispatch_data_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "extension 1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension 1"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(dispatch_data_cmd));
 
@@ -216,7 +216,7 @@ TEST(DataTest, MultiDestData) {  // NOLINT
 
   auto check_received_cmd = ten::cmd_t::create("check_received");
   check_received_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "extension 2"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension 2"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(check_received_cmd));
 
@@ -225,7 +225,7 @@ TEST(DataTest, MultiDestData) {  // NOLINT
 
   check_received_cmd = ten::cmd_t::create("check_received");
   check_received_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", nullptr, "extension 3"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension 3"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(check_received_cmd));
 
