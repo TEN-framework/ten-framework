@@ -35,10 +35,7 @@ export const ENDPOINT_EXTENSION = {
       method: ENDPOINT_METHOD.POST,
       requestPayload: z.object({
         filter: TenPackageQueryFilterSchema,
-        options: TenPackageQueryOptionsSchema.optional().default({
-          page: 1,
-          page_size: 10,
-        }),
+        options: TenPackageQueryOptionsSchema.optional(),
       }),
       responseSchema: genResSchema(
         z.object({

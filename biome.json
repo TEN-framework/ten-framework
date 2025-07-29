@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -30,12 +30,8 @@
           "level": "error",
           "fix": "safe",
           "options": {
-            "attributes": [
-              "className"
-            ],
-            "functions": [
-              "cn"
-            ]
+            "attributes": ["className"],
+            "functions": ["cn"]
           }
         }
       }

@@ -201,34 +201,20 @@ export const ExtensionStoreWidget = (props: {
       return null; // Don't use search API for initial load
     }
 
-    const filters = [];
-    if (searchQuery.trim()) {
-      filters.push({
-        field: "name",
-        operator: "contains",
-        value: searchQuery.trim(),
-      });
-    }
-    if (selectedType !== "all") {
-      filters.push({
-        field: "type",
-        operator: "eq",
-        value: selectedType,
-      });
-    }
-
-    return filters.length > 0
-      ? filters[0]
-      : { field: "name", operator: "contains", value: "" };
+    return {
+      name: searchQuery.trim() || undefined,
+      type: selectedType !== "all" ? [selectedType] : undefined,
+    };
   }, [searchQuery, selectedType, isInitialLoad]);
 
   const {
     data: searchData,
     error: searchError,
     isLoading: isSearchLoading,
-  } = useSearchTenCloudStorePackages(
-    searchFilter ? { filter: searchFilter } : undefined
-  );
+  } = useSearchTenCloudStorePackages(searchFilter || { name: undefined }, {
+    page: 1,
+    page_size: 100,
+  });
 
   const { data: envData, error: envError, isLoading: isLoadingEnv } = useEnv();
   const { setDefaultOsArch } = useAppStore();
@@ -255,12 +241,6 @@ export const ExtensionStoreWidget = (props: {
 
   const isLoading =
     isInitialLoading || isSearchLoading || isFetchingAddons || isLoadingEnv;
-  console.log("Loading extensions:", {
-    isInitialLoading,
-    isSearchLoading,
-    isFetchingAddons,
-    isLoadingEnv,
-  });
   const error = initialError || searchError || envError || addonError;
 
   // Process extensions data
@@ -407,11 +387,7 @@ export const ExtensionStoreWidget = (props: {
 
         {/* Search Bar */}
         <div className="relative">
-          <SearchIcon
-            className={cn(
-              "-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground"
-            )}
-          />
+          <SearchIcon className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 transform text-muted-foreground" />
           <Input
             placeholder={t("extensionStore.searchPlaceholder", {
               defaultValue: "Search extensions...",

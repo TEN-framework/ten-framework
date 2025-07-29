@@ -66,9 +66,12 @@ export const useListTenCloudStorePackages = (options?: {
 };
 
 export const searchTenCloudStorePackages = async (
-  filter: z.infer<typeof TenPackageQueryFilterSchema>,
+  filter?: z.infer<typeof TenPackageQueryFilterSchema>,
   options?: z.infer<typeof TenPackageQueryOptionsSchema>
 ) => {
+  if (!filter) {
+    return { packages: [] };
+  }
   const template =
     ENDPOINT_EXTENSION.searchRegistryPackages[ENDPOINT_METHOD.POST];
   const payload = template.requestPayload.parse({
@@ -79,27 +82,29 @@ export const searchTenCloudStorePackages = async (
     body: payload,
   });
   const res = await req;
-  return template.responseSchema.parse(res).data.packages;
+  return template.responseSchema.parse(res).data;
 };
 
-export const useSearchTenCloudStorePackages = (
-  filter: z.infer<typeof TenPackageQueryFilterSchema>,
-  options?: z.infer<typeof TenPackageQueryOptionsSchema>
-) => {
+export const useSearchTenCloudStorePackages = (payload?: {
+  filter: z.infer<typeof TenPackageQueryFilterSchema>;
+  options?: z.infer<typeof TenPackageQueryOptionsSchema>;
+}) => {
   const queryClient = getTanstackQueryClient();
   const queryKey = [
     "searchRegistryPackages",
     ENDPOINT_METHOD.POST,
-    filter,
-    options,
+    payload?.filter,
+    payload?.options,
   ];
-  const { isPending, data, error } = useQuery({
+  const { isLoading, data, error } = useQuery({
     queryKey,
-    queryFn: () => searchTenCloudStorePackages(filter, options),
-    enabled: !!filter,
+    queryFn: () =>
+      searchTenCloudStorePackages(payload?.filter, payload?.options),
+    enabled: !!payload?.filter,
   });
   const mutation = useMutation({
-    mutationFn: () => searchTenCloudStorePackages(filter, options),
+    mutationFn: () =>
+      searchTenCloudStorePackages(payload?.filter, payload?.options),
     onSuccess: () => {
       // Invalidate and refetch
       queryClient.invalidateQueries({
@@ -110,7 +115,7 @@ export const useSearchTenCloudStorePackages = (
   return {
     data,
     error,
-    isLoading: isPending,
+    isLoading: isLoading,
     mutate: mutation.mutate,
   };
 };

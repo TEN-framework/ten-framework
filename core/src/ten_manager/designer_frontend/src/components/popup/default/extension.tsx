@@ -6,10 +6,9 @@
 //
 import { useTranslation } from "react-i18next";
 
-import {
-  ExtensionStoreWidget,
-  ExtensionWidget,
-} from "@/components/widget/extension-widget";
+import { ExtensionWidget } from "@/components/widget/extension-widget";
+// eslint-disable-next-line max-len
+import { ExtensionStoreWidget } from "@/components/widget/extension-widget/extension-store";
 import type { IExtensionWidgetData, IWidget } from "@/types/widgets";
 
 export const ExtensionStorePopupTitle = () => {

@@ -259,6 +259,8 @@
     "openAGraphToInstall": "Open a graph to install extensions",
     "noMatchResult": "No match results",
     "matchResult": "{{count}} match results",
+    "noExtensions": "No extensions found",
+    "tryAdjusting": "Try adjusting your search or filters",
     "install": "Install",
     "installed": "Installed",
     "filter": {
@@ -281,7 +283,16 @@
     "versionLatest": "Latest",
     "localAddonTip": "(local)",
     "tags": "Tags",
-    "identifier": "Identifier"
+    "identifier": "Identifier",
+    "packageType": {
+      "all": "All",
+      "invalid": "Invalid",
+      "system": "System",
+      "app": "App",
+      "extension": "Extension",
+      "protocol": "Protocol",
+      "addonLoader": "Addon Loader"
+    }
   },
   "rtcInteraction": {
     "title": "Realtime Voice AI Agent"

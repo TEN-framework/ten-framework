@@ -4,16 +4,66 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import {
+  AsteriskIcon,
+  HandshakeIcon,
+  LayoutGridIcon,
+  type LucideIcon,
+  MonitorCogIcon,
+  PuzzleIcon,
+  // TicketXIcon
+} from "lucide-react";
 import z from "zod";
 
 export enum ETenPackageType {
-  Invalid = "invalid",
+  // Invalid = 'invalid',
   System = "system",
   App = "app",
   Extension = "extension",
   Protocol = "protocol",
   AddonLoader = "addon_loader",
 }
+
+export const TenPackageTypeMappings: Record<
+  ETenPackageType,
+  {
+    id: ETenPackageType;
+    transKey: string;
+    icon: LucideIcon;
+  }
+> = {
+  // [ETenPackageType.Invalid]: {
+  //   id: ETenPackageType.Invalid,
+  //   transKey: 'extensionStore.packageType.invalid',
+  //   icon: TicketXIcon
+  // },
+  [ETenPackageType.System]: {
+    id: ETenPackageType.System,
+    transKey: "extensionStore.packageType.system",
+    icon: MonitorCogIcon,
+  },
+  [ETenPackageType.App]: {
+    id: ETenPackageType.App,
+    transKey: "extensionStore.packageType.app",
+    icon: LayoutGridIcon,
+  },
+  [ETenPackageType.Extension]: {
+    id: ETenPackageType.Extension,
+    transKey: "extensionStore.packageType.extension",
+    icon: PuzzleIcon,
+  },
+  [ETenPackageType.Protocol]: {
+    id: ETenPackageType.Protocol,
+    transKey: "extensionStore.packageType.protocol",
+    icon: HandshakeIcon,
+  },
+  [ETenPackageType.AddonLoader]: {
+    id: ETenPackageType.AddonLoader,
+    transKey: "extensionStore.packageType.addonLoader",
+    icon: AsteriskIcon,
+  },
+};
 
 export const TenPackageBaseSchema = z.object({
   type: z.nativeEnum(ETenPackageType),
@@ -59,11 +109,19 @@ export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   readme: TenCloudStorePackageSchemaI18nField.optional(),
 });
 
-export const TenPackageQueryFilterSchema = z.object({
+export const TenPackageQueryAtomicFilterSchema = z.object({
   field: z.string(),
   operator: z.string(),
   value: z.string(),
 });
+export const TenPackageQueryLogicFilterSchema = z.object({
+  and: z.array(TenPackageQueryAtomicFilterSchema).optional(),
+  or: z.array(TenPackageQueryAtomicFilterSchema).optional(),
+});
+
+export const TenPackageQueryFilterSchema = TenPackageQueryAtomicFilterSchema.or(
+  TenPackageQueryLogicFilterSchema
+);
 
 export const TenPackageQueryOptionsSchema = z.object({
   page: z.number().min(1).optional(),
