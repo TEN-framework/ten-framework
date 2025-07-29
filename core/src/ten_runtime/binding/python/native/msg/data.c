@@ -16,9 +16,11 @@
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 
+static PyTypeObject *ten_py_data_type = NULL;
+
 static ten_py_data_t *ten_py_data_create_internal(PyTypeObject *py_type) {
   if (!py_type) {
-    py_type = ten_py_data_py_type();
+    py_type = ten_py_data_type;
   }
 
   ten_py_data_t *py_data = (ten_py_data_t *)py_type->tp_alloc(py_type, 0);
@@ -178,7 +180,8 @@ PyObject *ten_py_data_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_shared_ptr_t *cloned_msg = ten_msg_clone(py_data->msg.c_msg, NULL);
   TEN_ASSERT(cloned_msg, "Should not happen.");
 
-  ten_py_data_t *cloned_py_data = ten_py_data_create_internal(NULL);
+  PyTypeObject *actual_type = Py_TYPE(self);
+  ten_py_data_t *cloned_py_data = ten_py_data_create_internal(actual_type);
   cloned_py_data->msg.c_msg = cloned_msg;
   return (PyObject *)cloned_py_data;
 }
@@ -200,4 +203,19 @@ bool ten_py_data_init_for_module(PyObject *module) {
     return false;
   }
   return true;
+}
+
+PyObject *ten_py_data_register_data_type(TEN_UNUSED PyObject *self,
+                                         PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_data_type);
+
+  ten_py_data_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

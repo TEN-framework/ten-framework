@@ -32,10 +32,10 @@ class DefaultExtension(AsyncExtension):
         cmd_json, _ = cmd.get_property_to_json()
         ten_env.log_debug(f"on_cmd: {cmd_json}")
 
-        app_uri, graph_id, extension_name = cmd.get_source()
-        ten_env.log_info(f"app_uri: {app_uri}")
-        ten_env.log_info(f"graph_id: {graph_id}")
-        ten_env.log_info(f"extension_name: {extension_name}")
+        loc = cmd.get_source()
+        ten_env.log_info(f"get_source: app_uri: {loc.app_uri}")
+        ten_env.log_info(f"get_source: graph_id: {loc.graph_id}")
+        ten_env.log_info(f"get_source: extension_name: {loc.extension_name}")
 
         # Mock async operation, e.g. network, file I/O.
         await asyncio.sleep(0.5)

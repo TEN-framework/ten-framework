@@ -22,6 +22,8 @@
 #include "ten_utils/value/value_is.h"
 #include "ten_utils/value/value_json.h"
 
+static PyTypeObject *ten_py_msg_type = NULL;
+
 bool ten_py_msg_check_integrity(ten_py_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
 
@@ -789,4 +791,19 @@ bool ten_py_msg_init_for_module(PyObject *module) {
     return false;
   }
   return true;
+}
+
+PyObject *ten_py_msg_register_msg_type(TEN_UNUSED PyObject *self,
+                                       PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_msg_type);
+
+  ten_py_msg_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

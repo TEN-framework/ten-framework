@@ -81,7 +81,7 @@ class DefaultExtension(Extension):
         ten_env.log(LogLevel.INFO, "on_cmd json: " + cmd_json)
 
         new_cmd = Cmd.create("hello")
-        new_cmd.set_dest(None, None, "simple_echo_cpp")
+        new_cmd.set_dests(None, None, "simple_echo_cpp")
         new_cmd.set_property_from_json("test", '"testValue2"')
         test_value, _ = new_cmd.get_property_to_json("test")
         ten_env.log(LogLevel.INFO, "on_cmd test_value: " + test_value)
