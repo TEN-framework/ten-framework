@@ -371,8 +371,9 @@ bool ten_msg_clear_and_set_dest(ten_shared_ptr_t *self, const char *app_uri,
 }
 
 void ten_raw_msg_clear_and_set_dest_to_loc(ten_msg_t *self, ten_loc_t *loc) {
-  TEN_ASSERT(self && ten_raw_msg_check_integrity(self) && loc,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(loc, "Should not happen.");
 
   if (!loc) {
     ten_raw_msg_clear_dest(self);
@@ -387,8 +388,9 @@ void ten_raw_msg_clear_and_set_dest_to_loc(ten_msg_t *self, ten_loc_t *loc) {
 }
 
 void ten_msg_clear_and_set_dest_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
-  TEN_ASSERT(self && ten_msg_check_integrity(self) && loc,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(loc, "Should not happen.");
 
   ten_raw_msg_clear_and_set_dest_to_loc(ten_shared_ptr_get_data(self), loc);
 }
@@ -417,8 +419,9 @@ void ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
     TEN_ASSERT(dest_loc, "Should not happen.");
     TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
-    if (ten_string_is_empty(&dest_loc->graph_id)) {
+    if (!dest_loc->has_graph_id || ten_string_is_empty(&dest_loc->graph_id)) {
       ten_string_copy(&dest_loc->graph_id, &engine->graph_id);
+      dest_loc->has_graph_id = true;
     } else if (predefined_graph_infos) {
       // Otherwise, if the target_engine is one of the _singleton_ predefined
       // graph engine, and the destination graph_id is the "name" of that
@@ -437,6 +440,7 @@ void ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
 
         ten_string_copy(&dest_loc->graph_id,
                         &singleton_predefined_graph->engine->graph_id);
+        dest_loc->has_graph_id = true;
       }
     }
   }

@@ -61,11 +61,20 @@ bool ten_extension_info_to_json(ten_extension_info_t *self, ten_json_t *info) {
       info, TEN_STR_EXTENSION_GROUP,
       ten_string_get_raw_str(&self->extension_group_name));
 
-  ten_json_object_set_string(info, TEN_STR_GRAPH,
-                             ten_string_get_raw_str(&self->loc.graph_id));
+  // In the graph, if the 'app' and 'graph' fields appear, they should not be
+  // empty. However, in extension info, an empty string ("") is used to
+  // represent 'this' app and 'this' graph. Therefore, only when the string is
+  // non-empty does it indicate that the original graph JSON contains these two
+  // fields, and only then do we need to dump them into the JSON.
+  if (self->loc.has_graph_id && !ten_string_is_empty(&self->loc.graph_id)) {
+    ten_json_object_set_string(info, TEN_STR_GRAPH,
+                               ten_string_get_raw_str(&self->loc.graph_id));
+  }
 
-  ten_json_object_set_string(info, TEN_STR_APP,
-                             ten_string_get_raw_str(&self->loc.app_uri));
+  if (self->loc.has_app_uri && !ten_string_is_empty(&self->loc.app_uri)) {
+    ten_json_object_set_string(info, TEN_STR_APP,
+                               ten_string_get_raw_str(&self->loc.app_uri));
+  }
 
   if (self->property) {
     ten_json_t property_json = TEN_JSON_INIT_VAL(info->ctx, false);
@@ -100,11 +109,20 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
 
   TEN_ASSERT(json, "Should not happen.");
 
-  ten_json_object_set_string(json, TEN_STR_APP,
-                             ten_string_get_raw_str(&self->loc.app_uri));
+  // In the graph, if the 'app' and 'graph' fields appear, they should not be
+  // empty. However, in extension info, an empty string ("") is used to
+  // represent 'this' app and 'this' graph. Therefore, only when the string is
+  // non-empty does it indicate that the original graph JSON contains these two
+  // fields, and only then do we need to dump them into the JSON.
+  if (self->loc.has_app_uri && !ten_string_is_empty(&self->loc.app_uri)) {
+    ten_json_object_set_string(json, TEN_STR_APP,
+                               ten_string_get_raw_str(&self->loc.app_uri));
+  }
 
-  ten_json_object_set_string(json, TEN_STR_GRAPH,
-                             ten_string_get_raw_str(&self->loc.graph_id));
+  if (self->loc.has_graph_id && !ten_string_is_empty(&self->loc.graph_id)) {
+    ten_json_object_set_string(json, TEN_STR_GRAPH,
+                               ten_string_get_raw_str(&self->loc.graph_id));
+  }
 
   ten_json_object_set_string(
       json, TEN_STR_EXTENSION_GROUP,
