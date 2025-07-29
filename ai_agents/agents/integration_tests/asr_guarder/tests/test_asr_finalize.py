@@ -24,8 +24,6 @@ from .id_group_manager import AsrIdGroupManager, AsrResultGroup
 # Constants for audio configuration
 AUDIO_CHUNK_SIZE = 320
 AUDIO_SAMPLE_RATE = 16000
-AUDIO_BYTES_PER_SAMPLE = 2
-SILENCE_DURATION_SECONDS = 5
 FRAME_INTERVAL_MS = 10
 
 # Constants for test configuration
@@ -63,7 +61,6 @@ class AsrFinalizeTester(AsyncExtensionTester):
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
-        self.sender_task: asyncio.Task[None] | None = None
         # Track state for single audio send
         self.final_id: str | None = None
         self.waiting_for_final: bool = False
@@ -91,20 +88,6 @@ class AsrFinalizeTester(AsyncExtensionTester):
         audio_frame.unlock_buf(buf)
         return audio_frame
 
-    def _create_silence_frame(self, size: int, session_id: str) -> AudioFrame:
-        """Create a silence frame filled with zeros."""
-        silence_frame = AudioFrame.create("pcm_frame")
-
-        # Set session_id in metadata according to API specification
-        metadata = {"session_id": session_id}
-        silence_frame.set_property_from_json("metadata", json.dumps(metadata))
-
-        silence_frame.alloc_buf(size)
-        buf = silence_frame.lock_buf()
-        buf[:] = b"\x00" * size
-        silence_frame.unlock_buf(buf)
-        return silence_frame
-
     async def _send_audio_file(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio file data to ASR extension."""
         ten_env.log_info(f"Sending audio file: {self.audio_file_path}")
@@ -118,26 +101,6 @@ class AsrFinalizeTester(AsyncExtensionTester):
                 audio_frame = self._create_audio_frame(chunk, self.session_id)
                 await ten_env.send_audio_frame(audio_frame)
                 await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
-
-    async def _send_silence_packets(self, ten_env: AsyncTenEnvTester) -> None:
-        """Send silence packets to trigger final ASR results."""
-        ten_env.log_info("Sending silence packets to trigger final results...")
-
-        # Calculate silence packet parameters
-        samples_per_chunk = AUDIO_CHUNK_SIZE // AUDIO_BYTES_PER_SAMPLE
-        chunks_per_second = AUDIO_SAMPLE_RATE // samples_per_chunk
-        total_chunks = SILENCE_DURATION_SECONDS * chunks_per_second
-
-        for i in range(total_chunks):
-            silence_frame = self._create_silence_frame(
-                AUDIO_CHUNK_SIZE, self.session_id
-            )
-            await ten_env.send_audio_frame(silence_frame)
-            await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
-
-        ten_env.log_info(
-            "Silence packets sent, waiting for final ASR results..."
-        )
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send asr_finalize signal to trigger finalization."""
@@ -545,18 +508,7 @@ class AsrFinalizeTester(AsyncExtensionTester):
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
         """Clean up resources when test stops."""
-        ten_env.log_info("Stopping audio sender task...")
-
-        if self.sender_task:
-            self.sender_task.cancel()
-            try:
-                await self.sender_task
-            except asyncio.CancelledError:
-                ten_env.log_info("Audio sender task cancelled")
-            except Exception as e:
-                ten_env.log_error(f"Error cancelling audio sender task: {e}")
-            finally:
-                ten_env.log_info("Audio sender task cleanup completed")
+        ten_env.log_info("Test stopped")
 
 
 def test_asr_finalize(extension_name: str, config_dir: str) -> None:
