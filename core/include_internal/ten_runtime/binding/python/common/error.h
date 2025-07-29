@@ -61,3 +61,6 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_raise_py_import_error_exception(
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_raise_py_runtime_error_exception(
     const char *msg);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_error_register_error_type(
+    PyObject *self, PyObject *args);

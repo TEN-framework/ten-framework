@@ -73,6 +73,9 @@ static PyModuleDef *ten_py_runtime_module(void) {
        ten_py_ten_env_tester_register_ten_env_tester_type, METH_VARARGS,
        "Register the Python TenEnvTester class for later tp_alloc use"},
 
+      {"_ten_py_error_register_error_type", ten_py_error_register_error_type,
+       METH_VARARGS, "Register the Python Error class for later tp_alloc use"},
+
       {NULL, NULL, 0, NULL}};
 
   static struct PyModuleDef module_def = {
