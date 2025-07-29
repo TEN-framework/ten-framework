@@ -1,6 +1,6 @@
 {
     "params": {
-        "api_key": "${env:DEEPGRAM_API_KEY}",
+        "api_key": "dfgfdgd",
         "language": "en-US"
     }
 }
