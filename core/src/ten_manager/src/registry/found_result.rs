@@ -33,11 +33,17 @@ pub struct PkgRegistryInfo {
     pub basic_info: PkgBasicInfo,
 
     #[serde(with = "dependencies_conversion")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub dependencies: Vec<ManifestDependency>,
 
+    #[serde(skip_serializing_if = "String::is_empty")]
+    #[serde(default)]
     pub hash: String,
 
     #[serde(rename = "downloadUrl")]
+    #[serde(skip_serializing_if = "String::is_empty")]
+    #[serde(default)]
     pub download_url: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
