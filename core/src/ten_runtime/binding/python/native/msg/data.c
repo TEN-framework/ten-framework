@@ -159,7 +159,8 @@ PyObject *ten_py_data_get_buf(PyObject *self, TEN_UNUSED PyObject *args) {
 }
 
 ten_py_data_t *ten_py_data_wrap(ten_shared_ptr_t *data) {
-  TEN_ASSERT(data && ten_msg_check_integrity(data), "Invalid argument.");
+  TEN_ASSERT(data, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(data), "Invalid argument.");
 
   ten_py_data_t *py_data = ten_py_data_create_internal(NULL);
   py_data->msg.c_msg = ten_shared_ptr_clone(data);

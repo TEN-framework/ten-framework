@@ -262,7 +262,8 @@ static void proxy_on_data(ten_extension_tester_t *extension_tester,
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Invalid argument.");
-  TEN_ASSERT(data && ten_msg_check_integrity(data), "Invalid argument.");
+  TEN_ASSERT(data, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(data), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
