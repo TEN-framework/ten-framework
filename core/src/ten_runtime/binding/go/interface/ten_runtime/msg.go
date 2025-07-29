@@ -46,8 +46,8 @@ type Msg interface {
 
 	GetName() (name string, err error)
 
-	GetSource() (appURI, graphID, extensionName *string, err error)
-	SetDest(appURI, graphID, extension string) (err error)
+	GetSource() (loc Loc, err error)
+	SetDests(appURI, graphID, extension string) (err error)
 
 	iProperty
 }
@@ -201,7 +201,7 @@ func (p *msg) GetName() (string, error) {
 	return C.GoString(msgName), nil
 }
 
-func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
+func (p *msg) GetSource() (loc Loc, err error) {
 	defer p.keepAlive()
 
 	var cAppURI, cGraphID, cExtensionName *C.char
@@ -214,25 +214,25 @@ func (p *msg) GetSource() (appURI, graphID, extensionName *string, err error) {
 		return withCGoError(&apiStatus)
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return Loc{}, err
 	}
 
 	if cAppURI != nil {
 		goAppURI := C.GoString(cAppURI)
-		appURI = &goAppURI
+		loc.AppURI = &goAppURI
 	}
 	if cGraphID != nil {
 		goGraphID := C.GoString(cGraphID)
-		graphID = &goGraphID
+		loc.GraphID = &goGraphID
 	}
 	if cExtensionName != nil {
 		goExtensionName := C.GoString(cExtensionName)
-		extensionName = &goExtensionName
+		loc.ExtensionName = &goExtensionName
 	}
-	return appURI, graphID, extensionName, nil
+	return loc, nil
 }
 
-func (p *msg) SetDest(
+func (p *msg) SetDests(
 	appURI, graphID, extension string,
 ) (err error) {
 	defer p.keepAlive()
