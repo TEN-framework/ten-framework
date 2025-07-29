@@ -152,12 +152,10 @@ mod tests {
     #[actix_rt::test]
     async fn test_search_packages_from_remote_registry_with_scope() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig {
-                    verbose: true,
-                    ..TmanConfig::default()
-                },
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig {
+                verbose: true,
+                ..TmanConfig::default()
+            })),
             storage_in_memory: Arc::new(tokio::sync::RwLock::new(
                 TmanStorageInMemory::default(),
             )),
@@ -185,10 +183,7 @@ mod tests {
                 }),
             },
             options: Some(PkgSearchOptions {
-                scope: Some(
-                    "type,name,version,display_name"
-                        .to_string(),
-                ),
+                scope: Some("type,name,version,display_name".to_string()),
                 page_size: None,
                 page: None,
                 sort_by: None,
