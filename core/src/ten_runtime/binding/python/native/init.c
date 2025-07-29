@@ -65,6 +65,10 @@ static PyModuleDef *ten_py_runtime_module(void) {
        ten_py_audio_frame_register_audio_frame_type, METH_VARARGS,
        "Register the Python AudioFrame class for later tp_alloc use"},
 
+      {"_ten_py_ten_env_register_ten_env_type",
+       ten_py_ten_env_register_ten_env_type, METH_VARARGS,
+       "Register the Python TenEnv class for later tp_alloc use"},
+
       {NULL, NULL, 0, NULL}};
 
   static struct PyModuleDef module_def = {
