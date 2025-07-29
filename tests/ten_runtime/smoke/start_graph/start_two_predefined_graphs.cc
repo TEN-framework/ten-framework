@@ -106,7 +106,7 @@ class test_predefined_graph : public ten::extension_t {
       // Shut down the graph 1; otherwise, the app won't be able to close
       // because there is still a running engine/graph.
       auto stop_graph_1_cmd = ten::cmd_stop_graph_t::create();
-      stop_graph_1_cmd->set_dests({{nullptr, nullptr, nullptr}});
+      stop_graph_1_cmd->set_dests({{"", nullptr, nullptr}});
       stop_graph_1_cmd->set_graph_id(graph_id_1.c_str());
 
       ten_env.send_cmd(
@@ -117,7 +117,7 @@ class test_predefined_graph : public ten::extension_t {
             // Shut down the graph 2; otherwise, the app won't be able to close
             // because there is still a running engine/graph.
             auto stop_graph_2_cmd = ten::cmd_stop_graph_t::create();
-            stop_graph_2_cmd->set_dests({{nullptr, nullptr, nullptr}});
+            stop_graph_2_cmd->set_dests({{"", nullptr, nullptr}});
             stop_graph_2_cmd->set_graph_id(graph_id_2.c_str());
 
             ten_env.send_cmd(
