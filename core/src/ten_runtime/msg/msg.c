@@ -103,6 +103,18 @@ void ten_msg_set_src_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
   ten_raw_msg_set_src_to_loc(ten_shared_ptr_get_data(self), loc);
 }
 
+static void ten_raw_msg_clear_dest(ten_msg_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+  ten_list_clear(&self->dest_loc);
+}
+
+void ten_msg_clear_dest(ten_shared_ptr_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+  ten_raw_msg_clear_dest(ten_msg_get_raw_msg(self));
+}
+
 // The semantics of the following function is to replace the destination
 // information to one which is specified through the parameters.
 static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *app_uri,
@@ -112,7 +124,7 @@ static bool ten_raw_msg_clear_and_set_dest(ten_msg_t *self, const char *app_uri,
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
 
-  ten_list_clear(&self->dest_loc);
+  ten_raw_msg_clear_dest(self);
   ten_list_push_ptr_back(&self->dest_loc,
                          ten_loc_create(app_uri, graph_id, extension_name),
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
@@ -130,11 +142,13 @@ void ten_raw_msg_add_dest(ten_msg_t *self, const char *app_uri,
                          (ten_ptr_listnode_destroy_func_t)ten_loc_destroy);
 }
 
-void ten_raw_msg_clear_dest(ten_msg_t *self) {
+void ten_msg_add_dest(ten_shared_ptr_t *self, const char *app_uri,
+                      const char *graph_id, const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
 
-  ten_list_clear(&self->dest_loc);
+  ten_raw_msg_add_dest(ten_msg_get_raw_msg(self), app_uri, graph_id,
+                       extension_name);
 }
 
 static void ten_raw_msg_clear_and_set_dest_from_msg_src(ten_msg_t *self,
@@ -457,13 +471,6 @@ const char *ten_msg_get_src_graph_id(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   return ten_string_get_raw_str(&ten_msg_get_raw_msg(self)->src_loc.graph_id);
-}
-
-void ten_msg_clear_dest(ten_shared_ptr_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-
-  ten_list_clear(&ten_msg_get_raw_msg(self)->dest_loc);
 }
 
 ten_loc_t *ten_raw_msg_get_src_loc(ten_msg_t *self) {
