@@ -314,7 +314,5 @@ ten_go_error_t ten_go_msg_get_source(uintptr_t bridge_addr,
                                      const char **graph_id,
                                      const char **extension_name);
 
-ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
-                                   int app_uri_len, const void *graph_id,
-                                   int graph_id_len, const void *extension,
-                                   int extension_len);
+ten_go_error_t ten_go_msg_set_dests(uintptr_t bridge_addr, const void *buffer,
+                                    int buffer_len);

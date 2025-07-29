@@ -47,7 +47,7 @@ type Msg interface {
 	GetName() (name string, err error)
 
 	GetSource() (loc Loc, err error)
-	SetDests(appURI, graphID, extension string) (err error)
+	SetDests(locs []Loc) (err error)
 
 	iProperty
 }
@@ -232,24 +232,100 @@ func (p *msg) GetSource() (loc Loc, err error) {
 	return loc, nil
 }
 
-func (p *msg) SetDests(
-	appURI, graphID, extension string,
-) (err error) {
+func (p *msg) SetDests(locs []Loc) (err error) {
 	defer p.keepAlive()
 
-	err = withCGOLimiter(func() error {
-		apiStatus := C.ten_go_msg_set_dest(
-			p.cPtr,
-			unsafe.Pointer(unsafe.StringData(appURI)),
-			C.int(len(appURI)),
-			unsafe.Pointer(unsafe.StringData(graphID)),
-			C.int(len(graphID)),
-			unsafe.Pointer(unsafe.StringData(extension)),
-			C.int(len(extension)),
-		)
+	// Calculate total buffer size needed
+	bufferSize := 4 // 4 bytes for destination count
+	for _, loc := range locs {
+		bufferSize += 12 // 3 * 4 bytes for string lengths
+		if loc.AppURI != nil {
+			bufferSize += len(*loc.AppURI)
+		}
+		if loc.GraphID != nil {
+			bufferSize += len(*loc.GraphID)
+		}
+		if loc.ExtensionName != nil {
+			bufferSize += len(*loc.ExtensionName)
+		}
+	}
 
+	// Create buffer and serialize data
+	buffer := make([]byte, bufferSize)
+	offset := 0
+
+	// Write destination count (4 bytes, little-endian)
+	destCount := uint32(len(locs))
+	buffer[offset] = byte(destCount)
+	buffer[offset+1] = byte(destCount >> 8)
+	buffer[offset+2] = byte(destCount >> 16)
+	buffer[offset+3] = byte(destCount >> 24)
+	offset += 4
+
+	// Process each destination
+	for _, loc := range locs {
+		// Get string values, handle nil pointers
+		var appURI, graphID, extension string
+		if loc.AppURI != nil {
+			appURI = *loc.AppURI
+		}
+		if loc.GraphID != nil {
+			graphID = *loc.GraphID
+		}
+		if loc.ExtensionName != nil {
+			extension = *loc.ExtensionName
+		}
+
+		// Write string lengths (4 bytes each, little-endian)
+		appURILen := uint32(len(appURI))
+		buffer[offset] = byte(appURILen)
+		buffer[offset+1] = byte(appURILen >> 8)
+		buffer[offset+2] = byte(appURILen >> 16)
+		buffer[offset+3] = byte(appURILen >> 24)
+		offset += 4
+
+		graphIDLen := uint32(len(graphID))
+		buffer[offset] = byte(graphIDLen)
+		buffer[offset+1] = byte(graphIDLen >> 8)
+		buffer[offset+2] = byte(graphIDLen >> 16)
+		buffer[offset+3] = byte(graphIDLen >> 24)
+		offset += 4
+
+		extensionLen := uint32(len(extension))
+		buffer[offset] = byte(extensionLen)
+		buffer[offset+1] = byte(extensionLen >> 8)
+		buffer[offset+2] = byte(extensionLen >> 16)
+		buffer[offset+3] = byte(extensionLen >> 24)
+		offset += 4
+
+		// Write string data
+		if appURILen > 0 {
+			copy(buffer[offset:], appURI)
+			offset += int(appURILen)
+		}
+		if graphIDLen > 0 {
+			copy(buffer[offset:], graphID)
+			offset += int(graphIDLen)
+		}
+		if extensionLen > 0 {
+			copy(buffer[offset:], extension)
+			offset += int(extensionLen)
+		}
+	}
+
+	// Call the buffer-based C function
+	err = withCGOLimiter(func() error {
+		var bufferPtr unsafe.Pointer
+		if len(buffer) > 0 {
+			bufferPtr = unsafe.Pointer(&buffer[0])
+		}
+		apiStatus := C.ten_go_msg_set_dests(
+			p.cPtr,
+			bufferPtr,
+			C.int(len(buffer)),
+		)
 		return withCGoError(&apiStatus)
 	})
 
-	return
+	return err
 }
