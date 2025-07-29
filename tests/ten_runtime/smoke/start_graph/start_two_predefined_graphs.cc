@@ -47,7 +47,7 @@ class test_predefined_graph : public ten::extension_t {
       std::string graph_name, ten::ten_env_t &ten_env,
       const std::function<void(ten::ten_env_t &, const std::string &)> &cb) {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dests({{nullptr, nullptr, nullptr}});
+    start_graph_cmd->set_dests({{"", nullptr, nullptr}});
     start_graph_cmd->set_predefined_graph_name(graph_name.c_str());
 
     ten_env.send_cmd(

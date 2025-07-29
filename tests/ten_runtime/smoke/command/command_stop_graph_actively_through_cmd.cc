@@ -69,7 +69,7 @@ class test_extension_4 : public ten::extension_t {
       ten_env.return_result(std::move(cmd_result));
 
       auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-      stop_graph_cmd->set_dests({{nullptr, nullptr, nullptr}});
+      stop_graph_cmd->set_dests({{"", nullptr, nullptr}});
       ten_env.send_cmd(std::move(stop_graph_cmd));
     }
   }
