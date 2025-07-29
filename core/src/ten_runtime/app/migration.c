@@ -50,12 +50,11 @@ static void ten_app_clean_connection_task(void *connection_,
 // app, so the app thread is responsible for cleaning them up.
 void ten_app_clean_connection_async(ten_app_t *self,
                                     ten_connection_t *connection) {
-  TEN_ASSERT(self &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: This function is intended to be called outside
-                 // of the TEN app thread.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is intended to be called outside of the TEN app
+  // thread.
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
   TEN_ASSERT(connection &&
                  // TEN_NOLINTNEXTLINE(thread-check)
                  // thread-check: 'connection' belongs to app thread, but this

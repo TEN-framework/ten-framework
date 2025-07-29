@@ -124,6 +124,10 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
         "Expect to be a create request, the extension_addon_name is required.");
   }
 
+  if (!graph_id) {
+    graph_id = "";
+  }
+
   ten_extension_info_t *extension_info = NULL;
 
   // Find the corresponding extension_info according to the instance name of

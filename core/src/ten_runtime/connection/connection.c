@@ -391,7 +391,7 @@ static void ten_connection_handle_command_from_external_client(
   const char *cmd_id = ten_cmd_base_gen_new_cmd_id_forcibly(cmd);
 
   const char *src_uri = ten_msg_get_src_app_uri(cmd);
-  TEN_ASSERT(src_uri, "Should not happen.");
+  TEN_ASSERT(!src_uri, "Should not happen.");
 
   // If this message is coming from the outside of the TEN world (i.e.,
   // a client), regardless of whether the src_uri of the command is set or

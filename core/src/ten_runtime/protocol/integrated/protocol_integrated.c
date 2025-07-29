@@ -949,7 +949,8 @@ static void ten_stream_migrated(ten_stream_t *stream, void **user_data) {
       "The reason is the same as the above comments about 'connection'.");
 
   ten_shared_ptr_t *cmd = user_data[2];
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   TEN_FREE(user_data);
 
@@ -995,7 +996,8 @@ static void ten_protocol_integrated_migrate(ten_protocol_integrated_t *self,
              "protocol to the engine thread.");
   TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
              "'connection' belongs to app thread now.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   ten_stream_t *stream = self->role_facility.communication_stream;
   TEN_ASSERT(stream && ten_stream_check_integrity(stream),

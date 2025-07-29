@@ -37,6 +37,13 @@ typedef struct ten_extension_t ten_extension_t;
 typedef struct ten_loc_t {
   ten_signature_t signature;
 
+  // Another approach is to make app_uri, graph_id, and extension_name all
+  // ten_string_t *. This way, NULL can be used to indicate the absence of a
+  // value. However, this increases memory fragmentation.
+  //
+  // Therefore, we use an implementation similar to C++'s optional<T>, using a
+  // bool to indicate whether a value exists.
+
   bool has_app_uri;         // If false, app_uri is useless.
   bool has_graph_id;        // If false, graph_id is useless.
   bool has_extension_name;  // If false, extension_name is useless.
@@ -93,10 +100,6 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_clear(ten_loc_t *self);
 
 TEN_RUNTIME_PRIVATE_API bool ten_loc_is_equal(ten_loc_t *self,
                                               ten_loc_t *other);
-
-TEN_RUNTIME_PRIVATE_API bool ten_loc_is_equal_with_value(
-    ten_loc_t *self, const char *app_uri, const char *graph_id,
-    const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_to_string(ten_loc_t *self,
                                                ten_string_t *result);
