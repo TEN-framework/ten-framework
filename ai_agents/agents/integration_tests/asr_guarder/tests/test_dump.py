@@ -262,8 +262,8 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     if "params" not in config:
         config["params"] = {}
 
-    config["params"]["dump"] = True
-    config["params"]["dump_path"] = str(temp_dir)
+    config["dump"] = True
+    config["dump_path"] = str(temp_dir)
 
     # Expected test results
     expected_result = {
