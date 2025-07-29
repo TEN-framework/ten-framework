@@ -37,9 +37,7 @@ static bool ten_py_extension_tester_check_integrity(
 
 static ten_py_extension_tester_t *ten_py_extension_tester_create_internal(
     PyTypeObject *py_type) {
-  if (!py_type) {
-    py_type = ten_py_extension_tester_py_type();
-  }
+  TEN_ASSERT(py_type, "Invalid argument");
 
   ten_py_extension_tester_t *py_extension_tester =
       (ten_py_extension_tester_t *)py_type->tp_alloc(py_type, 0);
@@ -264,7 +262,8 @@ static void proxy_on_data(ten_extension_tester_t *extension_tester,
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
   TEN_ASSERT(ten_env_tester_check_integrity(ten_env_tester, true),
              "Invalid argument.");
-  TEN_ASSERT(data && ten_msg_check_integrity(data), "Invalid argument.");
+  TEN_ASSERT(data, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(data), "Invalid argument.");
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -521,7 +520,7 @@ static PyObject *ten_py_extension_tester_run(PyObject *self,
   Py_RETURN_NONE;
 }
 
-PyTypeObject *ten_py_extension_tester_py_type(void) {
+static PyTypeObject *ten_py_extension_tester_py_type(void) {
   static PyMethodDef py_methods[] = {
       {"set_test_mode_single_internal",
        ten_py_extension_tester_set_test_mode_single, METH_VARARGS, NULL},

@@ -80,3 +80,6 @@ TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *ten_py_msg_move_c_msg(
 TEN_RUNTIME_PRIVATE_API bool ten_py_msg_init_for_module(PyObject *module);
 
 TEN_RUNTIME_PRIVATE_API bool ten_py_msg_check_integrity(ten_py_msg_t *self);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_register_msg_type(PyObject *self,
+                                                               PyObject *args);

@@ -26,6 +26,4 @@ typedef struct ten_py_extension_tester_t {
   PyObject *py_ten_env_tester;
 } ten_py_extension_tester_t;
 
-TEN_RUNTIME_PRIVATE_API PyTypeObject *ten_py_extension_tester_py_type(void);
-
 TEN_RUNTIME_API bool ten_py_extension_tester_init_for_module(PyObject *module);

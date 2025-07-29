@@ -7,6 +7,7 @@
 #include "ten_runtime/binding/go/interface/ten_runtime/msg.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #include "include_internal/ten_runtime/binding/go/internal/common.h"
 #include "include_internal/ten_runtime/binding/go/internal/json.h"
@@ -906,44 +907,112 @@ ten_go_error_t ten_go_msg_get_source(uintptr_t bridge_addr,
   return cgo_error;
 }
 
-ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
-                                   int app_uri_len, const void *graph_id,
-                                   int graph_id_len, const void *extension,
-                                   int extension_len) {
+ten_go_error_t ten_go_msg_set_dests(uintptr_t bridge_addr, const void *buffer,
+                                    int buffer_len) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(buffer, "Buffer should not be NULL.");
+  TEN_ASSERT(buffer_len > 0, "Buffer length should be positive.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_string_t app_uri_str;
-  ten_string_init_from_c_str_with_size(&app_uri_str, app_uri, app_uri_len);
-
-  ten_string_t graph_id_str;
-  ten_string_init_from_c_str_with_size(&graph_id_str, graph_id, graph_id_len);
-
-  ten_string_t extension_str;
-  ten_string_init_from_c_str_with_size(&extension_str, extension,
-                                       extension_len);
-
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_msg_clear_and_set_dest(
-      ten_go_msg_c_msg(self), ten_string_get_raw_str(&app_uri_str),
-      ten_string_get_raw_str(&graph_id_str),
-      ten_string_get_raw_str(&extension_str), &err);
+  const uint8_t *buf = (const uint8_t *)buffer;
+  uint32_t offset = 0;
 
-  if (!rc) {
+  // Check buffer has at least 4 bytes for count
+  if (buffer_len < 4) {
     ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
-                     ten_error_message(&err));
+                     "Buffer too small to contain destination count");
+    goto cleanup;
   }
 
-  ten_error_deinit(&err);
-  ten_string_deinit(&app_uri_str);
-  ten_string_deinit(&graph_id_str);
-  ten_string_deinit(&extension_str);
+  // Read destination count (4 bytes, little-endian)
+  uint32_t dest_count = 0;
+  memcpy(&dest_count, buf + offset, 4);
+  offset += 4;
 
+  // Clear existing destinations
+  ten_msg_clear_dest(ten_go_msg_c_msg(self));
+
+  // Process each destination
+  for (uint32_t i = 0; i < dest_count; i++) {
+    // Check buffer has at least 12 bytes for three length fields
+    if (offset + 12 > buffer_len) {
+      ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                       "Buffer truncated while reading destination lengths");
+      goto cleanup;
+    }
+
+    // Read string lengths (4 bytes each, little-endian)
+    uint32_t app_uri_len = 0;
+    uint32_t graph_id_len = 0;
+    uint32_t extension_name_len = 0;
+
+    memcpy(&app_uri_len, buf + offset, 4);
+    offset += 4;
+    memcpy(&graph_id_len, buf + offset, 4);
+    offset += 4;
+    memcpy(&extension_name_len, buf + offset, 4);
+    offset += 4;
+
+    // Check buffer has enough space for all string data
+    uint32_t total_str_len = app_uri_len + graph_id_len + extension_name_len;
+    if (offset + total_str_len > buffer_len) {
+      ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                       "Buffer truncated while reading destination strings");
+      goto cleanup;
+    }
+
+    // Extract strings
+    const char *app_uri_str = NULL;
+    const char *graph_id_str = NULL;
+    const char *extension_name_str = NULL;
+
+    ten_string_t app_uri;
+    ten_string_t graph_id;
+    ten_string_t extension_name;
+
+    ten_string_init(&app_uri);
+    ten_string_init(&graph_id);
+    ten_string_init(&extension_name);
+
+    if (app_uri_len > 0) {
+      ten_string_init_from_c_str_with_size(
+          &app_uri, (const char *)(buf + offset), app_uri_len);
+      app_uri_str = ten_string_get_raw_str(&app_uri);
+      offset += app_uri_len;
+    }
+
+    if (graph_id_len > 0) {
+      ten_string_init_from_c_str_with_size(
+          &graph_id, (const char *)(buf + offset), graph_id_len);
+      graph_id_str = ten_string_get_raw_str(&graph_id);
+      offset += graph_id_len;
+    }
+
+    if (extension_name_len > 0) {
+      ten_string_init_from_c_str_with_size(
+          &extension_name, (const char *)(buf + offset), extension_name_len);
+      extension_name_str = ten_string_get_raw_str(&extension_name);
+      offset += extension_name_len;
+    }
+
+    // Add this destination
+    ten_msg_add_dest(ten_go_msg_c_msg(self), app_uri_str, graph_id_str,
+                     extension_name_str);
+
+    // Clean up strings
+    ten_string_deinit(&app_uri);
+    ten_string_deinit(&graph_id);
+    ten_string_deinit(&extension_name);
+  }
+
+cleanup:
+  ten_error_deinit(&err);
   return cgo_error;
 }

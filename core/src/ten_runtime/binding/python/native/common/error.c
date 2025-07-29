@@ -15,9 +15,11 @@
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 
+static PyTypeObject *ten_py_error_type = NULL;
+
 static ten_py_error_t *ten_py_error_create_internal(PyTypeObject *py_type) {
   if (!py_type) {
-    py_type = ten_py_error_py_type();
+    py_type = ten_py_error_type;
   }
 
   ten_py_error_t *py_error = (ten_py_error_t *)py_type->tp_alloc(py_type, 0);
@@ -249,4 +251,19 @@ bool ten_py_error_init_for_module(PyObject *module) {
   }
 
   return true;
+}
+
+PyObject *ten_py_error_register_error_type(TEN_UNUSED PyObject *self,
+                                           PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_error_type);
+
+  ten_py_error_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

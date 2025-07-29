@@ -31,7 +31,13 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to create data.")
 	}
 
-	newData.SetDest("", "", "simple_echo_cpp")
+	newData.SetDests([]ten.Loc{
+		{
+			AppURI:        ten.StringPtr(""),
+			GraphID:       ten.StringPtr(""),
+			ExtensionName: ten.StringPtr("simple_echo_cpp"),
+		},
+	})
 
 	testBytes := []byte("hello world")
 
@@ -59,7 +65,13 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to create data.")
 	}
 
-	data2.SetDest("", "", "default_extension_go2")
+	data2.SetDests([]ten.Loc{
+		{
+			AppURI:        ten.StringPtr(""),
+			GraphID:       ten.StringPtr(""),
+			ExtensionName: ten.StringPtr("default_extension_go2"),
+		},
+	})
 
 	data2.SetPropertyString("test_key", "test_value")
 
@@ -90,7 +102,7 @@ func (ext *defaultExtension) OnData(
 		panic("Failed to get data name.")
 	}
 
-	tenEnv.Log(ten.LogLevelDebug, "OnData" + dataName)
+	tenEnv.Log(ten.LogLevelDebug, "OnData"+dataName)
 
 	if dataName == "data2" {
 		testValue, error := data.GetPropertyString("test_key")

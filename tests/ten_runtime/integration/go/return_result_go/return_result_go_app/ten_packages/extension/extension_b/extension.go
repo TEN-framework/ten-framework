@@ -31,14 +31,14 @@ func (p *extensionB) OnCmd(
 	go func() {
 		fmt.Println("extensionB OnCmd")
 
-		appURI, graphID, extensionName, err := cmd.GetSource()
+		srcLoc, err := cmd.GetSource()
 		if err != nil {
 			fmt.Println("Failed to get cmd source", err)
 			panic(err)
 		}
-		fmt.Println("appURI", *appURI)
-		fmt.Println("graphID", *graphID)
-		fmt.Println("extensionName", *extensionName)
+		fmt.Println("GetSource: appURI", *srcLoc.AppURI)
+		fmt.Println("GetSource: graphID", *srcLoc.GraphID)
+		fmt.Println("GetSource: extensionName", *srcLoc.ExtensionName)
 
 		cmdName, _ := cmd.GetName()
 		if cmdName == "B" {

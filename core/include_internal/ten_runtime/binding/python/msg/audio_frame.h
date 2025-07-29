@@ -95,3 +95,6 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_audio_frame_set_eof(PyObject *self,
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_audio_frame_clone(PyObject *self,
                                                            PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_audio_frame_register_audio_frame_type(
+    PyObject *self, PyObject *args);

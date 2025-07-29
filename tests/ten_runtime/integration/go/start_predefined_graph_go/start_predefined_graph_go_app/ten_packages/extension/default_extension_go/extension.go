@@ -20,7 +20,13 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 	if name == "start_graph" {
 		startGraphCmd, _ := ten.NewStartGraphCmd()
 		startGraphCmd.SetPredefinedGraphName("biz")
-		startGraphCmd.SetDest("", "", "")
+		startGraphCmd.SetDests([]ten.Loc{
+			{
+				AppURI:        ten.StringPtr(""),
+				GraphID:       ten.StringPtr(""),
+				ExtensionName: ten.StringPtr(""),
+			},
+		})
 
 		tenEnv.SendCmd(
 			startGraphCmd,

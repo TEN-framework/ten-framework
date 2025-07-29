@@ -419,7 +419,7 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
   TEN_ASSERT(client, "Failed to connect to the TEN app.");
 
   auto send_cmd = ten::cmd_t::create("send");
-  send_cmd->set_dests({{"msgpack://127.0.0.1:8001/", nullptr, "A"}});
+  send_cmd->set_dests({{"msgpack://127.0.0.1:8001/", "", "A"}});
 
   auto cmd_result = client->send_cmd_and_recv_result(std::move(send_cmd));
 

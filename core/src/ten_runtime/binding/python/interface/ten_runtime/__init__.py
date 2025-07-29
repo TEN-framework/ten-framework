@@ -24,6 +24,7 @@ from .error import TenError, TenErrorCode
 from .value import Value, ValueType
 from .test import ExtensionTester, TenEnvTester
 from .async_test import AsyncExtensionTester, AsyncTenEnvTester
+from .loc import Loc
 
 # Specify what should be imported when a user imports * from the
 # ten_runtime_python package.
@@ -53,4 +54,5 @@ __all__ = [
     "ValueType",
     "AsyncExtensionTester",
     "AsyncTenEnvTester",
+    "Loc",
 ]

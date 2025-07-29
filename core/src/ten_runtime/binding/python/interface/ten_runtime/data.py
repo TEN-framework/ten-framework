@@ -7,13 +7,15 @@
 from typing import TypeVar, cast
 from libten_runtime_python import (
     _Data,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_data_register_data_type,  # pyright: ignore[reportPrivateUsage]
 )
+from .msg import Msg
 
 T = TypeVar("T", bound="Data")
 
 
-class Data(_Data):
-    def __init__(self, name: str):
+class Data(_Data, Msg):
+    def __init__(self, name: str):  # pyright: ignore[reportMissingSuperCall]
         raise NotImplementedError("Use Data.create instead.")
 
     @classmethod
@@ -22,3 +24,6 @@ class Data(_Data):
 
     def clone(self) -> "Data":  # pyright: ignore[reportImplicitOverride]
         return cast("Data", _Data.clone(self))
+
+
+_ten_py_data_register_data_type(Data)
