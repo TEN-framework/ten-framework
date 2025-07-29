@@ -319,10 +319,17 @@ bool ten_msg_src_uri_is_empty(ten_shared_ptr_t *self) {
   return strlen(ten_msg_get_src_app_uri(self)) == 0;
 }
 
-bool ten_msg_src_graph_id_is_empty(ten_shared_ptr_t *self) {
+static bool ten_msg_src_graph_id_is_empty(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-  return strlen(ten_msg_get_src_graph_id(self)) == 0;
+
+  ten_loc_t *src_loc = &ten_msg_get_raw_msg(self)->src_loc;
+  TEN_ASSERT(src_loc, "Should not happen.");
+
+  if (!src_loc->has_graph_id || ten_string_is_empty(&src_loc->graph_id)) {
+    return true;
+  }
+  return false;
 }
 
 void ten_msg_set_src_uri(ten_shared_ptr_t *self, const char *uri) {
@@ -357,6 +364,7 @@ void ten_msg_set_src_engine_if_unspecified(ten_shared_ptr_t *self,
   if (ten_msg_src_graph_id_is_empty(self)) {
     ten_string_copy(&(ten_msg_get_raw_msg(self)->src_loc.graph_id),
                     &engine->graph_id);
+    ten_msg_get_raw_msg(self)->src_loc.has_graph_id = true;
   }
 }
 

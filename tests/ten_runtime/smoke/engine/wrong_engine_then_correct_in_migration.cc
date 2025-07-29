@@ -85,7 +85,7 @@ TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
 
 }  // namespace
 
-TEST(ExtensionTest, DISABLED_WrongEngineThenCorrectInMigration) {  // NOLINT
+TEST(ExtensionTest, WrongEngineThenCorrectInMigration) {  // NOLINT
   auto *app_thread = ten_thread_create("app thread", app_thread_main, nullptr);
 
   // Create a client and connect to the app.

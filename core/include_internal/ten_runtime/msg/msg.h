@@ -116,9 +116,6 @@ TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_uri(ten_shared_ptr_t *self,
 
 TEN_RUNTIME_PRIVATE_API bool ten_msg_src_uri_is_empty(ten_shared_ptr_t *self);
 
-TEN_RUNTIME_PRIVATE_API bool ten_msg_src_graph_id_is_empty(
-    ten_shared_ptr_t *self);
-
 TEN_RUNTIME_PRIVATE_API void ten_msg_set_src_uri_if_empty(
     ten_shared_ptr_t *self, const char *app_uri);
 
