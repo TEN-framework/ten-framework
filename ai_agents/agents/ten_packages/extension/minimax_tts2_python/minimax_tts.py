@@ -20,6 +20,7 @@ EVENT_TTSSentenceStart = 350
 EVENT_TTSSentenceEnd = 351
 EVENT_TTSResponse = 352
 EVENT_TTSTaskFinished = 353
+EVENT_TTSFlush = 354
 
 
 class MinimaxTTSTaskFailedException(Exception):
@@ -42,6 +43,8 @@ class MinimaxTTS2:
         self.vendor = vendor
 
         self.stopping: bool = False
+        self._is_cancelled: bool = False
+        self._connection_is_dirty: bool = False
         self.ws: websockets.ClientConnection | None = None
         self.session_id: str = ""
         self.session_trace_id: str = ""
@@ -61,11 +64,23 @@ class MinimaxTTS2:
         """Stop and cleanup websocket connection"""
         await self.close()
 
+    async def cancel(self):
+        """
+        Cancel the current TTS task by closing the websocket connection.
+        This will trigger a ConnectionClosed exception in the processing loop.
+        """
+        if self.ten_env:
+            self.ten_env.log_debug("Cancelling current TTS task by closing websocket.")
+        self._is_cancelled = True
+        if self.ws:
+            await self.ws.close()
+
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
         """Generate TTS audio for the given text, returns (audio_data, event_status)"""
         if not text or text.strip() == "":
             return
 
+        self._is_cancelled = False
         try:
             # Ensure websocket connection
             if not await self._ensure_connection():
@@ -82,6 +97,13 @@ class MinimaxTTS2:
 
     async def _ensure_connection(self) -> bool:
         """Ensure websocket connection is established"""
+        # If connection is marked as dirty from a previous cancellation, recycle it.
+        if self._connection_is_dirty:
+            if self.ten_env:
+                self.ten_env.log_info("Connection is dirty, recycling.")
+            await self.close()
+            self._connection_is_dirty = False
+
         # If no connection or connection seems closed, reconnect
         if not self.ws:
             try:
@@ -256,14 +278,27 @@ class MinimaxTTS2:
                         self.ten_env.log_warn(f"tts response no audio data, full response: {tts_response}")
                     break  # No more audio data, end this request
 
+                # Check for cancellation signal
+                if self._is_cancelled:
+                    if self.ten_env:
+                        self.ten_env.log_info("Cancellation flag detected, stopping TTS processing.")
+                    break
+
             except websockets.exceptions.ConnectionClosed:
                 if self.ten_env:
-                    self.ten_env.log_warn("Websocket connection closed during TTS processing")
+                    if self._is_cancelled:
+                        self.ten_env.log_info("Websocket connection closed due to cancellation.")
+                        yield None, EVENT_TTSFlush
+                    else:
+                        self.ten_env.log_warn("Websocket connection closed during TTS processing")
                 self.ws = None
                 break
             except websockets.exceptions.ConnectionClosedOK:
                 if self.ten_env:
-                    self.ten_env.log_warn("Websocket connection closed OK during TTS processing")
+                    if self._is_cancelled:
+                        self.ten_env.log_warn("Websocket connection closed OK during TTS processing (cancelled)")
+                    else:
+                        self.ten_env.log_warn("Websocket connection closed OK during TTS processing")
                 self.ws = None
                 break
             except Exception as e:

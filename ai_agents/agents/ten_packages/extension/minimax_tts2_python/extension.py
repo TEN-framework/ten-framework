@@ -17,11 +17,11 @@ from ten_ai_base.message import (
     ModuleType,
     ModuleVendorException,
 )
-from ten_ai_base.struct import TTSTextInput
+from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTS2Config
-from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse
+from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse, EVENT_TTSFlush
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -37,6 +37,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
         self.recorder: PCMWriter | None = None
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
+        self.total_audio_bytes: int = 0
         self.finished_request_ids: set[str] = set()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -61,7 +62,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             message=error_msg,
                             module_name=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=None,
+                            vendor_info={},
                         ),
                     )
                     return
@@ -79,7 +80,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             message=error_msg,
                             module_name=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=None,
+                            vendor_info={},
                         ),
                     )
                     return
@@ -98,7 +99,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             message=error_msg,
                             module_name=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=None,
+                            vendor_info={},
                         ),
                     )
                     return
@@ -114,7 +115,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             message=error_msg,
                             module_name=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=None,
+                            vendor_info={},
                         ),
                     )
                     return
@@ -130,7 +131,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             message=error_msg,
                             module_name=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=None,
+                            vendor_info={},
                         ),
                     )
                     return
@@ -159,9 +160,18 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     message=f"Unexpected error during initialization: {str(e)}",
                     module_name=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
-                    vendor_info=None,
+                    vendor_info={},
                 ),
             )
+
+    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
+        # Get the necessary properties
+        self.ten_env.log_info(f"on_data12345: {data.get_name()}")
+        data_name = data.get_name()
+        ten_env.log_info(f"on_data:{data_name}")
+        if data.get_name() == "tts_flush":
+            await self.client.cancel()
+        await super().on_data(ten_env, data)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Clean up client if exists
@@ -188,6 +198,20 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def _calculate_audio_duration_ms(self) -> int:
+        if self.config is None:
+            return 0
+        bytes_per_sample = 2  # Assuming 16-bit audio
+        channels = 1  # Assuming mono
+        duration_sec = self.total_audio_bytes / (self.config.sample_rate * bytes_per_sample * channels)
+        return int(duration_sec * 1000)
+
+    async def on_flush(self, t: TTSFlush) -> None:
+        if self.client and t.flush_id == self.current_request_id:
+            self.ten_env.log_info(f"Flushing TTS for request ID: {t.flush_id}")
+            await self.client.cancel()
+
+
     async def request_tts(self, t: TTSTextInput) -> None:
         """
         Override this method to handle TTS requests.
@@ -211,6 +235,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
+                self.total_audio_bytes = 0 # Reset for new request
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -252,6 +277,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 if event_status == EVENT_TTSResponse:
                     if audio_chunk is not None and len(audio_chunk) > 0:
                         chunk_count += 1
+                        self.total_audio_bytes += len(audio_chunk)
                         self.ten_env.log_info(f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes")
 
                         # Send TTS audio start on first chunk
@@ -268,8 +294,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                         # Write to dump file if enabled
                         if self.config and self.config.dump and self.recorder:
                             self.ten_env.log_info(f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}")
-                            # asyncio.create_task(self.recorder.write(audio_chunk))
-                            await self.recorder.write(audio_chunk)
+                            asyncio.create_task(self.recorder.write(audio_chunk))
 
                         # Send audio data
                         await self.send_tts_audio_data(audio_chunk)
@@ -280,14 +305,26 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info("Received TTSSentenceEnd event from Minimax TTS")
                     # Send TTS audio end event
                     if self.sent_ts:
+                        duration_ms = self._calculate_audio_duration_ms()
                         request_event_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
                         await self.send_tts_audio_end(
                             self.current_request_id,
                             request_event_interval,
-                            0,  # total_audio_duration will be calculated by framework
+                            duration_ms,
                             self.current_turn_id,
                         )
-                        self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms")
+                        self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms")
+                    break
+                elif event_status == EVENT_TTSFlush:
+                    self.ten_env.log_info("Received TTSFlush event, sending audio end with flush reason.")
+                    duration_ms = self._calculate_audio_duration_ms()
+                    await self.send_tts_audio_end(
+                        self.current_request_id,
+                        duration_ms,
+                        duration_ms,  # Using same for request_event_interval for now
+                        self.current_turn_id
+                    )
+                    self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event due to flush, duration: {duration_ms}ms")
                     break
 
             self.ten_env.log_info(f"TTS processing completed, total chunks: {chunk_count}")
