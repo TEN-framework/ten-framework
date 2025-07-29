@@ -32,11 +32,9 @@ class _Msg:
     def get_source_internal(
         self,
     ) -> tuple[str | None, str | None, str | None]: ...
-    def set_dests(
+    def set_dests_internal(
         self,
-        app_uri: str | None,
-        graph_id: str | None,
-        extension: str | None,
+        locs: list[tuple[str | None, str | None, str | None]],
     ) -> TenError | None: ...
     def set_property_from_json(
         self, path: str | None, json_str: str
