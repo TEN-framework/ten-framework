@@ -171,7 +171,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug(
             f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
         )
-        self._handle_finalize_api()
+        await self._handle_finalize_api()
 
     async def _register_deepgram_event_handlers(self):
         """Register event handlers for Deepgram WebSocket client."""

@@ -1,6 +1,6 @@
 {
   "params": {
-    "api_key": "${env:AZURE_ASR_API_KEY}",
+    "api_key": "${env:DEEPGRAM_API_KEY}",
     "language": "en-US",
     "hotwords": [
         "aaa",
