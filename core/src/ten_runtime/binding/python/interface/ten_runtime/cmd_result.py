@@ -10,9 +10,11 @@ from enum import IntEnum
 from libten_runtime_python import (
     _CmdResult,  # pyright: ignore[reportPrivateUsage]
     _Cmd,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_cmd_result_register_cmd_result_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 from .cmd import Cmd
+from .msg import Msg
 
 T = TypeVar("T", bound="CmdResult")
 
@@ -27,8 +29,10 @@ class StatusCode(IntEnum):
     ERROR = 1
 
 
-class CmdResult(_CmdResult):
-    def __init__(self, status_code: int, target_cmd: _Cmd):
+class CmdResult(_CmdResult, Msg):
+    def __init__(  # pyright: ignore[reportMissingSuperCall]
+        self, status_code: int, target_cmd: _Cmd
+    ):
         raise NotImplementedError("Use CmdResult.create instead.")
 
     @classmethod
@@ -47,3 +51,6 @@ class CmdResult(_CmdResult):
         self, is_final: bool
     ):
         return _CmdResult.set_final(self, is_final)
+
+
+_ten_py_cmd_result_register_cmd_result_type(CmdResult)

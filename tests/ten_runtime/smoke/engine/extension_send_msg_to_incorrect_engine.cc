@@ -27,8 +27,8 @@ class test_extension : public ten::extension_t {
           std::make_shared<std::unique_ptr<ten::cmd_t>>(std::move(cmd));
 
       auto test_cmd = ten::cmd_t::create("test");
-      test_cmd->set_dest("msgpack://127.0.0.1:8001/", "incorrect_graph_id",
-                         "test_extension");
+      test_cmd->set_dests({{"msgpack://127.0.0.1:8001/", "incorrect_graph_id",
+                            "test_extension"}});
       ten_env.send_cmd(
           std::move(test_cmd),
           [cmd_shared](ten::ten_env_t &ten_env,
@@ -106,8 +106,8 @@ TEST(ExtensionTest, ExtensionSendMsgToIncorrectEngine) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension");
+  hello_world_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
 

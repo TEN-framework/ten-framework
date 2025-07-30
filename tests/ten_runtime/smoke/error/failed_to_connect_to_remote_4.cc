@@ -20,7 +20,7 @@ class test_predefined_graph : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
+    start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
         std::move(start_graph_cmd),
@@ -36,7 +36,7 @@ class test_predefined_graph : public ten::extension_t {
     ten_random_sleep_range_ms(0, 100);
 
     auto close_app_cmd = ten::cmd_close_app_t::create();
-    close_app_cmd->set_dest(nullptr, nullptr, nullptr);
+    close_app_cmd->set_dests({{""}});
     ten_env.send_cmd(std::move(close_app_cmd));
   }
 };

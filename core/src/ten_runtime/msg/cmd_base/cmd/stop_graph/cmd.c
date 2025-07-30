@@ -57,17 +57,20 @@ ten_shared_ptr_t *ten_cmd_stop_graph_create(void) {
 
 static const char *ten_raw_cmd_stop_graph_get_graph_id(
     ten_cmd_stop_graph_t *self) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_STOP_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
+      "Should not happen.");
 
   ten_string_t *graph_id = ten_value_peek_string(&self->graph_id);
   return ten_string_get_raw_str(graph_id);
 }
 
 const char *ten_cmd_stop_graph_get_graph_id(ten_shared_ptr_t *self) {
-  TEN_ASSERT(self && ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
              "Should not happen.");
 
   return ten_raw_cmd_stop_graph_get_graph_id(get_raw_cmd(self));
@@ -75,17 +78,21 @@ const char *ten_cmd_stop_graph_get_graph_id(ten_shared_ptr_t *self) {
 
 static bool ten_raw_cmd_stop_graph_set_graph_id(ten_cmd_stop_graph_t *self,
                                                 const char *graph_id) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) &&
-                 ten_raw_msg_get_type((ten_msg_t *)self) ==
-                     TEN_MSG_TYPE_CMD_STOP_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
+      "Should not happen.");
+  TEN_ASSERT(graph_id, "Invalid argument.");
 
   return ten_value_set_string(&self->graph_id, graph_id);
 }
 
 bool ten_cmd_stop_graph_set_graph_id(ten_shared_ptr_t *self,
                                      const char *graph_id) {
-  TEN_ASSERT(self && ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
              "Should not happen.");
 
   return ten_raw_cmd_stop_graph_set_graph_id(get_raw_cmd(self), graph_id);

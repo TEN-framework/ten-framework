@@ -29,7 +29,7 @@ class test_extension : public ten::extension_t {
 
       // Start a timer.
       std::unique_ptr<ten::cmd_timer_t> timer_cmd = ten::cmd_timer_t::create();
-      timer_cmd->set_dest(nullptr, nullptr, nullptr);
+      timer_cmd->set_dests({{"", "", nullptr}});
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
       timer_cmd->set_times(TIMER_TIMES);
@@ -104,8 +104,8 @@ TEST(MsgTest, Msg3) {
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension");
+  hello_world_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");

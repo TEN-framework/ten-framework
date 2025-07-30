@@ -13,8 +13,8 @@ from .addon import Addon
 # Internal APIs from libten_runtime_python - these are private by design and
 # only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
-    _add_extension_addon_to_addon_manager,  # pyright: ignore[reportPrivateUsage] # noqa: E501
-    _register_addon_as_extension,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_addon_manager_add_extension_addon,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_addon_manager_register_addon_as_extension,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 
@@ -93,7 +93,7 @@ def register_addon_as_extension(name: str, base_dir: str | None = None):
             addon_instance = cls()
 
             try:
-                _register_addon_as_extension(
+                _ten_py_addon_manager_register_addon_as_extension(
                     name, resolved_base_dir, addon_instance, register_ctx
                 )
             except Exception as e:
@@ -105,7 +105,7 @@ def register_addon_as_extension(name: str, base_dir: str | None = None):
         )
 
         # Add the addon to the native addon manager.
-        _add_extension_addon_to_addon_manager(name)
+        _ten_py_addon_manager_add_extension_addon(name)
 
         # Return the original class without modification.
         return cls

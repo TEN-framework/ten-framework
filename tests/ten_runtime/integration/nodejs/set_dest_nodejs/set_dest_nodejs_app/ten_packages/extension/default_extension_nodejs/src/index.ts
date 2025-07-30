@@ -70,7 +70,13 @@ class DefaultExtension extends Extension {
     tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
-    testCmd.setDest(undefined, undefined, "simple_echo_cpp");
+    testCmd.setDests([
+      {
+        appUri: "",
+        graphId: "",
+        extensionName: "simple_echo_cpp",
+      },
+    ]);
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== undefined, "result is undefined");
 

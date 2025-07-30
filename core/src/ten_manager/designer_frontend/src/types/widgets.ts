@@ -8,7 +8,7 @@
 import type { editor as MonacoEditor } from "monaco-editor";
 import { z } from "zod";
 import type { EDocLinkKey } from "@/types/doc";
-import type { IListTenCloudStorePackage } from "@/types/extension";
+import type { ETenPackageType } from "@/types/extension";
 import type { TCustomNode } from "@/types/flow";
 import type { EConnectionType, EGraphActions, IGraph } from "@/types/graphs";
 
@@ -228,7 +228,7 @@ export interface IDefaultWidget extends IWidgetBase<IDefaultWidgetData> {
 // 7. Extension Widget
 export interface IExtensionWidgetData {
   name: string;
-  versions: IListTenCloudStorePackage[];
+  type: ETenPackageType;
 }
 
 export interface IExtensionWidget extends IWidgetBase<IExtensionWidgetData> {

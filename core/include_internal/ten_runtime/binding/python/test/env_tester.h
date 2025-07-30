@@ -76,3 +76,7 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_tester_log(PyObject *self,
 
 TEN_RUNTIME_PRIVATE_API bool ten_py_ten_env_tester_check_integrity(
     ten_py_ten_env_tester_t *self);
+
+TEN_RUNTIME_PRIVATE_API PyObject *
+ten_py_ten_env_tester_register_ten_env_tester_type(PyObject *self,
+                                                   PyObject *args);

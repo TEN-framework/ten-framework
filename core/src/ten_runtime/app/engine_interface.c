@@ -31,12 +31,10 @@ static void ten_app_check_termination_when_engine_closed_(void *app_,
 
 static void ten_app_check_termination_when_engine_closed_async(
     ten_app_t *self, ten_engine_t *engine) {
-  TEN_ASSERT(self &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: This function is intended to be called in
-                 // different threads.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is intended to be called in different threads.
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   int rc = ten_runloop_post_task_tail(
       ten_app_get_attached_runloop(self),
@@ -104,7 +102,8 @@ static void ten_app_add_engine(ten_app_t *self, ten_engine_t *engine) {
 ten_engine_t *ten_app_create_engine(ten_app_t *self, ten_shared_ptr_t *cmd) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   TEN_LOGD("[%s] App creates an engine", ten_app_get_uri(self));
 

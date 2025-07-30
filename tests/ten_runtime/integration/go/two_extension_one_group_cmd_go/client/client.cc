@@ -52,7 +52,7 @@ int main(TEN_UNUSED int argc, TEN_UNUSED char **argv) {
 
   TEN_LOGD("Got graph result");
   auto A_cmd = ten::cmd_t::create("A");
-  A_cmd->set_dest("msgpack://127.0.0.1:8007/", nullptr, "A");
+  A_cmd->set_dests({{"msgpack://127.0.0.1:8007/", "", "A"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(A_cmd));
   TEN_ASSERT(TEN_STATUS_CODE_OK == cmd_result->get_status_code(),
              "Should not happen.");

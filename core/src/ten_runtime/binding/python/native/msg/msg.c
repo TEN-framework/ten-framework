@@ -22,6 +22,8 @@
 #include "ten_utils/value/value_is.h"
 #include "ten_utils/value/value_json.h"
 
+static PyTypeObject *ten_py_msg_type = NULL;
+
 bool ten_py_msg_check_integrity(ten_py_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
 
@@ -164,9 +166,9 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
   TEN_ASSERT(py_msg, "Invalid argument.");
   TEN_ASSERT(ten_py_msg_check_integrity(py_msg), "Invalid argument.");
 
-  if (PyTuple_GET_SIZE(args) != 3) {
+  if (PyTuple_GET_SIZE(args) != 1) {
     return ten_py_raise_py_value_error_exception(
-        "Invalid argument count when set_dest.");
+        "Invalid argument count when set_dests_internal.");
   }
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
@@ -175,30 +177,60 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
-  const char *app_uri = NULL;
-  const char *graph_id = NULL;
-  const char *extension_name = NULL;
-  if (!PyArg_ParseTuple(args, "zzz", &app_uri, &graph_id, &extension_name)) {
+  PyObject *dest_list = NULL;
+  if (!PyArg_ParseTuple(args, "O", &dest_list)) {
     return ten_py_raise_py_value_error_exception("Failed to parse arguments.");
+  }
+
+  // Check if the argument is a list
+  if (!PyList_Check(dest_list)) {
+    return ten_py_raise_py_value_error_exception(
+        "Expected a list of destination tuples.");
   }
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_msg_clear_and_set_dest(c_msg, app_uri, graph_id, extension_name,
-                                       &err);
+  // Clear existing destinations
+  ten_msg_clear_dest(c_msg);
 
-  if (!rc) {
-    ten_py_raise_py_value_error_exception(ten_error_message(&err));
+  // Iterate through the list of destination tuples
+  Py_ssize_t list_size = PyList_Size(dest_list);
+  for (Py_ssize_t i = 0; i < list_size; i++) {
+    PyObject *dest_tuple = PyList_GetItem(dest_list, i);
+
+    // Check if each item is a tuple
+    if (!PyTuple_Check(dest_tuple)) {
+      ten_error_deinit(&err);
+      return ten_py_raise_py_value_error_exception(
+          "Expected tuple in destination list.");
+    }
+
+    // Check if tuple has exactly 3 elements
+    if (PyTuple_GET_SIZE(dest_tuple) != 3) {
+      ten_error_deinit(&err);
+      return ten_py_raise_py_value_error_exception(
+          "Each destination tuple must have exactly 3 elements.");
+    }
+
+    const char *app_uri = NULL;
+    const char *graph_id = NULL;
+    const char *extension_name = NULL;
+
+    // Parse the tuple (app_uri, graph_id, extension_name)
+    if (!PyArg_ParseTuple(dest_tuple, "zzz", &app_uri, &graph_id,
+                          &extension_name)) {
+      ten_error_deinit(&err);
+      return ten_py_raise_py_value_error_exception(
+          "Failed to parse destination tuple.");
+    }
+
+    // Add this destination
+    ten_msg_add_dest(c_msg, app_uri, graph_id, extension_name);
   }
 
   ten_error_deinit(&err);
-
-  if (rc) {
-    Py_RETURN_NONE;
-  } else {
-    return NULL;
-  }
+  Py_RETURN_NONE;
 }
 
 PyObject *ten_py_msg_set_property_string(PyObject *self, PyObject *args) {
@@ -789,4 +821,19 @@ bool ten_py_msg_init_for_module(PyObject *module) {
     return false;
   }
   return true;
+}
+
+PyObject *ten_py_msg_register_msg_type(TEN_UNUSED PyObject *self,
+                                       PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_msg_type);
+
+  ten_py_msg_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

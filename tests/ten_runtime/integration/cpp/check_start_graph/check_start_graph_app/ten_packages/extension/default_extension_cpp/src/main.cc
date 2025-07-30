@@ -30,7 +30,7 @@ class test_extension : public ten::extension_t {
     ten::error_t err;
 
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
+    start_graph_cmd->set_dests({{""}});
     bool result = start_graph_cmd->set_graph_from_json(R"({
             "nodes": [
               {
@@ -75,7 +75,7 @@ class test_extension : public ten::extension_t {
       send_invalid_graph(ten_env);
 
       auto start_graph_cmd = ten::cmd_start_graph_t::create();
-      start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
+      start_graph_cmd->set_dests({{""}});
       start_graph_cmd->set_graph_from_json(R"({
             "nodes": [
               {
@@ -94,7 +94,7 @@ class test_extension : public ten::extension_t {
             // The graph check should be passed.
             if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
               auto close_app = ten::cmd_close_app_t::create();
-              close_app->set_dest(nullptr, nullptr, nullptr);
+              close_app->set_dests({{""}});
               env.send_cmd(std::move(close_app));
             } else {
               std::cout << "Failed to start graph: "

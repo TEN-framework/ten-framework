@@ -238,32 +238,32 @@ TEST(ExtensionTest, RespHandlerBasic) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto hello_world_1_cmd = ten::cmd_t::create("hello_world_1");
-  hello_world_1_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                              "test_extension_1");
+  hello_world_1_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_1_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world 1, too");
   auto hello_world_2_cmd = ten::cmd_t::create("hello_world_2");
-  hello_world_2_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                              "test_extension_1");
+  hello_world_2_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_2_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world 2, too");
   auto hello_world_3_cmd = ten::cmd_t::create("hello_world_3");
-  hello_world_3_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                              "test_extension_1");
+  hello_world_3_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_3_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world 3, too");
   auto hello_world_4_cmd = ten::cmd_t::create("hello_world_4");
-  hello_world_4_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                              "test_extension_1");
+  hello_world_4_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_4_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world 4, too");
   auto hello_world_5_cmd = ten::cmd_t::create("hello_world_5");
-  hello_world_5_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                              "test_extension_1");
+  hello_world_5_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_5_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world 5, too");

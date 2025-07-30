@@ -14,10 +14,12 @@
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_utils/macro/mark.h"
 
+static PyTypeObject *ten_py_cmd_result_type = NULL;
+
 static ten_py_cmd_result_t *ten_py_cmd_result_create_internal(
     PyTypeObject *py_type) {
   if (!py_type) {
-    py_type = ten_py_cmd_result_py_type();
+    py_type = ten_py_cmd_result_type;
   }
 
   ten_py_cmd_result_t *py_cmd_result =
@@ -193,8 +195,9 @@ PyObject *ten_py_cmd_result_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_shared_ptr_t *cloned_msg = ten_msg_clone(py_cmd_result->msg.c_msg, NULL);
   TEN_ASSERT(cloned_msg, "Should not happen.");
 
+  PyTypeObject *actual_type = Py_TYPE(self);
   ten_py_cmd_result_t *cloned_py_cmd_result =
-      ten_py_cmd_result_create_internal(NULL);
+      ten_py_cmd_result_create_internal(actual_type);
   cloned_py_cmd_result->msg.c_msg = cloned_msg;
   return (PyObject *)cloned_py_cmd_result;
 }
@@ -217,4 +220,19 @@ bool ten_py_cmd_result_init_for_module(PyObject *module) {
     return false;
   }
   return true;
+}
+
+PyObject *ten_py_cmd_result_register_cmd_result_type(TEN_UNUSED PyObject *self,
+                                                     PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_cmd_result_type);
+
+  ten_py_cmd_result_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

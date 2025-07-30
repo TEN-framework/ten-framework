@@ -67,12 +67,14 @@ export const useWidgetStore = create<{
   // extension store ---
   extSearch: string;
   setExtSearch: (search: string) => void;
+  /** @deprecated */
   extFilter: {
     showUninstalled: boolean;
     showInstalled: boolean;
     sort: "default" | "name" | "name-desc";
     type: string[];
   };
+  /** @deprecated */
   updateExtFilter: (filter: {
     showUninstalled?: boolean;
     showInstalled?: boolean;
@@ -222,12 +224,14 @@ export const useWidgetStore = create<{
     // extension store ---
     extSearch: "",
     setExtSearch: (search: string) => set({ extSearch: search }),
+    /** @deprecated */
     extFilter: {
       showUninstalled: true,
       showInstalled: true,
       sort: "default",
       type: [],
     },
+    /** @deprecated */
     updateExtFilter: (filter: {
       showUninstalled?: boolean;
       showInstalled?: boolean;
