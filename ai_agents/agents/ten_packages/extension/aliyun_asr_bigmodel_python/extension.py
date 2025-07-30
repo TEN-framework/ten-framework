@@ -81,7 +81,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         # Vocabulary service
         self.service = VocabularyService()
 
-
         # Reconnection manager
         self.reconnect_manager: Optional[ReconnectManager] = None
 
@@ -103,13 +102,16 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = AliyunASRBigmodelConfig.model_validate_json(config_json)
+            self.config = AliyunASRBigmodelConfig.model_validate_json(
+                config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
                 f"Aliyun ASR config: {self.config.to_json(sensitive_handling=True)}"
             )
+            # Initialize Dashscope with API key
             dashscope.api_key = self.config.api_key
 
+            # Initialize vocabulary service
             if len(self.config.vocabulary_list) > 0:
                 self.config.vocabulary_id = self.service.create_vocabulary(
                     prefix=self.config.vocabulary_prefix,
@@ -117,7 +119,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                     vocabulary=self.config.vocabulary_list)
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME)
                 self.audio_dumper = Dumper(dump_file_path)
 
         except Exception as e:
@@ -183,7 +186,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             self.ten_env.log_info("Aliyun ASR connection started successfully")
 
         except Exception as e:
-            self.ten_env.log_error(f"Failed to start Aliyun ASR connection: {e}")
+            self.ten_env.log_error(
+                f"Failed to start Aliyun ASR connection: {e}")
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -229,7 +233,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             ),
             ModuleErrorVendorInfo(
                 vendor=self.vendor(),
-                code=str(result.status_code) if hasattr(result, 'status_code') else "unknown",
+                code=str(result.status_code) if hasattr(
+                    result, 'status_code') else "unknown",
                 message=result.message,
             ),
         )
@@ -258,7 +263,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                         last_word = words[-1]
                         if 'end_time' in last_word and last_word['end_time']:
                             end_ms = int(last_word['end_time'])
-                            self.ten_env.log_debug(f"Using last word end_time: {end_ms} as sentence end_time")
+                            self.ten_env.log_debug(
+                                f"Using last word end_time: {end_ms} as sentence end_time")
 
                 duration_ms = end_ms - start_ms if end_ms > start_ms else 0
 
@@ -283,7 +289,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                         language=self.config.normalized_language,
                     )
                 else:
-                    self.ten_env.log_error("Cannot handle ASR result: config is None")
+                    self.ten_env.log_error(
+                        "Cannot handle ASR result: config is None")
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Aliyun ASR result: {e}")
@@ -294,9 +301,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         self.connected = False
 
         if not self.stopped:
-            self.ten_env.log_warn("Aliyun ASR connection closed unexpectedly. Reconnecting...")
+            self.ten_env.log_warn(
+                "Aliyun ASR connection closed unexpectedly. Reconnecting...")
             await self._handle_reconnect()
-
 
     @override
     async def finalize(self, session_id: str | None) -> None:
@@ -304,7 +311,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(f"Aliyun ASR finalize start at {self.last_finalize_timestamp}")
+        self.ten_env.log_debug(
+            f"Aliyun ASR finalize start at {self.last_finalize_timestamp}")
 
         if self.config.finalize_mode == "disconnect":
             await self._handle_finalize_disconnect()
@@ -312,12 +320,12 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             await self._handle_finalize_mute_pkg()
 
     async def _handle_asr_result(
-        self,
-        text: str,
-        final: bool,
-        start_ms: int = 0,
-        duration_ms: int = 0,
-        language: str = "",
+            self,
+            text: str,
+            final: bool,
+            start_ms: int = 0,
+            duration_ms: int = 0,
+            language: str = "",
     ):
         """Process ASR recognition result"""
         assert self.config is not None
@@ -378,10 +386,12 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully")
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}")
 
     async def _finalize_end(self) -> None:
         """Handle finalization end logic"""
@@ -409,7 +419,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 await self.audio_dumper.stop()
 
         except Exception as e:
-            self.ten_env.log_error(f"Error stopping Aliyun ASR connection: {e}")
+            self.ten_env.log_error(
+                f"Error stopping Aliyun ASR connection: {e}")
 
     @override
     def is_connected(self) -> bool:

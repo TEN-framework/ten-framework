@@ -15,20 +15,19 @@ class AliyunASRBigmodelConfig(BaseModel):
     semantic_punctuation_enabled: bool = False
     multi_threshold_mode_enabled: bool = False
     punctuation_prediction_enabled: bool = True
-    inverse_text_normalization_enabled:bool = True
-    heartbeat:bool = False
-    max_sentence_silence:int = 200 #200ms~6000ms，def 800ms。
+    inverse_text_normalization_enabled: bool = True
+    heartbeat: bool = False
+    max_sentence_silence: int = 200  # 200ms~6000ms，def 800ms。
     finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
     vocabulary_id: str = ""
     vocabulary_prefix: str = "prefix"
     vocabulary_target_model: str = "paraformer-realtime-v2"
     vocabulary_list: List[Dict[str, Any]] = []
-    mute_pkg_duration_ms: int = 1000 # must be greater than max_sentence_silence
+    mute_pkg_duration_ms: int = 1000  # must be greater than max_sentence_silence
     dump: bool = False
     dump_path: str = "/tmp"
     advanced_params_json: str = ""
     params: Dict[str, Any] = Field(default_factory=dict)
-
 
     def update(self, params: Dict[str, Any]) -> None:
         """Update configuration with additional parameters."""
