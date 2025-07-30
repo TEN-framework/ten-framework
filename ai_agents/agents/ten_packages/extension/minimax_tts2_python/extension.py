@@ -54,10 +54,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     error_msg = "Configuration is empty. Required parameters: api_key, group_id are missing."
                     self.ten_env.log_error(error_msg)
 
-                    # Generate a temporary request ID for error reporting during initialization
-                    temp_request_id = str(uuid.uuid4())
                     await self.send_tts_error(
-                        temp_request_id,
+                        self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
                             module_name=ModuleType.TTS,
@@ -73,9 +71,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     error_msg = f"Configuration validation failed: {str(validation_error)}"
                     self.ten_env.log_error(error_msg)
 
-                    temp_request_id = str(uuid.uuid4())
                     await self.send_tts_error(
-                        temp_request_id,
+                        self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
                             module_name=ModuleType.TTS,
@@ -92,9 +89,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     error_msg = f"Environment variable not resolved: {self.config.api_key}. Please set the MINIMAX_TTS_API_KEY environment variable."
                     self.ten_env.log_error(error_msg)
 
-                    temp_request_id = str(uuid.uuid4())
                     await self.send_tts_error(
-                        temp_request_id,
+                        self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
                             module_name=ModuleType.TTS,
@@ -108,9 +104,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     error_msg = "Required parameter 'api_key' is missing or empty."
                     self.ten_env.log_error(error_msg)
 
-                    temp_request_id = str(uuid.uuid4())
                     await self.send_tts_error(
-                        temp_request_id,
+                        self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
                             module_name=ModuleType.TTS,
@@ -124,9 +119,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     error_msg = "Required parameter 'group_id' is missing or empty."
                     self.ten_env.log_error(error_msg)
 
-                    temp_request_id = str(uuid.uuid4())
                     await self.send_tts_error(
-                        temp_request_id,
+                        self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
                             module_name=ModuleType.TTS,
@@ -153,9 +147,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
 
             # Send FATAL ERROR for unexpected exceptions during initialization
-            temp_request_id = str(uuid.uuid4())
             await self.send_tts_error(
-                temp_request_id,
+                self.current_request_id or "",
                 ModuleError(
                     message=f"Unexpected error during initialization: {str(e)}",
                     module_name=ModuleType.TTS,
