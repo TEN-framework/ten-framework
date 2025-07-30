@@ -141,9 +141,10 @@ export const makeAPIRequest = async <T extends ENDPOINT_METHOD, R = unknown>(
     query?: Record<string, string | undefined>;
     pathParams?: Record<string, string>;
     body?: Record<string, unknown>;
-  }
+  },
+  fetchOpts?: RequestInit
 ): Promise<R> => {
-  const req = parseReq(reqTemplate, opts);
+  const req = parseReq(reqTemplate, opts, fetchOpts);
   const res = await req;
   if (!res.ok) {
     await parseResponseError(res);
