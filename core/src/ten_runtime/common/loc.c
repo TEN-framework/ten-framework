@@ -393,15 +393,19 @@ void ten_loc_init_from_value(ten_loc_t *self, ten_value_t *value) {
 bool ten_loc_str_check_correct(const char *app_uri, const char *graph_id,
                                const char *extension_name, ten_error_t *err) {
   if (!app_uri) {
-    ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
-                  "App URI cannot be empty.");
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "App URI cannot be empty.");
+    }
     return false;
   } else {
     if (extension_name) {
       if (!graph_id) {
-        ten_error_set(
-            err, TEN_ERROR_CODE_INVALID_ARGUMENT,
-            "Graph ID cannot be empty when extension name is provided.");
+        if (err) {
+          ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                        "Graph ID cannot be empty when extension name is "
+                        "provided.");
+        }
         return false;
       }
     }
