@@ -31,11 +31,23 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to create data.")
 	}
 
-	newData.SetDests(ten.Loc{
+	error = newData.SetDests(ten.Loc{
+		AppURI:        nil,
+		GraphID:       ten.Ptr(""),
+		ExtensionName: ten.Ptr("simple_echo_cpp"),
+	})
+	if error == nil {
+		panic("Should fail.")
+	}
+
+	error = newData.SetDests(ten.Loc{
 		AppURI:        ten.Ptr(""),
 		GraphID:       ten.Ptr(""),
 		ExtensionName: ten.Ptr("simple_echo_cpp"),
 	})
+	if error != nil {
+		panic("Failed to set dests.")
+	}
 
 	testBytes := []byte("hello world")
 
