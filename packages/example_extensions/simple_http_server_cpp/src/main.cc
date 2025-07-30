@@ -605,7 +605,7 @@ void send_ten_msg_with_req_body(
               cmd = ten::cmd_close_app_t::create();
 
               // Set the destination of the command to the localhost.
-              cmd->set_dests({{"", nullptr, nullptr}});
+              cmd->set_dests({{""}});
             } else {
               assert(0 && "Handle more internal command types.");
             }

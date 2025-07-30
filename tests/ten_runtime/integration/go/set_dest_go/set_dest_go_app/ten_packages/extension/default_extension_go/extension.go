@@ -33,9 +33,9 @@ func (ext *defaultExtension) OnCmd(
 
 	newData.SetDests([]ten.Loc{
 		{
-			AppURI:        ten.StringPtr(""),
-			GraphID:       ten.StringPtr(""),
-			ExtensionName: ten.StringPtr("simple_echo_cpp"),
+			AppURI:        ten.Ptr(""),
+			GraphID:       ten.Ptr(""),
+			ExtensionName: ten.Ptr("simple_echo_cpp"),
 		},
 	})
 
@@ -67,9 +67,9 @@ func (ext *defaultExtension) OnCmd(
 
 	data2.SetDests([]ten.Loc{
 		{
-			AppURI:        ten.StringPtr(""),
-			GraphID:       ten.StringPtr(""),
-			ExtensionName: ten.StringPtr("default_extension_go2"),
+			AppURI:        ten.Ptr(""),
+			GraphID:       ten.Ptr(""),
+			ExtensionName: ten.Ptr("default_extension_go2"),
 		},
 	})
 

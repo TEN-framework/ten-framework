@@ -7,7 +7,7 @@
 
 package ten_runtime
 
-// StringPtr returns a pointer to the string.
-func StringPtr(s string) *string {
-	return &s
+// Ptr returns a pointer to the value.
+func Ptr[T any](v T) *T {
+	return &v
 }
