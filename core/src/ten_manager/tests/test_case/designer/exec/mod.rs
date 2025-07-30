@@ -64,7 +64,7 @@ async fn test_exec_endpoint_command_execution() {
     // We use 'echo' command because it's simple and available on all systems
     let exec_cmd_msg = InboundMsg::ExecCmd {
         base_dir: "/tmp".to_string(), // Working directory
-        cmd: "echo 'Hello from exec test'".to_string(), // Command to execute
+        cmd: "echo Hello from exec test".to_string(), // Command to execute
         stdout_is_log: false,         // Standard output not treated as log
         stderr_is_log: false,         // Error output not treated as log
     };
@@ -77,12 +77,11 @@ async fn test_exec_endpoint_command_execution() {
     write.send(Message::Text(json_msg)).await.unwrap();
 
     // Collect server responses
-    let mut message_count = 0;
     let mut received_output = false;
     let mut received_exit = false;
+    let mut message_count = 0;
+    let max_wait = 20; // Maximum number of messages to wait for
 
-    // Read response messages until connection closes or reasonable message
-    // limit is reached
     while let Some(msg_result) = read.next().await {
         match msg_result {
             Ok(Message::Text(text)) => {
@@ -112,7 +111,7 @@ async fn test_exec_endpoint_command_execution() {
                 }
 
                 // Prevent infinite loop, set reasonable message count limit
-                if message_count >= 10 {
+                if message_count >= max_wait {
                     break;
                 }
             }
@@ -127,6 +126,8 @@ async fn test_exec_endpoint_command_execution() {
                 panic!("❌ WebSocket error: {e}");
             }
         }
+        // Add a small delay to ensure all async messages are received
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
 
     // Verify we received at least one message
