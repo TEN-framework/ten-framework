@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "include_internal/ten_runtime/common/constant_str.h"
+#include "ten_runtime/common/error_code.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/container/list_ptr.h"
 #include "ten_utils/lib/alloc.h"
@@ -389,4 +390,23 @@ void ten_loc_init_from_value(ten_loc_t *self, ten_value_t *value) {
 
   ten_loc_init_empty(self);
   ten_loc_set_from_value(self, value);
+}
+
+bool ten_loc_str_check_correct(const char *app_uri, const char *graph_id,
+                               const char *extension_name, ten_error_t *err) {
+  if (!app_uri) {
+    ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                  "App URI cannot be empty.");
+    return false;
+  } else {
+    if (extension_name) {
+      if (!graph_id) {
+        ten_error_set(
+            err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+            "Graph ID cannot be empty when extension name is provided.");
+        return false;
+      }
+    }
+  }
+  return true;
 }
