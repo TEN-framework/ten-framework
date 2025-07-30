@@ -300,9 +300,6 @@ static bool ten_loc_set_value(ten_loc_t *self, ten_value_t *value) {
   }
 
   if (self->has_extension_name) {
-    TEN_ASSERT(!ten_string_is_empty(&self->extension_name),
-               "Should not happen.");
-
     ten_list_push_ptr_back(
         &loc_fields,
         ten_value_kv_create(TEN_STR_EXTENSION,
