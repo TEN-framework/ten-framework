@@ -1,5 +1,6 @@
 import {
   BlocksIcon,
+  BrushCleaningIcon,
   CheckLineIcon,
   DownloadIcon,
   GitBranchIcon,
@@ -11,11 +12,20 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { useFetchAddons } from "@/api/services/addons";
+import { postReloadApps, useFetchApps } from "@/api/services/apps";
 import { useSearchTenCloudStorePackages } from "@/api/services/extension";
 import { extractLocaleContentFromPkg } from "@/api/services/utils";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { SpinnerLoading } from "@/components/status/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -27,24 +37,36 @@ import {
 } from "@/components/ui/select";
 // eslint-disable-next-line max-len
 import { extensionListItemVariants } from "@/components/widget/extension-widget/common";
+import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
+import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
 import { cn, compareVersions } from "@/lib/utils";
+import { useWidgetStore } from "@/store";
+import type { IApp } from "@/types/apps";
 import {
   type ETenPackageType,
   type IListTenCloudStorePackage,
   TenPackageTypeMappings,
 } from "@/types/extension";
+import {
+  ELogViewerScriptType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 
 // Header Component
 const ExtensionHeader: React.FC<{
   selectedPackage: IListTenCloudStorePackage;
   allPackages: IListTenCloudStorePackage[];
   isInstalled: boolean;
+  apps?: IApp[];
   onVersionChange: (versionHash: string) => void;
-  onAction: () => void;
+  onAction: (app: IApp) => void;
 }> = ({
   selectedPackage,
   allPackages,
   isInstalled,
+  apps = [],
   onVersionChange,
   onAction,
 }) => {
@@ -161,22 +183,42 @@ const ExtensionHeader: React.FC<{
             <h3 className="mb-2 font-medium text-foreground text-xs opacity-0">
               Action
             </h3>
-            <Button
-              variant={isInstalled ? "outline" : "default"}
-              onClick={onAction}
-            >
-              {isInstalled ? (
-                <>
-                  <CheckLineIcon />
-                  <span className="">{t("extensionStore.installed")}</span>
-                </>
-              ) : (
-                <>
-                  <DownloadIcon />
-                  <span className="">{t("extensionStore.install")}</span>
-                </>
-              )}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  disabled={isInstalled || (apps && apps.length === 0)}
+                  variant={isInstalled ? "outline" : "default"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  {isInstalled ? (
+                    <>
+                      <CheckLineIcon />
+                      <span className="">{t("extensionStore.installed")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <DownloadIcon />
+                      <span className="">{t("extensionStore.install")}</span>
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-fit" align="start">
+                <DropdownMenuGroup>
+                  {apps?.map((app) => (
+                    <DropdownMenuItem
+                      key={`ext-details-app-${app.base_dir}`}
+                      onClick={() => onAction(app)}
+                    >
+                      {app.base_dir}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -400,9 +442,20 @@ export const ExtensionDetails = (props: {
         "downloadUrl,type,description,supports,readme",
     },
   });
+  const {
+    data: addons,
+    isLoading: isAddonsLoading,
+    mutate: mutateAddons,
+  } = useFetchAddons({});
+  const {
+    data: apps,
+    isLoading: isAppsLoading,
+    // mutate: mutateApps,
+  } = useFetchApps();
+  const { t, i18n } = useTranslation();
 
-  const { data: addons } = useFetchAddons({});
-  const { i18n } = useTranslation();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
 
   const [latestPackage, allPackages] = React.useMemo(() => {
     const rawPackages = searchedData?.packages || [];
@@ -414,6 +467,9 @@ export const ExtensionDetails = (props: {
     }
     return [sortedPackages[0], sortedPackages];
   }, [searchedData]);
+  const isLoading = React.useMemo(() => {
+    return isSearchedDataLoading || isAddonsLoading || isAppsLoading;
+  }, [isSearchedDataLoading, isAddonsLoading, isAppsLoading]);
 
   React.useEffect(() => {
     if (selectedPackage) {
@@ -444,17 +500,62 @@ export const ExtensionDetails = (props: {
     return addons.some((addon) => addon.name === name);
   }, [addons, name]);
 
-  const handleAction = () => {
-    if (isInstalled) {
-      // Handle manage action
-      console.log("Manage extension:", name);
-    } else {
-      // Handle install action
-      console.log("Install extension:", name);
+  const handleInstall = (targetApp: IApp) => {
+    if (!selectedPackage) {
+      return;
     }
+    const widgetId = `ext-install-${selectedPackage.hash}`;
+    appendWidget({
+      container_id: CONTAINER_DEFAULT_ID,
+      group_id: GROUP_LOG_VIEWER_ID,
+      widget_id: widgetId,
+
+      category: EWidgetCategory.LogViewer,
+      display_type: EWidgetDisplayType.Popup,
+
+      title: <LogViewerPopupTitle />,
+      metadata: {
+        wsUrl: getWSEndpointFromWindow() + TEN_PATH_WS_BUILTIN_FUNCTION,
+        scriptType: ELogViewerScriptType.INSTALL,
+        script: {
+          type: ELogViewerScriptType.INSTALL,
+          base_dir: targetApp.base_dir,
+          pkg_type: selectedPackage.type,
+          pkg_name: selectedPackage.name,
+          pkg_version: selectedPackage.version,
+        },
+        options: {
+          disableSearch: true,
+          title: t("popup.logViewer.appInstall"),
+        },
+        postActions: async () => {
+          await mutateAddons();
+          await postReloadApps(targetApp.base_dir);
+        },
+      },
+      popup: {
+        width: 0.5,
+        height: 0.8,
+      },
+      actions: {
+        onClose: () => {
+          removeBackstageWidget(widgetId);
+        },
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(widgetId);
+            },
+          },
+        ],
+      },
+    });
   };
 
-  if (isSearchedDataLoading) {
+  if (isLoading) {
     return <ExtensionDetailsLoading className={className} />;
   }
 
@@ -476,9 +577,10 @@ export const ExtensionDetails = (props: {
       <ExtensionHeader
         selectedPackage={selectedPackage}
         allPackages={allPackages}
+        apps={apps?.app_info}
         isInstalled={isInstalled}
         onVersionChange={handleVersionChange}
-        onAction={handleAction}
+        onAction={handleInstall}
       />
 
       <div className="flex-1 overflow-y-auto p-6">

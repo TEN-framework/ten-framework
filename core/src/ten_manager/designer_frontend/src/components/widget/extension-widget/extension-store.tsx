@@ -432,9 +432,9 @@ const ExtensionItem = (props: {
             disableSearch: true,
             title: t("popup.logViewer.appInstall"),
           },
-          postActions: () => {
-            mutateAddons();
-            postReloadApps(baseDir);
+          postActions: async () => {
+            await mutateAddons();
+            await postReloadApps(baseDir);
           },
         },
         popup: {
