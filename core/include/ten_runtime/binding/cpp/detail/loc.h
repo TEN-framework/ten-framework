@@ -22,7 +22,8 @@ struct loc_t {
         const optional<std::string> &extension_name)
       : app_uri(app_uri), graph_id(graph_id), extension_name(extension_name) {}
 
-  loc_t(const char *app_uri, const char *graph_id = nullptr,
+  // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
+  loc_t(const char *app_uri = nullptr, const char *graph_id = nullptr,
         const char *extension_name = nullptr)
       : app_uri((app_uri != nullptr) ? optional<std::string>(app_uri)
                                      : nullptr),
