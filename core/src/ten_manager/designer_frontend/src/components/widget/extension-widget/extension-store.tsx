@@ -9,6 +9,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BlocksIcon,
+  BrushCleaningIcon,
   CheckLineIcon,
   ChromeIcon,
   DownloadIcon,
@@ -19,18 +20,29 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
+import AutoSizer from "react-virtualized-auto-sizer";
+import { FixedSizeList as VirtualList } from "react-window";
 import { toast } from "sonner";
 import type z from "zod";
 import { useFetchAddons } from "@/api/services/addons";
+import { postReloadApps, useFetchApps } from "@/api/services/apps";
 import { useEnv } from "@/api/services/common";
 import {
   useListTenCloudStorePackages,
   useSearchTenCloudStorePackages,
 } from "@/api/services/extension";
 import { extractLocaleContentFromPkg } from "@/api/services/utils";
+import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { SpinnerLoading } from "@/components/status/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -39,8 +51,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn, compareVersions } from "@/lib/utils";
+import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
+import { getWSEndpointFromWindow } from "@/constants/utils";
+import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
+import { calcAbbreviatedBaseDir, cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
+import type { IApp, IExtensionAddon } from "@/types/apps";
 import {
   EPackageSource,
   ETenPackageType,
@@ -51,7 +67,11 @@ import {
   type TenPackageQueryFilterSchema,
   TenPackageTypeMappings,
 } from "@/types/extension";
-import { ExtensionDetails } from "./extension-details";
+import {
+  ELogViewerScriptType,
+  EWidgetCategory,
+  EWidgetDisplayType,
+} from "@/types/widgets";
 
 export const ExtensionStoreWidget = (props: {
   className?: string;
@@ -105,32 +125,53 @@ export const ExtensionStoreWidget = (props: {
     error: addonError,
     isLoading: isFetchingAddons,
   } = useFetchAddons({});
+  const {
+    data: apps,
+    error: appsError,
+    isLoading: isLoadingApps,
+  } = useFetchApps();
 
   console.log({ isFetchingAddons, isLoadingEnv, isSearchedDataLoading });
 
   const isLoading = React.useMemo(() => {
-    return isSearchedDataLoading || isLoadingEnv || isFetchingAddons;
-  }, [isFetchingAddons, isLoadingEnv, isSearchedDataLoading]);
-  const displayItems = React.useMemo(() => {
-    const latestUniqueItems = new Map<string, IListTenCloudStorePackage>();
+    return (
+      isSearchedDataLoading || isLoadingEnv || isFetchingAddons || isLoadingApps
+    );
+  }, [isFetchingAddons, isLoadingEnv, isSearchedDataLoading, isLoadingApps]);
+  const latestUniqueItems = React.useMemo(() => {
+    const latestUniqueItemsMap = new Map<string, IListTenCloudStorePackage>();
     searchedData?.packages.forEach((pkg) => {
-      const existing = latestUniqueItems.get(pkg.name);
+      const existing = latestUniqueItemsMap.get(pkg.name);
       if (!existing || compareVersions(pkg.version, existing.version) > 0) {
-        latestUniqueItems.set(pkg.name, pkg);
+        latestUniqueItemsMap.set(pkg.name, pkg);
       }
     });
-    return Array.from(latestUniqueItems.values());
+    return Array.from(latestUniqueItemsMap.values());
   }, [searchedData?.packages]);
-
-  const typeCounts: Record<ETenPackageType, number> = React.useMemo(() => {
-    return {
-      [ETenPackageType.Extension]: 0,
-      [ETenPackageType.App]: 0,
-      [ETenPackageType.AddonLoader]: 0,
-      [ETenPackageType.System]: 0,
-      [ETenPackageType.Protocol]: 0,
-    };
-  }, []);
+  const typeCounts: Record<ETenPackageType, IListTenCloudStorePackage[]> =
+    React.useMemo(() => {
+      return latestUniqueItems.reduce(
+        (acc, item) => {
+          const type =
+            (item.type as ETenPackageType) || ETenPackageType.Extension;
+          acc[type].push(item);
+          return acc;
+        },
+        {
+          [ETenPackageType.Extension]: [],
+          [ETenPackageType.App]: [],
+          [ETenPackageType.AddonLoader]: [],
+          [ETenPackageType.System]: [],
+          [ETenPackageType.Protocol]: [],
+        } as Record<ETenPackageType, IListTenCloudStorePackage[]>
+      );
+    }, [latestUniqueItems]);
+  const displayedItems = React.useMemo(() => {
+    if (selectedType === "all") {
+      return latestUniqueItems;
+    }
+    return typeCounts[selectedType as ETenPackageType] || [];
+  }, [latestUniqueItems, typeCounts, selectedType]);
 
   React.useEffect(() => {
     if (searchedDataError) {
@@ -155,7 +196,14 @@ export const ExtensionStoreWidget = (props: {
         })
       );
     }
-  }, [addonError, envError, searchedDataError, t]);
+    if (appsError) {
+      toast.error(
+        t("extensionStore.appsError", {
+          defaultValue: appsError?.message || "Failed to fetch apps",
+        })
+      );
+    }
+  }, [addonError, envError, searchedDataError, t, appsError]);
 
   React.useEffect(() => {
     if (envData?.os && envData?.arch) {
@@ -213,12 +261,12 @@ export const ExtensionStoreWidget = (props: {
               <TabsList className="grid h-8 w-full grid-cols-6">
                 <TabsTrigger value={"all"} className="px-2 text-xs">
                   {t("extensionStore.packageType.all")} (
-                  {Object.values(typeCounts).reduce((a, b) => a + b, 0)})
+                  {Object.values(typeCounts).reduce((a, b) => a + b.length, 0)})
                 </TabsTrigger>
                 {Object.entries(TenPackageTypeMappings).map(([key, value]) => (
                   <TabsTrigger key={key} value={key} className="px-1 text-xs">
                     <value.icon className="size-3" />
-                    {typeCounts[key as ETenPackageType]}
+                    {typeCounts[key as ETenPackageType].length}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -227,7 +275,7 @@ export const ExtensionStoreWidget = (props: {
         )}
       </AnimatePresence>
 
-      <div className="my-auto">
+      <div className="h-full flex-1">
         <AnimatePresence mode="popLayout">
           {isLoading && (
             <div
@@ -239,21 +287,30 @@ export const ExtensionStoreWidget = (props: {
               <SpinnerLoading />
             </div>
           )}
-          <div className="flex flex-col gap-2 py-2">
-            {displayItems.map((item) => (
-              <ExtensionItem
-                key={item.hash}
-                item={{
-                  ...item,
-                  _type: EPackageSource.Default,
-
-                  isInstalled: addons.some((addon) => addon.name === item.name),
-                }}
-                variant={item.type}
-              />
-            ))}
+          <div className="flex h-full flex-col gap-2 py-2">
+            {!isLoading && (
+              <AutoSizer>
+                {({ width, height }: { width: number; height: number }) => (
+                  <VirtualList
+                    width={width}
+                    height={height}
+                    itemCount={displayedItems.length}
+                    itemSize={96}
+                  >
+                    {(virtualProps) => (
+                      <VirtualListItem
+                        {...virtualProps}
+                        items={displayedItems}
+                        apps={apps?.app_info || []}
+                        addons={addons || []}
+                      />
+                    )}
+                  </VirtualList>
+                )}
+              </AutoSizer>
+            )}
           </div>
-          {!isLoading && displayItems.length === 0 && (
+          {!isLoading && latestUniqueItems.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -315,13 +372,26 @@ const extensionListItemVariants = cva("", {
 });
 
 const ExtensionItem = (props: {
+  style?: React.CSSProperties;
   item: ITenPackage | ITenPackageLocal;
   variant?: ETenPackageType;
   className?: string;
+  apps?: IApp[];
 }) => {
-  const { item, variant = ETenPackageType.Extension, className } = props;
+  const {
+    style,
+    item,
+    variant = ETenPackageType.Extension,
+    className,
+    apps: loadedApps,
+  } = props;
 
   const { t, i18n } = useTranslation();
+  const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
+    useWidgetStore();
+
+  const { mutate: mutateAddons } = useFetchAddons({});
+
   const isInstalled = item.isInstalled;
 
   const Icon = React.useMemo(() => {
@@ -353,6 +423,65 @@ const ExtensionItem = (props: {
     return (item as ITenPackage).tags || [];
   }, [item]);
 
+  const handleInstall =
+    (baseDir: string, item: IListTenCloudStorePackage) =>
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!baseDir || !item) {
+        return;
+      }
+      const widgetId = `ext-install-${item.hash}`;
+      appendWidget({
+        container_id: CONTAINER_DEFAULT_ID,
+        group_id: GROUP_LOG_VIEWER_ID,
+        widget_id: widgetId,
+
+        category: EWidgetCategory.LogViewer,
+        display_type: EWidgetDisplayType.Popup,
+
+        title: <LogViewerPopupTitle />,
+        metadata: {
+          wsUrl: getWSEndpointFromWindow() + TEN_PATH_WS_BUILTIN_FUNCTION,
+          scriptType: ELogViewerScriptType.INSTALL,
+          script: {
+            type: ELogViewerScriptType.INSTALL,
+            base_dir: baseDir,
+            pkg_type: item.type,
+            pkg_name: item.name,
+            pkg_version: item.version,
+          },
+          options: {
+            disableSearch: true,
+            title: t("popup.logViewer.appInstall"),
+          },
+          postActions: () => {
+            mutateAddons();
+            postReloadApps(baseDir);
+          },
+        },
+        popup: {
+          width: 0.5,
+          height: 0.8,
+        },
+        actions: {
+          onClose: () => {
+            removeBackstageWidget(widgetId);
+          },
+          custom_actions: [
+            {
+              id: "app-start-log-clean",
+              label: t("popup.logViewer.cleanLogs"),
+              Icon: BrushCleaningIcon,
+              onClick: () => {
+                removeLogViewerHistory(widgetId);
+              },
+            },
+          ],
+        },
+      });
+    };
+
   return (
     <motion.div
       layout
@@ -360,14 +489,17 @@ const ExtensionItem = (props: {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
-      className={cn(
-        "h-24 cursor-pointer rounded-lg p-3 transition-[colors,box-shadow]",
-        "inset-shadow-xs shadow-xs hover:shadow-md hover:ring-1",
-        extensionListItemVariants({ text: variant }),
-        className
-      )}
+      className={cn("h-24 w-full px-0.5 py-1", className)}
+      style={style}
     >
-      <div className="flex h-full items-start gap-3">
+      <div
+        className={cn(
+          "flex h-full items-start gap-3 p-3",
+          "cursor-pointer rounded-lg transition-[colors,box-shadow]",
+          "inset-shadow-xs shadow-xs hover:shadow-md hover:ring-1",
+          extensionListItemVariants({ text: variant })
+        )}
+      >
         {/* Content */}
         <div className="flex h-full min-w-0 flex-1 flex-col justify-between">
           <div className="mb-1 flex items-center gap-2">
@@ -429,31 +561,100 @@ const ExtensionItem = (props: {
             </div>
           )}
           {item._type === EPackageSource.Default && (
-            <Button
-              size="xs"
-              disabled={isInstalled}
-              variant={isInstalled ? "outline" : "default"}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              {isInstalled ? (
-                <>
-                  <CheckLineIcon />
-                  <span className="sr-only">
-                    {t("extensionStore.installed")}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <DownloadIcon />
-                  <span className="sr-only">{t("extensionStore.install")}</span>
-                </>
-              )}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="xs"
+                  disabled={
+                    isInstalled || (loadedApps && loadedApps.length === 0)
+                  }
+                  variant={isInstalled ? "outline" : "default"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  {isInstalled ? (
+                    <>
+                      <CheckLineIcon />
+                      <span className="sr-only">
+                        {t("extensionStore.installed")}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <DownloadIcon />
+                      <span className="sr-only">
+                        {t("extensionStore.install")}
+                      </span>
+                    </>
+                  )}
+                </Button>
+                {/* <Button
+                  variant="outline"
+                  size="xs"
+                  className={cn(
+                    "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
+                    "shadow-none"
+                  )}
+                  disabled={
+                    readOnly ||
+                    !loadedApps?.app_info ||
+                    loadedApps?.app_info?.length === 0
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  {t("extensionStore.install")}
+                </Button> */}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-fit" align="start">
+                <DropdownMenuGroup>
+                  {loadedApps?.map((app) => (
+                    <DropdownMenuItem
+                      key={`ext-details-app-${app.base_dir}`}
+                      onClick={handleInstall(
+                        app.base_dir,
+                        item as IListTenCloudStorePackage
+                      )}
+                    >
+                      {calcAbbreviatedBaseDir(app.base_dir)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
     </motion.div>
+  );
+};
+
+const VirtualListItem = (props: {
+  index: number;
+  style: React.CSSProperties;
+  items: IListTenCloudStorePackage[];
+  apps?: IApp[];
+  addons?: IExtensionAddon[];
+  variant?: ETenPackageType;
+}) => {
+  const { items, apps, addons } = props;
+
+  const item = items[props.index];
+
+  return (
+    <ExtensionItem
+      style={props.style}
+      apps={apps}
+      item={{
+        ...item,
+        _type: EPackageSource.Default,
+        isInstalled: addons?.some((addon) => addon.name === item.name),
+      }}
+      variant={item.type}
+    />
   );
 };

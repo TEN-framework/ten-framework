@@ -109,10 +109,6 @@ export const useSearchTenCloudStorePackages = (payload?: {
     filter,
     options,
   ];
-  queryClient.cancelQueries({
-    queryKey: ["searchRegistryPackages", ENDPOINT_METHOD.POST],
-    exact: false,
-  });
   const { isLoading, data, error } = useQuery({
     queryKey,
     queryFn: ({ signal }) =>
