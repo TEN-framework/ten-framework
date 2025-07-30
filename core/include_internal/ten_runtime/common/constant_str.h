@@ -25,6 +25,7 @@
 #define TEN_STR_DEST "dest"
 #define TEN_STR_EXTENSION_GROUP "extension_group"
 #define TEN_STR_EXTENSION "extension"
+#define TEN_STR_LOC_EMPTY "<empty>"
 
 // Result command relevant fields.
 #define TEN_STR_STATUS_CODE "status_code"

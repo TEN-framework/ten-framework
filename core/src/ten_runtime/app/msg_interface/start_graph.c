@@ -36,7 +36,8 @@ static bool ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
     ten_app_t *self, ten_shared_ptr_t *cmd, ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   ten_string_t *predefined_graph_name =
       ten_cmd_start_graph_get_predefined_graph_name(cmd);

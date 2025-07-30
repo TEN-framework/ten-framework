@@ -316,7 +316,8 @@ static ten_listnode_t *ten_path_table_find_path_from_cmd(
     ten_path_table_t *self, TEN_PATH_TYPE path_type, ten_shared_ptr_t *cmd) {
   TEN_ASSERT(self && ten_path_table_check_integrity(self, true),
              "Should not happen.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   ten_listnode_t *path_node = ten_path_table_find_path_from_cmd_id(
       self, path_type, ten_cmd_base_get_cmd_id(cmd));
@@ -331,7 +332,8 @@ static ten_listnode_t *ten_path_table_find_out_path(ten_path_table_t *self,
                                                     ten_shared_ptr_t *cmd) {
   TEN_ASSERT(self && ten_path_table_check_integrity(self, true),
              "Should not happen.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   ten_listnode_t *path_node =
       ten_path_table_find_path_from_cmd(self, TEN_PATH_OUT, cmd);

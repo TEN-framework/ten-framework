@@ -407,7 +407,7 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
              app);
 
   if (!ten_string_is_equal_c_str(&dest_loc->app_uri, ten_app_get_uri(app))) {
-    TEN_ASSERT(!ten_string_is_empty(&dest_loc->app_uri),
+    TEN_ASSERT(dest_loc->has_app_uri,
                "The uri of the app should not be empty.");
 
     // The message is _not_ for the current TEN app, so route the message to the
@@ -449,19 +449,17 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
                               iter) {
               ten_extension_thread_t *extension_thread =
                   ten_ptr_listnode_get(iter.node);
+              TEN_ASSERT(extension_thread, "Should not happen.");
+              // TEN_NOLINTNEXTLINE(thread-check)
+              // thread-check: We are in the engine thread, _not_ in the
+              // extension thread. However, before the engine is closed, the
+              // pointer of the extension group and the pointer of the extension
+              // thread will not be changed, and the closing of the entire
+              // engine must start from the engine, so the execution to this
+              // position means that the engine has not been closed, so there
+              // will be no thread safety issue.
               TEN_ASSERT(
-                  extension_thread &&
-                      // TEN_NOLINTNEXTLINE(thread-check)
-                      // thread-check: We are in the engine thread, _not_ in the
-                      // extension thread. However, before the engine is closed,
-                      // the pointer of the extension group and the pointer of
-                      // the extension thread will not be changed, and the
-                      // closing of the entire engine must start from the
-                      // engine, so the execution to this position means that
-                      // the engine has not been closed, so there will be no
-                      // thread safety issue.
-                      ten_extension_thread_check_integrity(extension_thread,
-                                                           false),
+                  ten_extension_thread_check_integrity(extension_thread, false),
                   "Should not happen.");
 
               ten_extension_group_t *extension_group =
@@ -480,10 +478,6 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
           }
 
           if (!found) {
-            // ten_msg_dump(msg, NULL,
-            //              "Failed to find the destination extension thread for
-            //              " "the message ^m");
-
             if (ten_msg_is_cmd(msg)) {
               ten_shared_ptr_t *cmd_result =
                   ten_engine_create_cmd_result_for_invalid_dest(msg);
@@ -515,7 +509,8 @@ void ten_engine_create_cmd_result_and_dispatch(ten_engine_t *self,
                                                const char *detail) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Invalid argument.");
-  TEN_ASSERT(origin_cmd && ten_msg_is_cmd(origin_cmd), "Invalid argument.");
+  TEN_ASSERT(origin_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_is_cmd(origin_cmd), "Invalid argument.");
 
   ten_shared_ptr_t *cmd_result =
       ten_cmd_result_create_from_cmd(status_code, origin_cmd);

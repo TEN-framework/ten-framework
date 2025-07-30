@@ -188,7 +188,8 @@ static void ten_stream_on_data(ten_stream_t *stream, void *data, int size) {
 
 static void ten_protocol_integrated_send_buf(ten_protocol_integrated_t *self,
                                              ten_buf_t buf) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
 
   TEN_UNUSED int rc =
@@ -198,7 +199,8 @@ static void ten_protocol_integrated_send_buf(ten_protocol_integrated_t *self,
 }
 
 static void ten_protocol_integrated_on_output(ten_protocol_integrated_t *self) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
   TEN_ASSERT(ten_protocol_role_is_communication(&self->base),
              "Should not happen.");
@@ -267,7 +269,8 @@ static void ten_stream_on_data_free(TEN_UNUSED ten_stream_t *stream,
 
 static void ten_protocol_integrated_set_stream(ten_protocol_integrated_t *self,
                                                ten_stream_t *stream) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
   TEN_ASSERT(stream, "Should not happen.");
   TEN_ASSERT(ten_protocol_role_is_communication(&self->base),
@@ -382,7 +385,8 @@ static void ten_protocol_integrated_listen(
     ten_protocol_t *self_, const char *uri,
     ten_protocol_on_client_accepted_func_t on_client_accepted) {
   ten_protocol_integrated_t *self = (ten_protocol_integrated_t *)self_;
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
   TEN_ASSERT(uri, "Should not happen.");
   // Only when the protocol attached to a app could start listening.
@@ -429,7 +433,8 @@ static void ten_protocol_integrated_listen(
 static void ten_protocol_integrated_on_output_task(void *self_,
                                                    TEN_UNUSED void *arg) {
   ten_protocol_integrated_t *self = (ten_protocol_integrated_t *)self_;
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
 
   if (self->base.state != TEN_PROTOCOL_STATE_CLOSING) {
@@ -899,7 +904,8 @@ static void ten_protocol_integrated_connect_to(
 
 static void ten_protocol_integrated_on_stream_cleaned(
     ten_protocol_integrated_t *self) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "We are in the app thread now.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "We are in the app thread now.");
 
   // Integrated protocol has been cleaned, call on_cleaned_for_internal callback
@@ -908,7 +914,8 @@ static void ten_protocol_integrated_on_stream_cleaned(
 }
 
 static void ten_protocol_integrated_clean(ten_protocol_integrated_t *self) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
 
   // Integrated protocol needs to _clean_ the containing stream. Because the
@@ -935,9 +942,9 @@ static void ten_stream_migrated(ten_stream_t *stream, void **user_data) {
   // function is called in the engine thread, so we can not perform thread
   // checking here, and need to be careful to consider thread safety when access
   // the connection instance before the cleaning is completed.
-  TEN_ASSERT(connection &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 ten_connection_check_integrity(connection, false),
+  TEN_ASSERT(connection, "Invalid argument.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  TEN_ASSERT(ten_connection_check_integrity(connection, false),
              "Invalid argument.");
 
   ten_protocol_integrated_t *protocol =
@@ -949,7 +956,8 @@ static void ten_stream_migrated(ten_stream_t *stream, void **user_data) {
       "The reason is the same as the above comments about 'connection'.");
 
   ten_shared_ptr_t *cmd = user_data[2];
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   TEN_FREE(user_data);
 
@@ -983,23 +991,27 @@ static void ten_protocol_integrated_migrate(ten_protocol_integrated_t *self,
                                             ten_engine_t *engine,
                                             ten_connection_t *connection,
                                             ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(self && ten_protocol_check_integrity(&self->base, true),
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_protocol_check_integrity(&self->base, true),
              "Should not happen.");
-  TEN_ASSERT(engine &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 ten_engine_check_integrity(engine, false),
+  TEN_ASSERT(engine, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  TEN_ASSERT(ten_engine_check_integrity(engine, false),
              "The function is called in the app thread, and will migrate the "
              "protocol to the engine thread.");
-  TEN_ASSERT(engine->app && ten_app_check_integrity(engine->app, true),
+  TEN_ASSERT(engine->app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(engine->app, true),
              "The function is called in the app thread, and will migrate the "
              "protocol to the engine thread.");
-  TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
+  TEN_ASSERT(connection, "Should not happen.");
+  TEN_ASSERT(ten_connection_check_integrity(connection, true),
              "'connection' belongs to app thread now.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
 
   ten_stream_t *stream = self->role_facility.communication_stream;
-  TEN_ASSERT(stream && ten_stream_check_integrity(stream),
-             "Should not happen.");
+  TEN_ASSERT(stream, "Should not happen.");
+  TEN_ASSERT(ten_stream_check_integrity(stream), "Should not happen.");
 
   // Stop reading from the stream _before_ migration.
   ten_stream_stop_read(stream);
