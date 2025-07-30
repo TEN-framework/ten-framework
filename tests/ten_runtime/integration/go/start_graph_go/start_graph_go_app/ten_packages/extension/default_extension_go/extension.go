@@ -40,9 +40,9 @@ func (ext *graphStarterExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 			startGraphCmd.SetGraphFromJSONBytes(graphJSONBytes)
 			startGraphCmd.SetDests([]ten.Loc{
 				{
-					AppURI:        ten.StringPtr(""),
-					GraphID:       ten.StringPtr(""),
-					ExtensionName: ten.StringPtr(""),
+					AppURI:        ten.Ptr(""),
+					GraphID:       ten.Ptr(""),
+					ExtensionName: ten.Ptr(""),
 				},
 			})
 			tenEnv.SendCmd(
