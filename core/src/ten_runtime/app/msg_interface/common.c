@@ -107,7 +107,7 @@ static bool ten_app_handle_msg_default_handler(ten_app_t *self,
     // The target engine is found, forward the message to it.
 
     // Correct the 'graph_id' from prebuilt-graph-name to engine-graph-id.
-    ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+    ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
         msg, dest_engine, &self->predefined_graph_infos);
 
     // Either migrate the connection to the engine or add the message to the
@@ -141,7 +141,7 @@ static bool ten_app_handle_msg_default_handler(ten_app_t *self,
         // it.
 
         // Correct the 'graph_id' from prebuilt-graph-name to engine-graph-id.
-        ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+        ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
             msg, dest_engine, &self->predefined_graph_infos);
 
         // Either migrate the connection to the engine or add the message to the

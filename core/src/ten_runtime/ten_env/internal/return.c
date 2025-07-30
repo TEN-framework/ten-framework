@@ -6,15 +6,18 @@
 //
 #include "ten_runtime/ten_env/internal/return.h"
 
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
 #include "include_internal/ten_runtime/extension/extension.h"
+#include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
+#include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/macro/check.h"
@@ -26,8 +29,8 @@ static bool ten_env_return_result_internal(
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
-  TEN_ASSERT(cmd_result && ten_cmd_base_check_integrity(cmd_result),
-             "Should not happen.");
+  TEN_ASSERT(cmd_result, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd_result), "Should not happen.");
   TEN_ASSERT(ten_msg_get_type(cmd_result) == TEN_MSG_TYPE_CMD_RESULT,
              "Should not happen.");
 
@@ -59,8 +62,21 @@ static bool ten_env_return_result_internal(
   switch (ten_env_get_attach_to(self)) {
   case TEN_ENV_ATTACH_TO_EXTENSION: {
     ten_extension_t *extension = ten_env_get_attached_extension(self);
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+    TEN_ASSERT(extension, "Invalid use of extension %p.", extension);
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid use of extension %p.", extension);
+
+    ten_engine_t *engine = extension->extension_context->engine;
+    TEN_ASSERT(engine, "Invalid argument.");
+    TEN_ASSERT(ten_engine_check_integrity(engine, false),
+               "Invalid use of engine %p.", engine);
+
+    ten_app_t *app = engine->app;
+    TEN_ASSERT(app, "Invalid argument.");
+    TEN_ASSERT(ten_app_check_integrity(app, false), "Invalid use of app %p.",
+               app);
+
+    ten_msg_set_src_app_uri_if_empty(cmd_result, ten_app_get_uri(app));
 
     result = ten_extension_dispatch_msg(
         extension, cmd_result, TEN_RESULT_RETURN_POLICY_EACH_OK_AND_ERROR, err);
@@ -72,6 +88,13 @@ static bool ten_env_return_result_internal(
     TEN_ASSERT(engine, "Invalid argument.");
     TEN_ASSERT(ten_engine_check_integrity(engine, true),
                "Invalid use of engine %p.", engine);
+
+    ten_app_t *app = engine->app;
+    TEN_ASSERT(app, "Invalid argument.");
+    TEN_ASSERT(ten_app_check_integrity(app, false), "Invalid use of app %p.",
+               app);
+
+    ten_msg_set_src_app_uri_if_empty(cmd_result, ten_app_get_uri(app));
 
     result = ten_engine_dispatch_msg(engine, cmd_result);
     break;
@@ -107,8 +130,8 @@ bool ten_env_return_result(ten_env_t *self, ten_shared_ptr_t *cmd_result,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(self, true), "Invalid use of ten_env %p.",
              self);
-  TEN_ASSERT(cmd_result && ten_cmd_base_check_integrity(cmd_result),
-             "Should not happen.");
+  TEN_ASSERT(cmd_result, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd_result), "Should not happen.");
   TEN_ASSERT(ten_msg_get_type(cmd_result) == TEN_MSG_TYPE_CMD_RESULT,
              "The target cmd must be a cmd result.");
 

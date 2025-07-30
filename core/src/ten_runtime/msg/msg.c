@@ -313,10 +313,15 @@ void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
                   ten_extension_get_name(extension, true));
 }
 
-bool ten_msg_src_uri_is_empty(ten_shared_ptr_t *self) {
+static bool ten_msg_src_app_uri_is_empty(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-  return strlen(ten_msg_get_src_app_uri(self)) == 0;
+
+  const char *app_uri = ten_msg_get_src_app_uri(self);
+  if (!app_uri || strlen(app_uri) == 0) {
+    return true;
+  }
+  return false;
 }
 
 static bool ten_msg_src_graph_id_is_empty(ten_shared_ptr_t *self) {
@@ -332,7 +337,7 @@ static bool ten_msg_src_graph_id_is_empty(ten_shared_ptr_t *self) {
   return false;
 }
 
-void ten_msg_set_src_uri(ten_shared_ptr_t *self, const char *uri) {
+void ten_msg_set_src_app_uri(ten_shared_ptr_t *self, const char *uri) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(uri, "Invalid argument.");
@@ -342,20 +347,20 @@ void ten_msg_set_src_uri(ten_shared_ptr_t *self, const char *uri) {
   ten_msg_get_raw_msg(self)->src_loc.has_app_uri = true;
 }
 
-void ten_msg_set_src_uri_if_empty(ten_shared_ptr_t *self, const char *uri) {
+void ten_msg_set_src_app_uri_if_empty(ten_shared_ptr_t *self, const char *uri) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(uri, "Invalid argument.");
 
-  if (ten_msg_src_uri_is_empty(self)) {
+  if (ten_msg_src_app_uri_is_empty(self)) {
     ten_string_set_formatted(&(ten_msg_get_raw_msg(self)->src_loc.app_uri),
                              "%s", uri);
     ten_msg_get_raw_msg(self)->src_loc.has_app_uri = true;
   }
 }
 
-void ten_msg_set_src_engine_if_unspecified(ten_shared_ptr_t *self,
-                                           ten_engine_t *engine) {
+void ten_msg_set_src_graph_id_if_empty(ten_shared_ptr_t *self,
+                                       ten_engine_t *engine) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(engine, "Invalid argument.");
@@ -415,7 +420,7 @@ static void ten_msg_clear_dest_graph_id(ten_shared_ptr_t *self) {
   }
 }
 
-void ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+void ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
     ten_shared_ptr_t *self, ten_engine_t *engine,
     ten_list_t *predefined_graph_infos) {
   TEN_ASSERT(self, "Should not happen.");
@@ -1082,7 +1087,7 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
       default:
         // For all other message types, ensure the engine/graph information is
         // properly set.
-        ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+        ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
             msg, engine, &engine->app->predefined_graph_infos);
         break;
       }
