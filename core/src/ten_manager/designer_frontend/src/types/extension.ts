@@ -17,7 +17,6 @@ import {
 import z from "zod";
 
 export enum ETenPackageType {
-  // Invalid = 'invalid',
   System = "system",
   App = "app",
   Extension = "extension",

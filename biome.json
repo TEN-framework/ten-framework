@@ -30,8 +30,12 @@
           "level": "error",
           "fix": "safe",
           "options": {
-            "attributes": ["className"],
-            "functions": ["cn"]
+            "attributes": [
+              "className"
+            ],
+            "functions": [
+              "cn"
+            ]
           }
         }
       }
