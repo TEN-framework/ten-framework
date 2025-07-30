@@ -5,33 +5,27 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BlocksIcon,
   BrushCleaningIcon,
   CheckLineIcon,
-  ChromeIcon,
   DownloadIcon,
   FilterIcon,
   SearchIcon,
-  SettingsIcon,
-  StarIcon,
 } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList as VirtualList } from "react-window";
 import { toast } from "sonner";
-import type z from "zod";
 import { useFetchAddons } from "@/api/services/addons";
 import { postReloadApps, useFetchApps } from "@/api/services/apps";
 import { useEnv } from "@/api/services/common";
-import {
-  useListTenCloudStorePackages,
-  useSearchTenCloudStorePackages,
-} from "@/api/services/extension";
+import { useSearchTenCloudStorePackages } from "@/api/services/extension";
 import { extractLocaleContentFromPkg } from "@/api/services/utils";
+import { ExtensionPopupTitle } from "@/components/popup/default/extension";
 import { LogViewerPopupTitle } from "@/components/popup/log-viewer";
 import { SpinnerLoading } from "@/components/status/loading";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -53,7 +47,12 @@ import {
 } from "@/components/ui/tooltip";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
-import { CONTAINER_DEFAULT_ID, GROUP_LOG_VIEWER_ID } from "@/constants/widgets";
+import {
+  CONTAINER_DEFAULT_ID,
+  EXTENSION_WIDGET_ID,
+  GROUP_EXTENSION_ID,
+  GROUP_LOG_VIEWER_ID,
+} from "@/constants/widgets";
 import { calcAbbreviatedBaseDir, cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import type { IApp, IExtensionAddon } from "@/types/apps";
@@ -61,10 +60,8 @@ import {
   EPackageSource,
   ETenPackageType,
   type IListTenCloudStorePackage,
-  type IListTenLocalStorePackage,
   type ITenPackage,
   type ITenPackageLocal,
-  type TenPackageQueryFilterSchema,
   TenPackageTypeMappings,
 } from "@/types/extension";
 import {
@@ -79,13 +76,13 @@ export const ExtensionStoreWidget = (props: {
 }) => {
   const { className } = props;
 
-  const [searchQuery, setSearchQuery] = React.useState("");
   const [showFilters, setShowFilters] = React.useState(false);
   const [selectedType, setSelectedType] = React.useState<
     ETenPackageType | "all" | undefined
   >("all");
 
-  const deferredSearch = React.useDeferredValue(searchQuery.trim());
+  const { extSearch, setExtSearch } = useWidgetStore();
+  const deferredSearch = React.useDeferredValue(extSearch.trim());
 
   const { t } = useTranslation();
   const { setDefaultOsArch } = useAppStore();
@@ -130,8 +127,6 @@ export const ExtensionStoreWidget = (props: {
     error: appsError,
     isLoading: isLoadingApps,
   } = useFetchApps();
-
-  console.log({ isFetchingAddons, isLoadingEnv, isSearchedDataLoading });
 
   const isLoading = React.useMemo(() => {
     return (
@@ -225,8 +220,8 @@ export const ExtensionStoreWidget = (props: {
           placeholder={t("extensionStore.searchPlaceholder", {
             defaultValue: "Search extensions...",
           })}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={extSearch}
+          onChange={(e) => setExtSearch(e.target.value)}
           className="h-9 pr-10 pl-9"
         />
         <Button
@@ -287,8 +282,8 @@ export const ExtensionStoreWidget = (props: {
               <SpinnerLoading />
             </div>
           )}
-          <div className="flex h-full flex-col gap-2 py-2">
-            {!isLoading && (
+          {!isLoading && (
+            <div className="flex h-full flex-col gap-2 py-1">
               <AutoSizer>
                 {({ width, height }: { width: number; height: number }) => (
                   <VirtualList
@@ -308,8 +303,8 @@ export const ExtensionStoreWidget = (props: {
                   </VirtualList>
                 )}
               </AutoSizer>
-            )}
-          </div>
+            </div>
+          )}
           {!isLoading && latestUniqueItems.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -338,7 +333,7 @@ export const ExtensionStoreWidget = (props: {
       </div>
 
       {/* Footer */}
-      <div className="pt-3">
+      {/* <div className="">
         <div
           className={cn(
             "flex items-center justify-between text-ten-icontext-2 text-xs"
@@ -347,7 +342,7 @@ export const ExtensionStoreWidget = (props: {
           <span></span>
           <span>TEN Store</span>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -481,6 +476,34 @@ const ExtensionItem = (props: {
         },
       });
     };
+  const handleClick = () => {
+    appendWidget({
+      container_id: CONTAINER_DEFAULT_ID,
+      group_id: GROUP_EXTENSION_ID,
+      widget_id: `${EXTENSION_WIDGET_ID}-${item.name}`,
+
+      category: EWidgetCategory.Extension,
+      display_type: EWidgetDisplayType.Popup,
+
+      title: (
+        <ExtensionPopupTitle
+          name={
+            extractLocaleContentFromPkg(
+              (item as IListTenCloudStorePackage)?.display_name,
+              i18n.language
+            ) || item.name
+          }
+        />
+      ),
+      metadata: {
+        name: item.name,
+        versions: [],
+      },
+      popup: {
+        height: 0.8,
+      },
+    });
+  };
 
   return (
     <motion.div
@@ -491,6 +514,7 @@ const ExtensionItem = (props: {
       transition={{ duration: 0.2 }}
       className={cn("h-24 w-full px-0.5 py-1", className)}
       style={style}
+      onClick={handleClick}
     >
       <div
         className={cn(
@@ -590,25 +614,6 @@ const ExtensionItem = (props: {
                     </>
                   )}
                 </Button>
-                {/* <Button
-                  variant="outline"
-                  size="xs"
-                  className={cn(
-                    "h-fit cursor-pointer px-2 py-0.5 font-normal text-xs",
-                    "shadow-none"
-                  )}
-                  disabled={
-                    readOnly ||
-                    !loadedApps?.app_info ||
-                    loadedApps?.app_info?.length === 0
-                  }
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  {t("extensionStore.install")}
-                </Button> */}
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-fit" align="start">
                 <DropdownMenuGroup>
@@ -648,6 +653,7 @@ const VirtualListItem = (props: {
   return (
     <ExtensionItem
       style={props.style}
+      key={item.name}
       apps={apps}
       item={{
         ...item,
