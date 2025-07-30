@@ -238,6 +238,7 @@ func (p *msg) SetDests(locs ...Loc) (err error) {
 	// Calculate total buffer size needed
 	bufferSize := 4 // 4 bytes for destination count
 	for _, loc := range locs {
+		bufferSize += 3  // 3 bytes for existence flags (has_app_uri, has_graph_id, has_extension_name)
 		bufferSize += 12 // 3 * 4 bytes for string lengths
 		if loc.AppURI != nil {
 			bufferSize += len(*loc.AppURI)
@@ -264,17 +265,30 @@ func (p *msg) SetDests(locs ...Loc) (err error) {
 
 	// Process each destination
 	for _, loc := range locs {
-		// Get string values, handle nil pointers
+		// Write existence flags (1 byte each)
+		// 1 = field exists (could be empty string), 0 = field is nil
+		var hasAppURI, hasGraphID, hasExtensionName byte
 		var appURI, graphID, extension string
+
 		if loc.AppURI != nil {
+			hasAppURI = 1
 			appURI = *loc.AppURI
 		}
 		if loc.GraphID != nil {
+			hasGraphID = 1
 			graphID = *loc.GraphID
 		}
 		if loc.ExtensionName != nil {
+			hasExtensionName = 1
 			extension = *loc.ExtensionName
 		}
+
+		buffer[offset] = hasAppURI
+		offset++
+		buffer[offset] = hasGraphID
+		offset++
+		buffer[offset] = hasExtensionName
+		offset++
 
 		// Write string lengths (4 bytes each, little-endian)
 		appURILen := uint32(len(appURI))
@@ -298,16 +312,16 @@ func (p *msg) SetDests(locs ...Loc) (err error) {
 		buffer[offset+3] = byte(extensionLen >> 24)
 		offset += 4
 
-		// Write string data
-		if appURILen > 0 {
+		// Write string data (only if field exists)
+		if hasAppURI != 0 {
 			copy(buffer[offset:], appURI)
 			offset += int(appURILen)
 		}
-		if graphIDLen > 0 {
+		if hasGraphID != 0 {
 			copy(buffer[offset:], graphID)
 			offset += int(graphIDLen)
 		}
-		if extensionLen > 0 {
+		if hasExtensionName != 0 {
 			copy(buffer[offset:], extension)
 			offset += int(extensionLen)
 		}
