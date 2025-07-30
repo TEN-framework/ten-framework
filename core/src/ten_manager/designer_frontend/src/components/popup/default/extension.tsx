@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { ExtensionWidget } from "@/components/widget/extension-widget";
 // eslint-disable-next-line max-len
 import { ExtensionStoreWidget } from "@/components/widget/extension-widget/extension-store";
+import { ETenPackageType } from "@/types/extension";
 import type { IExtensionWidgetData, IWidget } from "@/types/widgets";
 
 export const ExtensionStorePopupTitle = () => {
@@ -21,10 +22,16 @@ export const ExtensionStorePopupContent = (_props: { widget: IWidget }) => {
   return <ExtensionStoreWidget />;
 };
 
-export const ExtensionPopupTitle = (props: { name: string }) => {
-  const { name } = props;
+export const ExtensionPopupTitle = (props: {
+  name: string;
+  type?: ETenPackageType;
+}) => {
+  const { name, type } = props;
   const { t } = useTranslation();
-  return t("extensionStore.extensionTitle", { name });
+  return t("extensionStore.extensionTitle", {
+    name,
+    type: String(type || ETenPackageType.Extension).toUpperCase(),
+  });
 };
 
 export const ExtensionPopupContent = (props: { widget: IWidget }) => {

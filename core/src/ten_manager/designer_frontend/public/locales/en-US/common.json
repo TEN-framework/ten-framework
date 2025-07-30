@@ -272,7 +272,7 @@
       "sort-name-desc": "Name (Desc)",
       "type": "Type"
     },
-    "extensionTitle": "Extension: {{name}}",
+    "extensionTitle": "{{type}}: {{name}}",
     "os-arch": "OS/Arch",
     "selectOsArch": "Select OS/Arch",
     "os-arch-default": "Default",

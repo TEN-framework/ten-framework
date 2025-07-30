@@ -475,6 +475,7 @@ const ExtensionItem = (props: {
               i18n.language
             ) || item.name
           }
+          type={item.type}
         />
       ),
       metadata: {
