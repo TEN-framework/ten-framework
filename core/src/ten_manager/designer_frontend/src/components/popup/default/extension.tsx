@@ -29,7 +29,7 @@ export const ExtensionPopupTitle = (props: { name: string }) => {
 
 export const ExtensionPopupContent = (props: { widget: IWidget }) => {
   const { widget } = props;
-  const { versions, name } = widget.metadata as IExtensionWidgetData;
+  const metadata = widget.metadata as IExtensionWidgetData;
 
-  return <ExtensionWidget versions={versions} name={name} />;
+  return <ExtensionWidget {...metadata} />;
 };

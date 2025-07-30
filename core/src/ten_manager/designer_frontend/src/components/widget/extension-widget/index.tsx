@@ -7,20 +7,14 @@
 
 // eslint-disable-next-line max-len
 import { ExtensionDetails } from "@/components/widget/extension-widget/extension-details";
-import type { IListTenCloudStorePackage } from "@/types/extension";
+import type { ETenPackageType } from "@/types/extension";
 
 export const ExtensionWidget = (props: {
   className?: string;
-  versions: IListTenCloudStorePackage[];
   name: string;
+  type: ETenPackageType;
 }) => {
-  const { className, versions, name } = props;
+  const { className, name, type } = props;
 
-  if (versions?.length === 0) {
-    return null;
-  }
-
-  return (
-    <ExtensionDetails versions={versions} name={name} className={className} />
-  );
+  return <ExtensionDetails name={name} className={className} type={type} />;
 };

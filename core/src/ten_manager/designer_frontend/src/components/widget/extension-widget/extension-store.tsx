@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BlocksIcon,
@@ -45,6 +44,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+// eslint-disable-next-line max-len
+import { extensionListItemVariants } from "@/components/widget/extension-widget/common";
 import { TEN_PATH_WS_BUILTIN_FUNCTION } from "@/constants";
 import { getWSEndpointFromWindow } from "@/constants/utils";
 import {
@@ -347,25 +348,6 @@ export const ExtensionStoreWidget = (props: {
   );
 };
 
-const extensionListItemVariants = cva("", {
-  variants: {
-    text: {
-      [ETenPackageType.AddonLoader]: "text-blue-800 dark:text-blue-200",
-      [ETenPackageType.App]: "text-green-800 dark:text-green-200",
-      [ETenPackageType.Extension]: "text-purple-800 dark:text-purple-200",
-      [ETenPackageType.Protocol]: "text-orange-800 dark:text-orange-200",
-      [ETenPackageType.System]: "text-red-800 dark:text-red-200",
-    },
-    bg: {
-      [ETenPackageType.AddonLoader]: "bg-blue-100 dark:bg-blue-900",
-      [ETenPackageType.App]: "bg-green-100 dark:bg-green-900",
-      [ETenPackageType.Extension]: "bg-purple-100 dark:bg-purple-900",
-      [ETenPackageType.Protocol]: "bg-orange-100 dark:bg-orange-900",
-      [ETenPackageType.System]: "bg-red-100 dark:bg-red-900",
-    },
-  },
-});
-
 const ExtensionItem = (props: {
   style?: React.CSSProperties;
   item: ITenPackage | ITenPackageLocal;
@@ -497,10 +479,12 @@ const ExtensionItem = (props: {
       ),
       metadata: {
         name: item.name,
-        versions: [],
+        type: item.type,
       },
       popup: {
         height: 0.8,
+        width: 0.5,
+        maxWidth: 600,
       },
     });
   };
