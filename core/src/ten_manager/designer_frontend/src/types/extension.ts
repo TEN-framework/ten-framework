@@ -4,16 +4,65 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+import {
+  AsteriskIcon,
+  HandshakeIcon,
+  LayoutGridIcon,
+  type LucideIcon,
+  MonitorCogIcon,
+  PuzzleIcon,
+  // TicketXIcon
+} from "lucide-react";
 import z from "zod";
 
 export enum ETenPackageType {
-  Invalid = "invalid",
   System = "system",
   App = "app",
   Extension = "extension",
   Protocol = "protocol",
   AddonLoader = "addon_loader",
 }
+
+export const TenPackageTypeMappings: Record<
+  ETenPackageType,
+  {
+    id: ETenPackageType;
+    transKey: string;
+    icon: LucideIcon;
+  }
+> = {
+  // [ETenPackageType.Invalid]: {
+  //   id: ETenPackageType.Invalid,
+  //   transKey: 'extensionStore.packageType.invalid',
+  //   icon: TicketXIcon
+  // },
+  [ETenPackageType.System]: {
+    id: ETenPackageType.System,
+    transKey: "extensionStore.packageType.system",
+    icon: MonitorCogIcon,
+  },
+  [ETenPackageType.App]: {
+    id: ETenPackageType.App,
+    transKey: "extensionStore.packageType.app",
+    icon: LayoutGridIcon,
+  },
+  [ETenPackageType.Extension]: {
+    id: ETenPackageType.Extension,
+    transKey: "extensionStore.packageType.extension",
+    icon: PuzzleIcon,
+  },
+  [ETenPackageType.Protocol]: {
+    id: ETenPackageType.Protocol,
+    transKey: "extensionStore.packageType.protocol",
+    icon: HandshakeIcon,
+  },
+  [ETenPackageType.AddonLoader]: {
+    id: ETenPackageType.AddonLoader,
+    transKey: "extensionStore.packageType.addonLoader",
+    icon: AsteriskIcon,
+  },
+};
 
 export const TenPackageBaseSchema = z.object({
   type: z.nativeEnum(ETenPackageType),
@@ -37,13 +86,15 @@ export const TenCloudStorePackageSchemaI18nField = z.object({
 export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   version: z.string(),
   hash: z.string(),
-  dependencies: z.array(
-    z.object({
-      name: z.string(),
-      type: z.nativeEnum(ETenPackageType),
-      version: z.string(),
-    })
-  ),
+  dependencies: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.nativeEnum(ETenPackageType),
+        version: z.string(),
+      })
+    )
+    .optional(),
   downloadUrl: z.string(),
   supports: z
     .array(
@@ -57,6 +108,28 @@ export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   display_name: TenCloudStorePackageSchemaI18nField.optional(),
   description: TenCloudStorePackageSchemaI18nField.optional(),
   readme: TenCloudStorePackageSchemaI18nField.optional(),
+});
+
+export const TenPackageQueryAtomicFilterSchema = z.object({
+  field: z.string(),
+  operator: z.string(),
+  value: z.string(),
+});
+export const TenPackageQueryLogicFilterSchema = z.object({
+  and: z.array(TenPackageQueryAtomicFilterSchema).optional(),
+  or: z.array(TenPackageQueryAtomicFilterSchema).optional(),
+});
+
+export const TenPackageQueryFilterSchema = TenPackageQueryAtomicFilterSchema.or(
+  TenPackageQueryLogicFilterSchema
+);
+
+export const TenPackageQueryOptionsSchema = z.object({
+  page: z.number().min(1).optional(),
+  page_size: z.number().min(1).optional(),
+  sort_by: z.string().optional(),
+  sort_order: z.string().optional(),
+  scope: z.string().optional(),
 });
 
 export enum EPackageSource {
