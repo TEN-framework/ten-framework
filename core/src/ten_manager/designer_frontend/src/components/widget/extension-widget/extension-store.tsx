@@ -20,17 +20,25 @@ import {
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import type z from "zod";
 import { useFetchAddons } from "@/api/services/addons";
 import { useEnv } from "@/api/services/common";
 import {
   useListTenCloudStorePackages,
   useSearchTenCloudStorePackages,
 } from "@/api/services/extension";
+import { extractLocaleContentFromPkg } from "@/api/services/utils";
 import { SpinnerLoading } from "@/components/status/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn, compareVersions } from "@/lib/utils";
 import { useAppStore, useWidgetStore } from "@/store";
 import {
@@ -40,6 +48,7 @@ import {
   type IListTenLocalStorePackage,
   type ITenPackage,
   type ITenPackageLocal,
+  type TenPackageQueryFilterSchema,
   TenPackageTypeMappings,
 } from "@/types/extension";
 import { ExtensionDetails } from "./extension-details";
@@ -69,9 +78,23 @@ export const ExtensionStoreWidget = (props: {
     deferredSearch
       ? {
           filter: {
-            value: deferredSearch,
-            operator: "regex",
-            field: "name",
+            or: [
+              {
+                field: "name",
+                operator: "regex",
+                value: `.*${deferredSearch}.*`,
+              },
+              {
+                field: "display_name",
+                operator: "regex",
+                value: `.*${deferredSearch}.*`,
+              },
+            ],
+          },
+          options: {
+            scope:
+              // eslint-disable-next-line max-len
+              "name,version,hash,display_name,tags,dependencies,downloadUrl,type,description",
           },
         }
       : undefined
@@ -89,13 +112,14 @@ export const ExtensionStoreWidget = (props: {
     return isSearchedDataLoading || isLoadingEnv || isFetchingAddons;
   }, [isFetchingAddons, isLoadingEnv, isSearchedDataLoading]);
   const displayItems = React.useMemo(() => {
-    // if (deferredSearch) {
-    //   return searchedData?.packages || []
-    // }
-    // return initialData?.packages || []
-    const fullData = searchedData?.packages;
-
-    return [];
+    const latestUniqueItems = new Map<string, IListTenCloudStorePackage>();
+    searchedData?.packages.forEach((pkg) => {
+      const existing = latestUniqueItems.get(pkg.name);
+      if (!existing || compareVersions(pkg.version, existing.version) > 0) {
+        latestUniqueItems.set(pkg.name, pkg);
+      }
+    });
+    return Array.from(latestUniqueItems.values());
   }, [searchedData?.packages]);
 
   const typeCounts: Record<ETenPackageType, number> = React.useMemo(() => {
@@ -133,20 +157,11 @@ export const ExtensionStoreWidget = (props: {
     }
   }, [addonError, envError, searchedDataError, t]);
 
-  console.log("displayItems === ", displayItems);
-
-  //   if (isLoading) {
-  //     return (
-  //       <div
-  //         className={cn(
-  //           'flex h-full w-full items-center justify-center',
-  //           className
-  //         )}
-  //       >
-  //         <SpinnerLoading />
-  //       </div>
-  //     )
-  //   }
+  React.useEffect(() => {
+    if (envData?.os && envData?.arch) {
+      setDefaultOsArch({ os: envData.os, arch: envData.arch });
+    }
+  }, [envData?.os, envData?.arch, setDefaultOsArch]);
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -225,57 +240,19 @@ export const ExtensionStoreWidget = (props: {
             </div>
           )}
           <div className="flex flex-col gap-2 py-2">
-            {[
-              {
-                id: "1",
-                name: "TEN Extension Framework",
-                type: ETenPackageType.Extension,
-                _type: EPackageSource.Default,
-                isInstalled: false,
-                version: "1.0.0",
-                tags: ["framework", "core", "realtime"],
-              },
-              {
-                id: "2",
-                name: "Voice Assistant App",
-                type: ETenPackageType.App,
-                _type: EPackageSource.Default,
-                isInstalled: true,
-                version: "2.1.0",
-                tags: ["voice", "ai", "assistant", "speech"],
-              },
-              {
-                id: "3",
-                name: "HTTP Protocol Handler",
-                type: ETenPackageType.Protocol,
-                _type: EPackageSource.Default,
-                isInstalled: false,
-                version: "1.5.0",
-                tags: ["http", "protocol", "networking"],
-              },
-              {
-                id: "4",
-                name: "Audio Processing Addon",
-                type: ETenPackageType.AddonLoader,
-                _type: EPackageSource.Local,
-                isInstalled: true,
-                version: "3.0.1",
-                tags: ["audio", "processing", "dsp"],
-              },
-              {
-                id: "5",
-                name: "System Monitor",
-                type: ETenPackageType.System,
-                _type: EPackageSource.Default,
-                isInstalled: false,
-                version: "1.2.3",
-                tags: ["system", "monitoring", "performance"],
-              },
-            ].map((item) => (
-              <ExtensionItem key={item.id} item={item} variant={item.type} />
+            {displayItems.map((item) => (
+              <ExtensionItem
+                key={item.hash}
+                item={{
+                  ...item,
+                  _type: EPackageSource.Default,
+
+                  isInstalled: addons.some((addon) => addon.name === item.name),
+                }}
+                variant={item.type}
+              />
             ))}
           </div>
-          {!isLoading && displayItems.length > 0 && displayItems?.length}
           {!isLoading && displayItems.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -354,14 +331,21 @@ const ExtensionItem = (props: {
     if (item._type === EPackageSource.Local) {
       return item.name;
     }
-    return (item as ITenPackage).name;
-  }, [item]);
+    return (
+      extractLocaleContentFromPkg(item?.display_name, i18n.language) ||
+      item.name
+    );
+  }, [i18n.language, item]);
   const prettyDescription = React.useMemo(() => {
     if (item._type === EPackageSource.Local) {
       return item.type || "";
     }
-    return (item as ITenPackage).type || "";
-  }, [item]);
+    return (
+      extractLocaleContentFromPkg(item?.description, i18n.language) ||
+      item.type ||
+      ""
+    );
+  }, [i18n.language, item]);
   const tags = React.useMemo(() => {
     if (item._type === EPackageSource.Local) {
       return [];
@@ -392,9 +376,20 @@ const ExtensionItem = (props: {
             </h3>
           </div>
 
-          <p className="mb-2 line-clamp-2 text-muted-foreground text-xs">
-            {prettyDescription}
-          </p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p
+                  className={cn("mb-1 truncate text-muted-foreground text-xs")}
+                >
+                  {prettyDescription}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>{prettyDescription}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <div
             className={cn(

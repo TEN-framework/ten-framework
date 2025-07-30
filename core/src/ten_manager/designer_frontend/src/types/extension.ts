@@ -87,13 +87,15 @@ export const TenCloudStorePackageSchemaI18nField = z.object({
 export const TenCloudStorePackageSchema = TenPackageBaseSchema.extend({
   version: z.string(),
   hash: z.string(),
-  dependencies: z.array(
-    z.object({
-      name: z.string(),
-      type: z.nativeEnum(ETenPackageType),
-      version: z.string(),
-    })
-  ),
+  dependencies: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.nativeEnum(ETenPackageType),
+        version: z.string(),
+      })
+    )
+    .optional(),
   downloadUrl: z.string(),
   supports: z
     .array(

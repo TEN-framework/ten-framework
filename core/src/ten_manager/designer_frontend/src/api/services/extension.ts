@@ -67,7 +67,8 @@ export const useListTenCloudStorePackages = (options?: {
 
 export const searchTenCloudStorePackages = async (
   filter?: z.infer<typeof TenPackageQueryFilterSchema>,
-  options?: z.infer<typeof TenPackageQueryOptionsSchema>
+  options?: z.infer<typeof TenPackageQueryOptionsSchema>,
+  signal?: AbortSignal
 ) => {
   if (!filter) {
     return { packages: [] };
@@ -78,9 +79,13 @@ export const searchTenCloudStorePackages = async (
     filter,
     options,
   });
-  const req = makeAPIRequest(template, {
-    body: payload,
-  });
+  const req = makeAPIRequest(
+    template,
+    {
+      body: payload,
+    },
+    { signal: signal || AbortSignal.timeout(10000) }
+  );
   const res = await req;
   return template.responseSchema.parse(res).data;
 };
@@ -90,21 +95,32 @@ export const useSearchTenCloudStorePackages = (payload?: {
   options?: z.infer<typeof TenPackageQueryOptionsSchema>;
 }) => {
   const queryClient = getTanstackQueryClient();
+  const filter = payload?.filter || {
+    field: "name",
+    operator: "regex",
+    value: ".*default.*",
+  };
+  const options = payload?.options || {
+    scope: "name,version,hash,display_name,tags,downloadUrl,type,description",
+  };
   const queryKey = [
     "searchRegistryPackages",
     ENDPOINT_METHOD.POST,
-    payload?.filter,
-    payload?.options,
+    filter,
+    options,
   ];
+  queryClient.cancelQueries({
+    queryKey: ["searchRegistryPackages", ENDPOINT_METHOD.POST],
+    exact: false,
+  });
   const { isLoading, data, error } = useQuery({
     queryKey,
-    queryFn: () =>
-      searchTenCloudStorePackages(payload?.filter, payload?.options),
-    enabled: !!payload?.filter,
+    queryFn: ({ signal }) =>
+      searchTenCloudStorePackages(filter, options, signal),
+    enabled: !!filter,
   });
   const mutation = useMutation({
-    mutationFn: () =>
-      searchTenCloudStorePackages(payload?.filter, payload?.options),
+    mutationFn: () => searchTenCloudStorePackages(filter, options),
     onSuccess: () => {
       // Invalidate and refetch
       queryClient.invalidateQueries({
