@@ -70,7 +70,7 @@ class test_predefined_graph : public ten::extension_t {
                     // Shut down the graph; otherwise, the app won't be able to
                     // close because there is still a running engine/graph.
                     auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
-                    stop_graph_cmd->set_dests({{"", nullptr, nullptr}});
+                    stop_graph_cmd->set_dests({{""}});
                     stop_graph_cmd->set_graph_id(graph_id.c_str());
 
                     ten_env.send_cmd(

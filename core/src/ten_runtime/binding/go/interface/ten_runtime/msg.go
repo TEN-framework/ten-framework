@@ -47,7 +47,7 @@ type Msg interface {
 	GetName() (name string, err error)
 
 	GetSource() (loc Loc, err error)
-	SetDests(locs []Loc) (err error)
+	SetDests(locs ...Loc) (err error)
 
 	iProperty
 }
@@ -232,7 +232,7 @@ func (p *msg) GetSource() (loc Loc, err error) {
 	return loc, nil
 }
 
-func (p *msg) SetDests(locs []Loc) (err error) {
+func (p *msg) SetDests(locs ...Loc) (err error) {
 	defer p.keepAlive()
 
 	// Calculate total buffer size needed

@@ -22,9 +22,9 @@ export class Msg {
     });
   }
 
-  setDests(dests: Partial<Loc>[]) {
+  setDests(dests: Partial<Loc>[]): TenError | undefined {
     const locs: Loc[] = dests.map((d) => new Loc(d));
-    ten_addon.ten_nodejs_msg_set_dests(this, locs);
+    return ten_addon.ten_nodejs_msg_set_dests(this, locs);
   }
 
   setPropertyFromJson(path: string, jsonStr: string): TenError | undefined {

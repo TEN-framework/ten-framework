@@ -44,13 +44,19 @@ bool ten_msg_dest_info_to_json(ten_msg_dest_info_t *self,
     ten_json_init_object(&dest_json);
     ten_json_array_append(&dests_json, &dest_json);
 
-    ten_json_object_set_string(
-        &dest_json, TEN_STR_APP,
-        ten_string_get_raw_str(&extension_info->loc.app_uri));
+    if (extension_info->loc.has_app_uri &&
+        !ten_string_is_empty(&extension_info->loc.app_uri)) {
+      ten_json_object_set_string(
+          &dest_json, TEN_STR_APP,
+          ten_string_get_raw_str(&extension_info->loc.app_uri));
+    }
 
-    ten_json_object_set_string(
-        &dest_json, TEN_STR_GRAPH,
-        ten_string_get_raw_str(&extension_info->loc.graph_id));
+    if (extension_info->loc.has_graph_id &&
+        !ten_string_is_empty(&extension_info->loc.graph_id)) {
+      ten_json_object_set_string(
+          &dest_json, TEN_STR_GRAPH,
+          ten_string_get_raw_str(&extension_info->loc.graph_id));
+    }
 
     ten_json_object_set_string(
         &dest_json, TEN_STR_EXTENSION_GROUP,

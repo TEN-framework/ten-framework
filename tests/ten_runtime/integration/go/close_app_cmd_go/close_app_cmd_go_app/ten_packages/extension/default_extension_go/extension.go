@@ -36,12 +36,10 @@ func (ext *defaultExtension) OnCmd(
 
 		closeAppCmd, _ := ten.NewCmd("ten:close_app")
 
-		err := closeAppCmd.SetDests([]ten.Loc{
-			{
-				AppURI:        ten.StringPtr(""),
-				GraphID:       ten.StringPtr(""),
-				ExtensionName: ten.StringPtr(""),
-			},
+		err := closeAppCmd.SetDests(ten.Loc{
+			AppURI:        ten.Ptr(""),
+			GraphID:       ten.Ptr(""),
+			ExtensionName: ten.Ptr(""),
 		})
 		if err != nil {
 			tenEnv.Log(ten.LogLevelError, "Failed to SetDests:"+err.Error())
