@@ -131,13 +131,6 @@ class AsrFinalizeTester(AsyncExtensionTester):
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio data and silence packets to ASR extension once."""
         try:
-            # Wait for ASR extension to be fully ready
-            ten_env.log_info("Waiting for ASR extension to be fully ready...")
-            await asyncio.sleep(
-                3.0
-            )  # Wait 3 seconds for ASR extension to start
-            ten_env.log_info("ASR extension should be ready now")
-
             # Send audio file
             ten_env.log_info("=== Starting audio send ===")
             await self._send_audio_file(ten_env)

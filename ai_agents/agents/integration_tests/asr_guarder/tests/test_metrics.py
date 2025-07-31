@@ -128,8 +128,6 @@ class MetricsTester(AsyncExtensionTester):
             # Send audio file
             ten_env.log_info("=== Starting audio send ===")
             await self._send_audio_file(ten_env)
-            # await self._send_silence_packets(ten_env)
-
             # Wait 1.5 seconds after sending audio
             ten_env.log_info("=== Waiting 1.5 seconds after audio send ===")
             await asyncio.sleep(1.5)
@@ -148,8 +146,6 @@ class MetricsTester(AsyncExtensionTester):
             ten_env.log_info(
                 "=== Sending additional silence packets after finalize ==="
             )
-            # await self._send_silence_packets(ten_env)
-
             # Wait for final result
             ten_env.log_info("Waiting for final ASR result and metrics...")
             await asyncio.sleep(2)  # Give some time for processing

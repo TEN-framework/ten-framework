@@ -4,7 +4,12 @@ from datetime import datetime
 from typing import Any
 from typing_extensions import override
 from pydantic import BaseModel, Field
-from ten_ai_base.asr import AsyncASRBaseExtension
+from ten_ai_base.asr import (
+    AsyncASRBaseExtension,
+    ASRBufferConfig,
+    ASRBufferConfigModeKeep,
+    ASRResult,
+)
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ErrorMessage,
@@ -14,7 +19,8 @@ from ten_ai_base.message import (
     ModuleErrorCode,
 )
 from ten_ai_base.transcription import UserTranscription
-from ten_ai_base.struct import ASRResult, ASRWord
+
+# from ten_ai_base.struct import ASRResult, ASRWord
 from ten_ai_base.utils import encrypt
 from ten_ai_base.timeline import AudioTimeline
 from ten_runtime import (
@@ -461,3 +467,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
     @override
     def input_audio_sample_rate(self) -> int:
         return 16000
+
+    @override
+    def buffer_strategy(self) -> ASRBufferConfig:
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
