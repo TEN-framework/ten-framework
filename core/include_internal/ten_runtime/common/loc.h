@@ -103,20 +103,21 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_to_string(ten_loc_t *self,
 
 TEN_RUNTIME_PRIVATE_API ten_value_t *ten_loc_to_value(ten_loc_t *self);
 
-TEN_RUNTIME_PRIVATE_API void ten_loc_init_app_uri_with_size(ten_loc_t *self,
-                                                            const char *app_uri,
-                                                            size_t app_uri_len);
+TEN_RUNTIME_API void ten_loc_init_app_uri_with_size(ten_loc_t *self,
+                                                    const char *app_uri,
+                                                    size_t app_uri_len);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_init_app_uri(ten_loc_t *self,
                                                   const char *app_uri);
 
-TEN_RUNTIME_PRIVATE_API void ten_loc_init_graph_id_with_size(
-    ten_loc_t *self, const char *graph_id, size_t graph_id_len);
+TEN_RUNTIME_API void ten_loc_init_graph_id_with_size(ten_loc_t *self,
+                                                     const char *graph_id,
+                                                     size_t graph_id_len);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_init_graph_id(ten_loc_t *self,
                                                    const char *graph_id);
 
-TEN_RUNTIME_PRIVATE_API void ten_loc_init_extension_name_with_size(
+TEN_RUNTIME_API void ten_loc_init_extension_name_with_size(
     ten_loc_t *self, const char *extension_name, size_t extension_name_len);
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_init_extension_name(
