@@ -12,6 +12,7 @@
 
 #include "ten_runtime/binding/cpp/detail/loc.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lang/cpp/lib/error.h"
 #include "ten_utils/lang/cpp/lib/value.h"
@@ -89,6 +90,16 @@ class msg_t {
                       "Invalid TEN message.");
       }
       return false;
+    }
+
+    for (const auto &dest : dests) {
+      if (!ten_loc_str_check_correct(
+              dest.app_uri ? dest.app_uri->c_str() : nullptr,
+              dest.graph_id ? dest.graph_id->c_str() : nullptr,
+              dest.extension_name ? dest.extension_name->c_str() : nullptr,
+              err != nullptr ? err->get_c_error() : nullptr)) {
+        return false;
+      }
     }
 
     ten_msg_clear_dest(c_msg);

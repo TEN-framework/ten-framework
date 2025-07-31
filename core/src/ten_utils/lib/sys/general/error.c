@@ -82,8 +82,9 @@ bool ten_error_append_error_message(ten_error_t *self, const char *fmt, ...) {
 
 bool ten_error_set(ten_error_t *self, ten_error_code_t error_code,
                    const char *fmt, ...) {
-  TEN_ASSERT(self && ten_error_check_integrity(self) && fmt,
-             "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(fmt, "Invalid argument");
 
   va_list ap;
   va_start(ap, fmt);
@@ -95,8 +96,9 @@ bool ten_error_set(ten_error_t *self, ten_error_code_t error_code,
 
 bool ten_error_vset(ten_error_t *self, ten_error_code_t error_code,
                     const char *fmt, va_list ap) {
-  TEN_ASSERT(self && ten_error_check_integrity(self) && fmt,
-             "Invalid argument");
+  TEN_ASSERT(self, "Invalid argument");
+  TEN_ASSERT(ten_error_check_integrity(self), "Invalid argument");
+  TEN_ASSERT(fmt, "Invalid argument");
 
   self->error_code = error_code;
   ten_string_clear(&self->error_message);

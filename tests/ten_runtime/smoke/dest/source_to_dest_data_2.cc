@@ -41,8 +41,13 @@ class source_extension : public ten::extension_t {
       data_1->set_property("step", 1);
       data_1->set_property("message", "first data from source");
 
+      bool set_dest_success =
+          data_1->set_dests({{nullptr, "", "destination_extension"}});
+      TEN_ASSERT(set_dest_success == false, "app_uri is empty is an error");
+
       // Explicitly specify to send to destination extension
-      data_1->set_dests({{"", "", "destination_extension"}});
+      set_dest_success = data_1->set_dests({{"", "", "destination_extension"}});
+      TEN_ASSERT(set_dest_success == true, "should success");
 
       ten_env.send_data(std::move(data_1));
     }
