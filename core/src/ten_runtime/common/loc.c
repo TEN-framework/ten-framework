@@ -143,32 +143,50 @@ void ten_loc_deinit(ten_loc_t *self) {
   ten_string_deinit(&self->extension_name);
 }
 
+static void ten_loc_init_app_uri_with_unset_concept(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_init(&self->app_uri);
+  self->has_app_uri = false;
+}
+
+static void ten_loc_init_graph_id_with_unset_concept(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_init(&self->graph_id);
+  self->has_graph_id = false;
+}
+
+static void ten_loc_init_extension_name_with_unset_concept(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_init(&self->extension_name);
+  self->has_extension_name = false;
+}
+
 void ten_loc_init(ten_loc_t *self, const char *app_uri, const char *graph_id,
                   const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
 
   if (app_uri) {
-    ten_string_init_formatted(&self->app_uri, "%s", app_uri);
-    self->has_app_uri = true;
+    ten_loc_init_app_uri(self, app_uri);
   } else {
-    ten_string_init_formatted(&self->app_uri, "%s", "");
-    self->has_app_uri = false;
+    ten_loc_init_app_uri_with_unset_concept(self);
   }
 
   if (graph_id) {
-    ten_string_init_formatted(&self->graph_id, "%s", graph_id);
-    self->has_graph_id = true;
+    ten_loc_init_graph_id(self, graph_id);
   } else {
-    ten_string_init_formatted(&self->graph_id, "%s", "");
-    self->has_graph_id = false;
+    ten_loc_init_graph_id_with_unset_concept(self);
   }
 
   if (extension_name) {
-    ten_string_init_formatted(&self->extension_name, "%s", extension_name);
-    self->has_extension_name = true;
+    ten_loc_init_extension_name(self, extension_name);
   } else {
-    ten_string_init_formatted(&self->extension_name, "%s", "");
-    self->has_extension_name = false;
+    ten_loc_init_extension_name_with_unset_concept(self);
   }
 
   TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
@@ -178,28 +196,18 @@ void ten_loc_set(ten_loc_t *self, const char *app_uri, const char *graph_id,
                  const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
 
+  ten_loc_clear(self);
+
   if (app_uri) {
-    ten_string_set_formatted(&self->app_uri, "%s", app_uri);
-    self->has_app_uri = true;
-  } else {
-    ten_string_clear(&self->app_uri);
-    self->has_app_uri = false;
+    ten_loc_set_app_uri(self, app_uri);
   }
 
   if (graph_id) {
-    ten_string_set_formatted(&self->graph_id, "%s", graph_id);
-    self->has_graph_id = true;
-  } else {
-    ten_string_clear(&self->graph_id);
-    self->has_graph_id = false;
+    ten_loc_set_graph_id(self, graph_id);
   }
 
   if (extension_name) {
-    ten_string_set_formatted(&self->extension_name, "%s", extension_name);
-    self->has_extension_name = true;
-  } else {
-    ten_string_clear(&self->extension_name);
-    self->has_extension_name = false;
+    ten_loc_set_extension_name(self, extension_name);
   }
 
   TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
@@ -329,6 +337,30 @@ ten_value_t *ten_loc_to_value(ten_loc_t *self) {
   }
 }
 
+static void ten_loc_unset_app_uri(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->app_uri);
+  self->has_app_uri = false;
+}
+
+static void ten_loc_unset_graph_id(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->graph_id);
+  self->has_graph_id = false;
+}
+
+static void ten_loc_unset_extension_name(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->extension_name);
+  self->has_extension_name = false;
+}
+
 void ten_loc_set_from_value(ten_loc_t *self, ten_value_t *value) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(value, "Should not happen.");
@@ -343,13 +375,10 @@ void ten_loc_set_from_value(ten_loc_t *self, ten_value_t *value) {
 
     const char *app_str = ten_value_peek_raw_str(app_value, NULL);
     if (app_str && strlen(app_str) > 0) {
-      ten_string_set_from_c_str(&self->app_uri, app_str);
+      ten_loc_set_app_uri(self, app_str);
     }
-
-    self->has_app_uri = true;
   } else {
-    ten_string_clear(&self->app_uri);
-    self->has_app_uri = false;
+    ten_loc_unset_app_uri(self);
   }
 
   if (graph_value) {
@@ -357,13 +386,10 @@ void ten_loc_set_from_value(ten_loc_t *self, ten_value_t *value) {
 
     const char *graph_str = ten_value_peek_raw_str(graph_value, NULL);
     if (graph_str && strlen(graph_str) > 0) {
-      ten_string_set_from_c_str(&self->graph_id, graph_str);
+      ten_loc_set_graph_id(self, graph_str);
     }
-
-    self->has_graph_id = true;
   } else {
-    ten_string_clear(&self->graph_id);
-    self->has_graph_id = false;
+    ten_loc_unset_graph_id(self);
   }
 
   if (extension_value) {
@@ -372,22 +398,125 @@ void ten_loc_set_from_value(ten_loc_t *self, ten_value_t *value) {
     const char *extension_name_str =
         ten_value_peek_raw_str(extension_value, NULL);
     if (extension_name_str && strlen(extension_name_str) > 0) {
-      ten_string_set_from_c_str(&self->extension_name, extension_name_str);
+      ten_loc_set_extension_name(self, extension_name_str);
     }
-
-    self->has_extension_name = true;
   } else {
-    ten_string_clear(&self->extension_name);
-    self->has_extension_name = false;
+    ten_loc_unset_extension_name(self);
   }
 }
 
-void ten_loc_init_from_value(ten_loc_t *self, ten_value_t *value) {
+void ten_loc_init_app_uri_with_size(ten_loc_t *self, const char *app_uri,
+                                    size_t app_uri_len) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(value, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(app_uri, "Should not happen.");
 
-  ten_loc_init_empty(self);
-  ten_loc_set_from_value(self, value);
+  ten_string_init_from_c_str_with_size(&self->app_uri, app_uri, app_uri_len);
+  self->has_app_uri = true;
+}
+
+void ten_loc_init_app_uri(ten_loc_t *self, const char *app_uri) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(app_uri, "Should not happen.");
+
+  ten_loc_init_app_uri_with_size(self, app_uri, strlen(app_uri));
+}
+
+void ten_loc_init_graph_id_with_size(ten_loc_t *self, const char *graph_id,
+                                     size_t graph_id_len) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(graph_id, "Should not happen.");
+
+  ten_string_init_from_c_str_with_size(&self->graph_id, graph_id, graph_id_len);
+  self->has_graph_id = true;
+}
+
+void ten_loc_init_graph_id(ten_loc_t *self, const char *graph_id) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(graph_id, "Should not happen.");
+
+  ten_loc_init_graph_id_with_size(self, graph_id, strlen(graph_id));
+}
+
+void ten_loc_init_extension_name_with_size(ten_loc_t *self,
+                                           const char *extension_name,
+                                           size_t extension_name_len) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(extension_name, "Should not happen.");
+
+  ten_string_init_from_c_str_with_size(&self->extension_name, extension_name,
+                                       extension_name_len);
+  self->has_extension_name = true;
+}
+
+void ten_loc_init_extension_name(ten_loc_t *self, const char *extension_name) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(extension_name, "Should not happen.");
+
+  ten_loc_init_extension_name_with_size(self, extension_name,
+                                        strlen(extension_name));
+}
+
+void ten_loc_set_app_uri_with_size(ten_loc_t *self, const char *app_uri,
+                                   size_t app_uri_len) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(app_uri, "Should not happen.");
+
+  ten_string_set_from_c_str_with_size(&self->app_uri, app_uri, app_uri_len);
+  self->has_app_uri = true;
+}
+
+void ten_loc_set_app_uri(ten_loc_t *self, const char *app_uri) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(app_uri, "Should not happen.");
+
+  ten_loc_set_app_uri_with_size(self, app_uri, strlen(app_uri));
+}
+
+void ten_loc_set_graph_id_with_size(ten_loc_t *self, const char *graph_id,
+                                    size_t graph_id_len) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(graph_id, "Should not happen.");
+
+  ten_string_set_from_c_str_with_size(&self->graph_id, graph_id, graph_id_len);
+  self->has_graph_id = true;
+}
+
+void ten_loc_set_graph_id(ten_loc_t *self, const char *graph_id) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(graph_id, "Should not happen.");
+
+  ten_loc_set_graph_id_with_size(self, graph_id, strlen(graph_id));
+}
+
+void ten_loc_set_extension_name_with_size(ten_loc_t *self,
+                                          const char *extension_name,
+                                          size_t extension_name_len) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(extension_name, "Should not happen.");
+
+  ten_string_set_from_c_str_with_size(&self->extension_name, extension_name,
+                                      extension_name_len);
+  self->has_extension_name = true;
+}
+
+void ten_loc_set_extension_name(ten_loc_t *self, const char *extension_name) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(extension_name, "Should not happen.");
+
+  ten_loc_set_extension_name_with_size(self, extension_name,
+                                       strlen(extension_name));
 }
 
 bool ten_loc_str_check_correct(const char *app_uri, const char *graph_id,
