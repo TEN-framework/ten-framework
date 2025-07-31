@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::{process::Command, thread};
+use std::{path::Path, process::Command, thread};
 
 use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
@@ -22,6 +22,9 @@ pub struct ShutdownSenders {
     pub wait: Sender<()>,
 }
 
+// Output completion notification channels are created locally in cmd_run
+// method.
+
 impl WsRunCmd {
     pub fn cmd_run(
         &mut self,
@@ -32,6 +35,10 @@ impl WsRunCmd {
         let (stdout_shutdown_tx, stdout_shutdown_rx) = bounded::<()>(1);
         let (stderr_shutdown_tx, stderr_shutdown_rx) = bounded::<()>(1);
         let (wait_shutdown_tx, wait_shutdown_rx) = bounded::<()>(1);
+
+        // Create completion notification channels.
+        let (stdout_done_tx, stdout_done_rx) = bounded::<()>(1);
+        let (stderr_done_tx, stderr_done_rx) = bounded::<()>(1);
 
         // Store senders in the struct for later cleanup.
         self.shutdown_senders = Some(ShutdownSenders {
@@ -58,7 +65,30 @@ impl WsRunCmd {
             .stderr(std::process::Stdio::piped());
 
         if let Some(ref dir) = self.working_directory {
-            command.current_dir(dir);
+            // Normalize path separators for cross-platform compatibility
+            // On Windows, keep original path; on Unix-like systems, convert \
+            // to /
+            #[cfg(target_family = "windows")]
+            let normalized_dir = dir;
+            #[cfg(target_family = "unix")]
+            let normalized_dir = dir.replace('\\', "/");
+
+            let dir_path = Path::new(&normalized_dir);
+
+            // Validate that the directory exists before setting it
+            if dir_path.exists() && dir_path.is_dir() {
+                command.current_dir(dir_path);
+            } else {
+                let err_msg = OutboundMsg::Error {
+                    msg: format!(
+                        "Working directory does not exist or is not a \
+                         directory: {normalized_dir}"
+                    ),
+                };
+                ctx.text(serde_json::to_string(&err_msg).unwrap());
+                ctx.close(None);
+                return;
+            }
         }
 
         // Run the command.
@@ -87,10 +117,15 @@ impl WsRunCmd {
         // to the actor.
         let addr = ctx.address();
 
+        // Track whether we have stdout/stderr to read.
+        let has_stdout = stdout_child.is_some();
+        let has_stderr = stderr_child.is_some();
+
         // Read stdout.
         if let Some(mut out) = stdout_child {
             let addr_stdout = addr.clone();
             let shutdown_rx = stdout_shutdown_rx;
+            let done_tx = stdout_done_tx;
             let is_log = self.stdout_is_log;
 
             thread::spawn(move || {
@@ -134,14 +169,19 @@ impl WsRunCmd {
                         Err(_) => break,
                     }
                 }
-                // After reading is finished.
+                // Notify that stdout reading is finished.
+                let _ = done_tx.send(());
             });
+        } else {
+            // If no stdout to read, immediately signal completion.
+            let _ = stdout_done_tx.send(());
         }
 
         // Read stderr.
         if let Some(mut err) = stderr_child {
             let addr_stderr = addr.clone();
             let shutdown_rx = stderr_shutdown_rx;
+            let done_tx = stderr_done_tx;
             let is_log = self.stderr_is_log;
 
             thread::spawn(move || {
@@ -185,8 +225,12 @@ impl WsRunCmd {
                         Err(_) => break,
                     }
                 }
-                // After reading is finished.
+                // Notify that stderr reading is finished.
+                let _ = done_tx.send(());
             });
+        } else {
+            // If no stderr to read, immediately signal completion.
+            let _ = stderr_done_tx.send(());
         }
 
         // Wait for child exit in another thread.
@@ -195,7 +239,8 @@ impl WsRunCmd {
             let shutdown_rx = wait_shutdown_rx;
 
             thread::spawn(move || {
-                loop {
+                // First, wait for the process to exit
+                let exit_code = loop {
                     let exit_status = crossbeam_channel::select! {
                         recv(shutdown_rx) -> _ => {
                             // Termination requested, kill the process.
@@ -219,14 +264,29 @@ impl WsRunCmd {
                     };
 
                     if let Some(code) = exit_status {
-                        addr2.do_send(RunCmdOutput::Exit(code));
-                        break;
+                        break code;
                     }
 
                     // If no exit code (process still running),
                     // continue the loop
                     std::thread::sleep(std::time::Duration::from_millis(50));
+                };
+
+                // Process has exited, now wait for all output threads to
+                // complete
+
+                // Wait for stdout completion if it exists
+                if has_stdout {
+                    let _ = stdout_done_rx.recv();
                 }
+
+                // Wait for stderr completion if it exists
+                if has_stderr {
+                    let _ = stderr_done_rx.recv();
+                }
+
+                // All output has been processed, now send exit
+                addr2.do_send(RunCmdOutput::Exit(exit_code));
             });
         }
     }
