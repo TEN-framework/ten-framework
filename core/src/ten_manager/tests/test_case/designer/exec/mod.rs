@@ -62,11 +62,15 @@ async fn test_exec_endpoint_command_execution() {
 
     // Prepare command message to execute
     // We use 'echo' command because it's simple and available on all systems
+    // Use cross-platform temporary directory
+    let temp_dir = std::env::temp_dir();
     let exec_cmd_msg = InboundMsg::ExecCmd {
-        base_dir: "/tmp".to_string(), // Working directory
-        cmd: "echo Hello from exec test".to_string(), // Command to execute
-        stdout_is_log: false,         // Standard output not treated as log
-        stderr_is_log: false,         // Error output not treated as log
+        base_dir: temp_dir.to_string_lossy().to_string(), // Working directory
+        cmd: "echo Hello from exec test".to_string(),     // Command to execute
+        stdout_is_log: false,                             /* Standard output
+                                                           * not treated as
+                                                           * log */
+        stderr_is_log: false, // Error output not treated as log
     };
 
     // Serialize message to JSON
@@ -175,7 +179,9 @@ async fn test_exec_endpoint_run_script() {
     // Set up test data: create pkgs_cache containing scripts
     let mut pkgs_cache = HashMap::new();
     let mut graphs_cache = HashMap::new();
-    let test_base_dir = "/tmp"; // Use /tmp which definitely exists
+    // Use cross-platform temporary directory
+    let temp_dir = std::env::temp_dir();
+    let test_base_dir = temp_dir.to_string_lossy();
 
     // Prepare package information - (base_dir, manifest.json, property.json)
     let all_pkgs_json = vec![(
@@ -360,8 +366,10 @@ async fn test_exec_endpoint_invalid_command() {
     let (mut write, mut read) = ws_stream.split();
 
     // Send an invalid command
+    // Use cross-platform temporary directory
+    let temp_dir = std::env::temp_dir();
     let exec_cmd_msg = InboundMsg::ExecCmd {
-        base_dir: "/tmp".to_string(),
+        base_dir: temp_dir.to_string_lossy().to_string(),
         cmd: "this_command_does_not_exist_12345".to_string(), /* Non-existent
                                                                * command */
         stdout_is_log: false,
