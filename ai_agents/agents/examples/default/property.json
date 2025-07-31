@@ -1173,16 +1173,6 @@
                     }
                   ]
                 }
-              ],
-              "cmd": [
-                {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
               ]
             },
             {
