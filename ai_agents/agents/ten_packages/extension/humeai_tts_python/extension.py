@@ -19,7 +19,7 @@ from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import HumeAiTTSConfig
-from .humeTTS import HumeAiTTS, EVENT_TTS_RESPONSE, EVENT_TTS_END, EVENT_TTS_ERROR
+from .humeTTS import HumeAiTTS, EVENT_TTS_RESPONSE, EVENT_TTS_END, EVENT_TTS_ERROR, EVENT_TTS_INVALID_KEY_ERROR
 from ten_runtime import AsyncTenEnv
 
 
@@ -33,6 +33,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
+        self.current_request_finished: bool = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -93,7 +94,9 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
     async def on_flush(self, t: TTSFlush) -> None:
         if self.client and t.flush_id == self.current_request_id:
             self.ten_env.log_info(f"Flushing TTS for request ID: {t.flush_id}")
+            #await self.send_tts_flush_start(t.flush_id, self.current_turn_id)
             await self.client.cancel()
+            #await self.send_tts_flush_end(t.flush_id, self.current_turn_id)
 
     async def request_tts(self, t: TTSTextInput) -> None:
         try:
@@ -103,8 +106,22 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
             if t.request_id != self.current_request_id:
                 self.current_request_id = t.request_id
                 self.total_audio_bytes = 0
+                self.current_request_finished = False
                 if t.metadata:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+            elif self.current_request_finished:
+                error_msg = f"Received a message for a finished request_id: {self.current_request_id}"
+                self.ten_env.log_error(error_msg)
+                await self.send_tts_error(
+                    self.current_request_id,
+                    ModuleError(
+                        message=error_msg,
+                        module_name=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor())
+                    )
+                )
+                return
 
             if not t.text or t.text.isspace():
                 if t.text_input_end and self.current_request_id:
@@ -134,7 +151,21 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     duration_ms = self._calculate_audio_duration_ms()
                     request_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
                     await self.send_tts_audio_end(self.current_request_id, request_interval, duration_ms, self.current_turn_id)
+                    self.current_request_finished = True
                     break
+
+                elif event == EVENT_TTS_INVALID_KEY_ERROR:
+                    error_msg = audio_chunk.decode('utf-8') if audio_chunk else "Unknown API key error"
+                    await self.send_tts_error(
+                        self.current_request_id or t.request_id,
+                        ModuleError(
+                            message=error_msg,
+                            module_name=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(vendor=self.vendor())
+                        )
+                    )
+                    return
 
                 elif event == EVENT_TTS_ERROR:
                     error_msg = audio_chunk.decode('utf-8') if audio_chunk else "Unknown client error"

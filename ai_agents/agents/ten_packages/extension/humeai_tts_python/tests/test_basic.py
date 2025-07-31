@@ -16,13 +16,14 @@ if project_root not in sys.path:
 from pathlib import Path
 import json
 from typing import Any
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 import tempfile
 import os
 import asyncio
 import filecmp
 import shutil
 import threading
+import base64
 
 from ten_runtime import (
     ExtensionTester,
@@ -34,14 +35,14 @@ from ten_runtime import (
     TenError,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from minimax_tts2_python.minimax_tts import (
-    MinimaxTTSTaskFailedException,
-    EVENT_TTSSentenceEnd,
-    EVENT_TTSResponse,
-    EVENT_TTSFlush,
+from humeai_tts_python.humeTTS import (
+    EVENT_TTS_RESPONSE,
+    EVENT_TTS_END,
+    EVENT_TTS_ERROR,
+    EVENT_TTS_INVALID_KEY_ERROR,
 )
 
-# ================ case 1 ================
+# ================ case 1: 基本功能测试 ================
 class ExtensionTesterBasic(ExtensionTester):
     def check_hello(self, ten_env: TenEnvTester, result: CmdResult | None):
         if result is None:
@@ -51,7 +52,6 @@ class ExtensionTesterBasic(ExtensionTester):
         print("receive hello_world, status:" + str(statusCode))
 
         if statusCode == StatusCode.OK:
-            # TODO: move stop_test() to where the test passes
             ten_env.stop_test()
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
@@ -68,10 +68,10 @@ class ExtensionTesterBasic(ExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
-    tester.set_test_mode_single("minimax_tts2_python")
+    tester.set_test_mode_single("humeai_tts_python")
     tester.run()
 
-# ================ case 2 ================
+# ================ case 2: 空参数错误测试 ================
 class ExtensionTesterEmptyParams(ExtensionTester):
     def __init__(self):
         super().__init__()
@@ -82,7 +82,7 @@ class ExtensionTesterEmptyParams(ExtensionTester):
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts"""
-        ten_env_tester.log_info("Test started")
+        ten_env_tester.log_info("Empty params test started")
         ten_env_tester.on_start_done()
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
@@ -99,14 +99,11 @@ class ExtensionTesterEmptyParams(ExtensionTester):
             self.error_module = error_data.get("module", "")
 
             ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}")
-
-            # 立即停止测试
             ten_env.log_info("Error received, stopping test immediately")
             ten_env.stop_test()
 
 def test_empty_params_fatal_error():
     """Test that empty params raises FATAL ERROR with code -1000"""
-
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
@@ -116,7 +113,7 @@ def test_empty_params_fatal_error():
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(empty_params_config)
     )
 
@@ -127,16 +124,14 @@ def test_empty_params_fatal_error():
     # Verify FATAL ERROR was received
     assert tester.error_received, "Expected to receive error message"
     assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
-    # 暂时不检查module字段，因为可能没有被正确设置
-    # assert tester.error_module == "tts", f"Expected module 'tts', got {tester.error_module}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 
     print(f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}")
     print("Test verification completed successfully.")
 
-# ================ case 3 ================
-class ExtensionTesterInvalidParams(ExtensionTester):
+# ================ case 3: 无效API密钥测试 ================
+class ExtensionTesterInvalidApiKey(ExtensionTester):
     def __init__(self):
         super().__init__()
         self.error_received = False
@@ -147,11 +142,11 @@ class ExtensionTesterInvalidParams(ExtensionTester):
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request to trigger the logic."""
-        ten_env_tester.log_info("Test started, sending TTS request to trigger mocked error")
+        ten_env_tester.log_info("Invalid API key test started, sending TTS request")
 
         tts_input = TTSTextInput(
-            request_id="test-request-for-invalid-params",
-            text="This text will trigger the mocked error.",
+            request_id="test-request-invalid-key",
+            text="This text will trigger API key validation.",
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -173,78 +168,57 @@ class ExtensionTesterInvalidParams(ExtensionTester):
             self.error_module = error_data.get("module", "")
             self.vendor_info = error_data.get("vendor_info", {})
 
-            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}")
-            ten_env.log_info(f"Vendor info: {self.vendor_info}")
-
-            # 立即停止测试
+            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}")
             ten_env.log_info("Error received, stopping test immediately")
             ten_env.stop_test()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_invalid_params_fatal_error(MockMinimaxTTS2):
-    """Test that an error from the TTS client is handled correctly with a mock."""
+@patch('humeai_tts_python.humeTTS.AsyncHumeClient')
+def test_invalid_api_key_error(MockHumeClient):
+    """Test that an invalid API key is handled correctly with a mock."""
+    print("Starting test_invalid_api_key_error with mock...")
 
-    print("Starting test_invalid_params_fatal_error with mock...")
+    # Mock the Hume client to raise an authentication error
+    mock_client = MockHumeClient.return_value
 
-    # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    # Mock the async methods called on the client instance
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    # Define an async generator that raises the invalid key exception
+    async def mock_tts_error(context=None, utterances=None, format=None, instant_mode=None):
+        error_msg = "headers: {'date': 'Thu, 31 Jul 2025 06:47:59 GMT', 'content-type': 'application/json', 'content-length': '90', 'connection': 'keep-alive', 'x-request-id': '9bccec6c-dd26-4b2d-b99b-a9e2a305e0a4', 'via': '1.1 google', 'cf-cache-status': 'DYNAMIC', 'server': 'cloudflare', 'cf-ray': '967b25c22ed66837-NRT'}, status_code: 401, body: {'fault': {'faultstring': 'Invalid ApiKey', 'detail': {'errorcode': 'oauth.v2.InvalidApiKey'}}}"
+        raise Exception(error_msg)
+        yield  # Unreachable, but makes this an async generator function
 
-    # Define an async generator that raises the exception we want to test
-    async def mock_get_with_error(text: str):
-        raise MinimaxTTSTaskFailedException(
-            error_msg="Voice ID not found or invalid",
-            error_code=2054
-        )
-        yield (b"", 0)  # Unreachable, but makes this an async generator function
+    mock_client.tts.synthesize_json_streaming = mock_tts_error
 
-    # When extension calls self.client.get(), it will receive our faulty generator
-    mock_instance.get.side_effect = mock_get_with_error
-
-    # --- Test Setup ---
-    # Config with valid api_key and group_id so on_init passes and can proceed
-    # to the request_tts call where the mock will be triggered.
-    invalid_params_config = {
-        "api_key": "valid_key_for_test",
-        "group_id": "valid_group_for_test",
-        "params": {
-            "voice_id": "any_voice_id_will_be_mocked"
-        }
+    # Config with invalid API key
+    invalid_key_config = {
+        "key": "invalid_api_key_test",
+        "voice_id": "daisy",
+        "params": {}
     }
 
-    tester = ExtensionTesterInvalidParams()
+    tester = ExtensionTesterInvalidApiKey()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
-        json.dumps(invalid_params_config)
+        "humeai_tts_python",
+        json.dumps(invalid_key_config)
     )
 
     print("Running test with mock...")
     tester.run()
     print("Test with mock completed.")
 
-    # --- Assertions ---
+    # Verify FATAL ERROR was received for invalid API key
     assert tester.error_received, "Expected to receive error message"
     assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
-    # The module field seems to be empty in the error message, this might be a framework-level issue.
-    # Commenting out for now to focus on core logic validation.
-    # assert tester.error_module == "tts", f"Expected module 'tts', got {tester.error_module}"
     assert tester.error_message is not None, "Error message should not be None"
-    assert len(tester.error_message) > 0, "Error message should not be empty"
+    assert "Invalid ApiKey" in tester.error_message, "Error message should mention Invalid ApiKey"
 
     # Verify vendor_info
     vendor_info = tester.vendor_info
     assert vendor_info is not None, "Expected vendor_info to be present"
-    assert vendor_info.get("vendor") == "minimax", f"Expected vendor 'minimax', got {vendor_info.get('vendor')}"
-    assert "code" in vendor_info, "Expected 'code' in vendor_info"
-    assert "message" in vendor_info, "Expected 'message' in vendor_info"
+    assert vendor_info.get("vendor") == "humeai", f"Expected vendor 'humeai', got {vendor_info.get('vendor')}"
 
-    print(f"✅ Invalid params test passed with mock: code={tester.error_code}, message={tester.error_message}")
-    print(f"✅ Vendor info: {tester.vendor_info}")
-    print("Test verification completed successfully.")
+    print(f"✅ Invalid API key test passed: code={tester.error_code}, message={tester.error_message}")
 
-# ================ case 4 ================
+# ================ case 4: 音频转储功能测试 ================
 class ExtensionTesterDump(ExtensionTester):
     def __init__(self):
         super().__init__()
@@ -252,7 +226,7 @@ class ExtensionTesterDump(ExtensionTester):
         self.dump_dir = "./dump/"
         # Use a unique name for the file generated by the test to avoid collision
         # with the file generated by the extension.
-        self.test_dump_file_path = os.path.join(self.dump_dir, "test_manual_dump.pcm")
+        self.test_dump_file_path = os.path.join(self.dump_dir, "test_hume_manual_dump.pcm")
         self.audio_end_received = False
         self.received_audio_chunks = []
 
@@ -261,8 +235,8 @@ class ExtensionTesterDump(ExtensionTester):
         ten_env_tester.log_info("Dump test started, sending TTS request.")
 
         tts_input = TTSTextInput(
-            request_id="tts_request_1",
-            text="hello word, hello agora",
+            request_id="tts_request_dump",
+            text="hello world, testing audio dump functionality",
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -277,22 +251,17 @@ class ExtensionTesterDump(ExtensionTester):
             ten_env.stop_test()
 
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
-        """Receives audio frames and collects their data using the lock/unlock pattern."""
-        # The 'audio_frame' object is a wrapper around a memory buffer.
-        # We must lock the buffer to safely access the data, copy it,
-        # and finally unlock the buffer so the runtime can reuse it.
+        """Receives audio frames and collects their data."""
         buf = audio_frame.lock_buf()
         try:
-            # We must copy the data from the buffer, as the underlying memory
-            # may be freed or reused after we unlock it.
             copied_data = bytes(buf)
             self.received_audio_chunks.append(copied_data)
         finally:
-            # Always ensure the buffer is unlocked, even if an error occurs.
             audio_frame.unlock_buf(buf)
 
     def write_test_dump_file(self):
         """Writes the collected audio chunks to a file."""
+        os.makedirs(self.dump_dir, exist_ok=True)
         with open(self.test_dump_file_path, 'wb') as f:
             for chunk in self.received_audio_chunks:
                 f.write(chunk)
@@ -306,10 +275,9 @@ class ExtensionTesterDump(ExtensionTester):
                 return os.path.join(self.dump_dir, filename)
         return None
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_dump_functionality(MockMinimaxTTS2):
+@patch('humeai_tts_python.humeTTS.AsyncHumeClient')
+def test_dump_functionality(MockHumeClient):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
-
     print("Starting test_dump_functionality with mock...")
 
     # --- Directory Setup ---
@@ -322,68 +290,76 @@ def test_dump_functionality(MockMinimaxTTS2):
     os.makedirs(DUMP_PATH)
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_client = MockHumeClient.return_value
 
     # Create some fake audio data to be streamed
-    fake_audio_chunk_1 = b'\x11\x22\x33\x44' * 20
-    fake_audio_chunk_2 = b'\xAA\xBB\xCC\xDD' * 20
+    fake_audio_chunk_1 = b'\x11\x22\x33\x44' * 20  # 80 bytes
+    fake_audio_chunk_2 = b'\xAA\xBB\xCC\xDD' * 20  # 80 bytes
 
-    # This async generator simulates the TTS client's get() method
-    async def mock_get_audio_stream(text: str):
-        yield (fake_audio_chunk_1, EVENT_TTSResponse)
-        await asyncio.sleep(0.01)
-        yield (fake_audio_chunk_2, EVENT_TTSResponse)
-        await asyncio.sleep(0.01)
-        yield (None, EVENT_TTSSentenceEnd)
+    # This async generator simulates the Hume TTS client's response
+    async def mock_tts_stream(context=None, utterances=None, format=None, instant_mode=None):
+        # First chunk
+        mock_snippet_1 = MagicMock()
+        mock_snippet_1.generation_id = "test_gen_id"
+        mock_snippet_1.audio = base64.b64encode(fake_audio_chunk_1).decode('utf-8')
+        mock_snippet_1.is_last_chunk = False
+        yield mock_snippet_1
 
-    mock_instance.get.side_effect = mock_get_audio_stream
+        # Second chunk
+        mock_snippet_2 = MagicMock()
+        mock_snippet_2.generation_id = "test_gen_id"
+        mock_snippet_2.audio = base64.b64encode(fake_audio_chunk_2).decode('utf-8')
+        mock_snippet_2.is_last_chunk = True
+        yield mock_snippet_2
+
+    mock_client.tts.synthesize_json_streaming = mock_tts_stream
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
 
     dump_config = {
-        "api_key": "valid_key_for_test",
-        "group_id": "valid_group_for_test",
+        "key": "test_api_key",
+        "voice_id": "daisy",
         "dump": True,
-        "dump_path": DUMP_PATH
+        "dump_path": DUMP_PATH,
+        "params": {}
     }
 
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(dump_config)
     )
 
-    try:
-        print("Running dump test...")
-        tester.run()
-        print("Dump test completed.")
+    print("Running dump test...")
+    tester.run()
+    print("Dump test completed.")
 
-        # --- Assertions ---
-        assert tester.audio_end_received, "tts_audio_end was not received"
+    # --- Verification ---
+    # 1. Verify audio end was received
+    assert tester.audio_end_received, "Expected to receive tts_audio_end"
+    assert len(tester.received_audio_chunks) > 0, "Expected to receive audio chunks"
 
-        # Write the audio chunks collected by the test extension to its own dump file
-        tester.write_test_dump_file()
-        assert os.path.exists(tester.test_dump_file_path), "Test dump file was not created"
+    # 2. Write received audio chunks to test file for comparison
+    tester.write_test_dump_file()
 
-        # Find the dump file automatically created by the TTS extension
-        tts_dump_file = tester.find_tts_dump_file()
-        assert tts_dump_file is not None, f"Could not find TTS-generated dump file in {DUMP_PATH}"
+    # 3. Find the dump file created by the extension
+    tts_dump_file = tester.find_tts_dump_file()
+    assert tts_dump_file is not None, f"Expected to find a TTS dump file in {DUMP_PATH}"
+    assert os.path.exists(tts_dump_file), f"TTS dump file should exist: {tts_dump_file}"
 
-        print(f"Comparing TTS dump file: {tts_dump_file}")
-        print(f"With test dump file:    {tester.test_dump_file_path}")
+    # 4. Compare the files
+    print(f"Comparing test file {tester.test_dump_file_path} with TTS dump file {tts_dump_file}")
+    assert filecmp.cmp(tester.test_dump_file_path, tts_dump_file, shallow=False), \
+        "Test dump file and TTS dump file should have the same content"
 
-        # Binary comparison of the two files
-        assert filecmp.cmp(tts_dump_file, tester.test_dump_file_path, shallow=False), \
-            "The TTS dump file and the test-generated dump file do not match."
+    print(f"✅ Dump functionality test passed: received {len(tester.received_audio_chunks)} audio chunks")
+    print(f"   Test file: {tester.test_dump_file_path}")
+    print(f"   TTS dump file: {tts_dump_file}")
 
-        print("✅ Dump file binary comparison passed.")
+    # --- Cleanup ---
+    if os.path.exists(DUMP_PATH):
+        shutil.rmtree(DUMP_PATH)
 
-    finally:
-        # Cleanup the dump directory after the test.
-        if os.path.exists(DUMP_PATH):
-            shutil.rmtree(DUMP_PATH)
 
 # ================ case 5 ================
 class ExtensionTesterMetrics(ExtensionTester):
@@ -435,8 +411,8 @@ class ExtensionTesterMetrics(ExtensionTester):
              self.audio_frame_received = True
              ten_env.log_info("First audio frame received.")
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_ttfb_metric_is_sent(MockMinimaxTTS2):
+@patch('humeai_tts_python.extension.HumeAiTTS')
+def test_ttfb_metric_is_sent(MockHumeAiTTS):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
     receiving the first audio chunk from the TTS service.
@@ -444,30 +420,29 @@ def test_ttfb_metric_is_sent(MockMinimaxTTS2):
     print("Starting test_ttfb_metric_is_sent with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance = MockHumeAiTTS.return_value
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b'\x11\x22\x33', EVENT_TTSResponse)
+        yield (b'\x11\x22\x33', EVENT_TTS_RESPONSE)
         # Simulate the end of the stream
-        yield (None, EVENT_TTSSentenceEnd)
+        yield (None, EVENT_TTS_END)
 
     mock_instance.get.side_effect = mock_get_audio_with_delay
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
-        "api_key": "a_valid_key",
-        "group_id": "a_valid_group",
+        "key": "test_api_key",
+        "voice_id": "daisy",
+        "params": {}
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(metrics_config)
     )
 
@@ -487,129 +462,13 @@ def test_ttfb_metric_is_sent(MockMinimaxTTS2):
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")
 
-# ================ case 6 ================
-class ExtensionTesterRobustness(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.first_request_error: dict[str, Any] | None = None
-        self.second_request_successful = False
-        self.ten_env: TenEnvTester | None = None
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends the first TTS request."""
-        self.ten_env = ten_env_tester
-        ten_env_tester.log_info("Robustness test started, sending first TTS request.")
-
-        # First request, expected to fail
-        tts_input_1 = TTSTextInput(
-            request_id="tts_request_to_fail",
-            text="This request will trigger a simulated connection drop.",
-        )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input_1.model_dump_json())
-        ten_env_tester.send_data(data)
-        ten_env_tester.on_start_done()
-
-    def send_second_request(self):
-        """Sends the second TTS request to verify reconnection."""
-        if self.ten_env is None:
-            print("Error: ten_env is not initialized.")
-            return
-        self.ten_env.log_info("Sending second TTS request to verify reconnection.")
-        tts_input_2 = TTSTextInput(
-            request_id="tts_request_to_succeed",
-            text="This request should succeed after reconnection.",
-        )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input_2.model_dump_json())
-        self.ten_env.send_data(data)
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        name = data.get_name()
-        json_str, _ = data.get_property_to_json(None)
-        payload = json.loads(json_str)
-
-        if name == "error" and payload.get("id") == "tts_request_to_fail":
-            ten_env.log_info(f"Received expected error for the first request: {payload}")
-            self.first_request_error = payload
-            # After receiving the error for the first request, immediately send the second one.
-            self.send_second_request()
-
-        # Use a separate 'if' to ensure this check happens independently of the error check.
-        if payload.get("id") == "tts_request_to_succeed":
-            ten_env.log_info("Received tts_audio_end for the second request. Test successful.")
-            self.second_request_successful = True
-            # We can now safely stop the test.
-            ten_env.stop_test()
-
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_reconnect_after_connection_drop(MockMinimaxTTS2):
-    """
-    Tests that the extension can recover from a connection drop, report a
-    NON_FATAL_ERROR, and then successfully reconnect and process a new request.
-    """
-    print("Starting test_reconnect_after_connection_drop with mock...")
-
-    # --- Mock State ---
-    # Use a simple counter to track how many times get() is called
-    get_call_count = 0
-
-    # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
-
-    # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str):
-        nonlocal get_call_count
-        get_call_count += 1
-
-        if get_call_count == 1:
-            # On the first call, simulate a connection drop
-            raise ConnectionRefusedError("Simulated connection drop from test")
-        else:
-            # On the second call, simulate a successful audio stream
-            yield (b'\x44\x55\x66', EVENT_TTSResponse)
-            yield (None, EVENT_TTSSentenceEnd)
-
-    mock_instance.get.side_effect = mock_get_stateful
-
-    # --- Test Setup ---
-    config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
-    tester = ExtensionTesterRobustness()
-    tester.set_test_mode_single(
-        "minimax_tts2_python",
-        json.dumps(config)
-    )
-
-    print("Running robustness test...")
-    tester.run()
-    print("Robustness test completed.")
-
-    # --- Assertions ---
-    # 1. Verify that the first request resulted in a NON_FATAL_ERROR
-    assert tester.first_request_error is not None, "Did not receive any error message."
-    assert tester.first_request_error.get("code") == 1000, \
-        f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
-
-    # 2. Verify that vendor_info was included in the error
-    vendor_info = tester.first_request_error.get("vendor_info")
-    assert vendor_info is not None, "Error message did not contain vendor_info."
-    assert vendor_info.get("vendor") == "minimax", \
-        f"Expected vendor 'minimax', got {vendor_info.get('vendor')}"
-
-    # 3. Verify that the client's start method was called twice (initial + reconnect)
-    # This assertion is tricky because the reconnection logic might be inside the client.
-    # A better assertion is to check if the second request succeeded.
-
-    # 4. Verify that the second TTS request was successful
-    assert tester.second_request_successful, "The second TTS request after the error did not succeed."
-
-    print("✅ Robustness test passed: Correctly handled simulated connection drop and recovered.")
-
 # ================ case 7 ================
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""
+
+    def __init__(self):
+        super().__init__()
+        self.tts_completed = False
 
     def check_hello(self, ten_env: TenEnvTester, result: CmdResult | None):
         if result is None:
@@ -619,8 +478,14 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         print("receive hello_world, status:" + str(statusCode))
 
         if statusCode == StatusCode.OK:
-            # TODO: move stop_test() to where the test passes
-            ten_env.stop_test()
+            # Send a simple TTS request to ensure client initialization
+            tts_input = TTSTextInput(
+                request_id="passthrough_test",
+                text="test",
+            )
+            data = Data.create("tts_text_input")
+            data.set_property_from_json(None, tts_input.model_dump_json())
+            ten_env.send_data(data)
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         new_cmd = Cmd.create("hello_world")
@@ -634,42 +499,47 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         print("tester on_start_done")
         ten_env_tester.on_start_done()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_params_passthrough(MockMinimaxTTS2):
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        name = data.get_name()
+        if name == "tts_audio_end" and not self.tts_completed:
+            self.tts_completed = True
+            ten_env.stop_test()
+
+@patch('humeai_tts_python.extension.HumeAiTTS')
+def test_params_passthrough(MockHumeAiTTS):
     """
     Tests that custom parameters passed in the configuration are correctly
-    forwarded to the MinimaxTTS2 client constructor.
+    forwarded to the HumeAiTTS client constructor.
     """
     print("Starting test_params_passthrough with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock() # Required for clean shutdown in on_stop
+    mock_instance = MockHumeAiTTS.return_value
+    mock_instance.cancel = AsyncMock() # Required for clean shutdown in on_flush
+
+    async def mock_get_audio_stream(text: str):
+        yield (b'\x11\x22\x33', EVENT_TTS_RESPONSE)
+        yield (None, EVENT_TTS_END)
+
+    mock_instance.get.side_effect = mock_get_audio_stream
 
     # --- Test Setup ---
-    # Define a configuration with custom, arbitrary parameters inside 'params'.
+    # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
     passthrough_params = {
-        "model": "tts_v2",
-        "audio_setting": {
-            "format": "pcm",
-            "sample_rate": 16000,
-            "channels": 1
-        },
-        "voice_setting": {
-            "voice_id": "male-qn-qingse"
-        }
+        "speed": 1.5,
+        "trailing_silence": 0.8,
+        "custom_param": "test_value"
     }
     passthrough_config = {
-        "api_key": "a_valid_key",
-        "group_id": "a_valid_group",
+        "key": "test_api_key",
+        "voice_id": "daisy",
         "params": passthrough_params
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(passthrough_config)
     )
 
@@ -678,22 +548,24 @@ def test_params_passthrough(MockMinimaxTTS2):
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the MinimaxTTS2 client was instantiated exactly once.
-    MockMinimaxTTS2.assert_called_once()
+    # Check that the HumeAiTTS client was instantiated exactly once.
+    MockHumeAiTTS.assert_called_once()
 
     # Get the arguments that the mock was called with.
-    # The constructor signature is (self, config, ten_env, vendor),
-    # so we inspect the 'config' object at index 1 of the call arguments.
-    call_args, call_kwargs = MockMinimaxTTS2.call_args
-    called_config = call_args[0]
+    # The constructor is called with keyword arguments like config=...
+    # so we inspect the keyword arguments dictionary.
+    call_args, call_kwargs = MockHumeAiTTS.call_args
+    called_config = call_kwargs['config']
 
-    # Verify that the 'params' dictionary in the config object passed to the
-    # client constructor is identical to the one we defined in our test config.
-    assert called_config.params == passthrough_params, \
-        f"Expected params to be {passthrough_params}, but got {called_config.params}"
+    # Verify that the configuration object contains our expected parameters
+    # Note: HumeAi uses update_params() to merge params into the config
+    assert hasattr(called_config, 'speed'), "Config should have speed parameter"
+    assert called_config.speed == 1.5, f"Expected speed to be 1.5, but got {called_config.speed}"
+    assert hasattr(called_config, 'trailing_silence'), "Config should have trailing_silence parameter"
+    assert called_config.trailing_silence == 0.8, f"Expected trailing_silence to be 0.8, but got {called_config.trailing_silence}"
 
     print("✅ Params passthrough test passed successfully.")
-    print(f"✅ Verified params: {called_config.params}")
+    print(f"✅ Verified config speed: {called_config.speed}, trailing_silence: {called_config.trailing_silence}")
 
 # ================ case 8  ================
 class ExtensionTesterTextInputEnd(ExtensionTester):
@@ -713,7 +585,7 @@ class ExtensionTesterTextInputEnd(ExtensionTester):
         # 1. Send first request with text_input_end=True
         tts_input_1 = TTSTextInput(
             request_id="tts_request_1",
-            text="hello word, hello agora",
+            text="hello world, hello agora",
             text_input_end=True
         )
         data = Data.create("tts_text_input")
@@ -727,31 +599,30 @@ class ExtensionTesterTextInputEnd(ExtensionTester):
             return
 
         self.ten_env.log_info("Sending second TTS request, expecting an error.")
-        # 2. Send second request with text_input_end=False
+        # 2. Send second request with text_input_end=False, which should be ignored
         tts_input_2 = TTSTextInput(
             request_id="tts_request_1",
-            text="this should be ignored",
-            text_input_end=False
+            text="this should be ignored"
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_2.model_dump_json())
         self.ten_env.send_data(data)
-
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
         ten_env.log_info(f"Received data: {name}")
 
         if name == "tts_audio_end":
-            if not self.first_request_audio_end_received:
+            json_str, _ = data.get_property_to_json(None)
+            payload = json.loads(json_str) if json_str else {}
+            ten_env.log_info(f"Received tts_audio_end: {payload}")
+            if payload.get("request_id") == "tts_request_1" and not self.first_request_audio_end_received:
                 ten_env.log_info("Received tts_audio_end for the first request.")
                 self.first_request_audio_end_received = True
-                self.send_second_request()
+                self.send_second_request() # Now, send the second request that should fail
             return
 
         json_str, _ = data.get_property_to_json(None)
-        ten_env.log_info(f"Received data: {json_str}")
-
         if not json_str:
             return
 
@@ -766,30 +637,29 @@ class ExtensionTesterTextInputEnd(ExtensionTester):
             self.error_module = payload.get("module")
             ten_env.stop_test()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_text_input_end_logic(MockMinimaxTTS2):
+@patch('humeai_tts_python.extension.HumeAiTTS')
+def test_text_input_end_logic(MockHumeAiTTS):
     """
     Tests that after a request with text_input_end=True is processed,
-    subsequent requests with the same request_id and text_input_end=False are ignored and trigger an error.
+    subsequent requests with the same request_id are ignored and trigger an error.
     """
     print("Starting test_text_input_end_logic with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance = MockHumeAiTTS.return_value
+    mock_instance.cancel = AsyncMock()
 
     async def mock_get_audio_stream(text: str):
-        yield (b'\x11\x22\x33', EVENT_TTSResponse)
-        yield (None, EVENT_TTSSentenceEnd)
+        yield (b'\x11\x22\x33', EVENT_TTS_RESPONSE)
+        yield (None, EVENT_TTS_END)
 
     mock_instance.get.side_effect = mock_get_audio_stream
 
     # --- Test Setup ---
-    config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
+    config = { "key": "test_api_key", "voice_id": "daisy" }
     tester = ExtensionTesterTextInputEnd()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(config)
     )
 
@@ -818,7 +688,7 @@ class ExtensionTesterFlush(ExtensionTester):
         self.audio_end_reason = ""
         self.total_audio_duration_from_event = 0
         self.received_audio_bytes = 0
-        self.sample_rate = 24000
+        self.sample_rate = 48000  # Hume TTS sample rate
         self.bytes_per_sample = 2  # 16-bit
         self.channels = 1
         self.audio_received_after_flush_end = False
@@ -861,15 +731,15 @@ class ExtensionTesterFlush(ExtensionTester):
             self.audio_start_received = True
             return
 
-        if name == "tts_flush_start":
-            self.flush_start_received = True
-            return
-
         json_str, _ = data.get_property_to_json(None)
         if not json_str:
             return
         payload = json.loads(json_str)
         ten_env.log_info(f"on_data payload: {payload}")
+
+        if name == "tts_flush_start":
+            self.flush_start_received = True
+            return
 
         if name == "tts_audio_end":
             self.audio_end_received = True
@@ -883,8 +753,6 @@ class ExtensionTesterFlush(ExtensionTester):
                 ten_env.log_info("Waited after flush_end, stopping test now.")
                 ten_env.stop_test()
 
-            # Use threading.Timer to avoid 'no running event loop' error,
-            # as on_data is called from a non-async context.
             timer = threading.Timer(0.5, stop_test_later)
             timer.start()
 
@@ -893,36 +761,36 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_flush_logic(MockMinimaxTTS2):
+@patch('humeai_tts_python.extension.HumeAiTTS')
+def test_flush_logic(MockHumeAiTTS):
     """
     Tests that sending a flush command during TTS streaming correctly stops
     the audio and sends the appropriate events.
     """
     print("Starting test_flush_logic with mock...")
 
-    mock_instance = MockMinimaxTTS2.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance = MockHumeAiTTS.return_value
     mock_instance.cancel = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str):
         for _ in range(20):
+            # In a real scenario, the cancel() call would set a flag.
+            # We simulate this by checking the mock's 'called' status.
             if mock_instance.cancel.called:
-                print("Mock detected cancel call, stopping stream and yielding EVENT_TTSFlush.")
-                yield (None, EVENT_TTSFlush)
-                return  # Stop the generator immediately
-            yield (b'\x11\x22\x33' * 100, EVENT_TTSResponse)
+                print("Mock detected cancel call, stopping stream.")
+                break
+            yield (b'\x11\x22\x33' * 100, EVENT_TTS_RESPONSE)
             await asyncio.sleep(0.1)
-        # This part is only reached if not cancelled
-        yield (None, EVENT_TTSSentenceEnd)
+
+        # After being cancelled (or finishing), the stream must send EVENT_TTS_END
+        yield (None, EVENT_TTS_END)
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
-    config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
+    config = { "key": "test_api_key", "voice_id": "daisy" }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "humeai_tts_python",
         json.dumps(config)
     )
 
@@ -937,9 +805,6 @@ def test_flush_logic(MockMinimaxTTS2):
     assert tester.flush_end_received, "Did not receive tts_flush_end."
     assert not tester.audio_received_after_flush_end, "Received audio after tts_flush_end."
 
-    # TODO: no reason in audio end
-    #assert tester.audio_end_reason == "flush", f"Expected audio end reason 'flush', but got '{tester.audio_end_reason}'"
-
     calculated_duration = tester.get_calculated_audio_duration_ms()
     event_duration = tester.total_audio_duration_from_event
     print(f"calculated_duration: {calculated_duration}, event_duration: {event_duration}")
@@ -947,3 +812,17 @@ def test_flush_logic(MockMinimaxTTS2):
         f"Mismatch in audio duration. Calculated: {calculated_duration}ms, From event: {event_duration}ms"
 
     print("✅ Flush logic test passed successfully.")
+
+if __name__ == "__main__":
+    # Run all tests
+    print("Running all HumeAI TTS tests...")
+    test_basic()
+    test_empty_params_fatal_error()
+    test_invalid_api_key_error()
+    test_dump_functionality()
+    test_flush_logic()
+    test_ttfb_metric_is_sent()
+    test_params_passthrough()
+    test_text_input_end_logic()
+    test_flush_logic()
+    print("All tests completed!")

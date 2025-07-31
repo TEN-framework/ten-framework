@@ -18,6 +18,7 @@ from .config import HumeAiTTSConfig
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
+EVENT_TTS_INVALID_KEY_ERROR = 4
 
 class HumeAiTTS:
     def __init__(self, config: HumeAiTTSConfig, ten_env: AsyncTenEnv):
@@ -77,8 +78,16 @@ class HumeAiTTS:
             yield None, EVENT_TTS_END
 
         except Exception as e:
+            error_message = str(e)
             self.ten_env.log_error(f"Hume TTS streaming failed: {e}")
-            yield str(e).encode('utf-8'), EVENT_TTS_ERROR
+
+            # Check if it's an API key authentication error
+            if ("401" in error_message and "Invalid ApiKey" in error_message) or \
+               ("Invalid ApiKey" in error_message) or \
+               ("oauth.v2.InvalidApiKey" in error_message):
+                yield error_message.encode('utf-8'), EVENT_TTS_INVALID_KEY_ERROR
+            else:
+                yield error_message.encode('utf-8'), EVENT_TTS_ERROR
 
     async def cancel(self):
         self.ten_env.log_debug("HumeAiTTS: cancel() called.")
