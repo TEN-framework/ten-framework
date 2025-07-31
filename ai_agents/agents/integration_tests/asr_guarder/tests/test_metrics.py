@@ -66,6 +66,7 @@ class MetricsTester(AsyncExtensionTester):
         self.ttlw: int | None = None
         self.finalize_id: str | None = None
         self.finalize_end_received: bool = False
+        self.metrics_validated: bool = False
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data and session ID."""
@@ -345,6 +346,7 @@ class MetricsTester(AsyncExtensionTester):
             ten_env.log_info(
                 f"✅ Both metrics received - TTFW: {self.ttfw}, TTLW: {self.ttlw}"
             )
+            self.metrics_validated = True
             return True
         else:
             ten_env.log_info("Waiting for both TTFW and TTLW metrics...")
@@ -361,16 +363,24 @@ class MetricsTester(AsyncExtensionTester):
 
             if self._validate_finalize_end(ten_env, data):
                 ten_env.log_info("✅ asr_finalize_end validation completed")
+                # 检查 metrics 是否已经验证成功
+                if self.metrics_validated:
+                    ten_env.log_info(
+                        "✅ ASR metrics test passed - both finalize_end and metrics validation completed"
+                    )
+                    ten_env.stop_test()
+                else:
+                    ten_env.log_info("Waiting for metrics validation...")
             return
         elif name == "metrics":
             """Handle metrics data."""
             ten_env.log_info("Received metrics data")
 
             if self._validate_metrics(ten_env, data):
-                # Check if we have both finalize_end and metrics
+                # 检查是否已经收到 finalize_end 信号
                 if self.finalize_end_received:
                     ten_env.log_info(
-                        "✅ ASR metrics test passed with all validations"
+                        "✅ ASR metrics test passed - both finalize_end and metrics validation completed"
                     )
                     ten_env.stop_test()
                 else:
@@ -449,7 +459,7 @@ def test_metrics(extension_name: str, config_dir: str) -> None:
     print("  2. Receive final result with final=True")
     print("  3. Output asr_finalize_end signal")
     print("  4. Output metrics with TTFW and TTLW")
-    print("  5. Validate metrics structure and content")
+    print("  5. Validate both finalize_end and metrics before test completion")
 
     # Create and run tester
     tester = MetricsTester(

@@ -131,6 +131,13 @@ class AsrFinalizeTester(AsyncExtensionTester):
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio data and silence packets to ASR extension once."""
         try:
+            # Wait for ASR extension to be fully ready
+            ten_env.log_info("Waiting for ASR extension to be fully ready...")
+            await asyncio.sleep(
+                3.0
+            )  # Wait 3 seconds for ASR extension to start
+            ten_env.log_info("ASR extension should be ready now")
+
             # Send audio file
             ten_env.log_info("=== Starting audio send ===")
             await self._send_audio_file(ten_env)
@@ -437,6 +444,12 @@ class AsrFinalizeTester(AsyncExtensionTester):
 
             if self._validate_finalize_end(ten_env, data):
                 ten_env.log_info("✅ asr_finalize_end validation completed")
+                # Check if we already have final result, then we can stop test
+                if self.id_group_manager.get_complete_groups_count() > 0:
+                    ten_env.log_info(
+                        "✅ ASR finalize test passed with finalize validation"
+                    )
+                    ten_env.stop_test()
             return
         elif name == "asr_result":
             """Handle asr_result data."""
@@ -460,7 +473,7 @@ class AsrFinalizeTester(AsyncExtensionTester):
 
         # Add result to ID group manager
         group_id = self.id_group_manager.add_result(json_data)
-        ten_env.log_info(f"Added result to group: {group_id}")
+        # ten_env.log_info(f"Added result to group: {group_id}")
 
         # Get the group this result was added to
         group = self.id_group_manager.get_group_by_id(group_id)
