@@ -64,6 +64,9 @@ void ten_raw_msg_init(ten_msg_t *self, TEN_MSG_TYPE type) {
   self->type = type;
   ten_value_init_string(&self->name);
 
+  self->has_custom_src_loc = false;
+  ten_loc_init_empty(&self->custom_src_loc);
+
   ten_loc_init_empty(&self->src_loc);
   ten_list_init(&self->dest_loc);
 
@@ -83,6 +86,8 @@ void ten_raw_msg_deinit(ten_msg_t *self) {
   ten_signature_set(&self->signature, 0);
   ten_value_deinit(&self->name);
 
+  ten_loc_deinit(&self->custom_src_loc);
+
   ten_loc_deinit(&self->src_loc);
   ten_list_clear(&self->dest_loc);
 
@@ -91,27 +96,50 @@ void ten_raw_msg_deinit(ten_msg_t *self) {
   ten_value_deinit(&self->properties);
 }
 
+void ten_raw_msg_set_custom_src(ten_msg_t *self, const char *app_uri,
+                                const char *graph_id,
+                                const char *extension_name) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
+  ten_loc_set(&self->custom_src_loc, app_uri, graph_id, extension_name);
+  self->has_custom_src_loc = true;
+}
+
+void ten_msg_set_custom_src(ten_shared_ptr_t *self, const char *app_uri,
+                            const char *graph_id, const char *extension_name) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
+  ten_raw_msg_set_custom_src(ten_msg_get_raw_msg(self), app_uri, graph_id,
+                             extension_name);
+}
+
 void ten_raw_msg_set_src_to_loc(ten_msg_t *self, ten_loc_t *loc) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   ten_loc_set_from_loc(&self->src_loc, loc);
 }
 
 void ten_msg_set_src_to_loc(ten_shared_ptr_t *self, ten_loc_t *loc) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   ten_raw_msg_set_src_to_loc(ten_shared_ptr_get_data(self), loc);
 }
 
 static void ten_raw_msg_clear_dest(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   ten_list_clear(&self->dest_loc);
 }
 
 void ten_msg_clear_dest(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   ten_raw_msg_clear_dest(ten_msg_get_raw_msg(self));
 }
 
@@ -182,6 +210,7 @@ void ten_msg_clear_and_set_dest_from_msg_src(ten_shared_ptr_t *self,
 static bool ten_raw_msg_src_is_empty(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   return ten_loc_is_empty(&self->src_loc);
 }
 
@@ -227,6 +256,7 @@ ten_loc_t *ten_raw_msg_get_first_dest_loc(ten_msg_t *self) {
 
 bool ten_msg_check_integrity(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
+
   ten_msg_t *raw_msg = ten_shared_ptr_get_data(self);
   if (ten_raw_msg_check_integrity(raw_msg) == false) {
     return false;
@@ -237,12 +267,14 @@ bool ten_msg_check_integrity(ten_shared_ptr_t *self) {
 bool ten_msg_src_is_empty(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return ten_raw_msg_src_is_empty(ten_msg_get_raw_msg(self));
 }
 
 const char *ten_msg_get_first_dest_uri(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return ten_raw_msg_get_first_dest_uri(ten_msg_get_raw_msg(self));
 }
 
@@ -251,6 +283,7 @@ static void ten_raw_msg_set_src(ten_msg_t *self, const char *uri,
                                 const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   ten_loc_set(&self->src_loc, uri, graph_id, extension_name);
 }
 
@@ -258,6 +291,7 @@ void ten_msg_set_src(ten_shared_ptr_t *self, const char *uri,
                      const char *graph_id, const char *extension_name) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   ten_raw_msg_set_src(ten_msg_get_raw_msg(self), uri, graph_id, extension_name);
 }
 
@@ -478,18 +512,21 @@ void ten_msg_clear_and_set_dest_from_extension_info(
 ten_list_t *ten_msg_get_dest(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return &ten_msg_get_raw_msg(self)->dest_loc;
 }
 
 size_t ten_raw_msg_get_dest_cnt(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   return ten_list_size(&self->dest_loc);
 }
 
 size_t ten_msg_get_dest_cnt(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return ten_raw_msg_get_dest_cnt(ten_shared_ptr_get_data(self));
 }
 
@@ -506,18 +543,21 @@ const char *ten_msg_get_src_app_uri(ten_shared_ptr_t *self) {
 const char *ten_msg_get_src_graph_id(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return ten_string_get_raw_str(&ten_msg_get_raw_msg(self)->src_loc.graph_id);
 }
 
 ten_loc_t *ten_raw_msg_get_src_loc(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
+
   return &self->src_loc;
 }
 
 ten_loc_t *ten_msg_get_src_loc(ten_shared_ptr_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+
   return ten_raw_msg_get_src_loc(ten_shared_ptr_get_data(self));
 }
 
@@ -527,7 +567,15 @@ void ten_msg_get_source(ten_shared_ptr_t *self, const char **app_uri,
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
 
-  ten_loc_t *loc = ten_msg_get_src_loc(self);
+  ten_msg_t *raw_msg = ten_msg_get_raw_msg(self);
+  TEN_ASSERT(raw_msg, "Should not happen.");
+  ten_loc_t *loc = NULL;
+
+  if (raw_msg->has_custom_src_loc) {
+    loc = &raw_msg->custom_src_loc;
+  } else {
+    loc = &raw_msg->src_loc;
+  }
   TEN_ASSERT(loc, "Should not happen.");
 
   if (app_uri) {

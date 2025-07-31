@@ -51,6 +51,9 @@ typedef struct ten_msg_t {
   // that have not specified a name.
   ten_value_t name;  // string
 
+  bool has_custom_src_loc;
+  ten_loc_t custom_src_loc;
+
   ten_loc_t src_loc;
   ten_list_t dest_loc;
 
@@ -72,6 +75,15 @@ TEN_RUNTIME_PRIVATE_API void ten_raw_msg_deinit(ten_msg_t *self);
 
 TEN_RUNTIME_PRIVATE_API void ten_raw_msg_copy_field(
     ten_msg_t *self, ten_msg_t *src, ten_list_t *excluded_field_ids);
+
+TEN_RUNTIME_PRIVATE_API void ten_raw_msg_set_custom_src(
+    ten_msg_t *self, const char *app_uri, const char *graph_id,
+    const char *extension_name);
+
+TEN_RUNTIME_PRIVATE_API void ten_msg_set_custom_src(ten_shared_ptr_t *self,
+                                                    const char *app_uri,
+                                                    const char *graph_id,
+                                                    const char *extension_name);
 
 TEN_RUNTIME_PRIVATE_API void ten_raw_msg_set_src_to_loc(ten_msg_t *self,
                                                         ten_loc_t *loc);
