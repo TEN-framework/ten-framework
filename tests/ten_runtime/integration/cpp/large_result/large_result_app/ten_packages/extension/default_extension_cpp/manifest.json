@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "default_extension_cpp",
-  "version": "0.10.25",
+  "version": "0.10.26",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.25"
+      "version": "0.10.26"
     }
   ]
 }
