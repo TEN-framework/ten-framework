@@ -141,9 +141,3 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_set_extension_name_with_size(
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_set_extension_name(
     ten_loc_t *self, const char *extension_name);
-
-TEN_RUNTIME_PRIVATE_API void ten_loc_unset_app_uri(ten_loc_t *self);
-
-TEN_RUNTIME_PRIVATE_API void ten_loc_unset_graph_id(ten_loc_t *self);
-
-TEN_RUNTIME_PRIVATE_API void ten_loc_unset_extension_name(ten_loc_t *self);

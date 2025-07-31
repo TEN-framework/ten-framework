@@ -337,6 +337,30 @@ ten_value_t *ten_loc_to_value(ten_loc_t *self) {
   }
 }
 
+static void ten_loc_unset_app_uri(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->app_uri);
+  self->has_app_uri = false;
+}
+
+static void ten_loc_unset_graph_id(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->graph_id);
+  self->has_graph_id = false;
+}
+
+static void ten_loc_unset_extension_name(ten_loc_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
+
+  ten_string_clear(&self->extension_name);
+  self->has_extension_name = false;
+}
+
 void ten_loc_set_from_value(ten_loc_t *self, ten_value_t *value) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(value, "Should not happen.");
@@ -454,33 +478,6 @@ void ten_loc_set_app_uri(ten_loc_t *self, const char *app_uri) {
   TEN_ASSERT(app_uri, "Should not happen.");
 
   ten_loc_set_app_uri_with_size(self, app_uri, strlen(app_uri));
-}
-
-void ten_loc_unset_app_uri(ten_loc_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(self->has_app_uri, "Should not happen.");
-
-  ten_string_clear(&self->app_uri);
-  self->has_app_uri = false;
-}
-
-void ten_loc_unset_graph_id(ten_loc_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(self->has_graph_id, "Should not happen.");
-
-  ten_string_clear(&self->graph_id);
-  self->has_graph_id = false;
-}
-
-void ten_loc_unset_extension_name(ten_loc_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_loc_check_integrity(self), "Should not happen.");
-  TEN_ASSERT(self->has_extension_name, "Should not happen.");
-
-  ten_string_clear(&self->extension_name);
-  self->has_extension_name = false;
 }
 
 void ten_loc_set_graph_id_with_size(ten_loc_t *self, const char *graph_id,
