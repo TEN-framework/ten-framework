@@ -67,9 +67,8 @@ async fn test_exec_endpoint_command_execution() {
     let exec_cmd_msg = InboundMsg::ExecCmd {
         base_dir: temp_dir.to_string_lossy().to_string(), // Working directory
         cmd: "echo Hello from exec test".to_string(),     // Command to execute
-        stdout_is_log: false,                             /* Standard output
-                                                           * not treated as
-                                                           * log */
+        // Standard output not treated as log
+        stdout_is_log: false,
         stderr_is_log: false, // Error output not treated as log
     };
 
@@ -238,7 +237,7 @@ async fn test_exec_endpoint_run_script() {
     let server_addr = addr_rx.await.unwrap();
 
     // Give server time to fully start
-    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     println!("📡 Test server started at: {server_addr}");
 
