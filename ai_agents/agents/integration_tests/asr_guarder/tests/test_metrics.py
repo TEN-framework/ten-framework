@@ -359,7 +359,7 @@ class MetricsTester(AsyncExtensionTester):
 
             if self._validate_finalize_end(ten_env, data):
                 ten_env.log_info("✅ asr_finalize_end validation completed")
-                # 检查 metrics 是否已经验证成功
+                # Check if metrics have been validated successfully
                 if self.metrics_validated:
                     ten_env.log_info(
                         "✅ ASR metrics test passed - both finalize_end and metrics validation completed"
@@ -373,7 +373,7 @@ class MetricsTester(AsyncExtensionTester):
             ten_env.log_info("Received metrics data")
 
             if self._validate_metrics(ten_env, data):
-                # 检查是否已经收到 finalize_end 信号
+                # Check if finalize_end signal has been received
                 if self.finalize_end_received:
                     ten_env.log_info(
                         "✅ ASR metrics test passed - both finalize_end and metrics validation completed"
