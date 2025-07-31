@@ -54,17 +54,43 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
+        ten_env.log_info("DeepgramASRExtension on_init")
 
         # Initialize reconnection manager
         self.reconnect_manager = ReconnectManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
 
-        try:
-            self.config = DeepgramASRConfig.model_validate_json(config_json)
-            self.config.update(self.config.params)
-            ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}"
+    async def _handle_reconnect(self):
+        await asyncio.sleep(0.2)
+        await self.start_connection()
+
+    def _on_close(self, *args, **kwargs):
+        self.ten_env.log_info(
+            f"deepgram event callback on_close: {args}, {kwargs}"
+        )
+        self.connected = False
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Deepgram connection closed unexpectedly. Reconnecting..."
+            )
+            asyncio.create_task(self._handle_reconnect())
+
+    async def _on_open(self, _, event):
+        self.ten_env.log_info(f"deepgram event callback on_open: {event}")
+        self.connected = True
+
+    async def _on_error(self, _, error):
+        self.ten_env.log_error(
+            f"deepgram event callback on_error: {error.to_json()}"
+        )
+
+        if self.on_error:
+            error_message = ErrorMessage(
+                code=-1,
+                message=error.to_json(),
+                turn_id=0,
+                module=ModuleType.ASR,
             )
 
             if self.config.dump:
@@ -315,11 +341,13 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         if not self.reconnect_manager.can_retry():
             self.ten_env.log_warn("No more reconnection attempts allowed")
             await self.send_asr_error(
-              ModuleError(
-                module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.FATAL_ERROR.value,
-                message="No more reconnection attempts allowed",
-              )
+                ErrorMessage(
+                    code=1,
+                    message=str(e),
+                    turn_id=0,
+                    module=ModuleType.ASR,
+                ),
+                None,
             )
             return
 
@@ -358,13 +386,32 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             self.ten_env.log_error(f"Error stopping deepgram connection: {e}")
 
-    @override
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> None:
+        self.session_id = session_id
+        frame_buf = frame.get_buf()
+        return await self.client.send(frame_buf)
+
     def is_connected(self) -> bool:
         return self.connected and self.client is not None
 
-    @override
-    def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+    async def finalize(self, session_id: str | None) -> None:
+        self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
+        self.ten_env.log_debug(
+            f"deepgram drain start at {self.last_finalize_timestamp} session_id: {session_id}"
+        )
+        await self.client.finalize()
+
+    async def _finalize_counter_if_needed(self, is_final: bool) -> None:
+        if is_final and self.last_finalize_timestamp != 0:
+            timestamp = int(datetime.now().timestamp() * 1000)
+            latency = timestamp - self.last_finalize_timestamp
+            self.ten_env.log_debug(
+                f"KEYPOINT deepgram drain end at {timestamp}, counter: {latency}"
+            )
+            self.last_finalize_timestamp = 0
+            await self.send_asr_finalize_end()
 
     @override
     def input_audio_sample_rate(self) -> int:

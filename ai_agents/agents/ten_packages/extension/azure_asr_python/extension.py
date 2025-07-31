@@ -76,13 +76,105 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message=str(e),
+                    turn_id=0,
+                    module=ModuleType.ASR,
                 ),
             )
 
-    @override
+        self.ten_env.log_debug(f"azure event callback on_recognizing: {result}")
+        text = result.get("Text", "")
+        start_ms = (
+            result.get("Offset", 0) // 10000
+        )  # Convert ticks to milliseconds
+        duration_ms = result.get("Duration", 0) // 10000  # Convert
+        await self._on_recognized_result(
+            text, final=False, start_ms=start_ms, duration_ms=duration_ms
+        )
+
+    async def _on_recognized(self, evt: speechsdk.SpeechRecognitionEventArgs):
+        """Handle the recognized event from Azure ASR."""
+        result = json.loads(evt.result.json)
+        self.ten_env.log_debug(f"azure event callback on_recognizing: {result}")
+        text = result.get("DisplayText", "")
+        start_ms = (
+            result.get("Offset", 0) // 10000
+        )  # Convert ticks to milliseconds
+        duration_ms = result.get("Duration", 0) // 10000  # Convert
+        await self._on_recognized_result(
+            text, final=True, start_ms=start_ms, duration_ms=duration_ms
+        )
+
+    async def _on_recognized_result(
+        self, text: str, final: bool, start_ms: int = 0, duration_ms: int = 0
+    ):
+        """Handle the recognized result from Azure ASR."""
+        try:
+            transcription = UserTranscription(
+                text=text,
+                final=final,
+                start_ms=start_ms,  # Placeholder, actual start time should be set
+                duration_ms=duration_ms,  # Placeholder, actual duration should be set
+                language=self.config.language,
+                words=[],
+                metadata={
+                    "session_id": self.session_id,
+                },
+            )
+            await self.send_asr_transcription(transcription)
+        except Exception as e:
+            self.ten_env.log_error(f"Error processing recognized result: {e}")
+            await self.send_asr_error(
+                ErrorMessage(
+                    code=1,
+                    message=str(e),
+                    turn_id=0,
+                    module=ModuleType.ASR,
+                ),
+                None,
+            )
+
+    async def _on_session_started(self, evt):
+        """Handle the session started event from Azure ASR."""
+        self.ten_env.log_info(f"azure event callback on_session_started: {evt}")
+        self.connected = True
+
+    async def _on_session_stopped(self, evt):
+        """Handle the session stopped event from Azure ASR."""
+        self.ten_env.log_debug(
+            f"azure event callback on_session_stopped: {evt}"
+        )
+        self.connected = False
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "azure session stopped unexpectedly. Reconnecting..."
+            )
+            asyncio.create_task(self._handle_reconnect())
+
+    async def _on_canceled(self, evt):
+        """Handle the canceled event from Azure ASR."""
+        self.ten_env.log_error(f"azure event callback on_canceled: {evt}")
+
+        details = speechsdk.CancellationDetails(evt.result)
+        self.ten_env.log_error(
+            f"[azure] CANCELED: reason={details.reason}, error_code={details.code}, details={details.error_details}"
+        )
+
+        await self.send_asr_error(
+            ErrorMessage(
+                code=-1,
+                message="received on_canceled event from Azure ASR",
+                turn_id=0,
+                module=ModuleType.ASR,
+            ),
+            ErrorMessageVendorInfo(
+                vendor="azure",
+                code=details.code,
+                message=details.error_details,
+            ),
+        )
+
     async def start_connection(self) -> None:
         assert self.config is not None
-        self.ten_env.log_info("start_connection")
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -137,8 +229,49 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.client = speechsdk.SpeechRecognizer(
                 speech_config=speech_config,
                 audio_config=audio_config,
-                auto_detect_source_language_config=speechsdk.AutoDetectSourceLanguageConfig(
-                    languages=self.config.language_list
+            )
+
+            loop = asyncio.get_running_loop()
+
+            self.client.recognizing.connect(
+                lambda evt: loop.call_soon_threadsafe(
+                    asyncio.create_task, self._on_recognizing(evt)
+                )
+            )
+            self.client.recognized.connect(
+                lambda evt: loop.call_soon_threadsafe(
+                    asyncio.create_task, self._on_recognized(evt)
+                )
+            )
+            self.client.session_started.connect(
+                lambda evt: loop.call_soon_threadsafe(
+                    asyncio.create_task, self._on_session_started(evt)
+                )
+            )
+            self.client.session_stopped.connect(
+                lambda evt: loop.call_soon_threadsafe(
+                    asyncio.create_task, self._on_session_stopped(evt)
+                )
+            )
+            self.client.canceled.connect(
+                lambda evt: loop.call_soon_threadsafe(
+                    asyncio.create_task, self._on_canceled(evt)
+                )
+            )
+
+            result_future = self.client.start_continuous_recognition_async()
+            await loop.run_in_executor(None, result_future.get)
+            self.ten_env.log_info("start_connection completed")
+        except Exception as e:
+            self.ten_env.log_error(
+                f"Error starting azure connection: {traceback.format_exc()}"
+            )
+            await self.send_asr_error(
+                ErrorMessage(
+                    code=1,
+                    message=str(e),
+                    turn_id=0,
+                    module=ModuleType.ASR,
                 ),
             )
         else:
@@ -366,22 +499,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
     ):
         """Handle the canceled event from Azure ASR."""
 
-        cancellation_details = evt.cancellation_details
-        self.ten_env.log_error(
-            f"KEYPOINT vendor_error, code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}"
-        )
-        await self.send_asr_error(
-            ModuleError(
-                module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=cancellation_details.error_details,
-            ),
-            ModuleErrorVendorInfo(
-                vendor="microsoft",
-                code=str(cancellation_details.code),
-                message=cancellation_details.error_details,
-            ),
-        )
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> None:
+        self.session_id = session_id
+        frame_buf = frame.get_buf()
+        self.stream.write(bytes(frame_buf))
 
     async def _azure_event_handler_on_speech_start_detected(
         self, evt: speechsdk.RecognitionEventArgs
