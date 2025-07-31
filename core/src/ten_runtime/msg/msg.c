@@ -376,9 +376,7 @@ void ten_msg_set_src_app_uri(ten_shared_ptr_t *self, const char *uri) {
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   TEN_ASSERT(uri, "Invalid argument.");
 
-  ten_string_set_formatted(&(ten_msg_get_raw_msg(self)->src_loc.app_uri), "%s",
-                           uri);
-  ten_msg_get_raw_msg(self)->src_loc.has_app_uri = true;
+  ten_loc_set_app_uri(&(ten_msg_get_raw_msg(self)->src_loc), uri);
 }
 
 void ten_msg_set_src_app_uri_if_empty(ten_shared_ptr_t *self, const char *uri) {
@@ -387,9 +385,7 @@ void ten_msg_set_src_app_uri_if_empty(ten_shared_ptr_t *self, const char *uri) {
   TEN_ASSERT(uri, "Invalid argument.");
 
   if (ten_msg_src_app_uri_is_empty(self)) {
-    ten_string_set_formatted(&(ten_msg_get_raw_msg(self)->src_loc.app_uri),
-                             "%s", uri);
-    ten_msg_get_raw_msg(self)->src_loc.has_app_uri = true;
+    ten_loc_set_app_uri(&(ten_msg_get_raw_msg(self)->src_loc), uri);
   }
 }
 
@@ -401,9 +397,8 @@ void ten_msg_set_src_graph_id_if_empty(ten_shared_ptr_t *self,
   TEN_ASSERT(ten_engine_check_integrity(engine, true), "Invalid argument.");
 
   if (ten_msg_src_graph_id_is_empty(self)) {
-    ten_string_copy(&(ten_msg_get_raw_msg(self)->src_loc.graph_id),
-                    &engine->graph_id);
-    ten_msg_get_raw_msg(self)->src_loc.has_graph_id = true;
+    ten_loc_set_graph_id(&(ten_msg_get_raw_msg(self)->src_loc),
+                         ten_string_get_raw_str(&engine->graph_id));
   }
 }
 
@@ -467,8 +462,7 @@ void ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
     TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
     if (!dest_loc->has_graph_id || ten_string_is_empty(&dest_loc->graph_id)) {
-      ten_string_copy(&dest_loc->graph_id, &engine->graph_id);
-      dest_loc->has_graph_id = true;
+      ten_loc_set_graph_id(dest_loc, ten_string_get_raw_str(&engine->graph_id));
     } else if (predefined_graph_infos) {
       // Otherwise, if the target_engine is one of the _singleton_ predefined
       // graph engine, and the destination graph_id is the "name" of that
@@ -485,9 +479,9 @@ void ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
                    "Otherwise, the message should not be transferred to this "
                    "engine.");
 
-        ten_string_copy(&dest_loc->graph_id,
-                        &singleton_predefined_graph->engine->graph_id);
-        dest_loc->has_graph_id = true;
+        ten_loc_set_graph_id(
+            dest_loc, ten_string_get_raw_str(
+                          &singleton_predefined_graph->engine->graph_id));
       }
     }
   }
