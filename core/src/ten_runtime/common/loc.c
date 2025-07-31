@@ -9,6 +9,8 @@
 #include <stdlib.h>
 
 #include "include_internal/ten_runtime/common/constant_str.h"
+#include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/container/list_ptr.h"
 #include "ten_utils/lib/alloc.h"
@@ -298,9 +300,6 @@ static bool ten_loc_set_value(ten_loc_t *self, ten_value_t *value) {
   }
 
   if (self->has_extension_name) {
-    TEN_ASSERT(!ten_string_is_empty(&self->extension_name),
-               "Should not happen.");
-
     ten_list_push_ptr_back(
         &loc_fields,
         ten_value_kv_create(TEN_STR_EXTENSION,
@@ -389,4 +388,27 @@ void ten_loc_init_from_value(ten_loc_t *self, ten_value_t *value) {
 
   ten_loc_init_empty(self);
   ten_loc_set_from_value(self, value);
+}
+
+bool ten_loc_str_check_correct(const char *app_uri, const char *graph_id,
+                               const char *extension_name, ten_error_t *err) {
+  if (!app_uri) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "App URI cannot be empty.");
+    }
+    return false;
+  } else {
+    if (extension_name) {
+      if (!graph_id) {
+        if (err) {
+          ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                        "Graph ID cannot be empty when extension name is "
+                        "provided.");
+        }
+        return false;
+      }
+    }
+  }
+  return true;
 }

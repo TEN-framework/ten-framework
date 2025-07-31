@@ -260,6 +260,8 @@
     "openAGraphToInstall": "開啟圖譜以安裝擴充套件",
     "noMatchResult": "無符合結果",
     "matchResult": "找到 {{count}} 個符合結果",
+    "noExtensions": "未找到擴充套件",
+    "tryAdjusting": "嘗試調整您的搜尋或篩選條件",
     "install": "安裝",
     "installed": "已安裝",
     "filter": {
@@ -271,7 +273,7 @@
       "sort-name-desc": "名稱（降序）",
       "type": "類型"
     },
-    "extensionTitle": "擴充套件: {{name}}",
+    "extensionTitle": "{{type}}: {{name}}",
     "os-arch": "作業系統/架構",
     "selectOsArch": "選擇作業系統/架構",
     "os-arch-default": "預設",
@@ -282,7 +284,16 @@
     "versionLatest": "最新",
     "localAddonTip": "(本地)",
     "tags": "標籤",
-    "identifier": "識別碼"
+    "identifier": "識別碼",
+    "packageType": {
+      "all": "全部",
+      "invalid": "無效",
+      "system": "系統",
+      "app": "應用程式",
+      "extension": "擴充功能",
+      "protocol": "協定",
+      "addonLoader": "附加元件載入器"
+    }
   },
   "rtcInteraction": {
     "title": "實時語音 AI 代理"

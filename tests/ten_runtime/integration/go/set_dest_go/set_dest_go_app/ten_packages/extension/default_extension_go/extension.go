@@ -31,13 +31,23 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to create data.")
 	}
 
-	newData.SetDests([]ten.Loc{
-		{
-			AppURI:        ten.Ptr(""),
-			GraphID:       ten.Ptr(""),
-			ExtensionName: ten.Ptr("simple_echo_cpp"),
-		},
+	error = newData.SetDests(ten.Loc{
+		AppURI:        nil,
+		GraphID:       ten.Ptr(""),
+		ExtensionName: ten.Ptr("simple_echo_cpp"),
 	})
+	if error == nil {
+		panic("Should fail.")
+	}
+
+	error = newData.SetDests(ten.Loc{
+		AppURI:        ten.Ptr(""),
+		GraphID:       ten.Ptr(""),
+		ExtensionName: ten.Ptr("simple_echo_cpp"),
+	})
+	if error != nil {
+		panic("Failed to set dests.")
+	}
 
 	testBytes := []byte("hello world")
 
@@ -65,12 +75,10 @@ func (ext *defaultExtension) OnCmd(
 		panic("Failed to create data.")
 	}
 
-	data2.SetDests([]ten.Loc{
-		{
-			AppURI:        ten.Ptr(""),
-			GraphID:       ten.Ptr(""),
-			ExtensionName: ten.Ptr("default_extension_go2"),
-		},
+	data2.SetDests(ten.Loc{
+		AppURI:        ten.Ptr(""),
+		GraphID:       ten.Ptr(""),
+		ExtensionName: ten.Ptr("default_extension_go2"),
 	})
 
 	data2.SetPropertyString("test_key", "test_value")

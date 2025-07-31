@@ -9,6 +9,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/msg/msg.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
@@ -105,64 +106,156 @@ static napi_value ten_nodejs_msg_set_dests(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
                                 "Failed to get array length: %d", status);
 
-  // Clear all existing destinations
-  ten_msg_clear_dest(msg_bridge->msg);
+  if (array_length == 0) {
+    // Empty array, just clear destinations
+    ten_msg_clear_dest(msg_bridge->msg);
+    return js_undefined(env);
+  }
 
-  // Process each Loc object in the array
+  // Allocate array to store destination information
+  ten_loc_t *dest_locs = TEN_MALLOC(sizeof(ten_loc_t) * array_length);
+  TEN_ASSERT(dest_locs, "Failed to allocate memory.");
+  if (!dest_locs) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH, "Failed to allocate memory.",
+                     NAPI_AUTO_LENGTH);
+    return js_undefined(env);
+  }
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  // Phase 1: Parse all destination objects and store string information
   for (uint32_t i = 0; i < array_length; i++) {
     napi_value loc_element = NULL;
     status = napi_get_element(env, dests_array, i, &loc_element);
-    RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && loc_element != NULL,
-                                  "Failed to get array element %d: %d", i,
-                                  status);
+    if (status != napi_ok || loc_element == NULL) {
+      // Clean up previously initialized strings
+      for (uint32_t j = 0; j < i; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+      ten_error_deinit(&err);
+      napi_fatal_error(NULL, NAPI_AUTO_LENGTH, "Failed to get array element",
+                       NAPI_AUTO_LENGTH);
+      return js_undefined(env);
+    }
+
+    // Initialize strings
+    ten_loc_init_empty(&dest_locs[i]);
 
     // Extract appUri property
     napi_value app_uri_val =
         ten_nodejs_get_property(env, loc_element, "appUri");
-    ten_string_t app_uri;
-    TEN_STRING_INIT(app_uri);
-    const char *app_uri_str = NULL;
     if (!is_js_undefined(env, app_uri_val)) {
-      bool rc = ten_nodejs_get_str_from_js(env, app_uri_val, &app_uri);
-      RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get appUri from Loc %d", i);
-      app_uri_str = ten_string_get_raw_str(&app_uri);
+      bool rc =
+          ten_nodejs_get_str_from_js(env, app_uri_val, &dest_locs[i].app_uri);
+      if (!rc) {
+        // Clean up all initialized strings
+        for (uint32_t j = 0; j <= i; j++) {
+          ten_loc_deinit(&dest_locs[j]);
+        }
+        TEN_FREE(dest_locs);
+
+        ten_error_deinit(&err);
+        napi_throw_error(env, NULL, "Failed to get appUri from Loc");
+        return js_undefined(env);
+      } else {
+        dest_locs[i].has_app_uri = true;
+      }
     }
 
     // Extract graphId property
     napi_value graph_id_val =
         ten_nodejs_get_property(env, loc_element, "graphId");
-    ten_string_t graph_id;
-    TEN_STRING_INIT(graph_id);
-    const char *graph_id_str = NULL;
     if (!is_js_undefined(env, graph_id_val)) {
-      bool rc = ten_nodejs_get_str_from_js(env, graph_id_val, &graph_id);
-      RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get graphId from Loc %d", i);
-      graph_id_str = ten_string_get_raw_str(&graph_id);
+      bool rc =
+          ten_nodejs_get_str_from_js(env, graph_id_val, &dest_locs[i].graph_id);
+      if (!rc) {
+        // Clean up all initialized strings
+        for (uint32_t j = 0; j <= i; j++) {
+          ten_loc_deinit(&dest_locs[j]);
+        }
+        TEN_FREE(dest_locs);
+
+        ten_error_deinit(&err);
+        napi_throw_error(env, NULL, "Failed to get graphId from Loc");
+        return js_undefined(env);
+      } else {
+        dest_locs[i].has_graph_id = true;
+      }
     }
 
     // Extract extensionName property
     napi_value extension_name_val =
         ten_nodejs_get_property(env, loc_element, "extensionName");
-    ten_string_t extension_name;
-    TEN_STRING_INIT(extension_name);
-    const char *extension_name_str = NULL;
     if (!is_js_undefined(env, extension_name_val)) {
-      bool rc =
-          ten_nodejs_get_str_from_js(env, extension_name_val, &extension_name);
-      RETURN_UNDEFINED_IF_NAPI_FAIL(
-          rc, "Failed to get extensionName from Loc %d", i);
-      extension_name_str = ten_string_get_raw_str(&extension_name);
+      bool rc = ten_nodejs_get_str_from_js(env, extension_name_val,
+                                           &dest_locs[i].extension_name);
+      if (!rc) {
+        // Clean up all initialized strings
+        for (uint32_t j = 0; j <= i; j++) {
+          ten_loc_deinit(&dest_locs[j]);
+        }
+        TEN_FREE(dest_locs);
+
+        ten_error_deinit(&err);
+        napi_throw_error(env, NULL, "Failed to get extensionName from Loc");
+        return js_undefined(env);
+      } else {
+        dest_locs[i].has_extension_name = true;
+      }
     }
-
-    // Add this destination
-    ten_msg_add_dest(msg_bridge->msg, app_uri_str, graph_id_str,
-                     extension_name_str);
-
-    // Clean up strings
-    ten_string_deinit(&app_uri);
-    ten_string_deinit(&graph_id);
-    ten_string_deinit(&extension_name);
   }
+
+  // Phase 2: Validate all locations
+  for (uint32_t i = 0; i < array_length; i++) {
+    if (!ten_loc_str_check_correct(
+            dest_locs[i].has_app_uri
+                ? ten_string_get_raw_str(&dest_locs[i].app_uri)
+                : NULL,
+            dest_locs[i].has_graph_id
+                ? ten_string_get_raw_str(&dest_locs[i].graph_id)
+                : NULL,
+            dest_locs[i].has_extension_name
+                ? ten_string_get_raw_str(&dest_locs[i].extension_name)
+                : NULL,
+            &err)) {
+      // Clean up all strings
+      for (uint32_t j = 0; j < array_length; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+
+      napi_value js_error = ten_nodejs_error_wrap(env, &err);
+      RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
+
+      ten_error_deinit(&err);
+
+      return js_error;
+    }
+  }
+
+  // Phase 3: All validations passed, now clear and add destinations
+  ten_msg_clear_dest(msg_bridge->msg);
+  for (uint32_t i = 0; i < array_length; i++) {
+    ten_msg_add_dest(msg_bridge->msg,
+                     dest_locs[i].has_app_uri
+                         ? ten_string_get_raw_str(&dest_locs[i].app_uri)
+                         : NULL,
+                     dest_locs[i].has_graph_id
+                         ? ten_string_get_raw_str(&dest_locs[i].graph_id)
+                         : NULL,
+                     dest_locs[i].has_extension_name
+                         ? ten_string_get_raw_str(&dest_locs[i].extension_name)
+                         : NULL);
+  }
+
+  // Clean up all strings
+  for (uint32_t i = 0; i < array_length; i++) {
+    ten_loc_deinit(&dest_locs[i]);
+  }
+  TEN_FREE(dest_locs);
+  ten_error_deinit(&err);
 
   return js_undefined(env);
 }
