@@ -1,7 +1,0 @@
-{
-    "params": {
-        "appid": "valid_appid_for_reconnection_test",
-        "token": "valid_token_for_reconnection_test",
-        "api_url": "wss://non-existent-server.example.com/api/v2/asr"
-    }
-}

@@ -1,7 +1,0 @@
-{
-    "params": {
-        "appid": "test_reconnection_appid",
-        "token": "test_reconnection_token",
-        "api_url": "wss://localhost:9999/fake_asr_endpoint"
-    }
-}
