@@ -72,8 +72,8 @@ def generate_header(
     protocol_version(4 bits), header_size(4 bits),
     message_type(4 bits), message_type_specific_flags(4 bits)
     serialization_method(4 bits) message_compression(4 bits)
-    reserved （8bits) 保留字段
-    header_extensions 扩展头(大小等于 8 * 4 * (header_size - 1) )
+    reserved (8bits) reserved field
+    header_extensions extension header (size equals 8 * 4 * (header_size - 1))
     """
     header = bytearray()
     header_size = int(len(extension_header) / 4) + 1
@@ -105,9 +105,9 @@ def parse_response(res):
     protocol_version(4 bits), header_size(4 bits),
     message_type(4 bits), message_type_specific_flags(4 bits)
     serialization_method(4 bits) message_compression(4 bits)
-    reserved （8bits) 保留字段
-    header_extensions 扩展头(大小等于 8 * 4 * (header_size - 1) )
-    payload 类似与http 请求体
+    reserved (8bits) reserved field
+    header_extensions extension header (size equals 8 * 4 * (header_size - 1))
+    payload similar to http request body
     """
     header_size = res[0] & 0x0F
     message_type = res[1] >> 4

@@ -422,7 +422,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                     "ASR finalize timeout, proceeding with cleanup"
                 )
 
-            # 无论是否超时，都发送 finalize_end 信号
+            # Send finalize_end signal regardless of timeout
             try:
                 await self.send_asr_finalize_end()
                 self.ten_env.log_info("Sent asr_finalize_end signal")
@@ -431,7 +431,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                     f"Error sending asr_finalize_end signal: {e}"
                 )
 
-            # 根据finalize_mode处理连接
+            # Handle connection based on finalize_mode
             if self.config.finalize_mode == FINALIZE_MODE_DISCONNECT:
                 self.ten_env.log_info(
                     "Disconnecting ASR client due to finalize mode"
@@ -441,8 +441,8 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_info(
                     "Keeping ASR connection but muting audio packages"
                 )
-                # 在mute_pkg模式下，保持连接但停止发送音频
-                # 客户端会继续处理已接收的音频直到获得final结果
+                # In mute_pkg mode, keep connection but stop sending audio
+                # Client will continue processing received audio until final result
             else:
                 self.ten_env.log_warn(
                     f"Unknown finalize mode: {self.config.finalize_mode}"
@@ -450,7 +450,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(f"Error during ASR finalize: {e}")
-            # 即使finalize失败，也要确保连接被正确清理
+            # Ensure connection is properly cleaned up even if finalize fails
             if self.config.finalize_mode == FINALIZE_MODE_DISCONNECT:
                 await self.stop_connection()
 

@@ -12,22 +12,22 @@ MODULE_NAME_ASR = "asr"
 # Bytedance ASR Error Codes
 # Reference: https://www.volcengine.com/docs/6561/80818#_3-3-%E9%94%99%E8%AF%AF%E7%A0%81
 BYTEDANCE_ERROR_CODES = {
-    1000: "SUCCESS",  # 成功
-    1001: "INVALID_REQUEST_PARAMS",  # 请求参数无效
-    1002: "ACCESS_DENIED",  # 无访问权限
-    1003: "RATE_LIMIT_EXCEEDED",  # 访问超频
-    1004: "QUOTA_EXCEEDED",  # 访问超额
-    1005: "SERVER_BUSY",  # 服务器繁忙
-    1010: "AUDIO_TOO_LONG",  # 音频过长
-    1011: "AUDIO_TOO_LARGE",  # 音频过大
-    1012: "INVALID_AUDIO_FORMAT",  # 音频格式无效
-    1013: "AUDIO_SILENT",  # 音频静音
-    1020: "RECOGNITION_WAIT_TIMEOUT",  # 识别等待超时
-    1021: "RECOGNITION_TIMEOUT",  # 识别处理超时
-    1022: "RECOGNITION_ERROR",  # 识别错误
-    1099: "UNKNOWN_ERROR",  # 未知错误
-    2001: "WEBSOCKET_CONNECTION_ERROR",  # WebSocket连接错误（自定义）
-    2002: "DATA_TRANSMISSION_ERROR",  # 数据传输错误（自定义）
+    1000: "SUCCESS",  # Success
+    1001: "INVALID_REQUEST_PARAMS",  # Invalid request parameters
+    1002: "ACCESS_DENIED",  # Access denied
+    1003: "RATE_LIMIT_EXCEEDED",  # Rate limit exceeded
+    1004: "QUOTA_EXCEEDED",  # Quota exceeded
+    1005: "SERVER_BUSY",  # Server busy
+    1010: "AUDIO_TOO_LONG",  # Audio too long
+    1011: "AUDIO_TOO_LARGE",  # Audio too large
+    1012: "INVALID_AUDIO_FORMAT",  # Invalid audio format
+    1013: "AUDIO_SILENT",  # Audio is silent
+    1020: "RECOGNITION_WAIT_TIMEOUT",  # Recognition wait timeout
+    1021: "RECOGNITION_TIMEOUT",  # Recognition processing timeout
+    1022: "RECOGNITION_ERROR",  # Recognition error
+    1099: "UNKNOWN_ERROR",  # Unknown error
+    2001: "WEBSOCKET_CONNECTION_ERROR",  # WebSocket connection error (custom)
+    2002: "DATA_TRANSMISSION_ERROR",  # Data transmission error (custom)
 }
 
 # Error codes that require reconnection
