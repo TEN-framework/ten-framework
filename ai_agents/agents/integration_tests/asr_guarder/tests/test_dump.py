@@ -42,27 +42,27 @@ class DumpTester(AsyncExtensionTester):
         self,
         session_id: str = DUMP_SESSION_ID,
         expected_language: str = DUMP_EXPECTED_LANGUAGE,
+        audio_file_path: str = "",
     ):
         super().__init__()
+
+        # Print test case header
         print("=" * 80)
-        print("🧪 TEST CASE: ASR Dump Functionality Test")
+        print("🧪 ASR DUMP FUNCTIONALITY TEST")
         print("=" * 80)
         print("📋 Test Description: Validate ASR extension dump functionality")
         print("🎯 Test Objectives:")
-        print("   - Verify ASR extension can process audio and return results")
-        print("   - Test dump functionality with real audio file")
-        print("   - Validate dump file is created and not empty")
-        print("   - Check dump file content matches original audio file")
-        print("   - Verify dump file size is appropriate")
-        print("   - Test dump file path configuration")
-        print("   - Ensure proper cleanup of temporary files")
+        print(
+            "   • Verify ASR extension can process audio and generate dump files"
+        )
+        print("   • Test dump file content matches original audio data")
+        print("   • Validate dump file creation and proper cleanup")
+        print("   • Ensure audio frame processing integrity")
         print("=" * 80)
 
         self.session_id: str = session_id
         self.expected_language: str = expected_language
-
-        # Track dump state
-        self.dump_file_path: str | None = None
+        self.audio_file_path: str = audio_file_path
         self.frames_sent: int = 0
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
@@ -73,58 +73,89 @@ class DumpTester(AsyncExtensionTester):
         metadata = {"session_id": session_id}
         audio_frame.set_property_from_json("metadata", json.dumps(metadata))
 
+        # Allocate buffer and copy data
         audio_frame.alloc_buf(len(data))
         buf = audio_frame.lock_buf()
-        buf[:] = data
+        data_array = bytearray(data)
+        buf[: len(data_array)] = data_array
         audio_frame.unlock_buf(buf)
+
         return audio_frame
 
-    async def _send_audio_frames(self, ten_env: AsyncTenEnvTester) -> None:
-        """Send audio frames from real audio file for dump verification."""
-        ten_env.log_info(
-            "Sending audio frames from real audio file for dump testing..."
-        )
+    async def _send_audio_file(self, ten_env: AsyncTenEnvTester) -> None:
+        """Send audio file data to ASR extension."""
+        ten_env.log_info(f"Sending audio file: {self.audio_file_path}")
 
-        # Audio file path
-        audio_file_path = os.path.join(
-            os.path.dirname(__file__), "test_data/16k_en_us.pcm"
-        )
+        with open(self.audio_file_path, "rb") as audio_file:
+            chunk_count = 0
+            total_bytes_sent = 0
 
-        if not os.path.exists(audio_file_path):
-            ten_env.log_error(f"Audio file not found: {audio_file_path}")
-            raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
-
-        ten_env.log_info(f"Reading audio file: {audio_file_path}")
-
-        with open(audio_file_path, "rb") as audio_file:
             while True:
                 chunk = audio_file.read(AUDIO_CHUNK_SIZE)
                 if not chunk:
                     break
 
+                chunk_count += 1
+                total_bytes_sent += len(chunk)
+
                 audio_frame = self._create_audio_frame(chunk, self.session_id)
                 await ten_env.send_audio_frame(audio_frame)
-                self.frames_sent += 1
-
                 await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
 
+            ten_env.log_info(
+                f"Audio file sent completely: {chunk_count} chunks, {total_bytes_sent} total bytes"
+            )
+
+    async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
+        """Send asr_finalize signal to trigger finalization."""
+        ten_env.log_info("Sending asr_finalize signal...")
+
+        # Create finalize data according to protocol
+        finalize_data = {
+            "finalize_id": f"finalize_{self.session_id}_{int(asyncio.get_event_loop().time())}",
+            "metadata": {"session_id": self.session_id},
+        }
+
+        # Create Data object for asr_finalize
+        finalize_data_obj = Data.create("asr_finalize")
+        finalize_data_obj.set_property_from_json(
+            None, json.dumps(finalize_data)
+        )
+
+        # Send the finalize signal
+        await ten_env.send_data(finalize_data_obj)
         ten_env.log_info(
-            f"✅ Sent {self.frames_sent} audio frames from real audio file"
+            f"asr_finalize signal sent with ID: {finalize_data['finalize_id']}"
         )
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio data for dump testing."""
         try:
             # Send audio frames
-            ten_env.log_info("=== Starting audio send for dump test ===")
-            await self._send_audio_frames(ten_env)
+            ten_env.log_info("Starting audio send for dump test")
+            await self._send_audio_file(ten_env)
 
-            # Wait for dump file to be written
-            ten_env.log_info("=== Waiting for dump file to be written ===")
-            await asyncio.sleep(2)  # Give time for dump file to be written
+            # Wait after sending audio
+            ten_env.log_info("Waiting after audio send")
+            await asyncio.sleep(1.5)
 
-            # Stop test after sending all frames
-            ten_env.log_info("=== Audio send completed, stopping test ===")
+            # Send finalize signal after audio send
+            ten_env.log_info("Sending finalize signal")
+            await self._send_finalize_signal(ten_env)
+
+            # Wait after sending finalize signal
+            ten_env.log_info("Waiting after finalize signal")
+            await asyncio.sleep(1.5)
+
+            # Additional wait for ASR providers that may produce multiple final results
+            # This ensures we capture all possible dump data before stopping the test
+            ten_env.log_info(
+                "Waiting for potential additional final results from ASR provider"
+            )
+            await asyncio.sleep(3.0)
+
+            # Now stop the test after all operations are complete
+            ten_env.log_info("All operations completed, stopping test")
             ten_env.stop_test()
 
         except Exception as e:
@@ -145,93 +176,29 @@ class DumpTester(AsyncExtensionTester):
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
         )
 
-    def _validate_dump_file(self, dump_dir: str) -> bool:
-        """Validate the dump file content."""
-        try:
-            dump_path = Path(dump_dir)
-            if not dump_path.exists():
-                print(f"❌ Dump directory does not exist: {dump_dir}")
-                return False
-
-            # Find any .pcm file in the dump directory
-            pcm_files = list(dump_path.glob("*.pcm"))
-            if len(pcm_files) == 0:
-                print(f"❌ No .pcm files found in dump directory: {dump_dir}")
-                return False
-
-            # Use the first .pcm file found
-            dump_file_path = pcm_files[0]
-            print(f"Found dump file: {dump_file_path}")
-
-            # Check file size is not empty
-            file_size = dump_file_path.stat().st_size
-            if file_size == 0:
-                print(f"❌ Dump file is empty: {file_size} bytes")
-                return False
-
-            # Read the original audio file to compare with dump file
-            audio_file_path = os.path.join(
-                os.path.dirname(__file__), "test_data/16k_en_us.pcm"
-            )
-
-            if os.path.exists(audio_file_path):
-                with open(audio_file_path, "rb") as original_file:
-                    original_content = original_file.read()
-
-                # Read dump file content
-                with open(dump_file_path, "rb") as dump_file:
-                    dump_content = dump_file.read()
-
-                # Compare content - dump file should contain the same audio data
-                if dump_content != original_content:
-                    print(
-                        f"❌ Dump file content does not match original audio file"
-                    )
-                    return False
-
-                print(
-                    f"✅ Dump file content matches original audio file - size: {file_size} bytes"
-                )
-            else:
-                print(
-                    f"⚠️  Original audio file not found for comparison: {audio_file_path}"
-                )
-                print(f"✅ Dump file exists with size: {file_size} bytes")
-
-            return True
-
-        except Exception as e:
-            print(f"❌ Error validating dump file: {e}")
-            return False
-
     @override
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
         """Handle received data from ASR extension."""
         name: str = data.get_name()
 
         if name == "asr_result":
-            """Handle asr_result data."""
             # Parse ASR result
             json_str, _ = data.get_property_to_json(None)
             json_data: dict[str, Any] = json.loads(json_str)
 
-            # Log ASR result for debugging
+            # Check if this is the final result
             is_final: bool = json_data.get("final", False)
             result_id: str = json_data.get("id", "")
+
             ten_env.log_info(
                 f"Received ASR result - final: {is_final}, id: {result_id}"
             )
 
-            # For dump test, we don't need to validate ASR results extensively
-            # Just log them for debugging purposes
+            # Track final results but don't stop test immediately
+            # Some ASR providers (like Azure) may produce multiple final results
             if is_final:
-                ten_env.log_info("✅ Received final ASR result")
-            else:
-                ten_env.log_info(
-                    "Received intermediate ASR result, continuing..."
-                )
-        else:
-            ten_env.log_info(f"Received non-ASR data: {name}")
+                ten_env.log_info("Received final ASR result")
+                # Note: Test will stop when audio_sender completes, not here
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -255,9 +222,6 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     temp_dir = Path(tempfile.gettempdir()) / str(uuid.uuid4())
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define dump directory (we'll check for any .pcm file in this directory)
-    dump_dir = temp_dir
-
     # Update config to enable dump functionality
     if "params" not in config:
         config["params"] = {}
@@ -265,32 +229,16 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     config["dump"] = True
     config["dump_path"] = str(temp_dir)
 
-    # Expected test results
-    expected_result = {
-        "language": DUMP_EXPECTED_LANGUAGE,
-        "session_id": DUMP_SESSION_ID,
-        "frames": TOTAL_FRAMES,
-        "dump_path": str(dump_dir),
-    }
-
-    # Log test configuration
-    print(f"Using test configuration: {config}")
-    print(f"Temporary directory: {temp_dir}")
-    print(f"Dump directory: {dump_dir}")
-    print(
-        f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}', frames={expected_result['frames']}"
+    # Get audio file path
+    audio_file_path = os.path.join(
+        os.path.dirname(__file__), "test_data/16k_en_us.pcm"
     )
-    print("Dump validation requirements:")
-    print("  1. Send real audio file frames")
-    print("  2. Enable dump functionality in config")
-    print("  3. Verify dump file exists")
-    print("  4. Validate dump file size is not empty")
-    print("  5. Validate dump file content matches original audio file")
 
     # Create and run tester
     tester = DumpTester(
-        session_id=str(expected_result["session_id"]),
-        expected_language=str(expected_result["language"]),
+        session_id=DUMP_SESSION_ID,
+        expected_language=DUMP_EXPECTED_LANGUAGE,
+        audio_file_path=audio_file_path,
     )
 
     tester.set_test_mode_single(extension_name, json.dumps(config))
@@ -301,11 +249,11 @@ def test_dump(extension_name: str, config_dir: str) -> None:
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
 
-    # Find any .pcm file in the dump directory
-    pcm_files = list(dump_dir.glob("*.pcm"))
+    # Find dump file in the directory
+    pcm_files = list(temp_dir.glob("*.pcm"))
     assert (
         len(pcm_files) > 0
-    ), f"No .pcm files found in dump directory: {dump_dir}"
+    ), f"No .pcm files found in dump directory: {temp_dir}"
 
     # Use the first .pcm file found
     dump_file_path = pcm_files[0]
@@ -313,28 +261,20 @@ def test_dump(extension_name: str, config_dir: str) -> None:
 
     # Validate dump file content
     file_size = dump_file_path.stat().st_size
-
-    # For real audio file, we can't predict exact size, so just check it's not empty
     assert file_size > 0, f"Dump file is empty: {file_size} bytes"
 
-    # Read the original audio file to compare with dump file
-    audio_file_path = os.path.join(
-        os.path.dirname(__file__), "test_data/16k_en_us.pcm"
-    )
-
+    # Compare dump file with original audio file
     if os.path.exists(audio_file_path):
         with open(audio_file_path, "rb") as original_file:
             original_content = original_file.read()
 
-        # Read dump file content
         with open(dump_file_path, "rb") as dump_file:
             dump_content = dump_file.read()
 
-        # Compare content - dump file should contain the same audio data
+        # Verify content matches
         assert (
             dump_content == original_content
-        ), f"Dump file content does not match original audio file"
-
+        ), "Dump file content does not match original audio file"
         print(
             f"✅ Dump file content matches original audio file - size: {file_size} bytes"
         )

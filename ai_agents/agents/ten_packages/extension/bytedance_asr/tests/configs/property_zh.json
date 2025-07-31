@@ -3,6 +3,6 @@
         "appid": "${env:BYTEDANCE_ASR_APP_ID}",
         "token": "${env:BYTEDANCE_ASR_TOKEN}",
         "cluster": "${env:BYTEDANCE_ASR_CLUSTER}",
-        "language": "en-US"
+        "language": "zh-CN"
     }
 }
