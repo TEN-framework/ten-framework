@@ -19,12 +19,7 @@ on:
         type: string
         default: ''
       env_vars:
-        description: 'Environment variables (use semicolon to separate multiple vars, format: KEY1=VALUE1;KEY2=VALUE2)'
-        required: false
-        type: string
-        default: 'AZURE_ASR_API_KEY=your_key_here;AZURE_ASR_REGION=your_region_here'
-      secret_values:
-        description: 'Sensitive environment variables (use semicolon to separate multiple vars, format: KEY1=VALUE1;KEY2=VALUE2) - values from GitHub Secrets or other secure sources'
+        description: 'Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets.'
         required: false
         type: string
         default: ''
@@ -37,6 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+
+    env:
+      # Import all secrets as environment variables for dynamic access
+      # Users need to create GitHub Secrets with the same names as their env_vars keys
+      _ALL_SECRETS: ${{ toJSON(secrets) }}
 
     steps:
       - name: Checkout code
@@ -56,98 +56,46 @@ jobs:
           echo "CONFIG_DIR=${{ github.event.inputs.config_dir }}" >> $GITHUB_ENV
           echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
 
-      - name: Parse and set sensitive environment variables
-        shell: bash
-        run: |
-          echo "Setting up sensitive environment variables..."
-
-          # Get the sensitive environment variables input
-          SECRET_INPUT="${{ github.event.inputs.secret_values }}"
-
-          echo "Processing sensitive environment variables:"
-          if [ -n "$SECRET_INPUT" ]; then
-            # Count environment variables but don't display actual content
-            secret_count=0
-
-            # Split by semicolon and process each variable
-            IFS=';' read -ra SECRET_ARRAY <<< "$SECRET_INPUT"
-            for env_pair in "${SECRET_ARRAY[@]}"; do
-              # Remove leading/trailing whitespace
-              env_pair=$(echo "$env_pair" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-              # Skip empty entries
-              if [ -z "$env_pair" ]; then
-                continue
-              fi
-
-              # Check if it is in KEY=VALUE format
-              if echo "$env_pair" | grep -q '^[A-Za-z_][A-Za-z0-9_]*='; then
-                key=$(echo "$env_pair" | cut -d'=' -f1)
-                value=$(echo "$env_pair" | cut -d'=' -f2-)
-
-                # Set environment variable
-                echo "${key}=${value}" >> $GITHUB_ENV
-
-                # Display in log (only show key for security)
-                echo "  🔐 ${key}=*** (sensitive value hidden)"
-                ((secret_count++))
-              else
-                echo "  ⚠️  Skipping invalid sensitive environment variable format"
-              fi
-            done
-
-            if [ $secret_count -gt 0 ]; then
-              echo "  📊 Successfully set $secret_count sensitive environment variables"
-            fi
-          else
-            echo "  ℹ️  No sensitive environment variables provided"
-          fi
-
       - name: Parse and set custom environment variables
         shell: bash
         run: |
-          echo "Setting up custom environment variables..."
+          echo "Setting up custom environment variables from GitHub Secrets..."
 
-          # Get the input and process semicolon-separated variables
+          # Get the input and process semicolon-separated variable keys
           ENV_INPUT="${{ github.event.inputs.env_vars }}"
 
-          echo "Processing custom environment variables:"
+          echo "Custom environment variables:"
           if [ -n "$ENV_INPUT" ]; then
-            # Count environment variables but don't display actual content
-            env_count=0
-
-            # Split by semicolon and process each variable
+            # Split by semicolon and process each variable key
             IFS=';' read -ra ENV_ARRAY <<< "$ENV_INPUT"
-            for env_pair in "${ENV_ARRAY[@]}"; do
+            for env_key in "${ENV_ARRAY[@]}"; do
               # Remove leading/trailing whitespace
-              env_pair=$(echo "$env_pair" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              env_key=$(echo "$env_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
               # Skip empty entries
-              if [ -z "$env_pair" ]; then
+              if [ -z "$env_key" ]; then
                 continue
               fi
 
-              # Check if it is in KEY=VALUE format
-              if echo "$env_pair" | grep -q '^[A-Za-z_][A-Za-z0-9_]*='; then
-                key=$(echo "$env_pair" | cut -d'=' -f1)
-                value=$(echo "$env_pair" | cut -d'=' -f2-)
+              # Check if it is a valid variable name (only letters, numbers, underscore, starting with letter or underscore)
+              if echo "$env_key" | grep -q '^[A-Za-z_][A-Za-z0-9_]*$'; then
+                # Extract the secret value from the JSON using jq
+                secret_value=$(echo "$_ALL_SECRETS" | jq -r --arg key "$env_key" '.[$key] // empty')
 
-                # Set environment variable
-                echo "${key}=${value}" >> $GITHUB_ENV
-
-                # Display in log (only show key for security)
-                echo "  ✅ ${key}=*** (value hidden for security)"
-                ((env_count++))
+                if [ -n "$secret_value" ] && [ "$secret_value" != "null" ]; then
+                  # Set environment variable
+                  echo "${env_key}=${secret_value}" >> $GITHUB_ENV
+                  echo "  ✅ ${env_key}=*** (value loaded from GitHub Secrets)"
+                else
+                  echo "  ❌ ${env_key}: GitHub Secret not found or empty"
+                  echo "  ℹ️  Please create a GitHub Secret named '${env_key}' in the repository settings"
+                fi
               else
-                echo "  ⚠️  Skipping invalid environment variable format"
+                echo "  ⚠️  Skipping invalid variable name: $env_key"
               fi
             done
-
-            if [ $env_count -gt 0 ]; then
-              echo "  📊 Successfully set $env_count custom environment variables"
-            fi
           else
-            echo "  ℹ️  No custom environment variables provided"
+            echo "  ℹ️  No environment variable keys provided"
           fi
 
       - name: Display test parameters
@@ -157,18 +105,12 @@ jobs:
           echo "Extension: ${{ github.event.inputs.extension }}"
           echo "Config Directory: ${{ github.event.inputs.config_dir }}"
           echo ""
-          echo "Environment Variables Configuration:"
-          if [ -n "${{ github.event.inputs.secret_values }}" ]; then
-            echo "🔐 Sensitive environment variables provided (values hidden for security)"
-          fi
+          echo "Custom Environment Variables Input:"
           if [ -n "${{ github.event.inputs.env_vars }}" ]; then
-            echo "✅ Custom environment variables provided (semicolon-separated)"
-            echo "📝 See environment variable parsing steps above for details (values hidden for security)"
+            echo "✅ Environment variable keys provided (semicolon-separated): ${{ github.event.inputs.env_vars }}"
+            echo "📝 Values loaded from GitHub Secrets (see environment parsing step above for details)"
           else
-            echo "ℹ️  No custom environment variables provided"
-          fi
-          if [ -z "${{ github.event.inputs.env_vars }}" ] && [ -z "${{ github.event.inputs.secret_values }}" ]; then
-            echo "ℹ️  No environment variables provided"
+            echo "ℹ️  No custom environment variable keys provided"
           fi
           echo "========================================================"
 
@@ -194,8 +136,8 @@ jobs:
         if: always()
         run: |
           echo "==================== Test Completed ===================="
-          echo "Tested Branch: ${{ github.event.inputs.branch || github.ref_name }}"
-          echo "Tested Extension: ${{ github.event.inputs.extension }}"
-          echo "Config Directory Used: ${{ github.event.inputs.config_dir }}"
-          echo "Please check the logs above for detailed test results."
+          echo "Branch tested: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension tested: ${{ github.event.inputs.extension }}"
+          echo "Config directory used: ${{ github.event.inputs.config_dir }}"
+          echo "Check the logs above for detailed test results."
           echo "========================================================"
