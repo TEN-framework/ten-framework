@@ -1,0 +1,42 @@
+{
+  "type": "extension",
+  "name": "openai_llm2_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "interface": [
+      "../../system/ten_ai_base/api/llm-interface.json"
+    ],
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "proxy_url": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
