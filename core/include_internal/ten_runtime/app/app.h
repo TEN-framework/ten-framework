@@ -147,6 +147,9 @@ typedef struct ten_app_t {
   // (e.g., Python module imports and C++ dynamic library loading).
   bool preload_all_addons;
 
+  bool is_standalone_test_app;
+  ten_string_t standalone_tested_target_name;
+
   void *user_data;
 } ten_app_t;
 
