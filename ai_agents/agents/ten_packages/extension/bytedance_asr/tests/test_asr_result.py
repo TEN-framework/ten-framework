@@ -40,8 +40,9 @@ class ExtensionTesterBytedance(AsyncExtensionTester):
             if not chunk:
                 break
             audio_frame = AudioFrame.create("pcm_frame")
-            metadata = {"session_id": "123"}
-            audio_frame.set_property_from_json("metadata", json.dumps(metadata))
+            audio_frame.set_property_from_json(
+                None, json.dumps({"metadata": {"session_id": "test"}})
+            )
             audio_frame.alloc_buf(len(chunk))
             buf = audio_frame.lock_buf()
             buf[:] = chunk

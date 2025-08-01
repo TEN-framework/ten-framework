@@ -19,17 +19,20 @@ from ten_runtime import (
 )
 
 # We must import it, which means this test fixture will be automatically executed
-from .mock import patch_gladia_ws  # noqa: F401
+from .mock import patch_deepgram_ws  # noqa: F401
 
 
-class ExtensionTesterGladia(AsyncExtensionTester):
+class ExtensionTesterDeepgram(AsyncExtensionTester):
     def __init__(self):
         super().__init__()
         self.stopped = False
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
+        # audio file path: ../test_data/test.pcm
         while not self.stopped:
-            chunk = b"\x01\x02" * 160
+            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
+            if not chunk:
+                break
             audio_frame = AudioFrame.create("pcm_frame")
             audio_frame.set_property_from_json(
                 None, json.dumps({"metadata": {"session_id": "test"}})
@@ -80,8 +83,8 @@ class ExtensionTesterGladia(AsyncExtensionTester):
             ten_env.stop_test()
 
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
-        self.stopped = True
         ten_env.log_info("Stopping audio sender task...")
+        self.stopped = True
         self.sender_task.cancel()
         try:
             await self.sender_task
@@ -97,33 +100,44 @@ class ExtensionTesterGladia(AsyncExtensionTester):
         print("on_stop_done")
 
 
-def test_gladia(patch_gladia_ws):
-    # yield one transcript message
-    async def fake_iter():
+def test_deepgram(patch_deepgram_ws):
+    async def fake_start(*args, **kwargs):
+        await asyncio.sleep(0.1)
+        handler = patch_deepgram_ws._handlers.get("Open")
+        if handler:
+            await handler(None, SimpleNamespace())
         await asyncio.sleep(1)
-        yield json.dumps(
-            {
-                "type": "transcript",
-                "data": {
-                    "is_final": True,
-                    "utterance": {
-                        "start": 0,
-                        "end": 0.5,
-                        "text": "hello world",
-                    },
-                },
-            }
-        )
+        handler = patch_deepgram_ws._handlers.get("Results")
+        if handler:
+            await handler(
+                None,
+                SimpleNamespace(
+                    channel=SimpleNamespace(
+                        alternatives=[SimpleNamespace(transcript="hello world")]
+                    ),
+                    start=0.0,
+                    duration=0.5,
+                    is_final=True,
+                    from_finalize=True,  # Simulate a finalization event
+                ),
+            )
+        return True
 
-    patch_gladia_ws.__aiter__.side_effect = fake_iter
+    async def fake_run(*args, **kwargs):
+        await asyncio.sleep(1)
+        asyncio.create_task(fake_start(*args, **kwargs))
+        return True
 
-    tester = ExtensionTesterGladia()
+    patch_deepgram_ws.start.side_effect = fake_run
+
+    tester = ExtensionTesterDeepgram()
     tester.set_test_mode_single(
-        "gladia_asr_python",
+        "deepgram_asr_python",
         json.dumps(
             {
                 "api_key": "111",
                 "language": "en-US",
+                "model": "nova-2",
                 "sample_rate": 16000,
             }
         ),
@@ -133,36 +147,50 @@ def test_gladia(patch_gladia_ws):
 
     if error is not None:
         print(f"Error occurred: {error.error_message()}")
+
     assert error is None
 
 
-def test_gladia_unexpected_result(patch_gladia_ws):
-    # yield one transcript message
-    async def fake_iter():
+def test_deepgram_unexpected_result(patch_deepgram_ws):
+    async def fake_start(*args, **kwargs):
+        await asyncio.sleep(0.1)
+        handler = patch_deepgram_ws._handlers.get("Open")
+        if handler:
+            await handler(None, SimpleNamespace())
         await asyncio.sleep(1)
-        yield json.dumps(
-            {
-                "type": "transcript",
-                "data": {
-                    "is_final": True,
-                    "utterance": {
-                        "start": 0,
-                        "end": 0.5,
-                        "text": "bad text",  # This is unexpected
-                    },
-                },
-            }
-        )
+        handler = patch_deepgram_ws._handlers.get("Results")
+        if handler:
+            await handler(
+                None,
+                SimpleNamespace(
+                    channel=SimpleNamespace(
+                        alternatives=[
+                            SimpleNamespace(transcript="goodbye world")
+                        ]
+                    ),
+                    start=0.0,
+                    duration=0.5,
+                    is_final=True,
+                    from_finalize=True,  # Simulate a finalization event
+                ),
+            )
+        return True
 
-    patch_gladia_ws.__aiter__.side_effect = fake_iter
+    async def fake_run(*args, **kwargs):
+        await asyncio.sleep(1)
+        asyncio.create_task(fake_start(*args, **kwargs))
+        return True
 
-    tester = ExtensionTesterGladia()
+    patch_deepgram_ws.start.side_effect = fake_run
+
+    tester = ExtensionTesterDeepgram()
     tester.set_test_mode_single(
-        "gladia_asr_python",
+        "deepgram_asr_python",
         json.dumps(
             {
                 "api_key": "111",
                 "language": "en-US",
+                "model": "nova-2",
                 "sample_rate": 16000,
             }
         ),
@@ -171,4 +199,4 @@ def test_gladia_unexpected_result(patch_gladia_ws):
     error = tester.run()
     assert error is not None
     assert error.error_code() == TenErrorCode.ErrorCodeGeneric
-    assert error.error_message() == "unexpected text: bad text"
+    assert error.error_message() == "unexpected text: goodbye world"

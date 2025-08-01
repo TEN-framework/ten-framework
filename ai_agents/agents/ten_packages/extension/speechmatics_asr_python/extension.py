@@ -59,6 +59,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
+        self.session_id = session_id
         await self.client.recv_audio_frame(frame, session_id)
         return True
 

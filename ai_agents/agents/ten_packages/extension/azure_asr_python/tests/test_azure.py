@@ -7,7 +7,13 @@
 import asyncio
 import json
 import os
+import threading
+from time import sleep
+import time
 from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+import pytest
 
 from ten_runtime import (
     AsyncExtensionTester,
@@ -19,17 +25,19 @@ from ten_runtime import (
 )
 
 # We must import it, which means this test fixture will be automatically executed
-from .mock import patch_gladia_ws  # noqa: F401
+from .mock import patch_azure_ws  # noqa: F401
 
 
-class ExtensionTesterGladia(AsyncExtensionTester):
+class ExtensionTesterAzure(AsyncExtensionTester):
     def __init__(self):
         super().__init__()
         self.stopped = False
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
         while not self.stopped:
-            chunk = b"\x01\x02" * 160
+            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
+            if not chunk:
+                break
             audio_frame = AudioFrame.create("pcm_frame")
             audio_frame.set_property_from_json(
                 None, json.dumps({"metadata": {"session_id": "test"}})
@@ -80,8 +88,8 @@ class ExtensionTesterGladia(AsyncExtensionTester):
             ten_env.stop_test()
 
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
-        self.stopped = True
         ten_env.log_info("Stopping audio sender task...")
+        self.stopped = True
         self.sender_task.cancel()
         try:
             await self.sender_task
@@ -97,72 +105,112 @@ class ExtensionTesterGladia(AsyncExtensionTester):
         print("on_stop_done")
 
 
-def test_gladia(patch_gladia_ws):
-    # yield one transcript message
-    async def fake_iter():
-        await asyncio.sleep(1)
-        yield json.dumps(
-            {
-                "type": "transcript",
-                "data": {
-                    "is_final": True,
-                    "utterance": {
-                        "start": 0,
-                        "end": 0.5,
-                        "text": "hello world",
-                    },
-                },
-            }
-        )
+def test_azure(patch_azure_ws):
+    def fake_start_continuous_recognition_async_get():
+        def triggerSessionStarted():
+            evt = SimpleNamespace(result=SimpleNamespace(json=json.dumps({})))
+            patch_azure_ws.event_handlers["session_started"](evt)
 
-    patch_gladia_ws.__aiter__.side_effect = fake_iter
+            threading.Timer(1.0, triggerRecognized).start()
 
-    tester = ExtensionTesterGladia()
+        def triggerRecognized():
+            print(
+                f"Triggering recognized event {patch_azure_ws.event_handlers['recognized']}"
+            )
+            evt = SimpleNamespace(
+                result=SimpleNamespace(
+                    json=json.dumps(
+                        {
+                            "DisplayText": "hello world",
+                            "Offset": 0,
+                            "Duration": 5000000,
+                        }
+                    )
+                )
+            )
+            patch_azure_ws.event_handlers["recognized"](evt)
+
+        threading.Timer(1.0, triggerSessionStarted).start()
+        return None
+
+    start_future = MagicMock()
+    start_future.get.side_effect = fake_start_continuous_recognition_async_get
+
+    # Inject into recognizer
+    patch_azure_ws.recognizer_instance.start_continuous_recognition_async.return_value = (
+        start_future
+    )
+    stop_future = MagicMock()
+    stop_future.get.return_value = None
+    patch_azure_ws.recognizer_instance.stop_continuous_recognition_async.return_value = (
+        stop_future
+    )
+
+    tester = ExtensionTesterAzure()
     tester.set_test_mode_single(
-        "gladia_asr_python",
+        "azure_asr_python",
         json.dumps(
             {
                 "api_key": "111",
                 "language": "en-US",
+                "model": "nova-2",
                 "sample_rate": 16000,
+                "params": {"test": "123"},
             }
         ),
     )
 
     error = tester.run()
-
-    if error is not None:
-        print(f"Error occurred: {error.error_message()}")
     assert error is None
 
 
-def test_gladia_unexpected_result(patch_gladia_ws):
-    # yield one transcript message
-    async def fake_iter():
-        await asyncio.sleep(1)
-        yield json.dumps(
-            {
-                "type": "transcript",
-                "data": {
-                    "is_final": True,
-                    "utterance": {
-                        "start": 0,
-                        "end": 0.5,
-                        "text": "bad text",  # This is unexpected
-                    },
-                },
-            }
-        )
+def test_azure_unexpected_result(patch_azure_ws):
+    def fake_start_continuous_recognition_async_get():
 
-    patch_gladia_ws.__aiter__.side_effect = fake_iter
+        def triggerSessionStarted():
+            evt = SimpleNamespace(result=SimpleNamespace(json=json.dumps({})))
+            patch_azure_ws.event_handlers["session_started"](evt)
 
-    tester = ExtensionTesterGladia()
+            threading.Timer(1.0, triggerRecognized).start()
+
+        def triggerRecognized():
+            evt = SimpleNamespace(
+                result=SimpleNamespace(
+                    json=json.dumps(
+                        {
+                            "DisplayText": "goodbye world",
+                            "Offset": 0,
+                            "Duration": 5000000,
+                        }
+                    )
+                )
+            )
+            patch_azure_ws.event_handlers["recognized"](evt)
+
+        threading.Timer(0.1, triggerSessionStarted).start()
+        return None
+
+    start_future = MagicMock()
+    start_future.get.side_effect = fake_start_continuous_recognition_async_get
+
+    # Inject into recognizer
+    patch_azure_ws.recognizer_instance.start_continuous_recognition_async.return_value = (
+        start_future
+    )
+    stop_future = MagicMock()
+    stop_future.get.return_value = None
+    patch_azure_ws.recognizer_instance.stop_continuous_recognition_async.return_value = (
+        stop_future
+    )
+
+    tester = ExtensionTesterAzure()
     tester.set_test_mode_single(
-        "gladia_asr_python",
+        "azure_asr_python",
         json.dumps(
             {
                 "api_key": "111",
                 "language": "en-US",
+                "model": "nova-2",
                 "sample_rate": 16000,
             }
         ),
@@ -171,4 +219,4 @@ def test_gladia_unexpected_result(patch_gladia_ws):
     error = tester.run()
     assert error is not None
     assert error.error_code() == TenErrorCode.ErrorCodeGeneric
-    assert error.error_message() == "unexpected text: bad text"
+    assert error.error_message() == "unexpected text: goodbye world"

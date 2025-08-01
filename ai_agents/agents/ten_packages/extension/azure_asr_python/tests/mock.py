@@ -34,53 +34,11 @@ def patch_azure_ws():
             print(f"connect_recognized_mock: {callback}")
             event_handlers["recognized"] = callback
 
-        def connect_recognizing_mock(callback):
-            print(f"connect_recognizing_mock: {callback}")
-            event_handlers["recognizing"] = callback
+        def session_mock(handler):
+            event_handlers["session_started"] = handler
 
-        def connect_session_started_mock(callback):
-            print(f"connect_session_started_mock: {callback}")
-            event_handlers["session_started"] = callback
-
-        def connect_session_stopped_mock(callback):
-            print(f"connect_session_stopped_mock: {callback}")
-            event_handlers["session_stopped"] = callback
-
-        def connect_canceled_mock(callback):
-            print(f"connect_canceled_mock: {callback}")
-            event_handlers["canceled"] = callback
-
-        def connect_speech_start_detected_mock(callback):
-            print(f"connect_speech_start_detected_mock: {callback}")
-            event_handlers["speech_start_detected"] = callback
-
-        def connect_speech_end_detected_mock(callback):
-            print(f"connect_speech_end_detected_mock: {callback}")
-            event_handlers["speech_end_detected"] = callback
-
-        def connect_connected_mock(callback):
-            print(f"connect_connected_mock: {callback}")
-            event_handlers["connected"] = callback
-
-        def connect_disconnected_mock(callback):
-            print(f"connect_disconnected_mock: {callback}")
-            event_handlers["disconnected"] = callback
-
-        recognizer_instance.recognized.connect.side_effect = connect_recognized_mock
-        recognizer_instance.recognizing.connect.side_effect = connect_recognizing_mock
-        recognizer_instance.session_started.connect.side_effect = (
-            connect_session_started_mock
-        )
-        recognizer_instance.session_stopped.connect.side_effect = (
-            connect_session_stopped_mock
-        )
-        recognizer_instance.canceled.connect.side_effect = connect_canceled_mock
-        recognizer_instance.speech_start_detected.connect.side_effect = (
-            connect_speech_start_detected_mock
-        )
-        recognizer_instance.speech_end_detected.connect.side_effect = (
-            connect_speech_end_detected_mock
-        )
+        recognizer_instance.recognized.connect.side_effect = connect_mock
+        recognizer_instance.session_started.connect.side_effect = session_mock
 
         MockRecognizer.return_value = recognizer_instance
         MockSpeechConfig.return_value = MagicMock()

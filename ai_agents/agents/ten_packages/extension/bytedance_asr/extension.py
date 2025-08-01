@@ -331,6 +331,8 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 module=ModuleType.ASR,
                 code=int(ModuleErrorCode.FATAL_ERROR),
                 message=str(e),
+                turn_id=0,
+                module=ModuleType.ASR,
             )
 
             vendor_info = ModuleErrorVendorInfo(
