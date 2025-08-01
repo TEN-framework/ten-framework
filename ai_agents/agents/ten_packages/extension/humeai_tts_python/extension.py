@@ -63,7 +63,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 "", ModuleError(
                     message=f"Initialization failed: {e}",
                     module_name=ModuleType.TTS,
-                    code=ModuleErrorCode.FATAL_ERROR
+                    code=ModuleErrorCode.FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor())
                 )
             )
 
