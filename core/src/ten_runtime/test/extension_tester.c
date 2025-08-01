@@ -469,6 +469,11 @@ static void test_app_ten_env_send_graph_info(ten_env_t *ten_env,
   ten_extension_tester_test_graph_info_t *test_graph_info = user_data;
   TEN_ASSERT(test_graph_info, "Should not happen.");
 
+  app->is_standalone_test_app = true;
+  ten_string_set_formatted(
+      &app->standalone_tested_target_name, "%s",
+      ten_string_get_raw_str(&test_graph_info->test_target.single.addon_name));
+
   ten_shared_ptr_t *start_graph_cmd = create_start_graph_cmd(test_graph_info);
   TEN_ASSERT(start_graph_cmd, "Should not happen.");
   TEN_ASSERT(ten_msg_check_integrity(start_graph_cmd), "Should not happen.");
