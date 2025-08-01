@@ -1027,24 +1027,20 @@ ten_go_error_t ten_go_msg_set_dests(uintptr_t bridge_addr, const void *buffer,
 
     // Extract strings based on existence flags
     if (has_app_uri != 0) {
-      ten_string_init_from_c_str_with_size(
-          &dest_locs[i].app_uri, (const char *)(buf + offset), app_uri_len);
-      dest_locs[i].has_app_uri = true;
+      ten_loc_init_app_uri_with_size(&dest_locs[i],
+                                     (const char *)(buf + offset), app_uri_len);
       offset += app_uri_len;
     }
 
     if (has_graph_id != 0) {
-      ten_string_init_from_c_str_with_size(
-          &dest_locs[i].graph_id, (const char *)(buf + offset), graph_id_len);
-      dest_locs[i].has_graph_id = true;
+      ten_loc_init_graph_id_with_size(
+          &dest_locs[i], (const char *)(buf + offset), graph_id_len);
       offset += graph_id_len;
     }
 
     if (has_extension_name != 0) {
-      ten_string_init_from_c_str_with_size(&dest_locs[i].extension_name,
-                                           (const char *)(buf + offset),
-                                           extension_name_len);
-      dest_locs[i].has_extension_name = true;
+      ten_loc_init_extension_name_with_size(
+          &dest_locs[i], (const char *)(buf + offset), extension_name_len);
       offset += extension_name_len;
     }
   }

@@ -321,9 +321,8 @@ static bool ten_app_handle_stop_graph_cmd(ten_app_t *self,
     TEN_ASSERT(dest_loc, "Should not happen.");
     TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
-    ten_string_set_formatted(&dest_loc->graph_id, "%s",
-                             ten_string_get_raw_str(&dest_engine->graph_id));
-    dest_loc->has_graph_id = true;
+    ten_loc_set_graph_id(dest_loc,
+                         ten_string_get_raw_str(&dest_engine->graph_id));
   }
 
   ten_engine_append_to_in_msgs_queue(dest_engine, cmd);
