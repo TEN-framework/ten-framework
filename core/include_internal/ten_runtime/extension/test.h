@@ -11,5 +11,8 @@
 #include "include_internal/ten_runtime/common/loc.h"
 #include "ten_runtime/extension/extension.h"
 
-TEN_RUNTIME_PRIVATE_API void ten_adjust_dest_loc_for_standalone_test_scenario(
-    ten_loc_t *dest_loc, ten_extension_t *from_extension);
+TEN_RUNTIME_PRIVATE_API void ten_adjust_msg_dest_for_standalone_test_scenario(
+    ten_shared_ptr_t *msg, ten_extension_t *from_extension);
+
+TEN_RUNTIME_PRIVATE_API void ten_add_msg_dest_for_standalone_test_scenario(
+    ten_shared_ptr_t *msg, ten_extension_t *from_extension);

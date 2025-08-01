@@ -469,7 +469,9 @@ static void test_app_ten_env_send_graph_info(ten_env_t *ten_env,
   ten_extension_tester_test_graph_info_t *test_graph_info = user_data;
   TEN_ASSERT(test_graph_info, "Should not happen.");
 
+  // Mark this app as a standalone test app.
   app->is_standalone_test_app = true;
+  app->standalone_test_mode = test_graph_info->test_mode;
   ten_string_set_formatted(
       &app->standalone_tested_target_name, "%s",
       ten_string_get_raw_str(&test_graph_info->test_target.single.addon_name));

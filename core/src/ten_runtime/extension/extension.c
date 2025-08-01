@@ -12,7 +12,6 @@
 #include <time.h>
 
 #include "include_internal/ten_runtime/addon/addon_host.h"
-#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/engine/engine.h"
@@ -309,13 +308,7 @@ static void ten_extension_determine_out_msg_dest_from_msg(
 
     ten_msg_clear_and_set_dest_to_loc(curr_msg, dest_loc);
 
-    ten_loc_t *dest_loc_in_curr_msg = ten_msg_get_first_dest_loc(curr_msg);
-    TEN_ASSERT(dest_loc_in_curr_msg, "Should not happen.");
-    TEN_ASSERT(ten_loc_check_integrity(dest_loc_in_curr_msg),
-               "Should not happen.");
-
-    ten_adjust_dest_loc_for_standalone_test_scenario(dest_loc_in_curr_msg,
-                                                     self);
+    ten_adjust_msg_dest_for_standalone_test_scenario(curr_msg, self);
 
     ten_list_push_smart_ptr_back(result_msgs, curr_msg);
 
@@ -379,13 +372,7 @@ static bool ten_extension_determine_out_msg_dest_from_graph(
         ten_msg_clear_and_set_dest_from_extension_info(curr_msg,
                                                        dest_extension_info);
 
-        ten_loc_t *dest_loc_in_curr_msg = ten_msg_get_first_dest_loc(curr_msg);
-        TEN_ASSERT(dest_loc_in_curr_msg, "Should not happen.");
-        TEN_ASSERT(ten_loc_check_integrity(dest_loc_in_curr_msg),
-                   "Should not happen.");
-
-        ten_adjust_dest_loc_for_standalone_test_scenario(dest_loc_in_curr_msg,
-                                                         self);
+        ten_adjust_msg_dest_for_standalone_test_scenario(curr_msg, self);
 
         ten_list_push_smart_ptr_back(result_msgs, curr_msg);
 
@@ -400,30 +387,7 @@ static bool ten_extension_determine_out_msg_dest_from_graph(
 
   // Graph doesn't specify how to route the messages.
 
-  ten_engine_t *engine = self->extension_context->engine;
-  TEN_ASSERT(engine, "Invalid argument.");
-  TEN_ASSERT(ten_engine_check_integrity(engine, false),
-             "Invalid use of engine %p.", engine);
-
-  ten_app_t *app = engine->app;
-  TEN_ASSERT(app, "Invalid argument.");
-  TEN_ASSERT(ten_app_check_integrity(app, false), "Invalid use of app %p.",
-             app);
-
-  if (app->is_standalone_test_app) {
-    const char *target_extension_name = NULL;
-
-    if (self->is_standalone_test_extension) {
-      // =-=-=
-      target_extension_name =
-          ten_string_get_raw_str(&app->standalone_tested_target_name);
-    } else {
-      target_extension_name = TEN_STR_TEN_TEST_EXTENSION;
-    }
-
-    ten_msg_add_dest(msg, ten_app_get_uri(app),
-                     ten_engine_get_id(engine, false), target_extension_name);
-  }
+  ten_add_msg_dest_for_standalone_test_scenario(msg, self);
 
   if (ten_msg_get_dest_cnt(msg) == 0) {
     TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
