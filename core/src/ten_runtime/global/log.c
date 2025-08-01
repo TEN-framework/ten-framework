@@ -6,9 +6,10 @@
 //
 #include "include_internal/ten_runtime/global/log.h"
 
+#include "ten_utils/macro/mark.h"
+
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
 #include "include_internal/ten_rust/ten_rust.h"
-#include "ten_utils/macro/mark.h"
 #endif
 
 void ten_encrypt_log_data(uint8_t *data, size_t data_len, void *user_data) {
@@ -33,17 +34,18 @@ void ten_log_rust_log_func(ten_log_t *self, TEN_LOG_LEVEL level,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(self->advanced_impl.impl, "Invalid argument.");
   TEN_ASSERT(self->advanced_impl.config, "Invalid argument.");
-
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
   int64_t pid = 0;
   int64_t tid = 0;
   ten_get_pid_tid(&pid, &tid);
-
   ten_rust_log(self->advanced_impl.config, category, pid, tid, level, func_name,
                file_name, line_no, msg);
+#endif
 }
 
 void ten_log_rust_config_deinit(void *config) {
   TEN_ASSERT(config, "Invalid argument.");
-
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
   ten_rust_log_config_destroy(config);
+#endif
 }
