@@ -59,7 +59,7 @@ import {
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import { ELocalAppStatus } from "@/types/apps";
+import { ELocalAppStatus, type IApp } from "@/types/apps";
 import {
   EDefaultWidgetType,
   ELogViewerScriptType,
@@ -69,56 +69,14 @@ import {
 } from "@/types/widgets";
 
 export const AppsManagerWidget = (props: { className?: string }) => {
-  const [isUnloading, setIsUnloading] = React.useState<boolean>(false);
   const [isReloading, setIsReloading] = React.useState<boolean>(false);
-  const [appStatuses, setAppStatuses] = React.useState<
-    Record<string, ELocalAppStatus>
-  >({});
 
   const { t } = useTranslation();
   const { data: loadedApps, isLoading, error, mutate } = useFetchApps();
   const { mutate: reloadGraphs } = useGraphs();
-  const {
-    appendWidget,
-    backstageWidgets, // Track running backstage widgets
-    removeBackstageWidget,
-    removeLogViewerHistory,
-  } = useWidgetStore();
+  const { appendWidget } = useWidgetStore();
   const { setNodesAndEdges } = useFlowStore();
   const { appendDialog, removeDialog } = useDialogStore();
-
-  // Initialize app statuses with LOADED status
-  React.useEffect(() => {
-    if (loadedApps?.app_info) {
-      const statuses: Record<string, ELocalAppStatus> = {};
-      loadedApps.app_info.forEach((app) => {
-        const targetBackstageWidget = backstageWidgets.find(
-          (widget) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ((widget as ILogViewerWidget)?.metadata?.script as any)
-              ?.base_dir === app.base_dir
-        );
-        statuses[app.base_dir] = targetBackstageWidget
-          ? ELocalAppStatus.RUNNING
-          : ELocalAppStatus.LOADED;
-      });
-      setAppStatuses(statuses);
-    }
-  }, [loadedApps, backstageWidgets]);
-
-  const handleStopApps = (baseDir: string) => {
-    const backstageIds = backstageWidgets
-      .filter(
-        (widget) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((widget as ILogViewerWidget)?.metadata?.script as any)?.base_dir ===
-          baseDir
-      )
-      .map((widget) => widget.widget_id);
-    backstageIds.forEach((id) => {
-      removeBackstageWidget(id);
-    });
-  };
 
   const openAppFolderPopup = () => {
     appendWidget({
@@ -138,26 +96,6 @@ export const AppsManagerWidget = (props: { className?: string }) => {
         height: 0.8,
       },
     });
-  };
-
-  const handleUnloadApp = async (baseDir: string) => {
-    try {
-      setIsUnloading(true);
-      await postUnloadApps(baseDir);
-      toast.success(t("header.menuApp.unloadAppSuccess"));
-    } catch (error) {
-      console.error(error);
-      toast.error(
-        t("header.menuApp.unloadAppFailed", {
-          description:
-            error instanceof Error ? error.message : t("popup.apps.error"),
-        })
-      );
-    } finally {
-      await mutate();
-      await reloadGraphs();
-      setIsUnloading(false);
-    }
   };
 
   const handleReloadApp = async (baseDir?: string) => {
@@ -220,6 +158,226 @@ export const AppsManagerWidget = (props: { className?: string }) => {
       await reloadGraphs();
       setNodesAndEdges([], []);
       setIsReloading(false);
+    }
+  };
+
+  const isLoadingMemo = React.useMemo(() => {
+    return isReloading;
+  }, [isReloading]);
+
+  React.useEffect(() => {
+    if (error) {
+      toast.error(t("popup.apps.error"));
+    }
+  }, [error, t]);
+
+  return (
+    <TooltipProvider>
+      <div
+        className={cn(
+          "flex h-full w-full flex-col gap-2 overflow-y-auto",
+          props.className
+        )}
+      >
+        <Table className="h-fit w-full border-none">
+          <TableHeader>
+            <TableRow className="border-none bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-12 border-none text-center">
+                {t("dataTable.no")}
+              </TableHead>
+              <TableHead className="border-none">
+                {t("dataTable.name")}
+              </TableHead>
+              <TableHead className="border-none text-center">
+                {t("popup.apps.status")}
+              </TableHead>
+              <TableHead className="border-none text-center">
+                {t("dataTable.actions")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow className="border-none hover:bg-transparent">
+                <TableCell colSpan={4} className="border-none">
+                  <SpinnerLoading />
+                </TableCell>
+              </TableRow>
+            )}
+            {!isLoading && loadedApps?.app_info?.length === 0 && (
+              <TableRow className="border-none hover:bg-transparent">
+                <TableCell
+                  colSpan={4}
+                  className="border-none text-center text-muted-foreground"
+                >
+                  {t("popup.apps.emptyPlaceholder")}
+                </TableCell>
+              </TableRow>
+            )}
+            {!isLoading &&
+              loadedApps?.app_info?.length &&
+              loadedApps?.app_info?.map((app, index) => (
+                <AppRow key={`app-row-${app.base_dir}`} app={app} idx={index} />
+              ))}
+          </TableBody>
+          <TableFooter className="border-none bg-transparent">
+            <TableRow className="border-none hover:bg-transparent">
+              <TableCell
+                colSpan={4}
+                className="space-x-2 border-none text-right"
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAppFolderPopup}
+                  disabled={isLoadingMemo}
+                  className="gap-2 bg-transparent"
+                >
+                  <FolderPlusIcon className="h-4 w-4" />
+                  {t("header.menuApp.loadApp")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoadingMemo}
+                  onClick={() => handleReloadApp()}
+                  className="gap-2 bg-transparent"
+                >
+                  <FolderSyncIcon className="h-4 w-4" />
+                  <span>{t("header.menuApp.reloadAllApps")}</span>
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+        <TableCaption className="mt-auto select-none">
+          {t("popup.apps.tableCaption")}
+        </TableCaption>
+      </div>
+    </TooltipProvider>
+  );
+};
+
+const AppRow = (props: { app: IApp; idx: number }) => {
+  const { app, idx } = props;
+
+  const [isActing, setIsActing] = React.useState<boolean>(false);
+
+  const { t } = useTranslation();
+  const { mutate: mutateApps } = useFetchApps();
+  const { mutate: reloadGraphs } = useGraphs();
+  const {
+    appendWidget,
+    backstageWidgets, // Track running backstage widgets
+    removeBackstageWidget,
+    removeLogViewerHistory,
+  } = useWidgetStore();
+  const { setNodesAndEdges } = useFlowStore();
+  const { appendDialog, removeDialog } = useDialogStore();
+
+  const relatedBackstageWidges = React.useMemo(() => {
+    return backstageWidgets.filter(
+      (widget) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((widget as ILogViewerWidget)?.metadata?.script as any)?.base_dir ===
+        app.base_dir
+    );
+  }, [app.base_dir, backstageWidgets]);
+
+  const handleStopApps = (baseDir: string) => {
+    const backstageIds = backstageWidgets
+      .filter(
+        (widget) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((widget as ILogViewerWidget)?.metadata?.script as any)?.base_dir ===
+          baseDir
+      )
+      .map((widget) => widget.widget_id);
+    backstageIds.forEach((id) => {
+      removeBackstageWidget(id);
+    });
+  };
+
+  const handleUnloadApp = async (baseDir: string) => {
+    try {
+      setIsActing(true);
+      await postUnloadApps(baseDir);
+      toast.success(t("header.menuApp.unloadAppSuccess"));
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        t("header.menuApp.unloadAppFailed", {
+          description:
+            error instanceof Error ? error.message : t("popup.apps.error"),
+        })
+      );
+    } finally {
+      await mutate();
+      await reloadGraphs();
+      setIsActing(false);
+    }
+  };
+
+  const handleReloadApp = async (baseDir?: string) => {
+    appendDialog({
+      id: "reload-app",
+      title: baseDir
+        ? t("header.menuApp.reloadApp")
+        : t("header.menuApp.reloadAllApps"),
+      content: (
+        <div className={cn("flex flex-col gap-2", "text-sm")}>
+          <p className="">
+            {baseDir
+              ? t("header.menuApp.reloadAppConfirmation", {
+                  name: baseDir,
+                })
+              : t("header.menuApp.reloadAllAppsConfirmation")}
+          </p>
+          <p>{t("header.menuApp.reloadAppDescription")}</p>
+        </div>
+      ),
+      onCancel: async () => {
+        removeDialog("reload-app");
+      },
+      onConfirm: async () => {
+        await reloadApps(baseDir);
+        await reloadGraphs();
+        removeDialog("reload-app");
+      },
+    });
+  };
+
+  const reloadApps = async (baseDir?: string) => {
+    try {
+      setIsActing(true);
+      await postReloadApps(baseDir);
+      if (baseDir) {
+        toast.success(t("header.menuApp.reloadAppSuccess"));
+      } else {
+        toast.success(t("header.menuApp.reloadAllAppsSuccess"));
+      }
+    } catch (error) {
+      console.error(error);
+      if (baseDir) {
+        toast.error(
+          t("header.menuApp.reloadAppFailed", {
+            description:
+              error instanceof Error ? error.message : t("popup.apps.error"),
+          })
+        );
+      } else {
+        toast.error(
+          t("header.menuApp.reloadAllAppsFailed", {
+            description:
+              error instanceof Error ? error.message : t("popup.apps.error"),
+          })
+        );
+      }
+    } finally {
+      await mutateApps();
+      await reloadGraphs();
+      setNodesAndEdges([], []);
+      setIsActing(false);
     }
   };
 
@@ -288,146 +446,44 @@ export const AppsManagerWidget = (props: { className?: string }) => {
         base_dir: baseDir,
         scripts: scripts,
       },
+      popup: {
+        width: 360,
+      },
     });
   };
 
-  const isLoadingMemo = React.useMemo(() => {
-    return isUnloading || isReloading || isLoading;
-  }, [isUnloading, isReloading, isLoading]);
-
-  React.useEffect(() => {
-    if (error) {
-      toast.error(t("popup.apps.error"));
-    }
-  }, [error, t]);
-
   return (
-    <TooltipProvider>
-      <div
-        className={cn(
-          "flex h-full w-full flex-col gap-2 overflow-y-auto",
-          props.className
-        )}
-      >
-        <Table className="h-fit w-full border-none">
-          <TableHeader>
-            <TableRow className="border-none bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-12 border-none text-center">
-                {t("dataTable.no")}
-              </TableHead>
-              <TableHead className="border-none">
-                {t("dataTable.name")}
-              </TableHead>
-              <TableHead className="border-none text-center">
-                {t("popup.apps.status")}
-              </TableHead>
-              <TableHead className="border-none text-center">
-                {t("dataTable.actions")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableRow className="border-none hover:bg-transparent">
-                <TableCell colSpan={4} className="border-none">
-                  <SpinnerLoading />
-                </TableCell>
-              </TableRow>
-            )}
-            {!isLoading && loadedApps?.app_info?.length === 0 && (
-              <TableRow className="border-none hover:bg-transparent">
-                <TableCell
-                  colSpan={4}
-                  className="border-none text-center text-muted-foreground"
-                >
-                  {t("popup.apps.emptyPlaceholder")}
-                </TableCell>
-              </TableRow>
-            )}
-            {!isLoading &&
-              loadedApps?.app_info?.length &&
-              loadedApps?.app_info?.map((app, index) => (
-                <TableRow
-                  key={app.base_dir}
-                  className="border-none hover:bg-muted/30"
-                >
-                  <TableCell
-                    className={cn(
-                      "border-none text-center",
-                      "font-mono text-sm"
-                    )}
-                  >
-                    {(index + 1).toString().padStart(2, "0")}
-                  </TableCell>
-                  <TableCell className="border-none">
-                    <span
-                      className={cn(
-                        "rounded-md bg-muted p-1 px-2",
-                        "font-medium text-xs"
-                      )}
-                    >
-                      {app.base_dir}
-                    </span>
-                  </TableCell>
-                  <TableCell className="border-none text-center">
-                    <Badge className="ml-2" variant="secondary">
-                      {`<TODO>`}
-                    </Badge>
-                  </TableCell>
-                  <AppRowActions
-                    baseDir={app.base_dir}
-                    status={appStatuses[app.base_dir] || "stopped"}
-                    isLoading={isLoadingMemo}
-                    handleUnloadApp={handleUnloadApp}
-                    handleReloadApp={handleReloadApp}
-                    handleAppInstallAll={handleAppInstallAll}
-                    handleRunApp={handleRunApp}
-                    handleStopApps={handleStopApps}
-                  />
-                </TableRow>
-              ))}
-          </TableBody>
-          <TableFooter className="border-none bg-transparent">
-            <TableRow className="border-none hover:bg-transparent">
-              <TableCell
-                colSpan={4}
-                className="space-x-2 border-none text-right"
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openAppFolderPopup}
-                  disabled={isLoadingMemo}
-                  className="gap-2 bg-transparent"
-                >
-                  <FolderPlusIcon className="h-4 w-4" />
-                  {t("header.menuApp.loadApp")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoadingMemo}
-                  onClick={() => handleReloadApp()}
-                  className="gap-2 bg-transparent"
-                >
-                  <FolderSyncIcon className="h-4 w-4" />
-                  <span>{t("header.menuApp.reloadAllApps")}</span>
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        </Table>
-        <TableCaption className="mt-auto select-none">
-          {t("popup.apps.tableCaption")}
-        </TableCaption>
-      </div>
-    </TooltipProvider>
+    <TableRow className="border-none hover:bg-muted/30">
+      <TableCell className={cn("border-none text-center", "font-mono text-sm")}>
+        {(idx + 1).toString().padStart(2, "0")}
+      </TableCell>
+      <TableCell className="border-none">
+        <span
+          className={cn("rounded-md bg-muted p-1 px-2", "font-medium text-xs")}
+        >
+          {app.base_dir}
+        </span>
+      </TableCell>
+      <TableCell className="border-none text-center">
+        <Badge className="ml-2" variant="secondary">
+          {`${relatedBackstageWidges.length} script(s)`}
+        </Badge>
+      </TableCell>
+      <AppRowActions
+        baseDir={app.base_dir}
+        isLoading={isActing}
+        handleUnloadApp={handleUnloadApp}
+        handleReloadApp={handleReloadApp}
+        handleAppInstallAll={handleAppInstallAll}
+        handleRunApp={handleRunApp}
+        handleStopApps={handleStopApps}
+      />
+    </TableRow>
   );
 };
 
 const AppRowActions = (props: {
   baseDir: string;
-  status: ELocalAppStatus;
   isLoading?: boolean;
   handleUnloadApp: (baseDir: string) => void;
   handleReloadApp: (baseDir: string) => void;
@@ -437,7 +493,6 @@ const AppRowActions = (props: {
 }) => {
   const {
     baseDir,
-    status,
     isLoading,
     handleUnloadApp,
     handleReloadApp,

@@ -219,6 +219,7 @@ export interface IDefaultWidgetData {
   base_dir?: string;
   scripts?: string[];
   doc_link_key?: EDocLinkKey;
+  enablePersistConnection?: boolean;
 }
 
 export interface IDefaultWidget extends IWidgetBase<IDefaultWidgetData> {

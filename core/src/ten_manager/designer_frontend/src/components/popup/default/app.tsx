@@ -5,7 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { BrushCleaningIcon, PlayIcon } from "lucide-react";
+import {
+  BrushCleaningIcon,
+  CircleQuestionMarkIcon,
+  PlayIcon,
+} from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -27,6 +31,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AppsManagerWidget,
   AppTemplateWidget,
@@ -132,17 +143,28 @@ export const AppRunPopupTitle = () => {
 
 export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const { widget } = props;
-  const { base_dir: baseDir, scripts } = widget.metadata as IDefaultWidgetData;
+  const {
+    base_dir: baseDir,
+    scripts,
+    enablePersistConnection,
+  } = widget.metadata as IDefaultWidgetData;
 
   const { t } = useTranslation();
 
-  const { removeWidget, appendWidget, removeLogViewerHistory } =
-    useWidgetStore();
+  const {
+    removeWidget,
+    appendWidget,
+    removeLogViewerHistory,
+    removeBackstageWidget,
+  } = useWidgetStore();
 
   const [selectedScript, setSelectedScript] = React.useState<
     string | undefined
   >(scripts?.[0] || undefined);
   const [runWithAgent, setRunWithAgent] = React.useState<boolean>(false);
+  const [persistConnection, setPersistConnection] = React.useState<boolean>(
+    enablePersistConnection || false
+  );
 
   const handleRun = async () => {
     removeWidget(widget.widget_id);
@@ -185,7 +207,9 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         onClose: () => {
           // Update(apps-manager):
           // keep the backstage widget after closing the popup
-          // removeBackstageWidget(newAppStartWidgetId);
+          if (!persistConnection) {
+            removeBackstageWidget(newAppStartWidgetId);
+          }
         },
         custom_actions: [
           {
@@ -234,20 +258,44 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="runapp_script">{t("popup.apps.runScript")}</Label>
-        <Select value={selectedScript} onValueChange={setSelectedScript}>
-          <SelectTrigger id="runapp_script">
-            <SelectValue placeholder={t("popup.apps.selectScript")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {scripts?.map((script) => (
-                <SelectItem key={script} value={script}>
-                  {script}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <div>
+          <Select value={selectedScript} onValueChange={setSelectedScript}>
+            <SelectTrigger id="runapp_script">
+              <SelectValue placeholder={t("popup.apps.selectScript")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {scripts?.map((script) => (
+                  <SelectItem key={script} value={script}>
+                    {script}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="runapp_persist_connection"
+            checked={persistConnection}
+            onCheckedChange={setPersistConnection}
+          />
+          <Label htmlFor="runapp_persist_connection">
+            {t("popup.apps.persistConnection")}
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <CircleQuestionMarkIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>{t("popup.apps.persistConnectionDescription")}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
       <Separator className="my-2" />
       <div className="mb-2 flex flex-col gap-2">
