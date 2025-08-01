@@ -8,6 +8,7 @@
 
 #include "ten_runtime/ten_config.h"
 
+#include "ten_runtime/msg/msg.h"
 #include "ten_runtime/ten_env/internal/send.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -65,3 +66,7 @@ TEN_RUNTIME_API bool ten_env_tester_log(ten_env_tester_t *self,
                                         const char *func_name,
                                         const char *file_name, size_t line_no,
                                         const char *msg, ten_error_t *error);
+
+TEN_RUNTIME_API bool ten_env_tester_set_msg_source(
+    ten_env_tester_t *self, ten_shared_ptr_t *msg, const char *app_uri,
+    const char *graph_id, const char *extension_name, ten_error_t *err);
