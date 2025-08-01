@@ -49,6 +49,10 @@ jobs:
       - name: Install and build extension
         run: |
           cd ai_agents/agents/ten_packages/extension/${{ github.event.inputs.extension }}
+
+          echo "tman --version"
+          tman --version
+          
           echo "Installing extension..."
           tman install --standalone
 
