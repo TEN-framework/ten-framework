@@ -3,7 +3,7 @@
     "editor.defaultFormatter": "ms-azuretools.vscode-containers"
   },
   "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
   "[markdown]": {
     "editor.wordWrap": "bounded",

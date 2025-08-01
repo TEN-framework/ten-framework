@@ -25,9 +25,11 @@
     ]
   },
   "api": {
-    "interface": [{
-      "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
-    }],
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
     "property": {
       "properties": {
         "appid": {
