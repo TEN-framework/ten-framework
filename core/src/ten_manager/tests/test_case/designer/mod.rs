@@ -9,6 +9,7 @@ pub mod builtin_function;
 pub mod dir_list;
 pub mod doc_link;
 pub mod env;
+pub mod exec;
 pub mod extensions;
 pub mod graphs;
 pub mod help_text;

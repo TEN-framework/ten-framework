@@ -9,6 +9,7 @@ from typing import Callable
 from libten_runtime_python import (
     _Extension,  # pyright: ignore[reportPrivateUsage]
     _TenEnv,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_ten_env_register_ten_env_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 from .error import TenError
@@ -136,3 +137,6 @@ class TenEnv(TenEnvBase):
 
     def init_property_from_json(self, json_str: str) -> TenError | None:
         return self._internal.init_property_from_json(json_str)
+
+
+_ten_py_ten_env_register_ten_env_type(TenEnv)

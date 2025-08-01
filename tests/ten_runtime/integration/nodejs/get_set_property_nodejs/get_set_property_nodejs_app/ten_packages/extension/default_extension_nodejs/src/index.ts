@@ -36,7 +36,7 @@ class DefaultExtension extends Extension {
     assert(aaaExist, "aaa not exist");
     assert(!bbbExist, "bbb exist");
 
-    let err: TenError | null = null;
+    let err: TenError | undefined = undefined;
     let intValue: number;
     let floatValue: number;
     let nonExistNumValue: number;
@@ -54,13 +54,13 @@ class DefaultExtension extends Extension {
     assert(floatValue > 3.14 && floatValue < 3.15, "floatValue incorrect");
 
     [nonExistNumValue, err] = await tenEnv.getPropertyNumber("nonExistNumKey");
-    assert(err != null, "err is null");
+    assert(err != undefined, "err is undefined");
 
     [stringValue, err] = await tenEnv.getPropertyString("keyString");
     assert(stringValue === "hello", "stringValue incorrect");
 
     [, err] = await tenEnv.getPropertyString("nonExistStringKey");
-    assert(err != null, "err is null");
+    assert(err != undefined, "err is undefined");
 
     [propertyJsonStr, err] = await tenEnv.getPropertyToJson("keyObject");
     const propertyJson = JSON.parse(propertyJsonStr);
@@ -68,22 +68,22 @@ class DefaultExtension extends Extension {
     assert(propertyJson.key2 === 2, "propertyJson incorrect");
 
     [, err] = await tenEnv.getPropertyToJson("nonExistObjectKey");
-    assert(err != null, "err is null");
+    assert(err != undefined, "err is undefined");
 
     err = await tenEnv.setPropertyNumber("setKeyInt", 12345);
-    assert(err == null, "err is not null");
+    assert(err == undefined, "err is not undefined");
 
     err = await tenEnv.setPropertyNumber("setKeyFloat", 3.1415);
-    assert(err == null, "err is not null");
+    assert(err == undefined, "err is not undefined");
 
     err = await tenEnv.setPropertyString("setKeyString", "happy");
-    assert(err == null, "err is not null");
+    assert(err == undefined, "err is not undefined");
 
     err = await tenEnv.setPropertyFromJson(
       "setKeyObject",
       JSON.stringify({ key1: "value1", key2: 2 }),
     );
-    assert(err == null, "err is not null");
+    assert(err == undefined, "err is not undefined");
 
     [setIntValue, err] = await tenEnv.getPropertyNumber("setKeyInt");
     assert(setIntValue === 12345, "setIntValue incorrect");

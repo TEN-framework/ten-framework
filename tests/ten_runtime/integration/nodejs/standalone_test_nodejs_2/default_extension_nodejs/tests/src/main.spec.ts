@@ -11,7 +11,7 @@ let fakeAppRunPromise: Promise<void>;
 
 class FakeApp extends App {
   private initPromise: Promise<void>;
-  private resolveInit: (() => void) | null = null;
+  private resolveInit: (() => void) | undefined = undefined;
 
   constructor() {
     super();

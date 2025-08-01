@@ -71,7 +71,7 @@ class DefaultExtension extends Extension {
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
-    assert(result !== null, "result is null");
+    assert(result !== undefined, "result is undefined");
 
     tenEnv.log(
       LogLevel.INFO,

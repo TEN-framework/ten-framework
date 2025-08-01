@@ -95,158 +95,149 @@ def _calculate_content_size(value: Value) -> int:
     """Calculate the size needed for the value content."""
     value_type = value.get_type()
 
-    if value_type == ValueType.INVALID:
-        return 0
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
 
-    elif value_type == ValueType.BOOL:
-        return 1
+        case ValueType.BOOL:
+            return 1
 
-    elif value_type == ValueType.INT:
-        return 8  # Always serialize as int64
+        case ValueType.INT:
+            return 8  # Always serialize as int64
 
-    elif value_type == ValueType.FLOAT:
-        return 8  # Always serialize as float64
+        case ValueType.FLOAT:
+            return 8  # Always serialize as float64
 
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        data = (
-            value.get_string()
-            if value_type == ValueType.STRING
-            else value.get_json_string()
-        )
-        encoded = data.encode("utf-8")
-        return 4 + len(encoded)  # length(4) + data
+        case ValueType.STRING:
+            data = value.get_string()[0]
+            encoded = data.encode("utf-8")
+            return 4 + len(encoded)  # length(4) + data
 
-    elif value_type == ValueType.BYTES:
-        data = value.get_bytes()
-        return 4 + len(data)  # length(4) + data
+        case ValueType.JSON_STRING:
+            data = value.get_json_string()[0]
+            encoded = data.encode("utf-8")
+            return 4 + len(encoded)  # length(4) + data
 
-    elif value_type == ValueType.ARRAY:
-        size = 4  # array length
-        for item in value.get_array():
-            size += 1  # item type
-            size += _calculate_content_size(item)
-        return size
+        case ValueType.BYTES:
+            data = value.get_buf()[0]
+            return 4 + len(data)  # length(4) + data
 
-    elif value_type == ValueType.OBJECT:
-        size = 4  # object size
-        for key, val in value.get_object().items():
-            key_bytes = key.encode("utf-8")
-            size += 4 + len(key_bytes)  # key length + key data
-            size += 1  # value type
-            size += _calculate_content_size(val)
-        return size
+        case ValueType.ARRAY:
+            size = 4  # array length
+            for item in value.get_array()[0]:
+                size += 1  # item type
+                size += _calculate_content_size(item)
+            return size
 
-    else:
-        return 0
+        case ValueType.OBJECT:
+            size = 4  # object size
+            for key, val in value.get_object()[0].items():
+                key_bytes = key.encode("utf-8")
+                size += 4 + len(key_bytes)  # key length + key data
+                size += 1  # value type
+                size += _calculate_content_size(val)
+            return size
+
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), "Invalid value type"
 
 
 def _serialize_content(value: Value, buffer: bytearray, pos: int) -> int:
     """Serialize the value content to buffer. Returns new position."""
     value_type = value.get_type()
 
-    if value_type == ValueType.INVALID:
-        # No additional data
-        pass
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
 
-    elif value_type == ValueType.BOOL:
-        val = 1 if value.get_bool() else 0
-        struct.pack_into("<B", buffer, pos, val)
-        pos += 1
-
-    elif value_type == ValueType.INT:
-        # Always serialize as int64
-        val = value.get_int()
-        struct.pack_into("<q", buffer, pos, val)
-        pos += 8
-
-    elif value_type == ValueType.FLOAT:
-        # Always serialize as float64
-        val = value.get_float()
-        struct.pack_into("<d", buffer, pos, val)
-        pos += 8
-
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        data = (
-            value.get_string()
-            if value_type == ValueType.STRING
-            else value.get_json_string()
-        )
-        encoded = data.encode("utf-8")
-        data_len = len(encoded)
-
-        struct.pack_into("<I", buffer, pos, data_len)
-        pos += 4
-
-        if data_len > 0:
-            buffer[pos : pos + data_len] = encoded
-            pos += data_len
-
-    elif value_type == ValueType.BYTES:
-        data = value.get_bytes()
-        data_len = len(data)
-
-        struct.pack_into("<I", buffer, pos, data_len)
-        pos += 4
-
-        if data_len > 0:
-            buffer[pos : pos + data_len] = data
-            pos += data_len
-
-    elif value_type == ValueType.ARRAY:
-        array_data = value.get_array()
-        array_len = len(array_data)
-        struct.pack_into("<I", buffer, pos, array_len)
-        pos += 4
-
-        for item in array_data:
-            item_type = _value_type_to_buffer_type(item.get_type())
-            struct.pack_into("<B", buffer, pos, item_type)
+        case ValueType.BOOL:
+            val = 1 if value.get_bool()[0] else 0
+            struct.pack_into("<B", buffer, pos, val)
             pos += 1
 
-            pos = _serialize_content(item, buffer, pos)
+        case ValueType.INT:
+            # Always serialize as int64
+            val = value.get_int()[0]
+            struct.pack_into("<q", buffer, pos, val)
+            pos += 8
 
-    elif value_type == ValueType.OBJECT:
-        obj_data = value.get_object()
-        obj_size = len(obj_data)
-        struct.pack_into("<I", buffer, pos, obj_size)
-        pos += 4
+        case ValueType.FLOAT:
+            # Always serialize as float64
+            val = value.get_float()[0]
+            struct.pack_into("<d", buffer, pos, val)
+            pos += 8
 
-        for key, val in obj_data.items():
-            # Write key
-            key_bytes = key.encode("utf-8")
-            key_len = len(key_bytes)
-
-            struct.pack_into("<I", buffer, pos, key_len)
+        case ValueType.STRING:
+            data = value.get_string()[0]
+            encoded = data.encode("utf-8")
+            data_len = len(encoded)
+            struct.pack_into("<I", buffer, pos, data_len)
             pos += 4
-            buffer[pos : pos + key_len] = key_bytes
-            pos += key_len
+            if data_len > 0:
+                buffer[pos : pos + data_len] = encoded
+                pos += data_len
 
-            # Write value type and content
-            val_type = _value_type_to_buffer_type(val.get_type())
-            struct.pack_into("<B", buffer, pos, val_type)
-            pos += 1
+        case ValueType.JSON_STRING:
+            data = value.get_json_string()[0]
+            encoded = data.encode("utf-8")
+            data_len = len(encoded)
+            struct.pack_into("<I", buffer, pos, data_len)
+            pos += 4
+            if data_len > 0:
+                buffer[pos : pos + data_len] = encoded
+                pos += data_len
 
-            pos = _serialize_content(val, buffer, pos)
+        case ValueType.BYTES:
+            data = value.get_buf()[0]
+            data_len = len(data)
+            struct.pack_into("<I", buffer, pos, data_len)
+            pos += 4
+            if data_len > 0:
+                buffer[pos : pos + data_len] = data
+                pos += data_len
 
-    else:
-        assert False, f"Unsupported value type for serialization: {value_type}"
+        case ValueType.ARRAY:
+            array_data = value.get_array()[0]
+            array_len = len(array_data)
+            struct.pack_into("<I", buffer, pos, array_len)
+            pos += 4
+            for item in array_data:
+                item_type = _value_type_to_buffer_type(item.get_type())
+                struct.pack_into("<B", buffer, pos, item_type)
+                pos += 1
+                pos = _serialize_content(item, buffer, pos)
+
+        case ValueType.OBJECT:
+            obj_data = value.get_object()[0]
+            obj_size = len(obj_data)
+            struct.pack_into("<I", buffer, pos, obj_size)
+            pos += 4
+            for key, val in obj_data.items():
+                # Write key
+                key_bytes = key.encode("utf-8")
+                key_len = len(key_bytes)
+                struct.pack_into("<I", buffer, pos, key_len)
+                pos += 4
+                buffer[pos : pos + key_len] = key_bytes
+                pos += key_len
+                # Write value type and content
+                val_type = _value_type_to_buffer_type(val.get_type())
+                struct.pack_into("<B", buffer, pos, val_type)
+                pos += 1
+                pos = _serialize_content(val, buffer, pos)
+
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), f"Unsupported value type for serialization: {value_type}"
 
     return pos
 
 
 def serialize_to_buffer(value: Value) -> bytes:
-    """
-    Serialize a Value to a buffer using only Python operations.
-
-    Args:
-        value: The Value to serialize
-
-    Returns:
-        The serialized buffer as bytes
-
-    Raises:
-        BufferProtocolError: If serialization fails
-    """
+    """Serialize a Value to a buffer using only Python operations."""
     content_size = _calculate_content_size(value)
     total_size = VALUE_BUFFER_HEADER_SIZE + content_size
     buffer = bytearray(total_size)
@@ -312,131 +303,132 @@ def _deserialize_content(
 ) -> tuple[Value, int]:
     """Deserialize value content from buffer. Returns (value, new_position)."""
 
-    if value_type == ValueType.INVALID:
-        assert False, "Invalid value type"
+    match value_type:
+        case ValueType.INVALID:
+            assert False, "Invalid value type"
 
-    elif value_type == ValueType.BOOL:
-        if pos >= len(buffer):
-            assert False, "Buffer too small for bool value"
-        val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
-        return Value.create_bool(val != 0), pos + 1
-
-    elif value_type == ValueType.INT:
-        if pos + 8 > len(buffer):
-            assert False, "Buffer too small for int value"
-        val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
-        return Value.create_int(val), pos + 8
-
-    elif value_type == ValueType.FLOAT:
-        if pos + 8 > len(buffer):
-            assert False, "Buffer too small for float value"
-        val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
-        return Value.create_float(val), pos + 8
-
-    elif value_type in (ValueType.STRING, ValueType.JSON_STRING):
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for string length"
-        str_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        if str_len == 0:
-            data = ""
-        else:
-            if pos + str_len > len(buffer):
-                assert False, "Buffer too small for string data"
-            data = buffer[pos : pos + str_len].decode("utf-8")
-            pos += str_len
-
-        if value_type == ValueType.STRING:
-            return Value.create_string(data), pos
-        else:
-            return Value.create_json_string(data), pos
-
-    elif value_type == ValueType.BYTES:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for bytes length"
-        buf_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        if buf_len == 0:
-            data = b""
-        else:
-            if pos + buf_len > len(buffer):
-                assert False, "Buffer too small for bytes data"
-            data = bytes(buffer[pos : pos + buf_len])
-            pos += buf_len
-
-        return Value.create_bytes(data), pos
-
-    elif value_type == ValueType.ARRAY:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for array length"
-        array_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        array_data: list[Value] = []
-        for _ in range(array_len):
+        case ValueType.BOOL:
             if pos >= len(buffer):
-                assert False, "Buffer too small for array item type"
-            item_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
-            pos += 1
+                assert False, "Buffer too small for bool value"
+            val = cast(bool, struct.unpack_from("<B", buffer, pos)[0])
+            return Value.from_bool(val != 0), pos + 1
 
-            item_type = _buffer_type_to_value_type(item_type_id)
-            item, pos = _deserialize_content(buffer, pos, item_type)
-            array_data.append(item)
+        case ValueType.INT:
+            if pos + 8 > len(buffer):
+                assert False, "Buffer too small for int value"
+            val = cast(int, struct.unpack_from("<q", buffer, pos)[0])
+            return Value.from_int(val), pos + 8
 
-        return Value.create_array(array_data), pos
+        case ValueType.FLOAT:
+            if pos + 8 > len(buffer):
+                assert False, "Buffer too small for float value"
+            val = cast(float, struct.unpack_from("<d", buffer, pos)[0])
+            return Value.from_float(val), pos + 8
 
-    elif value_type == ValueType.OBJECT:
-        if pos + 4 > len(buffer):
-            assert False, "Buffer too small for object size"
-        obj_size = cast(int, struct.unpack_from("<I", buffer, pos)[0])
-        pos += 4
-
-        obj_data: dict[str, Value] = {}
-        for _ in range(obj_size):
-            # Read key
+        case ValueType.STRING | ValueType.JSON_STRING:
             if pos + 4 > len(buffer):
-                assert False, "Buffer too small for object key length"
-            key_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+                assert False, "Buffer too small for string length"
+            str_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
             pos += 4
 
-            if pos + key_len > len(buffer):
-                assert False, "Buffer too small for object key data"
-            key = buffer[pos : pos + key_len].decode("utf-8")
-            pos += key_len
+            if str_len == 0:
+                data = ""
+            else:
+                if pos + str_len > len(buffer):
+                    assert False, "Buffer too small for string data"
+                data_bytes = buffer[pos : pos + str_len]
+                data = data_bytes.decode("utf-8")
+                pos += str_len
 
-            # Read value
-            if pos >= len(buffer):
-                assert False, "Buffer too small for object value type"
-            val_type_id = cast(int, struct.unpack_from("<B", buffer, pos)[0])
-            pos += 1
+            if value_type == ValueType.STRING:
+                return Value.from_string(data), pos
+            else:
+                return Value.from_json_string(data), pos
 
-            val_type = _buffer_type_to_value_type(val_type_id)
-            val, pos = _deserialize_content(buffer, pos, val_type)
-            obj_data[key] = val
+        case ValueType.BYTES:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for bytes length"
+            buf_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
 
-        return Value.create_object(obj_data), pos
+            if buf_len == 0:
+                data = b""
+            else:
+                if pos + buf_len > len(buffer):
+                    assert False, "Buffer too small for bytes data"
+                data = bytes(buffer[pos : pos + buf_len])
+                pos += buf_len
+
+            return Value.from_buf(data), pos
+
+        case ValueType.ARRAY:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for array length"
+            array_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
+
+            array_data: list[Value] = []
+            for _ in range(array_len):
+                if pos >= len(buffer):
+                    assert False, "Buffer too small for array item type"
+                item_type_id = cast(
+                    int, struct.unpack_from("<B", buffer, pos)[0]
+                )
+                pos += 1
+
+                item_type = _buffer_type_to_value_type(item_type_id)
+                item, pos = _deserialize_content(buffer, pos, item_type)
+                array_data.append(item)
+
+            return Value.from_array(array_data), pos
+
+        case ValueType.OBJECT:
+            if pos + 4 > len(buffer):
+                assert False, "Buffer too small for object size"
+            obj_size = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+            pos += 4
+
+            obj_data: dict[str, Value] = {}
+            for _ in range(obj_size):
+                # Read key
+                if pos + 4 > len(buffer):
+                    assert False, "Buffer too small for object key length"
+                key_len = cast(int, struct.unpack_from("<I", buffer, pos)[0])
+                pos += 4
+
+                if pos + key_len > len(buffer):
+                    assert False, "Buffer too small for object key data"
+                key_bytes = buffer[pos : pos + key_len]
+                key = key_bytes.decode("utf-8")
+                pos += key_len
+
+                # Read value
+                if pos >= len(buffer):
+                    assert False, "Buffer too small for object value type"
+                val_type_id = cast(
+                    int, struct.unpack_from("<B", buffer, pos)[0]
+                )
+                pos += 1
+
+                val_type = _buffer_type_to_value_type(val_type_id)
+                val, pos = _deserialize_content(buffer, pos, val_type)
+                obj_data[key] = val
+
+            return Value.from_object(obj_data), pos
+
+        case _:  # pyright: ignore[reportUnnecessaryComparison]
+            assert (  # pyright: ignore[reportUnreachable]
+                False
+            ), f"Unknown value type: {value_type}"
 
 
-def deserialize_from_buffer(buffer: bytes) -> tuple[Value, int]:
-    """
-    Deserialize a Value from buffer.
-
-    Args:
-        buffer: The buffer containing serialized data
-
-    Returns:
-        Tuple of (Value, bytes_consumed)
-
-    Raises:
-        AssertionError: If deserialization fails
-    """
+def deserialize_from_buffer(buffer: bytes) -> Value:
+    """Deserialize a Value from buffer."""
     header = _validate_buffer_header(buffer)
 
     pos = VALUE_BUFFER_HEADER_SIZE
     value_type = _buffer_type_to_value_type(header.type_id)
 
-    value, final_pos = _deserialize_content(buffer, pos, value_type)
+    value, _ = _deserialize_content(buffer, pos, value_type)
 
-    return value, final_pos
+    return value

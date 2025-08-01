@@ -16,7 +16,8 @@
 static PyMethodDef ten_py_msg_type_methods[] = {
     {"get_name", ten_py_msg_get_name, METH_VARARGS, NULL},
     {"set_name", ten_py_msg_set_name, METH_VARARGS, NULL},
-    {"set_dest", ten_py_msg_set_dest, METH_VARARGS, NULL},
+    {"get_source_internal", ten_py_msg_get_source, METH_VARARGS, NULL},
+    {"set_dests_internal", ten_py_msg_set_dests, METH_VARARGS, NULL},
     {"get_property_to_json", ten_py_msg_get_property_to_json, METH_VARARGS,
      NULL},
     {"set_property_from_json", ten_py_msg_set_property_from_json, METH_VARARGS,

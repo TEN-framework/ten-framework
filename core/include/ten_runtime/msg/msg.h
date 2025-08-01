@@ -74,11 +74,23 @@ TEN_RUNTIME_API ten_value_t *ten_msg_peek_property(ten_shared_ptr_t *self,
                                                    const char *path,
                                                    ten_error_t *err);
 
+TEN_RUNTIME_API void ten_msg_get_source(ten_shared_ptr_t *self,
+                                        const char **app_uri,
+                                        const char **graph_id,
+                                        const char **extension_name,
+                                        ten_error_t *err);
+
+TEN_RUNTIME_API void ten_msg_clear_dest(ten_shared_ptr_t *self);
+
 TEN_RUNTIME_API bool ten_msg_clear_and_set_dest(ten_shared_ptr_t *self,
                                                 const char *app_uri,
                                                 const char *graph_id,
                                                 const char *extension_name,
                                                 ten_error_t *err);
+
+TEN_RUNTIME_API void ten_msg_add_dest(ten_shared_ptr_t *self,
+                                      const char *app_uri, const char *graph_id,
+                                      const char *extension_name);
 
 TEN_RUNTIME_API bool ten_msg_from_json(ten_shared_ptr_t *self, ten_json_t *json,
                                        ten_error_t *err);

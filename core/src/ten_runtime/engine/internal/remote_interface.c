@@ -758,11 +758,11 @@ bool ten_engine_receive_msg_from_remote(ten_remote_t *remote,
   // Assign the current engine as the message _source_ if there is none, so
   // that if this message traverse to another graph, the result could find the
   // way home.
-  ten_msg_set_src_engine_if_unspecified(msg, engine);
+  ten_msg_set_src_graph_id_if_empty(msg, engine);
 
   // The default destination engine would be the engine where this remote
   // attached to, if the message doesn't specify one.
-  ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+  ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
       msg, engine, &engine->app->predefined_graph_infos);
 
   switch (ten_msg_get_type(msg)) {

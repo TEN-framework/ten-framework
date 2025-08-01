@@ -8,7 +8,9 @@ from enum import IntEnum
 from typing import TypeVar, cast
 from libten_runtime_python import (
     _VideoFrame,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_video_frame_register_video_frame_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+from .msg import Msg
 
 T = TypeVar("T", bound="VideoFrame")
 
@@ -29,8 +31,8 @@ class PixelFmt(IntEnum):
     NV12 = 8
 
 
-class VideoFrame(_VideoFrame):
-    def __init__(self, name: str):
+class VideoFrame(_VideoFrame, Msg):
+    def __init__(self, name: str):  # pyright: ignore[reportMissingSuperCall]
         raise NotImplementedError("Use VideoFrame.create instead.")
 
     @classmethod
@@ -39,3 +41,6 @@ class VideoFrame(_VideoFrame):
 
     def clone(self) -> "VideoFrame":  # pyright: ignore[reportImplicitOverride]
         return cast("VideoFrame", _VideoFrame.clone(self))
+
+
+_ten_py_video_frame_register_video_frame_type(VideoFrame)

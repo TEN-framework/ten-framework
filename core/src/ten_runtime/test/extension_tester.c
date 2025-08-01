@@ -302,10 +302,10 @@ void ten_extension_tester_destroy(ten_extension_tester_t *self) {
   TEN_FREE(self);
 }
 
-static void test_app_start_graph_result_handler(ten_env_t *ten_env,
+static void test_app_start_graph_result_handler(TEN_UNUSED ten_env_t *ten_env,
                                                 ten_shared_ptr_t *cmd_result,
-                                                void *user_data,
-                                                ten_error_t *err) {
+                                                TEN_UNUSED void *user_data,
+                                                TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(cmd_result, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(cmd_result), "Invalid argument.");
 
@@ -316,6 +316,7 @@ static void test_app_start_graph_result_handler(ten_env_t *ten_env,
   } else {
     TEN_LOGE("Failed to start standalone testing graph, status_code: %d",
              status_code);
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
 }
@@ -363,8 +364,8 @@ static void test_app_ten_env_send_start_graph_cmd(ten_env_t *ten_env,
 
   ten_path_t *out_path =
       (ten_path_t *)ten_path_table_add_out_path(app->path_table, cmd);
-  TEN_ASSERT(out_path && ten_path_check_integrity(out_path, true),
-             "Should not happen.");
+  TEN_ASSERT(out_path, "Should not happen.");
+  TEN_ASSERT(ten_path_check_integrity(out_path, true), "Should not happen.");
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -763,7 +764,8 @@ static void ten_extension_tester_inherit_thread_ownership(
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: The correct threading ownership will be setup soon, so we can
   // _not_ check thread safety here.
-  TEN_ASSERT(self && ten_extension_tester_check_integrity(self, false),
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, false),
              "Invalid argument.");
 
   ten_sanitizer_thread_check_set_belonging_thread_to_current_thread(
@@ -774,7 +776,8 @@ bool ten_extension_tester_run(ten_extension_tester_t *self, ten_error_t *err) {
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: this function could be called in different threads other than
   // the creation thread.
-  TEN_ASSERT(self && ten_extension_tester_check_integrity(self, false),
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, false),
              "Invalid argument.");
   TEN_ASSERT(self->test_mode != TEN_EXTENSION_TESTER_TEST_MODE_INVALID,
              "Invalid test mode.");
@@ -793,8 +796,12 @@ bool ten_extension_tester_run(ten_extension_tester_t *self, ten_error_t *err) {
     TEN_ASSERT(0, "Should not happen.");
   }
 
+  TEN_LOGD("Started extension_tester's runloop");
+
   // Start the runloop of tester.
   ten_runloop_run(self->tester_runloop);
+
+  TEN_LOGD("extension_tester's runloop stopped");
 
   if (err != NULL) {
     ten_error_copy(err, &self->test_result);

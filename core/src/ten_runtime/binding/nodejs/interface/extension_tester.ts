@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { AudioFrame } from "../msg/audio_frame.js";
-import { Data } from "../msg/data.js";
-import { Cmd } from "../msg/cmd.js";
-import { VideoFrame } from "../msg/video_frame.js";
-import ten_addon from "../ten_addon.js";
+import { AudioFrame } from "./audio_frame.js";
+import { Data } from "./data.js";
+import { Cmd } from "./cmd.js";
+import { VideoFrame } from "./video_frame.js";
+import ten_addon from "./ten_addon.js";
 import { TenEnvTester } from "./env_tester.js";
-import { TenError } from "../error/error.js";
+import { TenError } from "./error.js";
 
 export class ExtensionTester {
   constructor() {
@@ -60,14 +60,14 @@ export class ExtensionTester {
     // Stub for override.
   }
 
-  async run(): Promise<TenError | null> {
+  async run(): Promise<TenError | undefined> {
     return ten_addon.ten_nodejs_extension_tester_run(this);
   }
 
   setTestModeSingle(
     addonName: string,
     propertyJsonStr: string,
-  ): TenError | null {
+  ): TenError | undefined {
     return ten_addon.ten_nodejs_extension_tester_set_test_mode_single(
       this,
       addonName,
@@ -75,7 +75,7 @@ export class ExtensionTester {
     );
   }
 
-  setTimeout(usec: number): TenError | null {
+  setTimeout(usec: number): TenError | undefined {
     return ten_addon.ten_nodejs_extension_tester_set_timeout(this, usec);
   }
 

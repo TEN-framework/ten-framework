@@ -31,20 +31,27 @@ func (ext *defaultExtension) OnCmd(
 		testCmd.SetPropertyFromJSONBytes("", []byte("{\"key\":\"value\"}"))
 
 		testValue, _ := testCmd.GetPropertyToJSONBytes("")
-		tenEnv.Log(ten.LogLevelDebug, "testValue: " + string(testValue))
+		tenEnv.Log(ten.LogLevelDebug, "testValue: "+string(testValue))
 		// Testing end.
 
 		closeAppCmd, _ := ten.NewCmd("ten:close_app")
 
-		err := closeAppCmd.SetDest("", "", "")
+		err := closeAppCmd.SetDests(ten.Loc{
+			AppURI:        ten.Ptr(""),
+			GraphID:       ten.Ptr(""),
+			ExtensionName: ten.Ptr(""),
+		})
 		if err != nil {
-			tenEnv.Log(ten.LogLevelError, "Failed to SetDest:" + err.Error())
+			tenEnv.Log(ten.LogLevelError, "Failed to SetDests:"+err.Error())
 			return
 		}
 
 		err = tenEnv.SendCmd(closeAppCmd, nil)
 		if err != nil {
-			tenEnv.Log(ten.LogLevelError, "Failed to send close cmd:" + err.Error())
+			tenEnv.Log(
+				ten.LogLevelError,
+				"Failed to send close cmd:"+err.Error(),
+			)
 			return
 		}
 

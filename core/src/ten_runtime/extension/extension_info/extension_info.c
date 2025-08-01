@@ -124,6 +124,16 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
         "Expect to be a create request, the extension_addon_name is required.");
   }
 
+  if (!app_uri) {
+    // We use "" to represent 'this' app.
+    app_uri = "";
+  }
+
+  if (!graph_id) {
+    // We use "" to represent 'this' graph.
+    graph_id = "";
+  }
+
   ten_extension_info_t *extension_info = NULL;
 
   // Find the corresponding extension_info according to the instance name of

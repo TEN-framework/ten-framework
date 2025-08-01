@@ -94,8 +94,8 @@ TEST(ExtensionTest, WrongEngineThenCorrectInMigration) {  // NOLINT
   // Send a message to the wrong engine, the connection won't be migrated as the
   // engine is not found.
   auto test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", "incorrect_graph_id",
-                     "migration");
+  test_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "incorrect_graph_id", "migration"}});
 
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
 
@@ -105,7 +105,7 @@ TEST(ExtensionTest, WrongEngineThenCorrectInMigration) {  // NOLINT
   // Send a message to the correct engine, the connection will be migrated, and
   // the belonging thread of the connection should be correct.
   test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default", "migration");
+  test_cmd->set_dests({{"msgpack://127.0.0.1:8001/", "default", "migration"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
 
@@ -116,8 +116,8 @@ TEST(ExtensionTest, WrongEngineThenCorrectInMigration) {  // NOLINT
   // message to the wrong engine again, the message should be forwarded to the
   // app.
   test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", "incorrect_graph_id",
-                     "migration");
+  test_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "incorrect_graph_id", "migration"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
 

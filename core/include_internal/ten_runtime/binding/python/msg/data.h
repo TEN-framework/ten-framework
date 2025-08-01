@@ -44,3 +44,6 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_data_get_buf(PyObject *self,
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_data_clone(PyObject *self,
                                                     PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_data_register_data_type(
+    PyObject *self, PyObject *args);

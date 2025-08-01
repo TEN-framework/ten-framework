@@ -37,9 +37,6 @@ def patch_azure_ws():
         def session_mock(handler):
             event_handlers["session_started"] = handler
 
-        def session_mock(handler):
-            event_handlers["session_started"] = handler
-
         recognizer_instance.recognized.connect.side_effect = connect_mock
         recognizer_instance.session_started.connect.side_effect = session_mock
 

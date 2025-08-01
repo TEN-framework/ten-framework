@@ -4,9 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { AddonManager } from "../addon/addon_manager.js";
-import ten_addon from "../ten_addon.js";
-import { TenEnv } from "../ten_env/ten_env.js";
+import { AddonManager } from "./addon_manager.js";
+import ten_addon from "./ten_addon.js";
+import { TenEnv } from "./ten_env.js";
 
 export class App {
   constructor() {

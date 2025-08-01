@@ -305,7 +305,14 @@ void ten_go_msg_finalize(uintptr_t bridge_addr);
 
 ten_go_error_t ten_go_msg_get_name(uintptr_t bridge_addr, const char **name);
 
-ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
-                                   int app_uri_len, const void *graph_id,
-                                   int graph_id_len, const void *extension,
-                                   int extension_len);
+/**
+ * @brief Get the source location (app_uri, graph_id, extension_name) of the
+ * msg.
+ */
+ten_go_error_t ten_go_msg_get_source(uintptr_t bridge_addr,
+                                     const char **app_uri,
+                                     const char **graph_id,
+                                     const char **extension_name);
+
+ten_go_error_t ten_go_msg_set_dests(uintptr_t bridge_addr, const void *buffer,
+                                    int buffer_len);

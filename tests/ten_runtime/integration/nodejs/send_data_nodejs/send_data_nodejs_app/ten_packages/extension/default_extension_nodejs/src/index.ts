@@ -24,7 +24,7 @@ function assert(condition: boolean, message: string) {
 
 class DefaultExtension extends Extension {
   // Cache the received cmd
-  private cachedCmd: Cmd | null = null;
+  private cachedCmd: Cmd | undefined = undefined;
   private dataRespRecvCount: number = 0;
 
   constructor(name: string) {
@@ -43,10 +43,10 @@ class DefaultExtension extends Extension {
     console.log("DefaultExtension onInit");
 
     const [value1, err] = await tenEnv.getPropertyString("key1");
-    assert(err == null, "err is not null");
+    assert(err == undefined, "err is not undefined");
 
     const [value2, err2] = await tenEnv.getPropertyNumber("key2");
-    assert(err2 == null, "err2 is not null");
+    assert(err2 == undefined, "err2 is not undefined");
 
     console.log("value1:", value1);
     console.log("value2:", value2);
@@ -134,16 +134,16 @@ class DefaultExtension extends Extension {
 
     if (data.getName() === "data2") {
       const [value1, err] = data.getPropertyString("key1");
-      assert(err == null, "err is not null");
+      assert(err == undefined, "err is not undefined");
 
       const [value2, err2] = data.getPropertyNumber("key2");
-      assert(err2 == null, "err2 is not null");
+      assert(err2 == undefined, "err2 is not undefined");
 
       const [value3, err3] = data.getPropertyBool("key3");
-      assert(err3 == null, "err3 is not null");
+      assert(err3 == undefined, "err3 is not undefined");
 
       const [value4, err4] = data.getPropertyBuf("key4");
-      assert(err4 == null, "err4 is not null");
+      assert(err4 == undefined, "err4 is not undefined");
 
       assert(value1 === "value1", "value1 incorrect");
       assert(value2 === 2, "value2 incorrect");

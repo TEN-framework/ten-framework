@@ -16,6 +16,8 @@
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 
+static PyTypeObject *ten_py_registered_ten_env_type = NULL;
+
 bool ten_py_ten_env_check_integrity(ten_py_ten_env_t *self) {
   TEN_ASSERT(self, "Should not happen.");
 
@@ -37,6 +39,22 @@ static void ten_py_ten_env_c_part_destroyed(void *ten_env_bridge_) {
 
 static PyObject *create_actual_py_ten_env_instance(
     ten_py_ten_env_t *py_ten_env) {
+  if (ten_py_registered_ten_env_type) {
+    // Use the registered TenEnv class directly if available
+    PyObject *args = PyTuple_Pack(1, py_ten_env);
+    PyObject *ten_env_instance =
+        PyObject_CallObject((PyObject *)ten_py_registered_ten_env_type, args);
+    Py_DECREF(args);
+
+    if (!ten_env_instance) {
+      PyErr_Print();
+      return NULL;
+    }
+
+    return ten_env_instance;
+  }
+
+  // Fallback to the original implementation if no registered type.
   // Import the Python module where TenEnv is defined.
   PyObject *module_name = PyUnicode_FromString("ten_runtime.ten_env");
   PyObject *module = PyImport_Import(module_name);
@@ -110,11 +128,6 @@ ten_py_ten_env_t *ten_py_ten_env_wrap(ten_env_t *ten_env) {
   return py_ten_env;
 }
 
-static PyObject *ten_py_ten_env_get_attach_to(ten_py_ten_env_t *self,
-                                              TEN_UNUSED void *closure) {
-  return PyLong_FromLong(self->c_ten_env->attach_to);
-}
-
 void ten_py_ten_env_invalidate(ten_py_ten_env_t *py_ten_env) {
   TEN_ASSERT(py_ten_env, "Should not happen.");
 
@@ -137,9 +150,7 @@ static void ten_py_ten_env_destroy(PyObject *self) {
 }
 
 PyTypeObject *ten_py_ten_env_type(void) {
-  static PyGetSetDef ten_getset[] = {
-      {"_attach_to", (getter)ten_py_ten_env_get_attach_to, NULL, NULL, NULL},
-      {NULL, NULL, NULL, NULL, NULL}};
+  static PyGetSetDef ten_getset[] = {{NULL, NULL, NULL, NULL, NULL}};
 
   static PyMethodDef ten_methods[] = {
       {"on_configure_done", ten_py_ten_env_on_configure_done, METH_VARARGS,
@@ -239,4 +250,19 @@ bool ten_py_ten_env_init_for_module(PyObject *module) {
   }
 
   return true;
+}
+
+PyObject *ten_py_ten_env_register_ten_env_type(TEN_UNUSED PyObject *self,
+                                               PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_registered_ten_env_type);
+
+  ten_py_registered_ten_env_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

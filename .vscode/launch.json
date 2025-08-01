@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/out/linux/x64/tests/standalone/ten_utils_unit_test",
       "cwd": "${workspaceFolder}/out/linux/x64",
       "args": [
-        "--gtest_filter=LogTest.FileOutputReload"
+        "--gtest_filter=LogTest.FileOutputReload1"
       ],
       "env": {
         "LD_LIBRARY_PATH": "${workspaceFolder}/out/linux/x64/tests/standalone/",
@@ -137,7 +137,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/standalone/ten_runtime_smoke_test",
       "args": [
-        "--gtest_filter=ExtensionTest.ErrorClientSendJson"
+        "--gtest_filter=ExtensionTest.WrongEngineThenCorrectInMigration"
       ],
       "cwd": "${workspaceFolder}/out/linux/x64/tests/standalone/",
       "env": {

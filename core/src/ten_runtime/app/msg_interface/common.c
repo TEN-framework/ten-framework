@@ -107,7 +107,7 @@ static bool ten_app_handle_msg_default_handler(ten_app_t *self,
     // The target engine is found, forward the message to it.
 
     // Correct the 'graph_id' from prebuilt-graph-name to engine-graph-id.
-    ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+    ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
         msg, dest_engine, &self->predefined_graph_infos);
 
     // Either migrate the connection to the engine or add the message to the
@@ -141,7 +141,7 @@ static bool ten_app_handle_msg_default_handler(ten_app_t *self,
         // it.
 
         // Correct the 'graph_id' from prebuilt-graph-name to engine-graph-id.
-        ten_msg_set_dest_engine_if_unspecified_or_predefined_graph_name(
+        ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
             msg, dest_engine, &self->predefined_graph_infos);
 
         // Either migrate the connection to the engine or add the message to the
@@ -282,7 +282,8 @@ static bool ten_app_handle_stop_graph_cmd(ten_app_t *self,
                                           TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
-  TEN_ASSERT(cmd && ten_cmd_base_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Should not happen.");
   TEN_ASSERT(ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_STOP_GRAPH,
              "Should not happen.");
   TEN_ASSERT(ten_msg_get_dest_cnt(cmd) == 1, "Should not happen.");
@@ -320,8 +321,8 @@ static bool ten_app_handle_stop_graph_cmd(ten_app_t *self,
     TEN_ASSERT(dest_loc, "Should not happen.");
     TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
-    ten_string_set_formatted(&dest_loc->graph_id, "%s",
-                             ten_string_get_raw_str(&dest_engine->graph_id));
+    ten_loc_set_graph_id(dest_loc,
+                         ten_string_get_raw_str(&dest_engine->graph_id));
   }
 
   ten_engine_append_to_in_msgs_queue(dest_engine, cmd);
@@ -546,10 +547,10 @@ static void ten_app_handle_in_msgs_sync(ten_app_t *self) {
 
   ten_list_foreach (&in_msgs_, iter) {
     ten_shared_ptr_t *msg = ten_smart_ptr_listnode_get(iter.node);
-    TEN_ASSERT(msg && ten_msg_check_integrity(msg) &&
-                   !ten_msg_src_is_empty(msg) &&
-                   (ten_msg_get_dest_cnt(msg) == 1),
-               "Invalid argument.");
+    TEN_ASSERT(msg, "Invalid argument.");
+    TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
+    TEN_ASSERT(!ten_msg_src_is_empty(msg), "Invalid argument.");
+    TEN_ASSERT(ten_msg_get_dest_cnt(msg) == 1, "Invalid argument.");
 
     // The 'ten_app_on_external_cmds()' is called in the following two scenarios
     // now.
@@ -600,12 +601,11 @@ static void ten_app_handle_in_msgs_task(void *app_, TEN_UNUSED void *arg) {
 }
 
 static void ten_app_handle_in_msgs_async(ten_app_t *self) {
-  TEN_ASSERT(self &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: This function is intended to be called outside
-                 // of the TEN app thread.
-                 ten_app_check_integrity(self, false),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is intended to be called outside of the TEN app
+  // thread.
+  TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   int rc = ten_runloop_post_task_tail(ten_app_get_attached_runloop(self),
                                       ten_app_handle_in_msgs_task, self, NULL);
@@ -615,7 +615,9 @@ static void ten_app_handle_in_msgs_async(ten_app_t *self) {
 void ten_app_push_to_in_msgs_queue(ten_app_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
-  TEN_ASSERT(msg && ten_msg_is_cmd_and_result(msg), "Invalid argument.");
+
+  TEN_ASSERT(msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_is_cmd_and_result(msg), "Invalid argument.");
   TEN_ASSERT(!ten_cmd_base_cmd_id_is_empty(msg), "Invalid argument.");
   TEN_ASSERT(ten_msg_get_src_app_uri(msg), "Invalid argument.");
   TEN_ASSERT((ten_msg_get_dest_cnt(msg) == 1), "Invalid argument.");
@@ -637,7 +639,8 @@ void ten_app_create_cmd_result_and_dispatch(ten_app_t *self,
                                             const char *detail) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Invalid argument.");
-  TEN_ASSERT(origin_cmd && ten_msg_is_cmd(origin_cmd), "Invalid argument.");
+  TEN_ASSERT(origin_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_is_cmd(origin_cmd), "Invalid argument.");
 
   ten_shared_ptr_t *cmd_result =
       ten_cmd_result_create_from_cmd(status_code, origin_cmd);

@@ -28,7 +28,7 @@ class test_extension : public ten::extension_t {
       // We send out a request with invalid extension, the extension thread will
       // return the error result.
       auto test_cmd = ten::cmd_t::create("test");
-      test_cmd->set_dest(nullptr, nullptr, "a");
+      test_cmd->set_dests({{"", "", "a"}});
       ten_env.send_cmd(std::move(test_cmd),
                        [this](ten::ten_env_t &ten_env,
                               std::unique_ptr<ten::cmd_result_t> cmd_result,
@@ -106,8 +106,8 @@ TEST(ExtensionTest, CommandInvalidExtension2) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension");
+  hello_world_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_ERROR);
   ten_test::check_detail_with_string(cmd_result, "Failed to find destination.");
