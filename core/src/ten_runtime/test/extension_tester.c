@@ -261,11 +261,11 @@ static void ten_extension_tester_destroy_test_target(
 
 void ten_extension_tester_destroy(ten_extension_tester_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(
-      // TEN_NOLINTNEXTLINE(thread-check)
-      // thread-check: In TEN world, the destroy operations need to be performed
-      // in any threads.
-      ten_extension_tester_check_integrity(self, false), "Invalid argument.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: In TEN world, the destroy operations need to be performed in
+  // any threads.
+  TEN_ASSERT(ten_extension_tester_check_integrity(self, false),
+             "Invalid argument.");
 
   // The `ten_env_proxy` of `test_app` should be released in the tester task
   // triggered by the `deinit` of `test_app`.

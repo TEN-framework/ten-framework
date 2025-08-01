@@ -557,13 +557,13 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
 
     ten_list_foreach (&result_msgs, iter) {
       ten_shared_ptr_t *result_msg = ten_smart_ptr_listnode_get(iter.node);
-      TEN_ASSERT(result_msg && ten_msg_check_integrity(result_msg),
-                 "Invalid argument.");
+      TEN_ASSERT(result_msg, "Invalid argument.");
+      TEN_ASSERT(ten_msg_check_integrity(result_msg), "Invalid argument.");
 
       ten_path_t *path = (ten_path_t *)ten_path_table_add_out_path(
           self->path_table, result_msg);
-      TEN_ASSERT(path && ten_path_check_integrity(path, true),
-                 "Should not happen.");
+      TEN_ASSERT(path, "Should not happen.");
+      TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
       ten_list_push_ptr_back(&result_out_paths, path, NULL);
     }
@@ -581,8 +581,8 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
 
   ten_list_foreach (&result_msgs, iter) {
     ten_shared_ptr_t *result_msg = ten_smart_ptr_listnode_get(iter.node);
-    TEN_ASSERT(result_msg && ten_msg_check_integrity(result_msg),
-               "Invalid argument.");
+    TEN_ASSERT(result_msg, "Invalid argument.");
+    TEN_ASSERT(ten_msg_check_integrity(result_msg), "Invalid argument.");
 
     ten_extension_thread_dispatch_msg(self->extension_thread, result_msg);
   }

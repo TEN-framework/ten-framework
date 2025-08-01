@@ -49,7 +49,8 @@ bool ten_env_tester_check_integrity(ten_env_tester_t *self, bool check_thread) {
 }
 
 ten_env_tester_t *ten_env_tester_create(ten_extension_tester_t *tester) {
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_t *self = TEN_MALLOC(sizeof(ten_env_tester_t));
@@ -315,7 +316,8 @@ static void ten_env_tester_notify_log_ctx_destroy(
 static void ten_extension_tester_execute_error_handler_task(void *self,
                                                             void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_send_msg_ctx_t *ctx = arg;
@@ -329,7 +331,8 @@ static void ten_extension_tester_execute_error_handler_task(void *self,
 static void ten_extension_tester_execute_cmd_result_handler_task(void *self,
                                                                  void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_send_cmd_callback_ctx_t *ctx = arg;
@@ -351,7 +354,8 @@ static void ten_extension_tester_execute_cmd_result_handler_task(void *self,
 static void ten_extension_tester_execute_return_result_handler_task(void *self,
                                                                     void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_return_result_ctx_t *return_result_info = arg;
