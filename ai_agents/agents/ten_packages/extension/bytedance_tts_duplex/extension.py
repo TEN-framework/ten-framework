@@ -62,11 +62,11 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
 
                 if not self.config.appid:
                     self.ten_env.log_error("get property appid")
-                    return ValueError("appid is required")
+                    raise ValueError("appid is required")
 
                 if not self.config.token:
                     self.ten_env.log_error("get property token")
-                    return ValueError("token is required")
+                    raise ValueError("token is required")
 
                 # extract audio_params and additions from config
                 self.config.update_params()
@@ -83,12 +83,12 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                self.current_request_id,
+                self.current_request_id or "",
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.ASR,
+                    module_name=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
-                    vendor_info=None,
+                    vendor_info={},
                 ),
             )
 
@@ -96,6 +96,11 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         await self._stop_connection()
         if self.msg_polling_task:
             self.msg_polling_task.cancel()
+
+        # Flush the recorder to ensure all buffered data is written to the dump file.
+        if self.recorder:
+            await self.recorder.flush()
+            self.recorder = None
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
@@ -285,7 +290,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     message=str(e),
                     module_name=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=None,
+                    vendor_info={},
                 ),
             )
             await self._reconnect()
