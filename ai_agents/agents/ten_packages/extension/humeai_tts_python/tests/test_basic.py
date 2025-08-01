@@ -40,6 +40,7 @@ from humeai_tts_python.humeTTS import (
     EVENT_TTS_END,
     EVENT_TTS_ERROR,
     EVENT_TTS_INVALID_KEY_ERROR,
+    EVENT_TTS_FLUSH,
 )
 
 # ================ case 1: 基本功能测试 ================
@@ -763,41 +764,51 @@ class ExtensionTesterFlush(ExtensionTester):
 
 @patch('humeai_tts_python.extension.HumeAiTTS')
 def test_flush_logic(MockHumeAiTTS):
-    """
-    Tests that sending a flush command during TTS streaming correctly stops
-    the audio and sends the appropriate events.
-    """
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockHumeAiTTS.return_value
-    mock_instance.cancel = AsyncMock()
 
+    # Add _is_cancelled flag to mock instance
+    mock_instance._is_cancelled = False
+
+    # Mock the cancel method to set the flag
+    async def mock_cancel():
+        print("Mock cancel() called, setting _is_cancelled=True")
+        mock_instance._is_cancelled = True
+
+    mock_instance.cancel = AsyncMock(side_effect=mock_cancel)
+
+    # Mock the get method to check _is_cancelled flag
     async def mock_get_long_audio_stream(text: str):
-        for _ in range(20):
-            # In a real scenario, the cancel() call would set a flag.
-            # We simulate this by checking the mock's 'called' status.
-            if mock_instance.cancel.called:
-                print("Mock detected cancel call, stopping stream.")
-                break
-            yield (b'\x11\x22\x33' * 100, EVENT_TTS_RESPONSE)
-            await asyncio.sleep(0.1)
+        for i in range(50):  # 增加循环次数，给flush更多时间
+            # Check for cancellation using the _is_cancelled flag (like real code)
+            if mock_instance._is_cancelled:
+                print(f"Mock detected _is_cancelled=True at iteration {i}, sending EVENT_TTS_FLUSH.")
+                yield (None, EVENT_TTS_FLUSH)
+                return  # Stop the generator immediately after flush
 
-        # After being cancelled (or finishing), the stream must send EVENT_TTS_END
+            print(f"Mock sending audio chunk {i}")
+            yield (b'\x11\x22\x33' * 100, EVENT_TTS_RESPONSE)
+            await asyncio.sleep(0.05)  # 减少延迟，让测试更快响应
+
+        # This part is only reached if not cancelled - normal completion
+        print("Mock completed normally, sending EVENT_TTS_END")
         yield (None, EVENT_TTS_END)
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
-    config = { "key": "test_api_key", "voice_id": "daisy" }
-    tester = ExtensionTesterFlush()
-    tester.set_test_mode_single(
-        "humeai_tts_python",
-        json.dumps(config)
-    )
+    config = {
+        "key": "test_api_key",
+        "voice_id": "daisy"
+    }
 
+    tester = ExtensionTesterFlush()
+    tester.set_test_mode_single("humeai_tts_python", json.dumps(config))
     print("Running flush logic test...")
     tester.run()
     print("Flush logic test completed.")
 
+    # Assertions
     assert tester.audio_start_received, "Did not receive tts_audio_start."
     assert tester.first_audio_frame_received, "Did not receive any audio frame."
     assert tester.flush_start_received, "Did not receive tts_flush_start."
@@ -805,6 +816,7 @@ def test_flush_logic(MockHumeAiTTS):
     assert tester.flush_end_received, "Did not receive tts_flush_end."
     assert not tester.audio_received_after_flush_end, "Received audio after tts_flush_end."
 
+    # Audio duration check
     calculated_duration = tester.get_calculated_audio_duration_ms()
     event_duration = tester.total_audio_duration_from_event
     print(f"calculated_duration: {calculated_duration}, event_duration: {event_duration}")

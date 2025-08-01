@@ -19,6 +19,7 @@ EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
 EVENT_TTS_INVALID_KEY_ERROR = 4
+EVENT_TTS_FLUSH = 5
 
 class HumeAiTTS:
     def __init__(self, config: HumeAiTTSConfig, ten_env: AsyncTenEnv):
@@ -63,7 +64,8 @@ class HumeAiTTS:
                 instant_mode=True,
             ):
                 if self._is_cancelled:
-                    self.ten_env.log_info("Cancellation flag detected, stopping TTS stream.")
+                    self.ten_env.log_info("Cancellation flag detected, sending flush event and stopping TTS stream.")
+                    yield None, EVENT_TTS_FLUSH
                     break
 
                 async with self.generation_id_lock:
@@ -75,7 +77,9 @@ class HumeAiTTS:
                 if snippet.is_last_chunk:
                     break
 
-            yield None, EVENT_TTS_END
+            # Only send EVENT_TTS_END if not cancelled (flush event already sent)
+            if not self._is_cancelled:
+                yield None, EVENT_TTS_END
 
         except Exception as e:
             error_message = str(e)

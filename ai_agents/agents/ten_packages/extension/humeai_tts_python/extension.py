@@ -19,7 +19,7 @@ from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import HumeAiTTSConfig
-from .humeTTS import HumeAiTTS, EVENT_TTS_RESPONSE, EVENT_TTS_END, EVENT_TTS_ERROR, EVENT_TTS_INVALID_KEY_ERROR
+from .humeTTS import HumeAiTTS, EVENT_TTS_RESPONSE, EVENT_TTS_END, EVENT_TTS_ERROR, EVENT_TTS_INVALID_KEY_ERROR, EVENT_TTS_FLUSH
 from ten_runtime import AsyncTenEnv
 
 
@@ -91,12 +91,14 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         duration_sec = self.total_audio_bytes / (self.synthesize_audio_sample_rate() * bytes_per_sample * channels)
         return int(duration_sec * 1000)
 
-    async def on_flush(self, t: TTSFlush) -> None:
-        if self.client and t.flush_id == self.current_request_id:
-            self.ten_env.log_info(f"Flushing TTS for request ID: {t.flush_id}")
-            #await self.send_tts_flush_start(t.flush_id, self.current_turn_id)
+    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
+        # Get the necessary properties
+        self.ten_env.log_info(f"on_data12345: {data.get_name()}")
+        data_name = data.get_name()
+        ten_env.log_info(f"on_data:{data_name}")
+        if data.get_name() == "tts_flush":
             await self.client.cancel()
-            #await self.send_tts_flush_end(t.flush_id, self.current_turn_id)
+        await super().on_data(ten_env, data)
 
     async def request_tts(self, t: TTSTextInput) -> None:
         try:
@@ -151,6 +153,13 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     duration_ms = self._calculate_audio_duration_ms()
                     request_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
                     await self.send_tts_audio_end(self.current_request_id, request_interval, duration_ms, self.current_turn_id)
+                    break
+
+                elif event == EVENT_TTS_FLUSH and self.sent_ts and self.current_request_id:
+                    duration_ms = self._calculate_audio_duration_ms()
+                    request_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
+                    await self.send_tts_audio_end(self.current_request_id, request_interval, duration_ms, self.current_turn_id)
+                    #await self.send_tts_flush_end(self.current_request_id, self.current_turn_id)
                     self.current_request_finished = True
                     break
 
@@ -170,6 +179,10 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 elif event == EVENT_TTS_ERROR:
                     error_msg = audio_chunk.decode('utf-8') if audio_chunk else "Unknown client error"
                     raise RuntimeError(error_msg)
+
+            if t.text_input_end:
+                self.ten_env.log_info(f"t.text_input_end: {t.text_input_end}")
+                self.current_request_finished = True
 
         except Exception as e:
             self.ten_env.log_error(f"Error in request_tts: {traceback.format_exc()}")
