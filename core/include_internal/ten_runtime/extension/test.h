@@ -14,5 +14,5 @@
 TEN_RUNTIME_PRIVATE_API void ten_adjust_msg_dest_for_standalone_test_scenario(
     ten_shared_ptr_t *msg, ten_extension_t *from_extension);
 
-TEN_RUNTIME_PRIVATE_API void ten_add_msg_dest_for_standalone_test_scenario(
+TEN_RUNTIME_PRIVATE_API bool ten_add_msg_dest_for_standalone_test_scenario(
     ten_shared_ptr_t *msg, ten_extension_t *from_extension);

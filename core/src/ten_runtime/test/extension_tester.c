@@ -355,82 +355,19 @@ static ten_shared_ptr_t *create_start_graph_cmd(
     ten_string_t graph_json_str;
     ten_string_init_formatted(&graph_json_str,
                               "{\
-             \"nodes\": [{\
-                \"type\": \"extension\",\
-                \"name\": \"ten:test_extension\",\
-                \"addon\": \"ten:test_extension\",\
-                \"extension_group\": \"test_extension_group_1\"\
-             },{\
-                \"type\": \"extension\",\
-                \"name\": \"%s\",\
-                \"addon\": \"%s\",\
-                \"extension_group\": \"test_extension_group_2\",\
-                \"property\": %s\
-             }],\
-             \"connections\": [{\
-               \"extension_group\": \"test_extension_group_1\",\
-               \"extension\": \"ten:test_extension\",\
-               \"cmd\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_2\",\
-                    \"extension\": \"%s\"\
-                 }]\
-               }],\
-               \"data\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_2\",\
-                    \"extension\": \"%s\"\
-                 }]\
-               }],\
-               \"video_frame\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_2\",\
-                    \"extension\": \"%s\"\
-                 }]\
-               }],\
-               \"audio_frame\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_2\",\
-                    \"extension\": \"%s\"\
-                 }]\
-               }]\
-             },{\
-               \"extension_group\": \"test_extension_group_2\",\
-               \"extension\": \"%s\",\
-               \"cmd\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_1\",\
-                    \"extension\": \"ten:test_extension\"\
-                 }]\
-               }],\
-               \"data\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_1\",\
-                    \"extension\": \"ten:test_extension\"\
-                 }]\
-               }],\
-               \"video_frame\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_1\",\
-                    \"extension\": \"ten:test_extension\"\
-                 }]\
-               }],\
-               \"audio_frame\": [{\
-                 \"name\": \"*\",\
-                 \"dest\": [{\
-                    \"extension_group\": \"test_extension_group_1\",\
-                    \"extension\": \"ten:test_extension\"\
-                 }]\
-               }]\
-             }]\
-         }",
+      \"nodes\": [{\
+         \"type\": \"extension\",\
+         \"name\": \"ten:test_extension\",\
+         \"addon\": \"ten:test_extension\",\
+         \"extension_group\": \"test_extension_group_1\"\
+      },{\
+         \"type\": \"extension\",\
+         \"name\": \"%s\",\
+         \"addon\": \"%s\",\
+         \"extension_group\": \"test_extension_group_2\",\
+         \"property\": %s\
+      }]\
+    }",
                               addon_name, addon_name, property_json_str,
                               addon_name, addon_name, addon_name, addon_name,
                               addon_name);

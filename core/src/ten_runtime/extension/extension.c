@@ -387,24 +387,22 @@ static bool ten_extension_determine_out_msg_dest_from_graph(
 
   // Graph doesn't specify how to route the messages.
 
-  ten_add_msg_dest_for_standalone_test_scenario(msg, self);
-
-  if (ten_msg_get_dest_cnt(msg) == 0) {
-    TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
-    const char *msg_name = ten_msg_get_name(msg);
-
-    // In any case, the user needs to be informed about the error where the
-    // graph does not have a specified destination for the message.
-    TEN_ASSERT(err, "Should not happen.");
-    ten_error_set(
-        err, TEN_ERROR_CODE_MSG_NOT_CONNECTED,
-        "Failed to find destination of a '%s' message '%s' from graph.",
-        ten_msg_type_to_string(msg_type), msg_name);
-
-    return false;
-  } else {
+  if (ten_add_msg_dest_for_standalone_test_scenario(msg, self)) {
+    ten_list_push_smart_ptr_back(result_msgs, msg);
     return true;
   }
+
+  TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
+  const char *msg_name = ten_msg_get_name(msg);
+
+  // In any case, the user needs to be informed about the error where the
+  // graph does not have a specified destination for the message.
+  TEN_ASSERT(err, "Should not happen.");
+  ten_error_set(err, TEN_ERROR_CODE_MSG_NOT_CONNECTED,
+                "Failed to find destination of a '%s' message '%s' from graph.",
+                ten_msg_type_to_string(msg_type), msg_name);
+
+  return false;
 }
 
 typedef enum TEN_EXTENSION_DETERMINE_OUT_MSGS_RESULT {

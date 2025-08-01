@@ -52,7 +52,7 @@ void ten_adjust_msg_dest_for_standalone_test_scenario(
   }
 }
 
-void ten_add_msg_dest_for_standalone_test_scenario(
+bool ten_add_msg_dest_for_standalone_test_scenario(
     ten_shared_ptr_t *msg, ten_extension_t *from_extension) {
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
@@ -84,5 +84,9 @@ void ten_add_msg_dest_for_standalone_test_scenario(
 
     ten_msg_add_dest(msg, ten_app_get_uri(app),
                      ten_engine_get_id(engine, false), target_extension_name);
+
+    return true;
   }
+
+  return false;
 }
