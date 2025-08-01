@@ -76,7 +76,11 @@
       "version": "=0.6.21"
     }
   ],
-  "api": {},
+  "api": {
+    "interface": [{
+      "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+    }]
+  },
   "scripts": {
     "test": "tests/bin/start"
   }
