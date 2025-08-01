@@ -62,7 +62,7 @@ import {
 } from "@/constants/widgets";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import { ELocalAppStatus, type IApp } from "@/types/apps";
+import type { IApp } from "@/types/apps";
 import {
   EDefaultWidgetType,
   ELogViewerScriptType,
@@ -368,7 +368,7 @@ const AppRow = (props: { app: IApp; idx: number }) => {
         })
       );
     } finally {
-      await mutate();
+      await mutateApps();
       await reloadGraphs();
       setIsActing(false);
     }

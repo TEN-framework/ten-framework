@@ -5,11 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import {
-  BrushCleaningIcon,
-  CircleQuestionMarkIcon,
-  PlayIcon,
-} from "lucide-react";
+import { PlayIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -31,13 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   AppsManagerWidget,
   AppTemplateWidget,
