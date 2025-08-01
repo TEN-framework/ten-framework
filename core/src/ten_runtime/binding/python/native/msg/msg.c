@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
@@ -160,7 +161,13 @@ PyObject *ten_py_msg_get_source(PyObject *self, TEN_UNUSED PyObject *args) {
   return res;
 }
 
-PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
+typedef struct {
+  const char *app_uri;
+  const char *graph_id;
+  const char *extension_name;
+} dest_info_t;
+
+PyObject *ten_py_msg_set_dests(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_msg_t *py_msg = (ten_py_msg_t *)self;
 
   TEN_ASSERT(py_msg, "Invalid argument.");
@@ -188,19 +195,30 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
         "Expected a list of destination tuples.");
   }
 
+  Py_ssize_t list_size = PyList_Size(dest_list);
+  if (list_size == 0) {
+    // Empty list, just clear destinations
+    ten_msg_clear_dest(c_msg);
+    Py_RETURN_NONE;
+  }
+
+  // Allocate array to store destination information
+  dest_info_t *dest_infos = TEN_MALLOC(sizeof(dest_info_t) * list_size);
+  TEN_ASSERT(dest_infos, "Failed to allocate memory.");
+  if (!dest_infos) {
+    return ten_py_raise_py_value_error_exception("Failed to allocate memory.");
+  }
+
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  // Clear existing destinations
-  ten_msg_clear_dest(c_msg);
-
-  // Iterate through the list of destination tuples
-  Py_ssize_t list_size = PyList_Size(dest_list);
+  // Phase 1: Parse all destination tuples and store string pointers
   for (Py_ssize_t i = 0; i < list_size; i++) {
     PyObject *dest_tuple = PyList_GetItem(dest_list, i);
 
     // Check if each item is a tuple
     if (!PyTuple_Check(dest_tuple)) {
+      TEN_FREE(dest_infos);
       ten_error_deinit(&err);
       return ten_py_raise_py_value_error_exception(
           "Expected tuple in destination list.");
@@ -208,27 +226,43 @@ PyObject *ten_py_msg_set_dest(PyObject *self, TEN_UNUSED PyObject *args) {
 
     // Check if tuple has exactly 3 elements
     if (PyTuple_GET_SIZE(dest_tuple) != 3) {
+      TEN_FREE(dest_infos);
       ten_error_deinit(&err);
       return ten_py_raise_py_value_error_exception(
           "Each destination tuple must have exactly 3 elements.");
     }
 
-    const char *app_uri = NULL;
-    const char *graph_id = NULL;
-    const char *extension_name = NULL;
-
     // Parse the tuple (app_uri, graph_id, extension_name)
-    if (!PyArg_ParseTuple(dest_tuple, "zzz", &app_uri, &graph_id,
-                          &extension_name)) {
+    if (!PyArg_ParseTuple(dest_tuple, "zzz", &dest_infos[i].app_uri,
+                          &dest_infos[i].graph_id,
+                          &dest_infos[i].extension_name)) {
+      TEN_FREE(dest_infos);
       ten_error_deinit(&err);
       return ten_py_raise_py_value_error_exception(
           "Failed to parse destination tuple.");
     }
-
-    // Add this destination
-    ten_msg_add_dest(c_msg, app_uri, graph_id, extension_name);
   }
 
+  // Phase 2: Validate all locations
+  for (Py_ssize_t i = 0; i < list_size; i++) {
+    if (!ten_loc_str_check_correct(dest_infos[i].app_uri,
+                                   dest_infos[i].graph_id,
+                                   dest_infos[i].extension_name, &err)) {
+      PyObject *result = (PyObject *)ten_py_error_wrap(&err);
+      TEN_FREE(dest_infos);
+      ten_error_deinit(&err);
+      return result;
+    }
+  }
+
+  // Phase 3: All validations passed, now clear and add destinations
+  ten_msg_clear_dest(c_msg);
+  for (Py_ssize_t i = 0; i < list_size; i++) {
+    ten_msg_add_dest(c_msg, dest_infos[i].app_uri, dest_infos[i].graph_id,
+                     dest_infos[i].extension_name);
+  }
+
+  TEN_FREE(dest_infos);
   ten_error_deinit(&err);
   Py_RETURN_NONE;
 }

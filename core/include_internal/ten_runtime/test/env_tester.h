@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include "include_internal/ten_runtime/binding/common.h"
+#include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/signature.h"
 
 #define TEN_ENV_TESTER_SIGNATURE 0x66C619FBA7DC8BD9U
