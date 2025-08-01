@@ -168,6 +168,7 @@
     "apps": {
       "manager": "应用管理器",
       "tableCaption": "已加载应用列表。",
+      "emptyPlaceholder": "未加载任何应用。",
       "baseDir": "基础目录",
       "run": "运行应用",
       "runScript": "运行脚本",
@@ -187,7 +188,13 @@
       "appNameDescription": "输入应用的名称。",
       "baseDirDescription": "选择应用的基础目录。",
       "run_opts": "选项",
-      "run_with_agent": "使用 TEN Agent 运行"
+      "run_with_agent": "使用 TEN Agent 运行",
+      "status": "状态",
+      "noRunningScripts": "无运行中的脚本",
+      "runningScriptsCaption": "运行中脚本列表。",
+      "loadedApps": "已加载应用",
+      "runningScripts": "运行中脚本",
+      "runningScriptsWithCount": "正在运行 {{count}} 个脚本"
     },
     "graph": {
       "title": "节点",
@@ -315,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "已加载 {{count}} 个应用",
+    "scriptsRunningWithCount": "正在运行 {{count}} 个脚本",
     "appsError": "获取应用失败",
     "workspace": {
       "title": "当前工作区",

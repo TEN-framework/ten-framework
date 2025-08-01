@@ -533,7 +533,15 @@ const AppRow = (props: { app: IApp; idx: number }) => {
             handleChangeTab(EAppTab.RUNNING_SCRIPTS);
           }}
         >
-          {`${relatedBackstageWidges.length} running script(s)`}
+          {relatedBackstageWidges.length === 0 &&
+            t("popup.apps.noRunningScripts")}
+          {relatedBackstageWidges.length > 0 && (
+            <span className="text-muted">
+              {t("popup.apps.runningScriptsWithCount", {
+                count: relatedBackstageWidges.length,
+              })}
+            </span>
+          )}
         </Badge>
       </TableCell>
       <AppRowActions
