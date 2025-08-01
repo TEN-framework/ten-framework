@@ -500,7 +500,11 @@ void ten_msg_clear_and_set_dest_from_extension_info(
   TEN_ASSERT(ten_extension_info_check_integrity(extension_info, false),
              "Invalid use of extension_info %p.", extension_info);
 
-  ten_msg_clear_and_set_dest_to_loc(self, &extension_info->loc);
+  ten_loc_t *dest_loc = &extension_info->loc;
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
+
+  ten_msg_clear_and_set_dest_to_loc(self, dest_loc);
 }
 
 ten_list_t *ten_msg_get_dest(ten_shared_ptr_t *self) {

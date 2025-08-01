@@ -403,6 +403,9 @@ static void test_extension_addon_create_instance(ten_addon_t *addon,
       test_extension_on_cmd, test_extension_on_data,
       test_extension_on_audio_frame, test_extension_on_video_frame, NULL);
 
+  // Mark this extension as a standalone test extension.
+  extension->is_standalone_test_extension = true;
+
   ten_env_on_create_instance_done(ten_env, extension, context, NULL);
 }
 
