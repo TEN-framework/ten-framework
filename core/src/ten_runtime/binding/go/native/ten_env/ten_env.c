@@ -37,15 +37,15 @@ ten_go_ten_env_t *ten_go_ten_env_reinterpret(uintptr_t bridge_addr) {
 
   // NOLINTNEXTLINE(performance-no-int-to-ptr)
   ten_go_ten_env_t *self = (ten_go_ten_env_t *)bridge_addr;
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   return self;
 }
 
 static void ten_go_ten_env_destroy(ten_go_ten_env_t *self) {
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_rwlock_destroy(self->lock);
   TEN_FREE(self);
@@ -106,16 +106,16 @@ ten_go_handle_t ten_go_ten_env_go_handle(ten_go_ten_env_t *self) {
 
 void ten_go_ten_env_finalize(uintptr_t bridge_addr) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_go_bridge_destroy_go_part(&self->bridge);
 }
 
 const char *ten_go_ten_env_debug_info(uintptr_t bridge_addr) {
   ten_go_ten_env_t *self = ten_go_ten_env_reinterpret(bridge_addr);
-  TEN_ASSERT(self && ten_go_ten_env_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_go_ten_env_check_integrity(self), "Should not happen.");
 
   ten_string_t debug_info;
   ten_string_init_formatted(&debug_info, "ten attach_to type: %d",

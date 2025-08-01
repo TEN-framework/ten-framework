@@ -11,7 +11,9 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture(scope="function")
 def patch_azure_ws():
-    patch_target = "ten_packages.extension.azure_asr_python.extension.speechsdk.SpeechRecognizer"
+    patch_target = (
+        "ten_packages.extension.azure_asr_python.extension.speechsdk.SpeechRecognizer"
+    )
 
     with patch(patch_target) as MockRecognizer, patch(
         "ten_packages.extension.azure_asr_python.extension.speechsdk.SpeechConfig"
@@ -21,14 +23,19 @@ def patch_azure_ws():
         "ten_packages.extension.azure_asr_python.extension.speechsdk.audio.PushAudioInputStream"
     ) as MockStream, patch(
         "ten_packages.extension.azure_asr_python.extension.speechsdk.audio.AudioStreamFormat"
-    ) as MockStreamFormat:
-
+    ) as MockStreamFormat, patch(
+        "ten_packages.extension.azure_asr_python.extension.speechsdk.Connection"
+    ) as MockConnection:
         recognizer_instance = MagicMock()
         event_handlers = {}
         patch_azure_ws.event_handlers = event_handlers
 
-        def connect_mock(handler):
-            event_handlers["recognized"] = handler
+        def connect_recognized_mock(callback):
+            print(f"connect_recognized_mock: {callback}")
+            event_handlers["recognized"] = callback
+
+        def session_mock(handler):
+            event_handlers["session_started"] = handler
 
         def session_mock(handler):
             event_handlers["session_started"] = handler
@@ -41,6 +48,12 @@ def patch_azure_ws():
         MockAudioConfig.return_value = MagicMock()
         MockStream.return_value = MagicMock()
         MockStreamFormat.return_value = MagicMock()
+
+        connection_instance = MagicMock()
+        connection_instance.connected.connect.side_effect = connect_connected_mock
+        connection_instance.disconnected.connect.side_effect = connect_disconnected_mock
+
+        MockConnection.from_recognizer.return_value = connection_instance
 
         fixture_obj = SimpleNamespace(
             recognizer_instance=recognizer_instance,

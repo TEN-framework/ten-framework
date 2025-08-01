@@ -116,9 +116,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 if event == EVENT_TTSResponse:
                     if audio_data is not None:
                         if self.config.dump:
-                            self.ten_env.log_info(
-                                f"KEYPOINT Dumping audio data for request ID: {self.current_request_id}"
-                            )
                             asyncio.create_task(self.recorder.write(audio_data))
                         if (
                             self.request_start_ts is not None

@@ -137,7 +137,8 @@ ten_go_error_t ten_go_ten_env_tester_return_result(uintptr_t bridge_addr,
              "Should not happen.");
 
   ten_go_msg_t *cmd = ten_go_msg_reinterpret(cmd_bridge_addr);
-  TEN_ASSERT(cmd && ten_go_msg_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_go_msg_check_integrity(cmd), "Should not happen.");
   TEN_ASSERT(ten_go_msg_c_msg(cmd), "Should not happen.");
 
   ten_go_error_t cgo_error;

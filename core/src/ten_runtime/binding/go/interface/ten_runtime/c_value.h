@@ -12,9 +12,7 @@
 #include "common.h"
 
 typedef struct ten_value_t ten_value_t;
-typedef struct ten_go_value_t ten_go_value_t;
-
-void ten_go_value_finalize(ten_go_value_t *self);
+typedef struct ten_go_c_value_t ten_go_c_value_t;
 
 /**
  * @brief Destroy the ten_value_t instance from GO.
@@ -22,7 +20,7 @@ void ten_go_value_finalize(ten_go_value_t *self);
  * @param value_addr The bit pattern of the pointer to a ten_value_t. Note that
  * there is no bridge for ten_value_t.
  */
-void ten_go_value_destroy(uintptr_t value_addr);
+void ten_go_c_value_destroy(uintptr_t c_value_addr);
 
 // These functions are used in getting property from ten_env_t. Refer to the
 // comments in ten.h. Please keep in mind that the input ten_vale_t* is cloned
@@ -30,37 +28,41 @@ void ten_go_value_destroy(uintptr_t value_addr);
 // must be destroyed in these functions.
 
 /**
- * @param value_addr The bit pattern of the pointer to a ten_value_t. Note that
- * there is no bridge for ten_value_t.
+ * @param c_value_addr The bit pattern of the pointer to a ten_value_t. Note
+ * that there is no bridge for ten_value_t.
  */
-ten_go_error_t ten_go_value_get_string(uintptr_t value_addr, void *value);
+ten_go_error_t ten_go_c_value_get_string(uintptr_t c_value_addr, void *value);
 
-ten_go_error_t ten_go_value_get_buf(uintptr_t value_addr, void *value);
+ten_go_error_t ten_go_c_value_get_buf(uintptr_t c_value_addr, void *value);
 
-ten_go_error_t ten_go_value_get_int8(uintptr_t value_addr, int8_t *value);
+ten_go_error_t ten_go_c_value_get_int8(uintptr_t c_value_addr, int8_t *value);
 
-ten_go_error_t ten_go_value_get_int16(uintptr_t value_addr, int16_t *value);
+ten_go_error_t ten_go_c_value_get_int16(uintptr_t c_value_addr, int16_t *value);
 
-ten_go_error_t ten_go_value_get_int32(uintptr_t value_addr, int32_t *value);
+ten_go_error_t ten_go_c_value_get_int32(uintptr_t c_value_addr, int32_t *value);
 
-ten_go_error_t ten_go_value_get_int64(uintptr_t value_addr, int64_t *value);
+ten_go_error_t ten_go_c_value_get_int64(uintptr_t c_value_addr, int64_t *value);
 
-ten_go_error_t ten_go_value_get_uint8(uintptr_t value_addr, uint8_t *value);
+ten_go_error_t ten_go_c_value_get_uint8(uintptr_t c_value_addr, uint8_t *value);
 
-ten_go_error_t ten_go_value_get_uint16(uintptr_t value_addr, uint16_t *value);
+ten_go_error_t ten_go_c_value_get_uint16(uintptr_t c_value_addr,
+                                         uint16_t *value);
 
-ten_go_error_t ten_go_value_get_uint32(uintptr_t value_addr, uint32_t *value);
+ten_go_error_t ten_go_c_value_get_uint32(uintptr_t c_value_addr,
+                                         uint32_t *value);
 
-ten_go_error_t ten_go_value_get_uint64(uintptr_t value_addr, uint64_t *value);
+ten_go_error_t ten_go_c_value_get_uint64(uintptr_t c_value_addr,
+                                         uint64_t *value);
 
-ten_go_error_t ten_go_value_get_float32(uintptr_t value_addr, float *value);
+ten_go_error_t ten_go_c_value_get_float32(uintptr_t c_value_addr, float *value);
 
-ten_go_error_t ten_go_value_get_float64(uintptr_t value_addr, double *value);
+ten_go_error_t ten_go_c_value_get_float64(uintptr_t c_value_addr,
+                                          double *value);
 
-ten_go_error_t ten_go_value_get_bool(uintptr_t value_addr, bool *value);
+ten_go_error_t ten_go_c_value_get_bool(uintptr_t c_value_addr, bool *value);
 
-ten_go_error_t ten_go_value_get_ptr(uintptr_t value_addr, uintptr_t *value);
+ten_go_error_t ten_go_c_value_get_ptr(uintptr_t c_value_addr, uintptr_t *value);
 
-ten_go_error_t ten_go_value_to_json(uintptr_t value_addr,
-                                    uintptr_t *json_str_len,
-                                    const char **json_str);
+ten_go_error_t ten_go_c_value_to_json(uintptr_t c_value_addr,
+                                      uintptr_t *json_str_len,
+                                      const char **json_str);

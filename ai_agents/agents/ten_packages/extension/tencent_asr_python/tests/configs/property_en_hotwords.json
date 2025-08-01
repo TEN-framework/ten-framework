@@ -1,0 +1,12 @@
+{
+    "app_id": "${env:TENCENT_ASR_APP_ID}",
+    "secret_key": "${env:TENCENT_ASR_SECRET_KEY}",
+    "finalize_mode": "vendor_defined",
+    "params": {
+        "secretid": "${env:TENCENT_ASR_SECRET_ID}",
+        "engine_model_type": "16k_en",
+        "voice_format": 1,
+        "word_info": 2,
+        "hotword_list": "aaa|5,bbb|5"
+    }
+}
