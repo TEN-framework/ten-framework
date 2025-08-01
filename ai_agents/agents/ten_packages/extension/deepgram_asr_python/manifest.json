@@ -14,8 +14,10 @@
       "version": "=0.6.21"
     }
   ],
-  "interface": "../../system/ten_ai_base/api/asr-interface.json",
   "api": {
+    "interface": [{
+      "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+    }],
     "property": {
       "properties": {
         "api_key": {

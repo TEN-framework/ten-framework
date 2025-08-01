@@ -114,7 +114,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
             code=-1,
             message=message,
             turn_id=0,
-            module=ModuleType.STT,
+            module=ModuleType.ASR,
         )
 
         asyncio.create_task(
@@ -141,7 +141,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                     code=-1,
                     message="appkey is required",
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
                 await self.send_asr_error(error_message, None)
                 raise ValueError("appkey is required")
@@ -151,7 +151,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                     code=-1,
                     message="akid is required",
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
                 await self.send_asr_error(error_message, None)
                 raise ValueError("akid is required")
@@ -161,7 +161,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                     code=-1,
                     message="aksecret is required",
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
                 await self.send_asr_error(error_message, None)
                 raise ValueError("aksecret is required")
@@ -203,7 +203,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
             await self.send_asr_error(error_message, None)
             await self._handle_reconnect()
@@ -224,6 +224,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
+        self.session_id = session_id
         self.client.send_audio(frame.get_buf())
         return True
 
