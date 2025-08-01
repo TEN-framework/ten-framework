@@ -5,12 +5,14 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+import { t } from "i18next";
 import {
   BrushCleaningIcon,
   FolderMinusIcon,
   FolderPlusIcon,
   FolderSyncIcon,
   HardDriveDownloadIcon,
+  LogsIcon,
   PlayIcon,
   RotateCcwIcon,
   SquareIcon,
@@ -43,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -68,7 +71,59 @@ import {
   type ILogViewerWidget,
 } from "@/types/widgets";
 
+enum EAppTab {
+  LOADED_APPS = "loaded-apps",
+  RUNNING_SCRIPTS = "running-scripts",
+}
+
+const TabsContext = React.createContext<{
+  selectedTab: EAppTab;
+  handleChangeTab: (tab?: EAppTab) => void;
+}>({
+  selectedTab: EAppTab.LOADED_APPS,
+  handleChangeTab: () => {},
+});
+
 export const AppsManagerWidget = (props: { className?: string }) => {
+  const { className } = props;
+
+  const [selectedTab, setSelectedTab] = React.useState<EAppTab>(
+    EAppTab.LOADED_APPS
+  );
+
+  const handleChangeTab = (tab?: EAppTab) => {
+    setSelectedTab(tab || EAppTab.LOADED_APPS);
+  };
+
+  return (
+    <TabsContext.Provider value={{ selectedTab, handleChangeTab }}>
+      <Tabs
+        value={selectedTab}
+        onValueChange={(val: string) => {
+          setSelectedTab(val as EAppTab);
+        }}
+        className="h-full"
+      >
+        <TabsList>
+          <TabsTrigger value={EAppTab.LOADED_APPS}>
+            {t("popup.apps.loadedApps")}
+          </TabsTrigger>
+          <TabsTrigger value={EAppTab.RUNNING_SCRIPTS}>
+            {t("popup.apps.runningScripts")}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value={EAppTab.LOADED_APPS}>
+          <TabLoadedApps className={className} />
+        </TabsContent>
+        <TabsContent value={EAppTab.RUNNING_SCRIPTS}>
+          <TabRunningScripts className={className} />
+        </TabsContent>
+      </Tabs>
+    </TabsContext.Provider>
+  );
+};
+
+const TabLoadedApps = (props: { className?: string }) => {
   const [isReloading, setIsReloading] = React.useState<boolean>(false);
 
   const { t } = useTranslation();
@@ -186,7 +241,7 @@ export const AppsManagerWidget = (props: { className?: string }) => {
                 {t("dataTable.no")}
               </TableHead>
               <TableHead className="border-none">
-                {t("dataTable.name")}
+                {t("popup.apps.baseDir")}
               </TableHead>
               <TableHead className="border-none text-center">
                 {t("popup.apps.status")}
@@ -260,8 +315,9 @@ export const AppsManagerWidget = (props: { className?: string }) => {
 
 const AppRow = (props: { app: IApp; idx: number }) => {
   const { app, idx } = props;
-
   const [isActing, setIsActing] = React.useState<boolean>(false);
+
+  const handleChangeTab = React.useContext(TabsContext).handleChangeTab;
 
   const { t } = useTranslation();
   const { mutate: mutateApps } = useFetchApps();
@@ -449,6 +505,11 @@ const AppRow = (props: { app: IApp; idx: number }) => {
       popup: {
         width: 360,
       },
+      actions: {
+        onSubmit: () => {
+          handleChangeTab(EAppTab.RUNNING_SCRIPTS);
+        },
+      },
     });
   };
 
@@ -465,8 +526,14 @@ const AppRow = (props: { app: IApp; idx: number }) => {
         </span>
       </TableCell>
       <TableCell className="border-none text-center">
-        <Badge className="ml-2" variant="secondary">
-          {`${relatedBackstageWidges.length} script(s)`}
+        <Badge
+          className="cursor-pointer"
+          variant="secondary"
+          onClick={() => {
+            handleChangeTab(EAppTab.RUNNING_SCRIPTS);
+          }}
+        >
+          {`${relatedBackstageWidges.length} running script(s)`}
         </Badge>
       </TableCell>
       <AppRowActions
@@ -556,7 +623,6 @@ const AppRowActions = (props: {
                 size="sm"
                 onClick={handleStopAll}
                 className="h-8 w-8 p-0"
-                disabled={isLoading}
               >
                 <SquareIcon className="h-3 w-3" />
               </Button>
@@ -569,7 +635,7 @@ const AppRowActions = (props: {
             <Button
               variant="outline"
               size="sm"
-              disabled={isLoading}
+              disabled={relatedBackstageWidges.length > 0}
               onClick={() => handleAppInstallAll(baseDir)}
               className="h-8 w-8 p-0"
             >
@@ -584,7 +650,7 @@ const AppRowActions = (props: {
             <Button
               variant="outline"
               size="sm"
-              disabled={isLoading || isScriptsLoading || scripts?.length === 0}
+              disabled={isScriptsLoading || scripts?.length === 0}
               onClick={() => {
                 handleRunApp(baseDir, scripts);
               }}
@@ -607,7 +673,7 @@ const AppRowActions = (props: {
               size="sm"
               onClick={handleReload}
               className="h-8 w-8 p-0"
-              disabled={isLoading}
+              disabled={relatedBackstageWidges.length > 0}
             >
               <RotateCcwIcon className="h-3 w-3" />
             </Button>
@@ -624,7 +690,7 @@ const AppRowActions = (props: {
                 "h-8 w-8 bg-transparent p-0",
                 "text-destructive hover:text-destructive"
               )}
-              disabled={isLoading}
+              disabled={relatedBackstageWidges.length > 0}
               onClick={() => handleUnloadApp(baseDir)}
             >
               <FolderMinusIcon className="h-3 w-3" />
@@ -634,5 +700,170 @@ const AppRowActions = (props: {
         </Tooltip>
       </div>
     </TableCell>
+  );
+};
+
+const TabRunningScripts = (props: { className?: string }) => {
+  const { t } = useTranslation();
+  const {
+    appendWidget,
+    backstageWidgets,
+    removeBackstageWidget,
+    removeLogViewerHistory,
+  } = useWidgetStore();
+
+  const logViewerWidgets = React.useMemo(() => {
+    return backstageWidgets.filter(
+      (widget) => widget.category === EWidgetCategory.LogViewer
+    ) as ILogViewerWidget[];
+  }, [backstageWidgets]);
+
+  const handleStopScript = (widgetId: string) => {
+    removeBackstageWidget(widgetId);
+    toast.success(t("popup.apps.stopScriptSuccess"));
+  };
+
+  const handleOpenLogViewer = (widget: ILogViewerWidget) => {
+    appendWidget({
+      container_id: CONTAINER_DEFAULT_ID,
+      group_id: GROUP_LOG_VIEWER_ID,
+      widget_id: widget.widget_id,
+
+      category: EWidgetCategory.LogViewer,
+      display_type: EWidgetDisplayType.Popup,
+
+      title: <LogViewerPopupTitle />,
+      metadata: widget.metadata,
+      popup: {
+        width: 0.5,
+        height: 0.8,
+      },
+      actions: {
+        onClose: () => {
+          // Update(apps-manager):
+          // keep the backstage widget after closing the popup
+          // removeBackstageWidget(newAppStartWidgetId);
+        },
+        custom_actions: [
+          {
+            id: "app-start-log-clean",
+            label: t("popup.logViewer.cleanLogs"),
+            Icon: BrushCleaningIcon,
+            onClick: () => {
+              removeLogViewerHistory(widget.widget_id);
+            },
+          },
+        ],
+      },
+    });
+  };
+
+  return (
+    <TooltipProvider>
+      <div
+        className={cn(
+          "flex h-full w-full flex-col gap-2 overflow-y-auto",
+          props.className
+        )}
+      >
+        <Table className="h-fit w-full border-none">
+          <TableHeader>
+            <TableRow className="border-none bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-12 border-none text-center">
+                {t("dataTable.no")}
+              </TableHead>
+              <TableHead className="border-none">
+                {t("dataTable.name")}
+              </TableHead>
+              <TableHead className="border-none">
+                {t("popup.apps.baseDir")}
+              </TableHead>
+              <TableHead className="border-none text-center">
+                {t("dataTable.actions")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {logViewerWidgets.length === 0 && (
+              <TableRow className="border-none hover:bg-transparent">
+                <TableCell
+                  colSpan={5}
+                  className="border-none text-center text-muted-foreground"
+                >
+                  {t("popup.apps.noRunningScripts")}
+                </TableCell>
+              </TableRow>
+            )}
+            {logViewerWidgets.map((widget, index) => (
+              <TableRow
+                key={widget.widget_id}
+                className="border-none hover:bg-muted/30"
+              >
+                <TableCell
+                  className={cn("border-none text-center", "font-mono text-sm")}
+                >
+                  {(index + 1).toString().padStart(2, "0")}
+                </TableCell>
+                <TableCell className="border-none">
+                  <span
+                    className={cn(
+                      "rounded-md bg-muted p-1 px-2",
+                      "font-medium text-xs"
+                    )}
+                  >
+                    {(widget.metadata?.script as { name?: string })?.name ||
+                      "N/A"}
+                  </span>
+                </TableCell>
+                <TableCell className="border-none">
+                  <span className="text-muted-foreground text-sm">
+                    {(widget.metadata?.script as { base_dir?: string })
+                      ?.base_dir || "N/A"}
+                  </span>
+                </TableCell>
+                <TableCell className="border-none">
+                  <div className="flex justify-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenLogViewer(widget)}
+                          className={cn("h-8 w-8 p-0")}
+                        >
+                          <LogsIcon className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {t("action.launchLogViewer")}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStopScript(widget.widget_id)}
+                          className={cn(
+                            "h-8 w-8 p-0",
+                            "text-destructive hover:text-destructive"
+                          )}
+                        >
+                          <SquareIcon className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t("action.stop")}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TableCaption className="mt-auto select-none">
+          {t("popup.apps.runningScriptsCaption")}
+        </TableCaption>
+      </div>
+    </TooltipProvider>
   );
 };

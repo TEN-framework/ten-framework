@@ -143,28 +143,21 @@ export const AppRunPopupTitle = () => {
 
 export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const { widget } = props;
-  const {
-    base_dir: baseDir,
-    scripts,
-    enablePersistConnection,
-  } = widget.metadata as IDefaultWidgetData;
+  const { base_dir: baseDir, scripts } = widget.metadata as IDefaultWidgetData;
 
   const { t } = useTranslation();
 
   const {
     removeWidget,
     appendWidget,
-    removeLogViewerHistory,
-    removeBackstageWidget,
+    appendBackstageWidget,
+    // removeLogViewerHistory,
   } = useWidgetStore();
 
   const [selectedScript, setSelectedScript] = React.useState<
     string | undefined
   >(scripts?.[0] || undefined);
   const [runWithAgent, setRunWithAgent] = React.useState<boolean>(false);
-  const [persistConnection, setPersistConnection] = React.useState<boolean>(
-    enablePersistConnection || false
-  );
 
   const handleRun = async () => {
     removeWidget(widget.widget_id);
@@ -179,7 +172,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
       run_with_agent: runWithAgent,
     });
 
-    appendWidget({
+    appendBackstageWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
       widget_id: newAppStartWidgetId,
@@ -199,29 +192,27 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
           stderr_is_log: true,
         },
       },
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-      actions: {
-        onClose: () => {
-          // Update(apps-manager):
-          // keep the backstage widget after closing the popup
-          if (!persistConnection) {
-            removeBackstageWidget(newAppStartWidgetId);
-          }
-        },
-        custom_actions: [
-          {
-            id: "app-start-log-clean",
-            label: t("popup.logViewer.cleanLogs"),
-            Icon: BrushCleaningIcon,
-            onClick: () => {
-              removeLogViewerHistory(newAppStartWidgetId);
-            },
-          },
-        ],
-      },
+      // popup: {
+      //   width: 0.5,
+      //   height: 0.8,
+      // },
+      // actions: {
+      //   onClose: () => {
+      //     // Update(apps-manager):
+      //     // keep the backstage widget after closing the popup
+      //     // removeBackstageWidget(newAppStartWidgetId);
+      //   },
+      //   custom_actions: [
+      //     {
+      //       id: "app-start-log-clean",
+      //       label: t("popup.logViewer.cleanLogs"),
+      //       Icon: BrushCleaningIcon,
+      //       onClick: () => {
+      //         removeLogViewerHistory(newAppStartWidgetId);
+      //       },
+      //     },
+      //   ],
+      // },
     });
 
     if (runWithAgent) {
@@ -244,6 +235,8 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         },
       });
     }
+
+    widget?.actions?.onSubmit?.(widget.metadata);
   };
 
   if (!baseDir || !scripts || scripts.length === 0) {
@@ -273,28 +266,6 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
               </SelectGroup>
             </SelectContent>
           </Select>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="runapp_persist_connection"
-            checked={persistConnection}
-            onCheckedChange={setPersistConnection}
-          />
-          <Label htmlFor="runapp_persist_connection">
-            {t("popup.apps.persistConnection")}
-          </Label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost">
-                  <CircleQuestionMarkIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>{t("popup.apps.persistConnectionDescription")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
       <Separator className="my-2" />
