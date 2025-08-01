@@ -38,11 +38,6 @@ jobs:
       # Users need to create GitHub Secrets with the same names as their env_vars keys
       _ALL_SECRETS: ${{ toJSON(secrets) }}
 
-    env:
-      # Import all secrets as environment variables for dynamic access
-      # Users need to create GitHub Secrets with the same names as their env_vars keys
-      _ALL_SECRETS: ${{ toJSON(secrets) }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
