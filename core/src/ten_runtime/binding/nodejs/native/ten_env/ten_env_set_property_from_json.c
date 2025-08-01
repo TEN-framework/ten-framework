@@ -145,5 +145,5 @@ napi_value ten_nodejs_ten_env_set_property_from_json(napi_env env,
   ten_string_deinit(&path);
   ten_error_deinit(&err);
 
-  return js_null(env);
+  return js_undefined(env);
 }

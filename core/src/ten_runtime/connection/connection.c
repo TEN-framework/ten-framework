@@ -363,7 +363,7 @@ void ten_connection_clean(ten_connection_t *self) {
   // to the engine thread after the migration. But now (before the 'cleaning'),
   // the connection belongs to the app thread, and this function is called in
   // the app thread, so we can perform thread checking here.
-  TEN_ASSERT(self && ten_connection_check_integrity(self, true),
+  TEN_ASSERT(ten_connection_check_integrity(self, true),
              "Invalid use of connection %p.", self);
 
   TEN_ASSERT(self->attach_to == TEN_CONNECTION_ATTACH_TO_APP,
@@ -390,9 +390,6 @@ static void ten_connection_handle_command_from_external_client(
   // command ID for it.
   const char *cmd_id = ten_cmd_base_gen_new_cmd_id_forcibly(cmd);
 
-  const char *src_uri = ten_msg_get_src_app_uri(cmd);
-  TEN_ASSERT(src_uri, "Should not happen.");
-
   // If this message is coming from the outside of the TEN world (i.e.,
   // a client), regardless of whether the src_uri of the command is set or
   // not, we forcibly use the command ID as the identity of that client.
@@ -400,7 +397,9 @@ static void ten_connection_handle_command_from_external_client(
   // The effect of this operation is that when the corresponding remote is
   // created, the URI of that remote will be the source URI of the first
   // command it receives.
-  ten_msg_set_src_uri(cmd, cmd_id);
+  const char *src_uri = ten_msg_get_src_app_uri(cmd);
+  TEN_ASSERT(!src_uri, "Should not happen.");
+  ten_msg_set_src_app_uri(cmd, cmd_id);
 
   ten_protocol_t *protocol = self->protocol;
   TEN_ASSERT(protocol && ten_protocol_check_integrity(protocol, true),

@@ -274,6 +274,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             start_ms=actual_start_ms,
             duration_ms=duration_ms,
             language=language,
+            words=[],
         )
 
         await self.send_asr_result(asr_result)

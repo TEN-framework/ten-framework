@@ -3,7 +3,7 @@ import { getGraphProperties } from './graph';
 import axios from 'axios';
 /**
  * Handles the POST request to start an agent.
- * 
+ *
  * @param request - The NextRequest object representing the incoming request.
  * @returns A NextResponse object representing the response to be sent back to the client.
  */

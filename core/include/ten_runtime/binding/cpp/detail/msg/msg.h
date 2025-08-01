@@ -10,7 +10,9 @@
 
 #include <string>
 
+#include "ten_runtime/binding/cpp/detail/loc.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lang/cpp/lib/error.h"
 #include "ten_utils/lang/cpp/lib/value.h"
@@ -56,8 +58,30 @@ class msg_t {
     return ten_msg_get_name(c_msg);
   }
 
-  bool set_dest(const char *app_uri, const char *graph_id,
-                const char *extension_name, error_t *err = nullptr) const {
+  loc_t get_source(error_t *err = nullptr) const {
+    TEN_ASSERT(c_msg, "Should not happen.");
+
+    if (c_msg == nullptr) {
+      if (err != nullptr && err->get_c_error() != nullptr) {
+        ten_error_set(err->get_c_error(), TEN_ERROR_CODE_INVALID_ARGUMENT,
+                      "Invalid TEN message.");
+      }
+      return {nullptr, nullptr, nullptr};
+    }
+
+    const char *app_uri = nullptr;
+    const char *graph_id = nullptr;
+    const char *extension_name = nullptr;
+
+    ten_msg_get_source(c_msg, &app_uri, &graph_id, &extension_name,
+                       err != nullptr ? err->get_c_error() : nullptr);
+
+    return {optional<std::string>{app_uri}, optional<std::string>{graph_id},
+            optional<std::string>{extension_name}};
+  }
+
+  bool set_dests(const std::vector<loc_t> &dests,
+                 error_t *err = nullptr) const {
     TEN_ASSERT(c_msg, "Should not happen.");
 
     if (c_msg == nullptr) {
@@ -68,9 +92,26 @@ class msg_t {
       return false;
     }
 
-    return ten_msg_clear_and_set_dest(
-        c_msg, app_uri, graph_id, extension_name,
-        err != nullptr ? err->get_c_error() : nullptr);
+    for (const auto &dest : dests) {
+      if (!ten_loc_str_check_correct(
+              dest.app_uri ? dest.app_uri->c_str() : nullptr,
+              dest.graph_id ? dest.graph_id->c_str() : nullptr,
+              dest.extension_name ? dest.extension_name->c_str() : nullptr,
+              err != nullptr ? err->get_c_error() : nullptr)) {
+        return false;
+      }
+    }
+
+    ten_msg_clear_dest(c_msg);
+
+    for (const auto &dest : dests) {
+      ten_msg_add_dest(
+          c_msg, dest.app_uri ? dest.app_uri->c_str() : nullptr,
+          dest.graph_id ? dest.graph_id->c_str() : nullptr,
+          dest.extension_name ? dest.extension_name->c_str() : nullptr);
+    }
+
+    return true;
   }
 
   bool is_property_exist(const char *path, error_t *err = nullptr) {

@@ -10,12 +10,19 @@
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
 
 void ten_raw_msg_src_copy(ten_msg_t *self, ten_msg_t *src,
-                          ten_list_t *excluded_field_ids) {
+                          TEN_UNUSED ten_list_t *excluded_field_ids) {
   TEN_ASSERT(src && ten_raw_msg_check_integrity(src), "Should not happen.");
+
   ten_loc_set_from_loc(&self->src_loc, &src->src_loc);
+
+  self->has_custom_src_loc = src->has_custom_src_loc;
+  if (src->has_custom_src_loc) {
+    ten_loc_set_from_loc(&self->custom_src_loc, &src->custom_src_loc);
+  }
 }
 
 bool ten_raw_msg_src_process(ten_msg_t *self,

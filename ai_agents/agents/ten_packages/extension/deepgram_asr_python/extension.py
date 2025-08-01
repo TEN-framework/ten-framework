@@ -202,6 +202,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             start_ms=start_ms,
             duration_ms=duration_ms,
             language=language,
+            words=[],
         )
         # print(f"send_asr_result: {asr_result}")
         await self.send_asr_result(asr_result)

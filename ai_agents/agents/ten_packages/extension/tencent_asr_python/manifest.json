@@ -73,7 +73,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.21"
+      "version": "=0.6.22"
     }
   ],
   "api": {},

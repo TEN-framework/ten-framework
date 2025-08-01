@@ -148,5 +148,5 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
   ten_error_deinit(&err);
   ten_env_tester_notify_log_ctx_destroy(notify_info);
 
-  return js_null(env);
+  return js_undefined(env);
 }

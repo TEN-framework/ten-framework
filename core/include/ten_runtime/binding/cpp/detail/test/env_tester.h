@@ -178,6 +178,16 @@ class ten_env_tester_t {
         err != nullptr ? err->get_c_error() : nullptr);
   }
 
+  bool set_msg_source(msg_t &msg, const loc_t &loc, error_t *err = nullptr) {
+    TEN_ASSERT(c_ten_env_tester, "Should not happen.");
+    return ten_env_tester_set_msg_source(
+        c_ten_env_tester, msg.get_underlying_msg(),
+        loc.app_uri.has_value() ? loc.app_uri->c_str() : nullptr,
+        loc.graph_id.has_value() ? loc.graph_id->c_str() : nullptr,
+        loc.extension_name.has_value() ? loc.extension_name->c_str() : nullptr,
+        err != nullptr ? err->get_c_error() : nullptr);
+  }
+
  private:
   friend extension_tester_t;
   friend class ten_env_tester_proxy_t;

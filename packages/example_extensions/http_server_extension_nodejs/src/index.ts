@@ -17,8 +17,8 @@ import {
 } from "ten-runtime-nodejs";
 
 class HttpServerExtension extends Extension {
-  tenEnv: TenEnv | null = null;
-  httpServer: http.Server | null = null;
+  tenEnv: TenEnv | undefined = undefined;
+  httpServer: http.Server | undefined = undefined;
 
   constructor(name: string) {
     super(name);
@@ -73,7 +73,7 @@ class HttpServerExtension extends Extension {
         const ten = jsonData["ten"];
         if ("type" in ten && ten["type"] == "close_app") {
           const closeAppCmd = Cmd.Create("ten:close_app");
-          closeAppCmd.setDest();
+          closeAppCmd.setDests([{ appUri: "" }]);
           this.tenEnv!.sendCmd(closeAppCmd);
 
           res.writeHead(200, { "Content-Type": "application/json" });
@@ -87,7 +87,10 @@ class HttpServerExtension extends Extension {
           cmd.setPropertyString("url", req.url!);
 
           this.tenEnv!.sendCmd(cmd).then(
-            ([cmdResult, error]: [CmdResult | null, TenError | null]) => {
+            ([cmdResult, error]: [
+              CmdResult | undefined,
+              TenError | undefined,
+            ]) => {
               if (error) {
                 res.writeHead(500, { "Content-Type": "text/plain" });
                 res.end("Error: " + error.errorMessage);
@@ -119,7 +122,7 @@ class HttpServerExtension extends Extension {
 
     const hostname = "127.0.0.1";
     let [port, err] = await tenEnv.getPropertyNumber("server_port");
-    if (err != null) {
+    if (err != undefined) {
       // Use default port.
       port = 8001;
     }
@@ -149,7 +152,7 @@ class HttpServerExtension extends Extension {
   }
 
   async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    this.tenEnv = null;
+    this.tenEnv = undefined;
     console.log("HttpServerExtension onDeinit");
   }
 }

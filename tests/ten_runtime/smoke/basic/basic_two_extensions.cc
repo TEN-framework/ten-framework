@@ -35,6 +35,14 @@ class test_extension_2 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_world") {
+      auto loc = cmd->get_source();
+      TEN_LOGI("get_source: app_uri: %s",
+               loc.app_uri ? loc.app_uri->c_str() : "");
+      TEN_LOGI("get_source: graph_id: %s",
+               loc.graph_id ? loc.graph_id->c_str() : "");
+      TEN_LOGI("get_source: extension_name: %s",
+               loc.extension_name ? loc.extension_name->c_str() : "");
+
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
       ten_env.return_result(std::move(cmd_result));
@@ -120,8 +128,8 @@ TEST(BasicTest, TwoExtensions) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
-  hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                            "test_extension_1");
+  hello_world_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");

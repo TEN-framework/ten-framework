@@ -11,11 +11,15 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.21"
+      "version": "=0.6.22"
     }
   ],
-  "interface": "../../system/ten_ai_base/api/asr-interface.json",
   "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
     "property": {
       "properties": {
         "appid": {

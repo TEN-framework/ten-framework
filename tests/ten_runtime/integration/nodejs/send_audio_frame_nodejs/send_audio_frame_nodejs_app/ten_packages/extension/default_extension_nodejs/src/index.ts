@@ -25,7 +25,7 @@ function assert(condition: boolean, message: string) {
 
 class DefaultExtension extends Extension {
   // Cache the received cmd.
-  private cachedCmd: Cmd | null = null;
+  private cachedCmd: Cmd | undefined = undefined;
 
   constructor(name: string) {
     super(name);
@@ -111,7 +111,7 @@ class DefaultExtension extends Extension {
     }
 
     const cmd = this.cachedCmd;
-    assert(cmd !== null, "Cached cmd is null");
+    assert(cmd !== undefined, "Cached cmd is undefined");
 
     const result = CmdResult.Create(StatusCode.OK, cmd!);
     result.setPropertyString("detail", "success");

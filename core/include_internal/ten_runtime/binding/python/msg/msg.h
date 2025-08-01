@@ -28,8 +28,11 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_get_name(PyObject *self,
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_set_name(PyObject *self,
                                                       PyObject *args);
 
-TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_set_dest(PyObject *self,
-                                                      PyObject *args);
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_get_source(PyObject *self,
+                                                        PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_set_dests(PyObject *self,
+                                                       PyObject *args);
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_set_property_string(
     PyObject *self, PyObject *args);
@@ -77,3 +80,6 @@ TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *ten_py_msg_move_c_msg(
 TEN_RUNTIME_PRIVATE_API bool ten_py_msg_init_for_module(PyObject *module);
 
 TEN_RUNTIME_PRIVATE_API bool ten_py_msg_check_integrity(ten_py_msg_t *self);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_msg_register_msg_type(PyObject *self,
+                                                               PyObject *args);

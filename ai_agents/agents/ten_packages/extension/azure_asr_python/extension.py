@@ -252,6 +252,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             start_ms=start_ms,
             duration_ms=duration_ms,
             language=language,
+            words=[],
         )
 
         await self.send_asr_result(asr_result)

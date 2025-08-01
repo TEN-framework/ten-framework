@@ -14,7 +14,7 @@ describe("MyExtensionTester", () => {
     const extensionTester = new MyExtensionTester();
     extensionTester.setTestModeSingle(test_addon_name, "{}");
     const result = await extensionTester.run();
-    assert(result === null, "result should be null");
+    assert(result === undefined, "result should be undefined");
 
     console.log("deinit done");
   });
@@ -23,7 +23,7 @@ describe("MyExtensionTester", () => {
     const extensionTester = new MyExtensionTester();
     extensionTester.setTestModeSingle(test_addon_name, "{}");
     const result = await extensionTester.run();
-    assert(result === null, "result should be null");
+    assert(result === undefined, "result should be undefined");
 
     console.log("deinit done");
   });

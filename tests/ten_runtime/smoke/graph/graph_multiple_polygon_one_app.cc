@@ -313,7 +313,7 @@ TEST(ExtensionTest, GraphMultiplePolygonOneApp) {  // NOLINT
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   auto send_cmd = ten::cmd_t::create("send");
-  send_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr, "A");
+  send_cmd->set_dests({{"msgpack://127.0.0.1:8001/", "", "A"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(send_cmd));
 
   nlohmann::json detail =

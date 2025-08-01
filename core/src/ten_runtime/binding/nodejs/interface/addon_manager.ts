@@ -8,7 +8,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 import { Addon } from "./addon.js";
-import ten_addon from "../ten_addon.js";
+import ten_addon from "./ten_addon.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -20,7 +20,7 @@ type Ctor<T> = {
 type addonRegisterHandler = (registerContext: unknown) => void;
 
 export class AddonManager {
-  private static _instance: AddonManager | null = null;
+  private static _instance: AddonManager | undefined = undefined;
   private _registry: Map<string, addonRegisterHandler> = new Map();
 
   // Make the constructor private to prevent direct instantiation.

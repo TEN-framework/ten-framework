@@ -157,3 +157,6 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_init_property_from_json_async(
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_log(PyObject *self,
                                                      PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_ten_env_register_ten_env_type(
+    PyObject *self, PyObject *args);

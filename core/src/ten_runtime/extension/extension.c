@@ -276,8 +276,8 @@ static bool need_to_clone_msg_when_sending(ten_shared_ptr_t *msg,
 
 static void ten_extension_determine_out_msg_dest_from_msg(
     ten_extension_t *self, ten_shared_ptr_t *msg, ten_list_t *result_msgs) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(msg && ten_msg_check_integrity(msg) && ten_msg_get_dest_cnt(msg),
              "Invalid argument.");
   TEN_ASSERT(result_msgs && ten_list_size(result_msgs) == 0,
@@ -319,13 +319,13 @@ static void ten_extension_determine_out_msg_dest_from_msg(
 static bool ten_extension_determine_out_msg_dest_from_graph(
     ten_extension_t *self, ten_shared_ptr_t *msg, ten_list_t *result_msgs,
     ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
-  TEN_ASSERT(
-      msg && ten_msg_check_integrity(msg) && ten_msg_get_dest_cnt(msg) == 0,
-      "Invalid argument.");
-  TEN_ASSERT(result_msgs && ten_list_size(result_msgs) == 0,
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
+  TEN_ASSERT(ten_msg_get_dest_cnt(msg) == 0, "Invalid argument.");
+  TEN_ASSERT(result_msgs, "Invalid argument.");
+  TEN_ASSERT(ten_list_size(result_msgs) == 0, "Invalid argument.");
 
   TEN_UNUSED ten_extension_thread_t *extension_thread = self->extension_thread;
   TEN_ASSERT(extension_thread, "Invalid argument.");
@@ -417,8 +417,8 @@ typedef enum TEN_EXTENSION_DETERMINE_OUT_MSGS_RESULT {
 static TEN_EXTENSION_DETERMINE_OUT_MSGS_RESULT ten_extension_determine_out_msgs(
     ten_extension_t *self, ten_shared_ptr_t *msg, ten_list_t *result_msgs,
     ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
   TEN_ASSERT(result_msgs, "Invalid argument.");
@@ -956,8 +956,8 @@ void ten_extension_set_addon(ten_extension_t *self,
 bool ten_extension_validate_msg_schema(ten_extension_t *self,
                                        ten_shared_ptr_t *msg, bool is_msg_out,
                                        ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
 

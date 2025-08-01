@@ -187,7 +187,7 @@ TEST(ExtensionTest, EngineLongRunningMode) {  // NOLINT
 
   // Send a user-defined 'hello world' command.
   auto test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", graph_id.c_str(), "A");
+  test_cmd->set_dests({{"msgpack://127.0.0.1:8001/", graph_id.c_str(), "A"}});
 
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
 

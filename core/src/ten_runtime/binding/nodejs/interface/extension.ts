@@ -4,12 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { Cmd } from "../msg/cmd.js";
-import { Data } from "../msg/data.js";
-import { AudioFrame } from "../msg/audio_frame.js";
-import { VideoFrame } from "../msg/video_frame.js";
-import ten_addon from "../ten_addon.js";
-import { TenEnv } from "../ten_env/ten_env.js";
+import { Cmd } from "./cmd.js";
+import { Data } from "./data.js";
+import { AudioFrame } from "./audio_frame.js";
+import { VideoFrame } from "./video_frame.js";
+import ten_addon from "./ten_addon.js";
+import { TenEnv } from "./ten_env.js";
 
 export abstract class Extension {
   constructor(name: string) {

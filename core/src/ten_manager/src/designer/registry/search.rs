@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
 
 use crate::designer::response::{ApiResponse, ErrorResponse, Status};
 use crate::designer::DesignerState;
 use crate::registry;
+use crate::registry::found_result::PkgRegistryInfo;
 use crate::registry::search::PkgSearchFilter;
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -37,7 +37,7 @@ pub struct SearchPackagesRequestPayload {
 pub struct SearchPackagesResponseData {
     pub total_size: u32,
 
-    pub packages: Vec<PkgBasicInfo>,
+    pub packages: Vec<PkgRegistryInfo>,
 }
 
 pub async fn search_packages_endpoint(
@@ -57,10 +57,8 @@ pub async fn search_packages_endpoint(
     .await
     {
         Ok((total_size, packages)) => {
-            let response_data = SearchPackagesResponseData {
-                total_size,
-                packages: packages.into_iter().map(|p| p.basic_info).collect(),
-            };
+            let response_data =
+                SearchPackagesResponseData { total_size, packages };
 
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,

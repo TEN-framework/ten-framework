@@ -28,8 +28,8 @@
 #include "ten_utils/macro/check.h"
 
 void ten_extension_handle_in_msg(ten_extension_t *self, ten_shared_ptr_t *msg) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
 

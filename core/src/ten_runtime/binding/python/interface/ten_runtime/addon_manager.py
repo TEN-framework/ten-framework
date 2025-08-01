@@ -4,11 +4,8 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-import json
 import os
 import sys
-import importlib.util
-from glob import glob
 from typing import Callable
 
 from .addon import Addon
@@ -16,8 +13,8 @@ from .addon import Addon
 # Internal APIs from libten_runtime_python - these are private by design and
 # only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
-    _add_extension_addon_to_addon_manager,  # pyright: ignore[reportPrivateUsage] # noqa: E501
-    _register_addon_as_extension,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_addon_manager_add_extension_addon,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_addon_manager_register_addon_as_extension,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 
@@ -28,70 +25,6 @@ class _AddonManager:
     # supported in advanced environments like Cython. The global array method
     # is simple enough that it should work in all environments.
     _registry: dict[str, Callable[[object], None]] = {}
-
-    @classmethod
-    def load_all_addons(cls):
-        base_dir = cls._find_app_base_dir()
-
-        # Read manifest.json under base_dir.
-        manifest_path = os.path.join(base_dir, "manifest.json")
-        if not os.path.isfile(manifest_path):
-            raise FileNotFoundError("manifest.json not found in base_dir")
-
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            manifest = json.load(f)  # pyright: ignore[reportAny]
-
-        # Note: The logic for loading extensions based on the `dependencies`
-        # specified in the app's `manifest.json` is currently implemented
-        # separately in both C and Python where addons need to be loaded. Since
-        # the logic is fairly simple, a standalone implementation is directly
-        # written at each required location. In the future, this could be
-        # consolidated into a unified implementation in C, which could then be
-        # reused across multiple languages. However, this would require handling
-        # cross-language information exchange, which may not necessarily be
-        # cost-effective.
-
-        # Collect names of extensions from dependencies.
-        extension_names: list[str] = []
-        dependencies = manifest.get(  # pyright: ignore[reportAny]
-            "dependencies", []
-        )
-        for dep in dependencies:  # pyright: ignore[reportAny]
-            if dep.get("type") == "extension":  # pyright: ignore[reportAny]
-                extension_names.append(
-                    dep.get("name")  # pyright: ignore[reportAny]
-                )
-
-        for module in glob(os.path.join(base_dir, "ten_packages/extension/*")):
-            if os.path.isdir(module):
-                module_name = os.path.basename(module)
-
-                if module_name in extension_names:
-                    cls._load_module(
-                        module_full_name=(
-                            f"ten_packages.extension.{module_name}"
-                        ),
-                        module_name=module_name,
-                    )
-                else:
-                    print(f"Skipping module: {module_name}")
-
-    @classmethod
-    def _load_module(
-        cls,
-        module_full_name: str,
-        module_name: str,
-    ):
-        try:
-            spec = importlib.util.find_spec(module_full_name)
-            if spec is None:
-                raise ImportError(f"Cannot find module: {module_full_name}")
-
-            _ = importlib.import_module(module_full_name)
-            print(f"Imported module: {module_name}")
-
-        except ImportError as e:
-            print(f"Error importing module {module_name}: {e}")
 
     @classmethod
     def register_all_addons(cls, register_ctx: object):
@@ -133,37 +66,6 @@ class _AddonManager:
     ) -> None:
         _AddonManager._registry[addon_name] = register_handler
 
-    @staticmethod
-    def _find_app_base_dir():
-        current_dir = os.path.dirname(__file__)
-
-        while current_dir != os.path.dirname(
-            current_dir
-        ):  # Stop at the root directory.
-            manifest_path = os.path.join(current_dir, "manifest.json")
-            if os.path.isfile(manifest_path):
-                with open(
-                    manifest_path, "r", encoding="utf-8"
-                ) as manifest_file:
-                    try:
-                        manifest_data = json.load(  # pyright: ignore[reportAny]
-                            manifest_file
-                        )
-                        if (
-                            manifest_data.get(  # pyright: ignore[reportAny]
-                                "type"
-                            )
-                            == "app"
-                        ):
-                            return current_dir
-                    except json.JSONDecodeError:
-                        pass
-            current_dir = os.path.dirname(current_dir)
-
-        raise FileNotFoundError(
-            "App base directory with a valid manifest.json not found."
-        )
-
 
 def register_addon_as_extension(name: str, base_dir: str | None = None):
     def decorator(cls: type[Addon]) -> type[Addon]:
@@ -191,7 +93,7 @@ def register_addon_as_extension(name: str, base_dir: str | None = None):
             addon_instance = cls()
 
             try:
-                _register_addon_as_extension(
+                _ten_py_addon_manager_register_addon_as_extension(
                     name, resolved_base_dir, addon_instance, register_ctx
                 )
             except Exception as e:
@@ -203,7 +105,7 @@ def register_addon_as_extension(name: str, base_dir: str | None = None):
         )
 
         # Add the addon to the native addon manager.
-        _add_extension_addon_to_addon_manager(name)
+        _ten_py_addon_manager_add_extension_addon(name)
 
         # Return the original class without modification.
         return cls

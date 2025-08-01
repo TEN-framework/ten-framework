@@ -148,9 +148,11 @@ static void proxy_on_deinit(ten_app_t *app, ten_env_t *ten_env) {
   TEN_LOGI("proxy_on_deinit done");
 }
 
-static PyObject *ten_py_app_create(PyTypeObject *type, PyObject *args,
+static PyObject *ten_py_app_create(PyTypeObject *py_type, PyObject *args,
                                    TEN_UNUSED PyObject *kwds) {
-  ten_py_app_t *py_app = (ten_py_app_t *)type->tp_alloc(type, 0);
+  TEN_ASSERT(py_type, "Invalid argument");
+
+  ten_py_app_t *py_app = (ten_py_app_t *)py_type->tp_alloc(py_type, 0);
   if (!py_app) {
     TEN_ASSERT(0, "Failed to allocate Python app.");
 
