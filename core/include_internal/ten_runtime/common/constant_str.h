@@ -164,7 +164,6 @@
 #define TEN_STR_APP "app"
 #define TEN_STR_NAME "name"
 #define TEN_STR_TEN "ten"
-#define TEN_STR_STAR "*"
 #define TEN_STR_ADDON_BASE_DIR_FIND_FROM_APP_BASE_DIR "=*=find_from_app=*="
 
 // Services.

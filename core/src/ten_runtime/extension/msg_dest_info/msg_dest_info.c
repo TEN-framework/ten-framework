@@ -105,10 +105,5 @@ bool ten_msg_dest_info_qualified(ten_msg_dest_info_t *self,
     return true;
   }
 
-  // "*" is a special rule that matches all names.
-  if (ten_string_is_equal_c_str(&self->name, TEN_STR_STAR)) {
-    return true;
-  }
-
   return false;
 }
