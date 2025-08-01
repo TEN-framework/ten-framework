@@ -136,8 +136,8 @@ static ten_listnode_t *ten_path_table_find_path_from_cmd_id(
 
   ten_list_foreach (list, paths_iter) {
     ten_path_t *path = (ten_path_t *)ten_ptr_listnode_get(paths_iter.node);
-    TEN_ASSERT(path && ten_path_check_integrity(path, true),
-               "Should not happen.");
+    TEN_ASSERT(path, "Should not happen.");
+    TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
     // TEN_LOGD("path(%s) cmd_id: %s, cmd_id: %s",
     //          type == TEN_PATH_IN ? "in" : "out",

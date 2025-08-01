@@ -58,8 +58,8 @@ void ten_extension_flush_remaining_paths(ten_extension_t *extension) {
     // Generate an error result for each remaining out path.
     ten_list_foreach (out_paths, iter) {
       ten_path_t *path = (ten_path_t *)ten_ptr_listnode_get(iter.node);
-      TEN_ASSERT(path && ten_path_check_integrity(path, true),
-                 "Should not happen.");
+      TEN_ASSERT(path, "Should not happen.");
+      TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
       ten_shared_ptr_t *cmd_result =
           ten_cmd_result_create(TEN_STATUS_CODE_ERROR);
