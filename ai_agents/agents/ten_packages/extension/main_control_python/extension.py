@@ -12,6 +12,7 @@ from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
+    Loc,
     StatusCode,
     CmdResult,
     Data,
@@ -154,6 +155,7 @@ class MainControlExtension(AsyncExtension):
         ten_env.log_info(
             f"_send_transcript: text {text}, is_final {final}, end_of_segment {end_of_segment}, stream_id {stream_id}"
         )
+
 
     async def _interrupt(self, ten_env: AsyncTenEnv):
         await self.llm_exec.flush()
