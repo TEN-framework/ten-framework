@@ -18,8 +18,10 @@ from ten_runtime import (
 )
 from .helper import _send_data, _send_cmd
 
+
 class MainControlConfig(BaseModel):
     greeting: str = "Hello there, I'm TEN Agent"
+
 
 class MainControlExtension(AsyncExtension):
     def __init__(self, name: str):
@@ -62,7 +64,6 @@ class MainControlExtension(AsyncExtension):
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result)
 
-
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
         ten_env.log_info(f"on_data name {data_name}")
@@ -86,7 +87,9 @@ class MainControlExtension(AsyncExtension):
                         if final:
                             await self.llm_exec.queue_input(text)
 
-                        await self._send_transcript(self.ten_env, text, final, final, stream_id)
+                        await self._send_transcript(
+                            self.ten_env, text, final, final, stream_id
+                        )
                     case _:
                         self.ten_env.log_info(f"Unknown data: {data_name}")
             except Exception as e:
@@ -101,8 +104,16 @@ class MainControlExtension(AsyncExtension):
                     case "on_user_joined":
                         self._rtc_user_count += 1
                         if self._rtc_user_count == 1 and self.config.greeting:
-                            await self._send_to_tts(self.ten_env, self.config.greeting)
-                            await self._send_transcript(self.ten_env, self.config.greeting, True, True, 100)
+                            await self._send_to_tts(
+                                self.ten_env, self.config.greeting
+                            )
+                            await self._send_transcript(
+                                self.ten_env,
+                                self.config.greeting,
+                                True,
+                                True,
+                                100,
+                            )
                     case "on_user_left":
                         self._rtc_user_count -= 1
                     case _:
@@ -110,19 +121,39 @@ class MainControlExtension(AsyncExtension):
             except Exception as e:
                 self.ten_env.log_error(f"Error processing command: {e}")
 
-
     async def _send_to_tts(self, ten_env: AsyncTenEnv, text: str):
         await _send_data(ten_env, "text_data", "tts", {"text": text})
         ten_env.log_info(f"_send_to_tts: text {text}")
 
-    async def _on_llm_response(self, ten_env: AsyncTenEnv, text: str, is_final: bool):
+    async def _on_llm_response(
+        self, ten_env: AsyncTenEnv, text: str, is_final: bool
+    ):
         ten_env.log_info(f"_on_llm_response: text {text}, is_final {is_final}")
         await self._send_to_tts(ten_env, text)
         await self._send_transcript(ten_env, text, is_final, is_final, 100)
 
-    async def _send_transcript(self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool, final: bool, stream_id: int):
-        await _send_data(ten_env, "text_data", "message_collector", {"text": text, "is_final": final, "stream_id": stream_id, "end_of_segment": end_of_segment})
-        ten_env.log_info(f"_send_transcript: text {text}, is_final {final}, end_of_segment {end_of_segment}, stream_id {stream_id}")
+    async def _send_transcript(
+        self,
+        ten_env: AsyncTenEnv,
+        text: str,
+        end_of_segment: bool,
+        final: bool,
+        stream_id: int,
+    ):
+        await _send_data(
+            ten_env,
+            "text_data",
+            "message_collector",
+            {
+                "text": text,
+                "is_final": final,
+                "stream_id": stream_id,
+                "end_of_segment": end_of_segment,
+            },
+        )
+        ten_env.log_info(
+            f"_send_transcript: text {text}, is_final {final}, end_of_segment {end_of_segment}, stream_id {stream_id}"
+        )
 
     async def _interrupt(self, ten_env: AsyncTenEnv):
         await self.llm_exec.flush()

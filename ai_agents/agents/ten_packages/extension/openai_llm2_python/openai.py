@@ -15,7 +15,12 @@ import requests
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
-from ten_ai_base.struct import LLMInput, LLMOutput, LLMOutputChoice, LLMOutputChoiceDelta
+from ten_ai_base.struct import (
+    LLMInput,
+    LLMOutput,
+    LLMOutputChoice,
+    LLMOutputChoiceDelta,
+)
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 
@@ -107,13 +112,17 @@ class OpenAIChatGPT:
 
         for message in messages:
             if message.role == "user":
-                parsed_messages.append({"role": "user", "content": message.content})
+                parsed_messages.append(
+                    {"role": "user", "content": message.content}
+                )
             elif message.role == "assistant":
                 parsed_messages.append(
                     {"role": "assistant", "content": message.content}
                 )
             elif message.role == "system":
-                parsed_messages.append({"role": "system", "content": message.content})
+                parsed_messages.append(
+                    {"role": "system", "content": message.content}
+                )
             elif message.role == "tool":
                 parsed_messages.append(
                     {
@@ -146,7 +155,6 @@ class OpenAIChatGPT:
                     }
                 )
 
-
         req = {
             "model": self.config.model,
             "messages": [
@@ -168,7 +176,9 @@ class OpenAIChatGPT:
         }
 
         try:
-            response:AsyncStream[ChatCompletionChunk] = await self.client.chat.completions.create(**req)
+            response: AsyncStream[ChatCompletionChunk] = (
+                await self.client.chat.completions.create(**req)
+            )
 
             full_content = ""
             # Check for tool calls
@@ -192,22 +202,24 @@ class OpenAIChatGPT:
                 delta = choice.delta
 
                 llm_choice = LLMOutputChoice(
-                    finish_reason= choice.finish_reason,
+                    finish_reason=choice.finish_reason,
                     index=choice.index,
                     logprobs=None,  # Assuming no logprobs for simplicity
                     delta=LLMOutputChoiceDelta(
-                        content=delta.content if delta and delta.content else "",
+                        content=(
+                            delta.content if delta and delta.content else ""
+                        ),
                         role=delta.role,
                         refusal=delta.refusal,
-                        tool_calls=[]
-                    )
+                        tool_calls=[],
+                    ),
                 )
 
                 yield LLMOutput(
                     id=chat_completion.id,
                     choice=llm_choice,
                     created=chat_completion.created,
-                    model=chat_completion.model
+                    model=chat_completion.model,
                 )
 
                 # content = delta.content if delta and delta.content else ""

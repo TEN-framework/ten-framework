@@ -76,6 +76,4 @@ class OpenAILLM2Extension(AsyncLLM2BaseExtension):
     def on_call_chat_completion(
         self, async_ten_env: AsyncTenEnv, input: LLMInput
     ) -> AsyncGenerator[LLMOutput, None]:
-        return self.client.get_chat_completions(
-           input
-        )
+        return self.client.get_chat_completions(input)

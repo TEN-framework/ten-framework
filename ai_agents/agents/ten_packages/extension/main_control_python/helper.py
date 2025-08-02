@@ -30,6 +30,7 @@ def parse_sentences(sentence_fragment, content):
     remain = current_sentence  # Any remaining characters form the incomplete sentence
     return sentences, remain
 
+
 async def _send_cmd(
     ten_env: AsyncTenEnv, cmd_name: str, dest: str, payload: Any = None
 ) -> tuple[Optional[CmdResult], Optional[TenError]]:
@@ -45,6 +46,7 @@ async def _send_cmd(
     ten_env.log_debug(f"send_cmd: cmd_name {cmd_name}, dest {dest}")
 
     return await ten_env.send_cmd(cmd)
+
 
 async def _send_cmd_ex(
     ten_env: AsyncTenEnv, cmd_name: str, dest: str, payload: Any = None
@@ -64,6 +66,7 @@ async def _send_cmd_ex(
         if cmd_result:
             ten_env.log_debug(f"send_cmd_ex: cmd_result {cmd_result}")
             yield cmd_result, ten_error
+
 
 async def _send_data(
     ten_env: AsyncTenEnv, data_name: str, dest: str, payload: Any = None
