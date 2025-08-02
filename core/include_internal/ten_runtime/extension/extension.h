@@ -46,6 +46,8 @@ typedef struct ten_addon_host_t ten_addon_host_t;
 typedef struct ten_path_table_t ten_path_table_t;
 typedef struct ten_path_in_t ten_path_in_t;
 typedef struct ten_timer_t ten_timer_t;
+typedef struct ten_engine_t ten_engine_t;
+typedef struct ten_app_t ten_app_t;
 
 // The relationship between several lifecycle stages and their connection to
 // sending messages:
@@ -178,6 +180,13 @@ struct ten_extension_t {
 
   ten_extension_context_t *extension_context;
   ten_extension_info_t *extension_info;
+
+  // This is solely for caching the engine pointer, making it convenient to
+  // access the engine pointer within the extension.
+  ten_engine_t *engine;
+  // This is solely for caching the app pointer, making it convenient to access
+  // the app pointer within the extension.
+  ten_app_t *app;
 
   ten_value_t manifest;
   ten_value_t property;

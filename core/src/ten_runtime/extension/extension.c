@@ -129,6 +129,9 @@ ten_extension_t *ten_extension_create(
 
   self->user_data = user_data;
 
+  self->engine = NULL;
+  self->app = NULL;
+
   return self;
 }
 
