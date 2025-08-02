@@ -35,7 +35,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.13
     strategy:
       matrix:
         agent:
