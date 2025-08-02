@@ -168,6 +168,7 @@
     "apps": {
       "manager": "應用程式管理器",
       "tableCaption": "已載入的應用程式列表。",
+      "emptyPlaceholder": "未載入應用程式。",
       "baseDir": "基礎目錄",
       "run": "執行應用程式",
       "runScript": "執行腳本",
@@ -187,7 +188,13 @@
       "appNameDescription": "輸入應用程式的名稱。",
       "baseDirDescription": "選擇應用程式的基礎目錄。",
       "run_opts": "選項",
-      "run_with_agent": "使用 TEN Agent 執行"
+      "run_with_agent": "使用 TEN Agent 執行",
+      "status": "狀態",
+      "noRunningScripts": "無運行中的腳本",
+      "runningScriptsCaption": "運行中腳本的列表。",
+      "loadedApps": "已載入應用程式",
+      "runningScripts": "運行中腳本",
+      "runningScriptsWithCount": "{{count}} 個運行中腳本"
     },
     "graph": {
       "title": "節點",
@@ -315,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",
+    "scriptsRunningWithCount": "正在運行 {{count}} 個腳本",
     "appsError": "獲取應用程式失敗",
     "workspace": {
       "title": "目前工作區",

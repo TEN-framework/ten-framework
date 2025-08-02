@@ -167,6 +167,7 @@
     "apps": {
       "manager": "Apps Manager",
       "tableCaption": "A list of your loaded apps.",
+      "emptyPlaceholder": "No apps loaded.",
       "baseDir": "Base Dir",
       "run": "Run App",
       "runScript": "Run Script",
@@ -186,7 +187,13 @@
       "appNameDescription": "Enter the name for the app.",
       "baseDirDescription": "Select the base directory for the app.",
       "run_opts": "Options",
-      "run_with_agent": "Run with TEN Agent"
+      "run_with_agent": "Run with TEN Agent",
+      "status": "Status",
+      "noRunningScripts": "No running scripts",
+      "runningScriptsCaption": "A list of running scripts.",
+      "loadedApps": "Loaded Apps",
+      "runningScripts": "Running Scripts",
+      "runningScriptsWithCount": "{{count}} running script(s)"
     },
     "graph": {
       "title": "Node",
@@ -314,6 +321,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}} app(s) loaded",
+    "scriptsRunningWithCount": "{{count}} script(s) running",
     "appsError": "Failed to get apps",
     "workspace": {
       "title": "Currently Working in",
