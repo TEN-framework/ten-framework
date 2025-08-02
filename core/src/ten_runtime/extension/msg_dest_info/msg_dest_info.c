@@ -36,6 +36,7 @@ ten_msg_dest_info_t *ten_msg_dest_info_create(const char *msg_name) {
 
   ten_signature_set(&self->signature,
                     (ten_signature_t)TEN_MSG_DEST_STATIC_INFO_SIGNATURE);
+
   ten_list_init(&self->dest);
 
   ten_string_init_formatted(&self->name, "%s", msg_name);

@@ -217,7 +217,7 @@ void ten_extension_destroy(ten_extension_t *self) {
 }
 
 static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
-    ten_list_t *dest_info_list, ten_shared_ptr_t *msg) {
+    ten_hashtable_t *dest_info_list, ten_shared_ptr_t *msg) {
   TEN_ASSERT(dest_info_list, "Should not happen.");
   TEN_ASSERT(msg, "Should not happen.");
 
@@ -225,11 +225,11 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
   TEN_ASSERT(msg_name, "Should not happen.");
   TEN_ASSERT(strlen(msg_name) > 0, "Should not happen.");
 
-  // TODO(Wei): Use hash table to speed up the findings.
-  ten_listnode_t *msg_dest_info_node = ten_list_find_ptr_custom(
-      dest_info_list, msg_name, ten_msg_dest_info_qualified);
-  if (msg_dest_info_node) {
-    ten_msg_dest_info_t *msg_dest = ten_ptr_listnode_get(msg_dest_info_node);
+  ten_hashhandle_t *msg_dest_info_hh =
+      ten_hashtable_find_string(dest_info_list, msg_name);
+  if (msg_dest_info_hh) {
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_FIELD(
+        msg_dest_info_hh, ten_msg_dest_info_t, hh_in_all_msg_type_dest_info);
     TEN_ASSERT(msg_dest, "Should not happen.");
     TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
                "Should not happen.");
@@ -254,12 +254,12 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph(
     case TEN_MSG_TYPE_DATA:
       return ten_extension_get_msg_dests_from_graph_internal(
           &self->extension_info->msg_dest_info.data, msg);
-    case TEN_MSG_TYPE_VIDEO_FRAME:
-      return ten_extension_get_msg_dests_from_graph_internal(
-          &self->extension_info->msg_dest_info.video_frame, msg);
     case TEN_MSG_TYPE_AUDIO_FRAME:
       return ten_extension_get_msg_dests_from_graph_internal(
           &self->extension_info->msg_dest_info.audio_frame, msg);
+    case TEN_MSG_TYPE_VIDEO_FRAME:
+      return ten_extension_get_msg_dests_from_graph_internal(
+          &self->extension_info->msg_dest_info.video_frame, msg);
     default:
       TEN_ASSERT(0, "Should not happen.");
       return NULL;

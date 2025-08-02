@@ -404,6 +404,11 @@ uint32_t ten_hashtable_items_cnt(ten_hashtable_t *self) {
   return self->items_cnt;
 }
 
+bool ten_hashtable_is_empty(ten_hashtable_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  return self->items_cnt == 0;
+}
+
 ten_hashhandle_t *ten_hashtable_find_by_key(ten_hashtable_t *self,
                                             const void *key, uint32_t keylen) {
   TEN_ASSERT(self && key, "Invalid argument.");
