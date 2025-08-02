@@ -13,10 +13,10 @@
 typedef struct ten_extension_t ten_extension_t;
 
 typedef struct ten_all_msg_type_dest_info_t {
-  ten_list_t cmd;          // ten_shared_ptr_t of ten_msg_dest_info_t
-  ten_list_t data;         // ten_shared_ptr_t of ten_msg_dest_info_t
-  ten_list_t video_frame;  // ten_shared_ptr_t of ten_msg_dest_info_t
-  ten_list_t audio_frame;  // ten_shared_ptr_t of ten_msg_dest_info_t
+  ten_list_t cmd;          // ptr of ten_msg_dest_info_t
+  ten_list_t data;         // ptr of ten_msg_dest_info_t
+  ten_list_t video_frame;  // ptr of ten_msg_dest_info_t
+  ten_list_t audio_frame;  // ptr of ten_msg_dest_info_t
 } ten_all_msg_type_dest_info_t;
 
 TEN_RUNTIME_PRIVATE_API void ten_all_msg_type_dest_info_init(

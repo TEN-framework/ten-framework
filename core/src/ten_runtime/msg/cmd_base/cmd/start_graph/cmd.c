@@ -341,8 +341,7 @@ static void ten_cmd_start_graph_collect_all_connectable_apps(
              "Should not happen.");
 
   ten_list_foreach (&extension_info->msg_dest_info.cmd, iter_cmd) {
-    ten_msg_dest_info_t *cmd_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter_cmd.node));
+    ten_msg_dest_info_t *cmd_dest = ten_ptr_listnode_get(iter_cmd.node);
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
                                                  &cmd_dest->dest, next,
                                                  from_src_point_of_view);
@@ -350,8 +349,8 @@ static void ten_cmd_start_graph_collect_all_connectable_apps(
 
   ten_list_foreach (&extension_info->msg_dest_info.video_frame,
                     iter_video_frame) {
-    ten_msg_dest_info_t *video_frame_dest = ten_shared_ptr_get_data(
-        ten_smart_ptr_listnode_get(iter_video_frame.node));
+    ten_msg_dest_info_t *video_frame_dest =
+        ten_ptr_listnode_get(iter_video_frame.node);
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
                                                  &video_frame_dest->dest, next,
                                                  from_src_point_of_view);
@@ -359,16 +358,15 @@ static void ten_cmd_start_graph_collect_all_connectable_apps(
 
   ten_list_foreach (&extension_info->msg_dest_info.audio_frame,
                     iter_audio_frame) {
-    ten_msg_dest_info_t *audio_frame_dest = ten_shared_ptr_get_data(
-        ten_smart_ptr_listnode_get(iter_audio_frame.node));
+    ten_msg_dest_info_t *audio_frame_dest =
+        ten_ptr_listnode_get(iter_audio_frame.node);
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
                                                  &audio_frame_dest->dest, next,
                                                  from_src_point_of_view);
   }
 
   ten_list_foreach (&extension_info->msg_dest_info.data, iter_data) {
-    ten_msg_dest_info_t *data_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter_data.node));
+    ten_msg_dest_info_t *data_dest = ten_ptr_listnode_get(iter_data.node);
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
                                                  &data_dest->dest, next,
                                                  from_src_point_of_view);
