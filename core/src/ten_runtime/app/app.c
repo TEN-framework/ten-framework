@@ -162,6 +162,7 @@ ten_app_t *ten_app_create(ten_app_on_configure_func_t on_configure,
   self->preload_all_addons = false;
 
   self->is_standalone_test_app = false;
+  self->standalone_test_mode = TEN_EXTENSION_TESTER_TEST_MODE_INVALID;
   TEN_STRING_INIT(self->standalone_tested_target_name);
 
   self->user_data = NULL;

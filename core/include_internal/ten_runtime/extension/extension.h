@@ -225,6 +225,8 @@ struct ten_extension_t {
   // output messages.
   ten_hashtable_t msg_not_connected_count_map;
 
+  bool is_standalone_test_extension;
+
   void *user_data;
 };
 
