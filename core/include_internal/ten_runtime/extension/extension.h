@@ -287,7 +287,7 @@ TEN_RUNTIME_PRIVATE_API ten_extension_t *ten_extension_from_smart_ptr(
 TEN_RUNTIME_API void ten_extension_set_me_in_target_lang(
     ten_extension_t *self, void *me_in_target_lang);
 
-TEN_RUNTIME_PRIVATE_API ten_engine_t *ten_extension_get_belonging_engine(
+static inline ten_engine_t *ten_extension_get_belonging_engine(
     ten_extension_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true),
@@ -296,7 +296,7 @@ TEN_RUNTIME_PRIVATE_API ten_engine_t *ten_extension_get_belonging_engine(
   return self->engine;
 }
 
-TEN_RUNTIME_PRIVATE_API ten_app_t *ten_extension_get_belonging_app(
+static inline ten_app_t *ten_extension_get_belonging_app(
     ten_extension_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true),
