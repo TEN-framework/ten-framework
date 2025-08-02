@@ -220,13 +220,18 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   return shared_self_;
 }
 
-static bool copy_msg_dest(ten_list_t *to_static_info,
-                          ten_list_t *from_static_info,
+static bool copy_msg_dest(ten_hashtable_t *to_static_info,
+                          ten_hashtable_t *from_static_info,
                           ten_list_t *extensions_info, ten_error_t *err) {
   TEN_ASSERT(to_static_info && extensions_info, "Should not happen.");
 
-  ten_list_foreach (from_static_info, iter) {
-    ten_msg_dest_info_t *msg_dest_static_info = ten_ptr_listnode_get(iter.node);
+  ten_hashtable_foreach(from_static_info, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest_static_info =
+        CONTAINER_OF_FROM_OFFSET(hh, from_static_info->hh_offset);
+    TEN_ASSERT(msg_dest_static_info, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest_static_info),
+               "Should not happen.");
 
     ten_msg_dest_info_t *new_msg_dest_static_info =
         ten_msg_dest_info_clone(msg_dest_static_info, extensions_info, err);
@@ -234,8 +239,10 @@ static bool copy_msg_dest(ten_list_t *to_static_info,
       return false;
     }
 
-    ten_list_push_ptr_back(to_static_info, new_msg_dest_static_info,
-                           (void (*)(void *))ten_msg_dest_info_destroy);
+    ten_hashtable_add_string(
+        to_static_info, &new_msg_dest_static_info->hh_in_all_msg_type_dest_info,
+        ten_string_get_raw_str(&new_msg_dest_static_info->name),
+        ten_msg_dest_info_destroy);
   }
 
   return true;
@@ -488,8 +495,10 @@ void ten_extensions_info_fill_loc_info(ten_list_t *extensions_info,
     ten_extension_info_t *extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
 
-    ten_list_foreach (&extension_info->msg_dest_info.cmd, iter_cmd) {
-      ten_msg_dest_info_t *dest_info = ten_ptr_listnode_get(iter_cmd.node);
+    ten_hashtable_foreach(&extension_info->msg_dest_info.cmd, iter) {
+      ten_hashhandle_t *hh = iter.node;
+      ten_msg_dest_info_t *dest_info = CONTAINER_OF_FROM_OFFSET(
+          hh, extension_info->msg_dest_info.cmd.hh_offset);
       TEN_ASSERT(dest_info, "Should not happen.");
       TEN_ASSERT(ten_msg_dest_info_check_integrity(dest_info),
                  "Should not happen.");
