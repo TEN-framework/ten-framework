@@ -66,6 +66,3 @@ TEN_RUNTIME_PRIVATE_API ten_path_out_t *ten_path_table_add_out_path(
 TEN_RUNTIME_PRIVATE_API bool ten_path_table_process_cmd_result(
     ten_path_table_t *self, TEN_PATH_TYPE path_type,
     ten_shared_ptr_t *cmd_result, ten_shared_ptr_t **processed_cmd_result);
-
-TEN_RUNTIME_PRIVATE_API ten_string_t *ten_path_table_get_graph_id(
-    ten_path_table_t *self);

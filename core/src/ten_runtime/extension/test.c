@@ -25,7 +25,7 @@ void ten_adjust_msg_dest_for_standalone_test_scenario(
   TEN_ASSERT(dest_loc, "Should not happen.");
   TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
-  ten_engine_t *engine = from_extension->extension_context->engine;
+  ten_engine_t *engine = ten_extension_get_belonging_engine(from_extension);
   TEN_ASSERT(engine, "Invalid argument.");
   TEN_ASSERT(ten_engine_check_integrity(engine, false),
              "Invalid use of engine %p.", engine);
@@ -61,7 +61,7 @@ bool ten_add_msg_dest_for_standalone_test_scenario(
   TEN_ASSERT(ten_extension_check_integrity(from_extension, true),
              "Invalid argument.");
 
-  ten_engine_t *engine = from_extension->extension_context->engine;
+  ten_engine_t *engine = ten_extension_get_belonging_engine(from_extension);
   TEN_ASSERT(engine, "Invalid argument.");
   TEN_ASSERT(ten_engine_check_integrity(engine, false),
              "Invalid use of engine %p.", engine);

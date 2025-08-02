@@ -129,6 +129,9 @@ ten_extension_t *ten_extension_create(
 
   self->user_data = user_data;
 
+  self->engine = NULL;
+  self->app = NULL;
+
   return self;
 }
 
@@ -507,7 +510,7 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
   // The source of the out message is the current extension.
   ten_msg_set_src_to_extension(msg, self);
 
-  ten_msg_correct_dest(msg, self->extension_context->engine);
+  ten_msg_correct_dest(msg, ten_extension_get_belonging_engine(self));
 
   // The schema check for `msg` must be performed before message conversion and
   // path deletion for the following reasons:

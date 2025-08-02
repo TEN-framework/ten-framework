@@ -324,16 +324,15 @@ void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
 
   ten_extension_group_t *extension_group =
       extension->extension_thread->extension_group;
-  TEN_ASSERT(
-      extension_group &&
-          // TEN_NOLINTNEXTLINE(thread-check)
-          // thread-check: we might be in other threads except extension threads
-          // (ex: the JS main thread), and here, we only need to get the name of
-          // the extension_group and the engine, and those pointers and the name
-          // values will not be changed after they are created, and before the
-          // entire engine is closed, so it's thread-safe here.
-          ten_extension_group_check_integrity(extension_group, false),
-      "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: we might be in other threads except extension threads (ex:
+  // the JS main thread), and here, we only need to get the name of the
+  // extension_group and the engine, and those pointers and the name values will
+  // not be changed after they are created, and before the entire engine is
+  // closed, so it's thread-safe here.
+  TEN_ASSERT(extension_group, "Should not happen.");
+  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
+             "Should not happen.");
 
   ten_engine_t *engine =
       extension_group->extension_thread->extension_context->engine;
