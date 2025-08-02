@@ -9,7 +9,6 @@
 #include <inttypes.h>
 
 #include "include_internal/ten_runtime/common/loc.h"
-#include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
@@ -662,39 +661,4 @@ done:
     *processed_cmd_result = NULL;
   }
   return proceed;
-}
-
-ten_string_t *ten_path_table_get_graph_id(ten_path_table_t *self) {
-  TEN_ASSERT(self && ten_path_table_check_integrity(self, true),
-             "Invalid argument.");
-  if (self->attach_to == TEN_PATH_TABLE_ATTACH_TO_EXTENSION) {
-    ten_extension_context_t *extension_context =
-        self->attached_target.extension->extension_context;
-    TEN_ASSERT(
-        extension_context &&
-            // TEN_NOLINTNEXTLINE(thread-check)
-            // thread-check: We are in the extension thread, and all the uses of
-            // the extension context in this function would not cause thread
-            // safety issues.
-            ten_extension_context_check_integrity(extension_context, false),
-        "Invalid argument.");
-
-    ten_engine_t *engine = extension_context->engine;
-    TEN_ASSERT(
-        engine &&
-            // TEN_NOLINTNEXTLINE(thread-check)
-            // thread-check: We are in the extension thread, and all the uses of
-            // the engine in this function would not cause thread safety issues.
-            ten_engine_check_integrity(engine, false),
-        "Invalid argument.");
-
-    return &engine->graph_id;
-  } else {
-    ten_engine_t *engine = self->attached_target.engine;
-    TEN_ASSERT(engine, "Invalid argument.");
-    TEN_ASSERT(ten_engine_check_integrity(engine, true),
-               "Invalid use of engine %p.", engine);
-
-    return &engine->graph_id;
-  }
 }
