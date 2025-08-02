@@ -13,6 +13,7 @@ pub mod env;
 pub mod graph;
 pub mod json;
 pub mod json_schema;
+pub mod log;
 pub mod pkg_info;
 pub mod utils;
 

@@ -38,6 +38,10 @@ static const ten_app_ten_namespace_prop_info_t
             .name = TEN_STR_ADDON,
             .init_from_value = ten_app_init_addon,
         },
+        {
+            .name = TEN_STR_ADVANCED_LOG,
+            .init_from_value = ten_app_init_advanced_log,
+        },
 };
 
 static const size_t ten_app_ten_namespace_prop_info_list_size =
