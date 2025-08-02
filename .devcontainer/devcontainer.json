@@ -1,6 +1,6 @@
 {
   "name": "ten_framework",
-  "image": "docker.theten.ai/ten-framework/ten_agent_build:0.6.11",
+  "image": "docker.theten.ai/ten-framework/ten_agent_build:0.6.13",
   "customizations": {
     "vscode": {
       "extensions": [

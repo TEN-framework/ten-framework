@@ -19,9 +19,9 @@
     ]
   },
   "api": {
-    "interface": [
-      "../../system/ten_ai_base/api/llm-interface.json"
-    ],
+    "interface": [{
+      "import_uri": "../../system/ten_ai_base/api/llm-interface.json"
+    }],
     "property": {
       "properties": {
         "api_key": {

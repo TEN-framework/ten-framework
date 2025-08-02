@@ -4,22 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       extension:
-        description: 'Extension name (required)'
+        description: "Extension name (required)"
         required: true
         type: string
-        default: 'azure_asr_python'
+        default: "azure_asr_python"
       config_dir:
-        description: 'Config directory (optional)'
+        description: "Config directory (optional)"
         required: false
         type: string
-        default: 'tests/configs'
+        default: "tests/configs"
       branch:
-        description: 'Branch to test (optional, defaults to current branch)'
+        description: "Branch to test (optional, defaults to current branch)"
         required: false
         type: string
-        default: ''
+        default: ""
       env_vars:
-        description: 'Environment variables (one per line, format: KEY=VALUE)'
+        description: "Environment variables (one per line, format: KEY=VALUE)"
         required: false
         type: string
         default: |
@@ -34,7 +34,7 @@ jobs:
   asr-guarder-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.13
 
     steps:
       - name: Checkout code
