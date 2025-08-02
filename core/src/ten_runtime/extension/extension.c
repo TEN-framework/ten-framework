@@ -222,13 +222,17 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
   TEN_ASSERT(msg, "Should not happen.");
 
   const char *msg_name = ten_msg_get_name(msg);
+  TEN_ASSERT(msg_name, "Should not happen.");
+  TEN_ASSERT(strlen(msg_name) > 0, "Should not happen.");
 
   // TODO(Wei): Use hash table to speed up the findings.
-  ten_listnode_t *msg_dest_info_node = ten_list_find_shared_ptr_custom(
+  ten_listnode_t *msg_dest_info_node = ten_list_find_ptr_custom(
       dest_info_list, msg_name, ten_msg_dest_info_qualified);
   if (msg_dest_info_node) {
-    ten_msg_dest_info_t *msg_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(msg_dest_info_node));
+    ten_msg_dest_info_t *msg_dest = ten_ptr_listnode_get(msg_dest_info_node);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
 
     return msg_dest;
   }
@@ -238,8 +242,9 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
 
 static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph(
     ten_extension_t *self, ten_shared_ptr_t *msg) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true) && msg,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(msg, "Should not happen.");
 
   if (ten_msg_is_cmd_and_result(msg)) {
     return ten_extension_get_msg_dests_from_graph_internal(

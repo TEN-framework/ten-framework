@@ -48,14 +48,14 @@ static bool parse_msg_dest_value(ten_value_t *value,
       return false;
     }
 
-    ten_shared_ptr_t *msg_dest = ten_msg_dest_info_from_value(
+    ten_msg_dest_info_t *msg_dest = ten_msg_dest_info_from_value(
         item_value, extensions_info, src_extension_info, err);
     if (!msg_dest) {
       return false;
     }
 
-    ten_list_push_smart_ptr_back(static_dests, msg_dest);
-    ten_shared_ptr_destroy(msg_dest);
+    ten_list_push_ptr_back(static_dests, msg_dest,
+                           (void (*)(void *))ten_msg_dest_info_destroy);
   }
 
   return true;
@@ -342,8 +342,7 @@ static ten_value_t *pack_msg_dest(ten_extension_info_t *self,
   ten_list_t dest_list = TEN_LIST_INIT_VAL;
 
   ten_list_foreach (msg_dests, iter) {
-    ten_msg_dest_info_t *msg_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
+    ten_msg_dest_info_t *msg_dest = ten_ptr_listnode_get(iter.node);
 
     ten_value_t *msg_dest_value =
         ten_msg_dest_info_to_value(msg_dest, self, err);

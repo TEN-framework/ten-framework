@@ -29,8 +29,8 @@ TEN_RUNTIME_PRIVATE_API bool ten_msg_dest_info_check_integrity(
 TEN_RUNTIME_PRIVATE_API ten_msg_dest_info_t *ten_msg_dest_info_create(
     const char *msg_name);
 
-TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *ten_msg_dest_info_clone(
-    ten_shared_ptr_t *self, ten_list_t *extensions_info, ten_error_t *err);
+TEN_RUNTIME_PRIVATE_API ten_msg_dest_info_t *ten_msg_dest_info_clone(
+    ten_msg_dest_info_t *self, ten_list_t *extensions_info, ten_error_t *err);
 
 TEN_RUNTIME_PRIVATE_API void ten_msg_dest_info_destroy(
     ten_msg_dest_info_t *self);
