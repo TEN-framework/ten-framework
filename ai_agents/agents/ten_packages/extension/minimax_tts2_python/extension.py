@@ -16,6 +16,7 @@ from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleType,
     ModuleVendorException,
+    TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
@@ -34,11 +35,11 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
         self.client: MinimaxTTS2 | None = None
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
-        self.recorder: PCMWriter | None = None
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.finished_request_ids: set[str] = set()
+        self.recorder_map: dict[str, PCMWriter] = {}  # Store PCMWriter instances for different request_ids
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -133,12 +134,6 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 # extract audio_params and additions from config
                 self.config.update_params()
 
-            self.recorder = PCMWriter(
-                os.path.join(
-                    self.config.dump_path, generate_file_name("agent_dump")
-                )
-                # TODO based on request id
-            )
             self.client = MinimaxTTS2(self.config, ten_env, self.vendor())
             # Preheat websocket connection
             await self.client.start()
@@ -173,10 +168,13 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             await self.client.stop()
             self.client = None
 
-        # Flush the recorder to ensure all buffered data is written to the dump file.
-        if self.recorder:
-            await self.recorder.flush()
-            self.recorder = None
+        # Clean up all PCMWriters
+        for request_id, recorder in self.recorder_map.items():
+            try:
+                await recorder.flush()
+                ten_env.log_info(f"Flushed PCMWriter for request_id: {request_id}")
+            except Exception as e:
+                ten_env.log_error(f"Error flushing PCMWriter for request_id {request_id}: {e}")
 
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
@@ -232,6 +230,27 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+
+                # Create new PCMWriter for new request_id and clean up old ones
+                if self.config and self.config.dump:
+                    # Clean up old PCMWriters (except current request_id)
+                    old_request_ids = [rid for rid in self.recorder_map.keys() if rid != t.request_id]
+                    for old_rid in old_request_ids:
+                        try:
+                            await self.recorder_map[old_rid].flush()
+                            del self.recorder_map[old_rid]
+                            self.ten_env.log_info(f"Cleaned up old PCMWriter for request_id: {old_rid}")
+                        except Exception as e:
+                            self.ten_env.log_error(f"Error cleaning up PCMWriter for request_id {old_rid}: {e}")
+
+                    # Create new PCMWriter
+                    if t.request_id not in self.recorder_map:
+                        dump_file_path = os.path.join(
+                            self.config.dump_path,
+                            f"minimax_dump_{t.request_id}.pcm"
+                        )
+                        self.recorder_map[t.request_id] = PCMWriter(dump_file_path)
+                        self.ten_env.log_info(f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}")
             elif self.current_request_finished:
                 if not t.text_input_end:
                     error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
@@ -285,9 +304,9 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                             first_chunk = False
 
                         # Write to dump file if enabled
-                        if self.config and self.config.dump and self.recorder:
+                        if self.config and self.config.dump and self.current_request_id and self.current_request_id in self.recorder_map:
                             self.ten_env.log_info(f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}")
-                            asyncio.create_task(self.recorder.write(audio_chunk))
+                            asyncio.create_task(self.recorder_map[self.current_request_id].write(audio_chunk))
 
                         # Send audio data
                         await self.send_tts_audio_data(audio_chunk)
@@ -315,7 +334,8 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                         self.current_request_id,
                         duration_ms,
                         duration_ms,  # Using same for request_event_interval for now
-                        self.current_turn_id
+                        self.current_turn_id,
+                        TTSAudioEndReason.INTERRUPTED
                     )
                     self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event due to flush, duration: {duration_ms}ms")
                     break

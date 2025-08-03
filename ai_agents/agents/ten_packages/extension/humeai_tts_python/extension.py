@@ -14,6 +14,7 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     ModuleErrorVendorInfo,
     ModuleType,
+    TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
@@ -28,12 +29,12 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         super().__init__(name)
         self.config: HumeAiTTSConfig | None = None
         self.client: HumeAiTTS | None = None
-        self.recorder: PCMWriter | None = None
         self.sent_ts: datetime | None = None
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
         self.current_request_finished: bool = False
+        self.recorder_map: dict[str, PCMWriter] = {}  # Store PCMWriter instances for different request_ids
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -52,11 +53,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
 
             self.client = HumeAiTTS(config=self.config, ten_env=ten_env)
 
-            if self.config.dump:
-                self.recorder = PCMWriter(
-                    os.path.join(self.config.dump_path, generate_file_name("hume_dump"))
-                )
-
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
@@ -72,9 +68,15 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         if self.client:
             self.client.clean()
             self.client = None
-        if self.recorder:
-            await self.recorder.flush()
-            self.recorder = None
+
+        # Clean up all PCMWriters
+        for request_id, recorder in self.recorder_map.items():
+            try:
+                await recorder.flush()
+                ten_env.log_info(f"Flushed PCMWriter for request_id: {request_id}")
+            except Exception as e:
+                ten_env.log_error(f"Error flushing PCMWriter for request_id {request_id}: {e}")
+
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
@@ -112,6 +114,27 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_finished = False
                 if t.metadata:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+
+                # Create new PCMWriter for new request_id and clean up old ones
+                if self.config and self.config.dump:
+                    # Clean up old PCMWriters (except current request_id)
+                    old_request_ids = [rid for rid in self.recorder_map.keys() if rid != t.request_id]
+                    for old_rid in old_request_ids:
+                        try:
+                            await self.recorder_map[old_rid].flush()
+                            del self.recorder_map[old_rid]
+                            self.ten_env.log_info(f"Cleaned up old PCMWriter for request_id: {old_rid}")
+                        except Exception as e:
+                            self.ten_env.log_error(f"Error cleaning up PCMWriter for request_id {old_rid}: {e}")
+
+                    # Create new PCMWriter
+                    if t.request_id not in self.recorder_map:
+                        dump_file_path = os.path.join(
+                            self.config.dump_path,
+                            f"hume_dump_{t.request_id}.pcm"
+                        )
+                        self.recorder_map[t.request_id] = PCMWriter(dump_file_path)
+                        self.ten_env.log_info(f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}")
             elif self.current_request_finished:
                 error_msg = f"Received a message for a finished request_id: {self.current_request_id}"
                 self.ten_env.log_error(error_msg)
@@ -145,8 +168,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         await self.send_tts_ttfb_metrics(self.current_request_id, ttfb, self.current_turn_id)
                         first_chunk = False
 
-                    if self.config.dump and self.recorder:
-                        asyncio.create_task(self.recorder.write(audio_chunk))
+                    if self.config.dump and self.current_request_id and self.current_request_id in self.recorder_map:
+                        asyncio.create_task(self.recorder_map[self.current_request_id].write(audio_chunk))
 
                     await self.send_tts_audio_data(audio_chunk)
 
@@ -159,7 +182,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 elif event == EVENT_TTS_FLUSH and self.sent_ts and self.current_request_id:
                     duration_ms = self._calculate_audio_duration_ms()
                     request_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
-                    await self.send_tts_audio_end(self.current_request_id, request_interval, duration_ms, self.current_turn_id)
+                    await self.send_tts_audio_end(self.current_request_id, request_interval, duration_ms, self.current_turn_id, TTSAudioEndReason.INTERRUPTED)
                     #await self.send_tts_flush_end(self.current_request_id, self.current_turn_id)
                     self.current_request_finished = True
                     break
