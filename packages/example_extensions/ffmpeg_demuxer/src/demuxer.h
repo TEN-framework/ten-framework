@@ -48,6 +48,8 @@ struct interrupt_cb_param_t {
 
 class demuxer_t {
  public:
+  // Demuxer is running in the demuxer thread, so it needs a ten_env_proxy to
+  // interact with the TEN thread.
   demuxer_t(ten::ten_env_proxy_t *ten_env_proxy,
             demuxer_thread_t *demuxer_thread);
   ~demuxer_t();
