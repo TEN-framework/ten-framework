@@ -87,8 +87,8 @@ int interrupt_cb(void *p) {
   auto *r = reinterpret_cast<interrupt_cb_param_t *>(p);
   if (r->last_time > 0) {
     if (time(nullptr) - r->last_time > 20) {
-      // If the operation continues for more than 20 seconds, it returns a
-      // non-zero value to interrupt the operation.
+      // If the operation exceeds 20 seconds, return a non-zero value to
+      // interrupt and abort the current FFmpeg process.
       return 1;
     }
   }
@@ -224,8 +224,7 @@ demuxer_t::~demuxer_t() {
   TEN_LOGD("Demuxer instance destructed");
 }
 
-AVFormatContext *demuxer_t::create_input_format_context(
-    const std::string &input_stream_loc) {
+AVFormatContext *demuxer_t::open_input(const std::string &input_stream_loc) {
   TEN_ASSERT(input_stream_loc.length() > 0, "Invalid argument.");
 
   AVFormatContext *input_format_context = avformat_alloc_context();
@@ -275,13 +274,13 @@ AVFormatContext *demuxer_t::create_input_format_context(
   return input_format_context;
 }
 
-AVFormatContext *demuxer_t::create_input_format_context_with_retry(
+AVFormatContext *demuxer_t::open_input_with_retry(
     const std::string &input_stream_loc) {
   TEN_ASSERT(input_stream_loc.length() > 0, "Invalid argument.");
 
   AVFormatContext *input_format_context = nullptr;
   while (true) {
-    input_format_context = create_input_format_context(input_stream_loc);
+    input_format_context = open_input(input_stream_loc);
     if (input_format_context != nullptr) {
       // Open the input stream successfully.
       break;
@@ -302,7 +301,7 @@ AVFormatContext *demuxer_t::create_input_format_context_with_retry(
   return input_format_context;
 }
 
-bool demuxer_t::analyze_input_stream() {
+bool demuxer_t::analyze_input() {
   // Note: `avformat_find_stream_info` analyzes the input stream for a duration
   // determined by the `analyzeduration` parameter, which may introduce
   // additional latency. If the input stream format is well-defined and
@@ -323,27 +322,26 @@ bool demuxer_t::analyze_input_stream() {
 bool demuxer_t::open_input_stream(const std::string &init_input_stream_loc) {
   TEN_ASSERT(init_input_stream_loc.length() > 0, "Invalid argument.");
 
-  if (is_av_decoder_opened()) {
+  if (is_input_opened()) {
     TEN_LOGD("Demuxer has already opened");
     return true;
   }
 
-  input_format_context =
-      create_input_format_context_with_retry(init_input_stream_loc);
+  input_format_context = open_input_with_retry(init_input_stream_loc);
   if (input_format_context == nullptr) {
     return false;
   }
 
   input_stream_loc = init_input_stream_loc;
 
-  if (!analyze_input_stream()) {
+  if (!analyze_input()) {
     return false;
   }
 
-  open_video_decoder();
-  open_audio_decoder();
+  open_video_stream();
+  open_audio_stream();
 
-  if (!is_av_decoder_opened()) {
+  if (!is_input_opened()) {
     TEN_LOGW("Failed to find supported A/V codec for %s",
              input_stream_loc.c_str());
     return false;
@@ -354,11 +352,11 @@ bool demuxer_t::open_input_stream(const std::string &init_input_stream_loc) {
   return true;
 }
 
-bool demuxer_t::is_av_decoder_opened() {
+bool demuxer_t::is_input_opened() {
   return video_decoder != nullptr || audio_decoder != nullptr;
 }
 
-AVCodecParameters *demuxer_t::get_video_decoder_params() const {
+AVCodecParameters *demuxer_t::get_input_video_stream_decode_params() const {
   if (input_format_context != nullptr && video_stream_idx >= 0) {
     return input_format_context->streams[video_stream_idx]->codecpar;
   } else {
@@ -366,7 +364,7 @@ AVCodecParameters *demuxer_t::get_video_decoder_params() const {
   }
 }
 
-AVCodecParameters *demuxer_t::get_audio_decoder_params() const {
+AVCodecParameters *demuxer_t::get_input_audio_stream_decode_params() const {
   if (input_format_context != nullptr && audio_stream_idx >= 0) {
     return input_format_context->streams[audio_stream_idx]->codecpar;
   } else {
@@ -688,7 +686,7 @@ bool demuxer_t::decode_next_audio_packet(DECODE_STATUS &decode_status) {
 }
 
 DECODE_STATUS demuxer_t::decode_next_packet() {
-  if (!is_av_decoder_opened()) {
+  if (!is_input_opened()) {
     TEN_LOGD("Must open stream first");
     return DECODE_STATUS_ERROR;
   }
@@ -900,14 +898,14 @@ int64_t demuxer_t::number_of_video_frames() const {
   }
 }
 
-void demuxer_t::open_video_decoder() {
+void demuxer_t::open_video_stream() {
   TEN_ASSERT(input_format_context, "Invalid argument.");
 
   int idx = av_find_best_stream(input_format_context, AVMEDIA_TYPE_VIDEO, -1,
                                 -1, &video_decoder, 0);
   if (idx < 0) {
     TEN_LOGW(
-        "Failed to create video decoder, because video input stream not "
+        "Failed to create video decoder because no video input stream was "
         "found.");
     return;
   }
@@ -916,12 +914,12 @@ void demuxer_t::open_video_decoder() {
 
   if (video_decoder == nullptr) {
     TEN_LOGE(
-        "Video input stream is found, but failed to create input video "
-        "decoder, it might because the input video codec is not supported.");
+        "Video input stream found, but failed to create input video decoder. "
+        "This may be because the input video codec is not supported.");
     return;
   }
 
-  AVCodecParameters *params = get_video_decoder_params();
+  AVCodecParameters *params = get_input_video_stream_decode_params();
   TEN_ASSERT(params, "Invalid argument.");
 
   video_decoder_ctx = avcodec_alloc_context3(video_decoder);
@@ -935,9 +933,9 @@ void demuxer_t::open_video_decoder() {
     return;
   }
 
-  int ffmpeg_rc = avcodec_open2(video_decoder_ctx, video_decoder, nullptr);
-  if (ffmpeg_rc < 0) {
-    GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
+  int rc = avcodec_open2(video_decoder_ctx, video_decoder, nullptr);
+  if (rc < 0) {
+    GET_FFMPEG_ERROR_MESSAGE(err_msg, rc) {
       TEN_LOGE("Failed to bind video decoder to video decoder context: %s",
                err_msg);
     }
@@ -949,7 +947,7 @@ void demuxer_t::open_video_decoder() {
   TEN_LOGD("Successfully open '%s' video decoder for input stream %d",
            video_decoder->name, video_stream_idx);
 
-  // Check metadata for rotation.
+  // Loop through the metadata to check for rotation.
   AVDictionary *metadata =
       input_format_context->streams[video_stream_idx]->metadata;
   AVDictionaryEntry *tag =
@@ -966,12 +964,12 @@ void demuxer_t::open_video_decoder() {
   }
 }
 
-void demuxer_t::open_audio_decoder() {
+void demuxer_t::open_audio_stream() {
   int idx = av_find_best_stream(input_format_context, AVMEDIA_TYPE_AUDIO, -1,
                                 -1, &audio_decoder, 0);
   if (idx < 0) {
     TEN_LOGW(
-        "Failed to create audio decoder, because audio input stream not "
+        "Failed to create audio decoder because no audio input stream was "
         "found.");
     return;
   }
@@ -980,20 +978,21 @@ void demuxer_t::open_audio_decoder() {
 
   if (audio_decoder == nullptr) {
     TEN_LOGE(
-        "Audio input stream is found, but failed to create input audio "
-        "decoder, it might because the input audio codec is not supported.");
+        "Audio input stream found, but failed to create input audio decoder. "
+        "This may be because the input audio codec is not supported.");
     return;
   }
 
-  AVCodecParameters *params = get_audio_decoder_params();
+  AVCodecParameters *params = get_input_audio_stream_decode_params();
+
   audio_decoder_ctx = avcodec_alloc_context3(audio_decoder);
   if (audio_decoder_ctx == nullptr) {
-    TEN_LOGD("Failed to create audio decoder context");
+    TEN_LOGE("Failed to create audio decoder context");
     return;
   }
 
   if (avcodec_parameters_to_context(audio_decoder_ctx, params) < 0) {
-    TEN_LOGD("Failed to setup audio decoder parameters");
+    TEN_LOGE("Failed to setup audio decoder parameters");
     return;
   }
 
@@ -1011,13 +1010,14 @@ void demuxer_t::open_audio_decoder() {
   TEN_LOGD("Successfully open '%s' audio decoder for input stream %d",
            audio_decoder->name, audio_stream_idx);
 
-  // Use the metadata of the audio stream as the unified audio format output by
+  // Use the audio stream's metadata as the standardized audio format output by
   // the demuxer.
   audio_sample_rate = params->sample_rate;
   audio_num_of_channels = params->ch_layout.nb_channels;
 
   if (params->ch_layout.order != AV_CHANNEL_ORDER_NATIVE) {
-    // Some audio codec (e.g., pcm_mulaw) doesn't have channel layout setting.
+    // Certain audio codecs (e.g., pcm_mulaw) may not provide a channel layout
+    // configuration.
     AVChannelLayout default_layout;
     av_channel_layout_default(&default_layout, params->ch_layout.nb_channels);
 

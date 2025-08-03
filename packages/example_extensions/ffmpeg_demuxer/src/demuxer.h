@@ -76,15 +76,13 @@ class demuxer_t {
  private:
   friend class demuxer_thread_t;
 
-  AVFormatContext *create_input_format_context(
-      const std::string &input_stream_loc);
-  AVFormatContext *create_input_format_context_with_retry(
-      const std::string &input_stream_loc);
+  AVFormatContext *open_input(const std::string &input_stream_loc);
+  AVFormatContext *open_input_with_retry(const std::string &input_stream_loc);
 
-  void open_video_decoder();
-  void open_audio_decoder();
+  void open_video_stream();
+  void open_audio_stream();
 
-  bool is_av_decoder_opened();
+  bool is_input_opened();
 
   void dump_video_info();
   void dump_audio_info();
@@ -92,10 +90,10 @@ class demuxer_t {
   void flush_remaining_audio_frames();
   void flush_remaining_video_frames();
 
-  bool analyze_input_stream();
+  bool analyze_input();
 
-  AVCodecParameters *get_video_decoder_params() const;
-  AVCodecParameters *get_audio_decoder_params() const;
+  AVCodecParameters *get_input_video_stream_decode_params() const;
+  AVCodecParameters *get_input_audio_stream_decode_params() const;
 
   bool create_audio_converter(const AVFrame *frame,
                               uint64_t *out_channel_layout,
