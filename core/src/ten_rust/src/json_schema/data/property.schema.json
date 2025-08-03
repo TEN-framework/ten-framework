@@ -515,6 +515,28 @@
             "required": [
               "source"
             ]
+          },
+          {
+            "if": {
+              "required": [
+                "names"
+              ]
+            },
+            "then": {
+              "properties": {
+                "dest": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "not": {
+                      "required": [
+                        "msg_conversion"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         ]
       }
@@ -548,6 +570,28 @@
             "required": [
               "source"
             ]
+          },
+          {
+            "if": {
+              "required": [
+                "names"
+              ]
+            },
+            "then": {
+              "properties": {
+                "dest": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "not": {
+                      "required": [
+                        "msg_conversion"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         ]
       }
