@@ -74,14 +74,13 @@ void get_ffmpeg_error_message(char *buf, size_t buf_size, int errnum) {
   }
 }
 
-// This is a callback which will be called during the processing of the FFmpeg,
-// and if returning a non-zero value from this callback, this will break the
-// processing job of FFmpeg at that time, therefore, preventing FFmpeg from
-// blocking infinitely.
+// This callback is invoked during FFmpeg processing. Returning a non-zero value
+// from this callback will immediately interrupt the current FFmpeg operation,
+// thereby preventing potential infinite blocking.
 //
-// The primary function of this method is to prevent certain FFmpeg operations
-// (such as blocking I/O) from getting stuck indefinitely due to network issues
-// or inaccessible resources.
+// The primary purpose of this function is to safeguard against certain FFmpeg
+// operations, such as blocking I/O, that may hang indefinitely due to network
+// problems or inaccessible resources.
 int interrupt_cb(void *p) {
   TEN_ASSERT(p, "Invalid argument.");
 
@@ -211,9 +210,9 @@ demuxer_t::~demuxer_t() {
   }
 
   if (input_format_context != nullptr) {
-    // We need to use avformat_close_input() to close all the contexts opened by
-    // avformat_open_input(), otherwise we will encounter memory leakage in
-    // some format (ex: hls).
+    // It is essential to use avformat_close_input() to properly release all
+    // contexts opened by avformat_open_input(). Failing to do so may result in
+    // memory leaks, particularly with certain formats (e.g., HLS).
     avformat_close_input(&input_format_context);
   }
 
@@ -246,30 +245,31 @@ AVFormatContext *demuxer_t::create_input_format_context(
 
   AVDictionary *av_options = nullptr;
 
-  // This value could be decreased to improve the latency.
+  // Lowering this value can help reduce latency.
   av_dict_set(&av_options, "analyzeduration", "1000000", 0);  // 1000 msec
 
-  // The initial time is set to the current time, serving as the basis for
-  // timeout checks.
+  // Initialize the reference time to the current system time; this will be used
+  // as the baseline for subsequent timeout evaluations.
   interrupt_cb_param->last_time = time(nullptr);
 
-  // Open an input stream and read the header.
-  // Wait for the input stream to appear.
-  int ffmpeg_rc = avformat_open_input(
-      &input_format_context, input_stream_loc.c_str(), nullptr, &av_options);
+  // Attempt to open the input stream and read its header. If the input stream
+  // is not immediately available, wait until it becomes accessible.
+  int rc = avformat_open_input(&input_format_context, input_stream_loc.c_str(),
+                               nullptr, &av_options);
 
   av_dict_free(&av_options);
 
-  if (ffmpeg_rc == 0) {
+  if (rc == 0) {
     TEN_LOGD("Open input stream %s successfully", input_stream_loc.c_str());
   } else {
-    GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
+    GET_FFMPEG_ERROR_MESSAGE(err_msg, rc) {
       TEN_LOGW("Failed to open input stream %s: %s", input_stream_loc.c_str(),
                err_msg);
     }
 
     // Close the input, and the caller might try again.
     avformat_close_input(&input_format_context);
+    input_format_context = nullptr;
   }
 
   return input_format_context;
@@ -286,13 +286,12 @@ AVFormatContext *demuxer_t::create_input_format_context_with_retry(
       // Open the input stream successfully.
       break;
     } else {
-      // Does not detect any input stream, and does not create a corresponding
-      // av format context yet.
+      // No input stream detected; AVFormatContext has not been created yet.
       if (demuxer_thread->is_stopped()) {
         TEN_LOGW(
             "Giving up to detect any input stream, because the demuxer thread "
             "is stopped.");
-        return nullptr;
+        break;
       } else {
         // The demuxer thread is still running, try again to detect the input
         // stream.
@@ -304,14 +303,15 @@ AVFormatContext *demuxer_t::create_input_format_context_with_retry(
 }
 
 bool demuxer_t::analyze_input_stream() {
-  // `avformat_find_stream_info` will take `analyzeduration` time to analyze
-  // the input stream, so it will increase the latency. If we can regularize
-  // the input stream format, and want to minimize the latency, we can use some
-  // fixed logic here instead of calling 'avformat_find_stream_info' to analyze
-  // the input stream for us.
-  int ffmpeg_rc = avformat_find_stream_info(input_format_context, nullptr);
-  if (ffmpeg_rc < 0) {
-    GET_FFMPEG_ERROR_MESSAGE(err_msg, ffmpeg_rc) {
+  // Note: `avformat_find_stream_info` analyzes the input stream for a duration
+  // determined by the `analyzeduration` parameter, which may introduce
+  // additional latency. If the input stream format is well-defined and
+  // minimizing latency is essential, consider implementing a custom parser for
+  // the stream format instead of relying on the automatic analysis performed by
+  // `avformat_find_stream_info`.
+  int rc = avformat_find_stream_info(input_format_context, nullptr);
+  if (rc < 0) {
+    GET_FFMPEG_ERROR_MESSAGE(err_msg, rc) {
       TEN_LOGE("Failed to find input stream info: %s", err_msg);
     }
     return false;

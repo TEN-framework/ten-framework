@@ -112,10 +112,10 @@ class demuxer_t {
   demuxer_thread_t *demuxer_thread;
   ten::ten_env_proxy_t *ten_env_proxy;
 
-  // This structure describes the basic information of a media file or media
-  // streaming. This is the most basic structure in FFmpeg, which is the root of
-  // all other structures. It is the fundamental abstract of a media file or
-  // streaming.
+  // This structure encapsulates the essential metadata and state of a media
+  // file or stream. In FFmpeg, it serves as the primary context object, acting
+  // as the root for all other related structures. It provides a comprehensive
+  // abstraction for handling media containers and their associated streams.
   AVFormatContext *input_format_context;
 
   interrupt_cb_param_t *interrupt_cb_param;
