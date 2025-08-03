@@ -50,7 +50,7 @@ mod tests {
 
         // Check that the names are correct
         let mut names: Vec<&str> =
-            cmd_flows.iter().map(|f| f.name.as_str()).collect();
+            cmd_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
         names.sort();
         assert_eq!(names, vec!["cmd_1", "cmd_2", "cmd_3"]);
 
@@ -105,7 +105,7 @@ mod tests {
         assert_eq!(data_flows.len(), 2);
 
         let mut names: Vec<&str> =
-            data_flows.iter().map(|f| f.name.as_str()).collect();
+            data_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
         names.sort();
         assert_eq!(names, vec!["data_1", "data_2"]);
 

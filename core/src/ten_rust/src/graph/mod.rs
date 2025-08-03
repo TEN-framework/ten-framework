@@ -470,7 +470,7 @@ impl Graph {
                             // Expand this flow into multiple flows
                             for name in names {
                                 let mut new_flow = flow.clone();
-                                new_flow.name = name.clone();
+                                new_flow.name = Some(name.clone());
                                 new_flow.names = None; // Remove the names field
                                 new_cmd_flows.push(new_flow);
                             }
@@ -490,7 +490,7 @@ impl Graph {
                             // Expand this flow into multiple flows
                             for name in names {
                                 let mut new_flow = flow.clone();
-                                new_flow.name = name.clone();
+                                new_flow.name = Some(name.clone());
                                 new_flow.names = None; // Remove the names field
                                 new_data_flows.push(new_flow);
                             }
@@ -510,7 +510,7 @@ impl Graph {
                             // Expand this flow into multiple flows
                             for name in names {
                                 let mut new_flow = flow.clone();
-                                new_flow.name = name.clone();
+                                new_flow.name = Some(name.clone());
                                 new_flow.names = None; // Remove the names field
                                 new_audio_frame_flows.push(new_flow);
                             }
@@ -530,7 +530,7 @@ impl Graph {
                             // Expand this flow into multiple flows
                             for name in names {
                                 let mut new_flow = flow.clone();
-                                new_flow.name = name.clone();
+                                new_flow.name = Some(name.clone());
                                 new_flow.names = None; // Remove the names field
                                 new_video_frame_flows.push(new_flow);
                             }

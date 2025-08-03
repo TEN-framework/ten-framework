@@ -302,7 +302,9 @@ mod tests {
                                 app == "http://example.com:8000"
                             })
                             && conn.cmd.as_ref().is_some_and(|cmds| {
-                                cmds.iter().any(|cmd| cmd.name == "hello_world")
+                                cmds.iter().any(|cmd| {
+                                    cmd.name.as_deref() == Some("hello_world")
+                                })
                             })
                     })
                 });

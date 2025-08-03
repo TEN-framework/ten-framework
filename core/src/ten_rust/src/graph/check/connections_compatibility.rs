@@ -133,11 +133,24 @@ impl Graph {
         // Check command flows.
         if let Some(cmd_flows) = &connection.cmd {
             for (flow_idx, flow) in cmd_flows.iter().enumerate() {
+                // After flatten_graph processing, name should be Some and names
+                // should be None
+                let flow_name = flow.name.as_ref().expect(
+                    "name field should be Some after flatten_graph processing",
+                );
+
+                if flow.names.is_some() {
+                    panic!(
+                        "names field should be None after flatten_graph \
+                         processing"
+                    );
+                }
+
                 // Get source command schema.
                 let src_cmd_schema = find_c_msg_schema_from_pkg_info(
                     extension_pkg_info,
                     &MsgType::Cmd,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     &MsgDirection::Out,
                 );
 
@@ -146,7 +159,7 @@ impl Graph {
                     graph_app_base_dir,
                     pkgs_cache,
                     &MsgType::Cmd,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     src_cmd_schema,
                     &flow.dest,
                     ignore_missing_apps,
@@ -159,11 +172,24 @@ impl Graph {
         // Check data flows.
         if let Some(data_flows) = &connection.data {
             for (flow_idx, flow) in data_flows.iter().enumerate() {
+                // After flatten_graph processing, name should be Some and names
+                // should be None
+                let flow_name = flow.name.as_ref().expect(
+                    "name field should be Some after flatten_graph processing",
+                );
+
+                if flow.names.is_some() {
+                    panic!(
+                        "names field should be None after flatten_graph \
+                         processing"
+                    );
+                }
+
                 // Get source message schema.
                 let src_msg_schema = find_c_msg_schema_from_pkg_info(
                     extension_pkg_info,
                     &MsgType::Data,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     &MsgDirection::Out,
                 );
 
@@ -172,7 +198,7 @@ impl Graph {
                     graph_app_base_dir,
                     pkgs_cache,
                     &MsgType::Data,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     src_msg_schema,
                     &flow.dest,
                     ignore_missing_apps,
@@ -185,11 +211,24 @@ impl Graph {
         // Check video frame flows.
         if let Some(video_frame_flows) = &connection.video_frame {
             for (flow_idx, flow) in video_frame_flows.iter().enumerate() {
+                // After flatten_graph processing, name should be Some and names
+                // should be None
+                let flow_name = flow.name.as_ref().expect(
+                    "name field should be Some after flatten_graph processing",
+                );
+
+                if flow.names.is_some() {
+                    panic!(
+                        "names field should be None after flatten_graph \
+                         processing"
+                    );
+                }
+
                 // Get source message schema.
                 let src_msg_schema = find_c_msg_schema_from_pkg_info(
                     extension_pkg_info,
                     &MsgType::VideoFrame,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     &MsgDirection::Out,
                 );
 
@@ -198,7 +237,7 @@ impl Graph {
                     graph_app_base_dir,
                     pkgs_cache,
                     &MsgType::VideoFrame,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     src_msg_schema,
                     &flow.dest,
                     ignore_missing_apps,
@@ -211,11 +250,24 @@ impl Graph {
         // Check audio frame flows.
         if let Some(audio_frame_flows) = &connection.audio_frame {
             for (flow_idx, flow) in audio_frame_flows.iter().enumerate() {
+                // After flatten_graph processing, name should be Some and names
+                // should be None
+                let flow_name = flow.name.as_ref().expect(
+                    "name field should be Some after flatten_graph processing",
+                );
+
+                if flow.names.is_some() {
+                    panic!(
+                        "names field should be None after flatten_graph \
+                         processing"
+                    );
+                }
+
                 // Get source message schema.
                 let src_msg_schema = find_c_msg_schema_from_pkg_info(
                     extension_pkg_info,
                     &MsgType::AudioFrame,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     &MsgDirection::Out,
                 );
 
@@ -224,7 +276,7 @@ impl Graph {
                     graph_app_base_dir,
                     pkgs_cache,
                     &MsgType::AudioFrame,
-                    flow.name.as_str(),
+                    flow_name.as_str(),
                     src_msg_schema,
                     &flow.dest,
                     ignore_missing_apps,

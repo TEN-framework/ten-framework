@@ -142,8 +142,10 @@ impl Graph {
 
     /// Merge flows within a connection to handle duplicates
     fn merge_flows(flows: &mut Vec<GraphMessageFlow>) -> Result<()> {
-        let mut flow_map: HashMap<(Vec<GraphLoc>, String), GraphMessageFlow> =
-            HashMap::new();
+        let mut flow_map: HashMap<
+            (Vec<GraphLoc>, Option<String>),
+            GraphMessageFlow,
+        > = HashMap::new();
 
         for flow in flows.drain(..) {
             let sources: Vec<GraphLoc> =

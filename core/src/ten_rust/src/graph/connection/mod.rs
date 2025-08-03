@@ -192,8 +192,8 @@ impl GraphConnection {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphMessageFlow {
-    #[serde(default)]
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub names: Option<Vec<String>>,
@@ -206,6 +206,31 @@ pub struct GraphMessageFlow {
 }
 
 impl GraphMessageFlow {
+    /// Validates the mutual exclusivity of name and names fields.
+    ///
+    /// Ensures that exactly one of 'name' or 'names' is specified, but not both
+    /// and not neither.
+    ///
+    /// # Returns
+    /// * `Ok(())` if validation succeeds.
+    /// * `Err` with a descriptive error message if validation fails.
+    pub fn validate_name_mutual_exclusivity(&self) -> Result<()> {
+        match (&self.name, &self.names) {
+            (Some(_), Some(_)) => Err(anyhow::anyhow!(
+                "Both 'name' and 'names' fields are specified, but they are \
+                 mutually exclusive"
+            )),
+            (None, None) => Err(anyhow::anyhow!(
+                "Neither 'name' nor 'names' field is specified, but one must \
+                 be provided"
+            )),
+            (None, Some(names)) if names.is_empty() => Err(anyhow::anyhow!(
+                "'names' field is empty, must contain at least one name"
+            )),
+            _ => Ok(()),
+        }
+    }
+
     /// Validates and completes a message flow by ensuring all destinations are
     /// properly configured.
     ///
@@ -226,6 +251,9 @@ impl GraphMessageFlow {
         &mut self,
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
+        // First validate name/names mutual exclusivity
+        self.validate_name_mutual_exclusivity()?;
+
         for (idx, dest) in self.dest.iter_mut().enumerate() {
             dest.validate_and_complete(app_uri_declaration_state)
                 .map_err(|e| anyhow::anyhow!("dest[{}]: {}", idx, e))?;
@@ -239,7 +267,7 @@ impl GraphMessageFlow {
         dest: Vec<GraphDestination>,
         source: Vec<GraphSource>,
     ) -> Self {
-        Self { name, names: None, dest, source }
+        Self { name: Some(name), names: None, dest, source }
     }
 }
 
