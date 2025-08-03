@@ -48,15 +48,18 @@ struct interrupt_cb_param_t {
 
 class demuxer_t {
  public:
+  // Demuxer is running in the demuxer thread, so it needs a ten_env_proxy to
+  // interact with the TEN thread.
   demuxer_t(ten::ten_env_proxy_t *ten_env_proxy,
             demuxer_thread_t *demuxer_thread);
   ~demuxer_t();
 
+  // @{
   demuxer_t(const demuxer_t &other) = delete;
   demuxer_t(demuxer_t &&other) = delete;
-
   demuxer_t &operator=(const demuxer_t &other) = delete;
   demuxer_t &operator=(demuxer_t &&other) = delete;
+  // @}
 
   bool open_input_stream(const std::string &input_stream_loc);
 
@@ -73,15 +76,13 @@ class demuxer_t {
  private:
   friend class demuxer_thread_t;
 
-  AVFormatContext *create_input_format_context(
-      const std::string &input_stream_loc);
-  AVFormatContext *create_input_format_context_with_retry(
-      const std::string &input_stream_loc);
+  AVFormatContext *open_input(const std::string &input_stream_loc);
+  AVFormatContext *open_input_with_retry(const std::string &input_stream_loc);
 
-  void open_video_decoder();
-  void open_audio_decoder();
+  void open_video_stream();
+  void open_audio_stream();
 
-  bool is_av_decoder_opened();
+  bool is_input_opened();
 
   void dump_video_info();
   void dump_audio_info();
@@ -89,10 +90,10 @@ class demuxer_t {
   void flush_remaining_audio_frames();
   void flush_remaining_video_frames();
 
-  bool analyze_input_stream();
+  bool analyze_input();
 
-  AVCodecParameters *get_video_decoder_params() const;
-  AVCodecParameters *get_audio_decoder_params() const;
+  AVCodecParameters *get_input_video_stream_decode_params() const;
+  AVCodecParameters *get_input_audio_stream_decode_params() const;
 
   bool create_audio_converter(const AVFrame *frame,
                               uint64_t *out_channel_layout,
@@ -109,10 +110,10 @@ class demuxer_t {
   demuxer_thread_t *demuxer_thread;
   ten::ten_env_proxy_t *ten_env_proxy;
 
-  // This structure describes the basic information of a media file or media
-  // streaming. This is the most basic structure in FFmpeg, which is the root of
-  // all other structures. It is the fundamental abstract of a media file or
-  // streaming.
+  // This structure encapsulates the essential metadata and state of a media
+  // file or stream. In FFmpeg, it serves as the primary context object, acting
+  // as the root for all other related structures. It provides a comprehensive
+  // abstraction for handling media containers and their associated streams.
   AVFormatContext *input_format_context;
 
   interrupt_cb_param_t *interrupt_cb_param;

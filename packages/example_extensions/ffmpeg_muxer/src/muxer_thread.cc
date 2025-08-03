@@ -162,7 +162,7 @@ void *muxer_thread_main(void *self_) {
   out_audios.clear();
   out_images.clear();
 
-  self->notify_completed(status);
+  self->send_complete_cmd(status);
 
   TEN_LOGD("Muxer thread is stopped");
   return nullptr;
@@ -186,7 +186,7 @@ void muxer_thread_t::stop() {
   ten_event_set(out_available);
 }
 
-void muxer_thread_t::notify_completed(bool success) {
+void muxer_thread_t::send_complete_cmd(bool success) {
   auto cmd = ten::cmd_t::create("complete");
   cmd->set_property("input_stream", output_stream);
   cmd->set_property("success", success);
