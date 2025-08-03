@@ -478,7 +478,10 @@ mod tests {
 
         // Original connection should only have the forward flow
         assert_eq!(dest_conn.cmd.as_ref().unwrap().len(), 1);
-        assert_eq!(dest_conn.cmd.as_ref().unwrap()[0].name.as_deref(), Some("flow_gamma"));
+        assert_eq!(
+            dest_conn.cmd.as_ref().unwrap()[0].name.as_deref(),
+            Some("flow_gamma")
+        );
 
         // New forward connection should have 2 flows (from the 2 reverse flows)
         assert_eq!(src_conn.cmd.as_ref().unwrap().len(), 2);
@@ -578,12 +581,14 @@ mod tests {
         let original_connections = graph_complex.connections.as_ref().unwrap();
         assert!(original_connections.iter().any(|c| c.loc.extension
             == Some("ext1".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+            && c.cmd.as_ref().unwrap()[0].name.as_deref()
+                == Some("shared_flow")
             && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
                 == Some("ext2".to_string())));
         assert!(original_connections.iter().any(|c| c.loc.extension
             == Some("ext3".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+            && c.cmd.as_ref().unwrap()[0].name.as_deref()
+                == Some("shared_flow")
             && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
                 == Some("ext2".to_string())));
 

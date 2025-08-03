@@ -210,10 +210,6 @@ impl GraphMessageFlow {
     ///
     /// Ensures that exactly one of 'name' or 'names' is specified, but not both
     /// and not neither.
-    ///
-    /// # Returns
-    /// * `Ok(())` if validation succeeds.
-    /// * `Err` with a descriptive error message if validation fails.
     pub fn validate_name_mutual_exclusivity(&self) -> Result<()> {
         match (&self.name, &self.names) {
             (Some(_), Some(_)) => Err(anyhow::anyhow!(

@@ -482,10 +482,22 @@ mod tests {
         assert!(connection.audio_frame.is_some());
         assert!(connection.video_frame.is_some());
 
-        assert_eq!(connection.cmd.as_ref().unwrap()[0].name.as_deref(), Some("cmd1"));
-        assert_eq!(connection.data.as_ref().unwrap()[0].name.as_deref(), Some("data1"));
-        assert_eq!(connection.audio_frame.as_ref().unwrap()[0].name.as_deref(), Some("audio1"));
-        assert_eq!(connection.video_frame.as_ref().unwrap()[0].name.as_deref(), Some("video1"));
+        assert_eq!(
+            connection.cmd.as_ref().unwrap()[0].name.as_deref(),
+            Some("cmd1")
+        );
+        assert_eq!(
+            connection.data.as_ref().unwrap()[0].name.as_deref(),
+            Some("data1")
+        );
+        assert_eq!(
+            connection.audio_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("audio1")
+        );
+        assert_eq!(
+            connection.video_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("video1")
+        );
     }
 
     #[tokio::test]
