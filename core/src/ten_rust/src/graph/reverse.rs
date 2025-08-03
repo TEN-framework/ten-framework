@@ -40,6 +40,7 @@ impl Graph {
                 let mut msg_flows = Vec::new();
                 let forward_flow = GraphMessageFlow {
                     name: flow.name.clone(),
+                    names: None,
                     dest: vec![GraphDestination {
                         loc: conn_loc.loc.clone(),
                         msg_conversion: None,

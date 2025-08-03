@@ -192,7 +192,11 @@ impl GraphConnection {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphMessageFlow {
+    #[serde(default)]
     pub name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub names: Option<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dest: Vec<GraphDestination>,
@@ -235,7 +239,7 @@ impl GraphMessageFlow {
         dest: Vec<GraphDestination>,
         source: Vec<GraphSource>,
     ) -> Self {
-        Self { name, dest, source }
+        Self { name, names: None, dest, source }
     }
 }
 

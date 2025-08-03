@@ -493,10 +493,27 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "names"
+            ]
+          }
+        ],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
+          },
+          "names": { // The api names list should be an array of alphanumericCharacters.
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/alphanumericCharacters"
+            }
           },
           "dest": {
             "$ref": "#/$defs/msgDests"
@@ -515,30 +532,28 @@
             "required": [
               "source"
             ]
-          },
-          {
-            "if": {
-              "required": [
-                "names"
-              ]
-            },
-            "then": {
-              "properties": {
-                "dest": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "not": {
-                      "required": [
-                        "msg_conversion"
-                      ]
-                    }
-                  }
+          }
+        ],
+        "if": {
+          "required": [
+            "names"
+          ]
+        },
+        "then": {
+          "properties": {
+            "dest": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "msg_conversion"
+                  ]
                 }
               }
             }
           }
-        ]
+        }
       }
     },
     "extensionCmdsInGraph": {
@@ -546,12 +561,27 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "name"
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "names"
+            ]
+          }
         ],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
+          },
+          "names": { // The api names list should be an array of alphanumericCharacters.
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/alphanumericCharacters"
+            }
           },
           "dest": {
             "$ref": "#/$defs/msgDests"
@@ -570,30 +600,28 @@
             "required": [
               "source"
             ]
-          },
-          {
-            "if": {
-              "required": [
-                "names"
-              ]
-            },
-            "then": {
-              "properties": {
-                "dest": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "not": {
-                      "required": [
-                        "msg_conversion"
-                      ]
-                    }
-                  }
+          }
+        ],
+        "if": {
+          "required": [
+            "names"
+          ]
+        },
+        "then": {
+          "properties": {
+            "dest": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "msg_conversion"
+                  ]
                 }
               }
             }
           }
-        ]
+        }
       }
     },
     "msgDests": {

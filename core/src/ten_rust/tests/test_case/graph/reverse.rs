@@ -53,6 +53,7 @@ mod tests {
         };
         conn.cmd = Some(vec![GraphMessageFlow {
             name: "flow1".to_string(),
+            names: None,
             dest: vec![GraphDestination {
                 loc: GraphLoc {
                     app: Some("app2".to_string()),
@@ -151,6 +152,7 @@ mod tests {
         };
         let flow = GraphMessageFlow {
             name: "flow1".to_string(),
+            names: None,
             dest: vec![],
             source: vec![GraphSource {
                 loc: GraphLoc {
@@ -545,6 +547,7 @@ mod tests {
         };
         conn.cmd = Some(vec![GraphMessageFlow {
             name: "empty_source_flow".to_string(),
+            names: None,
             dest: vec![],
             source: vec![], // Empty source array
         }]);
