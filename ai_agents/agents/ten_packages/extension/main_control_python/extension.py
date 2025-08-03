@@ -131,7 +131,7 @@ class MainControlExtension(AsyncExtension):
                             tool_metadata = LLMToolMetadata.model_validate_json(
                                 tool_metadata_json
                             )
-                            await self.llm_exec.register_tool(tool_metadata)
+                            await self.llm_exec.register_tool(tool_metadata, cmd.get_source())
                             await self.ten_env.return_result(
                                 CmdResult.create(StatusCode.OK, cmd)
                             )

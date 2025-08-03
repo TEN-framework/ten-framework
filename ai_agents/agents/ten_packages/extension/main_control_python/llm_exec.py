@@ -4,13 +4,15 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import json
 import traceback
 from typing import Awaitable, Callable, Optional
+from ten_ai_base.const import CMD_PROPERTY_RESULT
 from ten_ai_base.helper import AsyncQueue
-from ten_ai_base.struct import LLMInput, LLMInputMessage, LLMOutput
-from ten_ai_base.types import LLMToolMetadata
-from .helper import _send_cmd_ex, parse_sentences
-from ten_runtime import AsyncTenEnv, StatusCode
+from ten_ai_base.struct import LLMInput, LLMInputMessage, LLMResponse, LLMResponseMessage, LLMResponseToolCall, parse_llm_response
+from ten_ai_base.types import LLMToolMetadata, LLMToolResult
+from .helper import _send_cmd, _send_cmd_ex, parse_sentences
+from ten_runtime import AsyncTenEnv, Loc, StatusCode
 
 
 class LLMExec:
@@ -26,11 +28,15 @@ class LLMExec:
         self.on_response: Optional[
             Callable[[AsyncTenEnv, str, bool], Awaitable[None]]
         ] = None
+        self.on_tool_call: Optional[
+            Callable[[AsyncTenEnv, LLMToolMetadata], Awaitable[None]]
+        ] = None
         self.sentence_fragment = ""
         self.current_task: Optional[asyncio.Task] = None
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_input_queue())
         self.available_tools: list[LLMToolMetadata] = []
+        self.tool_registry: dict[str, Loc] = {}
         self.available_tools_lock = (
             asyncio.Lock()
         )  # Lock to ensure thread-safe access
@@ -58,7 +64,7 @@ class LLMExec:
             self.current_task.cancel()
 
     async def register_tool(
-        self, tool: LLMToolMetadata
+        self, tool: LLMToolMetadata, loc: Loc
     ) -> None:
         """
         Register tools with the LLM.
@@ -66,6 +72,7 @@ class LLMExec:
         """
         async with self.available_tools_lock:
             self.available_tools.append(tool)
+            self.tool_registry[tool.name] = loc
 
 
 
@@ -116,30 +123,88 @@ class LLMExec:
 
         async for cmd_result, _ in response:
             if cmd_result and cmd_result.is_final() is False:
-                ten_env.log_info(f"_send_to_llm: cmd_result {cmd_result}")
                 if cmd_result.get_status_code() == StatusCode.OK:
                     response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_debug(
+                    ten_env.log_info(
                         f"_send_to_llm: response_json {response_json}"
                     )
-                    completion = LLMOutput.model_validate_json(response_json)
-                    await self._handle_llm_response(completion, is_final=False)
-        await self._handle_llm_response(None, is_final=True)
+                    completion = parse_llm_response(response_json)
+                    await self._handle_llm_response(completion)
 
     async def _handle_llm_response(
-        self, llm_output: LLMOutput | None, is_final: bool
+        self, llm_output: LLMResponse | None
     ):
         self.ten_env.log_info(f"_handle_llm_response: {llm_output}")
 
-        if is_final:
-            if self.on_response:
-                await self.on_response(self.ten_env, "", True)
-        else:
-            text = llm_output.choice.delta.content
-            if text:
-                sentences, self.sentence_fragment = parse_sentences(
-                    self.sentence_fragment, text
-                )
-                for sentence in sentences:
-                    if self.on_response:
-                        await self.on_response(self.ten_env, sentence, False)
+        match llm_output:
+            case LLMResponseMessage():
+                text = llm_output.content
+                if text:
+                    sentences, self.sentence_fragment = parse_sentences(
+                        self.sentence_fragment, text
+                    )
+                    for sentence in sentences:
+                        if self.on_response:
+                            await self.on_response(self.ten_env, sentence, False)
+            case LLMResponseToolCall():
+                self.ten_env.log_info(f"_handle_llm_response: invoking tool call {llm_output.name}")
+                loc = self.tool_registry.get(llm_output.name)
+                result, _ = await _send_cmd(self.ten_env, "tool_call", loc.extension_name, {
+                    "name": llm_output.name,
+                    "arguments": llm_output.arguments
+                })
+
+                if result.get_status_code() == StatusCode.OK:
+                    r, _ = result.get_property_to_json(
+                        CMD_PROPERTY_RESULT
+                    )
+                    tool_result: LLMToolResult = json.loads(r)
+
+                    self.ten_env.log_info(
+                        f"tool_result: {tool_result}"
+                    )
+
+                    if tool_result["type"] == "llmresult":
+                        result_content = tool_result["content"]
+                        if isinstance(result_content, str):
+                            pass
+                            # tool_message = {
+                            #     "role": "assistant",
+                            #     "tool_calls": [tool_call],
+                            # }
+                            # new_message = {
+                            #     "role": "tool",
+                            #     "content": result_content,
+                            #     "tool_call_id": tool_call["id"],
+                            # }
+                            # await self.queue_input_item(
+                            #     True,
+                            #     messages=[tool_message, new_message],
+                            #     no_tool=True,
+                            # )
+                        else:
+                            self.ten_env.log_error(
+                                f"Unknown tool result content: {result_content}"
+                            )
+                    elif tool_result["type"] == "requery":
+                        pass
+                        # self.memory_cache = []
+                        # self.memory_cache.pop()
+                        # result_content = tool_result["content"]
+                        # nonlocal message
+                        # new_message = {
+                        #     "role": "user",
+                        #     "content": self._convert_to_content_parts(
+                        #         message["content"]
+                        #     ),
+                        # }
+                        # new_message["content"] = new_message[
+                        #     "content"
+                        # ] + self._convert_to_content_parts(
+                        #     result_content
+                        # )
+                        # await self.queue_input_item(
+                        #     True, messages=[new_message], no_tool=True
+                        # )
+                else:
+                    self.ten_env.log_error("Tool call failed")

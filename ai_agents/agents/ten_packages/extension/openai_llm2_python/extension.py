@@ -6,18 +6,13 @@
 #
 #
 import asyncio
-from typing import Any, AsyncGenerator, Coroutine
+from typing import AsyncGenerator
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
-from ten_ai_base.struct import LLMInput, LLMOutput, LLMOutputChoice
+from ten_ai_base.struct import LLMInput, LLMResponse
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 from .openai import OpenAIChatGPT, OpenAILLM2Config
-from ten_runtime import (
-    Cmd,
-    StatusCode,
-    CmdResult,
-)
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
@@ -75,5 +70,5 @@ class OpenAILLM2Extension(AsyncLLM2BaseExtension):
 
     def on_call_chat_completion(
         self, async_ten_env: AsyncTenEnv, input: LLMInput
-    ) -> AsyncGenerator[LLMOutput, None]:
+    ) -> AsyncGenerator[LLMResponse, None]:
         return self.client.get_chat_completions(input)

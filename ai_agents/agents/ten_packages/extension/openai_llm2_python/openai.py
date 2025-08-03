@@ -8,6 +8,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
+import json
 import random
 from typing import AsyncGenerator, List
 from pydantic import BaseModel
@@ -17,9 +18,9 @@ from openai.types.chat import ChatCompletionChunk
 
 from ten_ai_base.struct import (
     LLMInput,
-    LLMOutput,
-    LLMOutputChoice,
-    LLMOutputChoiceDelta,
+    LLMResponse,
+    LLMResponseMessage,
+    LLMResponseToolCall,
 )
 from ten_runtime.async_ten_env import AsyncTenEnv
 
@@ -111,10 +112,14 @@ class OpenAIChatGPT:
 
     async def get_chat_completions(
         self, input: LLMInput
-    ) -> AsyncGenerator[LLMOutput, None]:
+    ) -> AsyncGenerator[LLMResponse, None]:
         messages = input.messages
         tools = None
         parsed_messages = []
+
+        self.ten_env.log_info(
+            f"get_chat_completions: {len(messages)} messages, streaming: {input.streaming}"
+        )
 
         for message in messages:
             if message.role == "user":
@@ -160,7 +165,6 @@ class OpenAIChatGPT:
                         "required": param.required,
                     }
                 )
-
             tools.append(tool_json)
 
         req = {
@@ -220,116 +224,108 @@ class OpenAIChatGPT:
                 choice = chat_completion.choices[0]
                 delta = choice.delta
 
-                llm_choice = LLMOutputChoice(
-                    finish_reason=choice.finish_reason,
-                    index=choice.index,
-                    logprobs=None,  # Assuming no logprobs for simplicity
-                    delta=LLMOutputChoiceDelta(
-                        content=(
-                            delta.content if delta and delta.content else ""
-                        ),
-                        role=delta.role,
-                        refusal=delta.refusal,
-                        tool_calls=[],
-                    ),
+                content = delta.content if delta and delta.content else ""
+                reasoning_content = (
+                    delta.reasoning_content
+                    if delta
+                    and hasattr(delta, "reasoning_content")
+                    and delta.reasoning_content
+                    else ""
                 )
 
-                yield LLMOutput(
-                    id=chat_completion.id,
-                    choice=llm_choice,
-                    created=chat_completion.created,
-                    model=chat_completion.model,
-                )
-
-                # content = delta.content if delta and delta.content else ""
-                # reasoning_content = (
-                #     delta.reasoning_content
-                #     if delta
-                #     and hasattr(delta, "reasoning_content")
-                #     and delta.reasoning_content
-                #     else ""
-                # )
-
-                # if reasoning_mode is None and reasoning_content is not None:
-                #     reasoning_mode = ReasoningMode.ModeV1
+                if reasoning_mode is None and reasoning_content is not None:
+                    reasoning_mode = ReasoningMode.ModeV1
 
                 # Emit content update event (fire-and-forget)
-            #     if listener and (content or reasoning_mode == ReasoningMode.ModeV1):
-            #         prev_state = parser.state
+                if (content or reasoning_mode == ReasoningMode.ModeV1):
+                    prev_state = parser.state
 
-            #         if reasoning_mode == ReasoningMode.ModeV1:
-            #             self.ten_env.log_info("process_by_reasoning_content")
-            #             think_state_changed = parser.process_by_reasoning_content(
-            #                 reasoning_content
-            #             )
-            #         else:
-            #             think_state_changed = parser.process(content)
+                    if reasoning_mode == ReasoningMode.ModeV1:
+                        self.ten_env.log_info("process_by_reasoning_content")
+                        think_state_changed = parser.process_by_reasoning_content(
+                            reasoning_content
+                        )
+                    else:
+                        think_state_changed = parser.process(content)
 
-            #         if not think_state_changed:
-            #             # self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
-            #             if parser.state == "THINK":
-            #                 listener.emit("reasoning_update", parser.think_content)
-            #             elif parser.state == "NORMAL":
-            #                 listener.emit("content_update", content)
+                    if not think_state_changed:
+                        self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
+                        if parser.state == "THINK":
+                            pass
+                            # listener.emit("reasoning_update", parser.think_content)
+                        elif parser.state == "NORMAL":
+                            yield LLMResponseMessage(
+                                response_id=chat_completion.id,
+                                role="assistant",
+                                content=content,
+                                created=chat_completion.created,
+                            )
 
-            #         if prev_state == "THINK" and parser.state == "NORMAL":
-            #             listener.emit(
-            #                 "reasoning_update_finish", parser.think_content
-            #             )
-            #             parser.think_content = ""
+                    if prev_state == "THINK" and parser.state == "NORMAL":
+                        # listener.emit(
+                        #     "reasoning_update_finish", parser.think_content
+                        # )
+                        parser.think_content = ""
 
-            #     full_content += content
+                full_content += content
 
-            #     if delta.tool_calls:
-            #         try:
-            #             for tool_call in delta.tool_calls:
-            #                 self.ten_env.log_info(f"Tool call: {tool_call}")
-            #                 if tool_call.index not in tool_calls_dict:
-            #                     tool_calls_dict[tool_call.index] = {
-            #                         "id": None,
-            #                         "function": {"arguments": "", "name": None},
-            #                         "type": None,
-            #                     }
+                if delta.tool_calls:
+                    try:
+                        for tool_call in delta.tool_calls:
+                            self.ten_env.log_info(f"Tool call: {tool_call}")
+                            if tool_call.index not in tool_calls_dict:
+                                tool_calls_dict[tool_call.index] = {
+                                    "id": None,
+                                    "function": {"arguments": "", "name": None},
+                                    "type": None,
+                                }
 
-            #                 if tool_call.id:
-            #                     tool_calls_dict[tool_call.index][
-            #                         "id"
-            #                     ] = tool_call.id
+                            if tool_call.id:
+                                tool_calls_dict[tool_call.index][
+                                    "id"
+                                ] = tool_call.id
 
-            #                 # If the function name is not None, set it
-            #                 if tool_call.function.name:
-            #                     tool_calls_dict[tool_call.index]["function"][
-            #                         "name"
-            #                     ] = tool_call.function.name
+                            # If the function name is not None, set it
+                            if tool_call.function.name:
+                                tool_calls_dict[tool_call.index]["function"][
+                                    "name"
+                                ] = tool_call.function.name
 
-            #                 # Append the arguments if not None
-            #                 if tool_call.function.arguments:
-            #                     tool_calls_dict[tool_call.index]["function"][
-            #                         "arguments"
-            #                     ] += tool_call.function.arguments
+                            # Append the arguments if not None
+                            if tool_call.function.arguments:
+                                tool_calls_dict[tool_call.index]["function"][
+                                    "arguments"
+                                ] += tool_call.function.arguments
 
-            #                 # If the type is not None, set it
-            #                 if tool_call.type:
-            #                     tool_calls_dict[tool_call.index][
-            #                         "type"
-            #                     ] = tool_call.type
-            #         except Exception as e:
-            #             import traceback
+                            # If the type is not None, set it
+                            if tool_call.type:
+                                tool_calls_dict[tool_call.index][
+                                    "type"
+                                ] = tool_call.type
+                    except Exception as e:
+                        import traceback
 
-            #             traceback.print_exc()
-            #             self.ten_env.log_error(
-            #                 f"Error processing tool call: {e} {tool_calls_dict}"
-            #             )
+                        traceback.print_exc()
+                        self.ten_env.log_error(
+                            f"Error processing tool call: {e} {tool_calls_dict}"
+                        )
 
-            # # Convert the dictionary to a list
-            # tool_calls_list = list(tool_calls_dict.values())
+            # Convert the dictionary to a list
+            tool_calls_list = list(tool_calls_dict.values())
 
-            # # Emit tool calls event (fire-and-forget)
-            # if listener and tool_calls_list:
-            #     for tool_call in tool_calls_list:
-            #         listener.emit("tool_call", tool_call)
+            # Emit tool calls event (fire-and-forget)
+            if tool_calls_list:
+                for tool_call in tool_calls_list:
+                    arguements = json.loads(tool_call["function"]["arguments"])
+                    yield LLMResponseToolCall(
+                        response_id=chat_completion.id,
+                        tool_call_id=tool_call["id"],
+                        name=tool_call["function"]["name"],
+                        arguments=arguements,
+                        created=chat_completion.created,
+                    )
 
-            # # Emit content finished event after the loop completes
+            # Emit content finished event after the loop completes
             # if listener:
             #     listener.emit("content_finished", full_content)
         except Exception as e:
