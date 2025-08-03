@@ -102,7 +102,7 @@ fn check_connection_exists(
                 if let Some(flows) = msg_flows {
                     for flow in flows {
                         // Check if message name matches.
-                        if flow.name == msg_name {
+                        if flow.name.as_deref() == Some(msg_name) {
                             // Check if destination already exists.
                             for dest in &flow.dest {
                                 if dest.loc.extension.as_deref()

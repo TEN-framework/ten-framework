@@ -64,15 +64,27 @@ impl Graph {
 
         // Iterate through each message flow in the group.
         for (flow_idx, flow) in message_flows.iter().enumerate() {
+            // After flatten_graph processing, name should be Some and names
+            // should be None
+            let flow_name = flow.name.as_ref().expect(
+                "name field should be Some after flatten_graph processing",
+            );
+
+            if flow.names.is_some() {
+                panic!(
+                    "names field should be None after flatten_graph processing"
+                );
+            }
+
             // Check if the message name has already been seen.
-            if let Some(idx) = msg_names.get(&flow.name) {
+            if let Some(idx) = msg_names.get(flow_name) {
                 errors.push(format!(
-                    "'{}' is defined in flow[{}] and flow[{}].",
-                    flow.name, idx, flow_idx
+                    "'{flow_name}' is defined in flow[{idx}] and \
+                     flow[{flow_idx}]."
                 ));
             } else {
                 // Record the first occurrence of the message name.
-                msg_names.insert(flow.name.clone(), flow_idx);
+                msg_names.insert(flow_name.clone(), flow_idx);
             }
         }
 

@@ -378,7 +378,7 @@ mod tests {
             .find(|conn| conn.loc.extension.as_deref() == Some("ext_a"))
             .unwrap();
         let cmd_flow = &connection_to_subgraph.cmd.as_ref().unwrap()[0];
-        assert_eq!(cmd_flow.name, "B");
+        assert_eq!(cmd_flow.name.as_deref(), Some("B"));
         assert_eq!(
             cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_2_ext_d"
@@ -393,7 +393,7 @@ mod tests {
             })
             .unwrap();
         let cmd_flow = &connection_from_subgraph.cmd.as_ref().unwrap()[0];
-        assert_eq!(cmd_flow.name, "H");
+        assert_eq!(cmd_flow.name.as_deref(), Some("H"));
         assert_eq!(cmd_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
     }
 
@@ -1250,7 +1250,7 @@ mod tests {
 
         // Verify cmd destination
         let cmd_flow = &connection_to_subgraph.cmd.as_ref().unwrap()[0];
-        assert_eq!(cmd_flow.name, "TestCmd");
+        assert_eq!(cmd_flow.name.as_deref(), Some("TestCmd"));
         assert_eq!(
             cmd_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_3_ext_input"
@@ -1258,7 +1258,7 @@ mod tests {
 
         // Verify data destination
         let data_flow = &connection_to_subgraph.data.as_ref().unwrap()[0];
-        assert_eq!(data_flow.name, "TestData");
+        assert_eq!(data_flow.name.as_deref(), Some("TestData"));
         assert_eq!(
             data_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_3_ext_input"
@@ -1267,7 +1267,7 @@ mod tests {
         // Verify audio_frame destination
         let audio_flow =
             &connection_to_subgraph.audio_frame.as_ref().unwrap()[0];
-        assert_eq!(audio_flow.name, "TestAudio");
+        assert_eq!(audio_flow.name.as_deref(), Some("TestAudio"));
         assert_eq!(
             audio_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_3_ext_input"
@@ -1276,7 +1276,7 @@ mod tests {
         // Verify video_frame destination
         let video_flow =
             &connection_to_subgraph.video_frame.as_ref().unwrap()[0];
-        assert_eq!(video_flow.name, "TestVideo");
+        assert_eq!(video_flow.name.as_deref(), Some("TestVideo"));
         assert_eq!(
             video_flow.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_3_ext_input"
@@ -1302,22 +1302,22 @@ mod tests {
 
         // Verify cmd flow
         let cmd_flow = &grouped_connection.cmd.as_ref().unwrap()[0];
-        assert_eq!(cmd_flow.name, "ResponseCmd");
+        assert_eq!(cmd_flow.name.as_deref(), Some("ResponseCmd"));
         assert_eq!(cmd_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
 
         // Verify data flow
         let data_flow = &grouped_connection.data.as_ref().unwrap()[0];
-        assert_eq!(data_flow.name, "ResponseData");
+        assert_eq!(data_flow.name.as_deref(), Some("ResponseData"));
         assert_eq!(data_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
 
         // Verify audio_frame flow
         let audio_flow = &grouped_connection.audio_frame.as_ref().unwrap()[0];
-        assert_eq!(audio_flow.name, "ResponseAudio");
+        assert_eq!(audio_flow.name.as_deref(), Some("ResponseAudio"));
         assert_eq!(audio_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
 
         // Verify video_frame flow
         let video_flow = &grouped_connection.video_frame.as_ref().unwrap()[0];
-        assert_eq!(video_flow.name, "ResponseVideo");
+        assert_eq!(video_flow.name.as_deref(), Some("ResponseVideo"));
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
     }
 
