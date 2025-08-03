@@ -6,10 +6,10 @@
 #
 #
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import random
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 from pydantic import BaseModel
 import requests
 from openai import AsyncOpenAI, AsyncStream
@@ -39,6 +39,12 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    black_list_params: List[str] = field(default_factory=lambda: [
+        "messages", "tools", "stream", "n", "model"
+    ])
+
+    def is_black_list_params(self, key: str) -> bool:
+        return key in self.black_list_params
 
 
 class ReasoningMode(str, Enum):
@@ -155,6 +161,8 @@ class OpenAIChatGPT:
                     }
                 )
 
+            tools.append(tool_json)
+
         req = {
             "model": self.config.model,
             "messages": [
@@ -174,6 +182,17 @@ class OpenAIChatGPT:
             "stream": input.streaming,
             "n": 1,  # Assuming single response for now
         }
+
+        # Add additional parameters if they are not in the black list
+        for key, value in (input.parameters or {}).items():
+            # Check if it's a valid option and not in black list
+            if not self.config.is_black_list_params(key):
+                self.ten_env.log_debug(
+                    f"set openai param: {key} = {value}"
+                )
+                req[key] = value
+
+        self.ten_env.log_info(f"Requesting chat completions with: {req}")
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (

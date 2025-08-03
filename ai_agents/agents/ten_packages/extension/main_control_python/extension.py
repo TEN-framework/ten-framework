@@ -5,14 +5,17 @@
 #
 import asyncio
 import json
+import traceback
 from typing import Tuple
 from pydantic import BaseModel
+
+from ten_ai_base.const import CMD_PROPERTY_TOOL
+from ten_ai_base.types import LLMToolMetadata
 from .llm_exec import LLMExec
 from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
-    Loc,
     StatusCode,
     CmdResult,
     Data,
@@ -99,7 +102,8 @@ class MainControlExtension(AsyncExtension):
     async def _process_cmd_events(self) -> None:
         while self.stopped is False:
             try:
-                cmd_name, _ = await self.cmd_events.get()
+                cmd_name, cmd = await self.cmd_events.get()
+                self.ten_env.log_info(f"Processing command: {cmd_name}")
 
                 match cmd_name:
                     case "on_user_joined":
@@ -117,10 +121,29 @@ class MainControlExtension(AsyncExtension):
                             )
                     case "on_user_left":
                         self._rtc_user_count -= 1
+                    case "tool_register":
+                            tool_metadata_json, err = cmd.get_property_to_json(
+                                CMD_PROPERTY_TOOL
+                            )
+                            if err:
+                                raise RuntimeError(f"Failed to  get tool metadata: {err}")
+                            self.ten_env.log_info(f"register tool: {tool_metadata_json}")
+                            tool_metadata = LLMToolMetadata.model_validate_json(
+                                tool_metadata_json
+                            )
+                            await self.llm_exec.register_tool(tool_metadata)
+                            await self.ten_env.return_result(
+                                CmdResult.create(StatusCode.OK, cmd)
+                            )
                     case _:
                         self.ten_env.log_info(f"Unknown command: {cmd_name}")
-            except Exception as e:
-                self.ten_env.log_error(f"Error processing command: {e}")
+            except Exception:
+                self.ten_env.log_warn(
+                    f"on_cmd failed: {traceback.format_exc()}"
+                )
+                await self.ten_env.return_result(
+                    CmdResult.create(StatusCode.ERROR, cmd)
+                )
 
     async def _send_to_tts(self, ten_env: AsyncTenEnv, text: str):
         await _send_data(ten_env, "text_data", "tts", {"text": text})

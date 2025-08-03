@@ -7,7 +7,8 @@ import asyncio
 import traceback
 from typing import Awaitable, Callable, Optional
 from ten_ai_base.helper import AsyncQueue
-from ten_ai_base.struct import LLMOutput
+from ten_ai_base.struct import LLMInput, LLMInputMessage, LLMOutput
+from ten_ai_base.types import LLMToolMetadata
 from .helper import _send_cmd_ex, parse_sentences
 from ten_runtime import AsyncTenEnv, StatusCode
 
@@ -29,6 +30,10 @@ class LLMExec:
         self.current_task: Optional[asyncio.Task] = None
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_input_queue())
+        self.available_tools: list[LLMToolMetadata] = []
+        self.available_tools_lock = (
+            asyncio.Lock()
+        )  # Lock to ensure thread-safe access
 
     async def queue_input(self, item: str) -> None:
         await self.input_queue.put(item)
@@ -52,6 +57,19 @@ class LLMExec:
         if self.current_task:
             self.current_task.cancel()
 
+    async def register_tool(
+        self, tool: LLMToolMetadata
+    ) -> None:
+        """
+        Register tools with the LLM.
+        This method sends a command to register the provided tools.
+        """
+        async with self.available_tools_lock:
+            self.available_tools.append(tool)
+
+
+
+
     async def _process_input_queue(self):
         """
         Process the input queue for commands and data.
@@ -59,9 +77,21 @@ class LLMExec:
         """
         while not self.stopped:
             try:
-                item = await self.input_queue.get()
+                text = await self.input_queue.get()
+                llm_input = LLMInput(
+                    messages=[LLMInputMessage(
+                        role="user",
+                        content=text
+                    )],
+                    model="qwen-max",
+                    streaming=True,
+                    parameters={
+                        "temperature": 0.7
+                    },
+                    tools=self.available_tools
+                )
                 self.current_task = self.loop.create_task(
-                    self._send_to_llm(self.ten_env, item, is_final=False)
+                    self._send_to_llm(self.ten_env, llm_input)
                 )
                 await self.current_task
             except asyncio.CancelledError:
@@ -74,26 +104,14 @@ class LLMExec:
                 self.current_task = None
 
     async def _send_to_llm(
-        self, ten_env: AsyncTenEnv, text: str, is_final: bool = None
+        self, ten_env: AsyncTenEnv, input: LLMInput
     ) -> None:
+        input_json = input.model_dump()
         response = _send_cmd_ex(
             ten_env,
             "chat_completion",
             "llm",
-            {
-                "messages": [{"role": "user", "content": text}],
-                "streaming": True,
-                "tools": [],
-                "model": "qwen-max",
-                "parameters": {
-                    "max_tokens": 1000,
-                    "temperature": 0.7,
-                    "top_p": 1.0,
-                    "frequency_penalty": 0.0,
-                    "presence_penalty": 0.0,
-                    "stop_sequences": [],
-                },
-            },
+            input_json
         )
 
         async for cmd_result, _ in response:
@@ -109,7 +127,7 @@ class LLMExec:
         await self._handle_llm_response(None, is_final=True)
 
     async def _handle_llm_response(
-        self, llm_output: LLMOutput | None, is_final: bool = False
+        self, llm_output: LLMOutput | None, is_final: bool
     ):
         self.ten_env.log_info(f"_handle_llm_response: {llm_output}")
 
