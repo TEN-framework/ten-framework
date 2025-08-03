@@ -41,6 +41,8 @@ demuxer_thread_t::demuxer_thread_t(ten::ten_env_proxy_t *ten_env_proxy,
 }
 
 demuxer_thread_t::~demuxer_thread_t() {
+  // Demuxer is created in the demuxer thread, so it should be deleted in the
+  // demuxer thread.
   if (demuxer != nullptr) {
     delete demuxer;
     demuxer = nullptr;

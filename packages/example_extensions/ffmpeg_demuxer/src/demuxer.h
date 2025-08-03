@@ -52,11 +52,12 @@ class demuxer_t {
             demuxer_thread_t *demuxer_thread);
   ~demuxer_t();
 
+  // @{
   demuxer_t(const demuxer_t &other) = delete;
   demuxer_t(demuxer_t &&other) = delete;
-
   demuxer_t &operator=(const demuxer_t &other) = delete;
   demuxer_t &operator=(demuxer_t &&other) = delete;
+  // @}
 
   bool open_input_stream(const std::string &input_stream_loc);
 
