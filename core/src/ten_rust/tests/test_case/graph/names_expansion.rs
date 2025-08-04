@@ -40,6 +40,7 @@ mod tests {
         assert!(expanded.is_some(), "Expected expansion to occur");
 
         let expanded_graph = expanded.unwrap();
+        println!("{}", serde_json::to_string_pretty(&expanded_graph).unwrap());
 
         // Check that we have the right number of cmd flows
         let connections = expanded_graph.connections.as_ref().unwrap();
@@ -99,6 +100,7 @@ mod tests {
 
         assert!(expanded.is_some());
         let expanded_graph = expanded.unwrap();
+        println!("{}", serde_json::to_string_pretty(&expanded_graph).unwrap());
 
         let connections = expanded_graph.connections.as_ref().unwrap();
         let data_flows = connections[0].data.as_ref().unwrap();
@@ -171,6 +173,51 @@ mod tests {
             "flatten_graph should return expanded graph"
         );
         let flattened_graph = flattened.unwrap();
+        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
+
+        let connections = flattened_graph.connections.as_ref().unwrap();
+        let cmd_flows = connections[0].cmd.as_ref().unwrap();
+        assert_eq!(
+            cmd_flows.len(),
+            2,
+            "flatten_graph should include names expansion"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_flatten_graph_includes_names_expansion_with_app() -> Result<()>
+    {
+        let test_json = r#"{
+            "connections": [
+                {
+                    "app": "msgpack://127.0.0.1:8001/",
+                    "extension": "ext_a",
+                    "cmd": [
+                        {
+                            "names": ["cmd_1", "cmd_2"],
+                            "dest": [
+                                {
+                                    "app": "msgpack://127.0.0.1:8001/",
+                                    "extension": "ext_b"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }"#;
+
+        let graph: Graph = serde_json::from_str(test_json)?;
+        let flattened = graph.flatten_graph(None).await?;
+
+        assert!(
+            flattened.is_some(),
+            "flatten_graph should return expanded graph"
+        );
+        let flattened_graph = flattened.unwrap();
+        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
 
         let connections = flattened_graph.connections.as_ref().unwrap();
         let cmd_flows = connections[0].cmd.as_ref().unwrap();
