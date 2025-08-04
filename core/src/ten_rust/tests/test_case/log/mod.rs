@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn test_create_log_config_from_json() {
-        let log_config_json = r#"{"level": "debug"}"#;
+        let log_config_json = r#"{"handlers": [{"matchers": [{"level": "debug"}], "formatter": {"type": "plain", "colored": false}, "emitter": {"type": "console", "config": {"stream": "stdout"}}}]}"#;
 
         let mut err_msg: *mut c_char = std::ptr::null_mut();
 
@@ -52,7 +52,23 @@ mod tests {
         let log_config =
             unsafe { Box::from_raw(log_config_ptr as *mut AdvancedLogConfig) };
 
-        assert_eq!(log_config.level, Some(AdvancedLogLevel::Debug));
+        assert_eq!(log_config.handlers.len(), 1);
+        assert_eq!(log_config.handlers[0].matchers.len(), 1);
+        assert_eq!(
+            log_config.handlers[0].matchers[0].level,
+            AdvancedLogLevel::Debug
+        );
+        assert_eq!(
+            log_config.handlers[0].formatter.formatter_type,
+            FormatterType::Plain
+        );
+        assert_eq!(log_config.handlers[0].formatter.colored, Some(false));
+        assert_eq!(
+            log_config.handlers[0].emitter,
+            AdvancedLogEmitter::Console(ConsoleEmitterConfig {
+                stream: StreamType::Stdout,
+            })
+        );
     }
 
     #[test]
@@ -61,8 +77,7 @@ mod tests {
         let path = temp_file.path().to_str().unwrap();
 
         let config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Info),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Info,
                     category: None,
@@ -74,7 +89,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: path.to_string(),
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&config);
@@ -158,8 +173,7 @@ mod tests {
     #[test]
     fn test_formatter_plain_colored() {
         let plain_colored_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Trace), // Allow all log levels
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Trace, // Allow all log levels
                     category: None,
@@ -171,7 +185,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&plain_colored_config);
@@ -230,8 +244,7 @@ mod tests {
     #[test]
     fn test_formatter_plain_no_color() {
         let plain_no_color_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Info),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Info,
                     category: None,
@@ -243,7 +256,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         println!("Testing Plain formatter without colors:");
@@ -266,8 +279,7 @@ mod tests {
     #[test]
     fn test_formatter_json_no_color() {
         let json_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Info),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Info,
                     category: None,
@@ -279,7 +291,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         println!("Testing JSON formatter:");
@@ -302,8 +314,7 @@ mod tests {
     #[test]
     fn test_formatter_json_colored() {
         let json_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Debug),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Debug,
                     category: None,
@@ -315,7 +326,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         println!("Testing JSON formatter with colors:");
@@ -350,8 +361,7 @@ mod tests {
     #[test]
     fn test_console_emitter_stdout() {
         let stdout_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Info),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Info,
                     category: None,
@@ -363,7 +373,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         println!("Testing stdout emitter:");
@@ -389,8 +399,7 @@ mod tests {
         let test_file = temp_file.path().to_str().unwrap();
 
         let stderr_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Warn),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Warn,
                     category: None,
@@ -402,7 +411,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: test_file.to_string(),
                 }),
-            }]),
+            }],
         };
 
         println!("Testing stderr emitter:");
@@ -437,8 +446,7 @@ mod tests {
         let test_file = temp_file.path().to_str().unwrap();
 
         let file_plain_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Info),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Info,
                     category: None,
@@ -450,7 +458,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: test_file.to_string(),
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&file_plain_config);
@@ -499,8 +507,7 @@ mod tests {
         let test_file = temp_file.path().to_str().unwrap();
 
         let file_json_config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Debug),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Debug,
                     category: None,
@@ -512,7 +519,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: test_file.to_string(),
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&file_json_config);
@@ -552,8 +559,7 @@ mod tests {
             NamedTempFile::new().expect("Failed to create temp file");
 
         let config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Debug),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![
                     AdvancedLogMatcher {
                         level: AdvancedLogLevel::Info,
@@ -571,7 +577,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: log_file.path().to_str().unwrap().to_string(),
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&config);
@@ -612,8 +618,7 @@ mod tests {
             NamedTempFile::new().expect("Failed to create temp file");
 
         let config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Debug),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![
                     AdvancedLogMatcher {
                         level: AdvancedLogLevel::Info,
@@ -631,7 +636,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: log_file.path().to_str().unwrap().to_string(),
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&config);
@@ -670,8 +675,7 @@ mod tests {
         let db_file = tempfile::NamedTempFile::new().unwrap();
 
         let config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Debug),
-            handlers: Some(vec![
+            handlers: vec![
                 // Handler 1: Auth logs (INFO and above) to auth_file
                 AdvancedLogHandler {
                     matchers: vec![AdvancedLogMatcher {
@@ -700,7 +704,7 @@ mod tests {
                         path: db_file.path().to_str().unwrap().to_string(),
                     }),
                 },
-            ]),
+            ],
         };
 
         ten_configure_log(&config);
@@ -720,7 +724,7 @@ mod tests {
         debug!(target: "network", "Socket initialized");
 
         // Force flush logs
-        ten_configure_log(&AdvancedLogConfig { level: None, handlers: None });
+        ten_configure_log(&AdvancedLogConfig { handlers: vec![] });
 
         // Read and verify auth file contents
         let auth_content = fs::read_to_string(auth_file.path())
@@ -777,10 +781,7 @@ mod tests {
 
     #[test]
     fn test_default_config_no_handlers() {
-        let config_no_handlers = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Warn),
-            handlers: None,
-        };
+        let config_no_handlers = AdvancedLogConfig { handlers: vec![] };
 
         ten_configure_log(&config_no_handlers);
         ten_log(
@@ -801,8 +802,7 @@ mod tests {
     #[test]
     fn test_actual_logging_output() {
         let config = AdvancedLogConfig {
-            level: Some(AdvancedLogLevel::Trace),
-            handlers: Some(vec![AdvancedLogHandler {
+            handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
                     level: AdvancedLogLevel::Trace,
                     category: None,
@@ -814,7 +814,7 @@ mod tests {
                 emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
                     stream: StreamType::Stdout,
                 }),
-            }]),
+            }],
         };
 
         ten_configure_log(&config);

@@ -1115,9 +1115,6 @@
     "advancedLogMatcher": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "level"
-      ],
       "properties": {
         "level": {
           "$ref": "#/$defs/advancedLogLevels"
@@ -1250,12 +1247,9 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "level": {
-          "$ref": "#/$defs/advancedLogLevels"
-        },
         "handlers": {
           "type": "array",
-          "minItems": 0,
+          "minItems": 1,
           "items": {
             "$ref": "#/$defs/advancedLogHandler"
           }

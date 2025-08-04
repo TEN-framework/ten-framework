@@ -147,11 +147,7 @@ pub struct AdvancedLogHandler {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AdvancedLogConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub level: Option<AdvancedLogLevel>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handlers: Option<Vec<AdvancedLogHandler>>,
+    pub handlers: Vec<AdvancedLogHandler>,
 }
 
 /// Configure logging system using tracing library based on AdvancedLogConfig
@@ -171,41 +167,10 @@ pub struct AdvancedLogConfig {
 /// - If no handlers are configured, default console output configuration will
 ///   be used
 pub fn ten_configure_log(config: &AdvancedLogConfig) {
-    // Create base registry
-    let registry = Registry::default();
-
-    // If no handlers are configured, use default configuration
-    let handlers = match &config.handlers {
-        Some(handlers) if !handlers.is_empty() => handlers,
-        _ => {
-            // Default configuration: output to stdout, use plain format
-            let default_config = AdvancedLogConfig {
-                level: config.level.clone(),
-                handlers: Some(vec![AdvancedLogHandler {
-                    matchers: vec![AdvancedLogMatcher {
-                        level: config
-                            .level
-                            .clone()
-                            .unwrap_or(AdvancedLogLevel::Info),
-                        category: None,
-                    }],
-                    formatter: AdvancedLogFormatter {
-                        formatter_type: FormatterType::Plain,
-                        colored: Some(true),
-                    },
-                    emitter: AdvancedLogEmitter::Console(
-                        ConsoleEmitterConfig { stream: StreamType::Stdout },
-                    ),
-                }]),
-            };
-            return ten_configure_log(&default_config);
-        }
-    };
-
     let mut layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = Vec::new();
 
     // Create corresponding layer for each handler
-    for handler in handlers {
+    for handler in &config.handlers {
         // Create filter
         let mut filter_directive = String::new();
 
@@ -241,7 +206,6 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
                         tracing_fmt::Layer::new()
                             .event_format(PlainFormatter::new(ansi))
                             .with_writer(io::stdout)
-                            .with_ansi(ansi)
                             .with_filter(filter)
                             .boxed()
                     }
@@ -250,7 +214,6 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
                         tracing_fmt::Layer::new()
                             .event_format(PlainFormatter::new(ansi))
                             .with_writer(io::stderr)
-                            .with_ansi(ansi)
                             .with_filter(filter)
                             .boxed()
                     }
@@ -264,9 +227,6 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
                                 pretty: false,
                                 field_names: JsonFieldNames::default(),
                             }))
-                            .with_ansi(
-                                handler.formatter.colored.unwrap_or(false),
-                            )
                             .with_writer(io::stdout)
                             .with_filter(filter)
                             .boxed()
@@ -281,9 +241,6 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
                                 pretty: false,
                                 field_names: JsonFieldNames::default(),
                             }))
-                            .with_ansi(
-                                handler.formatter.colored.unwrap_or(false),
-                            )
                             .with_writer(io::stderr)
                             .with_filter(filter)
                             .boxed()
@@ -302,7 +259,6 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
                         tracing_fmt::Layer::new()
                             .event_format(PlainFormatter::new(false)) // File output doesn't need colors
                             .with_writer(non_blocking)
-                            .with_ansi(false)
                             .with_filter(filter)
                             .boxed()
                     }
@@ -327,13 +283,7 @@ pub fn ten_configure_log(config: &AdvancedLogConfig) {
         }
     }
 
-    // Combine all layers and initialize global subscriber
-    let subscriber = registry.with(layers);
-
-    // Set global default subscriber
-    if let Err(e) = subscriber.try_init() {
-        eprintln!("Failed to set global default subscriber: {e}");
-    }
+    tracing_subscriber::registry().with(layers).init();
 }
 
 #[allow(clippy::too_many_arguments)]
