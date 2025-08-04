@@ -273,7 +273,16 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
     TEN_FREE(log_config_json_str);
   }
 
-  ten_rust_configure_log(log_config);
+  err_msg = NULL;
+  success = ten_rust_configure_log(log_config, &err_msg);
+  if (!success) {
+    if (err_msg) {
+      TEN_LOGE("Failed to configure log: %s", err_msg);
+      ten_rust_free_cstring(err_msg);
+    }
+
+    return false;
+  }
 
   ten_log_global_set_advanced_impl_with_config(
       ten_log_rust_log_func, ten_log_rust_config_deinit, log_config);

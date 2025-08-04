@@ -6,24 +6,22 @@
 //
 pub mod bindings;
 pub mod formatter;
+pub mod reloadable;
 
-use formatter::PlainFormatter;
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::io;
+use std::{fmt, io};
 use tracing;
 use tracing_appender::{non_blocking, rolling};
 use tracing_subscriber::{
     fmt::{self as tracing_fmt},
     layer::SubscriberExt,
     util::SubscriberInitExt,
-    EnvFilter, Layer, Registry,
+    Layer, Registry,
 };
 
-use crate::log::formatter::JsonConfig;
-use crate::log::formatter::JsonFieldNames;
-use crate::log::formatter::JsonFormatter;
-
+use crate::log::formatter::{
+    JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter,
+};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(from = "u8")]
 pub enum LogLevel {
@@ -62,8 +60,8 @@ impl LogLevel {
             LogLevel::Warn => tracing::Level::WARN,
             LogLevel::Error => tracing::Level::ERROR,
             LogLevel::Fatal => tracing::Level::ERROR,
-            LogLevel::Mandatory => tracing::Level::INFO,
-            LogLevel::Invalid => tracing::Level::TRACE,
+            LogLevel::Mandatory => tracing::Level::ERROR,
+            LogLevel::Invalid => tracing::Level::ERROR,
         }
     }
 }
@@ -150,140 +148,179 @@ pub struct AdvancedLogConfig {
     pub handlers: Vec<AdvancedLogHandler>,
 }
 
-/// Configure logging system using tracing library based on AdvancedLogConfig
+/// Creates a layer and filter separately from the handler configuration
 ///
-/// # Features
-/// - Support for multiple log handlers
-/// - Filter logs by level and category
-/// - Support for plain and JSON format output
-/// - Support for console (stdout/stderr) and file output
-/// - Support for colored output control
+/// This function is similar to `create_layer_from_handler` but returns the
+/// layer and filter separately, allowing more flexibility in how they are
+/// combined.
 ///
-/// # Notes
-/// - This function sets the global tracing subscriber and should only be called
-///   once
-/// - For file output, it's recommended to keep a reference to the guard
-///   throughout the application lifecycle
-/// - If no handlers are configured, default console output configuration will
-///   be used
-pub fn ten_configure_log(config: &AdvancedLogConfig) {
-    let mut layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = Vec::new();
+/// Returns a tuple containing:
+/// - A boxed Layer that hasn't had any filter applied
+/// - An EnvFilter configured according to the handler's matchers
+fn create_layer_and_filter(
+    handler: &AdvancedLogHandler,
+) -> (LayerWithGuard, tracing_subscriber::EnvFilter) {
+    // Create filter
+    let mut filter_directive = String::new();
 
-    // Create corresponding layer for each handler
-    for handler in &config.handlers {
-        // Create filter
-        let mut filter_directive = String::new();
-
-        // Build filter rules based on matchers
-        for (i, matcher) in handler.matchers.iter().enumerate() {
-            if i > 0 {
-                filter_directive.push(',');
-            }
-
-            let level_str = matcher.level.to_string();
-
-            if let Some(category) = &matcher.category {
-                filter_directive.push_str(&format!("{category}={level_str}"));
-            } else {
-                filter_directive.push_str(&level_str);
-            }
+    // Build filter rules based on matchers
+    for (i, matcher) in handler.matchers.iter().enumerate() {
+        if i > 0 {
+            filter_directive.push(',');
         }
 
-        let filter =
-            EnvFilter::try_new(&filter_directive).unwrap_or_else(|_| {
-                EnvFilter::new("info") // Default fallback to info level
-            });
+        let level_str = matcher.level.to_string();
 
-        // Create corresponding layer based on emitter type
-        match &handler.emitter {
-            AdvancedLogEmitter::Console(console_config) => {
-                let layer: Box<dyn Layer<Registry> + Send + Sync> = match (
-                    &console_config.stream,
-                    &handler.formatter.formatter_type,
-                ) {
-                    (StreamType::Stdout, FormatterType::Plain) => {
-                        let ansi = handler.formatter.colored.unwrap_or(false);
-                        tracing_fmt::Layer::new()
-                            .event_format(PlainFormatter::new(ansi))
-                            .with_writer(io::stdout)
-                            .with_filter(filter)
-                            .boxed()
-                    }
-                    (StreamType::Stderr, FormatterType::Plain) => {
-                        let ansi = handler.formatter.colored.unwrap_or(false);
-                        tracing_fmt::Layer::new()
-                            .event_format(PlainFormatter::new(ansi))
-                            .with_writer(io::stderr)
-                            .with_filter(filter)
-                            .boxed()
-                    }
-                    (StreamType::Stdout, FormatterType::Json) => {
-                        tracing_fmt::Layer::new()
-                            .event_format(JsonFormatter::new(JsonConfig {
-                                ansi: handler
-                                    .formatter
-                                    .colored
-                                    .unwrap_or(false),
-                                pretty: false,
-                                field_names: JsonFieldNames::default(),
-                            }))
-                            .with_writer(io::stdout)
-                            .with_filter(filter)
-                            .boxed()
-                    }
-                    (StreamType::Stderr, FormatterType::Json) => {
-                        tracing_fmt::Layer::new()
-                            .event_format(JsonFormatter::new(JsonConfig {
-                                ansi: handler
-                                    .formatter
-                                    .colored
-                                    .unwrap_or(false),
-                                pretty: false,
-                                field_names: JsonFieldNames::default(),
-                            }))
-                            .with_writer(io::stderr)
-                            .with_filter(filter)
-                            .boxed()
-                    }
-                };
+        if let Some(category) = &matcher.category {
+            filter_directive.push_str(&format!("{category}={level_str}"));
+        } else {
+            filter_directive.push_str(&level_str);
+        }
+    }
 
-                layers.push(layer);
-            }
-            AdvancedLogEmitter::File(file_config) => {
-                // Create file appender for file logging
-                let file_appender = rolling::never(".", &file_config.path);
-                let (non_blocking, _guard) = non_blocking(file_appender);
+    let filter = tracing_subscriber::EnvFilter::try_new(&filter_directive)
+        .unwrap_or_else(|_| {
+            tracing_subscriber::EnvFilter::new("info") // Default fallback to
+                                                       // info level
+        });
 
-                let layer = match handler.formatter.formatter_type {
-                    FormatterType::Plain => {
-                        tracing_fmt::Layer::new()
-                            .event_format(PlainFormatter::new(false)) // File output doesn't need colors
-                            .with_writer(non_blocking)
-                            .with_filter(filter)
-                            .boxed()
-                    }
-                    FormatterType::Json => tracing_fmt::Layer::new()
+    // Create corresponding layer based on emitter type
+    let layer_with_guard = match &handler.emitter {
+        AdvancedLogEmitter::Console(console_config) => {
+            let layer = match (
+                &console_config.stream,
+                &handler.formatter.formatter_type,
+            ) {
+                (StreamType::Stdout, FormatterType::Plain) => {
+                    let ansi = handler.formatter.colored.unwrap_or(false);
+                    tracing_fmt::Layer::new()
+                        .event_format(PlainFormatter::new(ansi))
+                        .with_writer(io::stdout)
+                        .boxed()
+                }
+                (StreamType::Stderr, FormatterType::Plain) => {
+                    let ansi = handler.formatter.colored.unwrap_or(false);
+                    tracing_fmt::Layer::new()
+                        .event_format(PlainFormatter::new(ansi))
+                        .with_writer(io::stderr)
+                        .boxed()
+                }
+                (StreamType::Stdout, FormatterType::Json) => {
+                    tracing_fmt::Layer::new()
                         .event_format(JsonFormatter::new(JsonConfig {
                             ansi: handler.formatter.colored.unwrap_or(false),
                             pretty: false,
                             field_names: JsonFieldNames::default(),
                         }))
-                        .with_writer(non_blocking)
-                        .with_filter(filter)
-                        .boxed(),
-                };
-
-                layers.push(layer);
-
-                // Note: _guard is dropped here, but in actual applications it
-                // should be saved to ensure non_blocking writer
-                // works properly
-                std::mem::forget(_guard);
-            }
+                        .with_writer(io::stdout)
+                        .boxed()
+                }
+                (StreamType::Stderr, FormatterType::Json) => {
+                    tracing_fmt::Layer::new()
+                        .event_format(JsonFormatter::new(JsonConfig {
+                            ansi: handler.formatter.colored.unwrap_or(false),
+                            pretty: false,
+                            field_names: JsonFieldNames::default(),
+                        }))
+                        .with_writer(io::stderr)
+                        .boxed()
+                }
+            };
+            LayerWithGuard { layer, guard: None }
         }
+        AdvancedLogEmitter::File(file_config) => {
+            // Create file appender for file logging
+            let file_appender = rolling::never(".", &file_config.path);
+            let (non_blocking, guard) = non_blocking(file_appender);
+
+            let layer = match handler.formatter.formatter_type {
+                FormatterType::Plain => {
+                    tracing_fmt::Layer::new()
+                        .event_format(PlainFormatter::new(false)) // File output doesn't need colors
+                        .with_writer(non_blocking)
+                        .boxed()
+                }
+                FormatterType::Json => tracing_fmt::Layer::new()
+                    .event_format(JsonFormatter::new(JsonConfig {
+                        ansi: handler.formatter.colored.unwrap_or(false),
+                        pretty: false,
+                        field_names: JsonFieldNames::default(),
+                    }))
+                    .with_writer(non_blocking)
+                    .boxed(),
+            };
+
+            LayerWithGuard { layer, guard: Some(Box::new(guard)) }
+        }
+    };
+
+    (layer_with_guard, filter)
+}
+
+/// A wrapper for a logging layer that may have an associated guard
+pub(crate) struct LayerWithGuard {
+    /// The actual logging layer
+    pub layer: Box<dyn Layer<Registry> + Send + Sync>,
+    /// Optional guard that must be kept alive for the layer to function
+    /// properly (particularly for non-blocking file writers)
+    pub guard: Option<Box<dyn std::any::Any + Send + Sync>>,
+}
+
+/// Error type for logging initialization
+#[derive(Debug)]
+pub struct LogInitError {
+    message: &'static str,
+}
+
+impl std::fmt::Display for LogInitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for LogInitError {}
+
+/// Configure the logging system for production use
+///
+/// This function initializes the logging system with the provided
+/// configuration. It can only be called once - subsequent calls will result in
+/// an error.
+///
+/// # Arguments
+/// * `config` - The logging configuration
+///
+/// # Returns
+/// * `Ok(())` if initialization was successful
+///
+/// * `Err(LogInitError)` if the logging system was already initialized
+/// A global guard holder to ensure non-blocking writers work properly
+static mut GLOBAL_GUARDS: Option<Vec<Box<dyn std::any::Any + Send + Sync>>> =
+    None;
+
+pub fn ten_configure_log(
+    config: &AdvancedLogConfig,
+) -> Result<(), LogInitError> {
+    let mut layers = Vec::with_capacity(config.handlers.len());
+    let mut guards = Vec::new();
+
+    // Create layers from handlers
+    for handler in &config.handlers {
+        let (layer_with_guard, filter) = create_layer_and_filter(handler);
+        if let Some(guard) = layer_with_guard.guard {
+            guards.push(guard);
+        }
+        layers.push(layer_with_guard.layer.with_filter(filter).boxed());
     }
 
-    tracing_subscriber::registry().with(layers).init();
+    // Store guards globally to keep them alive
+    unsafe {
+        GLOBAL_GUARDS = Some(guards);
+    }
+
+    // Initialize the registry
+    tracing_subscriber::registry().with(layers).try_init().map_err(|_| {
+        LogInitError { message: "Logging system is already initialized" }
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

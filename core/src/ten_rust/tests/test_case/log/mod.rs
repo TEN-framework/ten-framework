@@ -13,11 +13,11 @@ mod tests {
     use ten_rust::{
         bindings::ten_rust_free_cstring,
         log::{
-            bindings::ten_rust_create_log_config_from_json, ten_configure_log,
-            ten_log, AdvancedLogConfig, AdvancedLogEmitter,
-            AdvancedLogFormatter, AdvancedLogHandler, AdvancedLogLevel,
-            AdvancedLogMatcher, ConsoleEmitterConfig, FileEmitterConfig,
-            FormatterType, LogLevel, StreamType,
+            bindings::ten_rust_create_log_config_from_json,
+            reloadable::configure_log, ten_log, AdvancedLogConfig,
+            AdvancedLogEmitter, AdvancedLogFormatter, AdvancedLogHandler,
+            AdvancedLogLevel, AdvancedLogMatcher, ConsoleEmitterConfig,
+            FileEmitterConfig, FormatterType, LogLevel, StreamType,
         },
     };
     use tracing::{debug, info, trace};
@@ -92,7 +92,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&config);
+        configure_log(&config);
 
         ten_log(
             &config,
@@ -156,6 +156,8 @@ mod tests {
         // Read log file content
         let content = std::fs::read_to_string(path).unwrap();
 
+        println!("Log file content:\n{content}");
+
         // Verify log levels
         assert!(
             !content.contains("Trace message"),
@@ -188,7 +190,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&plain_colored_config);
+        configure_log(&plain_colored_config);
         // Test different log levels to see different colors
         ten_log(
             &plain_colored_config,
@@ -260,7 +262,7 @@ mod tests {
         };
 
         println!("Testing Plain formatter without colors:");
-        ten_configure_log(&plain_no_color_config);
+        configure_log(&plain_no_color_config);
         ten_log(
             &plain_no_color_config,
             "test_category",
@@ -295,7 +297,7 @@ mod tests {
         };
 
         println!("Testing JSON formatter:");
-        ten_configure_log(&json_config);
+        configure_log(&json_config);
         ten_log(
             &json_config,
             "test_category",
@@ -330,7 +332,7 @@ mod tests {
         };
 
         println!("Testing JSON formatter with colors:");
-        ten_configure_log(&json_config);
+        configure_log(&json_config);
         ten_log(
             &json_config,
             "test_category",
@@ -377,7 +379,7 @@ mod tests {
         };
 
         println!("Testing stdout emitter:");
-        ten_configure_log(&stdout_config);
+        configure_log(&stdout_config);
         ten_log(
             &stdout_config,
             "test_category",
@@ -415,7 +417,7 @@ mod tests {
         };
 
         println!("Testing stderr emitter:");
-        ten_configure_log(&stderr_config);
+        configure_log(&stderr_config);
         ten_log(
             &stderr_config,
             "test_category",
@@ -428,7 +430,7 @@ mod tests {
             "Warning message to stderr",
         );
 
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(300));
 
         let content =
             fs::read_to_string(test_file).expect("Failed to read log file");
@@ -461,7 +463,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&file_plain_config);
+        configure_log(&file_plain_config);
         ten_log(
             &file_plain_config,
             "test_category",
@@ -522,7 +524,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&file_json_config);
+        configure_log(&file_json_config);
         ten_log(
             &file_json_config,
             "test_category",
@@ -580,7 +582,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&config);
+        configure_log(&config);
 
         // Messages that should be logged (matching configured rules)
         info!(target: "auth", "Auth service started"); // Matches auth + info
@@ -639,7 +641,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&config);
+        configure_log(&config);
 
         // Messages that should not be logged (level mismatch)
         debug!(target: "auth", "Auth debug message"); // Won't match: auth only allows info
@@ -707,7 +709,7 @@ mod tests {
             ],
         };
 
-        ten_configure_log(&config);
+        configure_log(&config);
 
         // Auth logs at different levels
         info!(target: "auth", "User login successful"); // Should appear in auth_file
@@ -724,7 +726,7 @@ mod tests {
         debug!(target: "network", "Socket initialized");
 
         // Force flush logs
-        ten_configure_log(&AdvancedLogConfig { handlers: vec![] });
+        configure_log(&AdvancedLogConfig { handlers: vec![] });
 
         // Read and verify auth file contents
         let auth_content = fs::read_to_string(auth_file.path())
@@ -783,7 +785,7 @@ mod tests {
     fn test_default_config_no_handlers() {
         let config_no_handlers = AdvancedLogConfig { handlers: vec![] };
 
-        ten_configure_log(&config_no_handlers);
+        configure_log(&config_no_handlers);
         ten_log(
             &config_no_handlers,
             "test_category",
@@ -817,7 +819,7 @@ mod tests {
             }],
         };
 
-        ten_configure_log(&config);
+        configure_log(&config);
 
         ten_log(
             &config,

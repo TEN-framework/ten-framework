@@ -53,7 +53,7 @@ tokio = { version = "1.0", features = [
   "macros",
 ] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "std"] }
 tracing-appender = "0.2"
 
 [build-dependencies]
