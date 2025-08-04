@@ -229,4 +229,59 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_duplicate_names_error_between_name_and_names_fields(
+    ) -> Result<()> {
+        let test_json = r#"{
+            "connections": [
+                {
+                    "extension": "ext_a",
+                    "data": [
+                        {
+                            "name": "data_1",
+                            "dest": [
+                                {
+                                    "extension": "ext_b"
+                                }
+                            ]
+                        },
+                        {
+                            "names": ["data_1", "data_2"],
+                            "dest": [
+                                {
+                                    "extension": "ext_b"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }"#;
+
+        let graph: Graph = serde_json::from_str(test_json)?;
+
+        // Test that check_message_names correctly identifies the duplicate
+        let result = graph.check_message_names();
+
+        assert!(
+            result.is_err(),
+            "Expected error due to duplicate data name 'data_1'"
+        );
+
+        let error_msg = result.unwrap_err().to_string();
+        assert!(
+            error_msg.contains("data_1"),
+            "Error message should mention the duplicate name 'data_1'"
+        );
+        assert!(
+            error_msg.contains("flow[0]") && error_msg.contains("flow[1]"),
+            "Error message should mention both flow indices where 'data_1' \
+             appears"
+        );
+
+        println!("Successfully detected duplicate name error: {error_msg}");
+
+        Ok(())
+    }
 }
