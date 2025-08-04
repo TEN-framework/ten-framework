@@ -46,6 +46,8 @@ typedef struct ten_addon_host_t ten_addon_host_t;
 typedef struct ten_path_table_t ten_path_table_t;
 typedef struct ten_path_in_t ten_path_in_t;
 typedef struct ten_timer_t ten_timer_t;
+typedef struct ten_engine_t ten_engine_t;
+typedef struct ten_app_t ten_app_t;
 
 // The relationship between several lifecycle stages and their connection to
 // sending messages:
@@ -179,6 +181,13 @@ struct ten_extension_t {
   ten_extension_context_t *extension_context;
   ten_extension_info_t *extension_info;
 
+  // This is solely for caching the engine pointer, making it convenient to
+  // access the engine pointer within the extension.
+  ten_engine_t *engine;
+  // This is solely for caching the app pointer, making it convenient to access
+  // the app pointer within the extension.
+  ten_app_t *app;
+
   ten_value_t manifest;
   ten_value_t property;
 
@@ -224,6 +233,8 @@ struct ten_extension_t {
   // `TEN_ERROR_CODE_MSG_NOT_CONNECTED` for each message name when sending
   // output messages.
   ten_hashtable_t msg_not_connected_count_map;
+
+  bool is_standalone_test_extension;
 
   void *user_data;
 };
@@ -275,3 +286,21 @@ TEN_RUNTIME_PRIVATE_API ten_extension_t *ten_extension_from_smart_ptr(
 
 TEN_RUNTIME_API void ten_extension_set_me_in_target_lang(
     ten_extension_t *self, void *me_in_target_lang);
+
+static inline ten_engine_t *ten_extension_get_belonging_engine(
+    ten_extension_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true),
+             "Invalid use of extension %p.", self);
+
+  return self->engine;
+}
+
+static inline ten_app_t *ten_extension_get_belonging_app(
+    ten_extension_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true),
+             "Invalid use of extension %p.", self);
+
+  return self->app;
+}

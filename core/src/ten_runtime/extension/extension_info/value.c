@@ -15,6 +15,7 @@
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
 #include "ten_utils/value/value_merge.h"
 #include "ten_utils/value/value_object.h"
@@ -33,7 +34,7 @@
 // ------------------------
 static bool parse_msg_dest_value(ten_value_t *value,
                                  ten_list_t *extensions_info,
-                                 ten_list_t *static_dests,
+                                 ten_hashtable_t *static_dests,
                                  ten_extension_info_t *src_extension_info,
                                  ten_error_t *err) {
   TEN_ASSERT(value && ten_value_is_array(value) && extensions_info,
@@ -48,14 +49,15 @@ static bool parse_msg_dest_value(ten_value_t *value,
       return false;
     }
 
-    ten_shared_ptr_t *msg_dest = ten_msg_dest_info_from_value(
+    ten_msg_dest_info_t *msg_dest = ten_msg_dest_info_from_value(
         item_value, extensions_info, src_extension_info, err);
     if (!msg_dest) {
       return false;
     }
 
-    ten_list_push_smart_ptr_back(static_dests, msg_dest);
-    ten_shared_ptr_destroy(msg_dest);
+    ten_hashtable_add_string(
+        static_dests, &msg_dest->hh_in_all_msg_type_dest_info,
+        ten_string_get_raw_str(&msg_dest->name), ten_msg_dest_info_destroy);
   }
 
   return true;
@@ -246,7 +248,7 @@ ten_shared_ptr_t *ten_extension_info_parse_connection_dest_part_from_value(
 }
 
 ten_value_t *ten_extension_info_node_to_value(ten_extension_info_t *self,
-                                              ten_error_t *err) {
+                                              TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: The graph-related information of the extension remains
@@ -330,7 +332,8 @@ ten_value_t *ten_extension_info_node_to_value(ten_extension_info_t *self,
 }
 
 static ten_value_t *pack_msg_dest(ten_extension_info_t *self,
-                                  ten_list_t *msg_dests, ten_error_t *err) {
+                                  ten_hashtable_t *msg_dests,
+                                  ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: The graph-related information of the extension remains
@@ -341,9 +344,13 @@ static ten_value_t *pack_msg_dest(ten_extension_info_t *self,
 
   ten_list_t dest_list = TEN_LIST_INIT_VAL;
 
-  ten_list_foreach (msg_dests, iter) {
+  ten_hashtable_foreach(msg_dests, iter) {
+    ten_hashhandle_t *hh = iter.node;
     ten_msg_dest_info_t *msg_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
+        CONTAINER_OF_FROM_OFFSET(hh, msg_dests->hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
 
     ten_value_t *msg_dest_value =
         ten_msg_dest_info_to_value(msg_dest, self, err);
@@ -373,10 +380,10 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
   TEN_ASSERT(ten_extension_info_check_integrity(self, false),
              "Should not happen.");
 
-  if (ten_list_is_empty(&self->msg_dest_info.cmd) &&
-      ten_list_is_empty(&self->msg_dest_info.data) &&
-      ten_list_is_empty(&self->msg_dest_info.video_frame) &&
-      ten_list_is_empty(&self->msg_dest_info.audio_frame) &&
+  if (ten_hashtable_is_empty(&self->msg_dest_info.cmd) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.data) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.video_frame) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.audio_frame) &&
       ten_list_is_empty(&self->msg_conversion_contexts)) {
     return NULL;
   }
@@ -435,7 +442,7 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
       (ten_ptr_listnode_destroy_func_t)ten_value_kv_destroy);
 
   // Parse 'cmd'
-  if (!ten_list_is_empty(&self->msg_dest_info.cmd)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.cmd)) {
     ten_value_t *cmd_dest_value =
         pack_msg_dest(self, &self->msg_dest_info.cmd, err);
     if (!cmd_dest_value) {
@@ -448,7 +455,7 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
   }
 
   // Parse 'data'
-  if (!ten_list_is_empty(&self->msg_dest_info.data)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.data)) {
     ten_value_t *data_dest_value =
         pack_msg_dest(self, &self->msg_dest_info.data, err);
     if (!data_dest_value) {
@@ -461,7 +468,7 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
   }
 
   // Parse 'video_frame'
-  if (!ten_list_is_empty(&self->msg_dest_info.video_frame)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.video_frame)) {
     ten_value_t *video_frame_dest_value =
         pack_msg_dest(self, &self->msg_dest_info.video_frame, err);
     if (!video_frame_dest_value) {
@@ -475,7 +482,7 @@ ten_value_t *ten_extension_info_connection_to_value(ten_extension_info_t *self,
   }
 
   // Parse 'audio_frame'
-  if (!ten_list_is_empty(&self->msg_dest_info.audio_frame)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.audio_frame)) {
     ten_value_t *audio_frame_dest_value =
         pack_msg_dest(self, &self->msg_dest_info.audio_frame, err);
     if (!audio_frame_dest_value) {

@@ -605,7 +605,7 @@ void send_ten_msg_with_req_body(
               cmd = ten::cmd_close_app_t::create();
 
               // Set the destination of the command to the localhost.
-              cmd->set_dest(nullptr, nullptr, nullptr);
+              cmd->set_dests({{""}});
             } else {
               assert(0 && "Handle more internal command types.");
             }
@@ -621,9 +621,10 @@ void send_ten_msg_with_req_body(
               auto dest = cmd_json["ten"]["dest"];
 
               try {
-                cmd->set_dest(dest["app"].get<std::string>().c_str(),
-                              dest["graph"].get<std::string>().c_str(),
-                              dest["extension"].get<std::string>().c_str());
+                cmd->set_dests(
+                    {{dest["app"].get<std::string>().c_str(),
+                      dest["graph"].get<std::string>().c_str(),
+                      dest["extension"].get<std::string>().c_str()}});
               } catch (const std::exception &e) {
                 TEN_LOGW("Failed to set the destination of the command: %s",
                          e.what());

@@ -32,3 +32,6 @@ TEN_RUNTIME_PRIVATE_API void ten_py_cmd_destroy(PyObject *self);
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_cmd_clone(PyObject *self,
                                                    PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_cmd_register_cmd_type(PyObject *self,
+                                                               PyObject *args);

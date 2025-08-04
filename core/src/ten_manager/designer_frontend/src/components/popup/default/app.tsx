@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { BrushCleaningIcon, PlayIcon } from "lucide-react";
+import { PlayIcon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -38,6 +38,7 @@ import {
   GROUP_LOG_VIEWER_ID,
   RTC_INTERACTION_WIDGET_ID,
 } from "@/constants/widgets";
+import { EWidgetIdentifier } from "@/lib/identifier";
 import { useAppStore, useWidgetStore } from "@/store";
 import {
   EDefaultWidgetType,
@@ -138,8 +139,8 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const {
     removeWidget,
     appendWidget,
-    removeBackstageWidget,
-    removeLogViewerHistory,
+    appendBackstageWidget,
+    // removeLogViewerHistory,
   } = useWidgetStore();
 
   const [selectedScript, setSelectedScript] = React.useState<
@@ -150,7 +151,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const handleRun = async () => {
     removeWidget(widget.widget_id);
 
-    const newAppStartWidgetId = "app-start-" + Date.now();
+    const newAppStartWidgetId = EWidgetIdentifier.APP_RUN + Date.now();
 
     await addRecentRunApp({
       base_dir: baseDir || "",
@@ -160,7 +161,7 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
       run_with_agent: runWithAgent,
     });
 
-    appendWidget({
+    appendBackstageWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_LOG_VIEWER_ID,
       widget_id: newAppStartWidgetId,
@@ -180,25 +181,27 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
           stderr_is_log: true,
         },
       },
-      popup: {
-        width: 0.5,
-        height: 0.8,
-      },
-      actions: {
-        onClose: () => {
-          removeBackstageWidget(newAppStartWidgetId);
-        },
-        custom_actions: [
-          {
-            id: "app-start-log-clean",
-            label: t("popup.logViewer.cleanLogs"),
-            Icon: BrushCleaningIcon,
-            onClick: () => {
-              removeLogViewerHistory(newAppStartWidgetId);
-            },
-          },
-        ],
-      },
+      // popup: {
+      //   width: 0.5,
+      //   height: 0.8,
+      // },
+      // actions: {
+      //   onClose: () => {
+      //     // Update(apps-manager):
+      //     // keep the backstage widget after closing the popup
+      //     // removeBackstageWidget(newAppStartWidgetId);
+      //   },
+      //   custom_actions: [
+      //     {
+      //       id: "app-start-log-clean",
+      //       label: t("popup.logViewer.cleanLogs"),
+      //       Icon: BrushCleaningIcon,
+      //       onClick: () => {
+      //         removeLogViewerHistory(newAppStartWidgetId);
+      //       },
+      //     },
+      //   ],
+      // },
     });
 
     if (runWithAgent) {
@@ -221,6 +224,8 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
         },
       });
     }
+
+    widget?.actions?.onSubmit?.(widget.metadata);
   };
 
   if (!baseDir || !scripts || scripts.length === 0) {
@@ -235,20 +240,22 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="runapp_script">{t("popup.apps.runScript")}</Label>
-        <Select value={selectedScript} onValueChange={setSelectedScript}>
-          <SelectTrigger id="runapp_script">
-            <SelectValue placeholder={t("popup.apps.selectScript")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {scripts?.map((script) => (
-                <SelectItem key={script} value={script}>
-                  {script}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <div>
+          <Select value={selectedScript} onValueChange={setSelectedScript}>
+            <SelectTrigger id="runapp_script">
+              <SelectValue placeholder={t("popup.apps.selectScript")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {scripts?.map((script) => (
+                  <SelectItem key={script} value={script}>
+                    {script}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <Separator className="my-2" />
       <div className="mb-2 flex flex-col gap-2">

@@ -14,7 +14,8 @@ int main(TEN_UNUSED int argc, TEN_UNUSED char **argv) {
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8007/");
 
   auto hello_cmd = ten::cmd_t::create("hello");
-  hello_cmd->set_dest("msgpack://127.0.0.1:8007/", "default", "extension_a");
+  hello_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8007/", "default", "extension_a"}});
   auto cmd_result = client->send_cmd_and_recv_result(std::move(hello_cmd));
   TEN_ASSERT(TEN_STATUS_CODE_OK == cmd_result->get_status_code(),
              "Should not happen.");

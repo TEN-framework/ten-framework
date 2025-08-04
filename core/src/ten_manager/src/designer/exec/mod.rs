@@ -8,6 +8,9 @@ mod cmd_run;
 mod msg;
 mod run_script;
 
+// Re-export only the types that should be public API
+pub use msg::{InboundMsg, OutboundMsg};
+
 use std::process::Child;
 use std::sync::Arc;
 
@@ -20,8 +23,6 @@ use anyhow::Result;
 use crate::designer::DesignerState;
 use crate::log::LogLineInfo;
 use cmd_run::ShutdownSenders;
-use msg::InboundMsg;
-use msg::OutboundMsg;
 use run_script::extract_command_from_manifest;
 
 // The output (stdout, stderr) and exit status from the child process.

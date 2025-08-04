@@ -24,6 +24,21 @@ typedef struct ten_extension_tester_t ten_extension_tester_t;
 typedef struct ten_env_tester_t ten_env_tester_t;
 typedef struct ten_timer_t ten_timer_t;
 
+typedef struct ten_extension_tester_test_graph_info_t {
+  TEN_EXTENSION_TESTER_TEST_MODE test_mode;
+
+  union {
+    struct {
+      ten_string_t addon_name;
+      ten_string_t property_json;
+    } single;
+
+    struct {
+      ten_string_t graph_json;
+    } graph;
+  } test_target;
+} ten_extension_tester_test_graph_info_t;
+
 struct ten_extension_tester_t {
   ten_binding_handle_t binding_handle;
 
@@ -37,18 +52,7 @@ struct ten_extension_tester_t {
   ten_env_proxy_t *test_extension_ten_env_proxy;
   ten_event_t *test_extension_ten_env_proxy_create_completed;
 
-  TEN_EXTENSION_TESTER_TEST_MODE test_mode;
-
-  union {
-    struct {
-      ten_string_t addon_name;
-      ten_string_t property_json;
-    } addon;
-
-    struct {
-      ten_string_t graph_json;
-    } graph;
-  } test_target;
+  ten_extension_tester_test_graph_info_t test_graph_info;
 
   ten_string_t test_app_property_json;
 

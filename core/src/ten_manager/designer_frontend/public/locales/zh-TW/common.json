@@ -168,6 +168,7 @@
     "apps": {
       "manager": "應用程式管理器",
       "tableCaption": "已載入的應用程式列表。",
+      "emptyPlaceholder": "未載入應用程式。",
       "baseDir": "基礎目錄",
       "run": "執行應用程式",
       "runScript": "執行腳本",
@@ -187,7 +188,13 @@
       "appNameDescription": "輸入應用程式的名稱。",
       "baseDirDescription": "選擇應用程式的基礎目錄。",
       "run_opts": "選項",
-      "run_with_agent": "使用 TEN Agent 執行"
+      "run_with_agent": "使用 TEN Agent 執行",
+      "status": "狀態",
+      "noRunningScripts": "無運行中的腳本",
+      "runningScriptsCaption": "運行中腳本的列表。",
+      "loadedApps": "已載入應用程式",
+      "runningScripts": "運行中腳本",
+      "runningScriptsWithCount": "{{count}} 個運行中腳本"
     },
     "graph": {
       "title": "節點",
@@ -260,6 +267,8 @@
     "openAGraphToInstall": "開啟圖譜以安裝擴充套件",
     "noMatchResult": "無符合結果",
     "matchResult": "找到 {{count}} 個符合結果",
+    "noExtensions": "未找到擴充套件",
+    "tryAdjusting": "嘗試調整您的搜尋或篩選條件",
     "install": "安裝",
     "installed": "已安裝",
     "filter": {
@@ -271,7 +280,7 @@
       "sort-name-desc": "名稱（降序）",
       "type": "類型"
     },
-    "extensionTitle": "擴充套件: {{name}}",
+    "extensionTitle": "{{type}}: {{name}}",
     "os-arch": "作業系統/架構",
     "selectOsArch": "選擇作業系統/架構",
     "os-arch-default": "預設",
@@ -282,7 +291,16 @@
     "versionLatest": "最新",
     "localAddonTip": "(本地)",
     "tags": "標籤",
-    "identifier": "識別碼"
+    "identifier": "識別碼",
+    "packageType": {
+      "all": "全部",
+      "invalid": "無效",
+      "system": "系統",
+      "app": "應用程式",
+      "extension": "擴充功能",
+      "protocol": "協定",
+      "addonLoader": "附加元件載入器"
+    }
   },
   "rtcInteraction": {
     "title": "實時語音 AI 代理"
@@ -304,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",
+    "scriptsRunningWithCount": "正在運行 {{count}} 個腳本",
     "appsError": "獲取應用程式失敗",
     "workspace": {
       "title": "目前工作區",

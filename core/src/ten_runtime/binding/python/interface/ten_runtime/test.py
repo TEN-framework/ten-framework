@@ -8,7 +8,9 @@ from typing import Callable, final
 
 from libten_runtime_python import (
     _ExtensionTester,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_ten_env_tester_register_ten_env_tester_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+
 
 from .test_base import TenEnvTesterBase
 from .cmd_result import CmdResult
@@ -153,3 +155,6 @@ class ExtensionTester(_ExtensionTester):
         self, _ten_env_tester: TenEnvTester, _video_frame: VideoFrame
     ) -> None:
         pass
+
+
+_ten_py_ten_env_tester_register_ten_env_tester_type(TenEnvTester)

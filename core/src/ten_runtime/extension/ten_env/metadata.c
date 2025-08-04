@@ -23,8 +23,8 @@
 
 bool ten_extension_set_property(ten_extension_t *self, const char *name,
                                 ten_value_t *value, ten_error_t *err) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
 
   if (!ten_schema_store_adjust_property_kv(&self->schema_store, name, value,
                                            err)) {
@@ -121,7 +121,8 @@ bool ten_extension_set_property_async(ten_extension_t *self, const char *path,
 
 ten_value_t *ten_extension_peek_property(ten_extension_t *extension,
                                          const char *path, ten_error_t *err) {
-  TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+  TEN_ASSERT(extension, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(extension, true),
              "Invalid argument.");
 
   if (!path || !strlen(path)) {

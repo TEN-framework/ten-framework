@@ -64,7 +64,7 @@ class muxer_thread_t {
 
   void create_muxer();
   void wait_for_the_first_av_frame();
-  void notify_completed(bool success = true);
+  void send_complete_cmd(bool success = true);
 
   ten_thread_t *muxer_thread;
   ten_event_t *muxer_thread_is_started;

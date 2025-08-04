@@ -337,7 +337,7 @@ bool ten_remote_on_input(ten_remote_t *self, ten_shared_ptr_t *msg,
     // The source of all the messages coming from this remote will be
     // 'remote->uri'. Remote URI is used to identify the identity of the other
     // side, ex: the other side is a TEN app or a TEN client.
-    ten_msg_set_src_uri(msg, ten_string_get_raw_str(&self->uri));
+    ten_msg_set_src_app_uri(msg, ten_string_get_raw_str(&self->uri));
 
     return self->on_msg(self, msg, self->on_msg_data);
   }
@@ -402,8 +402,8 @@ static void on_server_connected(ten_protocol_t *protocol, bool success) {
              "Should not happen.");
 
   ten_remote_t *remote = connection->attached_target.remote;
-  TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-             "Should not happen.");
+  TEN_ASSERT(remote, "Should not happen.");
+  TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
   TEN_ASSERT(remote->engine && ten_engine_check_integrity(remote->engine, true),
              "Should not happen.");

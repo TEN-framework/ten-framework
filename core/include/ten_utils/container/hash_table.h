@@ -95,6 +95,8 @@ TEN_UTILS_API void ten_hashtable_destroy(ten_hashtable_t *self);
 
 TEN_UTILS_API uint32_t ten_hashtable_items_cnt(ten_hashtable_t *self);
 
+TEN_UTILS_API bool ten_hashtable_is_empty(ten_hashtable_t *self);
+
 TEN_UTILS_API void ten_hashtable_init(ten_hashtable_t *self,
                                       ptrdiff_t hh_offset);
 

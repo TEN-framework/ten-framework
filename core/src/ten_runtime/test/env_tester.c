@@ -16,6 +16,7 @@
 #include "include_internal/ten_runtime/test/extension_tester.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_runtime/extension/extension.h"
 #include "ten_runtime/msg/cmd/close_app/cmd.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
@@ -48,7 +49,8 @@ bool ten_env_tester_check_integrity(ten_env_tester_t *self, bool check_thread) {
 }
 
 ten_env_tester_t *ten_env_tester_create(ten_extension_tester_t *tester) {
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_t *self = TEN_MALLOC(sizeof(ten_env_tester_t));
@@ -314,7 +316,8 @@ static void ten_env_tester_notify_log_ctx_destroy(
 static void ten_extension_tester_execute_error_handler_task(void *self,
                                                             void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_send_msg_ctx_t *ctx = arg;
@@ -328,7 +331,8 @@ static void ten_extension_tester_execute_error_handler_task(void *self,
 static void ten_extension_tester_execute_cmd_result_handler_task(void *self,
                                                                  void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_send_cmd_callback_ctx_t *ctx = arg;
@@ -350,7 +354,8 @@ static void ten_extension_tester_execute_cmd_result_handler_task(void *self,
 static void ten_extension_tester_execute_return_result_handler_task(void *self,
                                                                     void *arg) {
   ten_extension_tester_t *tester = self;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_env_tester_return_result_ctx_t *return_result_info = arg;
@@ -826,7 +831,7 @@ bool ten_env_tester_send_video_frame(
 }
 
 static void test_app_ten_env_send_close_app_cmd(ten_env_t *ten_env,
-                                                void *user_data) {
+                                                TEN_UNUSED void *user_data) {
   TEN_ASSERT(ten_env, "Should not happen.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
 
@@ -904,7 +909,8 @@ bool ten_env_tester_log(ten_env_tester_t *self, TEN_LOG_LEVEL level,
   return rc;
 }
 
-bool ten_env_tester_on_init_done(ten_env_tester_t *self, ten_error_t *err) {
+bool ten_env_tester_on_init_done(ten_env_tester_t *self,
+                                 TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
 
@@ -913,7 +919,8 @@ bool ten_env_tester_on_init_done(ten_env_tester_t *self, ten_error_t *err) {
   return true;
 }
 
-bool ten_env_tester_on_start_done(ten_env_tester_t *self, ten_error_t *err) {
+bool ten_env_tester_on_start_done(ten_env_tester_t *self,
+                                  TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
 
@@ -922,7 +929,8 @@ bool ten_env_tester_on_start_done(ten_env_tester_t *self, ten_error_t *err) {
   return true;
 }
 
-bool ten_env_tester_on_stop_done(ten_env_tester_t *self, ten_error_t *err) {
+bool ten_env_tester_on_stop_done(ten_env_tester_t *self,
+                                 TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
 
@@ -931,7 +939,8 @@ bool ten_env_tester_on_stop_done(ten_env_tester_t *self, ten_error_t *err) {
   return true;
 }
 
-bool ten_env_tester_on_deinit_done(ten_env_tester_t *self, ten_error_t *err) {
+bool ten_env_tester_on_deinit_done(ten_env_tester_t *self,
+                                   TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
 
@@ -948,4 +957,32 @@ void ten_env_tester_set_destroy_handler_in_target_lang(
              "Invalid use of ten_env_tester %p.", self);
 
   self->destroy_handler = destroy_handler;
+}
+
+static bool ten_env_tester_set_raw_msg_source(
+    ten_env_tester_t *self, ten_msg_t *msg, const char *app_uri,
+    const char *graph_id, const char *extension_name, ten_error_t *err) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env_tester_check_integrity(self, true),
+             "Invalid use of ten_env_tester %p.", self);
+
+  TEN_ASSERT(msg, "Invalid argument.");
+  TEN_ASSERT(ten_raw_msg_check_integrity(msg), "Invalid argument.");
+
+  if (!ten_loc_str_check_correct(app_uri, graph_id, extension_name, err)) {
+    return false;
+  }
+
+  ten_raw_msg_set_custom_src(msg, app_uri, graph_id, extension_name);
+
+  return true;
+}
+
+bool ten_env_tester_set_msg_source(ten_env_tester_t *self,
+                                   ten_shared_ptr_t *msg, const char *app_uri,
+                                   const char *graph_id,
+                                   const char *extension_name,
+                                   ten_error_t *err) {
+  return ten_env_tester_set_raw_msg_source(
+      self, ten_msg_get_raw_msg(msg), app_uri, graph_id, extension_name, err);
 }

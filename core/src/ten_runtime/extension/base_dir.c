@@ -11,8 +11,8 @@
 #include "ten_utils/lib/string.h"
 
 const char *ten_extension_get_base_dir(ten_extension_t *self) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
 
   if (self->addon_host) {
     return ten_string_get_raw_str(&self->addon_host->base_dir);

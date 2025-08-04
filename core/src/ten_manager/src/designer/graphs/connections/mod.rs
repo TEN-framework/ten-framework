@@ -49,7 +49,10 @@ pub struct DesignerMessageFlow {
 impl From<GraphMessageFlow> for DesignerMessageFlow {
     fn from(msg_flow: GraphMessageFlow) -> Self {
         DesignerMessageFlow {
-            name: msg_flow.name,
+            name: msg_flow.name.expect(
+                "name field should be Some when converting to \
+                 DesignerMessageFlow",
+            ),
             dest: get_designer_destination_from_property(msg_flow.dest),
         }
     }

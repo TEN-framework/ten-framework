@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/extension_thread/on_xxx.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/msg/msg.h"
+#include "include_internal/ten_runtime/path/path_table.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
@@ -188,15 +189,6 @@ void ten_extension_group_on_create_extensions_done(ten_extension_group_t *self,
   }
 
   ten_list_swap(&extension_thread->extensions, extensions);
-
-  ten_list_foreach (&extension_thread->extensions, iter) {
-    ten_extension_t *extension = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(extension, "Invalid argument.");
-
-    ten_extension_inherit_thread_ownership(extension, extension_thread);
-    TEN_ASSERT(ten_extension_check_integrity(extension, true),
-               "Invalid use of extension %p.", extension);
-  }
 
   ten_extension_thread_add_all_created_extensions(extension_thread);
 }

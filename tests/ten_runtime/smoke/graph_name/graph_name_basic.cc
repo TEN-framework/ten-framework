@@ -141,8 +141,8 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
     client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr, nullptr,
-                              nullptr);
+    start_graph_cmd->set_dests(
+        {{"msgpack://127.0.0.1:8001/", nullptr, nullptr}});
     start_graph_cmd->set_graph_from_json(R"({
                "nodes": [{
                  "type": "extension",
@@ -210,8 +210,8 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
   // Send data to extension_1, it will return from extension_2 with json
   // result.
   auto send_message_cmd = ten::cmd_t::create("send_message");
-  send_message_cmd->set_dest("msgpack://127.0.0.1:8001/", nullptr,
-                             "extension1");
+  send_message_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "", "extension1"}});
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(send_message_cmd));
@@ -223,8 +223,8 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
   auto *client2 = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8002/");
 
   send_message_cmd = ten::cmd_t::create("send_message");
-  send_message_cmd->set_dest("msgpack://127.0.0.1:8002/", graph_id.c_str(),
-                             "extension3");
+  send_message_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8002/", graph_id.c_str(), "extension3"}});
 
   // It must be sent directly to 127.0.0.1:8002, not 127.0.0.1:8001
   cmd_result = client2->send_cmd_and_recv_result(std::move(send_message_cmd));
@@ -232,8 +232,8 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
   ten_test::check_detail_with_json(cmd_result, R"({"id": 1, "name": "aa"})");
 
   send_message_cmd = ten::cmd_t::create("send_message");
-  send_message_cmd->set_dest("msgpack://127.0.0.1:8001/", graph_id.c_str(),
-                             "extension2");
+  send_message_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", graph_id.c_str(), "extension2"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(send_message_cmd));
 

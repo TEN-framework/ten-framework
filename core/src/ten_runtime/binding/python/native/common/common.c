@@ -117,7 +117,19 @@ void ten_py_add_paths_to_sys(ten_list_t *paths) {
 }
 
 const char *ten_py_get_path(void) {
+  // Py_GetPath is deprecated in Python 3.13, but we support Python 3.10 and
+  // above.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
   wchar_t *path = Py_GetPath();
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
   const char *path_str = Py_EncodeLocale(path, NULL);
   return path_str;
 }

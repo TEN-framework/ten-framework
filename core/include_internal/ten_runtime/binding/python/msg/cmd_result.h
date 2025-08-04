@@ -46,3 +46,6 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_cmd_result_is_completed(
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_cmd_result_clone(PyObject *self,
                                                           PyObject *args);
+
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_cmd_result_register_cmd_result_type(
+    PyObject *self, PyObject *args);

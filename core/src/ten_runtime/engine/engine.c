@@ -144,8 +144,7 @@ static void ten_engine_set_graph_id(ten_engine_t *self, ten_shared_ptr_t *cmd) {
       TEN_ASSERT(dest_loc, "Should not happen.");
       TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
 
-      ten_string_set_formatted(&dest_loc->graph_id, "%s",
-                               ten_string_get_raw_str(&graph_id_str));
+      ten_loc_set_graph_id(dest_loc, ten_string_get_raw_str(&graph_id_str));
     }
 
     ten_string_deinit(&graph_id_str);
@@ -164,7 +163,8 @@ bool ten_engine_is_ready_to_handle_msg(ten_engine_t *self) {
   return self->is_ready_to_handle_msg;
 }
 
-static void ten_engine_on_end_of_life(ten_ref_t *ref, void *supervisee) {
+static void ten_engine_on_end_of_life(TEN_UNUSED ten_ref_t *ref,
+                                      void *supervisee) {
   ten_engine_t *self = (ten_engine_t *)supervisee;
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(self, false), "Should not happen.");

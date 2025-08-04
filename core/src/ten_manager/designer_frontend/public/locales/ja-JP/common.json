@@ -168,6 +168,7 @@
     "apps": {
       "manager": "アプリマネージャー",
       "tableCaption": "読み込まれたアプリの一覧",
+      "emptyPlaceholder": "アプリが読み込まれていません。",
       "baseDir": "ベースディレクトリ",
       "run": "アプリを実行",
       "runScript": "スクリプトを実行",
@@ -187,7 +188,13 @@
       "appNameDescription": "アプリの名前を入力してください。",
       "baseDirDescription": "アプリのベースディレクトリを選択してください。",
       "run_opts": "オプション",
-      "run_with_agent": "エージェントで実行"
+      "run_with_agent": "エージェントで実行",
+      "status": "ステータス",
+      "noRunningScripts": "実行中のスクリプトがありません",
+      "runningScriptsCaption": "実行中のスクリプトの一覧。",
+      "loadedApps": "読み込まれたアプリ",
+      "runningScripts": "実行中のスクリプト",
+      "runningScriptsWithCount": "{{count}}個のスクリプトが実行中"
     },
     "graph": {
       "title": "ノード",
@@ -260,6 +267,8 @@
     "openAGraphToInstall": "拡張機能をインストールするにはグラフを開いてください",
     "noMatchResult": "一致する結果がありません",
     "matchResult": "{{count}}件の一致する結果",
+    "noExtensions": "拡張機能が見つかりません",
+    "tryAdjusting": "検索条件やフィルターを調整してみてください",
     "install": "インストール",
     "installed": "インストール済み",
     "filter": {
@@ -271,7 +280,7 @@
       "sort-name-desc": "名前（降順）",
       "type": "タイプ"
     },
-    "extensionTitle": "拡張機能: {{name}}",
+    "extensionTitle": "{{type}}: {{name}}",
     "os-arch": "OS/アーキテクチャ",
     "selectOsArch": "OS/アーキテクチャを選択",
     "os-arch-default": "デフォルト",
@@ -282,7 +291,16 @@
     "versionLatest": "最新",
     "localAddonTip": "(ローカル)",
     "tags": "タグ",
-    "identifier": "識別"
+    "identifier": "識別",
+    "packageType": {
+      "all": "すべて",
+      "invalid": "無効",
+      "system": "システム",
+      "app": "アプリ",
+      "extension": "拡張機能",
+      "protocol": "プロトコル",
+      "addonLoader": "アドオンローダー"
+    }
   },
   "rtcInteraction": {
     "title": "リアルタイム音声AIエージェント"
@@ -304,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",
+    "scriptsRunningWithCount": "{{count}}個のスクリプトが実行中",
     "appsError": "アプリの取得に失敗しました",
     "workspace": {
       "title": "現在の作業場所",

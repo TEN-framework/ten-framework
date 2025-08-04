@@ -8,14 +8,35 @@ import z from "zod";
 
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
-import { ExtensionSchema, TenCloudStorePackageSchema } from "@/types/extension";
+import {
+  ExtensionSchema,
+  TenCloudStorePackageSchema,
+  TenPackageQueryFilterSchema,
+  TenPackageQueryOptionsSchema,
+} from "@/types/extension";
 
 export const ENDPOINT_EXTENSION = {
+  /** @deprecated */
   registryPackages: {
     [ENDPOINT_METHOD.GET]: {
       url: `${API_DESIGNER_V1}/registry/packages`,
       method: ENDPOINT_METHOD.GET,
       queryParams: ["page", "pageSize"],
+      responseSchema: genResSchema(
+        z.object({
+          packages: z.array(TenCloudStorePackageSchema),
+        })
+      ),
+    },
+  },
+  searchRegistryPackages: {
+    [ENDPOINT_METHOD.POST]: {
+      url: `${API_DESIGNER_V1}/registry/packages/search`,
+      method: ENDPOINT_METHOD.POST,
+      requestPayload: z.object({
+        filter: TenPackageQueryFilterSchema,
+        options: TenPackageQueryOptionsSchema.optional(),
+      }),
       responseSchema: genResSchema(
         z.object({
           packages: z.array(TenCloudStorePackageSchema),

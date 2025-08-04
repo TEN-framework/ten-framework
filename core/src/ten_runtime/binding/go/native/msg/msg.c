@@ -7,6 +7,7 @@
 #include "ten_runtime/binding/go/interface/ten_runtime/msg.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #include "include_internal/ten_runtime/binding/go/internal/common.h"
 #include "include_internal/ten_runtime/binding/go/internal/json.h"
@@ -17,6 +18,7 @@
 #include "ten_runtime/binding/go/interface/ten_runtime/c_value.h"
 #include "ten_runtime/binding/go/interface/ten_runtime/common.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/loc.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
@@ -906,44 +908,188 @@ ten_go_error_t ten_go_msg_get_source(uintptr_t bridge_addr,
   return cgo_error;
 }
 
-ten_go_error_t ten_go_msg_set_dest(uintptr_t bridge_addr, const void *app_uri,
-                                   int app_uri_len, const void *graph_id,
-                                   int graph_id_len, const void *extension,
-                                   int extension_len) {
+ten_go_error_t ten_go_msg_set_dests(uintptr_t bridge_addr, const void *buffer,
+                                    int buffer_len) {
   ten_go_msg_t *self = ten_go_msg_reinterpret(bridge_addr);
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_go_msg_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(buffer, "Buffer should not be NULL.");
+  TEN_ASSERT(buffer_len > 0, "Buffer length should be positive.");
 
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  ten_string_t app_uri_str;
-  ten_string_init_from_c_str_with_size(&app_uri_str, app_uri, app_uri_len);
-
-  ten_string_t graph_id_str;
-  ten_string_init_from_c_str_with_size(&graph_id_str, graph_id, graph_id_len);
-
-  ten_string_t extension_str;
-  ten_string_init_from_c_str_with_size(&extension_str, extension,
-                                       extension_len);
-
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_msg_clear_and_set_dest(
-      ten_go_msg_c_msg(self), ten_string_get_raw_str(&app_uri_str),
-      ten_string_get_raw_str(&graph_id_str),
-      ten_string_get_raw_str(&extension_str), &err);
+  const uint8_t *buf = (const uint8_t *)buffer;
+  uint32_t offset = 0;
 
-  if (!rc) {
+  // Check buffer has at least 4 bytes for count
+  if (buffer_len < 4) {
     ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
-                     ten_error_message(&err));
+                     "Buffer too small to contain destination count");
+    goto cleanup;
   }
 
-  ten_error_deinit(&err);
-  ten_string_deinit(&app_uri_str);
-  ten_string_deinit(&graph_id_str);
-  ten_string_deinit(&extension_str);
+  // Read destination count (4 bytes, little-endian)
+  uint32_t dest_count = 0;
+  memcpy(&dest_count, buf + offset, 4);
+  offset += 4;
 
+  if (dest_count == 0) {
+    // Empty list, just clear destinations
+    ten_msg_clear_dest(ten_go_msg_c_msg(self));
+    goto cleanup;
+  }
+
+  // Allocate array to store destination information
+  ten_loc_t *dest_locs = TEN_MALLOC(sizeof(ten_loc_t) * dest_count);
+  TEN_ASSERT(dest_locs, "Failed to allocate memory.");
+  if (!dest_locs) {
+    ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                     "Failed to allocate memory");
+    goto cleanup;
+  }
+
+  // Phase 1: Parse all destinations and store string pointers
+  for (uint32_t i = 0; i < dest_count; i++) {
+    // Initialize strings
+    ten_loc_init_empty(&dest_locs[i]);
+
+    // Check buffer has at least 3 bytes for existence flags
+    if (offset + 3 > buffer_len) {
+      ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                       "Buffer truncated while reading existence flags");
+      // Clean up allocated destinations
+      for (uint32_t j = 0; j <= i; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+      goto cleanup;
+    }
+
+    // Read existence flags (1 byte each)
+    uint8_t has_app_uri = buf[offset];
+    offset += 1;
+    uint8_t has_graph_id = buf[offset];
+    offset += 1;
+    uint8_t has_extension_name = buf[offset];
+    offset += 1;
+
+    // Check buffer has at least 12 bytes for three length fields
+    if (offset + 12 > buffer_len) {
+      ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                       "Buffer truncated while reading destination lengths");
+      // Clean up allocated destinations
+      for (uint32_t j = 0; j <= i; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+      goto cleanup;
+    }
+
+    // Read string lengths (4 bytes each, little-endian)
+    uint32_t app_uri_len = 0;
+    uint32_t graph_id_len = 0;
+    uint32_t extension_name_len = 0;
+
+    memcpy(&app_uri_len, buf + offset, 4);
+    offset += 4;
+    memcpy(&graph_id_len, buf + offset, 4);
+    offset += 4;
+    memcpy(&extension_name_len, buf + offset, 4);
+    offset += 4;
+
+    // Calculate total string data length based on existence flags
+    uint32_t total_str_len = 0;
+    if (has_app_uri != 0) {
+      total_str_len += app_uri_len;
+    }
+    if (has_graph_id != 0) {
+      total_str_len += graph_id_len;
+    }
+    if (has_extension_name != 0) {
+      total_str_len += extension_name_len;
+    }
+
+    // Check buffer has enough space for all string data
+    if (offset + total_str_len > buffer_len) {
+      ten_go_error_set(&cgo_error, TEN_ERROR_CODE_GENERIC,
+                       "Buffer truncated while reading destination strings");
+      // Clean up allocated destinations
+      for (uint32_t j = 0; j <= i; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+      goto cleanup;
+    }
+
+    // Extract strings based on existence flags
+    if (has_app_uri != 0) {
+      ten_loc_init_app_uri_with_size(&dest_locs[i],
+                                     (const char *)(buf + offset), app_uri_len);
+      offset += app_uri_len;
+    }
+
+    if (has_graph_id != 0) {
+      ten_loc_init_graph_id_with_size(
+          &dest_locs[i], (const char *)(buf + offset), graph_id_len);
+      offset += graph_id_len;
+    }
+
+    if (has_extension_name != 0) {
+      ten_loc_init_extension_name_with_size(
+          &dest_locs[i], (const char *)(buf + offset), extension_name_len);
+      offset += extension_name_len;
+    }
+  }
+
+  // Phase 2: Validate all locations
+  for (uint32_t i = 0; i < dest_count; i++) {
+    if (!ten_loc_str_check_correct(
+            dest_locs[i].has_app_uri
+                ? ten_string_get_raw_str(&dest_locs[i].app_uri)
+                : NULL,
+            dest_locs[i].has_graph_id
+                ? ten_string_get_raw_str(&dest_locs[i].graph_id)
+                : NULL,
+            dest_locs[i].has_extension_name
+                ? ten_string_get_raw_str(&dest_locs[i].extension_name)
+                : NULL,
+            &err)) {
+      ten_go_error_set_from_error(&cgo_error, &err);
+      // Clean up all destinations
+      for (uint32_t j = 0; j < dest_count; j++) {
+        ten_loc_deinit(&dest_locs[j]);
+      }
+      TEN_FREE(dest_locs);
+      goto cleanup;
+    }
+  }
+
+  // Phase 3: All validations passed, now clear and add destinations
+  ten_msg_clear_dest(ten_go_msg_c_msg(self));
+  for (uint32_t i = 0; i < dest_count; i++) {
+    ten_msg_add_dest(ten_go_msg_c_msg(self),
+                     dest_locs[i].has_app_uri
+                         ? ten_string_get_raw_str(&dest_locs[i].app_uri)
+                         : NULL,
+                     dest_locs[i].has_graph_id
+                         ? ten_string_get_raw_str(&dest_locs[i].graph_id)
+                         : NULL,
+                     dest_locs[i].has_extension_name
+                         ? ten_string_get_raw_str(&dest_locs[i].extension_name)
+                         : NULL);
+  }
+
+  // Clean up destinations
+  for (uint32_t i = 0; i < dest_count; i++) {
+    ten_loc_deinit(&dest_locs[i]);
+  }
+  TEN_FREE(dest_locs);
+
+cleanup:
+  ten_error_deinit(&err);
   return cgo_error;
 }

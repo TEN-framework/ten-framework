@@ -27,8 +27,8 @@
 
 static bool ten_extension_determine_ten_namespace_properties(
     ten_extension_t *self, ten_value_t *ten_namespace_properties) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(
       ten_namespace_properties && ten_value_is_object(ten_namespace_properties),
       "Invalid argument.");

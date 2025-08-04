@@ -47,7 +47,7 @@ class test_predefined_graph : public ten::extension_t {
       std::string graph_name, ten::ten_env_t &ten_env,
       const std::function<void(ten::ten_env_t &, const std::string &)> &cb) {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
-    start_graph_cmd->set_dest(nullptr, nullptr, nullptr);
+    start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name(graph_name.c_str());
 
     ten_env.send_cmd(
@@ -60,8 +60,9 @@ class test_predefined_graph : public ten::extension_t {
           auto graph_id = cmd_result->get_property_string("detail");
 
           auto hello_world_cmd = ten::cmd_t::create("hello_world");
-          hello_world_cmd->set_dest("msgpack://127.0.0.1:8001/",
-                                    graph_id.c_str(), "normal_extension_1");
+          hello_world_cmd->set_dests(
+              {{"msgpack://127.0.0.1:8001/", graph_id.c_str(),
+                "normal_extension_1"}});
 
           ten_env.send_cmd(
               std::move(hello_world_cmd),
@@ -105,7 +106,7 @@ class test_predefined_graph : public ten::extension_t {
       // Shut down the graph 1; otherwise, the app won't be able to close
       // because there is still a running engine/graph.
       auto stop_graph_1_cmd = ten::cmd_stop_graph_t::create();
-      stop_graph_1_cmd->set_dest(nullptr, nullptr, nullptr);
+      stop_graph_1_cmd->set_dests({{""}});
       stop_graph_1_cmd->set_graph_id(graph_id_1.c_str());
 
       ten_env.send_cmd(
@@ -116,7 +117,7 @@ class test_predefined_graph : public ten::extension_t {
             // Shut down the graph 2; otherwise, the app won't be able to close
             // because there is still a running engine/graph.
             auto stop_graph_2_cmd = ten::cmd_stop_graph_t::create();
-            stop_graph_2_cmd->set_dest(nullptr, nullptr, nullptr);
+            stop_graph_2_cmd->set_dests({{""}});
             stop_graph_2_cmd->set_graph_id(graph_id_2.c_str());
 
             ten_env.send_cmd(
@@ -302,8 +303,8 @@ TEST(StartGraphTest, StartTwoPredefinedGraphs) {  // NOLINT
   // The 'graph_id' MUST be "default" (a special string) if we want to send the
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
-  test_cmd->set_dest("msgpack://127.0.0.1:8001/", "default",
-                     "predefined_graph");
+  test_cmd->set_dests(
+      {{"msgpack://127.0.0.1:8001/", "default", "predefined_graph"}});
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_json(cmd_result, R"({"id": 1, "name": "a"})");

@@ -12,6 +12,9 @@
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/test/env_tester_proxy.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
+
+static PyTypeObject *ten_py_registered_ten_env_tester_type = NULL;
 
 bool ten_py_ten_env_tester_check_integrity(ten_py_ten_env_tester_t *self) {
   TEN_ASSERT(self, "Should not happen.");
@@ -40,6 +43,22 @@ static void ten_py_ten_env_tester_c_part_destroyed(
 
 static PyObject *create_actual_py_ten_env_tester_instance(
     ten_py_ten_env_tester_t *py_ten_env_tester) {
+  if (ten_py_registered_ten_env_tester_type) {
+    // Use the registered TenEnvTester class directly if available
+    PyObject *args = PyTuple_Pack(1, py_ten_env_tester);
+    PyObject *ten_env_tester_instance = PyObject_CallObject(
+        (PyObject *)ten_py_registered_ten_env_tester_type, args);
+    Py_DECREF(args);
+
+    if (!ten_env_tester_instance) {
+      PyErr_Print();
+      return NULL;
+    }
+
+    return ten_env_tester_instance;
+  }
+
+  // Fallback to the original implementation if no registered type.
   // Import the Python module where TenEnvTester is defined.
   PyObject *module_name = PyUnicode_FromString("ten_runtime.test");
   PyObject *module = PyImport_Import(module_name);
@@ -194,4 +213,19 @@ bool ten_py_ten_env_tester_init_for_module(PyObject *module) {
   }
 
   return true;
+}
+
+PyObject *ten_py_ten_env_tester_register_ten_env_tester_type(
+    TEN_UNUSED PyObject *self, PyObject *args) {
+  PyObject *cls = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &PyType_Type, &cls)) {
+    return NULL;
+  }
+
+  Py_XINCREF(cls);
+  Py_XDECREF(ten_py_registered_ten_env_tester_type);
+
+  ten_py_registered_ten_env_tester_type = (PyTypeObject *)cls;
+
+  Py_RETURN_NONE;
 }

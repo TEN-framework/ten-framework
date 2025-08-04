@@ -8,7 +8,9 @@ from enum import IntEnum
 from typing import TypeVar, cast
 from libten_runtime_python import (
     _AudioFrame,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_audio_frame_register_audio_frame_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+from .msg import Msg
 
 T = TypeVar("T", bound="AudioFrame")
 
@@ -23,8 +25,8 @@ class AudioFrameDataFmt(IntEnum):
     NON_INTERLEAVE = 2
 
 
-class AudioFrame(_AudioFrame):
-    def __init__(self, name: str):
+class AudioFrame(_AudioFrame, Msg):
+    def __init__(self, name: str):  # pyright: ignore[reportMissingSuperCall]
         raise NotImplementedError("Use AudioFrame.create instead.")
 
     @classmethod
@@ -37,3 +39,6 @@ class AudioFrame(_AudioFrame):
     ) -> "AudioFrame":
         # AudioFrame is a wrapper around _AudioFrame, so this cast is safe
         return cast("AudioFrame", _AudioFrame.clone(self))
+
+
+_ten_py_audio_frame_register_audio_frame_type(AudioFrame)

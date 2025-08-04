@@ -1,0 +1,75 @@
+name: 🚀 Manual - Publish Extension to TEN Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: 'Extension name (required)'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to publish (optional, defaults to main branch)'
+        required: false
+        type: string
+        default: 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-extension:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory $(pwd)
+
+      - name: Setup environment
+        run: |
+          echo "EXTENSION=${{ github.event.inputs.extension }}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Display publish parameters
+        run: |
+          echo "==================== Publish Parameters ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "========================================================"
+
+      - name: Install and build extension
+        run: |
+          cd ai_agents/agents/ten_packages/extension/${{ github.event.inputs.extension }}
+          echo "Installing extension..."
+          tman install --standalone
+
+          echo "Attempting to build extension..."
+          tman run build || echo "Build step skipped or failed - continuing with publish"
+
+      - name: Publish extension
+        run: |
+          cd ai_agents/agents/ten_packages/extension/${{ github.event.inputs.extension }}
+          echo "Publishing extension to TEN store..."
+
+          identity=$(tman package --get-identity)
+          echo "Identity: $identity"
+
+          tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish
+
+      - name: Show publish completion
+        if: always()
+        run: |
+          echo "==================== Publish Completed ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "Check the logs above for detailed publish results."
+          echo "========================================================"

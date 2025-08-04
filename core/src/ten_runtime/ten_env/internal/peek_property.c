@@ -165,7 +165,8 @@ ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_EXTENSION: {
     ten_extension_t *extension = ten_env_get_attached_extension(self);
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+    TEN_ASSERT(extension, "Invalid use of extension %p.", extension);
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid use of extension %p.", extension);
 
     ten_extension_thread_t *extension_thread = extension->extension_thread;
@@ -179,7 +180,7 @@ ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
       break;
 
     case TEN_METADATA_LEVEL_APP: {
-      ten_app_t *app = extension->extension_context->engine->app;
+      ten_app_t *app = ten_extension_get_belonging_app(extension);
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension, that is,
       // from the extension thread.
@@ -264,7 +265,8 @@ bool ten_env_peek_property_async(ten_env_t *self, const char *path,
   switch (self->attach_to) {
   case TEN_ENV_ATTACH_TO_EXTENSION: {
     ten_extension_t *extension = ten_env_get_attached_extension(self);
-    TEN_ASSERT(extension && ten_extension_check_integrity(extension, true),
+    TEN_ASSERT(extension, "Invalid use of extension %p.", extension);
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid use of extension %p.", extension);
 
     ten_extension_thread_t *extension_thread = extension->extension_thread;
@@ -279,7 +281,7 @@ bool ten_env_peek_property_async(ten_env_t *self, const char *path,
       break;
 
     case TEN_METADATA_LEVEL_APP: {
-      ten_app_t *app = extension->extension_context->engine->app;
+      ten_app_t *app = ten_extension_get_belonging_app(extension);
       // TEN_NOLINTNEXTLINE(thread-check):
       // thread-check: Access the app's property from an extension, that
       // is, from the extension thread.

@@ -64,15 +64,31 @@ impl Graph {
 
         // Iterate through each message flow in the group.
         for (flow_idx, flow) in message_flows.iter().enumerate() {
-            // Check if the message name has already been seen.
-            if let Some(idx) = msg_names.get(&flow.name) {
-                errors.push(format!(
-                    "'{}' is defined in flow[{}] and flow[{}].",
-                    flow.name, idx, flow_idx
-                ));
-            } else {
-                // Record the first occurrence of the message name.
-                msg_names.insert(flow.name.clone(), flow_idx);
+            // Handle both name and names fields
+            if let Some(flow_name) = &flow.name {
+                // If name field exists, use it
+                if let Some(idx) = msg_names.get(flow_name) {
+                    errors.push(format!(
+                        "'{flow_name}' is defined in flow[{idx}] and \
+                         flow[{flow_idx}]."
+                    ));
+                } else {
+                    // Record the first occurrence of the message name.
+                    msg_names.insert(flow_name.clone(), flow_idx);
+                }
+            } else if let Some(flow_names) = &flow.names {
+                // If name field doesn't exist, check names field
+                for name in flow_names {
+                    if let Some(idx) = msg_names.get(name) {
+                        errors.push(format!(
+                            "'{name}' is defined in flow[{idx}] and \
+                             flow[{flow_idx}]."
+                        ));
+                    } else {
+                        // Record the first occurrence of the message name.
+                        msg_names.insert(name.clone(), flow_idx);
+                    }
+                }
             }
         }
 
