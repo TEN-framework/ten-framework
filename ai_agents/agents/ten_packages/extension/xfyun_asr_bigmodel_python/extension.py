@@ -31,8 +31,8 @@ from .recognition import XfyunWSRecognition, XfyunWSRecognitionCallback
 from .config import XfyunASRConfig
 
 
-class XfyunBigmodelRecognitionCallback(XfyunWSRecognitionCallback):
-    """Xfyun ASR Bigmodel Recognition Callback Class"""
+class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
+    """Xfyun ASR Bigmodel Bigmodel Recognition Callback Class"""
 
     def __init__(self, extension_instance):
         super().__init__()
@@ -136,20 +136,18 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.is_finalize_disconnect: bool = False
 
         # WPGS mode status variables
-        self.last_result: str = ""
-        self.last_result_sn: int = -1
-        self.wpgs_buffer: Dict[int, str] = {}  # Mapping from sequence number to text
+        self.wpgs_buffer: Dict[int, Dict[str, Any]] = {}  # Mapping from sequence number to data including text, bg, ed
 
         # Reconnection manager
         self.reconnect_manager: Optional[ReconnectManager] = None
 
         # Callback instance
-        self.recognition_callback: Optional[XfyunBigmodelRecognitionCallback] = None
+        self.recognition_callback: Optional[XfyunRecognitionCallback] = None
 
     @override
     def vendor(self) -> str:
         """Get ASR vendor name"""
-        return "xfyun"
+        return "xfyun_bigmodel"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -228,7 +226,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Stop existing connection
             await self.stop_connection()
-
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
@@ -238,7 +235,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 self.ten_env._loop = asyncio.get_event_loop()
 
             # Create callback instance
-            self.recognition_callback = XfyunBigmodelRecognitionCallback(self)
+            self.recognition_callback = XfyunRecognitionCallback(self)
 
             # Start callback processor
             self.recognition_callback._start_callback_processor()
@@ -309,14 +306,12 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.timeline.reset()
 
         # Reset WPGS status variables
-        self.last_result = ""
-        self.last_result_sn = -1
         self.wpgs_buffer.clear()
         self.ten_env.log_debug("Xfyun ASR Bigmodel WPGS state reset")
 
     async def on_asr_result(self, message_data: dict) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_debug(f"Xfyun ASR result: {message_data}")
+        # self.ten_env.log_debug(f"Xfyun ASR Bigmodel result: {message_data}")
         try:
             code = message_data.get("code")
             if code != 0:
@@ -335,13 +330,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             end_ms = result_data.get("ed", 0)    # Sentence end time, ms
             duration_ms = end_ms - start_ms if end_ms > start_ms else 0
 
-            # If no valid timestamps, use timeline to estimate
-            actual_start_ms = int(
-                self.timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
-
-
             # Process current data segment
             data_ws = result_data.get("ws", [])
             result = ""
@@ -358,20 +346,23 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             if pgs:
                 if pgs == "apd":  # Append mode
-                    self.ten_env.log_debug(f"Xfyun ASR wpgs append mode, sn: {sn}")
-                    # Store current result in buffer
-                    self.wpgs_buffer[sn] = result
+                    self.ten_env.log_debug(f"Xfyun ASR Bigmodel wpgs append mode, sn: {sn}")
+                    # Store current result in buffer with timing information
+                    self.wpgs_buffer[sn] = {
+                        "text": result,
+                        "bg": start_ms,
+                        "ed": end_ms
+                    }
 
                     # Concatenate results in sequence order
                     combined_result = ""
                     for i in sorted(self.wpgs_buffer.keys()):
-                        combined_result += self.wpgs_buffer[i]
+                        combined_result += self.wpgs_buffer[i]["text"]
 
                     result_to_send = combined_result
-                    self.last_result = combined_result
 
                 elif pgs == "rpl":  # Replace mode
-                    self.ten_env.log_debug(f"Xfyun ASR wpgs replace mode, sn: {sn}")
+                    self.ten_env.log_debug(f"Xfyun ASR Bigmodel wpgs replace mode, sn: {sn}")
                     # Get replacement range
                     rg = result_data.get("rg", [])
                     if len(rg) >= 2:
@@ -387,53 +378,61 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                         for key in keys_to_remove:
                             self.wpgs_buffer.pop(key, None)
 
-                    # Store current result in buffer
-                    self.wpgs_buffer[sn] = result
+                    # Store current result in buffer with timing information
+                    self.wpgs_buffer[sn] = {
+                        "text": result,
+                        "bg": start_ms,
+                        "ed": end_ms
+                    }
 
                     # Concatenate results in sequence order
                     combined_result = ""
                     for i in sorted(self.wpgs_buffer.keys()):
-                        combined_result += self.wpgs_buffer[i]
+                        combined_result += self.wpgs_buffer[i]["text"]
 
                     result_to_send = combined_result
-                    self.last_result = combined_result
             else:
                 # Non-wpgs mode, use current result directly
-                self.last_result = result
                 result_to_send = result
-
-            # Update latest result sequence number
-            self.last_result_sn = max(self.last_result_sn, sn)
 
             # Handle sentence final result
             if result_data.get("sub_end") is True:
-                is_final = True
-                self.ten_env.log_debug(f"Xfyun ASR sub sentence end: {result_to_send}")
-                # Clear buffer when sentence ends
-                self.wpgs_buffer.clear()
+                is_final = False
+                self.ten_env.log_debug(f"Xfyun ASR Bigmodel sub sentence end: {result_to_send}")
+                # self.wpgs_buffer.clear()
 
-            # Recognition complete
             if status == 2:
-                self.ten_env.log_debug(f"Xfyun ASR complete result: {result_to_send}")
                 is_final = True
+                self.ten_env.log_debug(f"Xfyun ASR Bigmodel complete result: {result_to_send}")
                 # Clear buffer when recognition completes
+                min_sn = min(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                max_sn = max(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                start_ms = self.wpgs_buffer[min_sn]["bg"]
+                duration_ms = self.wpgs_buffer[max_sn]["ed"] - start_ms
                 self.wpgs_buffer.clear()
                 if self.recognition and self.is_finalize_disconnect:
                     self.recognition.close()
 
             self.ten_env.log_debug(
-                f"Xfyun ASR result: {result_to_send}, status: {status}, start: {actual_start_ms}ms, duration: {duration_ms}ms"
+                f"Xfyun ASR Bigmodel result: {result_to_send}, status: {status}"
             )
+
+            # If no valid timestamps, use timeline to estimate
+            actual_start_ms = int(
+                self.timeline.get_audio_duration_before_time(start_ms)
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+
 
             # Process ASR result
             if self.config is not None:
 
                 if status == 2:
                     await self._handle_asr_result(
-                        text="",
+                        text=result_to_send,
                         final=is_final,
-                        start_ms=0,
-                        duration_ms=0,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
                         language=self.config.normalized_language,
                     )
                 else:
@@ -449,13 +448,13 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                     "Cannot handle ASR result: config is None")
 
         except Exception as e:
-            self.ten_env.log_error(f"Error processing Xfyun ASR result: {e}")
+            self.ten_env.log_error(f"Error processing Xfyun ASR Bigmodel result: {e}")
 
     async def on_asr_error(self, error_msg: str, error_code: Optional[int] = None) -> None:
         """Handle error callback"""
         self.ten_env.log_error(f"Xfyun ASR Bigmodel error: {error_msg} code: {error_code}")
-        if error_code == TIMEOUT_CODE:
-            await self._handle_reconnect()
+        await self._handle_reconnect()
+
 
         # Send error information
         await self.send_asr_error(
@@ -477,8 +476,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.connected = False
 
         # Clear WPGS status variables
-        self.last_result = ""
-        self.last_result_sn = -1
         self.wpgs_buffer.clear()
 
         if self.is_finalize_disconnect:
