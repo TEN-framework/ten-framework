@@ -79,7 +79,7 @@ class XfyunASRExtensionTester(AsyncExtensionTester):
                 f"session_id is not 123 in asr_finalize_end: {metadata_dict}",
             )
 
-            # ten_env_tester.stop_test()
+            ten_env_tester.stop_test()
 
 
     def stop_test_if_checking_failed(

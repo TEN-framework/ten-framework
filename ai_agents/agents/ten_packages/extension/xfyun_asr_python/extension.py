@@ -136,9 +136,7 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self.is_finalize_disconnect: bool = False
 
         # WPGS mode status variables
-        self.last_result: str = ""
-        self.last_result_sn: int = -1
-        self.wpgs_buffer: Dict[int, str] = {}  # Mapping from sequence number to text
+        self.wpgs_buffer: Dict[int, Dict[str, Any]] = {}  # Mapping from sequence number to data including text, bg, ed
 
         # Reconnection manager
         self.reconnect_manager: Optional[ReconnectManager] = None
@@ -228,7 +226,6 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
             # Stop existing connection
             await self.stop_connection()
-
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
@@ -309,14 +306,12 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self.timeline.reset()
 
         # Reset WPGS status variables
-        self.last_result = ""
-        self.last_result_sn = -1
         self.wpgs_buffer.clear()
         self.ten_env.log_debug("Xfyun ASR WPGS state reset")
 
     async def on_asr_result(self, message_data: dict) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_debug(f"Xfyun ASR result: {message_data}")
+        # self.ten_env.log_debug(f"Xfyun ASR result: {message_data}")
         try:
             code = message_data.get("code")
             if code != 0:
@@ -335,22 +330,12 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             end_ms = result_data.get("ed", 0)    # Sentence end time, ms
             duration_ms = end_ms - start_ms if end_ms > start_ms else 0
 
-            # If no valid timestamps, use timeline to estimate
-            actual_start_ms = int(
-                self.timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
-
-
             # Process current data segment
             data_ws = result_data.get("ws", [])
             result = ""
             for i in data_ws:
                 for w in i.get("cw", []):
                     result += w.get("w", "")
-
-            if not result:
-                return
 
             # Determine if this is a final result
             is_final = False
@@ -362,16 +347,19 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             if pgs:
                 if pgs == "apd":  # Append mode
                     self.ten_env.log_debug(f"Xfyun ASR wpgs append mode, sn: {sn}")
-                    # Store current result in buffer
-                    self.wpgs_buffer[sn] = result
+                    # Store current result in buffer with timing information
+                    self.wpgs_buffer[sn] = {
+                        "text": result,
+                        "bg": start_ms,
+                        "ed": end_ms
+                    }
 
                     # Concatenate results in sequence order
                     combined_result = ""
                     for i in sorted(self.wpgs_buffer.keys()):
-                        combined_result += self.wpgs_buffer[i]
+                        combined_result += self.wpgs_buffer[i]["text"]
 
                     result_to_send = combined_result
-                    self.last_result = combined_result
 
                 elif pgs == "rpl":  # Replace mode
                     self.ten_env.log_debug(f"Xfyun ASR wpgs replace mode, sn: {sn}")
@@ -390,53 +378,71 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                         for key in keys_to_remove:
                             self.wpgs_buffer.pop(key, None)
 
-                    # Store current result in buffer
-                    self.wpgs_buffer[sn] = result
+                    # Store current result in buffer with timing information
+                    self.wpgs_buffer[sn] = {
+                        "text": result,
+                        "bg": start_ms,
+                        "ed": end_ms
+                    }
 
                     # Concatenate results in sequence order
                     combined_result = ""
                     for i in sorted(self.wpgs_buffer.keys()):
-                        combined_result += self.wpgs_buffer[i]
+                        combined_result += self.wpgs_buffer[i]["text"]
 
                     result_to_send = combined_result
-                    self.last_result = combined_result
             else:
                 # Non-wpgs mode, use current result directly
-                self.last_result = result
                 result_to_send = result
-
-            # Update latest result sequence number
-            self.last_result_sn = max(self.last_result_sn, sn)
 
             # Handle sentence final result
             if result_data.get("sub_end") is True:
-                is_final = True
+                is_final = False
                 self.ten_env.log_debug(f"Xfyun ASR sub sentence end: {result_to_send}")
-                # Clear buffer when sentence ends
-                self.wpgs_buffer.clear()
+                # self.wpgs_buffer.clear()
 
-            # Recognition complete
             if status == 2:
-                self.ten_env.log_debug(f"Xfyun ASR complete result: {result_to_send}")
                 is_final = True
+                self.ten_env.log_debug(f"Xfyun ASR complete result: {result_to_send}")
                 # Clear buffer when recognition completes
+                min_sn = min(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                max_sn = max(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                start_ms = self.wpgs_buffer[min_sn]["bg"]
+                duration_ms = self.wpgs_buffer[max_sn]["ed"] - start_ms
                 self.wpgs_buffer.clear()
                 if self.recognition and self.is_finalize_disconnect:
                     self.recognition.close()
 
             self.ten_env.log_debug(
-                f"Xfyun ASR result: {result_to_send}, status: {status}, start: {actual_start_ms}ms, duration: {duration_ms}ms"
+                f"Xfyun ASR result: {result_to_send}, status: {status}"
             )
+
+            # If no valid timestamps, use timeline to estimate
+            actual_start_ms = int(
+                self.timeline.get_audio_duration_before_time(start_ms)
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+
 
             # Process ASR result
             if self.config is not None:
-                await self._handle_asr_result(
-                    text=result_to_send,
-                    final=is_final,
-                    start_ms=actual_start_ms,
-                    duration_ms=duration_ms,
-                    language=self.config.normalized_language,
-                )
+
+                if status == 2:
+                    await self._handle_asr_result(
+                        text=result_to_send,
+                        final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
+                        language=self.config.normalized_language,
+                    )
+                else:
+                    await self._handle_asr_result(
+                        text=result_to_send,
+                        final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
+                        language=self.config.normalized_language,
+                    )
             else:
                 self.ten_env.log_error(
                     "Cannot handle ASR result: config is None")
@@ -447,8 +453,7 @@ class XfyunASRExtension(AsyncASRBaseExtension):
     async def on_asr_error(self, error_msg: str, error_code: Optional[int] = None) -> None:
         """Handle error callback"""
         self.ten_env.log_error(f"Xfyun ASR error: {error_msg} code: {error_code}")
-        if error_code == TIMEOUT_CODE:
-            await self._handle_reconnect()
+        await self._handle_reconnect()
 
         # Send error information
         await self.send_asr_error(
@@ -469,9 +474,8 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug("Xfyun ASR connection closed")
         self.connected = False
 
+
         # Clear WPGS status variables
-        self.last_result = ""
-        self.last_result_sn = -1
         self.wpgs_buffer.clear()
 
         if self.is_finalize_disconnect:

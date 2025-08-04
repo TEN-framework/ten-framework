@@ -26,7 +26,7 @@ class XfyunASRConfig(BaseModel):
     eos: int = 99999999
     punc: int = 1
     nunum: int = 1
-    vto: int = 15000
+    vto: int = 3000
 
     params: Dict[str, Any] = Field(default_factory=dict)
 
