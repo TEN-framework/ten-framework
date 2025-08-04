@@ -1,0 +1,9 @@
+{
+    "api_key": "",
+    "url": "wss://stt-rt.soniox.com/transcribe-websocket",
+    "model": "stt-rt-preview",
+    "language": "en-US",
+    "sample_rate": 16000,
+    "dump": false,
+    "dump_path": "."
+}
