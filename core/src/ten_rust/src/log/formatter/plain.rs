@@ -29,6 +29,7 @@ struct FieldVisitor {
     file_name: Option<String>,
     line_no: Option<u32>,
     message: String,
+    target: Option<String>,
 }
 
 impl Visit for FieldVisitor {
@@ -61,6 +62,10 @@ impl Visit for FieldVisitor {
                     self.line_no = Some(line);
                 }
             }
+            "target" => {
+                self.target =
+                    Some(format!("{value:?}").trim_matches('"').to_string());
+            }
             "message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
@@ -87,6 +92,9 @@ impl Visit for FieldVisitor {
             }
             "file_name" => {
                 self.file_name = Some(value.to_string());
+            }
+            "target" => {
+                self.target = Some(value.to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
@@ -190,6 +198,7 @@ where
         // PID(TID) - use values from C side
         let pid = visitor.pid.unwrap_or(0);
         let tid = visitor.tid.unwrap_or(0);
+        let target = visitor.target.as_ref().map_or(metadata.target(), |v| v);
         write!(writer, " {pid}({tid}) ")?;
 
         // Level with color
@@ -203,12 +212,12 @@ where
             write!(
                 writer,
                 " {magenta}{}{reset}",
-                metadata.target(),
-                magenta = MAGENTA,
+                target,
+                magenta = CYAN,
                 reset = self.reset_color()
             )?;
         } else {
-            write!(writer, " {}", metadata.target())?;
+            write!(writer, " {target}")?;
         }
 
         // Format function@file:line using extracted fields with colors

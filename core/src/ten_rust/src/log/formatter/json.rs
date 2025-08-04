@@ -28,6 +28,7 @@ struct FieldVisitor {
     file_name: Option<String>,
     line_no: Option<u32>,
     message: String,
+    target: Option<String>,
 }
 
 impl Visit for FieldVisitor {
@@ -60,6 +61,10 @@ impl Visit for FieldVisitor {
                     self.line_no = Some(line);
                 }
             }
+            "target" => {
+                self.target =
+                    Some(format!("{value:?}").trim_matches('"').to_string());
+            }
             "message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
@@ -86,6 +91,9 @@ impl Visit for FieldVisitor {
             }
             "file_name" => {
                 self.file_name = Some(value.to_string());
+            }
+            "target" => {
+                self.target = Some(value.to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
@@ -234,13 +242,14 @@ where
             if self.config.ansi { COLOR_RESET } else { "" }
         )?;
 
-        // Category
+        // Target
+        let target = visitor.target.as_ref().map_or(metadata.target(), |v| v);
         write!(
             writer,
             ",\"{}\":\"{}{}{}\"",
             self.config.field_names.target,
             if self.config.ansi { COLOR_MAGENTA } else { "" },
-            metadata.target(),
+            target,
             if self.config.ansi { COLOR_RESET } else { "" }
         )?;
 

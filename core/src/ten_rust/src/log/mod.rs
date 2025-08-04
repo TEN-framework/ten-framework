@@ -236,7 +236,9 @@ fn create_layer_and_filter(
             let layer = match handler.formatter.formatter_type {
                 FormatterType::Plain => {
                     tracing_fmt::Layer::new()
-                        .event_format(PlainFormatter::new(false)) // File output doesn't need colors
+                        .event_format(PlainFormatter::new(
+                            handler.formatter.colored.unwrap_or(false),
+                        )) // File output doesn't need colors
                         .with_writer(non_blocking)
                         .boxed()
                 }

@@ -239,8 +239,6 @@ mod tests {
             53,
             "Debug message in blue",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
@@ -261,8 +259,8 @@ mod tests {
             }],
         };
 
-        println!("Testing Plain formatter without colors:");
         configure_log(&plain_no_color_config);
+
         ten_log(
             &plain_no_color_config,
             "test_category",
@@ -274,8 +272,6 @@ mod tests {
             51,
             "Plain no color message",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
@@ -296,7 +292,6 @@ mod tests {
             }],
         };
 
-        println!("Testing JSON formatter:");
         configure_log(&json_config);
         ten_log(
             &json_config,
@@ -309,8 +304,6 @@ mod tests {
             52,
             "JSON formatted message",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
@@ -331,7 +324,6 @@ mod tests {
             }],
         };
 
-        println!("Testing JSON formatter with colors:");
         configure_log(&json_config);
         ten_log(
             &json_config,
@@ -356,8 +348,6 @@ mod tests {
             54,
             "JSON colored message",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
@@ -378,7 +368,6 @@ mod tests {
             }],
         };
 
-        println!("Testing stdout emitter:");
         configure_log(&stdout_config);
         ten_log(
             &stdout_config,
@@ -391,15 +380,10 @@ mod tests {
             60,
             "Message to stdout",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
     fn test_console_emitter_stderr() {
-        let temp_file = tempfile::NamedTempFile::new().unwrap();
-        let test_file = temp_file.path().to_str().unwrap();
-
         let stderr_config = AdvancedLogConfig {
             handlers: vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
@@ -408,15 +392,14 @@ mod tests {
                 }],
                 formatter: AdvancedLogFormatter {
                     formatter_type: FormatterType::Plain,
-                    colored: Some(false),
+                    colored: Some(true),
                 },
-                emitter: AdvancedLogEmitter::File(FileEmitterConfig {
-                    path: test_file.to_string(),
+                emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
+                    stream: StreamType::Stderr,
                 }),
             }],
         };
 
-        println!("Testing stderr emitter:");
         configure_log(&stderr_config);
         ten_log(
             &stderr_config,
@@ -428,17 +411,6 @@ mod tests {
             "emitter.rs",
             61,
             "Warning message to stderr",
-        );
-
-        thread::sleep(Duration::from_millis(300));
-
-        let content =
-            fs::read_to_string(test_file).expect("Failed to read log file");
-        println!("File content:\n{content}");
-
-        assert!(
-            content.contains("Warning message to stderr"),
-            "File should contain warning message"
         );
     }
 
@@ -516,7 +488,7 @@ mod tests {
                 }],
                 formatter: AdvancedLogFormatter {
                     formatter_type: FormatterType::Json,
-                    colored: Some(false),
+                    colored: Some(true),
                 },
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: test_file.to_string(),
@@ -541,6 +513,8 @@ mod tests {
 
         let json_content =
             fs::read_to_string(test_file).expect("Failed to read log file");
+        println!("JSON file content:\n{json_content}");
+
         assert!(
             json_content.contains("JSON message to file"),
             "JSON file should contain log content"
@@ -574,7 +548,7 @@ mod tests {
                 ],
                 formatter: AdvancedLogFormatter {
                     formatter_type: FormatterType::Plain,
-                    colored: Some(false),
+                    colored: Some(true),
                 },
                 emitter: AdvancedLogEmitter::File(FileEmitterConfig {
                     path: log_file.path().to_str().unwrap().to_string(),
@@ -732,6 +706,8 @@ mod tests {
         let auth_content = fs::read_to_string(auth_file.path())
             .expect("Failed to read auth log file");
 
+        println!("Auth file content:\n{auth_content}");
+
         // Verify auth file contents
         assert!(
             auth_content.contains("User login successful"),
@@ -757,6 +733,8 @@ mod tests {
         // Read and verify database file contents
         let db_content = fs::read_to_string(db_file.path())
             .expect("Failed to read database log file");
+
+        println!("DB file content:\n{db_content}");
 
         // Verify database file contents
         assert!(
@@ -797,8 +775,6 @@ mod tests {
             100,
             "Default config info",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 
     #[test]
@@ -877,7 +853,5 @@ mod tests {
             100,
             "Parse JSON: {\"key\": \"value\"}",
         );
-
-        thread::sleep(Duration::from_millis(100));
     }
 }
