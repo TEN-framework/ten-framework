@@ -10,7 +10,7 @@ import time
 from typing import List, Optional, Tuple, Union
 
 from ten_ai_base.asr import (ASRBufferConfig, ASRBufferConfigModeKeep,
-                             AsyncASRBaseExtension, ASRResult)
+                             ASRResult, AsyncASRBaseExtension)
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (ModuleError, ModuleErrorCode,
                                  ModuleErrorVendorInfo)

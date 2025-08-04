@@ -5,10 +5,7 @@ from ten_ai_base.utils import encrypt
 
 
 class SonioxASRConfig(BaseModel):
-    api_key: str = ""
     url: str = "wss://stt-rt.soniox.com/transcribe-websocket"
-    model: str = "stt-rt-preview"
-    language: str = "en-US"
     sample_rate: int = 16000
     params: dict[str, Any] = Field(default_factory=dict)
     dump: bool = False
@@ -18,11 +15,12 @@ class SonioxASRConfig(BaseModel):
         for key, value in params.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+                del params[key]
 
         # Set default parameters if not provided
         default_params = {
             "max_non_final_tokens_duration_ms": 360,
-            "model": self.model,
+            "model": "stt-rt-preview",
             "enable_language_identification": True,
             "audio_format": "pcm_s16le",
             "num_channels": 1,

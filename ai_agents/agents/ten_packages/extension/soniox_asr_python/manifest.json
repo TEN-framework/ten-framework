@@ -18,8 +18,10 @@
     "include": [
       "manifest.json",
       "property.json",
-      "**.py",
-      "README.md"
+      "tests/**",
+      "requirements.txt",
+      ".vscode/**",
+      "**/*.py"
     ]
   },
   "api": {
