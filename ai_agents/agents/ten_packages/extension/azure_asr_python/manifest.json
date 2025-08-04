@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "azure_asr_python",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.22"
+      "version": "0.6"
     }
   ],
   "api": {

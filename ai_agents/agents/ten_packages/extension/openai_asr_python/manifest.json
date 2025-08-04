@@ -1,42 +1,42 @@
 {
   "type": "extension",
-  "name": "tencent_asr_python",
-  "version": "0.10.25",
+  "name": "openai_asr_python",
+  "version": "0.1.0",
   "display_name": {
     "locales": {
       "en-US": {
-        "content": "Tencent ASR Python Extension"
+        "content": "OpenAI ASR Python Extension"
       },
       "zh-CN": {
-        "content": "腾讯 ASR Python 扩展"
+        "content": "OpenAI ASR Python 扩展"
       },
       "zh-TW": {
-        "content": "騰訊 ASR Python 擴充"
+        "content": "OpenAI ASR Python 擴充"
       },
       "ja-JP": {
-        "content": "テンセント ASR Python 拡張"
+        "content": "OpenAI ASR Python 拡張"
       },
       "ko-KR": {
-        "content": "텐센트 ASR Python 확장"
+        "content": "OpenAI ASR Python 확장"
       }
     }
   },
   "description": {
     "locales": {
       "en-US": {
-        "content": "Tencent ASR Python Extension"
+        "content": "OpenAI ASR Python Extension"
       },
       "zh-CN": {
-        "content": "使用 Python 语言编写的腾讯 ASR 扩展"
+        "content": "使用 Python 语言编写的 OpenAI ASR 扩展"
       },
       "zh-TW": {
-        "content": "使用 Python 語言編寫的騰訊 ASR 擴充"
+        "content": "使用 Python 語言編寫的 OpenAI ASR 擴充"
       },
       "ja-JP": {
-        "content": "Pythonで書かれたテンセント ASR 拡張"
+        "content": "Pythonで書かれた OpenAI ASR 拡張"
       },
       "ko-KR": {
-        "content": "Python으로 작성된 텐센트 ASR 확장"
+        "content": "Python으로 작성된 OpenAI ASR 확장"
       }
     }
   },
@@ -61,7 +61,7 @@
   },
   "tags": [
     "python",
-    "tencent",
+    "openai",
     "asr"
   ],
   "dependencies": [

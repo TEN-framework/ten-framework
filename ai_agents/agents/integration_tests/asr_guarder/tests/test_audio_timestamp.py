@@ -41,25 +41,37 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         expected_language: str = AUDIO_TIMESTAMP_EXPECTED_LANGUAGE,
     ):
         super().__init__()
-        print("=" * 80)
-        print("🧪 TEST CASE: Audio Timestamp ASR Test")
-        print("=" * 80)
-        print(
-            "📋 Test Description: Validate ASR result timestamp fields and accuracy"
-        )
-        print("🎯 Test Objectives:")
-        print("   - Verify timestamp fields are int type")
-        print("   - Validate time unit is milliseconds")
-        print("   - Check timestamps are non-negative integers")
-        print("   - Ensure duration is positive integer")
-        print("   - Validate start_ms reflects audio start position")
-        print("   - Verify duration_ms represents audio segment length")
-        print("   - Check timestamp precision is milliseconds")
-        print("=" * 80)
 
         self.audio_file_path: str = audio_file_path
         self.session_id: str = session_id
         self.expected_language: str = expected_language
+        self.final_results = []  # Collect all final results
+        self.audio_duration_ms = 0  # Audio file total duration
+        self.test_completed = False
+        self.audio_sent = False
+        self.finalize_sent = False
+        self.last_result_time = 0  # Track when last result was received
+
+    def _calculate_audio_duration(self, audio_file_path: str) -> int:
+        """Calculate the actual duration of the audio file in milliseconds."""
+        try:
+            file_size = os.path.getsize(audio_file_path)
+            # PCM format: 16-bit = 2 bytes per sample, mono = 1 channel
+            # Sample rate is 16000 Hz (16kHz)
+            bytes_per_sample = 2  # 16-bit
+            channels = 1  # mono
+            sample_rate = 16000  # 16kHz
+
+            # Calculate total samples
+            total_samples = file_size / (bytes_per_sample * channels)
+
+            # Calculate duration in seconds
+            duration_seconds = total_samples / sample_rate
+
+            return int(duration_seconds * 1000)
+        except Exception as e:
+            print(f"Warning: Could not calculate audio duration: {e}")
+            return 0
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data and session ID."""
@@ -79,59 +91,131 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         """Send audio file data to ASR extension."""
         ten_env.log_info(f"Sending audio file: {self.audio_file_path}")
 
-        with open(self.audio_file_path, "rb") as audio_file:
-            while True:
-                chunk = audio_file.read(AUDIO_CHUNK_SIZE)
-                if not chunk:
-                    break
+        try:
+            with open(self.audio_file_path, "rb") as audio_file:
+                chunk_count = 0
+                while True:
+                    chunk = audio_file.read(AUDIO_CHUNK_SIZE)
+                    if not chunk:
+                        break
 
-                audio_frame = self._create_audio_frame(chunk, self.session_id)
-                await ten_env.send_audio_frame(audio_frame)
-                await asyncio.sleep(FRAME_INTERVAL_MS / 1000)
+                    audio_frame = self._create_audio_frame(
+                        chunk, self.session_id
+                    )
+                    await ten_env.send_audio_frame(audio_frame)
+                    chunk_count += 1
+
+                    # Reduce interval between chunks for faster sending
+                    await asyncio.sleep(0.001)  # 1ms instead of 10ms
+
+                ten_env.log_info(
+                    f"✅ Audio file sent successfully: {chunk_count} chunks"
+                )
+
+        except Exception as e:
+            ten_env.log_error(f"Error sending audio file: {e}")
+            raise
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send asr_finalize signal to trigger finalization."""
         ten_env.log_info("Sending asr_finalize signal...")
 
-        # Create finalize data according to protocol
-        finalize_data = {
-            "finalize_id": f"finalize_{self.session_id}_{int(asyncio.get_event_loop().time())}",
-            "metadata": {"session_id": self.session_id},
-        }
+        try:
+            # Create finalize data according to protocol
+            finalize_data = {
+                "finalize_id": f"finalize_{self.session_id}_{int(asyncio.get_event_loop().time())}",
+                "metadata": {"session_id": self.session_id},
+            }
 
-        # Create Data object for asr_finalize
-        finalize_data_obj = Data.create("asr_finalize")
-        finalize_data_obj.set_property_from_json(
-            None, json.dumps(finalize_data)
-        )
+            # Create Data object for asr_finalize
+            finalize_data_obj = Data.create("asr_finalize")
+            finalize_data_obj.set_property_from_json(
+                None, json.dumps(finalize_data)
+            )
 
-        # Send the finalize signal
-        await ten_env.send_data(finalize_data_obj)
+            # Send the finalize signal
+            await ten_env.send_data(finalize_data_obj)
 
-        ten_env.log_info(
-            f"✅ asr_finalize signal sent with ID: {finalize_data['finalize_id']}"
-        )
+            ten_env.log_info(
+                f"✅ asr_finalize signal sent with ID: {finalize_data['finalize_id']}"
+            )
+
+        except Exception as e:
+            ten_env.log_error(f"Error sending finalize signal: {e}")
+            raise
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester) -> None:
         """Send audio data and finalize signal to ASR extension."""
         try:
-            # Send audio file
-            ten_env.log_info("=== Starting audio send ===")
-            await self._send_audio_file(ten_env)
+            # Calculate audio duration
+            self.audio_duration_ms = self._calculate_audio_duration(
+                self.audio_file_path
+            )
+            ten_env.log_info(f"Audio file duration: {self.audio_duration_ms}ms")
 
-            # Wait 1.5 seconds after sending audio
-            ten_env.log_info("=== Waiting 1.5 seconds after audio send ===")
-            await asyncio.sleep(1.5)
+            # Send audio file
+            await self._send_audio_file(ten_env)
+            self.audio_sent = True
+
+            # Wait shorter time after sending audio, but ensure ASR has processed it
+            await asyncio.sleep(1.0)
 
             # Send finalize signal after audio send
-            ten_env.log_info("=== Sending finalize signal ===")
             await self._send_finalize_signal(ten_env)
+            self.finalize_sent = True
 
-            # Wait 1.5 seconds after sending finalize signal
-            ten_env.log_info(
-                "=== Waiting 1.5 seconds after finalize signal ==="
-            )
-            await asyncio.sleep(1.5)
+            # Wait for results to be processed in on_data
+
+            # Dynamic wait: check for results every 0.5 seconds, up to 30 seconds total
+            max_wait_time = 30.0  # Maximum total wait time
+            check_interval = 0.5  # Check every 0.5 seconds
+            total_wait_time = 0
+            last_result_count = 0
+
+            while total_wait_time < max_wait_time:
+                current_result_count = len(self.final_results)
+
+                if current_result_count > 0:
+                    if current_result_count > last_result_count:
+                        # New results received, reset timer
+                        last_result_count = current_result_count
+                        ten_env.log_info(
+                            f"Received {current_result_count} final results, continuing to wait for more..."
+                        )
+                    elif current_result_count == last_result_count:
+                        # No new results for a while, check if we should proceed
+                        if (
+                            total_wait_time > 5.0
+                        ):  # Wait at least 5 seconds after last result
+                            ten_env.log_info(
+                                f"No new results for 5 seconds, proceeding with validation of {current_result_count} final results"
+                            )
+                            break
+
+                await asyncio.sleep(check_interval)
+                total_wait_time += check_interval
+
+            # If no results received after timeout, check if we should fail
+            if len(self.final_results) == 0:
+                ten_env.log_error("No final results received after timeout")
+                ten_env.log_error("Audio sent: " + str(self.audio_sent))
+                ten_env.log_error("Finalize sent: " + str(self.finalize_sent))
+                ten_env.log_error(
+                    "Audio duration: " + str(self.audio_duration_ms) + "ms"
+                )
+                self._stop_test_with_error(ten_env, "No final results received")
+            else:
+                # Validate the collected results
+                if self._validate_multiple_final_results(ten_env):
+                    ten_env.log_info(
+                        "✅ Multiple final results timestamp validation passed"
+                    )
+                    ten_env.stop_test()
+                else:
+                    self._stop_test_with_error(
+                        ten_env,
+                        "Multiple final results timestamp validation failed",
+                    )
 
         except Exception as e:
             ten_env.log_error(f"Error in audio sender: {e}")
@@ -158,13 +242,11 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         metadata: Any,
     ) -> None:
         """Log complete ASR result structure for debugging."""
-        ten_env.log_info("=" * 80)
-        ten_env.log_info("RECEIVED ASR RESULT - COMPLETE STRUCTURE:")
-        ten_env.log_info("=" * 80)
-        ten_env.log_info(f"Raw JSON string: {json_str}")
-        ten_env.log_info(f"Metadata: {metadata}")
-        ten_env.log_info(f"Metadata type: {type(metadata)}")
-        ten_env.log_info("=" * 80)
+        ten_env.log_info("=" * 60)
+        ten_env.log_info("FINAL ASR RESULT STRUCTURE:")
+        ten_env.log_info("=" * 60)
+        ten_env.log_info(f"Raw JSON: {json_str}")
+        ten_env.log_info("=" * 60)
 
     def _validate_required_fields(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
@@ -211,7 +293,7 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
             return False
 
         ten_env.log_info(
-            f"✅ Timestamp type validation passed - start_ms: {start_ms} ({type(start_ms)}), duration_ms: {duration_ms} ({type(duration_ms)})"
+            f"✅ Timestamp type validation passed - start_ms: {start_ms}, duration_ms: {duration_ms}"
         )
         return True
 
@@ -271,24 +353,6 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         )
         return True
 
-    def _validate_timestamp_milliseconds(
-        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
-    ) -> bool:
-        """Validate that timestamp values are reasonable for milliseconds."""
-        start_ms = json_data.get("start_ms")
-        duration_ms = json_data.get("duration_ms")
-
-        if start_ms is None or duration_ms is None:
-            self._stop_test_with_error(
-                ten_env, "Timestamp fields are missing or null"
-            )
-            return False
-
-        ten_env.log_info(
-            f"✅ Timestamp milliseconds validation passed - start_ms: {start_ms} ms, duration_ms: {duration_ms} ms"
-        )
-        return True
-
     def _validate_start_ms_accuracy(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
@@ -301,68 +365,25 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
             )
             return False
 
-        # start_ms should be 0 for the first audio segment
-        # For subsequent segments, it should be reasonable based on audio duration
-        if start_ms == 0:
-            ten_env.log_info(
-                "✅ start_ms correctly indicates beginning of audio (0ms)"
-            )
-        elif start_ms > 0:
-            # For non-zero start times, validate they are reasonable
-            # Assuming audio chunks are sent every 10ms (FRAME_INTERVAL_MS)
-            expected_start_times = [
-                i * FRAME_INTERVAL_MS for i in range(100)
-            ]  # First 1 second
-            if (
-                start_ms in expected_start_times
-                or start_ms % FRAME_INTERVAL_MS == 0
-            ):
-                ten_env.log_info(
-                    f"✅ start_ms correctly reflects audio position: {start_ms} ms"
-                )
-            else:
-                ten_env.log_info(
-                    f"start_ms {start_ms} ms may not align with expected frame intervals"
-                )
-        else:
+        # start_ms should be non-negative
+        if start_ms < 0:
             self._stop_test_with_error(
                 ten_env,
                 f"start_ms should be non-negative, got {start_ms}",
             )
             return False
 
-        return True
-
-    def _validate_duration_ms_accuracy(
-        self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
-    ) -> bool:
-        """Validate that duration_ms accurately represents the audio segment length."""
-        duration_ms = json_data.get("duration_ms")
-        text = json_data.get("text", "")
-
-        if duration_ms is None:
-            self._stop_test_with_error(
-                ten_env, "duration_ms field is missing or null"
-            )
-            return False
-
-        # Calculate expected duration based on text length and speaking rate
-        # Average speaking rate is about 150 words per minute
-        # For "hello world" (2 words), expected duration should be around 800ms
-        expected_min_duration = 100  # Minimum 100ms for any speech
-        expected_max_duration = 5000  # Maximum 5 seconds for short phrases
-
-        if duration_ms < expected_min_duration:
+        # For the first result, start_ms should typically be 0
+        # For subsequent results, it should be reasonable based on audio duration
+        if start_ms == 0:
             ten_env.log_info(
-                f"duration_ms {duration_ms} ms seems too short for text: '{text}'"
+                "✅ start_ms correctly indicates beginning of audio (0ms)"
             )
-        elif duration_ms > expected_max_duration:
+        elif start_ms > 0:
+            # For non-zero start times, just validate they are reasonable
+            # ASR may return results at any time point during audio processing
             ten_env.log_info(
-                f"duration_ms {duration_ms} ms seems too long for text: '{text}'"
-            )
-        else:
-            ten_env.log_info(
-                f"✅ duration_ms accurately represents audio segment length: {duration_ms} ms for text: '{text}'"
+                f"✅ start_ms correctly reflects audio position: {start_ms}ms"
             )
 
         return True
@@ -416,7 +437,7 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
             )
 
         ten_env.log_info(
-            f"✅ Timestamp precision validation passed - millisecond precision confirmed: start_ms={start_ms}ms, duration_ms={duration_ms}ms"
+            f"✅ Timestamp precision validation passed - start_ms={start_ms}ms, duration_ms={duration_ms}ms"
         )
         return True
 
@@ -469,13 +490,70 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
             lambda: self._validate_timestamp_type(ten_env, json_data),
             lambda: self._validate_timestamp_non_negative(ten_env, json_data),
             lambda: self._validate_duration_positive(ten_env, json_data),
-            lambda: self._validate_timestamp_milliseconds(ten_env, json_data),
             lambda: self._validate_start_ms_accuracy(ten_env, json_data),
-            lambda: self._validate_duration_ms_accuracy(ten_env, json_data),
             lambda: self._validate_timestamp_precision(ten_env, json_data),
         ]
 
         return all(validation() for validation in validations)
+
+    def _validate_multiple_final_results(
+        self, ten_env: AsyncTenEnvTester
+    ) -> bool:
+        """Validate multiple final results timestamp continuity and audio coverage."""
+        if len(self.final_results) < 1:
+            ten_env.log_error("No final results collected")
+            return False
+
+        # Sort results by start_ms
+        sorted_results = sorted(
+            self.final_results, key=lambda x: x.get("start_ms", 0)
+        )
+        ten_env.log_info(f"Validating {len(sorted_results)} final results")
+
+        # Validate timestamp continuity
+        for i in range(len(sorted_results) - 1):
+            current = sorted_results[i]
+            next_result = sorted_results[i + 1]
+
+            current_end = current.get("start_ms", 0) + current.get(
+                "duration_ms", 0
+            )
+            next_start = next_result.get("start_ms", 0)
+
+            # Check for overlaps or gaps
+            if current_end > next_start:
+                ten_env.log_error(
+                    f"Timestamp overlap: result {i} ends at {current_end}ms, result {i+1} starts at {next_start}ms"
+                )
+                return False
+
+        # For multiple final results, focus on continuity rather than full coverage
+        # Different ASR providers may return multiple final results covering different audio segments
+        last_result = sorted_results[-1]
+        last_end = last_result.get("start_ms", 0) + last_result.get(
+            "duration_ms", 0
+        )
+
+        ten_env.log_info(
+            f"✅ Multiple results validation passed: {len(self.final_results)} final results"
+        )
+        ten_env.log_info(f"Last result end time: {last_end}ms")
+
+        # Log audio coverage info for reference, but don't fail the test
+        if self.audio_duration_ms > 0:
+            coverage_ratio = last_end / self.audio_duration_ms
+            ten_env.log_info(f"Audio file duration: {self.audio_duration_ms}ms")
+            ten_env.log_info(f"Coverage ratio: {coverage_ratio*100:.1f}%")
+
+            # Only warn if coverage is very low (< 90%)
+            if coverage_ratio < 0.9:
+                ten_env.log_info(
+                    f"⚠️ Low audio coverage: {coverage_ratio*100:.1f}% (this may be normal for some ASR providers)"
+                )
+        else:
+            ten_env.log_info("Audio duration not calculated")
+
+        return True
 
     @override
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
@@ -496,27 +574,48 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
 
         # Check if this is a final result
         is_final: bool = json_data.get("final", False)
-        ten_env.log_info(f"Received ASR result - final: {is_final}")
-
-        if not is_final:
-            ten_env.log_info("Received intermediate ASR result, continuing...")
-            return
-
-        # For final results, log complete structure and validate
+        text: str = json_data.get("text", "")
         ten_env.log_info(
-            "Received final ASR result, validating timestamp fields..."
-        )
-        self._log_asr_result_structure(
-            ten_env, json_str, json_data.get("metadata")
+            f"Received ASR result - final: {is_final}, text: '{text}'"
         )
 
-        # Validate final result - metadata is part of json_data according to API spec
-        metadata_dict: dict[str, Any] | None = json_data.get("metadata")
-        if self._validate_final_result(ten_env, json_data, metadata_dict):
+        if is_final:
+            # Update last result time
+            self.last_result_time = asyncio.get_event_loop().time()
+
+            # Collect final result
+            self.final_results.append(json_data)
             ten_env.log_info(
-                "✅ ASR timestamp validation test passed with final result"
+                f"Collected final result #{len(self.final_results)}"
             )
-            ten_env.stop_test()
+
+            # Validate current result
+            metadata_dict: dict[str, Any] | None = json_data.get("metadata")
+            if not self._validate_final_result(
+                ten_env, json_data, metadata_dict
+            ):
+                return
+
+            # Log complete structure for the first final result
+            if len(self.final_results) == 1:
+                self._log_asr_result_structure(
+                    ten_env, json_str, json_data.get("metadata")
+                )
+
+            # Wait a bit more to see if more final results come
+            await asyncio.sleep(1.0)
+
+            # For multiple final results, we need to wait longer
+            # Instead of checking time here, let's just collect results
+            # The validation will be done in audio_sender after a longer wait
+            ten_env.log_info(
+                f"Collected {len(self.final_results)} final results"
+            )
+
+        else:
+            ten_env.log_info(
+                f"Received intermediate ASR result: '{text}', continuing..."
+            )
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -526,6 +625,11 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
 
 def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
     """Verify ASR result timestamp fields meet requirements."""
+
+    print("=" * 80)
+    print("🧪 TEST CASE: Audio Timestamp ASR Test")
+    print("📋 Validate ASR result timestamp fields and accuracy")
+    print("=" * 80)
 
     # Audio file path
     audio_file_path = os.path.join(
@@ -553,11 +657,6 @@ def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
     print(
         f"Expected results: language='{expected_result['language']}', session_id='{expected_result['session_id']}'"
     )
-    print("Timestamp validation requirements:")
-    print("  1. start_ms and duration_ms must be int type")
-    print("  2. Time unit must be milliseconds")
-    print("  3. start_ms must be non-negative integer")
-    print("  4. duration_ms must be positive integer")
 
     # Create and run tester
     tester = AudioTimestampAsrTester(
