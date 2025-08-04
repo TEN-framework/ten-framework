@@ -87,7 +87,9 @@ async fn update_graph_info(
                 // message flow by name.
                 if let Some(msg_flows) = msg_flow_vec {
                     for msg_flow in msg_flows.iter_mut() {
-                        if msg_flow.name == request_payload.msg_name {
+                        if msg_flow.name.as_ref()
+                            == Some(&request_payload.msg_name)
+                        {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
                                 if dest.loc.app == request_payload.dest_app

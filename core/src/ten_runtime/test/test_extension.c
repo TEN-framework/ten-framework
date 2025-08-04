@@ -39,7 +39,8 @@ static ten_extension_tester_t *test_extension_get_extension_tester_ptr(
 
 static void test_extension_on_configure(ten_extension_t *self,
                                         ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
 #if defined(_DEBUG)
   ten_random_sleep_range_ms(0, 1000);
@@ -63,7 +64,8 @@ static void test_extension_on_configure(ten_extension_t *self,
 static void ten_extension_tester_on_test_extension_init_task(
     void *self_, TEN_UNUSED void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_extension_tester_on_test_extension_init(tester);
@@ -72,7 +74,8 @@ static void ten_extension_tester_on_test_extension_init_task(
 static void ten_extension_tester_on_test_extension_start_task(
     void *self_, TEN_UNUSED void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_extension_tester_on_test_extension_start(tester);
@@ -81,14 +84,16 @@ static void ten_extension_tester_on_test_extension_start_task(
 static void ten_extension_tester_on_test_extension_stop_task(
     void *self_, TEN_UNUSED void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_extension_tester_on_test_extension_stop(tester);
 }
 
 static void test_extension_on_init(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
 #if defined(_DEBUG)
   ten_random_sleep_range_ms(0, 1000);
@@ -111,7 +116,8 @@ static void test_extension_on_init(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void test_extension_on_start(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
 #if defined(_DEBUG)
   ten_random_sleep_range_ms(0, 1000);
@@ -134,7 +140,8 @@ static void test_extension_on_start(ten_extension_t *self, ten_env_t *ten_env) {
 }
 
 static void test_extension_on_stop(ten_extension_t *self, ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
 #if defined(_DEBUG)
   ten_random_sleep_range_ms(0, 1000);
@@ -195,7 +202,8 @@ void ten_builtin_test_extension_ten_env_notify_on_deinit_done(
 static void ten_extension_tester_on_test_extension_cmd_task(void *self_,
                                                             void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_shared_ptr_t *cmd = arg;
@@ -210,7 +218,8 @@ static void ten_extension_tester_on_test_extension_cmd_task(void *self_,
 
 static void test_extension_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
                                   ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
   ten_extension_tester_t *tester = self->user_data;
   TEN_ASSERT(tester, "Should not happen.");
@@ -230,7 +239,8 @@ static void test_extension_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
 static void ten_extension_tester_on_test_extension_data_task(void *self_,
                                                              void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_shared_ptr_t *data = arg;
@@ -245,7 +255,8 @@ static void ten_extension_tester_on_test_extension_data_task(void *self_,
 
 static void test_extension_on_data(ten_extension_t *self, ten_env_t *ten_env,
                                    ten_shared_ptr_t *data) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
   ten_extension_tester_t *tester = self->user_data;
   TEN_ASSERT(tester, "Should not happen.");
@@ -265,7 +276,8 @@ static void test_extension_on_data(ten_extension_t *self, ten_env_t *ten_env,
 static void ten_extension_tester_on_test_extension_audio_frame_task(void *self_,
                                                                     void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_shared_ptr_t *audio_frame = arg;
@@ -281,7 +293,8 @@ static void ten_extension_tester_on_test_extension_audio_frame_task(void *self_,
 static void test_extension_on_audio_frame(ten_extension_t *self,
                                           ten_env_t *ten_env,
                                           ten_shared_ptr_t *audio_frame) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
   ten_extension_tester_t *tester = self->user_data;
   TEN_ASSERT(tester, "Should not happen.");
@@ -303,7 +316,8 @@ static void test_extension_on_audio_frame(ten_extension_t *self,
 static void ten_extension_tester_on_test_extension_video_frame_task(void *self_,
                                                                     void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_shared_ptr_t *video_frame = arg;
@@ -319,7 +333,8 @@ static void ten_extension_tester_on_test_extension_video_frame_task(void *self_,
 static void test_extension_on_video_frame(ten_extension_t *self,
                                           ten_env_t *ten_env,
                                           ten_shared_ptr_t *video_frame) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
   ten_extension_tester_t *tester = self->user_data;
   TEN_ASSERT(tester, "Should not happen.");
@@ -341,7 +356,8 @@ static void test_extension_on_video_frame(ten_extension_t *self,
 static void ten_extension_tester_on_test_extension_deinit_task(
     void *self_, TEN_UNUSED void *arg) {
   ten_extension_tester_t *tester = self_;
-  TEN_ASSERT(tester && ten_extension_tester_check_integrity(tester, true),
+  TEN_ASSERT(tester, "Invalid argument.");
+  TEN_ASSERT(ten_extension_tester_check_integrity(tester, true),
              "Invalid argument.");
 
   ten_extension_tester_on_test_extension_deinit(tester);
@@ -349,7 +365,8 @@ static void ten_extension_tester_on_test_extension_deinit_task(
 
 static void test_extension_on_deinit(ten_extension_t *self,
                                      ten_env_t *ten_env) {
-  TEN_ASSERT(self && ten_env, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_env, "Invalid argument.");
 
 #if defined(_DEBUG)
   ten_random_sleep_range_ms(0, 1000);
@@ -385,6 +402,9 @@ static void test_extension_addon_create_instance(ten_addon_t *addon,
       test_extension_on_start, test_extension_on_stop, test_extension_on_deinit,
       test_extension_on_cmd, test_extension_on_data,
       test_extension_on_audio_frame, test_extension_on_video_frame, NULL);
+
+  // Mark this extension as a standalone test extension.
+  extension->is_standalone_test_extension = true;
 
   ten_env_on_create_instance_done(ten_env, extension, context, NULL);
 }

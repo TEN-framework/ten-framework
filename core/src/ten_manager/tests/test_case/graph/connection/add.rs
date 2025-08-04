@@ -194,7 +194,7 @@ mod tests {
         assert_eq!(cmd_flows.len(), 1);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "test_cmd");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd"));
         assert_eq!(flow.dest.len(), 1);
 
         let dest = &flow.dest[0];
@@ -368,14 +368,14 @@ mod tests {
         assert_eq!(cmd_flows.len(), 2);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "test_cmd");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd"));
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
         assert_eq!(flow.dest[0].loc.extension, Some("ext2".to_string()));
 
         let flow = &cmd_flows[1];
-        assert_eq!(flow.name, "test_cmd_2");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd_2"));
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
@@ -482,10 +482,22 @@ mod tests {
         assert!(connection.audio_frame.is_some());
         assert!(connection.video_frame.is_some());
 
-        assert_eq!(connection.cmd.as_ref().unwrap()[0].name, "cmd1");
-        assert_eq!(connection.data.as_ref().unwrap()[0].name, "data1");
-        assert_eq!(connection.audio_frame.as_ref().unwrap()[0].name, "audio1");
-        assert_eq!(connection.video_frame.as_ref().unwrap()[0].name, "video1");
+        assert_eq!(
+            connection.cmd.as_ref().unwrap()[0].name.as_deref(),
+            Some("cmd1")
+        );
+        assert_eq!(
+            connection.data.as_ref().unwrap()[0].name.as_deref(),
+            Some("data1")
+        );
+        assert_eq!(
+            connection.audio_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("audio1")
+        );
+        assert_eq!(
+            connection.video_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("video1")
+        );
     }
 
     #[tokio::test]
