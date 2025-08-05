@@ -86,7 +86,10 @@ class SonioxWebsocketClient:
 
     async def connect(self):
         self._reset_client_state()
-        while self.state != self.State.STOPPED and self.state != self.State.STOPPING:
+        while (
+            self.state != self.State.STOPPED
+            and self.state != self.State.STOPPING
+        ):
             try:
                 self._reset_session_state()
                 self.state = self.State.CONNECTING
@@ -158,13 +161,16 @@ class SonioxWebsocketClient:
         if self._attempt_count >= self.max_attempts:
             self.state = self.State.STOPPED
             await self._call(
-                SonioxWebsocketEvents.EXCEPTION, Exception("max attempts reached")
+                SonioxWebsocketEvents.EXCEPTION,
+                Exception("max attempts reached"),
             )
             return
 
         self._attempt_count += 1
 
-        delay = min(self.base_delay * (2 ** (self._attempt_count - 1)), self.max_delay)
+        delay = min(
+            self.base_delay * (2 ** (self._attempt_count - 1)), self.max_delay
+        )
 
         jitter = random.uniform(0, 0.1 * delay)
         final_delay = delay + jitter
@@ -238,7 +244,11 @@ class SonioxWebsocketClient:
                 **optionals,
             }:
                 return SonioxTranslationToken(
-                    text, translation_status, language, source_language, **optionals
+                    text,
+                    translation_status,
+                    language,
+                    source_language,
+                    **optionals,
                 )
             case {
                 "text": text,

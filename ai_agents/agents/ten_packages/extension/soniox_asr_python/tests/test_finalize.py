@@ -1,6 +1,11 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+
 import asyncio
 import json
-from types import SimpleNamespace
 
 from ten_packages.extension.soniox_asr_python.websocket import (
     SonioxFinToken, SonioxTranscriptToken)
@@ -11,18 +16,20 @@ from typing_extensions import override
 from .mock import patch_soniox_ws  # noqa: F401
 
 
-class SonioxAsrExtensionTester(AsyncExtensionTester):
+class SonioxAsrFinalizeTester(AsyncExtensionTester):
 
     def __init__(self):
         super().__init__()
         self.sender_task: asyncio.Task[None] | None = None
         self.stopped = False
+        self.finalize_id = "test-finalize-123"
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
-        while not self.stopped:
-            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
-            if not chunk:
+        # Send some audio frames first
+        for i in range(5):
+            if self.stopped:
                 break
+            chunk = b"\x01\x02" * 160  # 320 bytes (16-bit * 160 samples)
             audio_frame = AudioFrame.create("pcm_frame")
             metadata = {"session_id": "123"}
             audio_frame.set_property_from_json("metadata", json.dumps(metadata))
@@ -32,6 +39,17 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
             audio_frame.unlock_buf(buf)
             await ten_env.send_audio_frame(audio_frame)
             await asyncio.sleep(0.1)
+
+        # Send finalize data event
+        if not self.stopped:
+            await asyncio.sleep(1.0)  # Wait for some processing time
+            finalize_data = Data.create("asr_finalize")
+            finalize_data.set_property_string("finalize_id", self.finalize_id)
+            metadata = {"session_id": "123"}
+            finalize_data.set_property_from_json(
+                "metadata", json.dumps(metadata)
+            )
+            await ten_env.send_data(finalize_data)
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
@@ -58,14 +76,17 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
     ) -> None:
         ten_env_tester.log_info(f"tester on_data, data: {data}")
         data_name = data.get_name()
-        if data_name == "asr_result":
-            # Check the data structure.
 
+        if data_name == "asr_result":
+            # Validate ASR result structure
             data_json, _ = data.get_property_to_json()
             data_dict = json.loads(data_json)
 
-            ten_env_tester.log_info(f"tester on_data, data_dict: {data_dict}")
+            ten_env_tester.log_info(
+                f"tester on_data, asr_result data_dict: {data_dict}"
+            )
 
+            # Basic ASR result validation
             self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "id" in data_dict,
@@ -84,35 +105,39 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
                 f"final is not in data_dict: {data_dict}",
             )
 
-            self.stop_test_if_checking_failed(
-                ten_env_tester,
-                "start_ms" in data_dict,
-                f"start_ms is not in data_dict: {data_dict}",
+        elif data_name == "asr_finalize_end":
+            # Check the finalize end response structure
+            data_json, _ = data.get_property_to_json()
+            data_dict = json.loads(data_json)
+
+            ten_env_tester.log_info(
+                f"tester on_data, asr_finalize_end data_dict: {data_dict}"
             )
 
             self.stop_test_if_checking_failed(
                 ten_env_tester,
-                "duration_ms" in data_dict,
-                f"duration_ms is not in data_dict: {data_dict}",
+                "finalize_id" in data_dict,
+                f"finalize_id is not in data_dict: {data_dict}",
             )
 
             self.stop_test_if_checking_failed(
                 ten_env_tester,
-                "language" in data_dict,
-                f"language is not in data_dict: {data_dict}",
+                data_dict["finalize_id"] == self.finalize_id,
+                f"finalize_id mismatch: expected {self.finalize_id}, got {data_dict.get('finalize_id')}",
             )
 
             self.stop_test_if_checking_failed(
                 ten_env_tester,
-                "words" in data_dict,
-                f"words is not in data_dict: {data_dict}",
+                "metadata" in data_dict,
+                f"metadata is not in data_dict: {data_dict}",
             )
 
-            if data_dict["final"] == True:
-                ten_env_tester.stop_test()
+            # Test passed, stop the test
+            ten_env_tester.stop_test()
 
     @override
     async def on_stop(self, ten_env_tester: AsyncTenEnvTester) -> None:
+        self.stopped = True
         if self.sender_task:
             _ = self.sender_task.cancel()
             try:
@@ -121,50 +146,48 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
                 pass
 
 
-def test_asr_result(patch_soniox_ws):
+def test_finalize(patch_soniox_ws):
     async def fake_connect():
         # Simulate connection opening
         await patch_soniox_ws.websocket_client.trigger_open()
 
-        # Wait a bit, then send transcript events
-        await asyncio.sleep(0.1)
+        # Wait a bit for audio to be sent
+        await asyncio.sleep(0.3)
 
-        # Mock transcript tokens
-
-        # First non-final token
+        # Send some intermediate results
         token1 = SonioxTranscriptToken(
             text="hello", start_ms=0, end_ms=500, is_final=False, language="en"
         )
 
-        # Send first transcript
         await patch_soniox_ws.websocket_client.trigger_transcript(
             [token1], 0, 0
         )
-
         await asyncio.sleep(0.1)
 
-        # Final token
-        token2 = SonioxTranscriptToken(
-            text="hello world",
+    async def fake_send_audio(_audio_data):
+        await asyncio.sleep(0)
+
+    async def fake_finalize():
+        # When finalize is called, send final results
+        await asyncio.sleep(0.1)
+
+        # Send final transcript
+        final_token = SonioxTranscriptToken(
+            text="hello world finalized",
             start_ms=0,
             end_ms=1000,
             is_final=True,
             language="en",
         )
 
-        # Fin token
         fin_token = SonioxFinToken("<fin>", True)
 
-        # Send final transcript with fin token
         await patch_soniox_ws.websocket_client.trigger_transcript(
-            [token2, fin_token], 0, 0
+            [final_token, fin_token], 1000, 1000
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize():
-        await asyncio.sleep(0)
+        # Trigger finished event
+        await patch_soniox_ws.websocket_client.trigger_finished(1000, 1000)
 
     async def fake_stop():
         await asyncio.sleep(0)
@@ -185,7 +208,7 @@ def test_asr_result(patch_soniox_ws):
         }
     }
 
-    tester = SonioxAsrExtensionTester()
+    tester = SonioxAsrFinalizeTester()
     tester.set_test_mode_single("soniox_asr_python", json.dumps(property_json))
     err = tester.run()
-    assert err is None, f"test_asr_result err: {err}"
+    assert err is None, f"test_finalize err: {err}"

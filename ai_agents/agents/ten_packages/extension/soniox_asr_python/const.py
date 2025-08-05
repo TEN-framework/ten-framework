@@ -69,10 +69,10 @@ LANGUAGE_CODE_MAPPING = {
 def map_language_code(iso_code: str) -> str:
     """
     Map ISO language code to Soniox language code.
-    
+
     Args:
         iso_code: ISO language code (e.g., 'en', 'fr', 'zh')
-        
+
     Returns:
         Mapped Soniox language code (e.g., 'en-US', 'fr-FR', 'zh-CN')
         If the ISO code is not supported, returns the original code
@@ -83,10 +83,10 @@ def map_language_code(iso_code: str) -> str:
 def is_supported_language(iso_code: str) -> bool:
     """
     Check if a language code is supported.
-    
+
     Args:
         iso_code: ISO language code to check
-        
+
     Returns:
         True if the language is supported, False otherwise
     """

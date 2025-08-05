@@ -54,7 +54,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             )
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
@@ -148,7 +150,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         return 2
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: Optional[str]) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: Optional[str]
+    ) -> bool:
         assert self.config is not None
         assert self.websocket is not None
 
@@ -224,14 +228,16 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _handle_transcript(
         self,
-        tokens: List[Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]],
+        tokens: List[
+            Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]
+        ],
         unused_final_audio_proc_ms: int,
         unused_total_audio_proc_ms: int,
     ):
         self.ten_env.log_debug(f"soniox transcript: {tokens}")
         try:
-            transcript_tokens, unused_translation_tokens, fin = self._group_tokens(
-                tokens
+            transcript_tokens, unused_translation_tokens, fin = (
+                self._group_tokens(tokens)
             )
 
             if fin:
@@ -240,8 +246,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             if not transcript_tokens:
                 return
 
-            final_tokens, non_final_tokens = self._group_transcript_tokens_by_final(
-                transcript_tokens
+            final_tokens, non_final_tokens = (
+                self._group_transcript_tokens_by_final(transcript_tokens)
             )
 
             if non_final_tokens:
@@ -255,7 +261,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     def _group_tokens(
         self,
-        tokens: List[Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]],
+        tokens: List[
+            Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]
+        ],
     ) -> Tuple[List[SonioxTranscriptToken], List[SonioxTranslationToken], bool]:
         transcript_tokens = []
         translation_tokens = []
