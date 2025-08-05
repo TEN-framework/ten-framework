@@ -147,7 +147,7 @@ mod tests {
             "Error message",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -447,7 +447,7 @@ mod tests {
             "Warning message to file",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -499,7 +499,7 @@ mod tests {
             "JSON message to file",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -555,7 +555,7 @@ mod tests {
         debug!(target: "database", "DB connection pool initialized"); // Matches database + debug
         info!(target: "unknown", "unknown target message"); // Won't match any configured rules
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -692,7 +692,7 @@ mod tests {
             .expect("Failed to read auth log file");
         println!("Auth file content before flush:\n{auth_content}");
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
