@@ -1,0 +1,13 @@
+{
+    "dump": false,
+    "finalize_mode": "disconnect",
+    "params": {
+        "region": "us-west-2",
+        "access_key_id": "${env:AWS_ACCESS_KEY_ID}",
+        "secret_access_key": "${env:AWS_SECRET_ACCESS_KEY}",
+        "language_code": "en-US",
+        "media_sample_rate_hz": 16000,
+        "media_encoding": "pcm",
+        "vocabulary_name": "my-vocabulary"
+    }
+}
