@@ -9,7 +9,7 @@ import asyncio
 from typing import AsyncGenerator
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
-from ten_ai_base.struct import LLMInput, LLMResponse
+from ten_ai_base.struct import LLMRequest, LLMResponse
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 from .openai import OpenAIChatGPT, OpenAILLM2Config
@@ -69,6 +69,6 @@ class OpenAILLM2Extension(AsyncLLM2BaseExtension):
         await super().on_deinit(async_ten_env)
 
     def on_call_chat_completion(
-        self, async_ten_env: AsyncTenEnv, input: LLMInput
+        self, async_ten_env: AsyncTenEnv, input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
         return self.client.get_chat_completions(input)

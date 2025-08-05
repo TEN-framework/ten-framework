@@ -17,9 +17,10 @@ from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
 from ten_ai_base.struct import (
-    LLMInput,
+    LLMRequest,
     LLMResponse,
     LLMResponseMessage,
+    LLMResponseMessageDone,
     LLMResponseToolCall,
 )
 from ten_runtime.async_ten_env import AsyncTenEnv
@@ -111,7 +112,7 @@ class OpenAIChatGPT:
         self.client.session = self.session
 
     async def get_chat_completions(
-        self, input: LLMInput
+        self, input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
         messages = input.messages
         tools = None
@@ -257,7 +258,8 @@ class OpenAIChatGPT:
                             yield LLMResponseMessage(
                                 response_id=chat_completion.id,
                                 role="assistant",
-                                content=content,
+                                content=full_content + content,
+                                delta=content,
                                 created=chat_completion.created,
                             )
 
@@ -326,7 +328,11 @@ class OpenAIChatGPT:
                     )
 
             # Emit content finished event after the loop completes
-            # if listener:
-            #     listener.emit("content_finished", full_content)
+            yield LLMResponseMessageDone(
+                response_id=chat_completion.id,
+                role="assistant",
+                content=full_content,
+                created=chat_completion.created,
+            )
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
