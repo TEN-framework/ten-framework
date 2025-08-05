@@ -113,7 +113,7 @@ TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced__test_extension,
 
 }  // namespace
 
-TEST(LogTest, LogAdvanced) {  // NOLINT
+TEST(AdvancedLogTest, LogAdvanced) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
