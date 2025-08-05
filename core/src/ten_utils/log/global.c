@@ -47,6 +47,10 @@ void ten_log_global_deinit_encryption(void) {
   ten_log_deinit_encryption(&ten_global_log);
 }
 
+void ten_log_global_deinit_advanced_log(void) {
+  ten_log_advanced_impl_deinit(&ten_global_log.advanced_impl);
+}
+
 void ten_log_global_reload(void) { ten_log_reload(&ten_global_log); }
 
 void ten_log_global_set_advanced_impl_with_config(

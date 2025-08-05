@@ -120,6 +120,8 @@ TEN_UTILS_API void ten_log_global_set_encrypt_deinit_cb(
 
 TEN_UTILS_API void ten_log_global_deinit_encryption(void);
 
+TEN_UTILS_API void ten_log_global_deinit_advanced_log(void);
+
 TEN_UTILS_API void ten_log_global_reload(void);
 
 TEN_UTILS_API void ten_log_global_set_advanced_impl_with_config(
