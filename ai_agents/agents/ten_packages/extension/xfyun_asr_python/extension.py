@@ -2,8 +2,6 @@ from datetime import datetime
 import json
 import os
 import asyncio
-import threading
-import queue
 from typing import Optional, Dict, Any
 
 from typing_extensions import override
@@ -27,6 +25,7 @@ from ten_runtime import (
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.timeline import AudioTimeline
 from .reconnect_manager import ReconnectManager
+from .audio_buffer_manager import AudioBufferManager
 from .recognition import XfyunWSRecognition, XfyunWSRecognitionCallback
 from .config import XfyunASRConfig
 
@@ -38,87 +37,22 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
         super().__init__()
         self.extension = extension_instance
         self.ten_env = extension_instance.ten_env
-        self.callback_queue = asyncio.Queue()
-        self.callback_processor_running = False
-        self.callback_processor_task = None
-        self.loop = asyncio.get_event_loop()
 
-    def _start_callback_processor(self):
-        """Start the callback processor"""
-        if not self.callback_processor_running:
-            self.callback_processor_running = True
-            # Start processor in the main thread's event loop
-            self.callback_processor_task = self.loop.create_task(self._process_callbacks())
-            self.ten_env.log_debug("Callback processor started")
-
-    async def _process_callbacks(self):
-        """Process callbacks in the callback queue"""
-        while self.callback_processor_running:
-            try:
-                callback_type, args = await self.callback_queue.get()
-                self.ten_env.log_debug(f"Processing callback: {callback_type}")
-
-                try:
-                    if callback_type == "on_open":
-                        await self.extension.on_asr_open()
-                    elif callback_type == "on_result":
-                        message_data = args[0]
-                        await self.extension.on_asr_result(message_data)
-                    elif callback_type == "on_error":
-                        error_msg, error_code = args
-                        await self.extension.on_asr_error(error_msg, error_code)
-                    elif callback_type == "on_close":
-                        await self.extension.on_asr_close()
-
-                    self.ten_env.log_debug(f"Callback {callback_type} processed successfully")
-                except Exception as e:
-                    self.ten_env.log_error(f"Error processing callback {callback_type}: {e}")
-                finally:
-                    # Mark task as done whether processing succeeds or fails
-                    self.callback_queue.task_done()
-
-            except asyncio.CancelledError:
-                # Handle task cancellation
-                self.ten_env.log_debug("Callback processor task cancelled")
-                break
-            except Exception as e:
-                self.ten_env.log_error(f"Unexpected error in callback processor: {e}")
-                # Wait briefly before continuing processing after unexpected errors
-                await asyncio.sleep(0.1)
-
-    def _stop_callback_processor(self):
-        """Stop the callback processor"""
-        self.callback_processor_running = False
-        if self.callback_processor_task:
-            self.callback_processor_task.cancel()
-            self.ten_env.log_debug("Callback processor stopped")
-
-    def _enqueue_callback(self, callback_type, *args):
-        """Add callback to the queue"""
-        try:
-            # Use call_soon_threadsafe to ensure thread-safe callback addition to the queue
-            self.loop.call_soon_threadsafe(
-                self.callback_queue.put_nowait,
-                (callback_type, args)
-            )
-        except Exception as e:
-            self.ten_env.log_error(f"Failed to enqueue callback {callback_type}: {e}")
-
-    def on_open(self) -> None:
+    async def on_open(self) -> None:
         """Callback when connection is established"""
-        self._enqueue_callback("on_open")
+        await self.extension.on_asr_open()
 
-    def on_result(self, message_data):
+    async def on_result(self, message_data):
         """Recognition result callback"""
-        self._enqueue_callback("on_result", message_data)
+        await self.extension.on_asr_result(message_data)
 
-    def on_error(self, error_msg, error_code=None) -> None:
+    async def on_error(self, error_msg, error_code=None) -> None:
         """Error handling callback"""
-        self._enqueue_callback("on_error", error_msg, error_code)
+        await self.extension.on_asr_error(error_msg, error_code)
 
-    def on_close(self) -> None:
+    async def on_close(self) -> None:
         """Callback when connection is closed"""
-        self._enqueue_callback("on_close")
+        await self.extension.on_asr_close()
 
 
 class XfyunASRExtension(AsyncASRBaseExtension):
@@ -141,6 +75,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         # Reconnection manager
         self.reconnect_manager: Optional[ReconnectManager] = None
 
+        # Audio buffer manager
+        self.audio_buffer_manager: Optional[AudioBufferManager] = None
+
         # Callback instance
         self.recognition_callback: Optional[XfyunRecognitionCallback] = None
 
@@ -155,6 +92,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
         # Initialize reconnection manager
         self.reconnect_manager = ReconnectManager(logger=ten_env)
+
+        # Initialize audio buffer manager
+        self.audio_buffer_manager = AudioBufferManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -230,15 +170,8 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             if self.audio_dumper:
                 await self.audio_dumper.start()
 
-            # Store current event loop in ten_env for callback access
-            if not hasattr(self.ten_env, '_loop'):
-                self.ten_env._loop = asyncio.get_event_loop()
-
             # Create callback instance
             self.recognition_callback = XfyunRecognitionCallback(self)
-
-            # Start callback processor
-            self.recognition_callback._start_callback_processor()
 
             # Prepare Xfyun config
             xfyun_config = {
@@ -251,6 +184,7 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 "punc": self.config.punc,
                 "nunum": self.config.nunum,
                 "vto": self.config.vto,
+                "samplerate": self.config.sample_rate,
             }
 
             # Create recognition instance
@@ -263,8 +197,8 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 callback=self.recognition_callback
             )
 
-            # Start recognition
-            success = self.recognition.start()
+            # Start recognition (now async)
+            success = await self.recognition.start()
             if success:
                 self.is_finalize_disconnect = False
                 self.ten_env.log_info("Xfyun ASR connection started successfully")
@@ -298,6 +232,11 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         # Notify reconnect manager of successful connection
         if self.reconnect_manager and self.connected:
             self.reconnect_manager.mark_connection_successful()
+
+        # Reset audio buffer manager
+        if self.audio_buffer_manager:
+            self.audio_buffer_manager.reset()
+            self.ten_env.log_debug("Audio buffer reset on connection open")
 
         # Reset timeline and audio duration
         self.sent_user_audio_duration_ms_before_last_reset += (
@@ -407,11 +346,10 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 # Clear buffer when recognition completes
                 min_sn = min(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
                 max_sn = max(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
-                start_ms = self.wpgs_buffer[min_sn]["bg"]
-                duration_ms = self.wpgs_buffer[max_sn]["ed"] - start_ms
+                start_ms = self.wpgs_buffer[min_sn]["bg"] if self.wpgs_buffer else start_ms
+                duration_ms = self.wpgs_buffer[max_sn]["ed"] - start_ms if self.wpgs_buffer else duration_ms
                 self.wpgs_buffer.clear()
-                if self.recognition and self.is_finalize_disconnect:
-                    self.recognition.close()
+                await self.recognition.close()
 
             self.ten_env.log_debug(
                 f"Xfyun ASR result: {result_to_send}, status: {status}"
@@ -427,22 +365,14 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             # Process ASR result
             if self.config is not None:
 
-                if status == 2:
-                    await self._handle_asr_result(
+                await self._handle_asr_result(
                         text=result_to_send,
                         final=is_final,
                         start_ms=actual_start_ms,
                         duration_ms=duration_ms,
                         language=self.config.normalized_language,
-                    )
-                else:
-                    await self._handle_asr_result(
-                        text=result_to_send,
-                        final=is_final,
-                        start_ms=actual_start_ms,
-                        duration_ms=duration_ms,
-                        language=self.config.normalized_language,
-                    )
+                )
+
             else:
                 self.ten_env.log_error(
                     "Cannot handle ASR result: config is None")
@@ -474,7 +404,6 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug("Xfyun ASR connection closed")
         self.connected = False
 
-
         # Clear WPGS status variables
         self.wpgs_buffer.clear()
 
@@ -491,6 +420,11 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
         self.ten_env.log_debug(
             f"Xfyun ASR finalize start at {self.last_finalize_timestamp}")
+
+        # Flush any buffered audio data
+        if self.audio_buffer_manager and self.recognition:
+            await self.audio_buffer_manager.flush(self.recognition.send_audio_frame)
+            self.ten_env.log_debug("Flushed audio buffer during finalization")
 
         await self._handle_finalize_disconnect()
 
@@ -522,7 +456,7 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         """Handle disconnect mode finalization"""
         if self.recognition:
             self.is_finalize_disconnect = True
-            self.recognition.stop()
+            await self.recognition.stop()
             self.ten_env.log_debug("Xfyun ASR finalize disconnect completed")
 
     async def _handle_reconnect(self):
@@ -537,7 +471,7 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message="No more reconnection attempts allowed",
                 )
             )
@@ -572,12 +506,17 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         """Stop ASR connection"""
         try:
             if self.recognition:
-                self.recognition.close()
+                # await self.recognition.close()
                 self.recognition = None
 
             self.recognition_callback = None
             self.connected = False
             self.ten_env.log_info("Xfyun ASR connection stopped")
+
+            # Reset audio buffer manager
+            if self.audio_buffer_manager:
+                self.audio_buffer_manager.reset()
+                self.ten_env.log_debug("Audio buffer manager reset")
 
             if self.audio_dumper:
                 await self.audio_dumper.stop()
@@ -628,8 +567,20 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 int(len(audio_data) / (self.config.sample_rate / 1000 * 2))
             )
 
-            # Send audio data to recognition service
-            self.recognition.send_audio_frame(audio_data)
+            # Use audio buffer manager to handle audio data
+            if self.audio_buffer_manager:
+                # Check if this is a finalization call
+                force_send = self.is_finalize_disconnect
+
+                # Push audio data to buffer and send if threshold is reached or forced
+                await self.audio_buffer_manager.push_audio(
+                    audio_data=audio_data,
+                    send_callback=self.recognition.send_audio_frame,
+                    force_send=force_send
+                )
+            else:
+                # Fallback to direct sending if buffer manager is not available
+                await self.recognition.send_audio_frame(audio_data)
 
             frame.unlock_buf(buf)
             return True
