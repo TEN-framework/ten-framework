@@ -151,6 +151,7 @@ mod tests {
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Read log file content
         let content = std::fs::read_to_string(path).unwrap();
@@ -451,6 +452,7 @@ mod tests {
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         let content =
             fs::read_to_string(test_file).expect("Failed to read log file");
@@ -503,6 +505,7 @@ mod tests {
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         let json_content =
             fs::read_to_string(test_file).expect("Failed to read log file");
@@ -559,6 +562,7 @@ mod tests {
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Read and verify log file contents
         let log_content = fs::read_to_string(log_file.path())
@@ -696,6 +700,7 @@ mod tests {
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(300));
 
         // Read and verify auth file contents
         let auth_content = fs::read_to_string(auth_file.path())
