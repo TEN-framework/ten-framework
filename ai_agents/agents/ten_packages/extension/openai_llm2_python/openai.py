@@ -17,11 +17,16 @@ from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
 from ten_ai_base.struct import (
+    ImageContent,
+    LLMMessageContent,
+    LLMMessageFunctionCall,
+    LLMMessageFunctionCallOutput,
     LLMRequest,
     LLMResponse,
-    LLMResponseMessage,
+    LLMResponseMessageDelta,
     LLMResponseMessageDone,
     LLMResponseToolCall,
+    TextContent,
 )
 from ten_runtime.async_ten_env import AsyncTenEnv
 
@@ -123,28 +128,54 @@ class OpenAIChatGPT:
         )
 
         for message in messages:
-            if message.role == "user":
-                parsed_messages.append(
-                    {"role": "user", "content": message.content}
-                )
-            elif message.role == "assistant":
-                parsed_messages.append(
-                    {"role": "assistant", "content": message.content}
-                )
-            elif message.role == "system":
-                parsed_messages.append(
-                    {"role": "system", "content": message.content}
-                )
-            elif message.role == "tool":
-                parsed_messages.append(
-                    {
+            match message:
+                case LLMMessageContent():
+                    role = message.role
+                    content = message.content
+                    if isinstance(content, str):
+                        parsed_messages.append(
+                            {"role": role, "content": content}
+                        )
+                    elif isinstance(content, list):
+                        # Assuming content is a list of objects
+                        content_items = []
+                        for item in content:
+                            match item:
+                                case TextContent():
+                                    content_items.append({
+                                        "type": "text",
+                                        "text": item.text
+                                    })
+                                case ImageContent():
+                                    content_items.append({
+                                        "type": "image",
+                                        "image_url": {
+                                            "url": item.image_url
+                                        }
+                                    })
+                        parsed_messages.append(
+                            {"role": role, "content": content_items}
+                        )
+                case LLMMessageFunctionCall():
+                    # Handle function call messages
+                    parsed_messages.append({
+                        "role": "assistant",
+                        "tool_calls": [{
+                            "id": message.call_id,
+                            "type": "function",
+                            "function": {
+                                "name": message.name,
+                                "arguments": message.arguments,
+                            }
+                        }]
+                    })
+                case LLMMessageFunctionCallOutput():
+                    # Handle function call output messages
+                    parsed_messages.append({
                         "role": "tool",
-                        "content": message.content,
-                        "tool_call_id": message.tool_call_id,
-                    }
-                )
-            else:
-                self.ten_env.log_warn(f"Unknown role: {message.role}")
+                        "tool_call_id": message.call_id,
+                        "content": message.output,
+                    })
 
         for tool in input.tools or []:
             if tools is None:
@@ -173,9 +204,9 @@ class OpenAIChatGPT:
             "messages": [
                 {
                     "role": "system",
-                    "content": self.config.prompt,
+                    "content": self.config.prompt or "you are a helpful assistant",
                 },
-                *messages,
+                *parsed_messages,
             ],
             "tools": tools,
             "temperature": self.config.temperature,
@@ -225,6 +256,10 @@ class OpenAIChatGPT:
                 choice = chat_completion.choices[0]
                 delta = choice.delta
 
+                self.ten_env.log_info(
+                    f"Processing choice: {choice}"
+                )
+
                 content = delta.content if delta and delta.content else ""
                 reasoning_content = (
                     delta.reasoning_content
@@ -255,7 +290,7 @@ class OpenAIChatGPT:
                             pass
                             # listener.emit("reasoning_update", parser.think_content)
                         elif parser.state == "NORMAL":
-                            yield LLMResponseMessage(
+                            yield LLMResponseMessageDelta(
                                 response_id=chat_completion.id,
                                 role="assistant",
                                 content=full_content + content,
@@ -319,8 +354,12 @@ class OpenAIChatGPT:
             if tool_calls_list:
                 for tool_call in tool_calls_list:
                     arguements = json.loads(tool_call["function"]["arguments"])
+                    self.ten_env.log_info(
+                        f"Tool call22: {choice.delta.model_dump_json()}"
+                    )
                     yield LLMResponseToolCall(
                         response_id=chat_completion.id,
+                        id=chat_completion.id,
                         tool_call_id=tool_call["id"],
                         name=tool_call["function"]["name"],
                         arguments=arguements,

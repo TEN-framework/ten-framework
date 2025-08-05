@@ -153,7 +153,8 @@ class MainControlExtension(AsyncExtension):
         self, ten_env: AsyncTenEnv, text: str, is_final: bool
     ):
         ten_env.log_info(f"_on_llm_response: text {text}, is_final {is_final}")
-        await self._send_to_tts(ten_env, text)
+        if not is_final:
+            await self._send_to_tts(ten_env, text)
         await self._send_transcript(ten_env, text, is_final, is_final, 100)
 
     async def _send_transcript(
@@ -183,4 +184,4 @@ class MainControlExtension(AsyncExtension):
     async def _interrupt(self, ten_env: AsyncTenEnv):
         await self.llm_exec.flush()
         await _send_cmd(ten_env, "flush", "tts")
-        await _send_cmd(ten_env, "flush", "rtc")
+        await _send_cmd(ten_env, "flush", "agora_rtc")

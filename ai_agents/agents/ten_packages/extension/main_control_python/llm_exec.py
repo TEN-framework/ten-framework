@@ -9,7 +9,7 @@ import traceback
 from typing import Awaitable, Callable, Literal, Optional
 from ten_ai_base.const import CMD_PROPERTY_RESULT
 from ten_ai_base.helper import AsyncQueue
-from ten_ai_base.struct import LLMMessage, LLMMessageContent, LLMRequest, LLMResponse, LLMResponseMessage, LLMResponseMessageDone, LLMResponseToolCall, parse_llm_response
+from ten_ai_base.struct import LLMMessage, LLMMessageContent, LLMMessageFunctionCall, LLMMessageFunctionCallOutput, LLMRequest, LLMResponse, LLMResponseMessageDelta, LLMResponseMessageDone, LLMResponseToolCall, parse_llm_response
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
 from .helper import _send_cmd, _send_cmd_ex, parse_sentences
 from ten_runtime import AsyncTenEnv, Loc, StatusCode
@@ -169,15 +169,20 @@ class LLMExec:
         self.ten_env.log_info(f"_handle_llm_response: {llm_output}")
 
         match llm_output:
-            case LLMResponseMessage():
+            case LLMResponseMessageDelta():
+                delta = llm_output.delta
                 text = llm_output.content
-                if text:
+                if delta:
                     sentences, self.sentence_fragment = parse_sentences(
-                        self.sentence_fragment, text
+                        self.sentence_fragment, delta
                     )
                     for sentence in sentences:
                         if self.on_response:
                             await self.on_response(self.ten_env, sentence, False)
+                if text:
+                    await self._write_context(
+                        self.ten_env, "assistant", text
+                    )
             case LLMResponseMessageDone():
                 text = llm_output.content
                 if self.on_response and text:
@@ -200,24 +205,22 @@ class LLMExec:
                         f"tool_result: {tool_result}"
                     )
 
+                    context_function_call = LLMMessageFunctionCall(
+                        name=llm_output.name,
+                        arguments=json.dumps(llm_output.arguments),
+                        call_id=llm_output.tool_call_id,
+                        id=llm_output.response_id,
+                        type="function_call",
+                    )
                     if tool_result["type"] == "llmresult":
                         result_content = tool_result["content"]
                         if isinstance(result_content, str):
-                            pass
-                            # tool_message = {
-                            #     "role": "assistant",
-                            #     "tool_calls": [tool_call],
-                            # }
-                            # new_message = {
-                            #     "role": "tool",
-                            #     "content": result_content,
-                            #     "tool_call_id": tool_call["id"],
-                            # }
-                            # await self.queue_input_item(
-                            #     True,
-                            #     messages=[tool_message, new_message],
-                            #     no_tool=True,
-                            # )
+                            await self._queue_context(self.ten_env, context_function_call)
+                            await self._send_to_llm(self.ten_env, LLMMessageFunctionCallOutput(
+                                output=result_content,
+                                call_id=llm_output.tool_call_id,
+                                type="function_call_output",
+                            ))
                         else:
                             self.ten_env.log_error(
                                 f"Unknown tool result content: {result_content}"
