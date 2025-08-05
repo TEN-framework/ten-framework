@@ -19,7 +19,7 @@ from ten_runtime import AsyncTenEnv, AudioFrame
 from typing_extensions import override
 
 from .config import SonioxASRConfig
-from .const import DUMP_FILE_NAME, MODULE_NAME_ASR
+from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
 from .websocket import (SonioxFinToken, SonioxTranscriptToken,
                         SonioxTranslationToken, SonioxWebsocketClient,
                         SonioxWebsocketEvents)
@@ -48,15 +48,14 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         try:
             self.config = SonioxASRConfig.model_validate_json(config_json)
-            if self.config:
-                self.config.update(self.config.params)
-                ten_env.log_info(
-                    f"KEYPOINT vendor_config: {self.config.to_str(sensitive_handling=True)}"
-                )
+            self.config.update(self.config.params)
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.to_str(sensitive_handling=True)}"
+            )
 
-                if self.config.dump:
-                    dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
-                    self.audio_dumper = Dumper(dump_file_path)
+            if self.config.dump:
+                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = SonioxASRConfig.model_validate_json("{}")
@@ -104,10 +103,26 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                     message=str(e),
                 ),
             )
+            return
+
+        try:
+            if self.audio_dumper:
+                await self.audio_dumper.start()
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to start audio dumper: {e}")
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=str(e),
+                ),
+            )
 
     @override
     async def stop_connection(self) -> None:
         self.ten_env.log_info("stop_connection")
+        if self.audio_dumper:
+            await self.audio_dumper.stop()
         if self.websocket:
             await self.websocket.stop()
         self.connected = False
@@ -118,7 +133,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeKeep()
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
     def input_audio_sample_rate(self) -> int:
@@ -137,15 +152,15 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.websocket is not None
 
-        audio_buf = frame.lock_buf()
+        buf = frame.lock_buf()
         if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(audio_buf))
+            await self.audio_dumper.push_bytes(bytes(buf))
         self.timeline.add_user_audio(
-            int(len(audio_buf) / (self.config.sample_rate / 1000 * 2))
+            int(len(buf) / (self.config.sample_rate / 1000 * 2))
         )
 
-        await self.websocket.send_audio(bytes(audio_buf))
-        frame.unlock_buf(audio_buf)
+        await self.websocket.send_audio(bytes(buf))
+        frame.unlock_buf(buf)
 
         return True
 
@@ -190,11 +205,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.FATAL_ERROR.value,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=error_msg,
                 vendor_info=ModuleErrorVendorInfo(
                     vendor="soniox",
-                    code=error_code,
+                    code=str(error_code),
                     message=error_message,
                 ),
             ),
@@ -284,11 +299,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return []
 
         results = []
-        current_language = tokens[0].language or "en"
+        current_language = map_language_code(tokens[0].language or "en")
         current_tokens = []
 
         for token in tokens:
-            token_language = token.language or "en"
+            token_language = map_language_code(token.language or "en")
 
             if token_language != current_language and current_tokens:
                 result = self._create_single_asr_result(

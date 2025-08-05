@@ -105,6 +105,9 @@ class SonioxWebsocketClient:
             else:
                 await self._call(SonioxWebsocketEvents.CLOSE)
 
+        if self.state == self.State.STOPPING:
+            self._stop_event.set()
+
     def _reset_client_state(self):
         self.state = self.State.INIT
         self._attempt_count = 0
