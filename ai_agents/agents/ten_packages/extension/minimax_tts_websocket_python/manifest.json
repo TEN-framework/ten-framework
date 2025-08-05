@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "minimax_tts2_python",
+  "name": "minimax_tts_websocket_python",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -32,23 +32,28 @@
     ],
     "property": {
       "properties": {
-        "api_key": {
-          "type": "string"
-        },
-        "group_id": {
-          "type": "string"
-        },
-        "model": {
-          "type": "string"
-        },
-        "voice_id": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
-        },
-        "url": {
-          "type": "string"
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "group_id": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "url": {
+              "type": "string"
+            }
+          }
         }
       }
     }

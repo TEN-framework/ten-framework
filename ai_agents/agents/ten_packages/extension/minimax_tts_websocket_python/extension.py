@@ -21,18 +21,18 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
-from .config import MinimaxTTS2Config
-from .minimax_tts import MinimaxTTS2, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse, EVENT_TTSFlush
+from .config import MinimaxTTSWebsocketConfig
+from .minimax_tts import MinimaxTTSWebsocket, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse, EVENT_TTSFlush
 from ten_runtime import (
     AsyncTenEnv,
 )
 
 
-class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
+class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.config: MinimaxTTS2Config | None = None
-        self.client: MinimaxTTS2 | None = None
+        self.config: MinimaxTTSWebsocketConfig | None = None
+        self.client: MinimaxTTSWebsocket | None = None
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.sent_ts: datetime | None = None
@@ -67,7 +67,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                     return
 
                 try:
-                    self.config = MinimaxTTS2Config.model_validate_json(config_json)
+                    self.config = MinimaxTTSWebsocketConfig.model_validate_json(config_json)
                 except Exception as validation_error:
                     error_msg = f"Configuration validation failed: {str(validation_error)}"
                     self.ten_env.log_error(error_msg)
@@ -134,10 +134,10 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
                 # extract audio_params and additions from config
                 self.config.update_params()
 
-            self.client = MinimaxTTS2(self.config, ten_env, self.vendor())
+            self.client = MinimaxTTSWebsocket(self.config, ten_env, self.vendor())
             # Preheat websocket connection
             await self.client.start()
-            ten_env.log_info("MinimaxTTS2 client initialized and preheated successfully")
+            ten_env.log_info("MinimaxTTSWebsocket client initialized and preheated successfully")
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
 
@@ -216,7 +216,7 @@ class MinimaxTTS2Extension(AsyncTTS2BaseExtension):
             )
             if self.client is None:
                 self.ten_env.log_info("TTS client is not initialized, attempting to reconnect...")
-                self.client = MinimaxTTS2(self.config, self.ten_env, self.vendor())
+                self.client = MinimaxTTSWebsocket(self.config, self.ten_env, self.vendor())
                 await self.client.start()
                 self.ten_env.log_info("TTS client reconnected successfully.")
 

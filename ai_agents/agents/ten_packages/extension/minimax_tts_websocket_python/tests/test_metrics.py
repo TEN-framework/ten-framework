@@ -21,15 +21,10 @@ import asyncio
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
-    Cmd,
-    CmdResult,
-    StatusCode,
     Data,
-    TenError
 )
 from ten_ai_base.struct import TTSTextInput
-from minimax_tts2_python.minimax_tts import (
-    MinimaxTTSTaskFailedException,
+from minimax_tts_websocket_python.minimax_tts import (
     EVENT_TTSSentenceEnd,
     EVENT_TTSResponse,
 )
@@ -84,8 +79,8 @@ class ExtensionTesterMetrics(ExtensionTester):
              self.audio_frame_received = True
              ten_env.log_info("First audio frame received.")
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_ttfb_metric_is_sent(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
     receiving the first audio chunk from the TTS service.
@@ -93,7 +88,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTS2):
     print("Starting test_ttfb_metric_is_sent with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
@@ -116,7 +111,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTS2):
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(metrics_config)
     )
 

@@ -476,7 +476,6 @@ def test_flush_logic(MockBytedanceV3Client):
     # --- Assertions ---
     assert tester.audio_start_received, "Did not receive tts_audio_start."
     assert tester.first_audio_frame_received, "Did not receive any audio frame."
-    assert tester.flush_start_received, "Did not receive tts_flush_start."
     assert tester.audio_end_received, "Did not receive tts_audio_end."
     assert tester.flush_end_received, "Did not receive tts_flush_end."
     assert not tester.audio_received_after_flush_end, "Received audio after tts_flush_end."

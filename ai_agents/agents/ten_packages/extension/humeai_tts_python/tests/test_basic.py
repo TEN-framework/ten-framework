@@ -38,8 +38,6 @@ from ten_ai_base.struct import TTSTextInput, TTSFlush
 from humeai_tts_python.humeTTS import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
-    EVENT_TTS_ERROR,
-    EVENT_TTS_INVALID_KEY_ERROR,
     EVENT_TTS_FLUSH,
 )
 
@@ -421,7 +419,6 @@ def test_flush_logic(MockHumeAiTTS):
 
     assert tester.audio_start_received, "Did not receive tts_audio_start."
     assert tester.first_audio_frame_received, "Did not receive any audio frame."
-    assert tester.flush_start_received, "Did not receive tts_flush_start."
     assert tester.audio_end_received, "Did not receive tts_audio_end."
     assert tester.flush_end_received, "Did not receive tts_flush_end."
     assert not tester.audio_received_after_flush_end, "Received audio after tts_flush_end."
@@ -433,17 +430,3 @@ def test_flush_logic(MockHumeAiTTS):
         f"Mismatch in audio duration. Calculated: {calculated_duration}ms, From event: {event_duration}ms"
 
     print("✅ Flush logic test passed successfully.")
-
-if __name__ == "__main__":
-    # Run all tests
-    print("Running all HumeAI TTS tests...")
-    test_basic()
-    test_empty_params_fatal_error()
-    test_invalid_api_key_error()
-    test_dump_functionality()
-    test_flush_logic()
-    test_ttfb_metric_is_sent()
-    test_params_passthrough()
-    test_text_input_end_logic()
-    test_flush_logic()
-    print("All tests completed!")

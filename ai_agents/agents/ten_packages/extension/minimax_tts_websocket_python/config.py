@@ -28,15 +28,14 @@ def mask_sensitive_data(
     )
 
 
-class MinimaxTTS2Config(BaseModel):
-    api_key: str  # API key
-    group_id: str
+class MinimaxTTSWebsocketConfig(BaseModel):
 
-    # Websocket specific configs
-    url: str = "wss://api.minimaxi.com/ws/v1/t2a_v2"
-    voice_id: str = "male-qn-qingse"
-    sample_rate: int = 24000
-    model: str = "speech-02-hd"
+    api_key: str
+    group_id: str
+    url: str
+    voice_id: str
+    sample_rate: int
+    model: str
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
@@ -74,16 +73,12 @@ class MinimaxTTS2Config(BaseModel):
         if "model" not in self.params:
             self.params["model"] = self.model
 
-    def get_voice_ids(self) -> str:
-        """Get voice ID for metrics reporting"""
-        return self.voice_id
-
     def to_str(self) -> str:
         """
         Convert the configuration to a string representation, masking sensitive data.
         """
         return (
-            f"MinimaxTTS2Config(key={mask_sensitive_data(self.api_key)}, "
+            f"MinimaxTTSWebsocketConfig(key={mask_sensitive_data(self.api_key)}, "
             f"group_id={self.group_id}, "
             f"voice_id={self.voice_id}, "
             f"sample_rate={self.sample_rate}, "

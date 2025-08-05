@@ -10,13 +10,13 @@ from ten_runtime import (
 )
 
 
-@register_addon_as_extension("minimax_tts2_python")
-class MinimaxTTS2ExtensionAddon(Addon):
+@register_addon_as_extension("minimax_tts_websocket_python")
+class MinimaxTTSWebsocketExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import MinimaxTTS2Extension
+        from .extension import MinimaxTTSWebsocketExtension
 
-        ten_env.log_info("MinimaxTTS2ExtensionAddon on_create_instance")
+        ten_env.log_info("MinimaxTTSWebsocketExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(
-            MinimaxTTS2Extension(name), context
+            MinimaxTTSWebsocketExtension(name), context
         )

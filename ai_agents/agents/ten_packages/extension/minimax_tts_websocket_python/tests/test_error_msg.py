@@ -20,14 +20,10 @@ from unittest.mock import patch, AsyncMock
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
-    Cmd,
-    CmdResult,
-    StatusCode,
     Data,
-    TenError,
 )
 from ten_ai_base.struct import TTSTextInput
-from minimax_tts2_python.minimax_tts import (
+from minimax_tts_websocket_python.minimax_tts import (
     MinimaxTTSTaskFailedException,
 )
 
@@ -76,19 +72,17 @@ def test_empty_params_fatal_error():
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(empty_params_config)
     )
 
     print("Running test...")
-    error = tester.run()
+    tester.run()
     print("Test completed.")
 
     # Verify FATAL ERROR was received
     assert tester.error_received, "Expected to receive error message"
     assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
-    # 暂时不检查module字段，因为可能没有被正确设置
-    # assert tester.error_module == "tts", f"Expected module 'tts', got {tester.error_module}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 
@@ -140,14 +134,14 @@ class ExtensionTesterInvalidParams(ExtensionTester):
             ten_env.log_info("Error received, stopping test immediately")
             ten_env.stop_test()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_invalid_params_fatal_error(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_invalid_params_fatal_error(MockMinimaxTTSWebsocket):
     """Test that an error from the TTS client is handled correctly with a mock."""
 
     print("Starting test_invalid_params_fatal_error with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     # Mock the async methods called on the client instance
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
@@ -176,7 +170,7 @@ def test_invalid_params_fatal_error(MockMinimaxTTS2):
 
     tester = ExtensionTesterInvalidParams()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(invalid_params_config)
     )
 

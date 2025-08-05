@@ -23,7 +23,7 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from minimax_tts2_python.minimax_tts import (
+from minimax_tts_websocket_python.minimax_tts import (
     MinimaxTTSTaskFailedException,
 )
 
@@ -82,8 +82,8 @@ class ExtensionTesterRobustness(ExtensionTester):
             # We can now safely stop the test.
             ten_env.stop_test()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_reconnect_after_connection_drop(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_reconnect_after_connection_drop(MockMinimaxTTSWebsocket):
     """
     Tests that the extension can recover from a connection drop, report a
     NON_FATAL_ERROR, and then successfully reconnect and process a new request.
@@ -95,7 +95,7 @@ def test_reconnect_after_connection_drop(MockMinimaxTTS2):
     get_call_count = 0
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
@@ -118,7 +118,7 @@ def test_reconnect_after_connection_drop(MockMinimaxTTS2):
     config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(config)
     )
 

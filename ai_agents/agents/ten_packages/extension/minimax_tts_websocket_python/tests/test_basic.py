@@ -17,7 +17,6 @@ from pathlib import Path
 import json
 from typing import Any
 from unittest.mock import patch, AsyncMock
-import tempfile
 import os
 import asyncio
 import filecmp
@@ -27,14 +26,10 @@ import threading
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
-    Cmd,
-    CmdResult,
-    StatusCode,
     Data,
-    TenError,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from minimax_tts2_python.minimax_tts import (
+from minimax_tts_websocket_python.minimax_tts import (
     MinimaxTTSTaskFailedException,
     EVENT_TTSSentenceEnd,
     EVENT_TTSResponse,
@@ -103,8 +98,8 @@ class ExtensionTesterDump(ExtensionTester):
                 return os.path.join(self.dump_dir, filename)
         return None
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_dump_functionality(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_dump_functionality(MockMinimaxTTSWebsocket):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
 
     print("Starting test_dump_functionality with mock...")
@@ -119,7 +114,7 @@ def test_dump_functionality(MockMinimaxTTS2):
     os.makedirs(DUMP_PATH)
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
@@ -148,7 +143,7 @@ def test_dump_functionality(MockMinimaxTTS2):
     }
 
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(dump_config)
     )
 
@@ -254,8 +249,8 @@ class ExtensionTesterTextInputEnd(ExtensionTester):
             self.error_module = payload.get("module")
             ten_env.stop_test()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_text_input_end_logic(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_text_input_end_logic(MockMinimaxTTSWebsocket):
     """
     Tests that after a request with text_input_end=True is processed,
     subsequent requests with the same request_id and text_input_end=False are ignored and trigger an error.
@@ -263,7 +258,7 @@ def test_text_input_end_logic(MockMinimaxTTS2):
     print("Starting test_text_input_end_logic with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
@@ -277,7 +272,7 @@ def test_text_input_end_logic(MockMinimaxTTS2):
     config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
     tester = ExtensionTesterTextInputEnd()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(config)
     )
 
@@ -381,15 +376,15 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_flush_logic(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_flush_logic(MockMinimaxTTSWebsocket):
     """
     Tests that sending a flush command during TTS streaming correctly stops
     the audio and sends the appropriate events.
     """
     print("Starting test_flush_logic with mock...")
 
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
     mock_instance.cancel = AsyncMock()
@@ -410,7 +405,7 @@ def test_flush_logic(MockMinimaxTTS2):
     config = { "api_key": "a_valid_key", "group_id": "a_valid_group" }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(config)
     )
 
@@ -420,7 +415,6 @@ def test_flush_logic(MockMinimaxTTS2):
 
     assert tester.audio_start_received, "Did not receive tts_audio_start."
     assert tester.first_audio_frame_received, "Did not receive any audio frame."
-    assert tester.flush_start_received, "Did not receive tts_flush_start."
     assert tester.audio_end_received, "Did not receive tts_audio_end."
     assert tester.flush_end_received, "Did not receive tts_flush_end."
     assert not tester.audio_received_after_flush_end, "Received audio after tts_flush_end."

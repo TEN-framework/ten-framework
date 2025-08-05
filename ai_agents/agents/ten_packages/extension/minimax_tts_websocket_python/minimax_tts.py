@@ -13,7 +13,7 @@ from typing import AsyncIterator
 from dataclasses import dataclass
 
 from ten_runtime import AsyncTenEnv
-from .config import MinimaxTTS2Config
+from .config import MinimaxTTSWebsocketConfig
 
 # TTS Events
 EVENT_TTSSentenceStart = 350
@@ -31,10 +31,10 @@ class MinimaxTTSTaskFailedException(Exception):
         super().__init__(f"TTS task failed: {error_msg} (code: {error_code})")
 
 
-class MinimaxTTS2:
+class MinimaxTTSWebsocket:
     def __init__(
         self,
-        config: MinimaxTTS2Config,
+        config: MinimaxTTSWebsocketConfig,
         ten_env: AsyncTenEnv | None = None,
         vendor: str = "minimax"
     ):
@@ -54,7 +54,7 @@ class MinimaxTTS2:
         try:
             await self._connect()
             if self.ten_env:
-                self.ten_env.log_info("MinimaxTTS2 websocket preheated successfully")
+                self.ten_env.log_info("MinimaxTTSWebsocket websocket preheated successfully")
         except Exception as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to preheat websocket connection: {e}")
@@ -206,7 +206,6 @@ class MinimaxTTS2:
         await self.ws.send(json.dumps(ws_req))
 
         chunk_counter = 0
-        ttfb_logged = False
 
         # Receive messages until is_final/task_finished/task_failed
         while True:
@@ -260,15 +259,6 @@ class MinimaxTTS2:
                         self.ten_env.log_debug(
                             f"audio chunk #{chunk_counter}, hex bytes: {len(audio)}, audio bytes: {len(audio_bytes)}"
                         )
-
-                    if not ttfb_logged:
-                        ttfb = int((time.time() - time_before_send) * 1000)
-                        ttfb_logged = True
-                        if self.ten_env:
-                            self.ten_env.log_info(
-                                f"KEYPOINT [session_id:{self.session_id}] [session_trace_id:{self.session_trace_id}] "
-                                f"[ttfb:{ttfb}ms] [text:{text}]"
-                            )
 
                     chunk_counter += 1
                     if len(audio_bytes) > 0:

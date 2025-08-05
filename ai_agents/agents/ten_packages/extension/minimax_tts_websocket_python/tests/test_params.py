@@ -61,16 +61,16 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         print("tester on_start_done")
         ten_env_tester.on_start_done()
 
-@patch('minimax_tts2_python.extension.MinimaxTTS2')
-def test_params_passthrough(MockMinimaxTTS2):
+@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+def test_params_passthrough(MockMinimaxTTSWebsocket):
     """
     Tests that custom parameters passed in the configuration are correctly
-    forwarded to the MinimaxTTS2 client constructor.
+    forwarded to the MinimaxTTSWebsocket client constructor.
     """
     print("Starting test_params_passthrough with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockMinimaxTTS2.return_value
+    mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock() # Required for clean shutdown in on_stop
 
@@ -96,7 +96,7 @@ def test_params_passthrough(MockMinimaxTTS2):
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "minimax_tts2_python",
+        "minimax_tts_websocket_python",
         json.dumps(passthrough_config)
     )
 
@@ -105,13 +105,13 @@ def test_params_passthrough(MockMinimaxTTS2):
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the MinimaxTTS2 client was instantiated exactly once.
-    MockMinimaxTTS2.assert_called_once()
+    # Check that the MinimaxTTSWebsocket client was instantiated exactly once.
+    MockMinimaxTTSWebsocket.assert_called_once()
 
     # Get the arguments that the mock was called with.
     # The constructor signature is (self, config, ten_env, vendor),
     # so we inspect the 'config' object at index 1 of the call arguments.
-    call_args, call_kwargs = MockMinimaxTTS2.call_args
+    call_args, call_kwargs = MockMinimaxTTSWebsocket.call_args
     called_config = call_args[0]
 
     # Verify that the 'params' dictionary in the config object passed to the
