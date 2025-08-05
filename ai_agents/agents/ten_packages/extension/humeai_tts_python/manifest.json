@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.23"
+      "version": "0.6"
     }
   ],
   "package": {
@@ -46,10 +46,10 @@
               "type": "string"
             },
             "speed": {
-              "type": "float32"
+              "type": "float64"
             },
             "trailing_silence": {
-              "type": "float32"
+              "type": "float64"
             },
             "request_timeout_seconds": {
               "type": "int64"
