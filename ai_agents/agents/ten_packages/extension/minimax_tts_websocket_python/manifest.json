@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "bytedance_tts_duplex",
+  "name": "minimax_tts_websocket_python",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.6.21"
+      "version": "0.6"
     }
   ],
   "package": {
@@ -32,20 +32,28 @@
     ],
     "property": {
       "properties": {
-        "appid": {
-          "type": "string"
-        },
-        "token": {
-          "type": "string"
-        },
-        "voice_type": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
-        },
-        "api_url": {
-          "type": "string"
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "group_id": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "url": {
+              "type": "string"
+            }
+          }
         }
       }
     }
