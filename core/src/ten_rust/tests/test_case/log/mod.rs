@@ -23,7 +23,24 @@ mod tests {
 
     #[test]
     fn test_create_log_config_from_json() {
-        let log_config_json = r#"{"handlers": [{"matchers": [{"level": "debug"}], "formatter": {"type": "plain", "colored": false}, "emitter": {"type": "console", "config": {"stream": "stdout"}}}]}"#;
+        let log_config_json = r#"
+        {
+          "handlers": [{
+            "matchers": [{
+              "level": "debug"
+            }],
+            "formatter": {
+              "type": "plain",
+              "colored": false
+            },
+            "emitter": {
+              "type": "console",
+              "config": {
+                "stream": "stdout"
+              }
+            }
+          }]
+        }"#;
 
         let mut err_msg: *mut c_char = std::ptr::null_mut();
 

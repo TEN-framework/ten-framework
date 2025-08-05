@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-
 use std::fmt;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::field::Visit;
