@@ -39,7 +39,7 @@
 - `language_code`: 語言代碼，例如 'en-US', 'zh-CN'
 - `media_sample_rate_hz`: 音訊採樣率（Hz），例如 16000
 - `media_encoding`: 音訊編碼格式，例如 'pcm'
-- `vocabulary_name`: 自訂詞彙表名稱（可選）
+- `vocabulary_name`: 自訂詞彙表名稱（可選）參考文檔: https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html
 - `session_id`: 會話 ID（可選）
 - `vocab_filter_method`: 詞彙過濾方法（可選）
 - `vocab_filter_name`: 詞彙過濾器名稱（可選）
@@ -85,15 +85,6 @@
 - `send_audio()`: 傳送音訊幀進行識別
 - `finalize()`: 完成目前識別會話
 - `is_connected()`: 檢查連線狀態
-
-### 事件處理器
-
-- `on_asr_start()`: ASR 會話開始時呼叫
-- `on_asr_delta()`: 收到轉錄增量時呼叫
-- `on_asr_completed()`: 轉錄完成時呼叫
-- `on_asr_committed()`: 音訊緩衝區提交時呼叫
-- `on_asr_server_error()`: 伺服器錯誤時呼叫
-- `on_asr_client_error()`: 用戶端錯誤時呼叫
 
 ### 內部方法
 
@@ -201,4 +192,4 @@ pytest tests/
 
 ## 授權
 
-此擴充是 TEN Framework 的一部分，根據 Apache License, Version 2.0 授權。 
+此擴充是 TEN Framework 的一部分，根據 Apache License, Version 2.0 授權。

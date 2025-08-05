@@ -1,19 +1,17 @@
 # AWS ASR Python Extension
 
-A Python extension for AWS Automatic Speech Recognition (ASR) service, providing real-time speech-to-text conversion capabilities with full async support using AWS Transcribe streaming API.
+A Python extension for AWS Automatic Speech Recognition (ASR) service, providing real-time speech-to-text conversion functionality with full asynchronous operation support using AWS Transcribe streaming API.
 
 ## Features
 
-- **Full Async Support**: Built with complete asynchronous architecture for high-performance speech recognition
-- **Real-time Streaming**: Supports real-time audio streaming with low latency using AWS Transcribe streaming API
-- **AWS Transcribe API**: Uses AWS Transcribe streaming transcription API for enterprise-grade performance
-- **Multiple Audio Formats**: Supports PCM16 audio format
-- **Audio Dumping**: Optional audio recording for debugging and analysis
-- **Configurable Logging**: Adjustable log levels for debugging
-- **Error Handling**: Comprehensive error handling with detailed logging
-- **Multi-language Support**: Supports multiple languages through AWS Transcribe
+- **Full Async Support**: Complete asynchronous architecture for high-performance speech recognition
+- **Real-time Streaming**: Low-latency real-time audio streaming using AWS Transcribe streaming API
+- **AWS Transcribe API**: Enterprise-grade performance using AWS Transcribe streaming transcription API
+- **Audio Dumping**: Optional audio recording functionality for debugging and analysis
+- **Error Handling**: Comprehensive error handling and detailed logging
+- **Multi-language Support**: Support for multiple languages through AWS Transcribe
 - **Reconnection Management**: Automatic reconnection mechanism for service stability
-- **Session Management**: Supports session ID and audio timeline management
+- **Session Management**: Support for session ID and audio timeline management
 
 ## Configuration
 
@@ -21,13 +19,13 @@ The extension requires the following configuration parameters:
 
 ### Required Parameters
 
-- `params`: AWS Transcribe configuration parameters including authentication and transcription settings
+- `params`: AWS Transcribe configuration parameters, including authentication information and transcription settings
 
 ### Optional Parameters
 
 - `dump`: Enable audio dumping (default: false)
 - `dump_path`: Path for dumped audio files (default: "aws_asr_in.pcm")
-- `log_level`: Logging level (default: "INFO")
+- `log_level`: Log level (default: "INFO")
 - `finalize_mode`: Finalization mode, either "disconnect" or "mute_pkg" (default: "disconnect")
 - `mute_pkg_duration_ms`: Mute package duration in milliseconds (default: 800)
 
@@ -39,7 +37,7 @@ The extension requires the following configuration parameters:
 - `language_code`: Language code, e.g. 'en-US', 'zh-CN'
 - `media_sample_rate_hz`: Audio sample rate (Hz), e.g. 16000
 - `media_encoding`: Audio encoding format, e.g. 'pcm'
-- `vocabulary_name`: Custom vocabulary name (optional)
+- `vocabulary_name`: Custom vocabulary name (optional) Reference: https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html
 - `session_id`: Session ID (optional)
 - `vocab_filter_method`: Vocabulary filter method (optional)
 - `vocab_filter_name`: Vocabulary filter name (optional)
@@ -50,7 +48,7 @@ The extension requires the following configuration parameters:
 - `partial_results_stability`: Partial results stability setting (optional)
 - `language_model_name`: Language model name (optional)
 
-### Example Configuration
+### Configuration Example
 
 ```json
 {
@@ -75,29 +73,20 @@ The extension requires the following configuration parameters:
 
 ## API
 
-The extension implements the `AsyncASRBaseExtension` interface and provides the following key methods:
+The extension implements the `AsyncASRBaseExtension` interface, providing the following key methods:
 
 ### Core Methods
 
-- `on_init()`: Initialize the AWS ASR client and configuration
-- `start_connection()`: Establish connection to AWS Transcribe service
-- `stop_connection()`: Close connection to ASR service
+- `on_init()`: Initialize AWS ASR client and configuration
+- `start_connection()`: Establish connection with AWS Transcribe service
+- `stop_connection()`: Close connection with ASR service
 - `send_audio()`: Send audio frames for recognition
-- `finalize()`: Finalize the current recognition session
+- `finalize()`: Complete current recognition session
 - `is_connected()`: Check connection status
-
-### Event Handlers
-
-- `on_asr_start()`: Called when ASR session starts
-- `on_asr_delta()`: Called when transcription delta is received
-- `on_asr_completed()`: Called when transcription is completed
-- `on_asr_committed()`: Called when audio buffer is committed
-- `on_asr_server_error()`: Called when server error occurs
-- `on_asr_client_error()`: Called when client error occurs
 
 ### Internal Methods
 
-- `_handle_transcript_event()`: Handle transcript events
+- `_handle_transcript_event()`: Handle transcription events
 - `_disconnect_aws()`: Disconnect from AWS
 - `_reconnect_aws()`: Reconnect to AWS
 - `_handle_finalize_disconnect()`: Handle disconnect finalization
@@ -118,18 +107,11 @@ The extension is built as part of the TEN Framework build system. No additional 
 
 ### Testing
 
-Run the unit tests using:
+Run unit tests:
 
 ```bash
 pytest tests/
 ```
-
-The extension includes comprehensive tests:
-- Configuration validation
-- Audio processing
-- Error handling
-- Connection management
-- Transcription result processing
 
 ## Usage
 
@@ -146,58 +128,33 @@ The extension provides detailed error information through:
 - Comprehensive logging
 - Graceful degradation and reconnection mechanisms
 
-## Performance
+## Reconnection Mechanism
 
-- **Low Latency**: Optimized real-time processing using AWS Transcribe streaming API
-- **High Throughput**: Efficient audio frame processing
-- **Memory Efficient**: Minimal memory footprint
-- **Connection Reuse**: Maintains persistent connections
-- **Auto Reconnection**: Automatic reconnection on network interruptions
-
-## Security
-
-- **Credential Encryption**: Sensitive credentials are encrypted in configuration
-- **Secure Communication**: Uses secure connections with AWS
-- **Input Validation**: Comprehensive input validation and sanitization
-- **IAM Permissions**: Supports AWS IAM permission management
-
-## Supported AWS Features
-
-The extension supports various AWS Transcribe features:
-- **Multi-language Support**: Supports multiple languages and dialects
-- **Custom Vocabulary**: Supports custom vocabulary tables
-- **Vocabulary Filtering**: Supports vocabulary filtering functionality
-- **Speaker Identification**: Supports speaker labels
-- **Channel Identification**: Supports multi-channel audio processing
-- **Partial Results**: Supports real-time partial results
-- **Result Stabilization**: Supports result stabilization settings
+The extension includes automatic reconnection mechanism:
+- Maximum 5 reconnection attempts
+- Exponential backoff strategy: 300ms, 600ms, 1.2s, 2.4s, 4.8s
+- Automatic counter reset after successful connection
+- Detailed logging for monitoring and debugging
 
 ## Audio Format Support
 
 - **PCM16**: 16-bit PCM audio format
-- **Sample Rates**: Supports various sample rates (e.g., 16000 Hz)
-- **Mono Channel**: Supports mono channel audio processing
+- **Sample Rate**: Support for various sample rates (e.g., 16000 Hz)
+- **Mono**: Support for mono audio processing
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Connection Failures**: Check AWS credentials and network connectivity
-2. **Authentication Errors**: Verify AWS access keys and permissions
-3. **Audio Quality Issues**: Validate audio format and sample rate settings
+1. **Connection Failure**: Check AWS credentials and network connection
+2. **Authentication Error**: Verify AWS access keys and permissions
+3. **Audio Quality Issues**: Verify audio format and sample rate settings
 4. **Performance Issues**: Adjust buffer settings and language models
 5. **Logging Issues**: Configure appropriate log levels
 
 ### Debug Mode
 
-Enable debug mode by setting `dump: true` in configuration to record audio for analysis.
-
-### Reconnection Mechanism
-
-The extension includes automatic reconnection mechanism:
-- Automatic reconnection on network interruptions
-- Configurable reconnection strategies
-- Connection status monitoring
+Enable debug mode by setting `dump: true` in the configuration to record audio for analysis.
 
 ## License
 

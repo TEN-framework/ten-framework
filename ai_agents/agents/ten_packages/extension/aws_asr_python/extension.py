@@ -244,23 +244,39 @@ class AWSASRExtension(AsyncASRBaseExtension):
                     stable = item.stable
                     if stable is None:
                         stable = False
+                    start_ms = (
+                        int(item.start_time * 1000)
+                        if item.start_time is not None
+                        else 0
+                    )
+                    duration_ms = (
+                        int((item.end_time - item.start_time) * 1000)
+                        if item.end_time is not None and item.start_time is not None
+                        else 0
+                    )
+                    actual_start_ms = int(
+                        self.timeline.get_audio_duration_before_time(start_ms)
+                        + self.sent_user_audio_duration_ms_before_last_reset
+                    )
 
                     words.append(
                         ASRWord(
                             word=item.content,
-                            start_ms=int(item.start_time * 1000)
-                            if item.start_time is not None
-                            else 0,
-                            duration_ms=int((item.end_time - item.start_time) * 1000)
-                            if item.end_time is not None and item.start_time is not None
-                            else 0,
+                            start_ms=start_ms,
+                            duration_ms=duration_ms,
                             stable=stable,
                         )
                     )
 
             # timestamp processing
-            start_ms = int(result.start_time * 1000) if result.start_time is not None else 0
-            duration_ms = int((result.end_time - result.start_time) * 1000) if result.end_time is not None and result.start_time is not None else 0
+            start_ms = (
+                int(result.start_time * 1000) if result.start_time is not None else 0
+            )
+            duration_ms = (
+                int((result.end_time - result.start_time) * 1000)
+                if result.end_time is not None and result.start_time is not None
+                else 0
+            )
 
             actual_start_ms = int(
                 self.timeline.get_audio_duration_before_time(start_ms)

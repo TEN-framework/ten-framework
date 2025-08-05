@@ -39,7 +39,7 @@ AWS 自動音声認識 (ASR) サービスのための Python 拡張で、AWS Tra
 - `language_code`: 言語コード、例：'en-US', 'zh-CN'
 - `media_sample_rate_hz`: 音声サンプルレート（Hz）、例：16000
 - `media_encoding`: 音声エンコーディング形式、例：'pcm'
-- `vocabulary_name`: カスタム語彙表名（オプション）
+- `vocabulary_name`: カスタム語彙表名（オプション）参考: https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html
 - `session_id`: セッション ID（オプション）
 - `vocab_filter_method`: 語彙フィルタ方法（オプション）
 - `vocab_filter_name`: 語彙フィルタ名（オプション）
@@ -85,15 +85,6 @@ AWS 自動音声認識 (ASR) サービスのための Python 拡張で、AWS Tra
 - `send_audio()`: 認識のための音声フレームを送信
 - `finalize()`: 現在の認識セッションを終了
 - `is_connected()`: 接続状態をチェック
-
-### イベントハンドラー
-
-- `on_asr_start()`: ASR セッション開始時に呼び出される
-- `on_asr_delta()`: 転写デルタを受信した時に呼び出される
-- `on_asr_completed()`: 転写完了時に呼び出される
-- `on_asr_committed()`: 音声バッファがコミットされた時に呼び出される
-- `on_asr_server_error()`: サーバーエラー発生時に呼び出される
-- `on_asr_client_error()`: クライアントエラー発生時に呼び出される
 
 ### 内部メソッド
 
@@ -201,4 +192,4 @@ pytest tests/
 
 ## ライセンス
 
-この拡張は TEN Framework の一部で、Apache License, Version 2.0 の下でライセンスされています。 
+この拡張は TEN Framework の一部で、Apache License, Version 2.0 の下でライセンスされています。

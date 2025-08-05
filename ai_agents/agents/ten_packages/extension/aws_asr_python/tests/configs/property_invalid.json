@@ -1,5 +1,4 @@
 {
-    "dump": false,
     "finalize_mode": "disconnect",
     "params": {
         "region": "us-west-2",

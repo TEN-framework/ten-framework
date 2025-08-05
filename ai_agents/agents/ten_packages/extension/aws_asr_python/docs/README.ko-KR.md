@@ -39,7 +39,7 @@ AWS 자동 음성 인식 (ASR) 서비스를 위한 Python 확장으로, AWS Tran
 - `language_code`: 언어 코드, 예: 'en-US', 'zh-CN'
 - `media_sample_rate_hz`: 오디오 샘플 레이트 (Hz), 예: 16000
 - `media_encoding`: 오디오 인코딩 형식, 예: 'pcm'
-- `vocabulary_name`: 사용자 정의 어휘표 이름 (선택사항)
+- `vocabulary_name`: 사용자 정의 어휘표 이름 (선택사항) 참조: https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html
 - `session_id`: 세션 ID (선택사항)
 - `vocab_filter_method`: 어휘 필터 방법 (선택사항)
 - `vocab_filter_name`: 어휘 필터 이름 (선택사항)
@@ -85,15 +85,6 @@ AWS 자동 음성 인식 (ASR) 서비스를 위한 Python 확장으로, AWS Tran
 - `send_audio()`: 인식을 위한 오디오 프레임 전송
 - `finalize()`: 현재 인식 세션 완료
 - `is_connected()`: 연결 상태 확인
-
-### 이벤트 핸들러
-
-- `on_asr_start()`: ASR 세션이 시작될 때 호출
-- `on_asr_delta()`: 전사 델타를 받았을 때 호출
-- `on_asr_completed()`: 전사가 완료되었을 때 호출
-- `on_asr_committed()`: 오디오 버퍼가 커밋되었을 때 호출
-- `on_asr_server_error()`: 서버 오류가 발생했을 때 호출
-- `on_asr_client_error()`: 클라이언트 오류가 발생했을 때 호출
 
 ### 내부 메서드
 
@@ -201,4 +192,4 @@ pytest tests/
 
 ## 라이선스
 
-이 확장은 TEN Framework의 일부이며 Apache License, Version 2.0에 따라 라이선스됩니다. 
+이 확장은 TEN Framework의 일부이며 Apache License, Version 2.0에 따라 라이선스됩니다.
