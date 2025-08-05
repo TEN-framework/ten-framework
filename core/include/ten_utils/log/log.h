@@ -122,6 +122,7 @@ typedef struct ten_log_formatter_t {
 typedef struct ten_log_advanced_impl_t {
   ten_log_advanced_log_func_t impl;
   ten_log_advanced_log_config_on_deinit_func_t on_deinit;
+  bool is_reloadable;
   void *config;
 } ten_log_advanced_impl_t;
 

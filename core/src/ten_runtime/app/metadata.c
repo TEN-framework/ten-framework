@@ -274,7 +274,8 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
   }
 
   err_msg = NULL;
-  success = ten_rust_configure_log(log_config, &err_msg);
+  success = ten_rust_configure_log(
+      log_config, ten_log_global_is_advanced_log_reloadable(), &err_msg);
   if (!success) {
     if (err_msg) {
       TEN_LOGE("Failed to configure log: %s", err_msg);

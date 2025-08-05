@@ -143,9 +143,22 @@ pub struct AdvancedLogHandler {
     pub emitter: AdvancedLogEmitter,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AdvancedLogConfig {
     pub handlers: Vec<AdvancedLogHandler>,
+
+    #[serde(skip)]
+    guards: Vec<Box<dyn std::any::Any + Send + Sync>>,
+}
+
+impl AdvancedLogConfig {
+    pub fn new(handlers: Vec<AdvancedLogHandler>) -> Self {
+        Self { handlers, guards: Vec::new() }
+    }
+
+    pub fn add_guard(&mut self, guard: Box<dyn std::any::Any + Send + Sync>) {
+        self.guards.push(guard);
+    }
 }
 
 /// Creates a layer and filter separately from the handler configuration
@@ -282,6 +295,35 @@ impl std::fmt::Display for LogInitError {
 
 impl std::error::Error for LogInitError {}
 
+fn ten_configure_log_non_reloadable(
+    config: &mut AdvancedLogConfig,
+) -> Result<(), LogInitError> {
+    let mut layers = Vec::with_capacity(config.handlers.len());
+    let mut guards = Vec::new();
+
+    // Create layers from handlers
+    {
+        let handlers = &config.handlers;
+        for handler in handlers {
+            let (layer_with_guard, filter) = create_layer_and_filter(handler);
+            if let Some(guard) = layer_with_guard.guard {
+                guards.push(guard);
+            }
+            layers.push(layer_with_guard.layer.with_filter(filter).boxed());
+        }
+    }
+
+    // Add guards to config
+    for guard in guards {
+        config.add_guard(guard);
+    }
+
+    // Initialize the registry
+    tracing_subscriber::registry().with(layers).try_init().map_err(|_| {
+        LogInitError { message: "Logging system is already initialized" }
+    })
+}
+
 /// Configure the logging system for production use
 ///
 /// This function initializes the logging system with the provided
@@ -295,34 +337,15 @@ impl std::error::Error for LogInitError {}
 /// * `Ok(())` if initialization was successful
 ///
 /// * `Err(LogInitError)` if the logging system was already initialized
-/// A global guard holder to ensure non-blocking writers work properly
-static mut GLOBAL_GUARDS: Option<Vec<Box<dyn std::any::Any + Send + Sync>>> =
-    None;
-
 pub fn ten_configure_log(
-    config: &AdvancedLogConfig,
+    config: &mut AdvancedLogConfig,
+    reloadable: bool,
 ) -> Result<(), LogInitError> {
-    let mut layers = Vec::with_capacity(config.handlers.len());
-    let mut guards = Vec::new();
-
-    // Create layers from handlers
-    for handler in &config.handlers {
-        let (layer_with_guard, filter) = create_layer_and_filter(handler);
-        if let Some(guard) = layer_with_guard.guard {
-            guards.push(guard);
-        }
-        layers.push(layer_with_guard.layer.with_filter(filter).boxed());
+    if reloadable {
+        reloadable::ten_configure_log_reloadable(config)
+    } else {
+        ten_configure_log_non_reloadable(config)
     }
-
-    // Store guards globally to keep them alive
-    unsafe {
-        GLOBAL_GUARDS = Some(guards);
-    }
-
-    // Initialize the registry
-    tracing_subscriber::registry().with(layers).try_init().map_err(|_| {
-        LogInitError { message: "Logging system is already initialized" }
-    })
 }
 
 #[allow(clippy::too_many_arguments)]

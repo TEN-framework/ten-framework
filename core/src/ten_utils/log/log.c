@@ -253,6 +253,7 @@ void ten_log_advanced_impl_init(ten_log_advanced_impl_t *self) {
   self->impl = NULL;
   self->on_deinit = NULL;
   self->config = NULL;
+  self->is_reloadable = false;
 }
 
 void ten_log_advanced_impl_deinit(ten_log_advanced_impl_t *self) {

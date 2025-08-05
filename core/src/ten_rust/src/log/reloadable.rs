@@ -7,7 +7,7 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
-use crate::log::{create_layer_and_filter, AdvancedLogConfig};
+use crate::log::{create_layer_and_filter, AdvancedLogConfig, LogInitError};
 
 const MAX_HANDLERS: usize = 5;
 
@@ -35,17 +35,17 @@ impl LogLayerHandle {
         self.filter_handle.reload(filter).expect("Failed to reload filter");
 
         // Update layer
-        let layer = layer
-            .unwrap_or_else(|| Box::new(tracing_fmt::Layer::new()) as LogLayer);
-        self.layer_handle.reload(layer).expect("Failed to reload layer");
+        if let Some(layer) = layer {
+            self.layer_handle.reload(layer).expect("Failed to reload layer");
+        }
     }
 }
 
 /// Global logging manager that supports dynamic reconfiguration
 struct LogManager {
     layer_handles: Vec<LogLayerHandle>,
-    /// Guards for each layer that must be kept alive
-    guards: Vec<Vec<Box<dyn std::any::Any + Send + Sync>>>,
+    /// Guard for each layer that must be kept alive
+    guards: Vec<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }
 
 impl LogManager {
@@ -54,7 +54,7 @@ impl LogManager {
         let mut layers = Vec::with_capacity(MAX_HANDLERS);
         let mut guards = Vec::with_capacity(MAX_HANDLERS);
         for _ in 0..MAX_HANDLERS {
-            guards.push(Vec::new());
+            guards.push(None);
         }
 
         // Initialize all layer handles
@@ -91,20 +91,15 @@ impl LogManager {
                 let (layer_with_guard, filter) =
                     create_layer_and_filter(handler);
 
-                // Clear old guards for this handler
-                self.guards[i].clear();
-
-                // Store new guard if present
-                if let Some(guard) = layer_with_guard.guard {
-                    self.guards[i].push(guard);
-                }
+                // Update guard for this handler
+                self.guards[i] = layer_with_guard.guard;
 
                 handle.reload(Some(layer_with_guard.layer), filter);
                 handle.is_active = true;
             } else {
                 // If the number of handlers in the config is less than
                 // MAX_HANDLERS, turn off the excess layers
-                self.guards[i].clear(); // Clear any existing guards
+                self.guards[i] = None; // Clear any existing guard
                 handle.reload(None, EnvFilter::new("off"));
                 handle.is_active = false;
             }
@@ -130,7 +125,9 @@ static LOG_MANAGER: once_cell::sync::Lazy<Arc<Mutex<LogManager>>> =
 /// # Notes
 /// * Supports up to 5 concurrent log handlers
 /// * If more than 5 handlers are configured, extra handlers will be ignored
-pub fn configure_log(config: &AdvancedLogConfig) {
+pub fn ten_configure_log_reloadable(
+    config: &AdvancedLogConfig,
+) -> Result<(), LogInitError> {
     if config.handlers.len() > MAX_HANDLERS {
         tracing::warn!(
             "Too many log handlers configured. Maximum is {}, but {} were \
@@ -138,10 +135,18 @@ pub fn configure_log(config: &AdvancedLogConfig) {
             MAX_HANDLERS,
             config.handlers.len()
         );
+
+        return Err(LogInitError {
+            message: "Too many log handlers configured",
+        });
     }
 
     // Get the global logging manager and update configuration
     if let Ok(mut manager) = LOG_MANAGER.lock() {
         manager.update_config(config);
+    } else {
+        return Err(LogInitError { message: "Failed to lock logging manager" });
     }
+
+    Ok(())
 }

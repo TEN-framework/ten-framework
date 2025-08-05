@@ -59,3 +59,11 @@ void ten_log_global_set_advanced_impl_with_config(
   ten_log_set_advanced_impl_with_config(&ten_global_log, impl, on_deinit,
                                         config);
 }
+
+void ten_log_global_set_advanced_log_reloadable() {
+  ten_global_log.advanced_impl.is_reloadable = true;
+}
+
+bool ten_log_global_is_advanced_log_reloadable(void) {
+  return ten_global_log.advanced_impl.is_reloadable;
+}

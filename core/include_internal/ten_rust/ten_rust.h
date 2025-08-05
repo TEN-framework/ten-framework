@@ -206,6 +206,7 @@ TEN_RUST_PRIVATE_API AdvancedLogConfig *ten_rust_create_log_config_from_json(
     const char *log_config_json, char **err_msg);
 
 TEN_RUST_PRIVATE_API bool ten_rust_configure_log(AdvancedLogConfig *config,
+                                                 bool reloadable,
                                                  char **err_msg);
 
 TEN_RUST_PRIVATE_API void ten_rust_log(AdvancedLogConfig *config,

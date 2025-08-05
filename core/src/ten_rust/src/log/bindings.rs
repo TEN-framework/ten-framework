@@ -84,18 +84,19 @@ pub unsafe extern "C" fn ten_rust_create_log_config_from_json(
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn ten_rust_configure_log(
-    config: *const AdvancedLogConfig,
+    config: *mut AdvancedLogConfig,
+    reloadable: bool,
     err_msg: *mut *mut c_char,
 ) -> bool {
     if config.is_null() {
         return false;
     }
 
-    let config = unsafe { &*config };
+    let config = unsafe { &mut *config };
 
     let mut result = true;
 
-    ten_configure_log(config).unwrap_or_else(|e| {
+    ten_configure_log(config, reloadable).unwrap_or_else(|e| {
         if !err_msg.is_null() {
             let err_msg_c_str = CString::new(e.to_string()).unwrap();
             unsafe {
