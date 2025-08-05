@@ -21,7 +21,7 @@ Soniox ASR (Automatic Speech Recognition) extension for TEN Framework.
 
 - `url`: WebSocket URL (default: "wss://stt-rt.soniox.com/transcribe-websocket")
 - `model`: ASR model to use (default: "stt-rt-preview")
-- `language`: Primary language for recognition (default: "en-US")
+- `language_hints`: Primary language for recognition (default: ["en"])
 - `sample_rate`: Audio sample rate in Hz (default: 16000)
 - `drain_holding_until_fin`: Whether to hold final tokens until drain (default: true)
 - `dump`: Enable audio dumping for debugging (default: false)
@@ -40,7 +40,7 @@ The extension implements the standard ASR interface and outputs `asr_result` dat
   "final": true,
   "start_ms": 1000,
   "duration_ms": 500,
-  "language": "en-US",
+  "language": "en",
   "words": [
     {
       "word": "hello",

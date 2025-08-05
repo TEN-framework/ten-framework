@@ -12,9 +12,10 @@ class SonioxASRConfig(BaseModel):
     dump_path: str = "."
 
     def update(self, params: dict[str, Any]):
-        for key, value in params.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        special_params = ["url", "sample_rate", "dump", "dump_path"]
+        for key in special_params:
+            if key in params:
+                setattr(self, key, params[key])
                 del params[key]
 
         # Set default parameters if not provided
@@ -40,8 +41,6 @@ class SonioxASRConfig(BaseModel):
             return self.model_dump_json()
 
         config = self.model_copy(deep=True)
-        if config.api_key:
-            config.api_key = encrypt(config.api_key)
 
         if config.params:
             for key, value in config.params.items():

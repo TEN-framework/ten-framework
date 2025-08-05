@@ -157,6 +157,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             await self.websocket.finalize()
 
     async def _finalize_end(self) -> None:
+        self.ten_env.log_info("finalize end")
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
@@ -212,6 +213,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         unused_final_audio_proc_ms: int,
         unused_total_audio_proc_ms: int,
     ):
+        self.ten_env.log_debug(f"soniox transcript: {tokens}")
         try:
             transcript_tokens, unused_translation_tokens, fin = self._group_tokens(
                 tokens
@@ -282,11 +284,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return []
 
         results = []
-        current_language = tokens[0].language or "en-US"
+        current_language = tokens[0].language or "en"
         current_tokens = []
 
         for token in tokens:
-            token_language = token.language or "en-US"
+            token_language = token.language or "en"
 
             if token_language != current_language and current_tokens:
                 result = self._create_single_asr_result(

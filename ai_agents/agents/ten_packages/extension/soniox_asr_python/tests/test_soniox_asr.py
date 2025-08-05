@@ -1,6 +1,5 @@
 import asyncio
 import json
-import threading
 from types import SimpleNamespace
 
 from ten_runtime import (AsyncExtensionTester, AsyncTenEnvTester, AudioFrame,
@@ -8,6 +7,7 @@ from ten_runtime import (AsyncExtensionTester, AsyncTenEnvTester, AudioFrame,
 from typing_extensions import override
 
 from .mock import patch_soniox_ws  # noqa: F401
+from ten_packages.extension.soniox_asr_python.websocket import SonioxFinToken, SonioxTranscriptToken
 
 
 class SonioxAsrExtensionTester(AsyncExtensionTester):
@@ -48,6 +48,7 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
 
     @override
     async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+        ten_env_tester.log_info(f"tester on_data, data: {data}")
         data_name = data.get_name()
         if data_name == "asr_result":
             # Check the data structure.
@@ -113,51 +114,52 @@ class SonioxAsrExtensionTester(AsyncExtensionTester):
 
 
 def test_asr_result(patch_soniox_ws):
-    def fake_connect():
-        def trigger_open():
-            patch_soniox_ws.websocket_client._handle_open()
-            threading.Timer(1.0, trigger_transcript).start()
+    async def fake_connect():
+        # Simulate connection opening
+        await patch_soniox_ws.websocket_client.trigger_open()
+        
+        # Wait a bit, then send transcript events
+        await asyncio.sleep(0.1)
+        
+        # Mock transcript tokens
 
-        def trigger_transcript():
-            # Mock transcript tokens
-            from ..websocket import SonioxFinToken, SonioxTranscriptToken
+        # First non-final token
+        token1 = SonioxTranscriptToken(
+            text="hello",
+            start_ms=0,
+            end_ms=500,
+            is_final=False,
+            language="en"
+        )
 
-            # First non-final token
-            token1 = SonioxTranscriptToken(
-                text="hello",
-                start_ms=0,
-                end_ms=500,
-                is_final=False,
-                language="en-US"
-            )
-            
-            # Final token
-            token2 = SonioxTranscriptToken(
-                text="hello world",
-                start_ms=0,
-                end_ms=1000,
-                is_final=True,
-                language="en-US"
-            )
-            
-            # Fin token
-            fin_token = SonioxFinToken()
-            
-            # Trigger transcript events
-            patch_soniox_ws.websocket_client._handle_transcript([token1], 0, 0)
-            threading.Timer(0.5, lambda: patch_soniox_ws.websocket_client._handle_transcript([token2, fin_token], 0, 0)).start()
+        # Send first transcript
+        await patch_soniox_ws.websocket_client.trigger_transcript([token1], 0, 0)
+        
+        await asyncio.sleep(0.1)
 
-        threading.Timer(0.2, trigger_open).start()
-        return asyncio.create_task(asyncio.sleep(0))
+        # Final token
+        token2 = SonioxTranscriptToken(
+            text="hello world",
+            start_ms=0,
+            end_ms=1000,
+            is_final=True,
+            language="en"
+        )
 
-    def fake_send_audio(audio_data):
-        return asyncio.create_task(asyncio.sleep(0))
+        # Fin token
+        fin_token = SonioxFinToken("<fin>", True)
 
-    def fake_finalize():
-        return asyncio.create_task(asyncio.sleep(0))
+        # Send final transcript with fin token
+        await patch_soniox_ws.websocket_client.trigger_transcript([token2, fin_token], 0, 0)
 
-    def fake_stop():
-        return asyncio.create_task(asyncio.sleep(0))
+    async def fake_send_audio(_audio_data):
+        await asyncio.sleep(0)
+
+    async def fake_finalize():
+        await asyncio.sleep(0)
+
+    async def fake_stop():
+        await asyncio.sleep(0)
 
     # Inject into websocket client
     patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
@@ -166,13 +168,13 @@ def test_asr_result(patch_soniox_ws):
     patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
 
     property_json = {
-        "api_key": "fake_api_key",
-        "url": "wss://fake.soniox.com/transcribe-websocket",
-        "model": "stt-rt-preview",
-        "language": "en-US",
-        "sample_rate": 16000,
-        "dump": False,
-        "dump_path": "."
+        "params": {
+            "api_key": "fake_api_key",
+            "url": "wss://fake.soniox.com/transcribe-websocket",
+            "sample_rate": 16000,
+            "dump": False,
+            "dump_path": "."
+        }
     }
 
     tester = SonioxAsrExtensionTester()
