@@ -1,0 +1,7 @@
+{
+    "appid": "${env:BYTEDANCE_TTS_APPID}",
+    "token": "${env:BYTEDANCE_TTS_TOKEN}",
+    "sample_rate": 24000,
+    "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
+    "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+}

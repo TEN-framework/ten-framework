@@ -1,0 +1,195 @@
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.10"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.21.0-rc1"
+    },
+    {
+      "type": "system",
+      "name": "azure_speech_sdk",
+      "version": "1.38.0"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "=0.6.16"
+    },
+    {
+      "type": "extension",
+      "name": "azure_tts",
+      "version": "=0.9.0-rc1"
+    },
+    {
+      "type": "extension",
+      "name": "openai_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "bingsearch_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_chatgpt_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "fish_audio_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "interrupt_detector_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "weatherapi_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "deepgram_asr_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "vision_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "vision_analyze_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "transcribe_asr_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "gemini_llm_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "bedrock_llm_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "polly_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "minimax_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "minimax_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "cosy_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "elevenlabs_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "dify_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "gemini_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "coze_python_async",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_image_generate_tool",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "computer_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "neuphonic_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "mcp_client_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "dubverse_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "stepfun_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "azure_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "data_adapter_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "azure_asr_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "speechmatics_asr_python",
+      "version": "=0.1.0"
+    }
+  ],
+  "scripts": {
+    "start": "bin/start"
+  }
+}

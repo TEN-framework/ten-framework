@@ -1,0 +1,8 @@
+{
+  "cursorpyright.analysis.extraPaths": [
+    ".ten/app/ten_packages/system/ten_runtime_python/interface",
+    ".ten/app/ten_packages/system/ten_runtime_python/lib",
+    ".ten/app/ten_packages/system/ten_ai_base/interface",
+  ],
+  "cursorpyright.analysis.typeCheckingMode": "basic",
+}
