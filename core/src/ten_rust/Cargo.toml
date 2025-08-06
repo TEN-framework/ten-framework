@@ -26,6 +26,7 @@ actix-rt = "2.10.0"
 actix-web = "4.9.0"
 aes = "0.8.4"
 anyhow = { version = "1.0" }
+chrono = { version = "0.4", features = ["serde", "clock"] }
 ctr = "0.9.2"
 futures = "0.3.31"
 json5 = { version = "0.4" }
@@ -51,6 +52,10 @@ tokio = { version = "1.0", features = [
   "test-util",
   "macros",
 ] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "std"] }
+tracing-appender = "0.2"
+serial_test = "3.2.0"
 
 [build-dependencies]
 bindgen = { version = "0.70", optional = true }

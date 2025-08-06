@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "gtest/gtest.h"
+#include "include_internal/ten_utils/log/log.h"
 #include "ten_runtime/binding/cpp/ten.h"
 #include "ten_utils/lib/thread.h"
 
@@ -65,6 +66,8 @@ class GlobalTestEnvironment : public ::testing::Environment {
  public:
   // This method is run before any test cases.
   void SetUp() override {
+    ten_log_global_set_advanced_log_reloadable();
+
     fake_app_thread_args args = {nullptr, nullptr};
 
     args.event = ten_event_create(0, 1);
