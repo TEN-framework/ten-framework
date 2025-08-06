@@ -115,7 +115,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "clangd.checkUpdates": true,
-  "dotnet.defaultSolution": "disable"
+  }
 }
