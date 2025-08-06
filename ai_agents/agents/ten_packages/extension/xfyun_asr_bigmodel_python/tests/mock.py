@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, patch
 
 
 @pytest.fixture(scope="function")
-def patch_deepgram_ws():
+def patch_xfyun_bigmodel_ws():
     """
     Automatically patch Recognition globally before any test runs.
     """
-    patch_target = "ten_packages.extension.xfyun_asr_python.extension.XfyunWSRecognition"
+    patch_target = "ten_packages.extension.xfyun_asr_bigmodel_python.extension.XfyunWSRecognition"
 
     with patch(patch_target) as MockWSClient:
         print(f"✅ Patching {patch_target} before test session.")

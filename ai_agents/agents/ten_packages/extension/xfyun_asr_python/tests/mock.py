@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 
 @pytest.fixture(scope="function")
-def patch_deepgram_ws():
+def patch_xfyun_ws():
     """
     Automatically patch Recognition globally before any test runs.
     """

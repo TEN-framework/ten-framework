@@ -1,2 +1,2 @@
-websocket-client
+websockets
 pydantic
