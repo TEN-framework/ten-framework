@@ -113,14 +113,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_with_names_field__extension_1,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_with_cmd_names_field__extension_1,
                                     test_extension_1);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_with_names_field__extension_2,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(graph_with_cmd_names_field__extension_2,
                                     test_extension_2);
 
 }  // namespace
 
-TEST(GraphSyntaxSugarTest, GraphWithNamesField) {  // NOLINT
+TEST(GraphSyntaxSugarTest, GraphWithCmdNamesField) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -134,15 +134,15 @@ TEST(GraphSyntaxSugarTest, GraphWithNamesField) {  // NOLINT
              "nodes": [{
                "type": "extension",
                "name": "test_extension_1",
-               "extension_group": "graph_with_names_field",
+               "extension_group": "graph_with_cmd_names_field",
                "app": "msgpack://127.0.0.1:8001/",
-               "addon": "graph_with_names_field__extension_1"
+               "addon": "graph_with_cmd_names_field__extension_1"
              },{
                "type": "extension",
                "name": "test_extension_2",
-               "extension_group": "graph_with_names_field",
+               "extension_group": "graph_with_cmd_names_field",
                "app": "msgpack://127.0.0.1:8001/",
-               "addon": "graph_with_names_field__extension_2"
+               "addon": "graph_with_cmd_names_field__extension_2"
              }],
              "connections": [{
                "app": "msgpack://127.0.0.1:8001/",
