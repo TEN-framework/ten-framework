@@ -9,9 +9,9 @@
       "version": "0.10"
     },
     {
-      "name": "ten_ai_base",
       "type": "system",
-      "version": "=0.6.23"
+      "name": "ten_ai_base",
+      "version": "0.6.16"
     }
   ],
   "package": {
