@@ -1,6 +1,6 @@
 {
     "params": {
-        "key": "${env:AZURE_ASR_API_KEY}",
-        "region": "${env:AZURE_ASR_REGION}"
+        "key": "${env:AZURE_STT_KEY}",
+        "region": "${env:AZURE_STT_REGION}"
     }
 }
