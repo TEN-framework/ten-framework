@@ -15,6 +15,7 @@ import json
 from .const import TIMEOUT_CODE
 from websockets.protocol import State
 
+
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
 STATUS_LAST_FRAME = 2  # Last frame identifier
@@ -103,7 +104,6 @@ class XfyunWSRecognition:
         self.is_started = False
         self.is_first_frame = True
         self._message_task = None
-        self._connection_event = asyncio.Event()
 
     def _log_debug(self, message):
         """Unified logging method, use ten_env.log_debug if available, otherwise use print"""
@@ -206,10 +206,12 @@ class XfyunWSRecognition:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
+
             # Connect to WebSocket with timeout
             self.websocket = await websockets.connect(
                     ws_url,
-                    ssl=ssl_context
+                    ssl=ssl_context,
+                    open_timeout=timeout
                 )
 
             self._log_debug("### WebSocket opened ###")
@@ -312,6 +314,10 @@ class XfyunWSRecognition:
 
     async def close(self):
         """Close WebSocket connection"""
+        if not self.is_started:
+            self._log_debug("Recognition not started")
+            return
+
         if self.websocket:
             try:
                 if self.websocket.state == State.OPEN:

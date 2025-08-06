@@ -5,6 +5,8 @@ import hashlib
 import base64
 import hmac
 import os
+import urllib.parse
+import uuid
 from urllib.parse import urlencode
 import time
 import ssl
@@ -13,12 +15,16 @@ from datetime import datetime
 from time import mktime
 import json
 from .const import TIMEOUT_CODE
-from websockets.protocol import State
+from collections import OrderedDict
 
+# 导入 websockets 相关的异常和状态
+from websockets.exceptions import ConnectionClosed
+from websockets.protocol import State
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
 STATUS_LAST_FRAME = 2  # Last frame identifier
+
 
 class XfyunWSRecognitionCallback:
     """WebSocket Speech Recognition Callback Interface"""
@@ -44,29 +50,32 @@ class XfyunWSRecognitionCallback:
 
 
 class XfyunWSRecognition:
-    """Async WebSocket-based speech recognition class"""
+    """Async WebSocket-based speech recognition class using new Xfyun ASR dialect API"""
 
-    def __init__(self, app_id, api_key, api_secret, ten_env=None, config=None, callback=None):
+    def __init__(self, app_id, access_key_id, access_key_secret, ten_env=None, config=None, callback=None):
         """
-        Initialize WebSocket speech recognition
+        Initialize WebSocket speech recognition with new API
         :param app_id: Application ID
-        :param api_key: API key
-        :param api_secret: API secret
+        :param access_key_id: Access Key ID
+        :param access_key_secret: Access Key Secret
         :param ten_env: Ten environment object for logging
-        :param config: Configuration parameter dictionary, including the following optional parameters
+        :param config: Configuration parameter dictionary, including the following optional parameters:
+        :param callback: Callback function instance
         """
         self.app_id = app_id
-        self.api_key = api_key
-        self.api_secret = api_secret
+        self.access_key_id = access_key_id
+        self.access_key_secret = access_key_secret
         self.ten_env = ten_env
 
         # Set default configuration
         default_config = {
-            "host": "ist-api.xfyun.cn",
-            "domain": "ist_ed_open",
-            "language": "zh_cn",
-            "accent": "mandarin",
-            "dwa": "wpgs"
+            "host": "office-api-ast-dx.iflyaisol.com",
+            "lang": "autodialect",
+            "audio_encode": "pcm",
+            "samplerate": "16000",
+            "multiFuncData": "false",
+            "use_tts": "false",
+            "nrtMode": "true"
         }
 
         # Merge user configuration and default configuration
@@ -76,29 +85,6 @@ class XfyunWSRecognition:
 
         self.host = self.config["host"]
         self.callback = callback
-
-        # Common parameters
-        self.common_args = {"app_id": self.app_id}
-
-        # Business parameters - extract all business-related parameters from config
-        self.business_args = {}
-
-        # Required business parameters
-        required_business_params = ["domain", "language", "accent"]
-        for param in required_business_params:
-            if param in self.config:
-                self.business_args[param] = self.config[param]
-
-        # Optional business parameters
-        optional_business_params = [
-            "dwa", "request_id", "eos", "pd", "res_id", "vto", "punc", "nunum",
-            "pptaw", "dyhotws", "personalization", "seg_max", "seg_min", "seg_weight",
-            "speex_size", "spkdia", "pgsnum", "vad_mdn", "language_type", "dhw",
-            "dhw_mod", "feature_list", "rsgid", "rlang", "pgs_flash_freq"
-        ]
-        for param in optional_business_params:
-            if param in self.config:
-                self.business_args[param] = self.config[param]
 
         self.websocket = None
         self.is_started = False
@@ -112,58 +98,137 @@ class XfyunWSRecognition:
         else:
             print(message)
 
+    def _get_params_string(self, params):
+        """Convert parameters to URL parameter string"""
+        result = []
+        params = sorted(params.items(), key=lambda x: x[0])
+        for key, value in params:
+            encoded_value = urllib.parse.quote(value)
+            result.append(f"{key}={encoded_value}")
+        return "&".join(result)
+
+    def _signature(self, access_key_secret, params):
+        """
+        Generate HMAC-SHA1 signature
+        :param access_key_secret: Signature key
+        :param params: Parameters to be signed
+        :return: Base64 encoded signature
+        """
+        # 1. Filter parameters
+        filtered_params = {
+            k: v for k, v in params.items()
+            if v is not None and v != "" and k != "signature"
+        }
+
+        # 2. Sort by parameter name ASCII code in ascending order
+        sorted_params = sorted(filtered_params.items(), key=lambda x: x[0])
+
+        # 3. Build string to be signed
+        base_string = "&".join(
+            f"{urllib.parse.quote(k)}={urllib.parse.quote(v)}"
+            for k, v in sorted_params
+        )
+
+        # 4. Calculate HMAC-SHA1 signature
+        digest = hmac.new(
+            access_key_secret.encode("utf-8"),
+            base_string.encode("utf-8"),
+            hashlib.sha1
+        ).digest()
+
+        # 5. Base64 encoding
+        return base64.b64encode(digest).decode("utf-8")
+
+    def _get_access_url(self, extend_param, access_key_id, app_id, access_key_secret):
+        """
+        Generate access URL with signature
+        :param extend_param: All request parameters (before URL encoding)
+        :param access_key_id: Credential issued
+        :param app_id: Business identifier issued
+        :param access_key_secret: Secret key issued
+        :return: URL parameter string
+        """
+        # Generate UTC+8 time (Beijing time), format: 2025-03-24T00:01:19+0800
+        utc = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+        # Ensure format is +0800 (not +08:00)
+        utc = utc[:-2] + utc[-2:]
+
+        extend_param["accessKeyId"] = access_key_id
+        extend_param["appId"] = app_id
+        extend_param["uuid"] = str(uuid.uuid4())
+        extend_param["utc"] = utc
+        signature_val = self._signature(access_key_secret, extend_param)
+        extend_param["signature"] = signature_val
+        return self._get_params_string(extend_param)
+
     def _create_url(self):
         """Generate WebSocket connection URL"""
-        url = f'wss://{self.host}/v2/ist'
+        base_url = f'wss://{self.host}/ast/communicate/v1'
 
-        # Generate RFC1123 format timestamp
-        now = datetime.now()
-        date = format_date_time(mktime(now.timetuple()))
+        # Build request parameters
+        params = {}
 
-        # Concatenate string
-        signature_origin = f"host: {self.host}\n"
-        signature_origin += f"date: {date}\n"
-        signature_origin += "GET /v2/ist HTTP/1.1"
+        # Required parameters
+        params["audio_encode"] = self.config.get("audio_encode", "pcm")
+        params["samplerate"] = self.config.get("samplerate", "16000")
+        params["lang"] = self.config.get("lang", "autodialect")
+        params["codec"] = self.config.get("codec", "pcm")
+        params["accent"] = self.config.get("accent", "mandarin")
+        params["multiFuncData"] = self.config.get("multiFuncData", "false")
+        params["use_tts"] = self.config.get("use_tts", "false")
+        params["nrtMode"] = self.config.get("nrtMode", "true")
 
-        # Encrypt using hmac-sha256
-        signature_sha = hmac.new(
-            self.api_secret.encode('utf-8'),
-            signature_origin.encode('utf-8'),
-            digestmod=hashlib.sha256
-        ).digest()
-        signature_sha = base64.b64encode(signature_sha).decode(encoding='utf-8')
+        # Optional parameters
+        optional_params = [
+            "multiFuncData", "use_tts", "nrtMode"
+        ]
 
-        authorization_origin = f'api_key="{self.api_key}", algorithm="hmac-sha256", headers="host date request-line", signature="{signature_sha}"'
-        authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
+        list_params = []
+        for param in optional_params:
+            if param in self.config:
+                list_params.append((param, str(self.config[param])))
 
-        # Combine authentication parameters into dictionary
-        v = {
-            "authorization": authorization,
-            "host": self.host,
-            "date": date
-        }
-        url = url + '?' + urlencode(v)
-        return url
+        for param in params:
+            if param in self.config:
+                list_params.append((param, str(params[param])))
+
+        params = OrderedDict(list_params)
+        # Generate URL with signature
+        url_params = self._get_access_url(params, self.access_key_id, self.app_id, self.access_key_secret)
+        return f"{base_url}?{url_params}"
 
     async def _handle_message(self, message):
         """Handle WebSocket message"""
         try:
             message_data = json.loads(message)
-            code = message_data.get("code")
-            sid = message_data.get("sid")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             self._log_debug(f"[{timestamp}] message: {message}")
 
-            if code != 0:
-                error_msg = message_data.get("message")
-                self._log_debug(f"[{timestamp}] sid: {sid} call error: {error_msg}, code: {code}")
-                if self.callback:
-                    self._log_debug(f"[{timestamp}] Calling callback.on_error")
-                    await self.callback.on_error(error_msg, code)
-            else:
-                if self.callback:
-                    self._log_debug(f"[{timestamp}] Calling callback.on_result")
-                    await self.callback.on_result(message_data)
+            msg_type = message_data.get("msg_type")
+
+            if msg_type == "action":
+                # Handle action messages (started/end)
+                data = message_data.get("data", {})
+                action = data.get("action")
+
+                if action == "started":
+                    self._log_debug("ASR service started successfully")
+                    if self.callback:
+                        await self.callback.on_open()
+                elif action == "end":
+                    # Handle error or service closure
+                    code = data.get("code")
+                    error_message = data.get("message", "Service ended")
+                    self._log_debug(f"ASR service ended: {error_message}, code: {code}")
+                    if self.callback:
+                        await self.callback.on_error(error_message, code)
+
+            elif msg_type == "result":
+                # Handle recognition results
+                res_type = message_data.get("res_type")
+                if res_type == "asr":
+                    if self.callback:
+                        await self.callback.on_result(message_data)
 
         except Exception as e:
             error_msg = f"Error processing message: {e}"
@@ -174,9 +239,10 @@ class XfyunWSRecognition:
     async def _message_handler(self):
         """Handle incoming WebSocket messages"""
         try:
-            async for message in self.websocket:
-                await self._handle_message(message)
-        except websockets.exceptions.ConnectionClosed:
+            if self.websocket:
+                async for message in self.websocket:
+                    await self._handle_message(message)
+        except ConnectionClosed:
             self._log_debug("WebSocket connection closed")
         except Exception as e:
             error_msg = f"WebSocket message handler error: {e}"
@@ -206,13 +272,12 @@ class XfyunWSRecognition:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
-
             # Connect to WebSocket with timeout
             self.websocket = await websockets.connect(
-                    ws_url,
-                    ssl=ssl_context,
-                    open_timeout=timeout
-                )
+                ws_url,
+                ssl=ssl_context,
+                open_timeout=timeout
+            )
 
             self._log_debug("### WebSocket opened ###")
             self.is_first_frame = True
@@ -221,8 +286,8 @@ class XfyunWSRecognition:
             # Start message handler task
             self._message_task = asyncio.create_task(self._message_handler())
 
-            if self.callback:
-                await self.callback.on_open()
+            # The on_open callback will be triggered by the 'started' action message
+            # from the server, not here, to maintain compatibility with the original behavior
 
             self._log_debug("Recognition started successfully")
             return True
@@ -250,33 +315,10 @@ class XfyunWSRecognition:
             return
 
         try:
-            if self.is_first_frame:
-                # First frame data, needs to include business parameters
-                d = {
-                    "common": self.common_args,
-                    "business": self.business_args,
-                    "data": {
-                        "status": STATUS_FIRST_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), 'utf-8'),
-                        "encoding": "raw"
-                    }
-                }
-                self.is_first_frame = False
-            else:
-                # Middle frame data
-                d = {
-                    "data": {
-                        "status": STATUS_CONTINUE_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), 'utf-8'),
-                        "encoding": "raw"
-                    }
-                }
+            # For the dialect API, we send raw binary audio data directly
+            await self.websocket.send(audio_data)
 
-            await self.websocket.send(json.dumps(d))
-
-        except websockets.exceptions.ConnectionClosed:
+        except ConnectionClosed:
             self._log_debug("WebSocket connection closed while sending audio frame")
             self.is_started = False
         except Exception as e:
@@ -293,19 +335,12 @@ class XfyunWSRecognition:
             return
 
         try:
-            # Send end identifier
-            d = {
-                "data": {
-                    "status": STATUS_LAST_FRAME,
-                    "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                    "audio": "",
-                    "encoding": "raw"
-                }
-            }
-            await self.websocket.send(json.dumps(d))
+            # Send end frame as text message
+            end_message = json.dumps({"end": True})
+            await self.websocket.send(end_message)
             self._log_debug("Stop signal sent")
 
-        except websockets.exceptions.ConnectionClosed:
+        except ConnectionClosed:
             self._log_debug("WebSocket connection already closed")
         except Exception as e:
             self._log_debug(f"Failed to stop recognition: {e}")

@@ -5,7 +5,7 @@ from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, AudioFram
 import json
 
 
-class XfyunBigmodelASRExtensionTester(AsyncExtensionTester):
+class XfyunDialectASRExtensionTester(AsyncExtensionTester):
 
     def __init__(self, audio_file_path: str):
         super().__init__()
@@ -105,16 +105,17 @@ class XfyunBigmodelASRExtensionTester(AsyncExtensionTester):
 def test_asr_result():
     property_json = {
       "params": {
-        "api_key": "${env:XFYUN_ASR_BIGMODEL_API_KEY}",
-        "app_id": "${env:XFYUN_ASR_BIGMODEL_APP_ID}",
-        "api_secret": "${env:XFYUN_ASR_BIGMODEL_API_SECRET}",
-        "lang": "en-US"
+        "access_key_id": "${env:XFYUN_ASR_DIALOG_ACCESS_KEY_ID}",
+        "access_key_secret": "${env:XFYUN_ASR_DIALOG_ACCESS_KEY_SECRET}",
+        "app_id": "${env:XFYUN_ASR_DIALOG_APP_ID}",
+        "language": "en-US",
+        "samplerate": 16000,
       }
     }
     audio_file_path = os.path.join(
-        os.path.dirname(__file__), f"test_data/16k_en_US.pcm"
+        os.path.dirname(__file__), f"test_data/test.wav"
     )
-    tester = XfyunBigmodelASRExtensionTester(audio_file_path)
-    tester.set_test_mode_single("xfyun_asr_bigmodel_python", json.dumps(property_json))
+    tester = XfyunDialectASRExtensionTester(audio_file_path)
+    tester.set_test_mode_single("xfyun_asr_dialect_python", json.dumps(property_json))
     err = tester.run()
     assert err is None, f"err: {err.error_message()}"
