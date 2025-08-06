@@ -82,6 +82,19 @@ tasks:
     cmds:
       - rm -rf bin
 
+  tts-guarder-test:
+    desc: run tests for tts guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "bytedance_tts_duplex"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
+      TEN_ENABLE_BACKTRACE_DUMP: "true"
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/tts_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
+      - cd agents/integration_tests/tts_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+
   test:
     desc: run tests
     cmds:
