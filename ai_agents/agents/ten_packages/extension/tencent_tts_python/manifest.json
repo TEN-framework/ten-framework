@@ -1,0 +1,83 @@
+{
+  "type": "extension",
+  "name": "tencent_tts_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "name": "ten_runtime_python",
+      "type": "system",
+      "version": "0.10"
+    },
+    {
+      "name": "ten_ai_base",
+      "type": "system",
+      "version": "=0.6.23"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "app_id": {
+              "type": "string"
+            },
+            "codec": {
+              "type": "string"
+            },
+            "emotion_category": {
+              "type": "string"
+            },
+            "emotion_intensity": {
+              "type": "int64"
+            },
+            "enable_words": {
+              "type": "bool"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "secret_id": {
+              "type": "string"
+            },
+            "secret_key": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "float32"
+            },
+            "voice_type": {
+              "type": "string"
+            },
+            "volume": {
+              "type": "float32"
+            }
+          }
+        }
+      }
+    }
+  }
+}
