@@ -6,8 +6,11 @@
 //
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
     use std::fs;
     use std::os::raw::c_char;
+    use std::thread;
+    use std::time::Duration;
     use ten_rust::{
         bindings::ten_rust_free_cstring,
         log::{
@@ -21,7 +24,40 @@ mod tests {
     };
     use tracing::{debug, info, trace};
 
+    fn read_with_backoff(
+        path: &str,
+        max_retries: u32,
+    ) -> Result<String, std::io::Error> {
+        let mut retry_count = 0;
+
+        while retry_count < max_retries {
+            match fs::read_to_string(path) {
+                Ok(content) if !content.is_empty() => return Ok(content),
+                Ok(_) => {
+                    thread::sleep(Duration::from_millis(
+                        100 * (retry_count + 1) as u64,
+                    ));
+                    retry_count += 1;
+                    continue;
+                }
+                Err(e) => {
+                    if e.kind() == std::io::ErrorKind::NotFound {
+                        thread::sleep(Duration::from_millis(
+                            100 * (retry_count + 1) as u64,
+                        ));
+                        retry_count += 1;
+                        continue;
+                    }
+                    return Err(e);
+                }
+            }
+        }
+
+        fs::read_to_string(path)
+    }
+
     #[test]
+    #[serial]
     fn test_create_log_config_from_json() {
         let log_config_json = r#"
         {
@@ -88,6 +124,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_log_level_info() {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let path = temp_file.path().to_str().unwrap();
@@ -164,14 +201,12 @@ mod tests {
             "Error message",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(300));
-
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(300));
 
-        // Read log file content
-        let content = std::fs::read_to_string(path).unwrap();
+        // Read log file content with backoff strategy
+        let content = read_with_backoff(path, 5)
+            .expect("Failed to read log file after retries");
 
         println!("Log file content:\n{content}");
 
@@ -190,6 +225,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_formatter_plain_colored() {
         let plain_colored_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
@@ -258,6 +294,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_formatter_plain_no_color() {
         let plain_no_color_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
@@ -290,6 +327,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_formatter_json_no_color() {
         let json_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
@@ -320,6 +358,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_formatter_json_colored() {
         let json_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
@@ -362,6 +401,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_console_emitter_stdout() {
         let stdout_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
@@ -392,6 +432,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_console_emitter_stderr() {
         let stderr_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
@@ -422,6 +463,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_file_emitter_plain() {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let test_file = temp_file.path().to_str().unwrap();
@@ -465,14 +507,11 @@ mod tests {
             "Warning message to file",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(300));
-
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(300));
 
-        let content =
-            fs::read_to_string(test_file).expect("Failed to read log file");
+        let content = read_with_backoff(test_file, 5)
+            .expect("Failed to read log file after retries");
         println!("File content:\n{content}");
 
         assert!(
@@ -486,6 +525,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_file_emitter_json() {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let test_file = temp_file.path().to_str().unwrap();
@@ -518,14 +558,11 @@ mod tests {
             "JSON message to file",
         );
 
-        std::thread::sleep(std::time::Duration::from_millis(300));
-
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(300));
 
-        let json_content =
-            fs::read_to_string(test_file).expect("Failed to read log file");
+        let json_content = read_with_backoff(test_file, 5)
+            .expect("Failed to read log file after retries");
         println!("JSON file content:\n{json_content}");
 
         assert!(
@@ -538,8 +575,8 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_category_matchers_matching_messages() {
-        use std::fs;
         use tempfile::NamedTempFile;
 
         // Create a temporary log file that will be automatically removed when
@@ -575,15 +612,13 @@ mod tests {
         debug!(target: "database", "DB connection pool initialized"); // Matches database + debug
         info!(target: "unknown", "unknown target message"); // Won't match any configured rules
 
-        std::thread::sleep(std::time::Duration::from_millis(300));
-
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(300));
 
-        // Read and verify log file contents
-        let log_content = fs::read_to_string(log_file.path())
-            .expect("Failed to read log file");
+        // Read and verify log file contents with backoff strategy
+        let log_content =
+            read_with_backoff(log_file.path().to_str().unwrap(), 5)
+                .expect("Failed to read log file after retries");
 
         // Print log content for debugging
         println!("Log file content:\n{log_content}");
@@ -598,8 +633,8 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_category_matchers_non_matching_messages() {
-        use std::fs;
         use tempfile::NamedTempFile;
 
         // Create a temporary log file that will be automatically removed when
@@ -655,6 +690,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_multiple_handlers_simplified() {
         use tracing::{debug, info, warn};
 
@@ -709,21 +745,13 @@ mod tests {
         info!(target: "network", "Server started");
         debug!(target: "network", "Socket initialized");
 
-        let auth_content = fs::read_to_string(auth_file.path())
-            .expect("Failed to read auth log file");
-        println!("Auth file content before flush:\n{auth_content}");
-
-        std::thread::sleep(std::time::Duration::from_millis(300));
-
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(300));
 
-        // Read and verify auth file contents
-        let auth_content = fs::read_to_string(auth_file.path())
-            .expect("Failed to read auth log file");
-
-        println!("Auth file content:\n{auth_content}");
+        // Read and verify auth file contents with backoff strategy
+        let auth_content =
+            read_with_backoff(auth_file.path().to_str().unwrap(), 5)
+                .expect("Failed to read auth log file after retries");
 
         // Verify auth file contents
         assert!(
@@ -747,9 +775,9 @@ mod tests {
             "Auth file should not contain network logs"
         );
 
-        // Read and verify database file contents
-        let db_content = fs::read_to_string(db_file.path())
-            .expect("Failed to read database log file");
+        // Read and verify database file contents with backoff strategy
+        let db_content = read_with_backoff(db_file.path().to_str().unwrap(), 5)
+            .expect("Failed to read database log file after retries");
 
         println!("DB file content:\n{db_content}");
 

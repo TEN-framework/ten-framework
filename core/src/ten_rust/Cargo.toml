@@ -55,6 +55,7 @@ tokio = { version = "1.0", features = [
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "std"] }
 tracing-appender = "0.2"
+serial_test = "3.2.0"
 
 [build-dependencies]
 bindgen = { version = "0.70", optional = true }
