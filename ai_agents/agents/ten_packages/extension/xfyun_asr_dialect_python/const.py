@@ -1,3 +1,3 @@
-DUMP_FILE_NAME = "xfyun_asr_in.pcm"
+DUMP_FILE_NAME = "xfyun_asr_dialect_in.pcm"
 MODULE_NAME_ASR = "asr"
 TIMEOUT_CODE = 10105
