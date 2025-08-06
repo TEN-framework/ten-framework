@@ -25,6 +25,8 @@ from ten_ai_base.struct import (
     LLMResponse,
     LLMResponseMessageDelta,
     LLMResponseMessageDone,
+    LLMResponseReasoningDelta,
+    LLMResponseReasoningDone,
     LLMResponseToolCall,
     TextContent,
 )
@@ -287,8 +289,13 @@ class OpenAIChatGPT:
                     if not think_state_changed:
                         self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
                         if parser.state == "THINK":
-                            pass
-                            # listener.emit("reasoning_update", parser.think_content)
+                            yield LLMResponseReasoningDelta(
+                                response_id=chat_completion.id,
+                                role="assistant",
+                                content=parser.think_content,
+                                delta=parser.think_content,
+                                created=chat_completion.created,
+                            )
                         elif parser.state == "NORMAL":
                             yield LLMResponseMessageDelta(
                                 response_id=chat_completion.id,
@@ -299,9 +306,12 @@ class OpenAIChatGPT:
                             )
 
                     if prev_state == "THINK" and parser.state == "NORMAL":
-                        # listener.emit(
-                        #     "reasoning_update_finish", parser.think_content
-                        # )
+                        yield LLMResponseReasoningDone(
+                            response_id=chat_completion.id,
+                            role="assistant",
+                            content=parser.think_content,
+                            created=chat_completion.created,
+                        )
                         parser.think_content = ""
 
                 full_content += content

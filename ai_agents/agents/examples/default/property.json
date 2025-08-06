@@ -998,18 +998,18 @@
             {
               "type": "extension",
               "name": "llm",
-              "addon": "openai_chatgpt_python",
+              "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
-                "api_key": "${env:OPENAI_API_KEY}",
                 "base_url": "",
+                "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
-                "greeting": "TEN Agent connected. How can I help you today?",
-                "max_memory_length": 10,
-                "max_tokens": 512,
                 "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
                 "prompt": "",
-                "proxy_url": "${env:OPENAI_PROXY_URL}"
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
               }
             },
             {
@@ -1033,7 +1033,7 @@
             {
               "type": "extension",
               "name": "message_collector",
-              "addon": "message_collector",
+              "addon": "message_collector2",
               "extension_group": "transcriber",
               "property": {}
             },

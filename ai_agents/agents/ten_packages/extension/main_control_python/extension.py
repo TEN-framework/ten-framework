@@ -5,8 +5,9 @@
 #
 import asyncio
 import json
+import time
 import traceback
-from typing import Tuple
+from typing import Literal, Tuple
 from pydantic import BaseModel
 
 from ten_ai_base.const import CMD_PROPERTY_TOOL
@@ -92,7 +93,7 @@ class MainControlExtension(AsyncExtension):
                             await self.llm_exec.queue_input(text)
 
                         await self._send_transcript(
-                            self.ten_env, text, final, final, stream_id
+                            self.ten_env, "user", text, final, stream_id
                         )
                     case _:
                         self.ten_env.log_info(f"Unknown data: {data_name}")
@@ -114,10 +115,10 @@ class MainControlExtension(AsyncExtension):
                             )
                             await self._send_transcript(
                                 self.ten_env,
+                                "assistant",
                                 self.config.greeting,
                                 True,
-                                True,
-                                100,
+                                100,  # Assuming a default stream ID
                             )
                     case "on_user_left":
                         self._rtc_user_count -= 1
@@ -155,29 +156,31 @@ class MainControlExtension(AsyncExtension):
         ten_env.log_info(f"_on_llm_response: text {text}, is_final {is_final}")
         if not is_final:
             await self._send_to_tts(ten_env, text)
-        await self._send_transcript(ten_env, text, is_final, is_final, 100)
+        await self._send_transcript(ten_env, "assistant", text, is_final, 100)  # Assuming a default stream ID
 
     async def _send_transcript(
         self,
         ten_env: AsyncTenEnv,
+        role: Literal["user", "assistant"],
         text: str,
-        end_of_segment: bool,
         final: bool,
         stream_id: int,
     ):
         await _send_data(
             ten_env,
-            "text_data",
+            "message",
             "message_collector",
             {
+                "data_type": "transcribe",
+                "role": role,
                 "text": text,
+                "text_ts": int(time.time() * 1000),  # Convert to milliseconds
                 "is_final": final,
                 "stream_id": stream_id,
-                "end_of_segment": end_of_segment,
             },
         )
         ten_env.log_info(
-            f"_send_transcript: text {text}, is_final {final}, end_of_segment {end_of_segment}, stream_id {stream_id}"
+            f"_send_transcript: role {role}, text {text}, is_final {final}, stream_id {stream_id}"
         )
 
 
