@@ -14,5 +14,8 @@ group("extension") {
     "ext_c",
     "ext_d",
     "ext_e",
+    "ext_f",
+    "ext_g",
+    "ext_h",
   ]
 }

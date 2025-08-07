@@ -1,0 +1,17 @@
+{
+  "type": "app",
+  "name": "test",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "ext_f",
+      "version": "0.0.1"
+    },
+    {
+      "type": "extension",
+      "name": "ext_g",
+      "version": "0.0.1"
+    }
+  ]
+}
