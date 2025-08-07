@@ -77,7 +77,7 @@ async fn test_exec_endpoint_command_execution() {
     println!("📤 Sending ExecCmd message: {json_msg}");
 
     // Send message via WebSocket
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect server responses
     let mut received_output = false;
@@ -266,7 +266,7 @@ async fn test_exec_endpoint_run_script() {
     );
 
     // Send message via WebSocket
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect server responses
     let mut message_count = 0;
@@ -378,7 +378,7 @@ async fn test_exec_endpoint_invalid_command() {
     let json_msg = serde_json::to_string(&exec_cmd_msg).unwrap();
     println!("📤 Sending invalid command: {json_msg}");
 
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect responses
     let mut message_count = 0;
@@ -446,7 +446,7 @@ async fn test_exec_endpoint_invalid_json() {
     let invalid_json = "{ invalid json here }";
     println!("📤 Sending invalid JSON: {invalid_json}");
 
-    write.send(Message::Text(invalid_json.to_string())).await.unwrap();
+    write.send(Message::Text(invalid_json.into())).await.unwrap();
 
     // Wait for response
     let mut message_count = 0;

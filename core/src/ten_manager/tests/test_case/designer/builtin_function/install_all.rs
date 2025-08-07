@@ -46,7 +46,7 @@ async fn test_ws_builtin_function_install_all() {
     let json_msg = serde_json::to_string(&install_all_msg).unwrap();
 
     // Send the message.
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
     println!(
         "Sent InstallAll message: {}",
         serde_json::to_string(&install_all_msg).unwrap()
@@ -63,7 +63,7 @@ async fn test_ws_builtin_function_install_all() {
                 // Verify that the response is not empty.
                 assert!(!text.is_empty(), "Response should not be empty");
                 // Save the text message for later verification.
-                last_text_message = text;
+                last_text_message = text.to_string();
                 message_count += 1;
             }
             Message::Close(_) => {
