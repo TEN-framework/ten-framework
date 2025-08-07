@@ -144,3 +144,8 @@ export const LogSchema = z.object({
 export const LegacyLogSchema = LogSchema.extend({
   data: z.string(),
 });
+
+export enum ELocalAppStatus {
+  LOADED = "loaded",
+  RUNNING = "running",
+}

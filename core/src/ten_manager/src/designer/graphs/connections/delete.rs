@@ -87,8 +87,9 @@ async fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            if let Some(flow_idx) =
-                flows.iter().position(|flow| flow.name == msg_name)
+            if let Some(flow_idx) = flows
+                .iter()
+                .position(|flow| flow.name.as_ref() == Some(&msg_name))
             {
                 let flow = &mut flows[flow_idx];
 
@@ -292,7 +293,7 @@ pub fn find_flow_with_name(
     name: &str,
 ) -> Option<usize> {
     // Find flow with matching name.
-    flows.iter().position(|flow| flow.name == name)
+    flows.iter().position(|flow| flow.name.as_deref() == Some(name))
 }
 
 pub fn find_dest_with_extension(

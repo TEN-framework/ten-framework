@@ -402,8 +402,8 @@ static void on_server_connected(ten_protocol_t *protocol, bool success) {
              "Should not happen.");
 
   ten_remote_t *remote = connection->attached_target.remote;
-  TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-             "Should not happen.");
+  TEN_ASSERT(remote, "Should not happen.");
+  TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
   TEN_ASSERT(remote->engine && ten_engine_check_integrity(remote->engine, true),
              "Should not happen.");

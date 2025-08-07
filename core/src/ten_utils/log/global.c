@@ -47,4 +47,23 @@ void ten_log_global_deinit_encryption(void) {
   ten_log_deinit_encryption(&ten_global_log);
 }
 
+void ten_log_global_deinit_advanced_log(void) {
+  ten_log_advanced_impl_deinit(&ten_global_log.advanced_impl);
+}
+
 void ten_log_global_reload(void) { ten_log_reload(&ten_global_log); }
+
+void ten_log_global_set_advanced_impl_with_config(
+    ten_log_advanced_log_func_t impl,
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config) {
+  ten_log_set_advanced_impl_with_config(&ten_global_log, impl, on_deinit,
+                                        config);
+}
+
+void ten_log_global_set_advanced_log_reloadable() {
+  ten_global_log.advanced_impl.is_reloadable = true;
+}
+
+bool ten_log_global_is_advanced_log_reloadable(void) {
+  return ten_global_log.advanced_impl.is_reloadable;
+}

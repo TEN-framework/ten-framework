@@ -493,10 +493,27 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [],
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "names"
+            ]
+          }
+        ],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
+          },
+          "names": { // The api names list should be an array of alphanumericCharacters.
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/alphanumericCharacters"
+            }
           },
           "dest": {
             "$ref": "#/$defs/msgDests"
@@ -516,7 +533,27 @@
               "source"
             ]
           }
-        ]
+        ],
+        "if": {
+          "required": [
+            "names"
+          ]
+        },
+        "then": {
+          "properties": {
+            "dest": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "msg_conversion"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "extensionCmdsInGraph": {
@@ -524,12 +561,27 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "name"
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "names"
+            ]
+          }
         ],
         "properties": {
           "name": { // The api name should be alphanumericCharacters.
             "$ref": "#/$defs/alphanumericCharacters"
+          },
+          "names": { // The api names list should be an array of alphanumericCharacters.
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/alphanumericCharacters"
+            }
           },
           "dest": {
             "$ref": "#/$defs/msgDests"
@@ -549,7 +601,27 @@
               "source"
             ]
           }
-        ]
+        ],
+        "if": {
+          "required": [
+            "names"
+          ]
+        },
+        "then": {
+          "properties": {
+            "dest": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "not": {
+                  "required": [
+                    "msg_conversion"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "msgDests": {
@@ -960,6 +1032,9 @@
               }
             }
           }
+        },
+        "advanced_log": {
+          "$ref": "#/$defs/advancedLogConfiguration"
         }
       }
     },
@@ -1024,6 +1099,160 @@
         "value": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "advancedLogLevels": {
+      "type": "string",
+      "enum": [
+        "trace",
+        "debug",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
+    "advancedLogMatcher": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "$ref": "#/$defs/advancedLogLevels"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "advancedLogFormatter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "json"
+          ]
+        },
+        "colored": {
+          "type": "boolean"
+        }
+      }
+    },
+    "advancedLogEmitter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "console",
+            "file"
+          ]
+        },
+        "config": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "console"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "additionalProperties": false,
+                "required": [
+                  "stream"
+                ],
+                "properties": {
+                  "stream": {
+                    "type": "string",
+                    "enum": [
+                      "stdout",
+                      "stderr"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "file"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "additionalProperties": false,
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "advancedLogHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matchers",
+        "formatter",
+        "emitter"
+      ],
+      "properties": {
+        "matchers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/advancedLogMatcher"
+          }
+        },
+        "formatter": {
+          "$ref": "#/$defs/advancedLogFormatter"
+        },
+        "emitter": {
+          "$ref": "#/$defs/advancedLogEmitter"
+        }
+      }
+    },
+    "advancedLogConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handlers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/advancedLogHandler"
+          }
         }
       }
     }

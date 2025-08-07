@@ -168,6 +168,7 @@
     "apps": {
       "manager": "アプリマネージャー",
       "tableCaption": "読み込まれたアプリの一覧",
+      "emptyPlaceholder": "アプリが読み込まれていません。",
       "baseDir": "ベースディレクトリ",
       "run": "アプリを実行",
       "runScript": "スクリプトを実行",
@@ -187,7 +188,13 @@
       "appNameDescription": "アプリの名前を入力してください。",
       "baseDirDescription": "アプリのベースディレクトリを選択してください。",
       "run_opts": "オプション",
-      "run_with_agent": "エージェントで実行"
+      "run_with_agent": "エージェントで実行",
+      "status": "ステータス",
+      "noRunningScripts": "実行中のスクリプトがありません",
+      "runningScriptsCaption": "実行中のスクリプトの一覧。",
+      "loadedApps": "読み込まれたアプリ",
+      "runningScripts": "実行中のスクリプト",
+      "runningScriptsWithCount": "{{count}}個のスクリプトが実行中"
     },
     "graph": {
       "title": "ノード",
@@ -315,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "{{count}}個のアプリが読み込まれています",
+    "scriptsRunningWithCount": "{{count}}個のスクリプトが実行中",
     "appsError": "アプリの取得に失敗しました",
     "workspace": {
       "title": "現在の作業場所",

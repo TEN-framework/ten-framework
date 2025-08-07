@@ -66,7 +66,7 @@ async fn test_exec_endpoint_command_execution() {
     let temp_dir = std::env::temp_dir();
     let exec_cmd_msg = InboundMsg::ExecCmd {
         base_dir: temp_dir.to_string_lossy().to_string(), // Working directory
-        cmd: "echo Hello from exec test".to_string(),     // Command to execute
+        cmd: "echo 'Hello from exec test'".to_string(),   // Command to execute
         // Standard output not treated as log
         stdout_is_log: false,
         stderr_is_log: false, // Error output not treated as log
@@ -391,7 +391,8 @@ async fn test_exec_endpoint_invalid_command() {
                 println!("📥 Received message #{message_count}: {text}");
 
                 // Check if we received error information or non-zero exit code
-                if text.contains("stderr")
+                if text.contains("error")
+                    || text.contains("stderr")
                     || (text.contains("exit") && !text.contains("\"code\":0"))
                 {
                     received_error_or_exit = true;

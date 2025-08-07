@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "=0.6.25"
     }
   ],
   "package": {

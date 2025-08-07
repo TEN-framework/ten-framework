@@ -4,20 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       extension:
-        description: 'Extension name (required)'
+        description: "Extension name (required)"
         required: true
         type: string
-        default: 'azure_asr_python'
+        default: "azure_asr_python"
       config_dir:
-        description: 'Config directory (optional)'
+        description: "Config directory (optional)"
         required: false
         type: string
-        default: 'tests/configs'
+        default: "tests/configs"
       branch:
-        description: 'Branch to test (optional, defaults to current branch)'
+        description: "Branch to test (optional, defaults to current branch)"
         required: false
         type: string
-        default: ''
+        default: ""
       env_vars:
         description: 'Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets.'
         required: false
@@ -31,7 +31,7 @@ jobs:
   asr-guarder-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.13
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.14
 
     env:
       # Import all secrets as environment variables for dynamic access

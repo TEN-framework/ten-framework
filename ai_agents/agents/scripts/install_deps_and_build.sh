@@ -131,7 +131,7 @@ main() {
 
   # Install all dependencies specified in manifest.json.
   echo "install dependencies..."
-  tman --verbose install
+  tman --verbose install --max-latest-versions=100
 
   # build extensions and app
   echo "build_cxx_extensions..."

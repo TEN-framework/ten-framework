@@ -242,7 +242,7 @@ mod tests {
         assert_eq!(cmd_flows.len(), 1);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "cmd1");
+        assert_eq!(flow.name.as_deref(), Some("cmd1"));
         assert_eq!(flow.dest.len(), 1);
 
         let dest = &flow.dest[0];

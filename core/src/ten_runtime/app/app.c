@@ -161,6 +161,10 @@ ten_app_t *ten_app_create(ten_app_on_configure_func_t on_configure,
 
   self->preload_all_addons = false;
 
+  self->is_standalone_test_app = false;
+  self->standalone_test_mode = TEN_EXTENSION_TESTER_TEST_MODE_INVALID;
+  TEN_STRING_INIT(self->standalone_tested_target_name);
+
   self->user_data = NULL;
 
   return self;
@@ -175,6 +179,8 @@ void ten_app_destroy(ten_app_t *self) {
   ten_global_del_app(self);
 
   ten_signature_set(&self->signature, 0);
+
+  ten_string_deinit(&self->standalone_tested_target_name);
 
   ten_env_destroy(self->ten_env);
   ten_mutex_destroy(self->state_lock);

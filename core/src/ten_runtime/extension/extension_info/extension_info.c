@@ -220,24 +220,29 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
   return shared_self_;
 }
 
-static bool copy_msg_dest(ten_list_t *to_static_info,
-                          ten_list_t *from_static_info,
+static bool copy_msg_dest(ten_hashtable_t *to_static_info,
+                          ten_hashtable_t *from_static_info,
                           ten_list_t *extensions_info, ten_error_t *err) {
   TEN_ASSERT(to_static_info && extensions_info, "Should not happen.");
 
-  ten_list_foreach (from_static_info, iter) {
-    ten_shared_ptr_t *msg_dest_static_info =
-        ten_smart_ptr_listnode_get(iter.node);
+  ten_hashtable_foreach(from_static_info, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest_static_info =
+        CONTAINER_OF_FROM_OFFSET(hh, from_static_info->hh_offset);
+    TEN_ASSERT(msg_dest_static_info, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest_static_info),
+               "Should not happen.");
 
-    ten_shared_ptr_t *new_msg_dest_static_info =
+    ten_msg_dest_info_t *new_msg_dest_static_info =
         ten_msg_dest_info_clone(msg_dest_static_info, extensions_info, err);
     if (!new_msg_dest_static_info) {
       return false;
     }
 
-    ten_list_push_smart_ptr_back(to_static_info, new_msg_dest_static_info);
-
-    ten_shared_ptr_destroy(new_msg_dest_static_info);
+    ten_hashtable_add_string(
+        to_static_info, &new_msg_dest_static_info->hh_in_all_msg_type_dest_info,
+        ten_string_get_raw_str(&new_msg_dest_static_info->name),
+        ten_msg_dest_info_destroy);
   }
 
   return true;
@@ -310,8 +315,8 @@ static ten_shared_ptr_t *ten_extension_info_clone_dest(
 
   ten_extension_info_t *exist_extension_info =
       ten_shared_ptr_get_data(exist_dest);
-  TEN_ASSERT(exist_extension_info &&
-                 ten_extension_info_check_integrity(exist_extension_info, true),
+  TEN_ASSERT(exist_extension_info, "Should not happen.");
+  TEN_ASSERT(ten_extension_info_check_integrity(exist_extension_info, true),
              "Should not happen.");
 
   if (!copy_msg_dest(&exist_extension_info->msg_dest_info.cmd,
@@ -474,12 +479,12 @@ void ten_extensions_info_fill_loc_info(ten_list_t *extensions_info,
   ten_list_foreach (extensions_info, iter) {
     ten_extension_info_t *extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
+    TEN_ASSERT(extension_info, "Invalid argument.");
     // TEN_NOLINTNEXTLINE(thread-check)
     // thread-check: The graph-related information of the extension remains
     // unchanged during the lifecycle of engine/graph, allowing safe
     // cross-thread access.
-    TEN_ASSERT(extension_info &&
-                   ten_extension_info_check_integrity(extension_info, false),
+    TEN_ASSERT(ten_extension_info_check_integrity(extension_info, false),
                "Invalid argument.");
 
     ten_extension_info_fill_loc_info(extension_info, app_uri, graph_id);
@@ -490,12 +495,22 @@ void ten_extensions_info_fill_loc_info(ten_list_t *extensions_info,
     ten_extension_info_t *extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
 
-    ten_list_foreach (&extension_info->msg_dest_info.cmd, iter_cmd) {
-      ten_msg_dest_info_t *dest_info =
-          ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter_cmd.node));
+    ten_hashtable_foreach(&extension_info->msg_dest_info.cmd, iter) {
+      ten_hashhandle_t *hh = iter.node;
+      ten_msg_dest_info_t *dest_info = CONTAINER_OF_FROM_OFFSET(
+          hh, extension_info->msg_dest_info.cmd.hh_offset);
+      TEN_ASSERT(dest_info, "Should not happen.");
+      TEN_ASSERT(ten_msg_dest_info_check_integrity(dest_info),
+                 "Should not happen.");
+
       ten_list_foreach (&dest_info->dest, dest_iter) {
         ten_extension_info_t *dest_extension_info =
             ten_smart_ptr_get_data(ten_smart_ptr_listnode_get(dest_iter.node));
+        TEN_ASSERT(dest_extension_info, "Should not happen.");
+        TEN_ASSERT(
+            ten_extension_info_check_integrity(dest_extension_info, true),
+            "Should not happen.");
+
         if (ten_string_is_equal_c_str(&dest_extension_info->loc.app_uri,
                                       TEN_STR_LOCALHOST)) {
           TEN_ASSERT(0, "extension_info->loc.app_uri should not be localhost.");

@@ -22,6 +22,7 @@
 #include "include_internal/ten_runtime/extension/msg_handling.h"
 #include "include_internal/ten_runtime/extension/msg_not_connected_cnt.h"
 #include "include_internal/ten_runtime/extension/on_xxx.h"
+#include "include_internal/ten_runtime/extension/test.h"
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
@@ -124,7 +125,12 @@ ten_extension_t *ten_extension_create(
       &self->msg_not_connected_count_map,
       offsetof(ten_extension_output_msg_not_connected_count_t, hh_in_map));
 
+  self->is_standalone_test_extension = false;
+
   self->user_data = user_data;
+
+  self->engine = NULL;
+  self->app = NULL;
 
   return self;
 }
@@ -211,17 +217,22 @@ void ten_extension_destroy(ten_extension_t *self) {
 }
 
 static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
-    ten_list_t *dest_info_list, ten_shared_ptr_t *msg) {
-  TEN_ASSERT(dest_info_list && msg, "Should not happen.");
+    ten_hashtable_t *dest_info_list, ten_shared_ptr_t *msg) {
+  TEN_ASSERT(dest_info_list, "Should not happen.");
+  TEN_ASSERT(msg, "Should not happen.");
 
   const char *msg_name = ten_msg_get_name(msg);
+  TEN_ASSERT(msg_name, "Should not happen.");
+  TEN_ASSERT(strlen(msg_name) > 0, "Should not happen.");
 
-  // TODO(Wei): Use hash table to speed up the findings.
-  ten_listnode_t *msg_dest_info_node = ten_list_find_shared_ptr_custom(
-      dest_info_list, msg_name, ten_msg_dest_info_qualified);
-  if (msg_dest_info_node) {
-    ten_msg_dest_info_t *msg_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(msg_dest_info_node));
+  ten_hashhandle_t *msg_dest_info_hh =
+      ten_hashtable_find_string(dest_info_list, msg_name);
+  if (msg_dest_info_hh) {
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_FIELD(
+        msg_dest_info_hh, ten_msg_dest_info_t, hh_in_all_msg_type_dest_info);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
 
     return msg_dest;
   }
@@ -231,8 +242,9 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph_internal(
 
 static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph(
     ten_extension_t *self, ten_shared_ptr_t *msg) {
-  TEN_ASSERT(self && ten_extension_check_integrity(self, true) && msg,
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(msg, "Should not happen.");
 
   if (ten_msg_is_cmd_and_result(msg)) {
     return ten_extension_get_msg_dests_from_graph_internal(
@@ -242,12 +254,12 @@ static ten_msg_dest_info_t *ten_extension_get_msg_dests_from_graph(
     case TEN_MSG_TYPE_DATA:
       return ten_extension_get_msg_dests_from_graph_internal(
           &self->extension_info->msg_dest_info.data, msg);
-    case TEN_MSG_TYPE_VIDEO_FRAME:
-      return ten_extension_get_msg_dests_from_graph_internal(
-          &self->extension_info->msg_dest_info.video_frame, msg);
     case TEN_MSG_TYPE_AUDIO_FRAME:
       return ten_extension_get_msg_dests_from_graph_internal(
           &self->extension_info->msg_dest_info.audio_frame, msg);
+    case TEN_MSG_TYPE_VIDEO_FRAME:
+      return ten_extension_get_msg_dests_from_graph_internal(
+          &self->extension_info->msg_dest_info.video_frame, msg);
     default:
       TEN_ASSERT(0, "Should not happen.");
       return NULL;
@@ -278,10 +290,11 @@ static void ten_extension_determine_out_msg_dest_from_msg(
     ten_extension_t *self, ten_shared_ptr_t *msg, ten_list_t *result_msgs) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
-  TEN_ASSERT(msg && ten_msg_check_integrity(msg) && ten_msg_get_dest_cnt(msg),
-             "Invalid argument.");
-  TEN_ASSERT(result_msgs && ten_list_size(result_msgs) == 0,
-             "Should not happen.");
+  TEN_ASSERT(msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
+  TEN_ASSERT(ten_msg_get_dest_cnt(msg), "Invalid argument.");
+  TEN_ASSERT(result_msgs, "Should not happen.");
+  TEN_ASSERT(ten_list_size(result_msgs) == 0, "Should not happen.");
 
   ten_list_t dests = TEN_LIST_INIT_VAL;
 
@@ -302,6 +315,8 @@ static void ten_extension_determine_out_msg_dest_from_msg(
     }
 
     ten_msg_clear_and_set_dest_to_loc(curr_msg, dest_loc);
+
+    ten_adjust_msg_dest_for_standalone_test_scenario(curr_msg, self);
 
     ten_list_push_smart_ptr_back(result_msgs, curr_msg);
 
@@ -365,6 +380,8 @@ static bool ten_extension_determine_out_msg_dest_from_graph(
         ten_msg_clear_and_set_dest_from_extension_info(curr_msg,
                                                        dest_extension_info);
 
+        ten_adjust_msg_dest_for_standalone_test_scenario(curr_msg, self);
+
         ten_list_push_smart_ptr_back(result_msgs, curr_msg);
 
         if (need_to_clone_msg) {
@@ -378,11 +395,16 @@ static bool ten_extension_determine_out_msg_dest_from_graph(
 
   // Graph doesn't specify how to route the messages.
 
+  if (ten_add_msg_dest_for_standalone_test_scenario(msg, self)) {
+    ten_list_push_smart_ptr_back(result_msgs, msg);
+    return true;
+  }
+
   TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
   const char *msg_name = ten_msg_get_name(msg);
 
-  // In any case, the user needs to be informed about the error where the graph
-  // does not have a specified destination for the message.
+  // In any case, the user needs to be informed about the error where the
+  // graph does not have a specified destination for the message.
   TEN_ASSERT(err, "Should not happen.");
   ten_error_set(err, TEN_ERROR_CODE_MSG_NOT_CONNECTED,
                 "Failed to find destination of a '%s' message '%s' from graph.",
@@ -493,7 +515,7 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
   // The source of the out message is the current extension.
   ten_msg_set_src_to_extension(msg, self);
 
-  ten_msg_correct_dest(msg, self->extension_context->engine);
+  ten_msg_correct_dest(msg, ten_extension_get_belonging_engine(self));
 
   // The schema check for `msg` must be performed before message conversion and
   // path deletion for the following reasons:
@@ -557,13 +579,13 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
 
     ten_list_foreach (&result_msgs, iter) {
       ten_shared_ptr_t *result_msg = ten_smart_ptr_listnode_get(iter.node);
-      TEN_ASSERT(result_msg && ten_msg_check_integrity(result_msg),
-                 "Invalid argument.");
+      TEN_ASSERT(result_msg, "Invalid argument.");
+      TEN_ASSERT(ten_msg_check_integrity(result_msg), "Invalid argument.");
 
       ten_path_t *path = (ten_path_t *)ten_path_table_add_out_path(
           self->path_table, result_msg);
-      TEN_ASSERT(path && ten_path_check_integrity(path, true),
-                 "Should not happen.");
+      TEN_ASSERT(path, "Should not happen.");
+      TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
       ten_list_push_ptr_back(&result_out_paths, path, NULL);
     }
@@ -581,8 +603,8 @@ bool ten_extension_dispatch_msg(ten_extension_t *self, ten_shared_ptr_t *msg,
 
   ten_list_foreach (&result_msgs, iter) {
     ten_shared_ptr_t *result_msg = ten_smart_ptr_listnode_get(iter.node);
-    TEN_ASSERT(result_msg && ten_msg_check_integrity(result_msg),
-               "Invalid argument.");
+    TEN_ASSERT(result_msg, "Invalid argument.");
+    TEN_ASSERT(ten_msg_check_integrity(result_msg), "Invalid argument.");
 
     ten_extension_thread_dispatch_msg(self->extension_thread, result_msg);
   }

@@ -17,13 +17,18 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
 
-static bool pack_msg_dest(ten_extension_info_t *self, ten_list_t *msg_dests,
-                          ten_json_t *msg_json, ten_error_t *err) {
+static bool pack_msg_dest(ten_extension_info_t *self,
+                          ten_hashtable_t *msg_dests, ten_json_t *msg_json,
+                          ten_error_t *err) {
   TEN_ASSERT(msg_json, "Should not happen.");
 
-  ten_list_foreach (msg_dests, iter) {
+  ten_hashtable_foreach(msg_dests, iter) {
+    ten_hashhandle_t *hh = iter.node;
     ten_msg_dest_info_t *msg_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
+        CONTAINER_OF_FROM_OFFSET(hh, msg_dests->hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
 
     ten_json_t msg_dest_json = TEN_JSON_INIT_VAL(msg_json->ctx, false);
     ten_json_init_object(&msg_dest_json);
@@ -99,10 +104,10 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
              "Should not happen.");
   TEN_ASSERT(json, "Invalid argument.");
 
-  if (ten_list_is_empty(&self->msg_dest_info.cmd) &&
-      ten_list_is_empty(&self->msg_dest_info.data) &&
-      ten_list_is_empty(&self->msg_dest_info.video_frame) &&
-      ten_list_is_empty(&self->msg_dest_info.audio_frame) &&
+  if (ten_hashtable_is_empty(&self->msg_dest_info.cmd) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.data) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.audio_frame) &&
+      ten_hashtable_is_empty(&self->msg_dest_info.video_frame) &&
       ten_list_is_empty(&self->msg_conversion_contexts)) {
     return 0;
   }
@@ -131,7 +136,7 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
   ten_json_object_set_string(json, TEN_STR_EXTENSION,
                              ten_string_get_raw_str(&self->loc.extension_name));
 
-  if (!ten_list_is_empty(&self->msg_dest_info.cmd)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.cmd)) {
     ten_json_t cmd_dest_json = TEN_JSON_INIT_VAL(json->ctx, false);
     ten_json_object_peek_or_create_array(json, TEN_STR_CMD, &cmd_dest_json);
 
@@ -142,7 +147,7 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
     }
   }
 
-  if (!ten_list_is_empty(&self->msg_dest_info.data)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.data)) {
     ten_json_t data_dest_json = TEN_JSON_INIT_VAL(json->ctx, false);
     ten_json_object_peek_or_create_array(json, TEN_STR_DATA, &data_dest_json);
 
@@ -153,7 +158,7 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
     }
   }
 
-  if (!ten_list_is_empty(&self->msg_dest_info.video_frame)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.video_frame)) {
     ten_json_t video_frame_dest_json = TEN_JSON_INIT_VAL(json->ctx, false);
     ten_json_object_peek_or_create_array(json, TEN_STR_VIDEO_FRAME,
                                          &video_frame_dest_json);
@@ -165,7 +170,7 @@ int ten_extension_info_connections_to_json(ten_extension_info_t *self,
     }
   }
 
-  if (!ten_list_is_empty(&self->msg_dest_info.audio_frame)) {
+  if (!ten_hashtable_is_empty(&self->msg_dest_info.audio_frame)) {
     ten_json_t audio_frame_dest_json = TEN_JSON_INIT_VAL(json->ctx, false);
     ten_json_object_peek_or_create_array(json, TEN_STR_AUDIO_FRAME,
                                          &audio_frame_dest_json);

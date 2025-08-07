@@ -14,11 +14,11 @@
 #include "ten_utils/macro/check.h"
 
 void ten_extension_group_load_metadata(ten_extension_group_t *self) {
-  TEN_ASSERT(self &&
-                 // This function is safe to be called from the extension
-                 // threads, because all the resources it accesses are not be
-                 // modified after the app initialization phase.
-                 ten_extension_group_check_integrity(self, true),
+  TEN_ASSERT(self, "Should not happen.");
+  // This function is safe to be called from the extension threads, because all
+  // the resources it accesses are not be modified after the app initialization
+  // phase.
+  TEN_ASSERT(ten_extension_group_check_integrity(self, true),
              "Should not happen.");
 
   TEN_LOGD("[%s] Load metadata", ten_extension_group_get_name(self, true));

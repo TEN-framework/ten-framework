@@ -9,7 +9,6 @@
 #include "ten_runtime/ten_config.h"
 
 #include "ten_utils/container/list.h"
-#include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/value/value.h"
 
 typedef struct ten_msg_dest_info_t ten_msg_dest_info_t;
@@ -19,6 +18,6 @@ TEN_RUNTIME_PRIVATE_API ten_value_t *ten_msg_dest_info_to_value(
     ten_msg_dest_info_t *self, ten_extension_info_t *src_extension_info,
     ten_error_t *err);
 
-TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *ten_msg_dest_info_from_value(
+TEN_RUNTIME_PRIVATE_API ten_msg_dest_info_t *ten_msg_dest_info_from_value(
     ten_value_t *value, ten_list_t *extensions_info,
     ten_extension_info_t *src_extension_info, ten_error_t *err);
