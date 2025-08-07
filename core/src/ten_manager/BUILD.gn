@@ -44,7 +44,7 @@ if (ten_enable_ten_manager) {
 
       # The transitive dependency of the ten_rust crate.
       utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
-      env += [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+      env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
 
       # If the output directory of `cargo build` (tman) and
       # `cargo build --tests` (tman_test) is the same, and if `cargo build` is
@@ -147,7 +147,7 @@ if (ten_enable_ten_manager) {
 
     # The transitive dependency of the ten_rust crate.
     utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
-    env += [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+    env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
 
     extra_sources = [
       "//core/src/ten_manager/src/solver/display.lp",
