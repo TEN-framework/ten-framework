@@ -74,7 +74,10 @@ async fn test_ws_log_watcher_endpoint() {
         "type": "set_app_base_dir",
         "app_base_dir": app_dir.to_string_lossy().to_string()
     });
-    write.send(Message::Text(app_base_dir_msg.into())).await.unwrap();
+    write
+        .send(Message::Text(app_base_dir_msg.to_string().into()))
+        .await
+        .unwrap();
     println!("({}) Sent app_base_dir message", log_file_path.display());
 
     // Wait for the info message about starting the watcher.
