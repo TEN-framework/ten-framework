@@ -30,7 +30,7 @@ mod tests {
     ) -> Result<String, std::io::Error> {
         let mut retry_count = 0;
 
-        while retry_count < 1 {
+        while retry_count < 0 {
             match fs::read_to_string(path) {
                 Ok(content) if !content.is_empty() => return Ok(content),
                 Ok(_) => {
