@@ -30,7 +30,7 @@ mod tests {
     ) -> Result<String, std::io::Error> {
         let mut retry_count = 0;
 
-        while retry_count < max_retries {
+        while retry_count < 1 {
             match fs::read_to_string(path) {
                 Ok(content) if !content.is_empty() => return Ok(content),
                 Ok(_) => {
@@ -579,6 +579,9 @@ mod tests {
     fn test_category_matchers_matching_messages() {
         use tempfile::NamedTempFile;
 
+        // Force flush logs
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
         // Create a temporary log file that will be automatically removed when
         // dropped
         let log_file =
@@ -805,6 +808,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_default_config_no_handlers() {
         let config_no_handlers = AdvancedLogConfig::new(vec![]);
 
@@ -823,6 +827,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_actual_logging_output() {
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
