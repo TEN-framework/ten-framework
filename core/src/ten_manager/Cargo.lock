@@ -688,18 +688,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
 
 [[package]]
-name = "clingo"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70ea6fc1e61b1150dc3d00f641267d9b7fe143f177a4e937692f78407f3bce2b"
-dependencies = [
- "bitflags 2.9.1",
- "clingo-sys",
- "thiserror 1.0.69",
- "vec1",
-]
-
-[[package]]
 name = "clingo-sys"
 version = "0.7.2"
 dependencies = [
@@ -3198,7 +3186,6 @@ dependencies = [
  "anyhow",
  "clap",
  "clap_complete",
- "clingo",
  "clingo-sys",
  "console",
  "crossbeam-channel",
@@ -3741,12 +3728,6 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
-
-[[package]]
-name = "vec1"
-version = "1.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab68b56840f69efb0fefbe3ab6661499217ffdc58e2eef7c3f6f69835386322"
 
 [[package]]
 name = "version_check"
