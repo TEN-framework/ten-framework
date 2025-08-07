@@ -30,7 +30,7 @@ mod tests {
     ) -> Result<String, std::io::Error> {
         let mut retry_count = 0;
 
-        while retry_count < 0 {
+        while retry_count < max_retries {
             match fs::read_to_string(path) {
                 Ok(content) if !content.is_empty() => return Ok(content),
                 Ok(_) => {
@@ -205,7 +205,7 @@ mod tests {
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
 
         // Read log file content with backoff strategy
-        let content = read_with_backoff(path, 5)
+        let content = read_with_backoff(path, 0)
             .expect("Failed to read log file after retries");
 
         println!("Log file content:\n{content}");
@@ -510,7 +510,7 @@ mod tests {
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
 
-        let content = read_with_backoff(test_file, 5)
+        let content = read_with_backoff(test_file, 0)
             .expect("Failed to read log file after retries");
         println!("File content:\n{content}");
 
@@ -561,7 +561,7 @@ mod tests {
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
 
-        let json_content = read_with_backoff(test_file, 5)
+        let json_content = read_with_backoff(test_file, 0)
             .expect("Failed to read log file after retries");
         println!("JSON file content:\n{json_content}");
 
@@ -620,7 +620,7 @@ mod tests {
 
         // Read and verify log file contents with backoff strategy
         let log_content =
-            read_with_backoff(log_file.path().to_str().unwrap(), 10)
+            read_with_backoff(log_file.path().to_str().unwrap(), 0)
                 .expect("Failed to read log file after retries");
 
         // Print log content for debugging
@@ -753,7 +753,7 @@ mod tests {
 
         // Read and verify auth file contents with backoff strategy
         let auth_content =
-            read_with_backoff(auth_file.path().to_str().unwrap(), 5)
+            read_with_backoff(auth_file.path().to_str().unwrap(), 0)
                 .expect("Failed to read auth log file after retries");
 
         // Verify auth file contents
@@ -779,7 +779,7 @@ mod tests {
         );
 
         // Read and verify database file contents with backoff strategy
-        let db_content = read_with_backoff(db_file.path().to_str().unwrap(), 5)
+        let db_content = read_with_backoff(db_file.path().to_str().unwrap(), 0)
             .expect("Failed to read database log file after retries");
 
         println!("DB file content:\n{db_content}");
