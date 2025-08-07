@@ -24,7 +24,6 @@ actix-web-actors = { version = "4.3.1", default-features = false }
 anyhow = { version = "1.0" }
 clap = { version = "4.5", features = ["derive"] }
 clap_complete = { version = "4.5" }
-clingo = { version = "0.8" }
 console = { version = "0.15" }
 dirs = { version = "6.0" }
 flate2 = "1.0.35"
@@ -84,7 +83,7 @@ mimalloc = { version = "0.1", optional = true }
 jemallocator = { version = "0.5", optional = true, features = ["stats"] }
 jemalloc-sys = { version = "0.5", optional = true, features = ["stats"] }
 
-[target."cfg(unix)".dependencies.clingo]
+[dependencies.clingo]
 version = "0.8"
 features = ["static-linking"]
 

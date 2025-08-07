@@ -8,7 +8,7 @@ import("//build/feature/ten_package.gni")
 import("//build/ten_common/general/glob.gni")
 import("//build/ten_common/rust/rust.gni")
 import("//build/ten_manager/options.gni")
-import("//third_party/clingo/output_libs.gni")
+import("//third_party/clingo-sys/clingo/output_libs.gni")
 
 declare_args() {
   use_shared_lib = false
@@ -34,14 +34,6 @@ copy_glob("ten_manager_standalone_test_data") {
   foreach(test_data_file, test_data_files) {
     test_data_file_rel_path = test_data_file.relative_path
     resources += [ "//core/src/ten_manager/tests/test_data/${test_data_file_rel_path}=>tests/test_data/${test_data_file_rel_path}" ]
-  }
-}
-
-if (is_win) {
-  copy("ten_manager_standalone_test_clingo_dll") {
-    sources = [ "${root_out_dir}/ten_manager/bin/clingo.dll" ]
-    outputs = [ "${root_out_dir}/tests/standalone/ten_manager/clingo.dll" ]
-    deps = [ ":ten_manager_package" ]
   }
 }
 
@@ -73,12 +65,8 @@ if (ten_enable_ten_manager) {
       deps = [
         ":ten_manager_standalone_test_data",
         "//core/src/ten_rust:ten_rust_static_lib",
-        "//third_party/clingo",
+        "//third_party/clingo-sys/clingo",
       ]
-
-      if (is_win) {
-        deps += [ ":ten_manager_standalone_test_clingo_dll" ]
-      }
     }
 
     if (ten_enable_cargo_clean) {
@@ -202,7 +190,7 @@ if (ten_enable_ten_manager) {
 
     deps = [
       "//core/src/ten_rust:ten_rust_static_lib",
-      "//third_party/clingo",
+      "//third_party/clingo-sys/clingo",
     ]
 
     if (ten_manager_enable_frontend) {
@@ -225,10 +213,6 @@ if (ten_enable_ten_manager) {
 
     tman_output = get_target_outputs(":tman")
 
-    if (is_win) {
-      use_shared_lib = true
-    }
-
     resources = []
     if (is_win) {
       resources += [ "${tman_output[0]}=>bin/tman.exe" ]
@@ -236,28 +220,10 @@ if (ten_enable_ten_manager) {
       resources += [ "${tman_output[0]}=>bin/tman" ]
     }
 
-    if (use_shared_lib) {
-      lib_dest_folder = "lib"
-      if (is_win) {
-        # In Windows, all .dll used by the executable must be in the same folder.
-        lib_dest_folder = "bin"
-      }
-
-      foreach(lib, clingo_output_libs) {
-        libname = get_path_info(rebase_path(lib), "file")
-        resources += [ "${lib}=>${lib_dest_folder}/${libname}" ]
-      }
-    }
-
     deps = [
       ":tman",
-      "//third_party/clingo",
+      "//third_party/clingo-sys/clingo",
     ]
-
-    if (use_shared_lib) {
-      # Copy relevant resources files.
-      # deps += [ ":copy_clingo_config_files" ]
-    }
   }
 
   if (ten_enable_cargo_clean) {
