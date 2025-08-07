@@ -77,7 +77,7 @@ zip = { version = "4.3", default-features = false, features = [
 crossbeam-channel = "0.5.15"
 libc = "0.2.172"
 winapi = { version = "0.3.9", features = ["fileapi"] }
-clingo-sys = { version = "0.7.2", features = ["static-linking"] }
+clingo-sys = { version = "0.7.2" }
 clingo = { version = "0.8", features = ["static-linking"] }
 
 [target."cfg(unix)".dependencies]
