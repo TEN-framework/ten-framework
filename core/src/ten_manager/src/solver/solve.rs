@@ -487,8 +487,6 @@ async fn create_input_str_for_pkg_info_dependencies(
             let candidates = all_candidates.get(&pkg_type_and_name);
 
             if let Some(candidates) = candidates {
-                let mut found_matched = false;
-
                 let mut candidates_vec: Vec<&PkgInfo> =
                     candidates.values().collect();
 
@@ -503,13 +501,9 @@ async fn create_input_str_for_pkg_info_dependencies(
                     b.manifest.version.cmp(&a.manifest.version)
                 });
 
-                for (idx, candidate) in candidates_vec.into_iter().enumerate() {
-                    if max_latest_versions >= 0
-                        && idx >= max_latest_versions as usize
-                    {
-                        break;
-                    }
+                let mut found_matched_count = 0;
 
+                for candidate in candidates_vec.into_iter() {
                     // Get version requirement from dependency.
                     let version_matches = match dependency {
                         ManifestDependency::RegistryDependency {
@@ -524,6 +518,8 @@ async fn create_input_str_for_pkg_info_dependencies(
                     };
 
                     if version_matches {
+                        found_matched_count += 1;
+
                         input_str.push_str(&format!(
                             "depends_on_declared(\"{}\", \"{}\", \"{}\", \
                              \"{}\", \"{}\", \"{}\").\n",
@@ -544,11 +540,13 @@ async fn create_input_str_for_pkg_info_dependencies(
                         ))
                         .await?;
 
-                        found_matched = true;
+                        if found_matched_count >= max_latest_versions {
+                            break;
+                        }
                     }
                 }
 
-                if !found_matched {
+                if found_matched_count == 0 {
                     return Err(anyhow!(
                         "Failed to find candidates for {}",
                         match dependency {

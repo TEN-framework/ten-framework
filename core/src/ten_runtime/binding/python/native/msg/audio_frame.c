@@ -113,7 +113,7 @@ PyObject *ten_py_audio_frame_alloc_buf(PyObject *self, PyObject *args) {
   }
 
   if (size <= 0) {
-    return ten_py_raise_py_value_error_exception("Invalid video frame size.");
+    return ten_py_raise_py_value_error_exception("Invalid audio frame size.");
   }
 
   ten_audio_frame_alloc_buf(py_audio_frame->msg.c_msg, size);
