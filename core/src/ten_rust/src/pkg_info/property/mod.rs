@@ -93,7 +93,7 @@ pub async fn parse_property_from_str(
                     graph_infos.push(graph);
                 }
 
-                validate_predefined_graphs(&graph_infos)?;
+                ensure_unique_predefined_graph_names(&graph_infos)?;
 
                 let mut temp_graphs_cache = HashMap::new();
                 let mut graph_uuids = Vec::new();
@@ -130,8 +130,8 @@ pub async fn parse_property_from_str(
     Ok(property)
 }
 
-/// Validates that all predefined graphs have unique names.
-fn validate_predefined_graphs(graphs: &[GraphInfo]) -> Result<()> {
+/// Ensures that all predefined graphs have unique names.
+fn ensure_unique_predefined_graph_names(graphs: &[GraphInfo]) -> Result<()> {
     // Check for duplicate graph names in a separate scope to limit the
     // lifetime of the HashSet to just this validation step
     let mut seen_graph_names = std::collections::HashSet::new();
