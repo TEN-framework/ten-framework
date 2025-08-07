@@ -94,7 +94,7 @@
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
     "./tests/ten_runtime/integration",
-    "./core/ten_gn/.gnfiles",
+    "./core/ten_gn/.gnfiles"
   ],
   "python.analysis.typeCheckingMode": "basic",
   "rust-analyzer.check.command": "clippy",
