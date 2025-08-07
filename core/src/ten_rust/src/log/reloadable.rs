@@ -37,12 +37,22 @@ impl LogLayerHandle {
     }
 
     fn reload(&self, layer: Option<LogLayer>, filter: EnvFilter) {
-        // Update filter
-        self.filter_handle.reload(filter).expect("Failed to reload filter");
-
         // Update layer
         if let Some(layer) = layer {
-            self.layer_handle.reload(layer).expect("Failed to reload layer");
+            let err = self.filter_handle.modify(|f| *f = filter);
+            if let Err(e) = err {
+                println!("Failed to reload filter: {e}");
+            }
+
+            let err = self.layer_handle.modify(|l| *l = layer);
+            if let Err(e) = err {
+                println!("Failed to reload layer: {e}");
+            }
+        } else {
+            let err = self.filter_handle.modify(|f| *f = filter);
+            if let Err(e) = err {
+                println!("Failed to reload filter: {e}");
+            }
         }
     }
 }
