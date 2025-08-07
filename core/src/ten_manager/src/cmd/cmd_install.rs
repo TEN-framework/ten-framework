@@ -37,8 +37,8 @@ use ten_rust::pkg_info::{
 
 use crate::{
     constants::{
-        APP_DIR_IN_DOT_TEN_DIR, DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
-        DEFAULT_MAX_RETRY_ATTEMPTS_WHEN_INSTALL, DOT_TEN_DIR,
+        APP_DIR_IN_DOT_TEN_DIR, DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL,
+        DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL, DOT_TEN_DIR,
     },
     dep_and_candidate::get_all_candidates_from_deps,
     designer::storage::in_memory::TmanStorageInMemory,
@@ -798,12 +798,13 @@ pub async fn execute_cmd(
 
     // Find an answer (a dependency tree) that satisfies all dependencies.
     // Implement retry mechanism with increasing max_latest_versions.
-    let mut current_max_latest_versions = command_data.max_latest_versions;
+    let mut current_max_latest_versions =
+        DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
     let mut usable_model = None;
     let mut final_non_usable_models = Vec::new();
     let mut retry_attempt = 0;
 
-    while retry_attempt < DEFAULT_MAX_RETRY_ATTEMPTS_WHEN_INSTALL {
+    while current_max_latest_versions < command_data.max_latest_versions {
         if retry_attempt > 0 && is_verbose(tman_config.clone()).await {
             out.normal_line(&format!(
                 "{}  Retry attempt {} with max_latest_versions = {}...",
@@ -832,25 +833,32 @@ pub async fn execute_cmd(
                     break;
                 } else {
                     final_non_usable_models = current_non_usable_models;
+
                     retry_attempt += 1;
-                    if retry_attempt < DEFAULT_MAX_RETRY_ATTEMPTS_WHEN_INSTALL {
-                        // Double the max_latest_versions for the next retry
-                        current_max_latest_versions *= 2;
-                        if is_verbose(tman_config.clone()).await {
-                            out.normal_line(&format!(
-                                "{}  Dependency resolution failed, increasing \
-                                 search space and retrying...",
-                                Emoji("⚠️", "")
-                            ));
-                        }
+                    current_max_latest_versions +=
+                        DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
+
+                    if current_max_latest_versions
+                        < command_data.max_latest_versions
+                        && is_verbose(tman_config.clone()).await
+                    {
+                        out.normal_line(&format!(
+                            "{}  Dependency resolution failed, increasing \
+                             search space and retrying...",
+                            Emoji("⚠️", "")
+                        ));
                     }
                 }
             }
             Err(error) => {
                 retry_attempt += 1;
-                if retry_attempt < DEFAULT_MAX_RETRY_ATTEMPTS_WHEN_INSTALL {
-                    // Double the max_latest_versions for the next retry
-                    current_max_latest_versions *= 2;
+
+                current_max_latest_versions +=
+                    DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
+
+                if current_max_latest_versions
+                    < command_data.max_latest_versions
+                {
                     if is_verbose(tman_config.clone()).await {
                         out.normal_line(&format!(
                             "{}  Dependency resolution failed, increasing \
