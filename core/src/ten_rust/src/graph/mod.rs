@@ -447,6 +447,115 @@ impl Graph {
             })
     }
 
+    /// Expands items with 'names' arrays into multiple items with individual
+    /// 'name' fields.
+    ///
+    /// This method processes all connections in the graph and for any message
+    /// flow (cmd, data, audio_frame, video_frame) that has a 'names' field,
+    /// it creates multiple copies of that item, one for each name in the
+    /// array, replacing the 'names' field with an individual 'name' field.
+    pub fn expand_names_to_individual_items(&self) -> Result<Option<Graph>> {
+        let mut graph_changed = false;
+        let mut new_connections = Vec::new();
+
+        if let Some(connections) = &self.connections {
+            for connection in connections {
+                let mut new_connection = connection.clone();
+
+                // Process cmd flows
+                if let Some(cmd_flows) = &connection.cmd {
+                    let mut new_cmd_flows = Vec::new();
+                    for flow in cmd_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_cmd_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_cmd_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.cmd = Some(new_cmd_flows);
+                }
+
+                // Process data flows
+                if let Some(data_flows) = &connection.data {
+                    let mut new_data_flows = Vec::new();
+                    for flow in data_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_data_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_data_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.data = Some(new_data_flows);
+                }
+
+                // Process audio_frame flows
+                if let Some(audio_frame_flows) = &connection.audio_frame {
+                    let mut new_audio_frame_flows = Vec::new();
+                    for flow in audio_frame_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_audio_frame_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_audio_frame_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.audio_frame = Some(new_audio_frame_flows);
+                }
+
+                // Process video_frame flows
+                if let Some(video_frame_flows) = &connection.video_frame {
+                    let mut new_video_frame_flows = Vec::new();
+                    for flow in video_frame_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_video_frame_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_video_frame_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.video_frame = Some(new_video_frame_flows);
+                }
+
+                new_connections.push(new_connection);
+            }
+        }
+
+        if !graph_changed {
+            return Ok(None);
+        }
+
+        // Create new graph with expanded connections
+        let mut new_graph = self.clone();
+        new_graph.connections = Some(new_connections);
+        Ok(Some(new_graph))
+    }
+
     /// Convenience method for flattening a graph instance without preserving
     /// exposed info. This is the main public API for flattening graphs.
     ///
@@ -458,18 +567,24 @@ impl Graph {
     ) -> Result<Option<Graph>> {
         let mut processing_graph = self;
 
-        // Step 1: Match nodes according to selector rules and replace them in
+        // Step 1: Expand names arrays to individual name items
+        let expanded_names_graph =
+            processing_graph.expand_names_to_individual_items()?;
+        processing_graph =
+            expanded_names_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 2: Match nodes according to selector rules and replace them in
         // connections
         let flattened_selector_graph = processing_graph.flatten_selectors()?;
         processing_graph =
             flattened_selector_graph.as_ref().unwrap_or(processing_graph);
 
-        // Step 2: Convert reversed connections to forward connections if needed
+        // Step 3: Convert reversed connections to forward connections if needed
         let reversed_graph = processing_graph
             .convert_reversed_connections_to_forward_connections()?;
         processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
 
-        // Step 3: Flatten subgraphs
+        // Step 4: Flatten subgraphs
         let flattened =
             Self::flatten_subgraphs(processing_graph, current_base_dir, false)
                 .await

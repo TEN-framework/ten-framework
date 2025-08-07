@@ -132,10 +132,22 @@ impl Graph {
         extension_flows: &mut HashMap<String, GraphConnection>,
     ) -> Result<()> {
         for flow in flows {
+            // After flatten_graph processing, name should be Some and names
+            // should be None
+            let flow_name = flow.name.as_ref().expect(
+                "name field should be Some after flatten_graph processing",
+            );
+
+            if flow.names.is_some() {
+                panic!(
+                    "names field should be None after flatten_graph processing"
+                );
+            }
+
             let extension_name = Self::resolve_subgraph_to_extension(
                 subgraph_name,
                 subgraph,
-                &flow.name,
+                flow_name,
                 msg_type.clone(),
             )?;
 
@@ -331,25 +343,39 @@ impl Graph {
         connection: &mut GraphConnection,
         subgraph_mappings: &HashMap<String, Graph>,
     ) -> Result<()> {
-        let update_destinations =
-            |flows: &mut Vec<GraphMessageFlow>, msg_type: &str| -> Result<()> {
-                for flow in flows {
-                    for dest in &mut flow.dest {
-                        let exposed_msg_type =
-                            Self::get_exposed_message_type_for_dest_subgraph(
-                                msg_type,
-                            )?;
+        let update_destinations = |flows: &mut Vec<GraphMessageFlow>,
+                                   msg_type: &str|
+         -> Result<()> {
+            for flow in flows {
+                // After flatten_graph processing, name should be Some and names
+                // should be None
+                let flow_name = flow.name.as_ref().expect(
+                    "name field should be Some after flatten_graph processing",
+                );
 
-                        Self::process_dest_location_for_subgraph_resolution(
-                            &mut dest.loc,
-                            subgraph_mappings,
-                            &flow.name,
-                            exposed_msg_type,
-                        )?;
-                    }
+                if flow.names.is_some() {
+                    panic!(
+                        "names field should be None after flatten_graph \
+                         processing"
+                    );
                 }
-                Ok(())
-            };
+
+                for dest in &mut flow.dest {
+                    let exposed_msg_type =
+                        Self::get_exposed_message_type_for_dest_subgraph(
+                            msg_type,
+                        )?;
+
+                    Self::process_dest_location_for_subgraph_resolution(
+                        &mut dest.loc,
+                        subgraph_mappings,
+                        flow_name,
+                        exposed_msg_type,
+                    )?;
+                }
+            }
+            Ok(())
+        };
 
         if let Some(ref mut cmd) = connection.cmd {
             update_destinations(cmd, "cmd")?;

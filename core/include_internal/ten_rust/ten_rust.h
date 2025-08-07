@@ -7,6 +7,7 @@
 #pragma once
 
 #include <include_internal/ten_rust/ten_config.h>
+#include <include_internal/ten_utils/log/log.h>
 #include <include_internal/ten_utils/schema/bindings/rust/schema_proxy.h>
 #include <include_internal/ten_utils/value/bindings/rust/value_proxy.h>
 #include <stdarg.h>
@@ -17,6 +18,7 @@ typedef struct Cipher Cipher;
 typedef struct MetricHandle MetricHandle;
 typedef struct ServiceHub ServiceHub;
 typedef struct ten_app_t ten_app_t;
+typedef struct AdvancedLogConfig AdvancedLogConfig;
 
 /**
  * @brief Frees a C string that was allocated by Rust.
@@ -199,3 +201,20 @@ TEN_RUST_PRIVATE_API void ten_metric_gauge_add(
 TEN_RUST_PRIVATE_API void ten_metric_gauge_sub(
     MetricHandle *metric_ptr, double value, const char *const *label_values_ptr,
     uintptr_t label_values_len);
+
+TEN_RUST_PRIVATE_API AdvancedLogConfig *ten_rust_create_log_config_from_json(
+    const char *log_config_json, char **err_msg);
+
+TEN_RUST_PRIVATE_API bool ten_rust_configure_log(AdvancedLogConfig *config,
+                                                 bool reloadable,
+                                                 char **err_msg);
+
+TEN_RUST_PRIVATE_API void ten_rust_log(AdvancedLogConfig *config,
+                                       const char *category, int64_t pid,
+                                       int64_t tid, int level,
+                                       const char *func_name,
+                                       const char *file_name, size_t line_no,
+                                       const char *msg);
+
+TEN_RUST_PRIVATE_API void ten_rust_log_config_destroy(
+    AdvancedLogConfig *config);

@@ -230,6 +230,68 @@ bool ten_app_init_addon(ten_app_t *self, ten_value_t *value) {
   return true;
 }
 
+bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(value, "Should not happen.");
+  TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
+
+  if (!ten_value_is_object(value)) {
+    TEN_LOGE("Invalid value type for property: %s", TEN_STR_ADVANCED_LOG);
+    return false;
+  }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Convert log config to JSON and pass it to Rust for configuration.
+  ten_json_t log_config_json =
+      TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
+  bool success = ten_value_to_json(value, &log_config_json);
+  if (!success) {
+    TEN_LOGE("Failed to convert log config to JSON");
+    return false;
+  }
+
+  bool must_free = false;
+  const char *log_config_json_str =
+      ten_json_to_string(&log_config_json, NULL, &must_free);
+
+  ten_json_deinit(&log_config_json);
+
+  char *err_msg = NULL;
+
+  AdvancedLogConfig *log_config =
+      ten_rust_create_log_config_from_json(log_config_json_str, &err_msg);
+  if (log_config == NULL) {
+    if (err_msg) {
+      TEN_LOGE("Failed to create log config: %s", err_msg);
+      ten_rust_free_cstring(err_msg);
+    }
+    return false;
+  }
+
+  if (must_free) {
+    TEN_FREE(log_config_json_str);
+  }
+
+  err_msg = NULL;
+  success = ten_rust_configure_log(
+      log_config, ten_log_global_is_advanced_log_reloadable(), &err_msg);
+  if (!success) {
+    if (err_msg) {
+      TEN_LOGE("Failed to configure log: %s", err_msg);
+      ten_rust_free_cstring(err_msg);
+    }
+
+    return false;
+  }
+
+  ten_log_global_set_advanced_impl_with_config(
+      ten_log_rust_log_func, ten_log_rust_config_deinit, log_config);
+
+  return true;
+#endif
+}
+
 static bool ten_app_determine_ten_namespace_properties(
     ten_app_t *self, ten_value_t *ten_namespace_properties) {
   TEN_ASSERT(self, "Should not happen.");

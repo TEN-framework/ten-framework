@@ -1,7 +1,7 @@
 import asyncio
 from typing import Callable, Awaitable, Optional
 from ten_ai_base.message import ModuleError, ModuleErrorCode
-from const import MODULE_NAME_ASR
+from .const import MODULE_NAME_ASR
 
 
 class ReconnectManager:

@@ -70,8 +70,8 @@ static void ten_engine_close_sync(ten_engine_t *self) {
     ten_hashhandle_t *hh = iter.node;
     ten_remote_t *remote =
         CONTAINER_OF_FROM_OFFSET(hh, self->remotes.hh_offset);
-    TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-               "Should not happen.");
+    TEN_ASSERT(remote, "Should not happen.");
+    TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
     ten_remote_close(remote);
 
@@ -170,11 +170,9 @@ done:
  */
 void ten_engine_close_async(ten_engine_t *self) {
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(
-      // TEN_NOLINTNEXTLINE(thread-check)
-      // thread-check: This function is intended to be called in different
-      // threads.
-      ten_engine_check_integrity(self, false), "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is intended to be called in different threads.
+  TEN_ASSERT(ten_engine_check_integrity(self, false), "Should not happen.");
 
   TEN_LOGI("[%s] Try to close engine", ten_engine_get_id(self, false));
 
@@ -198,8 +196,8 @@ static size_t ten_engine_unclosed_remotes_cnt(ten_engine_t *self) {
     ten_hashhandle_t *hh = iter.node;
     ten_remote_t *remote =
         CONTAINER_OF_FROM_OFFSET(hh, self->remotes.hh_offset);
-    TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-               "Should not happen.");
+    TEN_ASSERT(remote, "Should not happen.");
+    TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
     if (remote->state != TEN_REMOTE_STATE_CLOSED) {
       unclosed_remotes++;

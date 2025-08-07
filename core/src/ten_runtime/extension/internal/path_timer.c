@@ -43,8 +43,8 @@ static void ten_extension_in_path_timer_on_triggered(ten_timer_t *self,
   size_t removed_count = 0;
   ten_list_foreach (in_paths, iter) {
     ten_path_t *path = (ten_path_t *)ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(path && ten_path_check_integrity(path, true),
-               "Should not happen.");
+    TEN_ASSERT(path, "Should not happen.");
+    TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
     if (current_time_us >= path->expired_time_us) {
       ten_list_remove_node(in_paths, iter.node);
@@ -79,8 +79,8 @@ static void ten_extension_out_path_timer_on_triggered(ten_timer_t *self,
   ten_list_t timeout_cmd_result_list = TEN_LIST_INIT_VAL;
   ten_list_foreach (out_paths, iter) {
     ten_path_t *path = (ten_path_t *)ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(path && ten_path_check_integrity(path, true),
-               "Should not happen.");
+    TEN_ASSERT(path, "Should not happen.");
+    TEN_ASSERT(ten_path_check_integrity(path, true), "Should not happen.");
 
     if (current_time_us >= path->expired_time_us) {
       ten_shared_ptr_t *cmd_result =

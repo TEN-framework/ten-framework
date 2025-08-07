@@ -149,6 +149,7 @@
 #define TEN_STR_TEN_PACKAGES "ten_packages"
 #define TEN_STR_ONE_EVENT_LOOP_PER_ENGINE "one_event_loop_per_engine"
 #define TEN_STR_LOG "log"
+#define TEN_STR_ADVANCED_LOG "advanced_log"
 #define TEN_STR_LEVEL "level"
 #define TEN_STR_FILE "file"
 #define TEN_STR_ENCRYPTION "encryption"
@@ -164,7 +165,6 @@
 #define TEN_STR_APP "app"
 #define TEN_STR_NAME "name"
 #define TEN_STR_TEN "ten"
-#define TEN_STR_STAR "*"
 #define TEN_STR_ADDON_BASE_DIR_FIND_FROM_APP_BASE_DIR "=*=find_from_app=*="
 
 // Services.

@@ -317,7 +317,8 @@ fn remove_specified_connections(
                             for (flow_idx, remove_flow) in
                                 remove_flows.iter().enumerate()
                             {
-                                if flow_name.as_ref() == Some(&remove_flow.name)
+                                if flow_name.as_ref()
+                                    == remove_flow.name.as_ref()
                                 {
                                     matching_flow = Some(flow_idx);
                                     break;
@@ -686,10 +687,11 @@ fn update_msg_conversion_for_type(
         };
 
         // Find the matching flow in the modify connection.
-        let modify_flow = match flows.iter().find(|f| &f.name == flow_name) {
-            Some(flow) => flow,
-            None => continue,
-        };
+        let modify_flow =
+            match flows.iter().find(|f| f.name.as_ref() == Some(flow_name)) {
+                Some(flow) => flow,
+                None => continue,
+            };
 
         // Get destinations array if it exists.
         let conn_dests = match conn_flow_obj.get_mut("dest") {

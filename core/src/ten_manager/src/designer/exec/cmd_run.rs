@@ -47,22 +47,43 @@ impl WsRunCmd {
             wait: wait_shutdown_tx,
         });
 
-        let mut command = Command::new("sh");
-        command
-            .arg("-c")
-            .arg(format!("exec {cmd}"))
-            // Set TEN_LOG_FORMATTER to json if any output is log content.
-            .env(
-                "TEN_LOG_FORMATTER",
-                if self.stdout_is_log || self.stderr_is_log {
-                    "json"
-                } else {
-                    ""
-                },
-            )
-            // Capture stdout/stderr.
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
+        // Create command for different platforms
+        let mut command;
+        #[cfg(target_family = "windows")]
+        {
+            command = Command::new("cmd");
+            command
+                .arg("/C")
+                .arg(cmd)
+                // Set TEN_LOG_FORMATTER to json if any output is log content.
+                .env(
+                    "TEN_LOG_FORMATTER",
+                    if self.stdout_is_log || self.stderr_is_log {
+                        "json"
+                    } else {
+                        ""
+                    },
+                )
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+        }
+        #[cfg(not(target_family = "windows"))]
+        {
+            command = Command::new("sh");
+            command
+                .arg("-c")
+                .arg(format!("exec {cmd}"))
+                .env(
+                    "TEN_LOG_FORMATTER",
+                    if self.stdout_is_log || self.stderr_is_log {
+                        "json"
+                    } else {
+                        ""
+                    },
+                )
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+        }
 
         if let Some(ref dir) = self.working_directory {
             // Normalize path separators for cross-platform compatibility

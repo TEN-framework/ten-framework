@@ -747,8 +747,8 @@ bool ten_engine_check_remote_is_weak(ten_engine_t *self, ten_remote_t *remote) {
 bool ten_engine_receive_msg_from_remote(ten_remote_t *remote,
                                         ten_shared_ptr_t *msg,
                                         TEN_UNUSED void *user_data) {
-  TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-             "Should not happen.");
+  TEN_ASSERT(remote, "Should not happen.");
+  TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
   ten_engine_t *engine = remote->engine;
   TEN_ASSERT(engine, "Invalid argument.");

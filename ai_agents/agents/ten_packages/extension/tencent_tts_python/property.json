@@ -1,0 +1,17 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "app_id": "",
+    "codec": "pcm",
+    "emotion_category": "",
+    "emotion_intensity": 0,
+    "enable_words": false,
+    "sample_rate": 24000,
+    "secret_id": "",
+    "secret_key": "",
+    "speed": 0,
+    "voice_type": "0",
+    "volume": 0
+  }
+}

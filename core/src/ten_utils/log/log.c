@@ -43,6 +43,7 @@ void ten_log_init(ten_log_t *self) {
   ten_log_output_init(&self->output);
   ten_log_set_output_to_stderr(self);
   ten_log_encryption_init(&self->encryption);
+  ten_log_advanced_impl_init(&self->advanced_impl);
 }
 
 ten_log_t *ten_log_create(void) {
@@ -67,6 +68,8 @@ void ten_log_deinit(ten_log_t *self) {
   if (self->output.on_deinit) {
     self->output.on_deinit(self);
   }
+
+  ten_log_advanced_impl_deinit(&self->advanced_impl);
 }
 
 void ten_log_deinit_encryption(ten_log_t *self) {
@@ -187,6 +190,12 @@ void ten_log_log(ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
+  if (self->advanced_impl.impl) {
+    self->advanced_impl.impl(self, level, "", func_name, file_name, line_no,
+                             msg);
+    return;
+  }
+
   if (level < self->output_level) {
     return;
   }
@@ -236,4 +245,40 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
   self->output.on_output(self, &buf);
 
   ten_string_deinit(&buf);
+}
+
+void ten_log_advanced_impl_init(ten_log_advanced_impl_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+
+  self->impl = NULL;
+  self->on_deinit = NULL;
+  self->config = NULL;
+  self->is_reloadable = false;
+}
+
+void ten_log_advanced_impl_deinit(ten_log_advanced_impl_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+
+  if (self->on_deinit) {
+    self->on_deinit(self->config);
+  }
+
+  self->impl = NULL;
+  self->on_deinit = NULL;
+  self->config = NULL;
+}
+
+void ten_log_set_advanced_impl_with_config(
+    ten_log_t *self, ten_log_advanced_log_func_t impl,
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
+
+  TEN_ASSERT(self->advanced_impl.impl == NULL, "Invalid argument.");
+  TEN_ASSERT(self->advanced_impl.on_deinit == NULL, "Invalid argument.");
+  TEN_ASSERT(self->advanced_impl.config == NULL, "Invalid argument.");
+
+  self->advanced_impl.impl = impl;
+  self->advanced_impl.on_deinit = on_deinit;
+  self->advanced_impl.config = config;
 }

@@ -17,6 +17,7 @@
 #include "include_internal/ten_runtime/schema_store/store.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/ten_env.h"
+#include "ten_runtime/test/extension_tester.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/io/runloop.h"
 #include "ten_utils/lib/mutex.h"
@@ -146,6 +147,10 @@ typedef struct ten_app_t {
   // scanning directories, which saves loading time when used later in graphs
   // (e.g., Python module imports and C++ dynamic library loading).
   bool preload_all_addons;
+
+  bool is_standalone_test_app;
+  TEN_EXTENSION_TESTER_TEST_MODE standalone_test_mode;
+  ten_string_t standalone_tested_target_name;
 
   void *user_data;
 } ten_app_t;

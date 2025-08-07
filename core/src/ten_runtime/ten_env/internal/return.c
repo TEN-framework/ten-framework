@@ -66,7 +66,7 @@ static bool ten_env_return_result_internal(
     TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Invalid use of extension %p.", extension);
 
-    ten_engine_t *engine = extension->extension_context->engine;
+    ten_engine_t *engine = ten_extension_get_belonging_engine(extension);
     TEN_ASSERT(engine, "Invalid argument.");
     TEN_ASSERT(ten_engine_check_integrity(engine, false),
                "Invalid use of engine %p.", engine);

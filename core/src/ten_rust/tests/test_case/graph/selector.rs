@@ -42,7 +42,7 @@ mod tests {
         assert!(connection.data.is_some());
         let data = connection.data.as_ref().unwrap();
         assert_eq!(data.len(), 1);
-        assert_eq!(data[0].name, "hi");
+        assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
         assert_eq!(
             data[0].dest[0].loc.extension,
@@ -59,7 +59,7 @@ mod tests {
         assert!(connection.data.is_some());
         let data = connection.data.as_ref().unwrap();
         assert_eq!(data.len(), 1);
-        assert_eq!(data[0].name, "hi");
+        assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
         assert_eq!(
             data[0].dest[0].loc.extension,
@@ -77,7 +77,7 @@ mod tests {
         assert!(connection.cmd.is_some());
         let cmd = connection.cmd.as_ref().unwrap();
         assert_eq!(cmd.len(), 1);
-        assert_eq!(cmd[0].name, "hello_world");
+        assert_eq!(cmd[0].name.as_deref(), Some("hello_world"));
         assert_eq!(cmd[0].dest.len(), 2);
         assert!(cmd[0]
             .dest
@@ -91,7 +91,7 @@ mod tests {
         assert!(connection.data.is_some());
         let data = connection.data.as_ref().unwrap();
         assert_eq!(data.len(), 1);
-        assert_eq!(data[0].name, "hi");
+        assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
         assert_eq!(
             data[0].dest[0].loc.extension,

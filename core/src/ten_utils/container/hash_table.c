@@ -213,7 +213,8 @@ void ten_hashtable_clear(ten_hashtable_t *self) {
 }
 
 void ten_hashtable_concat(ten_hashtable_t *self, ten_hashtable_t *target) {
-  TEN_ASSERT(self && target, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(target, "Invalid argument.");
 
   ten_hashtable_foreach(target, iter) {
     ten_hashhandle_t *hh = iter.node;
@@ -315,7 +316,8 @@ void ten_hashtable_expand_bkts(ten_hashtable_t *self) {
 
 static void ten_hashtable_add_to_app_list(ten_hashtable_t *self,
                                           ten_hashhandle_t *hh) {
-  TEN_ASSERT(self && hh, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
 
   hh->next = NULL;
   if (self->tail) {
@@ -332,7 +334,8 @@ static void ten_hashtable_add_to_app_list(ten_hashtable_t *self,
 static void ten_hashtable_add_by_hash_val(ten_hashtable_t *self,
                                           ten_hashhandle_t *hh,
                                           uint32_t hashval) {
-  TEN_ASSERT(self && hh, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
 
   self->items_cnt++;
   const uint32_t bkt_idx = ten_hash_get_bucket_idx(hashval, self->bkts_cnt);
@@ -344,7 +347,9 @@ static void ten_hashtable_add_by_hash_val(ten_hashtable_t *self,
 
 void ten_hashtable_add_by_key(ten_hashtable_t *self, ten_hashhandle_t *hh,
                               const void *key, uint32_t keylen, void *destroy) {
-  TEN_ASSERT(self && hh && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_hashhandle_init(hh, self, key, keylen, destroy);
   ten_hashtable_add_by_hash_val(self, hh, hh->hashval);
@@ -355,7 +360,9 @@ static void ten_hashtable_replace_by_hash_val(ten_hashtable_t *self,
                                               ten_hashhandle_t *hh,
                                               uint32_t hashval, void *key,
                                               uint32_t keylen) {
-  TEN_ASSERT(self && hh && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_hashhandle_t *replaced = ten_hashtable_find(self, hashval, key, keylen);
   if (replaced) {
@@ -366,7 +373,9 @@ static void ten_hashtable_replace_by_hash_val(ten_hashtable_t *self,
 
 void ten_hashtable_replace_by_key(ten_hashtable_t *self, ten_hashhandle_t *hh,
                                   void *key, uint32_t keylen, void *destroy) {
-  TEN_ASSERT(self && hh && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_hashhandle_init(hh, self, key, keylen, destroy);
   ten_hashtable_replace_by_hash_val(self, hh, hh->hashval, key, keylen);
@@ -374,7 +383,9 @@ void ten_hashtable_replace_by_key(ten_hashtable_t *self, ten_hashhandle_t *hh,
 }
 
 void ten_hashtable_del(ten_hashtable_t *self, ten_hashhandle_t *hh) {
-  TEN_ASSERT(self && hh && self == hh->tbl, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
+  TEN_ASSERT(self == hh->tbl, "Invalid argument.");
 
   const uint32_t bkt_idx = ten_hash_get_bucket_idx(hh->hashval, self->bkts_cnt);
   ten_hashbucket_del(&(self->bkts[bkt_idx]), hh);
@@ -404,16 +415,25 @@ uint32_t ten_hashtable_items_cnt(ten_hashtable_t *self) {
   return self->items_cnt;
 }
 
+bool ten_hashtable_is_empty(ten_hashtable_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  return self->items_cnt == 0;
+}
+
 ten_hashhandle_t *ten_hashtable_find_by_key(ten_hashtable_t *self,
                                             const void *key, uint32_t keylen) {
-  TEN_ASSERT(self && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
+
   uint32_t hashval = ten_hash_function(key, keylen);
   return ten_hashtable_find(self, hashval, key, keylen);
 }
 
 ten_hashhandle_t *ten_hashtable_find(ten_hashtable_t *self, uint32_t hashval,
                                      const void *key, uint32_t keylen) {
-  TEN_ASSERT(self && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
+
   const uint32_t bkt_idx = ten_hash_get_bucket_idx(hashval, self->bkts_cnt);
   return ten_hashbucket_find(&(self->bkts[bkt_idx]), hashval, key, keylen);
 }

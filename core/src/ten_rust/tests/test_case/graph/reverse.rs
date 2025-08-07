@@ -52,7 +52,8 @@ mod tests {
             video_frame: None,
         };
         conn.cmd = Some(vec![GraphMessageFlow {
-            name: "flow1".to_string(),
+            name: Some("flow1".to_string()),
+            names: None,
             dest: vec![GraphDestination {
                 loc: GraphLoc {
                     app: Some("app2".to_string()),
@@ -93,7 +94,7 @@ mod tests {
         );
 
         let original_flow = &original_conn.cmd.as_ref().unwrap()[0];
-        assert_eq!(original_flow.name, "hello");
+        assert_eq!(original_flow.name.as_deref(), Some("hello"));
         assert_eq!(original_flow.source.len(), 1);
         assert_eq!(
             original_flow.source[0].loc.extension,
@@ -120,7 +121,7 @@ mod tests {
         assert_eq!(forward_conn.loc.extension, Some("another_ext".to_string()));
 
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
-        assert_eq!(forward_flow.name, "hello");
+        assert_eq!(forward_flow.name.as_deref(), Some("hello"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 1);
         assert_eq!(
@@ -150,7 +151,8 @@ mod tests {
             video_frame: None,
         };
         let flow = GraphMessageFlow {
-            name: "flow1".to_string(),
+            name: Some("flow1".to_string()),
+            names: None,
             dest: vec![],
             source: vec![GraphSource {
                 loc: GraphLoc {
@@ -189,7 +191,7 @@ mod tests {
         let forward_flow =
             &converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()
                 [0];
-        assert_eq!(forward_flow.name, "flow1");
+        assert_eq!(forward_flow.name.as_deref(), Some("flow1"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 1);
         assert_eq!(
@@ -331,7 +333,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .iter()
-            .find(|f| f.name == "forward_cmd")
+            .find(|f| f.name.as_deref() == Some("forward_cmd"))
             .expect("forward_cmd should exist");
         assert_eq!(
             forward_flow.dest[0].loc.extension,
@@ -344,7 +346,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .iter()
-            .find(|f| f.name == "reverse_cmd")
+            .find(|f| f.name.as_deref() == Some("reverse_cmd"))
             .expect("reverse_cmd should exist");
         assert_eq!(
             reverse_flow.dest[0].loc.extension,
@@ -378,7 +380,7 @@ mod tests {
         assert_eq!(forward_conn.loc.subgraph, Some("subgraph1".to_string()));
 
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
-        assert_eq!(forward_flow.name, "subgraph_call");
+        assert_eq!(forward_flow.name.as_deref(), Some("subgraph_call"));
         assert_eq!(forward_flow.dest[0].loc.subgraph, None);
         assert_eq!(
             forward_flow.dest[0].loc.extension,
@@ -476,7 +478,10 @@ mod tests {
 
         // Original connection should only have the forward flow
         assert_eq!(dest_conn.cmd.as_ref().unwrap().len(), 1);
-        assert_eq!(dest_conn.cmd.as_ref().unwrap()[0].name, "flow_gamma");
+        assert_eq!(
+            dest_conn.cmd.as_ref().unwrap()[0].name.as_deref(),
+            Some("flow_gamma")
+        );
 
         // New forward connection should have 2 flows (from the 2 reverse flows)
         assert_eq!(src_conn.cmd.as_ref().unwrap().len(), 2);
@@ -485,7 +490,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .iter()
-            .map(|f| f.name.as_str())
+            .map(|f| f.name.as_deref().unwrap())
             .collect();
         assert!(flow_names.contains(&"flow_alpha"));
         assert!(flow_names.contains(&"flow_beta"));
@@ -515,7 +520,7 @@ mod tests {
         assert_eq!(forward_conn.loc.extension, Some("source_ext".to_string()));
 
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
-        assert_eq!(forward_flow.name, "source_only_flow");
+        assert_eq!(forward_flow.name.as_deref(), Some("source_only_flow"));
         assert_eq!(
             forward_flow.dest[0].loc.extension,
             Some("empty_dest_ext".to_string())
@@ -544,7 +549,8 @@ mod tests {
             video_frame: None,
         };
         conn.cmd = Some(vec![GraphMessageFlow {
-            name: "empty_source_flow".to_string(),
+            name: Some("empty_source_flow".to_string()),
+            names: None,
             dest: vec![],
             source: vec![], // Empty source array
         }]);
@@ -575,12 +581,14 @@ mod tests {
         let original_connections = graph_complex.connections.as_ref().unwrap();
         assert!(original_connections.iter().any(|c| c.loc.extension
             == Some("ext1".to_string())
-            && c.cmd.as_ref().unwrap()[0].name == "shared_flow"
+            && c.cmd.as_ref().unwrap()[0].name.as_deref()
+                == Some("shared_flow")
             && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
                 == Some("ext2".to_string())));
         assert!(original_connections.iter().any(|c| c.loc.extension
             == Some("ext3".to_string())
-            && c.cmd.as_ref().unwrap()[0].name == "shared_flow"
+            && c.cmd.as_ref().unwrap()[0].name.as_deref()
+                == Some("shared_flow")
             && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
                 == Some("ext2".to_string())));
 
@@ -606,7 +614,7 @@ mod tests {
         assert_eq!(forward_conn.loc.extension, Some("ext2".to_string()));
 
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
-        assert_eq!(forward_flow.name, "shared_flow");
+        assert_eq!(forward_flow.name.as_deref(), Some("shared_flow"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 2);
 

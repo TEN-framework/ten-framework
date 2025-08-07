@@ -5,7 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { FolderTreeIcon, MessageSquareShareIcon } from "lucide-react";
+import {
+  BugPlayIcon,
+  FolderTreeIcon,
+  MessageSquareShareIcon,
+} from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -55,8 +59,14 @@ export default function StatusBar(props: { className?: string }) {
 const StatusApps = () => {
   const { t } = useTranslation();
   const { data, error, isLoading } = useFetchApps();
-  const { appendWidget } = useWidgetStore();
+  const { appendWidget, backstageWidgets } = useWidgetStore();
   const { currentWorkspace, updateCurrentWorkspace } = useAppStore();
+
+  const backstageLogViewerWidgets = React.useMemo(() => {
+    return backstageWidgets.filter(
+      (w) => w.category === EWidgetCategory.LogViewer
+    );
+  }, [backstageWidgets]);
 
   const openAppsManagerPopup = () => {
     appendWidget({
@@ -70,6 +80,11 @@ const StatusApps = () => {
       title: <LoadedAppsPopupTitle />,
       metadata: {
         type: EDefaultWidgetType.AppsManager,
+      },
+      popup: {
+        width: 0.5,
+        height: 0.8,
+        maxWidth: 800,
       },
     });
   };
@@ -114,6 +129,16 @@ const StatusApps = () => {
           count: data.app_info?.length || 0,
         })}
       </span>
+      {backstageLogViewerWidgets.length > 0 && (
+        <>
+          <BugPlayIcon className="ms-1 size-3" />
+          <span className="text-muted-foreground text-xs">
+            {t("statusBar.scriptsRunningWithCount", {
+              count: backstageLogViewerWidgets.length,
+            })}
+          </span>
+        </>
+      )}
     </Button>
   );
 };

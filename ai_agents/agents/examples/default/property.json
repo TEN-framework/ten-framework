@@ -3,7 +3,7 @@
     "predefined_graphs": [
       {
         "name": "voice_assistant",
-        "auto_start": true,
+        "auto_start": false,
         "graph": {
           "nodes": [
             {
@@ -96,8 +96,8 @@
             {
               "type": "extension",
               "name": "adapter",
-              "extension_group": "default",
-              "addon": "data_adapter_python"
+              "addon": "data_adapter_python",
+              "extension_group": "default"
             },
             {
               "type": "extension",
@@ -948,6 +948,199 @@
                   "dest": [
                     {
                       "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "voice_assistant_star",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false,
+                "agora_asr_vendor_name": "microsoft",
+                "agora_asr_language": "en-US",
+                "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+                "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+                "agora_asr_session_control_file_path": "session_control.conf"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "azure_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "key": "${env:AZURE_STT_KEY}",
+                  "region": "${env:AZURE_STT_REGION}"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "bytedance_tts_duplex",
+              "extension_group": "tts",
+              "property": {
+                "appid": "${env:BYTEDANCE_TTS_APPID}",
+                "token": "${env:BYTEDANCE_TTS_TOKEN}",
+                "sample_rate": 24000,
+                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
+                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_control_python",
+              "extension_group": "control",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "name": "on_user_joined",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_user_left",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "name": "tool_register",
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "agora_rtc"
                     }
                   ]
                 }
