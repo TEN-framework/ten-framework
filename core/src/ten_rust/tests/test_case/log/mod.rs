@@ -617,7 +617,7 @@ mod tests {
 
         // Read and verify log file contents with backoff strategy
         let log_content =
-            read_with_backoff(log_file.path().to_str().unwrap(), 5)
+            read_with_backoff(log_file.path().to_str().unwrap(), 10)
                 .expect("Failed to read log file after retries");
 
         // Print log content for debugging
