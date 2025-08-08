@@ -69,13 +69,18 @@ fn main() {
         println!("cargo:rustc-link-lib=static=clasp");
         println!("cargo:rustc-link-lib=static=gringo");
 
+        if target_os == "windows" {
+            println!("cargo:rustc-link-arg=/WHOLEARCHIVE:clingo.lib");
+        }
+
         if target_os.as_str() == "linux" {
             println!("cargo:rustc-link-lib=dylib=stdc++");
         } else if target_os.as_str() == "macos" {
             println!("cargo:rustc-link-lib=dylib=c++");
         }
     } else {
-        let path = env::var("CLINGO_LIBRARY_PATH").expect("$CLINGO_LIBRARY_PATH should be defined");
+        let path = env::var("CLINGO_LIBRARY_PATH")
+            .expect("$CLINGO_LIBRARY_PATH should be defined");
         println!("cargo:rustc-link-search=native={}", path);
 
         if target_os.as_str() == "windows" {
