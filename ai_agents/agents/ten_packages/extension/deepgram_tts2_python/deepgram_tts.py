@@ -31,6 +31,9 @@ class DeepgramTTSConfig(BaseConfig):
     keepalive_interval: float = 30.0
     max_request_retries: int = 2
     health_check_timeout: float = 5.0
+    # Dump options
+    dump_enabled: bool = False
+    dump_path: str = "/tmp/tts_test_dump"
 
 
 class TTSRequest:
