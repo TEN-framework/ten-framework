@@ -69,10 +69,6 @@ fn main() {
         println!("cargo:rustc-link-lib=static=clasp");
         println!("cargo:rustc-link-lib=static=gringo");
 
-        if target_os == "windows" {
-            println!("cargo:rustc-link-arg=/WHOLEARCHIVE:clingo.lib");
-        }
-
         if target_os.as_str() == "linux" {
             println!("cargo:rustc-link-lib=dylib=stdc++");
         } else if target_os.as_str() == "macos" {
