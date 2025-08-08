@@ -1,208 +1,194 @@
-#
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0.
-# See the LICENSE file for more information.
-#
 import asyncio
-import json
 import time
-import traceback
-from typing import Literal, Optional, Tuple
-import uuid
-from pydantic import BaseModel
+from typing import Optional
 
-from ten_ai_base.const import CMD_PROPERTY_TOOL
-from ten_ai_base.types import LLMToolMetadata
-from .llm_exec import LLMExec
 from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
+    Data,
     StatusCode,
     CmdResult,
-    Data,
 )
-from .helper import _send_data, _send_cmd, parse_sentences
 
+from .agent.agent import Agent
+from .agent.events import (
+    AgentEvent,
+    ASRResultEvent,
+    ToolRegisterEvent,
+    UserJoinedEvent,
+    UserLeftEvent,
+)
+from .agent.llm_exec import LLMExec
+from .helper import _send_cmd, _send_data, parse_sentences
+from .config import MainControlConfig  # assume extracted from your base model
 
-class MainControlConfig(BaseModel):
-    greeting: str = "Hello there, I'm TEN Agent"
+import uuid
 
 
 class MainControlExtension(AsyncExtension):
+    """
+    The entry point of the agent module.
+    Consumes semantic AgentEvents from the Agent class and drives the runtime behavior.
+    """
+
     def __init__(self, name: str):
         super().__init__(name)
-        self._rtc_user_count = 0
-        self.config = None
-        self.cmd_events = asyncio.Queue[Tuple[str, Cmd]]()
-        self.data_events = asyncio.Queue[Tuple[str, Data]]()
-        self.llm_exec: LLMExec = None
         self.ten_env: AsyncTenEnv = None
-        self.stopped = False
-        self.sentence_fragment = ""
-        self.current_metadata: Optional[dict] = None
+        self.agent: Agent = None
+        self.llm_exec: LLMExec = None
+        self.config: MainControlConfig = None
 
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        self.stopped: bool = False
+        self._rtc_user_count: int = 0
+        self.current_metadata: Optional[dict] = None
+        self.sentence_fragment: str = ""
+
+    async def on_init(self, ten_env: AsyncTenEnv):
         self.ten_env = ten_env
 
+        # Load config from runtime properties
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
-        ten_env.log_debug("on_init")
 
+        self.agent = Agent(ten_env)
         self.llm_exec = LLMExec(ten_env)
         self.llm_exec.on_response = self._on_llm_response
 
-        asyncio.create_task(self._process_cmd_events())
-        asyncio.create_task(self._process_data_events())
+        # Start agent event loop
+        asyncio.create_task(self._consume_agent_events())
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+    async def on_start(self, ten_env: AsyncTenEnv):
+        ten_env.log_info("[MainControlExtension] on_start")
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
-        self.llm_exec.stopped = True
+    async def on_stop(self, ten_env: AsyncTenEnv):
+        ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        self.llm_exec.stopped = True
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_name = cmd.get_name()
-        ten_env.log_info(f"on_cmd name {cmd_name}")
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
+        await self.agent.on_cmd(cmd)
 
-        await self.cmd_events.put([cmd_name, cmd])
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+        await self.agent.on_data(data)
 
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        await ten_env.return_result(cmd_result)
-
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-        ten_env.log_info(f"on_data name {data_name}")
-
-        await self.data_events.put([data_name, data])
-
-    async def _process_data_events(self) -> None:
-        while self.stopped is False:
+    async def _consume_agent_events(self):
+        """
+        Main event loop that consumes semantic AgentEvents from the Agent class.
+        Dispatches logic based on event type and name.
+        """
+        while not self.stopped:
             try:
-                data_name, data = await self.data_events.get()
-                match data_name:
-                    case "asr_result":
-                        asr_result_json, _ = data.get_property_to_json(None)
-                        asr_result_dict = json.loads(asr_result_json)
-                        text = asr_result_dict.get("text", "")
-                        final = asr_result_dict.get("final", False)
-                        metadata = asr_result_dict.get("metadata", {})
-                        self.current_metadata = {
-                            "session_id": metadata.get("session_id", "100"),
-                            "turn_id": metadata.get("turn_id", -1),
-                        }
-                        stream_id = int(metadata.get("session_id", "100"))
-                        if final or len(text) > 2:
-                            await self._interrupt(self.ten_env)
-                        if final:
-                            await self.llm_exec.queue_input(text)
+                event = await self.agent.get_event()
 
-                        await self._send_transcript(
-                            self.ten_env, "user", text, final, stream_id
-                        )
-                    case _:
-                        self.ten_env.log_info(f"Unknown data: {data_name}")
-            except Exception as e:
-                self.ten_env.log_error(f"Error processing data: {e}")
-
-    async def _process_cmd_events(self) -> None:
-        while self.stopped is False:
-            try:
-                cmd_name, cmd = await self.cmd_events.get()
-                self.ten_env.log_info(f"Processing command: {cmd_name}")
-
-                match cmd_name:
-                    case "on_user_joined":
+                match event:
+                    case UserJoinedEvent():
                         self._rtc_user_count += 1
                         if self._rtc_user_count == 1 and self.config.greeting:
-                            await self._send_to_tts(
-                                self.ten_env, self.config.greeting, True
-                            )
+                            await self._send_to_tts(self.config.greeting, is_final=True)
                             await self._send_transcript(
-                                self.ten_env,
-                                "assistant",
-                                self.config.greeting,
-                                True,
-                                100,  # Assuming a default stream ID
+                                role="assistant",
+                                text=self.config.greeting,
+                                final=True,
+                                stream_id=100,
                             )
-                    case "on_user_left":
+
+                    case UserLeftEvent():
                         self._rtc_user_count -= 1
-                    case "tool_register":
-                            tool_metadata_json, err = cmd.get_property_to_json(
-                                CMD_PROPERTY_TOOL
-                            )
-                            if err:
-                                raise RuntimeError(f"Failed to  get tool metadata: {err}")
-                            self.ten_env.log_info(f"register tool: {tool_metadata_json}")
-                            tool_metadata = LLMToolMetadata.model_validate_json(
-                                tool_metadata_json
-                            )
-                            await self.llm_exec.register_tool(tool_metadata, cmd.get_source())
-                            await self.ten_env.return_result(
-                                CmdResult.create(StatusCode.OK, cmd)
-                            )
+
+                    case ToolRegisterEvent():
+                        await self.llm_exec.register_tool(
+                            event.tool,
+                            source=event.source,
+                        )
+                        await self.ten_env.return_result(
+                            CmdResult.create(StatusCode.OK, event)
+                        )
+
+                    case ASRResultEvent():
+                        self.current_metadata = {
+                            "session_id": event.metadata.get("session_id", "100"),
+                            "turn_id": event.metadata.get("turn_id", -1),
+                        }
+                        stream_id = int(event.metadata.get("session_id", "100"))
+
+                        if event.final or len(event.text) > 2:
+                            await self._interrupt()
+
+                        if event.final:
+                            await self.llm_exec.queue_input(event.text)
+
+                        await self._send_transcript(
+                            role="user",
+                            text=event.text,
+                            final=event.final,
+                            stream_id=stream_id,
+                        )
+
                     case _:
-                        self.ten_env.log_info(f"Unknown command: {cmd_name}")
-            except Exception:
-                self.ten_env.log_warn(
-                    f"on_cmd failed: {traceback.format_exc()}"
-                )
-                await self.ten_env.return_result(
-                    CmdResult.create(StatusCode.ERROR, cmd)
-                )
+                        self.ten_env.log_warn(f"[MainControlExtension] Unhandled event: {event}")
 
-    async def _send_to_tts(self, ten_env: AsyncTenEnv, text: str, is_final: bool):
-        request_id = str(uuid.uuid4())
-        await _send_data(ten_env, "tts_text_input", "tts", {
-            "request_id": request_id,
-            "text": text,
-            "text_input_end": is_final,
-            "metadata": self.current_metadata
-        })
-        ten_env.log_info(f"_send_to_tts: text {text} is_final {is_final}")
+            except Exception as e:
+                self.ten_env.log_error(f"[MainControlExtension] Event processing error: {e}")
 
-    async def _on_llm_response(
-        self, ten_env: AsyncTenEnv, delta: str, text:str, is_final: bool
-    ):
-        ten_env.log_info(f"_on_llm_response: delta {delta} text {text}, is_final {is_final}")
-
+    async def _on_llm_response(self, ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool):
+        """
+        Callback for streaming LLM responses. Partial sentences are streamed to TTS.
+        """
         if not is_final:
-            sentences, self.sentence_fragment = parse_sentences(
-                self.sentence_fragment, delta
-            )
+            sentences, self.sentence_fragment = parse_sentences(self.sentence_fragment, delta)
             for sentence in sentences:
-                await self._send_to_tts(ten_env, sentence, False)
-        await self._send_transcript(ten_env, "assistant", text, is_final, 100)  # Assuming a default stream ID
+                await self._send_to_tts(sentence, is_final=False)
 
-    async def _send_transcript(
-        self,
-        ten_env: AsyncTenEnv,
-        role: Literal["user", "assistant"],
-        text: str,
-        final: bool,
-        stream_id: int,
-    ):
+        await self._send_transcript(
+            role="assistant",
+            text=text,
+            final=is_final,
+            stream_id=100,  # default for now
+        )
+
+    async def _send_transcript(self, role: str, text: str, final: bool, stream_id: int):
+        """
+        Sends the transcript (ASR or LLM output) to the message collector.
+        """
         await _send_data(
-            ten_env,
+            self.ten_env,
             "message",
             "message_collector",
             {
                 "data_type": "transcribe",
                 "role": role,
                 "text": text,
-                "text_ts": int(time.time() * 1000),  # Convert to milliseconds
+                "text_ts": int(time.time() * 1000),
                 "is_final": final,
                 "stream_id": stream_id,
             },
         )
-        ten_env.log_info(
-            f"_send_transcript: role {role}, text {text}, is_final {final}, stream_id {stream_id}"
+        self.ten_env.log_info(f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}")
+
+    async def _send_to_tts(self, text: str, is_final: bool):
+        """
+        Sends a sentence to the TTS system.
+        """
+        request_id = str(uuid.uuid4())
+        await _send_data(
+            self.ten_env,
+            "tts_text_input",
+            "tts",
+            {
+                "request_id": request_id,
+                "text": text,
+                "text_input_end": is_final,
+                "metadata": self.current_metadata,
+            },
         )
+        self.ten_env.log_info(f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}")
 
-
-    async def _interrupt(self, ten_env: AsyncTenEnv):
+    async def _interrupt(self):
+        """
+        Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
+        """
         await self.llm_exec.flush()
-        await _send_cmd(ten_env, "flush", "tts")
-        await _send_cmd(ten_env, "flush", "agora_rtc")
+        await _send_cmd(self.ten_env, "flush", "tts")
+        await _send_cmd(self.ten_env, "flush", "agora_rtc")
+        self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")

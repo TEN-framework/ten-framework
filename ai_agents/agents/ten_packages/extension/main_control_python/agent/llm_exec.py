@@ -11,7 +11,7 @@ from ten_ai_base.const import CMD_PROPERTY_RESULT
 from ten_ai_base.helper import AsyncQueue
 from ten_ai_base.struct import LLMMessage, LLMMessageContent, LLMMessageFunctionCall, LLMMessageFunctionCallOutput, LLMRequest, LLMResponse, LLMResponseMessageDelta, LLMResponseMessageDone, LLMResponseToolCall, parse_llm_response
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
-from .helper import _send_cmd, _send_cmd_ex
+from ..helper import _send_cmd, _send_cmd_ex
 from ten_runtime import AsyncTenEnv, Loc, StatusCode
 
 
