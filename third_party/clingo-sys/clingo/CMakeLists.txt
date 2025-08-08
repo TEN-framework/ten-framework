@@ -9,11 +9,8 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-# MSVC: enable IPO (adds /GL at compile and /LTCG at link)
+# Important: refer to https://github.com/rust-lang/rust/issues/26003
 if (MSVC)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
   add_compile_options(/GL-)
   add_link_options(/LTCG-)
 endif()
