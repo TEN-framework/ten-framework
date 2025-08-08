@@ -35,7 +35,7 @@ class LLMExec:
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_input_queue())
         self.available_tools: list[LLMToolMetadata] = []
-        self.tool_registry: dict[str, Loc] = {}
+        self.tool_registry: dict[str, str] = {}
         self.available_tools_lock = (
             asyncio.Lock()
         )  # Lock to ensure thread-safe access
@@ -64,7 +64,7 @@ class LLMExec:
             self.current_task.cancel()
 
     async def register_tool(
-        self, tool: LLMToolMetadata, loc: Loc
+        self, tool: LLMToolMetadata, source: str
     ) -> None:
         """
         Register tools with the LLM.
@@ -72,7 +72,7 @@ class LLMExec:
         """
         async with self.available_tools_lock:
             self.available_tools.append(tool)
-            self.tool_registry[tool.name] = loc
+            self.tool_registry[tool.name] = source
 
 
 
@@ -183,8 +183,8 @@ class LLMExec:
                     await self.on_response(self.ten_env, "", text, True)
             case LLMResponseToolCall():
                 self.ten_env.log_info(f"_handle_llm_response: invoking tool call {llm_output.name}")
-                loc = self.tool_registry.get(llm_output.name)
-                result, _ = await _send_cmd(self.ten_env, "tool_call", loc.extension_name, {
+                src_extension_name = self.tool_registry.get(llm_output.name)
+                result, _ = await _send_cmd(self.ten_env, "tool_call", src_extension_name, {
                     "name": llm_output.name,
                     "arguments": llm_output.arguments
                 })

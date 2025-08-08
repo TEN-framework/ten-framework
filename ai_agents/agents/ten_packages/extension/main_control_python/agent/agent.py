@@ -1,5 +1,6 @@
 import asyncio
 import json
+from .llm_exec import LLMExec
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata
 from .events import *
@@ -9,6 +10,8 @@ class Agent:
         self.ten_env: AsyncTenEnv = ten_env
         self.stopped = False
         self.event_queue: asyncio.Queue[AgentEvent] = asyncio.Queue()
+        self.llm_exec = LLMExec(ten_env)
+        self.llm_exec.on_response = self._on_llm_response  # callback handled internally
 
     async def on_cmd(self, cmd: Cmd):
         cmd_name = cmd.get_name()
@@ -22,7 +25,7 @@ class Agent:
                 if err:
                     raise RuntimeError(f"Invalid tool metadata: {err}")
                 tool = LLMToolMetadata.model_validate_json(tool_json)
-                event = ToolRegisterEvent(tool=tool, source=cmd.get_source())
+                event = ToolRegisterEvent(tool=tool, source=cmd.get_source().extension_name)
             else:
                 self.ten_env.log_warn(f"Unhandled cmd: {cmd_name}")
                 return
@@ -54,3 +57,45 @@ class Agent:
 
     async def get_event(self) -> AgentEvent:
         return await self.event_queue.get()
+
+
+    async def register_llm_tool(self, tool: LLMToolMetadata, source: str):
+        """
+        Register tools with the LLM.
+        This method sends a command to register the provided tools.
+        """
+        await self.llm_exec.register_tool(tool, source)
+
+    async def queue_llm_input(self, text: str):
+        """
+        Queue a new message to the LLM context.
+        This method sends the text input to the LLM for processing.
+        """
+        await self.llm_exec.queue_input(text)
+
+    async def flush_llm(self):
+        """
+        Flush the LLM input queue.
+        This will ensure that all queued inputs are processed.
+        """
+        await self.llm_exec.flush()
+
+    async def stop(self):
+        """
+        Stop the agent processing.
+        This will stop the event queue and any ongoing tasks.
+        """
+        self.stopped = True
+        await self.llm_exec.stop()
+        await self.event_queue.put(None)
+
+    async def _on_llm_response(self, ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool):
+        """
+        Internal callback for streaming LLM output, wrapped as an AgentEvent.
+        """
+        event = LLMResponseEvent(
+            delta=delta,
+            text=text,
+            is_final=is_final,
+        )
+        await self.event_queue.put(event)

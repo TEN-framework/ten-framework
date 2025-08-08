@@ -1,25 +1,21 @@
 import asyncio
 import time
-from typing import Optional
 
 from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
     Data,
-    StatusCode,
-    CmdResult,
 )
 
 from .agent.agent import Agent
 from .agent.events import (
-    AgentEvent,
     ASRResultEvent,
+    LLMResponseEvent,
     ToolRegisterEvent,
     UserJoinedEvent,
     UserLeftEvent,
 )
-from .agent.llm_exec import LLMExec
 from .helper import _send_cmd, _send_data, parse_sentences
 from .config import MainControlConfig  # assume extracted from your base model
 
@@ -36,12 +32,11 @@ class MainControlExtension(AsyncExtension):
         super().__init__(name)
         self.ten_env: AsyncTenEnv = None
         self.agent: Agent = None
-        self.llm_exec: LLMExec = None
         self.config: MainControlConfig = None
 
         self.stopped: bool = False
         self._rtc_user_count: int = 0
-        self.current_metadata: Optional[dict] = None
+        self.current_metadata: dict = { "session_id": "0", "turn_id": -1 }
         self.sentence_fragment: str = ""
 
     async def on_init(self, ten_env: AsyncTenEnv):
@@ -52,8 +47,6 @@ class MainControlExtension(AsyncExtension):
         self.config = MainControlConfig.model_validate_json(config_json)
 
         self.agent = Agent(ten_env)
-        self.llm_exec = LLMExec(ten_env)
-        self.llm_exec.on_response = self._on_llm_response
 
         # Start agent event loop
         asyncio.create_task(self._consume_agent_events())
@@ -64,7 +57,7 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
-        self.llm_exec.stopped = True
+        await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
@@ -97,12 +90,9 @@ class MainControlExtension(AsyncExtension):
                         self._rtc_user_count -= 1
 
                     case ToolRegisterEvent():
-                        await self.llm_exec.register_tool(
+                        await self.agent.register_llm_tool(
                             event.tool,
                             source=event.source,
-                        )
-                        await self.ten_env.return_result(
-                            CmdResult.create(StatusCode.OK, event)
                         )
 
                     case ASRResultEvent():
@@ -116,7 +106,7 @@ class MainControlExtension(AsyncExtension):
                             await self._interrupt()
 
                         if event.final:
-                            await self.llm_exec.queue_input(event.text)
+                            await self.agent.queue_llm_input(event.text)
 
                         await self._send_transcript(
                             role="user",
@@ -125,27 +115,26 @@ class MainControlExtension(AsyncExtension):
                             stream_id=stream_id,
                         )
 
+                    case LLMResponseEvent():
+                        # Handle LLM response events
+                        if not event.is_final:
+                            sentences, self.sentence_fragment = parse_sentences(
+                                self.sentence_fragment, event.delta
+                            )
+                            for sentence in sentences:
+                                await self._send_to_tts(sentence, is_final=False)
+
+                        await self._send_transcript(
+                            role="assistant",
+                            text=event.text,
+                            final=event.is_final,
+                            stream_id=100,
+                        )
                     case _:
                         self.ten_env.log_warn(f"[MainControlExtension] Unhandled event: {event}")
 
             except Exception as e:
                 self.ten_env.log_error(f"[MainControlExtension] Event processing error: {e}")
-
-    async def _on_llm_response(self, ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool):
-        """
-        Callback for streaming LLM responses. Partial sentences are streamed to TTS.
-        """
-        if not is_final:
-            sentences, self.sentence_fragment = parse_sentences(self.sentence_fragment, delta)
-            for sentence in sentences:
-                await self._send_to_tts(sentence, is_final=False)
-
-        await self._send_transcript(
-            role="assistant",
-            text=text,
-            final=is_final,
-            stream_id=100,  # default for now
-        )
 
     async def _send_transcript(self, role: str, text: str, final: bool, stream_id: int):
         """
@@ -188,7 +177,7 @@ class MainControlExtension(AsyncExtension):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
-        await self.llm_exec.flush()
+        await self.agent.flush_llm()
         await _send_cmd(self.ten_env, "flush", "tts")
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")

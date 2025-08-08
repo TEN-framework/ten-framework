@@ -42,6 +42,14 @@ class ASRResultEvent(AgentEventBase):
     metadata: Dict[str, Any]
 
 
+class LLMResponseEvent(AgentEventBase):
+    """Event triggered when LLM returns a streaming response."""
+    type: Literal["llm"] = "llm"
+    name: Literal["llm_response"] = "llm_response"
+    delta: str
+    text: str
+    is_final: bool
+
 # ==== Unified Event Union ====
 
 AgentEvent = Union[
@@ -49,4 +57,5 @@ AgentEvent = Union[
     UserLeftEvent,
     ToolRegisterEvent,
     ASRResultEvent,
+    LLMResponseEvent
 ]
