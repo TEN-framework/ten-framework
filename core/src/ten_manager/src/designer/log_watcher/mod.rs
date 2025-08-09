@@ -304,6 +304,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
+                println!("Received text: {}", text);
+
                 // Try to parse the received message as JSON.
                 if let Ok(json) =
                     serde_json::from_str::<serde_json::Value>(&text)
