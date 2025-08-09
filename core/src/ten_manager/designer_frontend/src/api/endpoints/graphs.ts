@@ -14,7 +14,6 @@ import {
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
-  type IBackendConnection,
   type IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
@@ -62,75 +61,6 @@ export const ENDPOINT_GRAPHS = {
         z.object({
           success: z.boolean(),
         })
-      ),
-    },
-  },
-  connections: {
-    [ENDPOINT_METHOD.POST]: {
-      url: `${API_DESIGNER_V1}/graphs/connections`,
-      method: ENDPOINT_METHOD.POST,
-      requestSchema: z.object({
-        graph_id: z.string(),
-      }),
-      responseSchema: genResSchema<IBackendConnection[]>(
-        z.array(
-          z.object({
-            app: z.string().optional(),
-            extension: z.string(),
-            cmd: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            data: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            audio_frame: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            video_frame: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-          })
-        )
       ),
     },
   },

@@ -115,7 +115,6 @@ pub fn configure_routes(
                     )
                     .service(
                         web::scope("/connections")
-                            .service(web::resource("").route(web::post().to(graphs::connections::get::get_graph_connections_endpoint)))
                             .service(web::resource("/add").route(web::post().to(graphs::connections::add::add_graph_connection_endpoint)))
                             .service(web::resource("/delete").route(web::post().to(graphs::connections::delete::delete_graph_connection_endpoint)))
                             .service(
