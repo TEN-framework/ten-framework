@@ -13,8 +13,8 @@ mod tests {
         constants::TEST_DIR,
         designer::{
             graphs::nodes::get::{
-                get_graph_nodes_endpoint, GetGraphNodesRequestPayload,
-                GraphNodesSingleResponseData,
+                get_graph_nodes_endpoint, DesignerGraphNode,
+                GetGraphNodesRequestPayload,
             },
             response::{ApiResponse, ErrorResponse},
             storage::in_memory::TmanStorageInMemory,
@@ -102,12 +102,12 @@ mod tests {
 
         eprintln!("body_str: {body_str}");
 
-        let extensions: ApiResponse<Vec<GraphNodesSingleResponseData>> =
+        let extensions: ApiResponse<Vec<DesignerGraphNode>> =
             serde_json::from_str(body_str).unwrap();
 
         assert!(!extensions.data.is_empty());
 
-        let json: ApiResponse<Vec<GraphNodesSingleResponseData>> =
+        let json: ApiResponse<Vec<DesignerGraphNode>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
         println!("Response body: {pretty_json}");
@@ -254,7 +254,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let response: ApiResponse<Vec<GraphNodesSingleResponseData>> =
+        let response: ApiResponse<Vec<DesignerGraphNode>> =
             serde_json::from_str(body_str).unwrap();
 
         // The vector should contain 1 item.

@@ -14,9 +14,8 @@ mod tests {
         designer::{
             graphs::connections::{
                 get::{
-                    get_graph_connections_endpoint,
+                    get_graph_connections_endpoint, DesignerGraphConnection,
                     GetGraphConnectionsRequestPayload,
-                    GraphConnectionsSingleResponseData,
                 },
                 DesignerDestination, DesignerMessageFlow,
             },
@@ -100,10 +99,10 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let connections: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let connections: ApiResponse<Vec<DesignerGraphConnection>> =
             serde_json::from_str(body_str).unwrap();
 
-        let expected_connections = vec![GraphConnectionsSingleResponseData {
+        let expected_connections = vec![DesignerGraphConnection {
             app: None,
             extension: "extension_1".to_string(),
             subgraph: None,
@@ -123,7 +122,7 @@ mod tests {
         assert_eq!(connections.data, expected_connections);
         assert!(!connections.data.is_empty());
 
-        let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let json: ApiResponse<Vec<DesignerGraphConnection>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
         println!("Response body: {pretty_json}");
@@ -239,10 +238,10 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let connections: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let connections: ApiResponse<Vec<DesignerGraphConnection>> =
             serde_json::from_str(body_str).unwrap();
 
-        let expected_connections = vec![GraphConnectionsSingleResponseData {
+        let expected_connections = vec![DesignerGraphConnection {
             app: None,
             extension: "extension_1".to_string(),
             subgraph: None,
@@ -283,7 +282,7 @@ mod tests {
         assert_eq!(connections.data, expected_connections);
         assert!(!connections.data.is_empty());
 
-        let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let json: ApiResponse<Vec<DesignerGraphConnection>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
         println!("Response body: {pretty_json}");

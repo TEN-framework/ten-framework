@@ -25,7 +25,7 @@ pub struct GetGraphConnectionsRequestPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct GraphConnectionsSingleResponseData {
+pub struct DesignerGraphConnection {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app: Option<String>,
 
@@ -63,9 +63,9 @@ fn get_property_msg_flow_from_designer(
     msg_flow.into_iter().map(|v| v.into()).collect()
 }
 
-impl From<GraphConnection> for GraphConnectionsSingleResponseData {
+impl From<GraphConnection> for DesignerGraphConnection {
     fn from(conn: GraphConnection) -> Self {
-        GraphConnectionsSingleResponseData {
+        DesignerGraphConnection {
             app: conn.loc.app,
             extension: conn.loc.extension.unwrap_or_default(),
             subgraph: conn.loc.subgraph,
@@ -85,8 +85,8 @@ impl From<GraphConnection> for GraphConnectionsSingleResponseData {
     }
 }
 
-impl From<GraphConnectionsSingleResponseData> for GraphConnection {
-    fn from(designer_connection: GraphConnectionsSingleResponseData) -> Self {
+impl From<DesignerGraphConnection> for GraphConnection {
+    fn from(designer_connection: DesignerGraphConnection) -> Self {
         GraphConnection {
             loc: GraphLoc {
                 app: designer_connection.app,
@@ -121,13 +121,12 @@ pub async fn get_graph_connections_endpoint(
     if let Some(graph_info) = graphs_cache.get(&request_payload.graph_id) {
         // Convert the connections field to RespConnection.
         let connections = graph_info.graph.connections().clone();
-        let resp_connections: Vec<GraphConnectionsSingleResponseData> =
-            match connections {
-                Some(connections) => {
-                    connections.iter().map(|conn| conn.clone().into()).collect()
-                }
-                None => vec![],
-            };
+        let resp_connections: Vec<DesignerGraphConnection> = match connections {
+            Some(connections) => {
+                connections.iter().map(|conn| conn.clone().into()).collect()
+            }
+            None => vec![],
+        };
 
         let response = ApiResponse {
             status: Status::Ok,

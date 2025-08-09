@@ -41,6 +41,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test case 1: Delete a valid node - should succeed.
@@ -156,6 +157,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Store the original state.
@@ -248,6 +250,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Delete the target extension.

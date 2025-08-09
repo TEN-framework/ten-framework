@@ -12,9 +12,8 @@ use ten_manager::{
     designer::{
         graphs::{
             connections::get::{
-                get_graph_connections_endpoint,
+                get_graph_connections_endpoint, DesignerGraphConnection,
                 GetGraphConnectionsRequestPayload,
-                GraphConnectionsSingleResponseData,
             },
             get::{
                 get_graphs_endpoint, GetGraphsRequestPayload,
@@ -222,7 +221,7 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
 
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+    let json: ApiResponse<Vec<DesignerGraphConnection>> =
         serde_json::from_str(body_str).unwrap();
 
     let pretty_json = serde_json::to_string_pretty(&json).unwrap();
