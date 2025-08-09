@@ -28,7 +28,7 @@ pub struct GetGraphNodesRequestPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct GraphNodesSingleResponseData {
+pub struct DesignerGraphNode {
     pub addon: String,
     pub name: String,
 
@@ -50,29 +50,27 @@ pub struct GraphNodesSingleResponseData {
     pub is_installed: bool,
 }
 
-impl TryFrom<GraphNode> for GraphNodesSingleResponseData {
+impl TryFrom<GraphNode> for DesignerGraphNode {
     type Error = anyhow::Error;
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
         match node {
-            GraphNode::Extension { content } => {
-                Ok(GraphNodesSingleResponseData {
-                    addon: content.addon,
-                    name: content.name,
-                    extension_group: content.extension_group,
-                    app: content.app,
-                    api: None,
-                    property: content.property,
-                    is_installed: false,
-                })
-            }
+            GraphNode::Extension { content } => Ok(DesignerGraphNode {
+                addon: content.addon,
+                name: content.name,
+                extension_group: content.extension_group,
+                app: content.app,
+                api: None,
+                property: content.property,
+                is_installed: false,
+            }),
             _ => Err(anyhow!("Graph node is not an extension node")),
         }
     }
 }
 
-impl From<GraphNodesSingleResponseData> for GraphNode {
-    fn from(designer_extension: GraphNodesSingleResponseData) -> Self {
+impl From<DesignerGraphNode> for GraphNode {
+    fn from(designer_extension: DesignerGraphNode) -> Self {
         GraphNode::new_extension_node(
             designer_extension.name,
             designer_extension.addon,
@@ -113,7 +111,7 @@ pub async fn get_graph_nodes_endpoint(
         }
     };
 
-    let mut resp_extensions: Vec<GraphNodesSingleResponseData> = Vec::new();
+    let mut resp_extensions: Vec<DesignerGraphNode> = Vec::new();
 
     for node in graph_nodes {
         let extension_graph_node = match node {
@@ -141,7 +139,7 @@ pub async fn get_graph_nodes_endpoint(
 
             let manifest_api = manifest_api.unwrap();
 
-            resp_extensions.push(GraphNodesSingleResponseData {
+            resp_extensions.push(DesignerGraphNode {
                 addon: extension_graph_node.addon.clone(),
                 name: extension_graph_node.name.clone(),
                 extension_group: extension_graph_node.extension_group.clone(),
@@ -205,7 +203,7 @@ pub async fn get_graph_nodes_endpoint(
                 is_installed: true,
             });
         } else {
-            match GraphNodesSingleResponseData::try_from(node.clone()) {
+            match DesignerGraphNode::try_from(node.clone()) {
                 Ok(designer_ext) => {
                     resp_extensions.push(designer_ext);
                 }

@@ -113,6 +113,7 @@ mod tests {
             ]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test case 1: Delete a node that doesn't exist.
@@ -198,6 +199,7 @@ mod tests {
             connections: Some(vec![]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Add a connection with multiple message types.
