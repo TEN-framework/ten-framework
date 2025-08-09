@@ -12,9 +12,12 @@ mod tests {
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
-            graphs::get::{
-                get_graphs_endpoint, GetGraphsRequestPayload,
-                GetGraphsResponseData,
+            graphs::{
+                get::{
+                    get_graphs_endpoint, GetGraphsRequestPayload,
+                    GetGraphsResponseData,
+                },
+                DesignerGraph,
             },
             response::ApiResponse,
             storage::in_memory::TmanStorageInMemory,
@@ -79,24 +82,34 @@ mod tests {
         let graphs: ApiResponse<Vec<GetGraphsResponseData>> =
             serde_json::from_str(body_str).unwrap();
 
+        let empty_graph = DesignerGraph {
+            nodes: vec![],
+            connections: vec![],
+            exposed_messages: vec![],
+            exposed_properties: vec![],
+        };
+
         let expected_graphs = vec![
             GetGraphsResponseData {
                 uuid: "default".to_string(),
                 name: Some("default".to_string()),
                 auto_start: Some(true),
                 base_dir: Some(TEST_DIR.to_string()),
+                graph: empty_graph.clone(),
             },
             GetGraphsResponseData {
                 uuid: "default_with_app_uri".to_string(),
                 name: Some("default_with_app_uri".to_string()),
                 auto_start: Some(true),
                 base_dir: Some(TEST_DIR.to_string()),
+                graph: empty_graph.clone(),
             },
             GetGraphsResponseData {
                 uuid: "addon_not_found".to_string(),
                 name: Some("addon_not_found".to_string()),
                 auto_start: Some(false),
                 base_dir: Some(TEST_DIR.to_string()),
+                graph: empty_graph.clone(),
             },
         ];
 

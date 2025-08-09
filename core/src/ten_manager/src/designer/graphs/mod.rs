@@ -30,7 +30,7 @@ pub struct DesignerGraphInfo {
     pub graph: DesignerGraph,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DesignerGraph {
     pub nodes: Vec<DesignerGraphNode>,
     pub connections: Vec<DesignerGraphConnection>,
