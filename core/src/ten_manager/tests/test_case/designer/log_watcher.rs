@@ -74,7 +74,10 @@ async fn test_ws_log_watcher_endpoint() {
         "type": "set_app_base_dir",
         "app_base_dir": app_dir.to_string_lossy().to_string()
     });
-    write.send(Message::Text(app_base_dir_msg.to_string())).await.unwrap();
+    write
+        .send(Message::Text(app_base_dir_msg.to_string().into()))
+        .await
+        .unwrap();
     println!("({}) Sent app_base_dir message", log_file_path.display());
 
     // Wait for the info message about starting the watcher.
@@ -136,7 +139,7 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Send stop message.
     let stop_msg = r#"{"type":"stop"}"#;
-    write.send(Message::Text(stop_msg.to_string())).await.unwrap();
+    write.send(Message::Text(stop_msg.into())).await.unwrap();
     println!("({}) Sent stop message", log_file_path.display());
 
     // Wait for connection to close or stop confirmation.

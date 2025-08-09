@@ -71,7 +71,7 @@ async fn test_ws_terminal_endpoint() {
     // Send a command to the terminal.
     let command = "echo 'Hello from terminal test'\n";
 
-    write.send(Message::Text(command.to_string())).await.unwrap();
+    write.send(Message::Text(command.into())).await.unwrap();
     println!("Sent command: {command}");
 
     // Wait a moment for the command to execute.
@@ -80,7 +80,7 @@ async fn test_ws_terminal_endpoint() {
     // Send a resize message.
     let resize_msg = r#"{"type":"resize","cols":100,"rows":30}"#;
 
-    write.send(Message::Text(resize_msg.to_string())).await.unwrap();
+    write.send(Message::Text(resize_msg.into())).await.unwrap();
     println!("Sent resize message: {resize_msg}");
 
     // Wait a moment for the resize to take effect.
@@ -92,7 +92,7 @@ async fn test_ws_terminal_endpoint() {
     #[cfg(not(target_os = "windows"))]
     let exit_command = "exit\n";
 
-    write.send(Message::Text(exit_command.to_string())).await.unwrap();
+    write.send(Message::Text(exit_command.into())).await.unwrap();
     println!("Sent exit command to close the terminal");
 
     // Read responses until we get an exit message or timeout.
@@ -158,7 +158,7 @@ async fn test_ws_terminal_endpoint() {
     let _ = write.send(Message::Close(None)).await;
 
     println!(
-        "Test completed successfully with {message_count} initial messages and {response_count} response \
-         messages"
+        "Test completed successfully with {message_count} initial messages \
+         and {response_count} response messages"
     );
 }
