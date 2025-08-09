@@ -16,7 +16,7 @@ use ten_rust::graph::GraphExposedMessageType;
 use uuid::Uuid;
 
 use crate::designer::graphs::{
-    connections::get::DesignerGraphConnection, nodes::get::DesignerGraphNode,
+    connections::get::DesignerGraphConnection, nodes::DesignerGraphNode,
 };
 
 #[derive(Serialize, Deserialize, Debug)]

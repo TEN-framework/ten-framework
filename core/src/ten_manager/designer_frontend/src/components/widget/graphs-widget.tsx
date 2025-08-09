@@ -224,7 +224,7 @@ export const GraphAddNodeWidget = (props: {
   const form = useForm<z.infer<typeof AddNodePayloadSchema>>({
     resolver: zodResolver(AddNodePayloadSchema),
     defaultValues: {
-      graph_id: graph_id ?? node?.data?.graph?.uuid ?? "",
+      graph_id: graph_id ?? node?.data?.graph?.graph_id ?? "",
       name: (node?.data?.name as string | undefined) || undefined,
       addon: undefined,
       extension_group: undefined,
@@ -243,7 +243,7 @@ export const GraphAddNodeWidget = (props: {
       }
       if (graph_id === data.graph_id || isReplaceNode) {
         const { nodes, edges } = await resetNodesAndEdgesByGraphs(
-          graphs?.filter((g) => g.uuid === data.graph_id) || []
+          graphs?.filter((g) => g.graph_id === data.graph_id) || []
         );
         setNodesAndEdges(nodes, edges);
         postAddNodeActions?.();
@@ -322,7 +322,9 @@ export const GraphAddNodeWidget = (props: {
                         </SelectItem>
                       ) : (
                         graphs?.map((graph) => (
-                          <SelectItem key={graph.uuid} value={graph.uuid}>
+                          <SelectItem
+                            key={graph.graph_id}
+                            value={graph.graph_id}>
                             {graph.name}
                           </SelectItem>
                         ))
@@ -489,7 +491,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
             setIsSubmitting(true);
             try {
               const nodeData = UpdateNodePropertyPayloadSchema.parse({
-                graph_id: graph_id ?? node?.data?.graph?.uuid ?? "",
+                graph_id: graph_id ?? node?.data?.graph?.graph_id ?? "",
                 name: node.data.name,
                 addon: node.data.addon,
                 extension_group: node.data.extension_group,
@@ -498,7 +500,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
               });
               await postUpdateNodeProperty(nodeData);
               const targetGraph = graphs?.find(
-                (g) => g.uuid === nodeData.graph_id
+                (g) => g.graph_id === nodeData.graph_id
               );
               if (targetGraph) {
                 const { nodes, edges } = await resetNodesAndEdgesByGraphs([
@@ -608,7 +610,7 @@ export const GraphConnectionCreationWidget = (props: {
         throw new Error(t("popup.graph.sameNodeError"));
       }
       await postAddConnection(payload);
-      const targetGraph = graphs?.find((g) => g.uuid === data.graph_id);
+      const targetGraph = graphs?.find((g) => g.graph_id === data.graph_id);
       if (graph_id === data.graph_id && targetGraph) {
         const { nodes, edges } = await resetNodesAndEdgesByGraphs([
           targetGraph,
@@ -824,7 +826,9 @@ export const GraphConnectionCreationWidget = (props: {
                         </SelectItem>
                       ) : (
                         graphs?.map((graph) => (
-                          <SelectItem key={graph.uuid} value={graph.uuid}>
+                          <SelectItem
+                            key={graph.graph_id}
+                            value={graph.graph_id}>
                             {graph.name}
                           </SelectItem>
                         ))

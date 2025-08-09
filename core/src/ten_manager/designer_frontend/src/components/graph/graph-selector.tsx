@@ -78,10 +78,12 @@ export const GraphSelector = (props: { className?: string }) => {
       return;
     }
     const nextDisplayedNodes = nodes.filter((node) =>
-      selectedGraphs.some((graph) => graph.uuid === node.data.graph.uuid)
+      selectedGraphs.some(
+        (graph) => graph.graph_id === node.data.graph.graph_id)
     );
     const nextDisplayedEdges = edges.filter((edge) =>
-      selectedGraphs.some((graph) => graph.uuid === edge.data?.graph.uuid)
+      selectedGraphs.some(
+        (graph) => graph.graph_id === edge.data?.graph.graph_id)
     );
     setDisplayedNodes(nextDisplayedNodes);
     setDisplayedEdges(nextDisplayedEdges);
@@ -218,13 +220,14 @@ const GraphList = (props: { graphs: IGraph[] }) => {
             </div>
             {graphs.map((graph) => (
               <div
-                key={graph.uuid}
+                key={graph.graph_id}
                 className={cn("flex items-center gap-3", "group relative")}
               >
                 <Checkbox
-                  id={`graph-selector-${graph.uuid}`}
+                  id={`graph-selector-${graph.graph_id}`}
                   disabled={isLoading}
-                  checked={selectedGraphs?.some((g) => g.uuid === graph.uuid)}
+                  checked={selectedGraphs?.some(
+                    (g) => g.graph_id === graph.graph_id)}
                   onCheckedChange={(checked) => {
                     if (checked) {
                       appendSelectedGraphs([graph]);
@@ -234,7 +237,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                   }}
                 />
                 <Label
-                  htmlFor={`graph-selector-${graph.uuid}`}
+                  htmlFor={`graph-selector-${graph.graph_id}`}
                   className="w-full"
                 >
                   <span
@@ -274,7 +277,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                         setIsLoading(true);
                         await postGraphsAutoStart({
                           auto_start: !graph.auto_start,
-                          graph_id: graph.uuid,
+                          graph_id: graph.graph_id,
                         });
                         await mutateGraphs();
                         toast.success(t("graph.change-auto-start-success"), {
