@@ -118,5 +118,8 @@
       "name": "minimax_v2v_python",
       "version": "=0.1.0"
     }
-  ]
+  ],
+    "scripts": {
+    "start": "bin/start"
+  }
 }
