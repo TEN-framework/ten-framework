@@ -1,0 +1,6 @@
+deepgram-sdk>=3.2.6
+websockets>=11.0.3
+aiohttp>=3.8.0
+pydantic>=2
+typing-extensions
+aiofiles
