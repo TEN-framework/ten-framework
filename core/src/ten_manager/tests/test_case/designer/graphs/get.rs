@@ -9,15 +9,14 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
+    use uuid::Uuid;
+
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
             graphs::{
-                get::{
-                    get_graphs_endpoint, GetGraphsRequestPayload,
-                    GetGraphsResponseData,
-                },
-                DesignerGraph,
+                get::{get_graphs_endpoint, GetGraphsRequestPayload},
+                DesignerGraph, DesignerGraphInfo,
             },
             response::ApiResponse,
             storage::in_memory::TmanStorageInMemory,
@@ -79,7 +78,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let graphs: ApiResponse<Vec<GetGraphsResponseData>> =
+        let graphs: ApiResponse<Vec<DesignerGraphInfo>> =
             serde_json::from_str(body_str).unwrap();
 
         let empty_graph = DesignerGraph {
@@ -90,22 +89,25 @@ mod tests {
         };
 
         let expected_graphs = vec![
-            GetGraphsResponseData {
-                uuid: "default".to_string(),
+            DesignerGraphInfo {
+                graph_id: Uuid::parse_str("default")
+                    .unwrap_or_else(|_| Uuid::new_v4()),
                 name: Some("default".to_string()),
                 auto_start: Some(true),
                 base_dir: Some(TEST_DIR.to_string()),
                 graph: empty_graph.clone(),
             },
-            GetGraphsResponseData {
-                uuid: "default_with_app_uri".to_string(),
+            DesignerGraphInfo {
+                graph_id: Uuid::parse_str("default_with_app_uri")
+                    .unwrap_or_else(|_| Uuid::new_v4()),
                 name: Some("default_with_app_uri".to_string()),
                 auto_start: Some(true),
                 base_dir: Some(TEST_DIR.to_string()),
                 graph: empty_graph.clone(),
             },
-            GetGraphsResponseData {
-                uuid: "addon_not_found".to_string(),
+            DesignerGraphInfo {
+                graph_id: Uuid::parse_str("addon_not_found")
+                    .unwrap_or_else(|_| Uuid::new_v4()),
                 name: Some("addon_not_found".to_string()),
                 auto_start: Some(false),
                 base_dir: Some(TEST_DIR.to_string()),
@@ -127,7 +129,7 @@ mod tests {
             assert_eq!(actual.base_dir, expected.base_dir);
         }
 
-        let json: ApiResponse<Vec<GetGraphsResponseData>> =
+        let json: ApiResponse<Vec<DesignerGraphInfo>> =
             serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
         println!("Response body: {pretty_json}");
