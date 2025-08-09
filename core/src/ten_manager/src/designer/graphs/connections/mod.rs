@@ -6,13 +6,12 @@
 //
 pub mod add;
 pub mod delete;
-pub mod get;
 pub mod msg_conversion;
 
 use serde::{Deserialize, Serialize};
 
 use ten_rust::graph::connection::{
-    GraphDestination, GraphLoc, GraphMessageFlow,
+    GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
 };
 use ten_rust::graph::msg_conversion::MsgAndResultConversion;
 
@@ -83,4 +82,91 @@ fn get_designer_destination_from_property(
     destinations: Vec<GraphDestination>,
 ) -> Vec<DesignerDestination> {
     destinations.into_iter().map(|v| v.into()).collect()
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerGraphConnection {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app: Option<String>,
+
+    pub extension: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subgraph: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmd: Option<Vec<DesignerMessageFlow>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Vec<DesignerMessageFlow>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio_frame: Option<Vec<DesignerMessageFlow>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_frame: Option<Vec<DesignerMessageFlow>>,
+}
+
+fn get_designer_msg_flow_from_property(
+    msg_flow: Vec<GraphMessageFlow>,
+) -> Vec<DesignerMessageFlow> {
+    if msg_flow.is_empty() {
+        return vec![];
+    }
+
+    msg_flow.into_iter().map(|v| v.into()).collect()
+}
+
+fn get_property_msg_flow_from_designer(
+    msg_flow: Vec<DesignerMessageFlow>,
+) -> Vec<GraphMessageFlow> {
+    msg_flow.into_iter().map(|v| v.into()).collect()
+}
+
+impl From<GraphConnection> for DesignerGraphConnection {
+    fn from(conn: GraphConnection) -> Self {
+        DesignerGraphConnection {
+            app: conn.loc.app,
+            extension: conn.loc.extension.unwrap_or_default(),
+            subgraph: conn.loc.subgraph,
+
+            cmd: conn.cmd.map(get_designer_msg_flow_from_property),
+
+            data: conn.data.map(get_designer_msg_flow_from_property),
+
+            audio_frame: conn
+                .audio_frame
+                .map(get_designer_msg_flow_from_property),
+
+            video_frame: conn
+                .video_frame
+                .map(get_designer_msg_flow_from_property),
+        }
+    }
+}
+
+impl From<DesignerGraphConnection> for GraphConnection {
+    fn from(designer_connection: DesignerGraphConnection) -> Self {
+        GraphConnection {
+            loc: GraphLoc {
+                app: designer_connection.app,
+                extension: Some(designer_connection.extension),
+                subgraph: designer_connection.subgraph,
+                selector: None,
+            },
+
+            cmd: designer_connection
+                .cmd
+                .map(get_property_msg_flow_from_designer),
+            data: designer_connection
+                .data
+                .map(get_property_msg_flow_from_designer),
+            audio_frame: designer_connection
+                .audio_frame
+                .map(get_property_msg_flow_from_designer),
+            video_frame: designer_connection
+                .video_frame
+                .map(get_property_msg_flow_from_designer),
+        }
+    }
 }
