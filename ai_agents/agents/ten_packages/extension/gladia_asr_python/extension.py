@@ -128,6 +128,7 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: Optional[str]
     ) -> None:
         try:
+            self.session_id = session_id
             chunk = base64.b64encode(frame.get_buf()).decode("utf-8")
             msg = json.dumps({"type": "audio_chunk", "data": {"chunk": chunk}})
             await self.ws.send(msg)
@@ -167,7 +168,7 @@ class GladiaASRExtension(AsyncASRBaseExtension):
                 code=-1,
                 message=str(error),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             ),
             ErrorMessageVendorInfo(
                 vendor="gladia", code=-1, message=str(error)
@@ -178,5 +179,9 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         if is_final and self.last_finalize_timestamp != 0:
             timestamp = int(datetime.now().timestamp() * 1000)
             latency = timestamp - self.last_finalize_timestamp
+            self.ten_env.log_debug(
+                f"KEYPOINT gladia drain end at {timestamp}, counter: {latency}"
+            )
             self.last_finalize_timestamp = 0
-            await self.send_asr_finalize_end(latency)
+
+            await self.send_asr_finalize_end()

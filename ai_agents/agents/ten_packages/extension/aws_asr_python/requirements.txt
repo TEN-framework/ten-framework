@@ -1,0 +1,4 @@
+typing_extensions
+pytest==8.3.4
+pydantic
+amazon-transcribe

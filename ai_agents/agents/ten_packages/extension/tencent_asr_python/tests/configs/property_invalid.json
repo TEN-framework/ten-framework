@@ -1,0 +1,11 @@
+{
+    "app_id": "xxxx",
+    "secret_key": "xxx",
+    "finalize_mode": "vendor_defined",
+    "params": {
+        "secretid": "xxx",
+        "engine_model_type": "16k_zh",
+        "voice_format": 1,
+        "word_info": 2
+    }
+}

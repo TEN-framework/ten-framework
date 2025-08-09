@@ -1,0 +1,11 @@
+{
+    "finalize_mode": "disconnect",
+    "params": {
+        "region": "${env:AWS_ASR_REGION}",
+        "access_key_id": "${env:AWS_ASR_ACCESS_KEY_ID}",
+        "secret_access_key": "${env:AWS_ASR_SECRET_ACCESS_KEY}",
+        "language_code": "zh-CN",
+        "media_sample_rate_hz": 16000,
+        "media_encoding": "pcm"
+    }
+}

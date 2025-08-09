@@ -1,0 +1,12 @@
+{
+    "params": {
+        "appid": "${env:BYTEDANCE_ASR_API_KEY}",
+        "token": "${env:BYTEDANCE_ASR_TOKEN}",
+        "cluster": "${env:BYTEDANCE_ASR_CLUSTER}",
+        "language": "en-US",
+        "hotwords": [
+            "aaa",
+            "bbb"
+        ]
+    }
+}

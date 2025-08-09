@@ -1,0 +1,8 @@
+{
+"params": {
+        "app_id": "${env:XFYUN_ASR_DIALOG_APP_ID}",
+        "access_key_id": "${env:XFYUN_ASR_DIALOG_ACCESS_KEY_ID}",
+        "access_key_secret": "${env:XFYUN_ASR_DIALOG_ACCESS_KEY_SECRET}",
+        "language": "en-US"
+      }
+}

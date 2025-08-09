@@ -3,7 +3,7 @@
     "editor.defaultFormatter": "ms-azuretools.vscode-containers"
   },
   "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "vscode.json-language-features"
   },
   "[markdown]": {
     "editor.wordWrap": "bounded",
@@ -31,6 +31,8 @@
     "./core/src/ten_runtime/binding/python/interface",
     "./tests/ten_runtime/integration",
     "./core/ten_gn/.gnfiles",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/interface",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/lib",
   ],
   "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,
@@ -115,5 +117,9 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  }
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "cmake.sourceDirectory": "D:/dev/TEN-Agent/third_party/mbedtls"
 }

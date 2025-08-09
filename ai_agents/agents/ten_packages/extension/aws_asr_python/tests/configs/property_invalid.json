@@ -1,0 +1,11 @@
+{
+    "finalize_mode": "disconnect",
+    "params": {
+        "region": "us-west-2",
+        "access_key_id": "xxx",
+        "secret_access_key": "xxx",
+        "language_code": "en-US",
+        "media_sample_rate_hz": 16000,
+        "media_encoding": "pcm"
+    }
+}

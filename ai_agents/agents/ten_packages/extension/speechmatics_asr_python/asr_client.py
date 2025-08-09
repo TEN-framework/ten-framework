@@ -189,7 +189,7 @@ class SpeechmaticsASRClient:
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
             asyncio.create_task(self._emit_error(error, None))
 
@@ -235,7 +235,7 @@ class SpeechmaticsASRClient:
                     code=-1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
                 asyncio.create_task(self._emit_error(error_message, None))
 
@@ -301,7 +301,7 @@ class SpeechmaticsASRClient:
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
 
             asyncio.create_task(self._emit_error(error_message, None))
@@ -339,7 +339,7 @@ class SpeechmaticsASRClient:
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
 
             asyncio.create_task(self._emit_error(error_message, None))
@@ -433,7 +433,7 @@ class SpeechmaticsASRClient:
                 code=1,
                 message=str(e),
                 turn_id=0,
-                module=ModuleType.STT,
+                module=ModuleType.ASR,
             )
 
             asyncio.create_task(self._emit_error(error_message, None))
@@ -453,7 +453,7 @@ class SpeechmaticsASRClient:
             code=-1,
             message=str(error),
             turn_id=0,
-            module=ModuleType.STT,
+            module=ModuleType.ASR,
         )
 
         asyncio.create_task(

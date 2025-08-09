@@ -1,0 +1,10 @@
+{
+    "api_key": "",
+    "group_id": "",
+    "model": "speech-02-hd",
+    "voice_id": "male-qn-qingse",
+    "sample_rate": 24000,
+    "url": "wss://api.minimaxi.com/ws/v1/t2a_v2",
+    "dump": false,
+    "dump_path": "/tmp"
+}
