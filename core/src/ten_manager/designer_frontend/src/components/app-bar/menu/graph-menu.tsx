@@ -73,7 +73,7 @@ export function GraphMenu(props: {
       widget_id:
         GRAPH_ACTIONS_WIDGET_ID +
         `-$type-` +
-        `$selectedGraph?.base_dir-$selectedGraph?.uuid`,
+        `$selectedGraph?.base_dir-$selectedGraph?.graph_id`,
 
       category: EWidgetCategory.Graph,
       display_type: EWidgetDisplayType.Popup,
@@ -82,7 +82,7 @@ export function GraphMenu(props: {
       metadata: {
         type,
         base_dir: selectedGraph?.base_dir,
-        graph_id: selectedGraph?.uuid,
+        graph_id: selectedGraph?.graph_id,
         app_uri: selectedApp?.app_uri,
       },
       popup: {

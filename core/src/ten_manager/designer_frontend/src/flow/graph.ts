@@ -10,7 +10,6 @@ import dagre from "dagre";
 import { retrieveAddons } from "@/api/services/addons";
 import {
   retrieveGraphConnections,
-  retrieveGraphNodes,
 } from "@/api/services/graphs";
 import {
   postGetGraphNodeGeometry,
@@ -99,7 +98,7 @@ export const generateRawNodes = (
     rows * NODE_HEIGHT + NODE_Y_SPACING * (rows + 1) + bufferHeight;
 
   const graphNode: TGraphNode = {
-    id: graph.uuid,
+    id: graph.graph_id,
     position: { x: startX, y: startY },
     type: "graphNode",
     data: {
@@ -115,10 +114,10 @@ export const generateRawNodes = (
     const col = idx % cols;
 
     return {
-      // id: `${graph.uuid}-${n.name}`,
+      // id: `${graph.graph_id}-${n.name}`,
       id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
         type: ECustomNodeType.EXTENSION,
-        graph: graph.uuid,
+        graph: graph.graph_id,
         name: n.name,
       }),
       position: {
@@ -130,7 +129,7 @@ export const generateRawNodes = (
           NODE_Y_SPACING,
       },
       type: "extensionNode",
-      parentId: graph.uuid,
+      parentId: graph.graph_id,
       extent: "parent",
       data: {
         ...n,
@@ -203,7 +202,7 @@ export const generateRawEdges = (
             name,
             src: extension,
             target: targetExtension,
-            graph: graph.uuid,
+            graph: graph.graph_id,
             connectionType,
           });
           // const edgeId = `edge-${extension}-${name}-${targetExtension}`;
@@ -226,12 +225,12 @@ export const generateRawEdges = (
             // target: targetExtension,
             source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
               type: ECustomNodeType.EXTENSION,
-              graph: graph.uuid,
+              graph: graph.graph_id,
               name: extension,
             }),
             target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
               type: ECustomNodeType.EXTENSION,
-              graph: graph.uuid,
+              graph: graph.graph_id,
               name: targetExtension,
             }),
             data: {
@@ -252,13 +251,13 @@ export const generateRawEdges = (
             sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
               type: "source",
               extension,
-              graph: graph.uuid,
+              graph: graph.graph_id,
               connectionType: connectionType,
             }),
             targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
               type: "target",
               extension: targetExtension,
-              graph: graph.uuid,
+              graph: graph.graph_id,
               connectionType: connectionType,
             }),
             markerEnd: {
@@ -295,12 +294,12 @@ export const updateNodesWithConnections = (
         const srcConnections = edgeAddressMap[connectionType].filter(
           (edge) =>
             edge.target.extension === node.data.name &&
-            edge.graph.uuid === node.data.graph.uuid
+            edge.graph.graph_id === node.data.graph.graph_id
         );
         const targetConnections = edgeAddressMap[connectionType].filter(
           (edge) =>
             edge.src.extension === node.data.name &&
-            edge.graph.uuid === node.data.graph.uuid
+            edge.graph.graph_id === node.data.graph.graph_id
         );
         (node as TExtensionNode).data.src[connectionType].push(
           ...srcConnections
@@ -325,7 +324,7 @@ export const updateNodesWithAddonInfo = async (
   const cache = graphsBaseDirList.reduce(
     (acc, baseDir) => {
       const addonInfoMap = new Map<string, IExtensionAddon>();
-      acc[baseDir] = addonInfoMap;
+      acc[baseDir ?? ""] = addonInfoMap;
       return acc;
     },
     {} as Record<string, Map<string, IExtensionAddon>>
@@ -337,10 +336,10 @@ export const updateNodesWithAddonInfo = async (
     }
     const baseDir = node.data.graph.base_dir;
     const addonName = node.data.addon;
-    const targetAddonMap = cache[baseDir];
+    const targetAddonMap = cache[baseDir ?? ""];
     if (!targetAddonMap.has(addonName)) {
       const addonInfoList: IExtensionAddon[] = await retrieveAddons({
-        base_dir: baseDir,
+        base_dir: baseDir ?? "",
         addon_name: addonName,
       });
       const addonInfo: IExtensionAddon | undefined = addonInfoList?.[0];
@@ -351,7 +350,7 @@ export const updateNodesWithAddonInfo = async (
       }
       targetAddonMap.set(addonName, addonInfo);
     }
-    node.data.url = cache[baseDir].get(addonName)?.url;
+    node.data.url = cache[baseDir ?? ""].get(addonName)?.url;
   }
 
   return nodes;
@@ -455,10 +454,10 @@ export const syncGraphNodeGeometry = async (
 
   const localNodesGeometryMappings = nodes.reduce(
     (acc, node) => {
-      if (!acc[node.data.graph.uuid]) {
-        acc[node.data.graph.uuid] = [];
+      if (!acc[node.data.graph.graph_id]) {
+        acc[node.data.graph.graph_id] = [];
       }
-      acc[node.data.graph.uuid].push({
+      acc[node.data.graph.graph_id].push({
         id: node.id,
         x: node.position.x,
         y: node.position.y,
@@ -517,7 +516,7 @@ export const syncGraphNodeGeometry = async (
 
       // Update nodes with geometry for this graph
       const graphNodes = nodes.filter(
-        (node) => node.data.graph.uuid === graphId
+        (node) => node.data.graph.graph_id === graphId
       );
       const nodesWithGeometry = graphNodes.map((node) => {
         const geometry = mergedNodesGeometry.find((g) => g.id === node.id);
@@ -544,15 +543,13 @@ export const syncGraphNodeGeometry = async (
 };
 
 export const resetNodesAndEdgesByGraphs = async (graphs: IGraph[]) => {
-  const backendNodes = await Promise.all(
-    graphs.map(async (graph) => {
-      const nodes = await retrieveGraphNodes(graph.uuid);
-      return { graph: graph, nodes: nodes };
-    })
-  );
+  const backendNodes = graphs.map((graph) => ({
+    graph: graph,
+    nodes: graph.graph?.nodes || []
+  }));
   const backendConnections = await Promise.all(
     graphs.map(async (graph) => {
-      const connections = await retrieveGraphConnections(graph.uuid);
+      const connections = await retrieveGraphConnections(graph.graph_id);
       return { graph: graph, connections: connections };
     })
   );

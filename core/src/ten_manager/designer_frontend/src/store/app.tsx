@@ -80,8 +80,8 @@ export const useAppStore = create<IAppStore>()(
     appendSelectedGraphs: (graph: IGraph[]) =>
       set((state) => {
         const existing = state.selectedGraphs || [];
-        const existingIds = new Set(existing.map((g) => g.uuid));
-        const newGraphs = graph.filter((g) => !existingIds.has(g.uuid));
+        const existingIds = new Set(existing.map((g) => g.graph_id));
+        const newGraphs = graph.filter((g) => !existingIds.has(g.graph_id));
         return {
           selectedGraphs: [...existing, ...newGraphs],
         };
@@ -89,8 +89,9 @@ export const useAppStore = create<IAppStore>()(
     removeSelectedGraphs: (graph: IGraph[]) =>
       set((state) => {
         const existing = state.selectedGraphs || [];
-        const graphIdsToRemove = new Set(graph.map((g) => g.uuid));
-        const newGraphs = existing.filter((g) => !graphIdsToRemove.has(g.uuid));
+        const graphIdsToRemove = new Set(graph.map((g) => g.graph_id));
+        const newGraphs = existing.filter(
+          (g) => !graphIdsToRemove.has(g.graph_id));
         return {
           selectedGraphs: newGraphs,
         };

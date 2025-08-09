@@ -9,7 +9,7 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::designer::graphs::nodes::get::DesignerGraphNode;
+use crate::designer::graphs::nodes::DesignerGraphNode;
 use crate::designer::graphs::DesignerGraphInfo;
 use crate::designer::{
     graphs::{

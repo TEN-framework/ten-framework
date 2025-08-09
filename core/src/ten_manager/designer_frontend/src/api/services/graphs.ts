@@ -21,15 +21,6 @@ import type {
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
 
-export const retrieveGraphNodes = async (graphId: string) => {
-  const template = ENDPOINT_GRAPHS.nodes[ENDPOINT_METHOD.POST];
-  const req = makeAPIRequest(template, {
-    body: { graph_id: graphId },
-  });
-  const res = await req;
-  return template.responseSchema.parse(res).data;
-};
-
 export const retrieveGraphConnections = async (graphId: string) => {
   const template = ENDPOINT_GRAPHS.connections[ENDPOINT_METHOD.POST];
   const req = makeAPIRequest(template, {
@@ -45,7 +36,11 @@ export const retrieveGraphs = async () => {
     body: {},
   });
   const res = await req;
-  return template.responseSchema.parse(res).data;
+  const data = template.responseSchema.parse(res).data;
+
+  return data.map(graph => ({
+    ...graph,
+  }));
 };
 
 export const useGraphs = () => {

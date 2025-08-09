@@ -6,13 +6,12 @@
 //
 pub mod add;
 pub mod delete;
-pub mod get;
 pub mod property;
 pub mod replace;
 
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
@@ -164,6 +163,60 @@ impl From<ManifestApiMsg> for DesignerApiMsg {
                 .map(Into::into),
             result: api_cmd_like.result.as_ref().cloned().map(Into::into),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerGraphNode {
+    pub addon: String,
+    pub name: String,
+
+    // The app which this extension belongs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app: Option<String>,
+
+    // The extension group which this extension belongs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension_group: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api: Option<DesignerApi>,
+
+    pub property: Option<serde_json::Value>,
+
+    /// This indicates that the extension has been installed under the
+    /// `ten_packages/` directory.
+    pub is_installed: bool,
+}
+
+impl TryFrom<GraphNode> for DesignerGraphNode {
+    type Error = anyhow::Error;
+
+    fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
+        match node {
+            GraphNode::Extension { content } => Ok(DesignerGraphNode {
+                addon: content.addon,
+                name: content.name,
+                extension_group: content.extension_group,
+                app: content.app,
+                api: None,
+                property: content.property,
+                is_installed: false,
+            }),
+            _ => Err(anyhow!("Graph node is not an extension node")),
+        }
+    }
+}
+
+impl From<DesignerGraphNode> for GraphNode {
+    fn from(designer_extension: DesignerGraphNode) -> Self {
+        GraphNode::new_extension_node(
+            designer_extension.name,
+            designer_extension.addon,
+            designer_extension.extension_group,
+            designer_extension.app,
+            designer_extension.property,
+        )
     }
 }
 
