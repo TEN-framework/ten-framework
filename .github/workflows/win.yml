@@ -249,8 +249,8 @@ jobs:
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_rust unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_rust integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
 
       - name: Run Tests (ten_manager standalone tests)
         run: |
@@ -259,8 +259,8 @@ jobs:
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_manager unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_manager integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
 
       #   continue-on-error: true
       # - name: Setup tmate session
