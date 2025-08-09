@@ -42,7 +42,7 @@ jaq-std = "2.0.0"
 json5 = { version = "0.4" }
 jsonschema = { version = "0.32", default-features = false }
 mime_guess = { version = "2.0.5" }
-portable-pty = { version = "0.9" }
+portable-pty = { version = "0.8.1" }
 regex = { version = "1.11" }
 remove_dir_all = { version = "1.0" }
 reqwest = { version = "0.12", default-features = false, features = [
