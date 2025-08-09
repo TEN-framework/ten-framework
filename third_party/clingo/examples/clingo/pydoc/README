@@ -1,3 +1,0 @@
-To generate the python API documentation for the clingo module, execute:
-    clingo pydoc.lp
-    python pydoc-lib.py
