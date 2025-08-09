@@ -15,10 +15,8 @@ use ten_manager::{
                 get_graph_connections_endpoint, DesignerGraphConnection,
                 GetGraphConnectionsRequestPayload,
             },
-            get::{
-                get_graphs_endpoint, GetGraphsRequestPayload,
-                GetGraphsResponseData,
-            },
+            get::{get_graphs_endpoint, GetGraphsRequestPayload},
+            DesignerGraphInfo,
         },
         response::ApiResponse,
         storage::in_memory::TmanStorageInMemory,
@@ -111,7 +109,7 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
 
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<Vec<GetGraphsResponseData>> =
+    let json: ApiResponse<Vec<DesignerGraphInfo>> =
         serde_json::from_str(body_str).unwrap();
 
     let pretty_json = serde_json::to_string_pretty(&json).unwrap();

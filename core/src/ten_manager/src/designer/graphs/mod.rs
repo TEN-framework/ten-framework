@@ -21,7 +21,7 @@ use crate::designer::graphs::{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DesignerGraphInfo {
-    pub uuid: Uuid,
+    pub graph_id: Uuid,
 
     pub name: Option<String>,
     pub auto_start: Option<bool>,
