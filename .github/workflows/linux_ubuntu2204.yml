@@ -356,6 +356,7 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: 1
         run: |
           cd out/linux/${{ matrix.arch }}/tests/standalone/ten_rust
 
@@ -381,6 +382,7 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: 1
         run: |
           cd out/linux/${{ matrix.arch }}/tests/standalone/ten_manager
 
