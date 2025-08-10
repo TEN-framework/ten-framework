@@ -622,11 +622,12 @@ mod tests {
         )
         .to_string();
 
-        // Create test directory name for the app - use the actual path from
-        // test_data
-        let test_app_dir = "/home/wei/MyData/MyProject/ten-framework/core/src/\
-                            ten_manager/tests/test_data/\
-                            cmd_check_predefined_graph_with_subgraph"
+        // Create test directory name for the app - use a relative path that
+        // works across all platforms (Linux, macOS, Windows)
+        let test_app_dir = std::env::current_dir()
+            .unwrap()
+            .join("tests/test_data/cmd_check_predefined_graph_with_subgraph")
+            .to_string_lossy()
             .to_string();
 
         let all_pkgs_json = vec![(
@@ -646,6 +647,9 @@ mod tests {
                 all_pkgs_json,
             )
             .await;
+            if inject_ret.is_err() {
+                println!("inject_ret: {:?}", inject_ret);
+            }
             assert!(inject_ret.is_ok());
         }
 

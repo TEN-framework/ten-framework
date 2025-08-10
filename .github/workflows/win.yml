@@ -244,7 +244,7 @@ jobs:
 
       - name: Run Tests (ten_rust standalone tests)
         env:
-          RUST_BACKTRACE: 1
+          RUST_BACKTRACE: "full"
         run: |
           cd out/win/x64/tests/standalone/ten_rust
 
@@ -256,7 +256,7 @@ jobs:
 
       - name: Run Tests (ten_manager standalone tests)
         env:
-          RUST_BACKTRACE: 1
+          RUST_BACKTRACE: "full"
         run: |
           cd out/win/x64/tests/standalone/ten_manager
 
