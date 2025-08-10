@@ -11,12 +11,12 @@ pub mod replace;
 
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::node::GraphNode;
+use ten_rust::graph::node::{AtomicFilter, Filter, FilterOperator, GraphNode};
 use ten_rust::pkg_info::manifest::api::ManifestApiMsg;
 use ten_rust::pkg_info::manifest::api::{
     ManifestApiCmdResult, ManifestApiProperty, ManifestApiPropertyAttributes,
@@ -167,7 +167,7 @@ impl From<ManifestApiMsg> for DesignerApiMsg {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct DesignerGraphNode {
+pub struct DesignerExtensionNode {
     pub addon: String,
     pub name: String,
 
@@ -189,34 +189,152 @@ pub struct DesignerGraphNode {
     pub is_installed: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerSubgraphNode {
+    pub name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub property: Option<serde_json::Value>,
+
+    pub graph: DesignerGraphContent,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerGraphContent {
+    pub import_uri: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerSelectorNode {
+    pub name: String,
+    pub filter: DesignerFilter,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum DesignerFilterOperator {
+    #[serde(rename = "exact")]
+    Exact,
+    #[serde(rename = "regex")]
+    Regex,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct DesignerAtomicFilter {
+    pub field: String,
+    pub operator: DesignerFilterOperator,
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum DesignerFilter {
+    Atomic(DesignerAtomicFilter),
+    And { and: Vec<DesignerFilter> },
+    Or { or: Vec<DesignerFilter> },
+}
+
+impl From<FilterOperator> for DesignerFilterOperator {
+    fn from(op: FilterOperator) -> Self {
+        match op {
+            FilterOperator::Exact => DesignerFilterOperator::Exact,
+            FilterOperator::Regex => DesignerFilterOperator::Regex,
+        }
+    }
+}
+
+impl From<AtomicFilter> for DesignerAtomicFilter {
+    fn from(filter: AtomicFilter) -> Self {
+        DesignerAtomicFilter {
+            field: filter.field,
+            operator: filter.operator.into(),
+            value: filter.value,
+        }
+    }
+}
+
+impl From<Filter> for DesignerFilter {
+    fn from(filter: Filter) -> Self {
+        match filter {
+            Filter::Atomic(atomic) => DesignerFilter::Atomic(atomic.into()),
+            Filter::And { and } => DesignerFilter::And {
+                and: and.into_iter().map(|f| f.into()).collect(),
+            },
+            Filter::Or { or } => DesignerFilter::Or {
+                or: or.into_iter().map(|f| f.into()).collect(),
+            },
+        }
+    }
+}
+
+/// Represents a node in a designer graph. This enum represents different types
+/// of nodes that can exist in the graph, similar to GraphNode but designed for
+/// the designer API.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum DesignerGraphNode {
+    Extension {
+        #[serde(flatten)]
+        content: Box<DesignerExtensionNode>,
+    },
+    Subgraph {
+        #[serde(flatten)]
+        content: Box<DesignerSubgraphNode>,
+    },
+    Selector {
+        #[serde(flatten)]
+        content: Box<DesignerSelectorNode>,
+    },
+}
+
+impl DesignerGraphNode {
+    /// Get the name of the node regardless of its type.
+    pub fn get_name(&self) -> &str {
+        match self {
+            DesignerGraphNode::Extension { content } => &content.name,
+            DesignerGraphNode::Subgraph { content } => &content.name,
+            DesignerGraphNode::Selector { content } => &content.name,
+        }
+    }
+}
+
 impl TryFrom<GraphNode> for DesignerGraphNode {
     type Error = anyhow::Error;
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
         match node {
-            GraphNode::Extension { content } => Ok(DesignerGraphNode {
-                addon: content.addon,
-                name: content.name,
-                extension_group: content.extension_group,
-                app: content.app,
-                api: None,
-                property: content.property,
-                is_installed: false,
-            }),
-            _ => Err(anyhow!("Graph node is not an extension node")),
+            GraphNode::Extension { content } => {
+                Ok(DesignerGraphNode::Extension {
+                    content: Box::new(DesignerExtensionNode {
+                        addon: content.addon,
+                        name: content.name,
+                        extension_group: content.extension_group,
+                        app: content.app,
+                        api: None,
+                        property: content.property,
+                        is_installed: false,
+                    }),
+                })
+            }
+            GraphNode::Subgraph { content } => {
+                Ok(DesignerGraphNode::Subgraph {
+                    content: Box::new(DesignerSubgraphNode {
+                        name: content.name,
+                        property: content.property,
+                        graph: DesignerGraphContent {
+                            import_uri: content.graph.import_uri,
+                        },
+                    }),
+                })
+            }
+            GraphNode::Selector { content } => {
+                Ok(DesignerGraphNode::Selector {
+                    content: Box::new(DesignerSelectorNode {
+                        name: content.name,
+                        filter: DesignerFilter::from(content.filter),
+                    }),
+                })
+            }
         }
-    }
-}
-
-impl From<DesignerGraphNode> for GraphNode {
-    fn from(designer_extension: DesignerGraphNode) -> Self {
-        GraphNode::new_extension_node(
-            designer_extension.name,
-            designer_extension.addon,
-            designer_extension.extension_group,
-            designer_extension.app,
-            designer_extension.property,
-        )
     }
 }
 
