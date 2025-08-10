@@ -14,8 +14,8 @@ mod tests {
         designer::{
             graphs::{
                 connections::{
-                    DesignerDestination, DesignerGraphConnection,
-                    DesignerMessageFlow,
+                    DesignerGraphConnection, DesignerGraphDestination,
+                    DesignerGraphLoc, DesignerGraphMessageFlow,
                 },
                 get::{get_graphs_endpoint, GetGraphsRequestPayload},
                 DesignerGraphInfo,
@@ -113,16 +113,24 @@ mod tests {
             .clone();
 
         let expected_connections = vec![DesignerGraphConnection {
-            app: None,
-            extension: "extension_1".to_string(),
-            subgraph: None,
-            cmd: Some(vec![DesignerMessageFlow {
+            loc: DesignerGraphLoc {
+                app: None,
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+                selector: None,
+            },
+            cmd: Some(vec![DesignerGraphMessageFlow {
                 name: "hello_world".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
             data: None,
             audio_frame: None,
@@ -260,40 +268,63 @@ mod tests {
             .clone();
 
         let expected_connections = vec![DesignerGraphConnection {
-            app: None,
-            extension: "extension_1".to_string(),
-            subgraph: None,
-            cmd: Some(vec![DesignerMessageFlow {
+            loc: DesignerGraphLoc {
+                app: None,
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+                selector: None,
+            },
+            cmd: Some(vec![DesignerGraphMessageFlow {
                 name: "hello_world".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            data: Some(vec![DesignerMessageFlow {
+            data: Some(vec![DesignerGraphMessageFlow {
                 name: "data".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            audio_frame: Some(vec![DesignerMessageFlow {
+            audio_frame: Some(vec![DesignerGraphMessageFlow {
                 name: "pcm".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            video_frame: Some(vec![DesignerMessageFlow {
+            video_frame: Some(vec![DesignerGraphMessageFlow {
                 name: "image".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
         }];
 

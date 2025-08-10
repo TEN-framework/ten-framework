@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
@@ -20,12 +21,54 @@ use crate::designer::{
     DesignerState,
 };
 use ten_rust::graph::{
-    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode,
+    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
     GraphExposedMessage, GraphExposedProperty,
 };
 
 #[derive(Serialize, Deserialize)]
 pub struct GetGraphsRequestPayload {}
+
+/// Loads a graph from the given import_uri relative to the base_dir.
+fn load_graph_from_import_uri(
+    import_uri: &str,
+    base_dir: &Option<String>,
+) -> Option<DesignerGraph> {
+    let base_path = base_dir.as_ref()?;
+    let graph_path = Path::new(base_path).join(import_uri);
+
+    // Read the graph file
+    let graph_content = std::fs::read_to_string(&graph_path).ok()?;
+
+    // Parse the graph JSON
+    let graph: Graph = serde_json::from_str(&graph_content).ok()?;
+
+    // Convert to DesignerGraph
+    Some(create_designer_graph(
+        &graph.nodes,
+        &graph.connections,
+        &graph.exposed_messages,
+        &graph.exposed_properties,
+    ))
+}
+
+/// Resolves import_uri in subgraph nodes and populates the graph field.
+fn resolve_subgraph_imports(
+    mut designer_graph: DesignerGraph,
+    base_dir: &Option<String>,
+) -> DesignerGraph {
+    for node in &mut designer_graph.nodes {
+        if let DesignerGraphNode::Subgraph { content } = node {
+            if content.graph.graph.is_none() {
+                // Load the graph from import_uri
+                content.graph.graph = load_graph_from_import_uri(
+                    &content.graph.import_uri,
+                    base_dir,
+                );
+            }
+        }
+    }
+    designer_graph
+}
 
 /// Converts a collection of nodes, connections, exposed_messages, and
 /// exposed_properties into a DesignerGraph structure.
@@ -78,7 +121,7 @@ fn create_designer_graph(
 fn extract_designer_graph_from_graph_info(
     graph_info: &GraphInfo,
 ) -> DesignerGraph {
-    graph_info
+    let designer_graph = graph_info
         .graph
         .graph
         .pre_flatten
@@ -98,7 +141,10 @@ fn extract_designer_graph_from_graph_info(
                 &graph_info.graph.graph.exposed_messages,
                 &graph_info.graph.graph.exposed_properties,
             )
-        })
+        });
+
+    // Resolve subgraph imports
+    resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir)
 }
 
 pub async fn get_graphs_endpoint(
