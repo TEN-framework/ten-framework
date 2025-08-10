@@ -22,12 +22,16 @@ import type {
 } from "@/types/graphs";
 
 export const retrieveGraphConnections = async (graphId: string) => {
-  const template = ENDPOINT_GRAPHS.connections[ENDPOINT_METHOD.POST];
+  const template = ENDPOINT_GRAPHS.graphs[ENDPOINT_METHOD.POST];
   const req = makeAPIRequest(template, {
     body: { graph_id: graphId },
   });
   const res = await req;
-  return template.responseSchema.parse(res).data;
+  const data = template.responseSchema.parse(res).data;
+
+  // Find the graph with matching graph_id and return its connections
+  const targetGraph = data.find(graph => graph.graph_id === graphId);
+  return targetGraph?.graph.connections || [];
 };
 
 export const retrieveGraphs = async () => {
