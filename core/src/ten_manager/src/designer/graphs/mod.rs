@@ -30,7 +30,7 @@ pub struct DesignerGraphInfo {
     pub graph: DesignerGraph,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DesignerGraph {
     pub nodes: Vec<DesignerGraphNode>,
     pub connections: Vec<DesignerGraphConnection>,
@@ -38,7 +38,7 @@ pub struct DesignerGraph {
     pub exposed_properties: Vec<DesignerGraphExposedProperty>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DesignerGraphExposedMessage {
     #[serde(rename = "type")]
     pub msg_type: GraphExposedMessageType,
@@ -58,7 +58,7 @@ pub struct DesignerGraphExposedMessage {
     pub subgraph: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DesignerGraphExposedProperty {
     /// The name of the extension.
     /// Must match the regular expression ^[A-Za-z_][A-Za-z0-9_]*$

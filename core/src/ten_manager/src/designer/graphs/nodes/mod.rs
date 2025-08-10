@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 use ten_rust::graph::graph_info::GraphInfo;
@@ -22,8 +23,8 @@ use ten_rust::pkg_info::manifest::api::{
     ManifestApiCmdResult, ManifestApiProperty, ManifestApiPropertyAttributes,
 };
 use ten_rust::pkg_info::value_type::ValueType;
-use uuid::Uuid;
 
+use crate::designer::graphs::DesignerGraph;
 use crate::graph::update_graph_node_all_fields;
 use crate::pkg_info::belonging_pkg_info_find_by_graph_info_mut;
 
@@ -202,6 +203,9 @@ pub struct DesignerSubgraphNode {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerGraphContent {
     pub import_uri: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub graph: Option<DesignerGraph>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -322,6 +326,8 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                         property: content.property,
                         graph: DesignerGraphContent {
                             import_uri: content.graph.import_uri,
+                            // Will be populated during graph resolution
+                            graph: None,
                         },
                     }),
                 })
