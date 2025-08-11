@@ -71,7 +71,8 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
-        await self.agent.stop()
+        if self.agent:
+            await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)

@@ -114,6 +114,12 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
             ten_env.log_error("api_key is required")
             raise ValueError("api_key is required")
 
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_stop(ten_env)
+        self.stopped = True
+        if self.conn:
+            await self.conn.close()
+
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
@@ -382,14 +388,15 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         await self._handle_reconnect()
 
     async def stop_connection(self) -> None:
+        self.connected = False
         await self.conn.close()
-        self.stopped = True
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic with exponential backoff strategy."""
         await self.stop_connection()
-        await self.loop.sleep(1)  # Initial delay before reconnecting
-        await self.start_connection()
+        if not self.stopped:
+            await self.loop.sleep(1)  # Initial delay before reconnecting
+            await self.start_connection()
 
     def is_connected(self) -> bool:
         return self.connected
