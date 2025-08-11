@@ -7,9 +7,8 @@ import asyncio
 from datetime import datetime
 import os
 import traceback
-import uuid
 
-from ten_ai_base.helper import PCMWriter, generate_file_name
+from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -18,13 +17,14 @@ from ten_ai_base.message import (
     ModuleVendorException,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
+from ten_ai_base.struct import TTSTextInput, TTSFlush, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTSWebsocketConfig
-from .minimax_tts import MinimaxTTSWebsocket, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse, EVENT_TTSFlush
+from .minimax_tts import MinimaxTTSWebsocket, MinimaxTTSTaskFailedException, EVENT_TTSSentenceEnd, EVENT_TTSResponse
 from ten_runtime import (
     AsyncTenEnv,
+    Data,
 )
 
 
@@ -39,6 +39,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.finished_request_ids: set[str] = set()
+        self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = {}  # Store PCMWriter instances for different request_ids
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -152,13 +153,29 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
-        # Get the necessary properties
-        self.ten_env.log_info(f"on_data12345: {data.get_name()}")
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log_info(f"on_data:{data_name}")
-        if data.get_name() == "tts_flush":
-            await self.client.cancel()
+        ten_env.log_info(f"on_data: {data_name}")
+
+        if data_name == "tts_flush":
+            flush_id, _ = data.get_property_string("flush_id")
+            if flush_id:
+                ten_env.log_info(f"Received flush request for ID: {flush_id}")
+                self.flushed_request_ids.add(flush_id)
+
+                if self.current_request_id and self.current_request_id == flush_id:
+                    ten_env.log_info(f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED.")
+                    if self.sent_ts:
+                        request_event_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
+                        duration_ms = self._calculate_audio_duration_ms()
+                        await self.send_tts_audio_end(
+                            self.current_request_id,
+                            request_event_interval,
+                            duration_ms,
+                            self.current_turn_id,
+                            TTSAudioEndReason.INTERRUPTED,
+                        )
+                        self.current_request_finished = True
         await super().on_data(ten_env, data)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -193,15 +210,13 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
         if self.config is None:
             return 0
         bytes_per_sample = 2  # Assuming 16-bit audio
-        channels = 1  # Assuming mono
+        channels = self.config.params.get("audio_setting", {}).get("channels", 1)
         duration_sec = self.total_audio_bytes / (self.config.sample_rate * bytes_per_sample * channels)
         return int(duration_sec * 1000)
 
     async def on_flush(self, t: TTSFlush) -> None:
-        if self.client and t.flush_id == self.current_request_id:
-            self.ten_env.log_info(f"Flushing TTS for request ID: {t.flush_id}")
-            await self.client.cancel()
-
+        # This logic is now handled in on_data to align with the bytedance example
+        pass
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -219,6 +234,8 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.client = MinimaxTTSWebsocket(self.config, self.ten_env, self.vendor())
                 await self.client.start()
                 self.ten_env.log_info("TTS client reconnected successfully.")
+
+            self.ten_env.log_info(f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}, current_request_finished: {self.current_request_finished}")
 
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
@@ -252,24 +269,28 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.recorder_map[t.request_id] = PCMWriter(dump_file_path)
                         self.ten_env.log_info(f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}")
             elif self.current_request_finished:
-                if not t.text_input_end:
-                    error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
-                    self.ten_env.log_error(error_msg)
-                    await self.send_tts_error(
-                        t.request_id,
-                        ModuleError(
-                            message=error_msg,
-                            module_name=ModuleType.TTS,
-                            code=ModuleErrorCode.NON_FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                        ),
-                    )
+                error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                self.ten_env.log_error(error_msg)
+                await self.send_tts_error(
+                    t.request_id,
+                    ModuleError(
+                        message=error_msg,
+                        module_name=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    ),
+                )
                 return
 
             if t.text.strip() == "":
                 self.ten_env.log_info("Received empty text for TTS request")
                 if t.text_input_end:
                     self.current_request_finished = True
+                return
+
+            if self.current_request_id in self.flushed_request_ids:
+                self.ten_env.log_info(f"Request {self.current_request_id} was flushed. Stopping processing.")
+                self.flushed_request_ids.remove(self.current_request_id)
                 return
 
             # Record TTFB timing
@@ -279,12 +300,16 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             # Get audio stream from Minimax TTS
             self.ten_env.log_info(f"Calling client.get() with text: {t.text}")
             data = self.client.get(t.text)
-            self.ten_env.log_info(f"Got data generator: {data}")
             first_chunk = True
 
             self.ten_env.log_info("Starting async for loop to process audio chunks")
             chunk_count = 0
             async for audio_chunk, event_status in data:
+                if self.current_request_id in self.flushed_request_ids:
+                    self.ten_env.log_info(f"Request {self.current_request_id} was flushed. Stopping processing.")
+                    self.flushed_request_ids.remove(self.current_request_id)
+                    break
+
                 self.ten_env.log_info(f"Received event_status: {event_status}")
                 if event_status == EVENT_TTSResponse:
                     if audio_chunk is not None and len(audio_chunk) > 0:
@@ -315,9 +340,18 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
 
                 elif event_status == EVENT_TTSSentenceEnd:
                     self.ten_env.log_info("Received TTSSentenceEnd event from Minimax TTS")
+                    duration_ms = self._calculate_audio_duration_ms()
+                    await self.send_tts_text_result(TTSTextResult(
+                        request_id=self.current_request_id,
+                        text=t.text,
+                        text_input_end=t.text_input_end,
+                        start_ms=0,
+                        duration_ms=duration_ms,
+                        words=[],
+                        metadata={},
+                    ))
                     # Send TTS audio end event
                     if self.sent_ts:
-                        duration_ms = self._calculate_audio_duration_ms()
                         request_event_interval = int((datetime.now() - self.sent_ts).total_seconds() * 1000)
                         await self.send_tts_audio_end(
                             self.current_request_id,
@@ -326,18 +360,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                             self.current_turn_id,
                         )
                         self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms")
-                    break
-                elif event_status == EVENT_TTSFlush:
-                    self.ten_env.log_info("Received TTSFlush event, sending audio end with flush reason.")
-                    duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_audio_end(
-                        self.current_request_id,
-                        duration_ms,
-                        duration_ms,  # Using same for request_event_interval for now
-                        self.current_turn_id,
-                        TTSAudioEndReason.INTERRUPTED
-                    )
-                    self.ten_env.log_info(f"KEYPOINT Sent TTS audio end event due to flush, duration: {duration_ms}ms")
                     break
 
             self.ten_env.log_info(f"TTS processing completed, total chunks: {chunk_count}")

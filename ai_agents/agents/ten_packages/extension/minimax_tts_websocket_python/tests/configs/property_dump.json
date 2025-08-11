@@ -1,0 +1,6 @@
+{
+    "api_key": "${env:MINIMAX_TTS_KEY}",
+    "group_id": "${env:MINIMAX_TTS_GROUPID}",
+    "dump": true,
+    "dump_path": "./tests/dump_output/"
+}

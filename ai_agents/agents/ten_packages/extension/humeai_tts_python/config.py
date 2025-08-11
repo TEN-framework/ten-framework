@@ -1,5 +1,4 @@
 from typing import Any, Dict
-import copy
 from pydantic import BaseModel, Field
 
 
@@ -17,7 +16,7 @@ def mask_sensitive_data(
 
 
 class HumeAiTTSConfig(BaseModel):
-    key: str
+    key: str = ""
     adjust_volume: int = 1000
     dump: bool = False
     dump_path: str = "/tmp"
@@ -41,7 +40,6 @@ class HumeAiTTSConfig(BaseModel):
         return f"{config}"
 
     def update_params(self) -> None:
-        # This function allows overriding default config values with 'params' from property.json
-        for key, value in self.params.items():
+        for key, value in self.params.items():  # pylint: disable=no-member
             if hasattr(self, key):
                 setattr(self, key, value)

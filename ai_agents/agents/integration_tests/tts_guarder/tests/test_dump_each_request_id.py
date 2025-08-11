@@ -161,7 +161,7 @@ class DumperByRequestTester(AsyncExtensionTester):
                 ten_env.log_info("✅ Two TTS audio end received, check dump file number")
                 self._check_dump_file_number(ten_env)
             return
-    
+
     def _check_dump_file_number(self, ten_env: AsyncTenEnvTester) -> None:
         """Check if there are exactly two dump files in the directory."""
         # 检查 TTS extension dump 目录下的文件数量
@@ -169,33 +169,33 @@ class DumperByRequestTester(AsyncExtensionTester):
             ten_env.log_error("tts_extension_dump_folder not set")
             self._stop_test_with_error(ten_env, "tts_extension_dump_folder not configured")
             return
-        
+
         if not os.path.exists(self.tts_extension_dump_folder):
             self._stop_test_with_error(ten_env, f"TTS extension dump folder not found: {self.tts_extension_dump_folder}")
             return
-        
+
         # 获取目录下的所有文件
         time.sleep(1)
         dump_files = []
         for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
             if os.path.isfile(file_path):
                 dump_files.append(file_path)
-        
+
         ten_env.log_info(f"Found {len(dump_files)} dump files in {self.tts_extension_dump_folder}")
         for i, file_path in enumerate(dump_files):
             ten_env.log_info(f"  {i+1}. {os.path.basename(file_path)}")
-        
+
         # 检查是否有恰好两个 dump 文件
         if len(dump_files) == 2:
             ten_env.log_info("✅ Found exactly 2 dump files as expected")
-            
+
             ten_env.stop_test()
         elif len(dump_files) > 2:
             self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly 2")
         else:
             self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly 2")
-        
-        
+
+
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
@@ -243,11 +243,11 @@ def test_dump_each_request_id(extension_name: str, config_dir: str) -> None:
 
 
     # Create and run tester
-    tester = DumpTester(
+    tester = DumperByRequestTester(
         session_id="test_dump_each_request_id_session_123",
         text="hello world, hello agora, hello shanghai, nice to meet you!",
     )
-    
+
     # Set the tts_extension_dump_folder for the tester
     tester.tts_extension_dump_folder = config["dump_path"]
 

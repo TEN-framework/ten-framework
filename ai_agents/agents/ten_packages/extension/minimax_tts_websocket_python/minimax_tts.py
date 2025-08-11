@@ -3,14 +3,12 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import asyncio
 import copy
 import json
 import ssl
 import time
 import websockets
 from typing import AsyncIterator
-from dataclasses import dataclass
 
 from ten_runtime import AsyncTenEnv
 from .config import MinimaxTTSWebsocketConfig
@@ -45,7 +43,7 @@ class MinimaxTTSWebsocket:
         self.stopping: bool = False
         self._is_cancelled: bool = False
         self._connection_is_dirty: bool = False
-        self.ws: websockets.ClientConnection | None = None
+        self.ws: websockets.ClientConnection | None = None # pylint: disable=no-member
         self.session_id: str = ""
         self.session_trace_id: str = ""
 
@@ -197,7 +195,6 @@ class MinimaxTTSWebsocket:
         if not self.ws:
             return
 
-        time_before_send = time.time()
         ws_req = {"event": "task_continue", "text": text}
 
         if self.ten_env:
@@ -274,21 +271,17 @@ class MinimaxTTSWebsocket:
                         self.ten_env.log_info("Cancellation flag detected, stopping TTS processing.")
                     break
 
-            except websockets.exceptions.ConnectionClosed:
-                if self.ten_env:
-                    if self._is_cancelled:
-                        self.ten_env.log_info("Websocket connection closed due to cancellation.")
-                        yield None, EVENT_TTSFlush
-                    else:
-                        self.ten_env.log_warn("Websocket connection closed during TTS processing")
-                self.ws = None
-                break
             except websockets.exceptions.ConnectionClosedOK:
                 if self.ten_env:
                     if self._is_cancelled:
                         self.ten_env.log_warn("Websocket connection closed OK during TTS processing (cancelled)")
                     else:
                         self.ten_env.log_warn("Websocket connection closed OK during TTS processing")
+                self.ws = None
+                break
+            except websockets.exceptions.ConnectionClosed:
+                if self.ten_env:
+                    self.ten_env.log_warn("Websocket connection closed during TTS processing")
                 self.ws = None
                 break
             except Exception as e:
