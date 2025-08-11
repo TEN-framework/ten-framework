@@ -11,61 +11,9 @@
 
 namespace {
 
-class test_normal_extension_1 : public ten::extension_t {
+class test_extension_1 : public ten::extension_t {
  public:
-  explicit test_normal_extension_1(const char *name) : ten::extension_t(name) {}
-
-  void on_start(ten::ten_env_t &ten_env) override {
-    ten_env.send_cmd(ten::cmd_t::create("A"),
-                     [](ten::ten_env_t &ten_env,
-                        std::unique_ptr<ten::cmd_result_t> cmd_result,
-                        ten::error_t *err) { ten_env.on_start_done(); });
-  }
-};
-
-class test_normal_extension_2 : public ten::extension_t {
- public:
-  explicit test_normal_extension_2(const char *name) : ten::extension_t(name) {}
-
-  void on_cmd(ten::ten_env_t &ten_env,
-              std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "B") {
-      ten_env.return_result(
-          ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd));
-    } else {
-      auto cmd_name = cmd->get_name();
-      auto error_msg =
-          "test_normal_extension_2 received unexpected cmd: " + cmd_name;
-
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
-      TEN_ASSERT(0, "Should not happen.");
-    }
-  }
-};
-
-class test_normal_extension_3 : public ten::extension_t {
- public:
-  explicit test_normal_extension_3(const char *name) : ten::extension_t(name) {}
-
-  void on_cmd(ten::ten_env_t &ten_env,
-              std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "A") {
-      ten_env.return_result(
-          ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd));
-    } else {
-      auto cmd_name = cmd->get_name();
-      auto error_msg =
-          "test_normal_extension_3 received unexpected cmd: " + cmd_name;
-
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
-      TEN_ASSERT(0, "Should not happen.");
-    }
-  }
-};
-
-class test_predefined_graph : public ten::extension_t {
- public:
-  explicit test_predefined_graph(const char *name) : ten::extension_t(name) {}
+  explicit test_extension_1(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
     auto start_graph_cmd = ten::cmd_start_graph_t::create();
@@ -73,29 +21,29 @@ class test_predefined_graph : public ten::extension_t {
     start_graph_cmd->set_graph_from_json(R"({
       "nodes": [{
         "type": "extension",
-        "name": "normal_extension_1",
-        "addon": "start_graph_with_msg_conversion__normal_extension_1",
-        "extension_group": "start_graph_with_msg_conversion__normal_extension_group_1"
+        "name": "test_extension_2",
+        "addon": "start_graph_with_msg_conversion_1__test_extension_2",
+        "extension_group": "start_graph_with_msg_conversion_1__test_extension_2_group"
       }, {
         "type": "extension",
-        "name": "normal_extension_2",
-        "addon": "start_graph_with_msg_conversion__normal_extension_2",
-        "extension_group": "start_graph_with_msg_conversion__normal_extension_group_2"
+        "name": "test_extension_3",
+        "addon": "start_graph_with_msg_conversion_1__test_extension_3",
+        "extension_group": "start_graph_with_msg_conversion_1__test_extension_3_group"
       }, {
         "type": "extension",
-        "name": "normal_extension_3",
-        "addon": "start_graph_with_msg_conversion__normal_extension_3",
-        "extension_group": "start_graph_with_msg_conversion__normal_extension_group_3"
+        "name": "test_extension_4",
+        "addon": "start_graph_with_msg_conversion_1__test_extension_4",
+        "extension_group": "start_graph_with_msg_conversion_1__test_extension_4_group"
       }],
       "connections": [
         {
-          "extension": "normal_extension_1",
+          "extension": "test_extension_2",
           "cmd": [
             {
               "name": "A",
               "dest": [
                 {
-                  "extension": "normal_extension_2",
+                  "extension": "test_extension_3",
                   "msg_conversion": {
                     "keep_original": true,
                     "type": "per_property",
@@ -107,7 +55,7 @@ class test_predefined_graph : public ten::extension_t {
                   }
                 },
                 {
-                  "extension": "normal_extension_3"
+                  "extension": "test_extension_4"
                 }
               ]
             }
@@ -176,44 +124,96 @@ class test_predefined_graph : public ten::extension_t {
   std::unique_ptr<ten::cmd_t> test_cmd;
 };
 
+class test_extension_2 : public ten::extension_t {
+ public:
+  explicit test_extension_2(const char *name) : ten::extension_t(name) {}
+
+  void on_start(ten::ten_env_t &ten_env) override {
+    ten_env.send_cmd(ten::cmd_t::create("A"),
+                     [](ten::ten_env_t &ten_env,
+                        std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
+                        ten::error_t * /* err */) { ten_env.on_start_done(); });
+  }
+};
+
+class test_extension_3 : public ten::extension_t {
+ public:
+  explicit test_extension_3(const char *name) : ten::extension_t(name) {}
+
+  void on_cmd(ten::ten_env_t &ten_env,
+              std::unique_ptr<ten::cmd_t> cmd) override {
+    auto cmd_name = cmd->get_name();
+
+    if (cmd_name == "B") {
+      ten_env.return_result(
+          ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd));
+    } else {
+      auto error_msg = "test_extension_3 received unexpected cmd: " + cmd_name;
+
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  }
+};
+
+class test_extension_4 : public ten::extension_t {
+ public:
+  explicit test_extension_4(const char *name) : ten::extension_t(name) {}
+
+  void on_cmd(ten::ten_env_t &ten_env,
+              std::unique_ptr<ten::cmd_t> cmd) override {
+    auto cmd_name = cmd->get_name();
+
+    if (cmd_name == "A") {
+      ten_env.return_result(
+          ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd));
+    } else {
+      auto error_msg = "test_extension_4 received unexpected cmd: " + cmd_name;
+
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  }
+};
+
 class test_app : public ten::app_t {
  public:
   void on_configure(ten::ten_env_t &ten_env) override {
     bool rc = ten::ten_env_internal_accessor_t::init_manifest_from_json(
         ten_env,
         // clang-format off
-                 R"({
-                      "type": "app",
-                      "name": "test_app",
-                      "version": "0.1.0"
-                    })"
+        R"({
+             "type": "app",
+             "name": "test_app",
+             "version": "0.1.0"
+           })"
         // clang-format on
     );
     ASSERT_EQ(rc, true);
 
     rc = ten_env.init_property_from_json(
         // clang-format off
-                 R"({
-                      "ten": {
-                        "uri": "msgpack://127.0.0.1:8001/",
-                        "log": {
-                          "level": 2
-                        },
-                        "predefined_graphs": [{
-                          "name": "default",
-                          "auto_start": false,
-                          "singleton": true,
-                          "graph": {
-                            "nodes": [{
-                              "type": "extension",
-                              "name": "predefined_graph",
-                              "addon": "start_graph_with_msg_conversion__predefined_graph_extension",
-                              "extension_group": "start_graph_with_msg_conversion__predefined_graph_group"
-                            }]
-                          }
-                        }]
-                      }
-                    })"
+        R"({
+             "ten": {
+               "uri": "msgpack://127.0.0.1:8001/",
+               "log": {
+                 "level": 2
+               },
+               "predefined_graphs": [{
+                 "name": "default",
+                 "auto_start": false,
+                 "singleton": true,
+                 "graph": {
+                   "nodes": [{
+                     "type": "extension",
+                     "name": "test_extension_1",
+                     "addon": "start_graph_with_msg_conversion_1__test_extension_1",
+                     "extension_group": "start_graph_with_msg_conversion_1__test_extension_1_group"
+                   }]
+                 }
+               }]
+             }
+           })"
         // clang-format on
     );
     ASSERT_EQ(rc, true);
@@ -231,21 +231,17 @@ void *app_thread_main(TEN_UNUSED void *args) {
 }
 
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__predefined_graph_extension,
-    test_predefined_graph);
+    start_graph_with_msg_conversion_1__test_extension_1, test_extension_1);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_1,
-    test_normal_extension_1);
+    start_graph_with_msg_conversion_1__test_extension_2, test_extension_2);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_2,
-    test_normal_extension_2);
+    start_graph_with_msg_conversion_1__test_extension_3, test_extension_3);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    start_graph_with_msg_conversion__normal_extension_3,
-    test_normal_extension_3);
+    start_graph_with_msg_conversion_1__test_extension_4, test_extension_4);
 
 }  // namespace
 
-TEST(StartGraphTest, StartGraphWithMsgConversion) {  // NOLINT
+TEST(StartGraphTest, StartGraphWithMsgConversion1) {  // NOLINT
   auto *app_thread = ten_thread_create("app thread", app_thread_main, nullptr);
 
   // Create a client and connect to the app.
@@ -256,7 +252,7 @@ TEST(StartGraphTest, StartGraphWithMsgConversion) {  // NOLINT
   // request to predefined graph.
   auto test_cmd = ten::cmd_t::create("test");
   test_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "default", "predefined_graph"}});
+      {{"msgpack://127.0.0.1:8001/", "default", "test_extension_1"}});
   auto cmd_result = client->send_cmd_and_recv_result(std::move(test_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_json(cmd_result, R"({"id": 1, "name": "a"})");
