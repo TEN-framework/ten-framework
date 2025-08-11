@@ -1,10 +1,10 @@
 {
     "params": {
         "project_id": "${env:GOOGLE_ASR_PROJECT_ID}",
-        "location": "global",
+        "location": "asia-southeast1",
         "adc_credentials_path": "${env:GOOGLE_APPLICATION_CREDENTIALS}",
-        "language": "en-US",
-        "model": "long",
+        "language": "cmn-Hans-CN",
+        "model": "chirp",
         "sample_rate": 16000,
         "channels": 1,
         "encoding": "LINEAR16",

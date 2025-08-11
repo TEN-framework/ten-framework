@@ -1,8 +1,7 @@
 import asyncio
 import os
-import time
-from queue import Queue, Empty
-from typing import Callable, Awaitable, Any
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from google.cloud import speech_v2 as speech
 from google.cloud.speech_v2.types import (
@@ -10,9 +9,11 @@ from google.cloud.speech_v2.types import (
     StreamingRecognizeRequest,
 )
 from google.api_core import exceptions as gcp_exceptions
+from google.api_core.client_options import ClientOptions
 import grpc
 
 from ten_ai_base.struct import ASRResult, ASRWord
+
 from ten_runtime import AsyncTenEnv
 
 from .config import GoogleASRConfig
@@ -34,10 +35,25 @@ class GoogleASRClient:
         self.on_error_callback = on_error_callback
 
         self.speech_client: speech.SpeechAsyncClient | None = None
-        self._audio_queue: Queue = Queue()
+        self._audio_queue: asyncio.Queue = asyncio.Queue()
         self._recognition_task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
         self.is_finalizing = False
+        self._has_sent_final_result = False
+
+    def _normalize_language_code(self, code: str | None) -> str:
+        """Normalize provider language codes to framework-expected ones.
+
+        - Map Google V2 Chinese codes like `cmn-Hans-CN`/`cmn-Hans` to `zh-CN`
+        - Preserve known English code `en-US`
+        - Fallback to original code if no mapping is needed
+        """
+        if not code:
+            return ""
+        lowered = code.strip()
+        if lowered.startswith("cmn-Hans"):
+            return "zh-CN"
+        return lowered
 
     async def start(self) -> None:
         """Initializes the client and starts the recognition stream."""
@@ -75,19 +91,39 @@ class GoogleASRClient:
             else:
                 self.ten_env.log_info("No ADC credentials path specified, using default ADC")
 
+            # Choose regional endpoint if location is set and not global
+            api_endpoint: str | None = None
+            if getattr(self.config, "location", "global") and self.config.location != "global":
+                api_endpoint = f"{self.config.location}-speech.googleapis.com"
+                self.ten_env.log_info(f"Using regional endpoint: {api_endpoint}")
+
+            client_options = ClientOptions(api_endpoint=api_endpoint) if api_endpoint else None
+
             # Create client with ADC (Application Default Credentials)
             # This will automatically use the best available credentials
             if credentials_path:
                 # Explicitly pass credentials to ensure they are used
                 from google.auth import default
                 credentials, project = default()
-                self.speech_client = speech.SpeechAsyncClient(credentials=credentials)
+                if client_options:
+                    self.speech_client = speech.SpeechAsyncClient(
+                        credentials=credentials, client_options=client_options
+                    )
+                else:
+                    self.speech_client = speech.SpeechAsyncClient(
+                        credentials=credentials
+                    )
                 self.ten_env.log_info(
                     f"Initialized Google Speech V2 client with explicit credentials from {credentials_path}"
                 )
             else:
                 # Use default ADC
-                self.speech_client = speech.SpeechAsyncClient()
+                if client_options:
+                    self.speech_client = speech.SpeechAsyncClient(
+                        client_options=client_options
+                    )
+                else:
+                    self.speech_client = speech.SpeechAsyncClient()
                 self.ten_env.log_info(
                     "Initialized Google Speech V2 client with Application Default Credentials"
                 )
@@ -104,10 +140,13 @@ class GoogleASRClient:
             self._stop_event.set()
             # Drain the queue to unblock the generator
             while not self._audio_queue.empty():
-                self._audio_queue.get_nowait()
-            self._audio_queue.put(None)  # Signal generator to stop
+                try:
+                    await self._audio_queue.get()
+                except Exception:
+                    break
+            await self._audio_queue.put(None)  # Signal generator to stop
             try:
-                await asyncio.wait_for(self._recognition_task, timeout=5.0)
+                await asyncio.wait_for(self._recognition_task, timeout=1.0)
             except asyncio.TimeoutError:
                 self.ten_env.log_warn(
                     "Recognition task did not stop gracefully, cancelling."
@@ -119,13 +158,13 @@ class GoogleASRClient:
     async def send_audio(self, chunk: bytes) -> None:
         """Adds an audio chunk to the processing queue."""
         if not self._stop_event.is_set():
-            self._audio_queue.put(chunk)
+            await self._audio_queue.put(chunk)
 
     async def finalize(self) -> None:
         """Signals that the current utterance is complete."""
         self.ten_env.log_info("Finalizing utterance.")
         self.is_finalizing = True
-        self._audio_queue.put(None)  # Signal end of audio stream
+        await self._audio_queue.put(None)  # Signal end of audio stream
 
     async def _audio_generator(self):
         """Yields audio chunks from the queue for the gRPC stream."""
@@ -135,7 +174,7 @@ class GoogleASRClient:
             streaming_config = StreamingRecognitionConfig(
                 config=config,
                 streaming_features={
-                    "interim_results": self.config.interim_results
+                    "interim_results": self.config.interim_results,
                 },
             )
             recognizer_path = self.config.get_recognizer_path()
@@ -160,17 +199,11 @@ class GoogleASRClient:
                 raise ValueError("Recognizer path is required for Google Cloud Speech V2 API")
 
             while not self._stop_event.is_set():
-                try:
-                    chunk = self._audio_queue.get_nowait()
-                    if chunk is None:
-                        self.ten_env.log_info("Received end-of-stream signal")
-                        break
-                    # self.ten_env.log_info(
-                    #     f"Sending audio chunk of size {len(chunk)} bytes"
-                    # )
-                    yield speech.StreamingRecognizeRequest(audio=chunk)
-                except Empty:
-                    await asyncio.sleep(0.01)  # Wait for more audio
+                chunk = await self._audio_queue.get()
+                if chunk is None:
+                    self.ten_env.log_info("Received end-of-stream signal")
+                    break
+                yield speech.StreamingRecognizeRequest(audio=chunk)
         except Exception as e:
             self.ten_env.log_error(f"Error in audio generator: {e}")
             await self.on_error_callback(500, str(e))
@@ -193,14 +226,27 @@ class GoogleASRClient:
                     responses = await self.speech_client.streaming_recognize(
                         requests=requests
                     )
-                    self.ten_env.log_info("Got streaming response iterator")
-                    self.ten_env.log_info(f"Responses: {responses}")
+                    if getattr(self.config, "enable_detailed_logging", False):
+                        self.ten_env.log_info("Got streaming response iterator")
+                        self.ten_env.log_debug(f"Responses: {responses}")
 
                     async for response in responses:
                         if self._stop_event.is_set():
                             break
-                        self.ten_env.log_info(f"Received response: {response}")
+                        if getattr(self.config, "enable_detailed_logging", False):
+                            self.ten_env.log_debug(f"Received response: {response}")
                         await self._process_response(response)
+                except grpc.RpcError as e:
+                    error_code = (
+                        e.code().value[0]
+                        if hasattr(e, "code") and hasattr(e.code(), "value")
+                        else 500
+                    )
+                    error_message = e.details() if hasattr(e, "details") else str(e)
+                    self.ten_env.log_error(
+                        f"gRPC error in streaming_recognize ({error_code}): {error_message}"
+                    )
+                    await self.on_error_callback(error_code, error_message)
                 except Exception as e:
                     self.ten_env.log_error(f"Error in streaming_recognize: {e}")
                     await self.on_error_callback(500, str(e))
@@ -262,9 +308,10 @@ class GoogleASRClient:
         self, response: speech.StreamingRecognizeResponse
     ) -> None:
         """Process a streaming recognition response and trigger callbacks."""
-        self.ten_env.log_info(
-            f"Processing response with {len(response.results)} results"
-        )
+        if getattr(self.config, "enable_detailed_logging", False):
+            self.ten_env.log_info(
+                f"Processing response with {len(response.results)} results"
+            )
         for result in response.results:
             if not result.alternatives:
                 self.ten_env.log_info("Skipping result with no alternatives")
@@ -272,25 +319,32 @@ class GoogleASRClient:
 
             # We'll use the first alternative as the primary result.
             first_alt = result.alternatives[0]
-            words = [
-                ASRWord(
-                    text=word.word,
-                    start_ms=int(word.start_offset.total_seconds() * 1000),
-                    duration_ms=int(
-                        (word.end_offset - word.start_offset).total_seconds()
-                        * 1000
-                    ),
-                    confidence=word.confidence,
+            words = []
+            for w in first_alt.words:
+                start_ms = int(w.start_offset.total_seconds() * 1000)
+                duration_ms = int(
+                    (w.end_offset - w.start_offset).total_seconds() * 1000
                 )
-                for word in first_alt.words
-            ]
+                # Align with ASRWord schema used elsewhere in the project
+                words.append(
+                    ASRWord(
+                        word=w.word,
+                        start_ms=start_ms,
+                        duration_ms=duration_ms,
+                        stable=bool(result.is_final),
+                    )
+                )
+
+            normalized_lang = self._normalize_language_code(result.language_code)
+            if not normalized_lang:
+                normalized_lang = self._normalize_language_code(self.config.language)
 
             asr_result = ASRResult(
-                is_final=result.is_final,
+                final=result.is_final,
                 text=first_alt.transcript,
                 words=words,
                 confidence=first_alt.confidence,
-                language=result.language_code,
+                language=normalized_lang,
                 start_ms=(int(words[0].start_ms) if words else 0),
                 duration_ms=(
                     int(
@@ -303,6 +357,8 @@ class GoogleASRClient:
                 ),
             )
             await self.on_result_callback(asr_result)
+            if result.is_final:
+                self._has_sent_final_result = True
 
     def _is_retryable_error(self, error: Exception) -> bool:
         """Check if a gRPC/API error is retryable."""

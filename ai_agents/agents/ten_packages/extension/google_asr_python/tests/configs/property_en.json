@@ -4,12 +4,12 @@
         "location": "global",
         "adc_credentials_path": "${env:GOOGLE_APPLICATION_CREDENTIALS}",
         "language": "en-US",
+        "model": "long",
         "sample_rate": 16000,
         "channels": 1,
         "encoding": "LINEAR16",
         "enable_automatic_punctuation": true,
         "enable_word_time_offsets": true,
-        "enable_word_confidence": true,
         "interim_results": true,
         "max_retry_attempts": 3,
         "retry_delay": 1.0
