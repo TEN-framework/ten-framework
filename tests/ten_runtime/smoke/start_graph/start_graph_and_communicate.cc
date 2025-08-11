@@ -63,7 +63,7 @@ class test_extension_1 : public ten::extension_t {
                            std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
                            ten::error_t * /* err */) {
                       // Received the response from test_extension_2.
-                      received_hello_world_resp = true;
+                      start_and_stop_graph_is_completed = true;
 
                       if (test_cmd != nullptr) {
                         // Send the response to the client.
@@ -86,7 +86,7 @@ class test_extension_1 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "test") {
-      if (received_hello_world_resp) {
+      if (start_and_stop_graph_is_completed) {
         // Send the response to the client.
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
 
@@ -105,7 +105,7 @@ class test_extension_1 : public ten::extension_t {
   }
 
  private:
-  bool received_hello_world_resp{};
+  bool start_and_stop_graph_is_completed{};
   std::unique_ptr<ten::cmd_t> test_cmd;
 };
 

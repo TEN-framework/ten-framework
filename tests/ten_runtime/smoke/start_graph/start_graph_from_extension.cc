@@ -53,7 +53,7 @@ class test_extension_1 : public ten::extension_t {
               [this](ten::ten_env_t &ten_env,
                      std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
                      ten::error_t * /* err */) {
-                start_graph_cmd_is_done = true;
+                start_and_stop_graph_is_completed = true;
 
                 if (test_cmd != nullptr) {
                   nlohmann::json detail = {{"id", 1}, {"name", "a"}};
@@ -73,7 +73,7 @@ class test_extension_1 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "test") {
-      if (start_graph_cmd_is_done) {
+      if (start_and_stop_graph_is_completed) {
         nlohmann::json detail = {{"id", 1}, {"name", "a"}};
 
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -89,7 +89,7 @@ class test_extension_1 : public ten::extension_t {
   }
 
  private:
-  bool start_graph_cmd_is_done{};
+  bool start_and_stop_graph_is_completed{};
   std::unique_ptr<ten::cmd_t> test_cmd;
 };
 
