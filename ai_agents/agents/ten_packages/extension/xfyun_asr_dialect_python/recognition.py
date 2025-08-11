@@ -4,20 +4,14 @@ import datetime
 import hashlib
 import base64
 import hmac
-import os
 import urllib.parse
 import uuid
-from urllib.parse import urlencode
-import time
 import ssl
-from wsgiref.handlers import format_date_time
 from datetime import datetime
-from time import mktime
 import json
 from .const import TIMEOUT_CODE
 from collections import OrderedDict
 
-# 导入 websockets 相关的异常和状态
 from websockets.exceptions import ConnectionClosed
 from websockets.protocol import State
 
@@ -31,22 +25,17 @@ class XfyunWSRecognitionCallback:
 
     async def on_open(self):
         """Called when connection is established"""
-        pass
-
     async def on_result(self, message_data):
         """
         Recognition result callback
         :param message_data: Complete recognition result data
         """
-        pass
 
     async def on_error(self, error_msg, error_code=None):
         """Error callback"""
-        pass
 
     async def on_close(self):
         """Called when connection is closed"""
-        pass
 
 
 class XfyunWSRecognition:

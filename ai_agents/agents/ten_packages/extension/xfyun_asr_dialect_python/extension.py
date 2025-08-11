@@ -6,7 +6,6 @@ from typing_extensions import override
 from .const import (
     DUMP_FILE_NAME,
     MODULE_NAME_ASR,
-    TIMEOUT_CODE,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
