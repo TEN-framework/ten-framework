@@ -54,16 +54,16 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
             if "test_miss_required_params" in current_test or "test_invalid_required_params" in current_test:
                 ten_env.log_error(f"FATAL: {current_test} detected - simulating missing/invalid required parameters")
-                
+
                 # Fixed ModuleError structure as per PR feedback
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
-                
+
                 error_info = ModuleErrorVendorInfo(
                     vendor="deepgram",
                     code="MISSING_API_KEY",
                     message="Deepgram API key is required"
                 )
-                
+
                 error = ModuleError(
                     message="Deepgram API key is required",
                     module_name=ModuleType.TTS,
@@ -90,19 +90,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             ten_env.log_info(f"Initializing Deepgram TTS with model: {self.config.model}, voice: {self.config.voice}")
             self.client = DeepgramTTS(self.config)
-            ten_env.log_info("DeepgramTTS extension initialized successfully")
-
-        except Exception as e:
-            ten_env.log_error(f"Failed to initialize Deepgram TTS: {str(e)}")
-            ten_env.log_error(f"Traceback: {traceback.format_exc()}")
-            # Send fatal error for any other initialization failures
-            await self._send_initialization_error(f"Failed to initialize Deepgram TTS: {str(e)}")
-
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        """Start the extension - only handles WebSocket connection and startup tasks"""
-        try:
-            await super().on_start(ten_env)
-            ten_env.log_debug("DeepgramTTS on_start - STARTING UP")
 
             # Initialize persistent WebSocket connection
             await self.client.initialize(ten_env)
@@ -118,13 +105,24 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     await self._process_tts_request(queued_request)
                 self.pending_requests.clear()
 
-            ten_env.log_info("DeepgramTTS extension started successfully with persistent WebSocket")
+            ten_env.log_info("DeepgramTTS extension initialized successfully with WebSocket")
+
+        except Exception as e:
+            ten_env.log_error(f"Failed to initialize Deepgram TTS: {str(e)}")
+            ten_env.log_error(f"Traceback: {traceback.format_exc()}")
+            # Send fatal error for any other initialization failures
+            await self._send_initialization_error(f"Failed to initialize Deepgram TTS: {str(e)}")
+
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        """Start the extension - only call parent on_start"""
+        try:
+            ten_env.log_info("DeepgramTTS extension on_start called")
+            await super().on_start(ten_env)
+            ten_env.log_info("DeepgramTTS extension started successfully")
 
         except Exception as e:
             ten_env.log_error(f"Failed to start Deepgram TTS: {str(e)}")
             ten_env.log_error(f"Traceback: {traceback.format_exc()}")
-            # Send fatal error for any other initialization failures
-            await self._send_initialization_error(f"Failed to start Deepgram TTS: {str(e)}")
 
     async def _send_initialization_error(self, message: str):
         """Send initialization error using TTS2 base class method"""
@@ -137,7 +135,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 code="INITIALIZATION_ERROR",
                 message=message
             )
-            
+
             error = ModuleError(
                 message=message,
                 module_name=ModuleType.TTS,
@@ -167,20 +165,20 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         """Handle TTS request using TTS2 interface"""
         try:
             self.ten_env.log_info(f"Received TTS request: {t.request_id} - {t.text[:50]}...")
-            
+
             # Text validation removed as per PR feedback - not necessary unless handling special Deepgram behaviors
 
             # Check circuit breaker before processing
             if not self._should_allow_request():
                 self.ten_env.log_error("KEYPOINT: Circuit breaker OPEN - rejecting TTS request")
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
-                
+
                 error_info = ModuleErrorVendorInfo(
                     vendor="deepgram",
                     code="SERVICE_UNAVAILABLE",
                     message="Service temporarily unavailable due to connection issues"
                 )
-                
+
                 error = ModuleError(
                     message="Service temporarily unavailable due to connection issues",
                     module_name=ModuleType.TTS,
@@ -205,13 +203,13 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             # Send error notification with fixed ModuleError structure
             from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
-            
+
             error_info = ModuleErrorVendorInfo(
                 vendor="deepgram",
                 code="REQUEST_PROCESSING_ERROR",
                 message=f"Failed to process TTS request: {str(e)}"
             )
-            
+
             error = ModuleError(
                 message=f"Failed to process TTS request: {str(e)}",
                 module_name=ModuleType.TTS,
@@ -310,13 +308,13 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             # Send error notification with fixed ModuleError structure
             from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
-            
+
             error_info = ModuleErrorVendorInfo(
                 vendor="deepgram",
                 code="PROCESSING_ERROR",
                 message=f"Failed to process TTS request: {str(e)}"
             )
-            
+
             error = ModuleError(
                 message=f"Failed to process TTS request: {str(e)}",
                 module_name=ModuleType.TTS,
@@ -349,16 +347,16 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
     def _should_allow_request(self) -> bool:
         """
         Circuit breaker pattern - prevents requests during system failures.
-        
+
         This implements a basic circuit breaker to protect against cascading failures
         when the Deepgram API is experiencing issues. The circuit breaker has three states:
         - CLOSED: Normal operation, requests are allowed
         - OPEN: Too many failures detected, requests are rejected
         - HALF_OPEN: Testing if service has recovered
-        
+
         The circuit breaker tracks failure counts and automatically transitions between
         states based on failure thresholds and recovery timeouts.
-        
+
         Returns:
             bool: True if request should be allowed, False if circuit breaker is open
         """
@@ -430,4 +428,3 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling data: {str(e)}")
-
