@@ -79,6 +79,12 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.recognition_callback: Optional[XfyunRecognitionCallback] = None
 
     @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_deinit(ten_env)
+        if self.audio_dumper:
+            await self.audio_dumper.stop()
+            self.audio_dumper = None
+    @override
     def vendor(self) -> str:
         """Get ASR vendor name"""
         return "xfyun_bigmodel"
@@ -519,9 +525,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             if self.audio_buffer_manager:
                 self.audio_buffer_manager.reset()
                 self.ten_env.log_debug("Audio buffer manager reset")
-
-            if self.audio_dumper:
-                await self.audio_dumper.stop()
 
         except Exception as e:
             self.ten_env.log_error(f"Error stopping Xfyun ASR connection: {e}")

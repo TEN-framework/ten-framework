@@ -83,6 +83,13 @@ class XfyunDialectASRExtension(AsyncASRBaseExtension):
         self.audio_buffer_manager: Optional[AudioBufferManager] = None
 
     @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_deinit(ten_env)
+        if self.audio_dumper:
+            await self.audio_dumper.stop()
+            self.audio_dumper = None
+
+    @override
     def vendor(self) -> str:
         """Get ASR vendor name"""
         return "xfyun_dialect"
@@ -469,9 +476,6 @@ class XfyunDialectASRExtension(AsyncASRBaseExtension):
             self.recognition_callback = None
             self.connected = False
             self.ten_env.log_info("Xfyun ASR connection stopped")
-
-            if self.audio_dumper:
-                await self.audio_dumper.stop()
 
         except Exception as e:
             self.ten_env.log_error(f"Error stopping Xfyun ASR connection: {e}")
