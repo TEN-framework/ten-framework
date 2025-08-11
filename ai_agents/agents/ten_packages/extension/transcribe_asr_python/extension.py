@@ -42,6 +42,7 @@ class TranscribeASRExtension(AsyncASRBaseExtension):
         self.event_handler = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_init(ten_env)
         ten_env.log_info("TranscribeASRExtension on_init")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -96,7 +97,7 @@ class TranscribeASRExtension(AsyncASRBaseExtension):
                     code=1,
                     message=str(e),
                     turn_id=0,
-                    module=ModuleType.STT,
+                    module=ModuleType.ASR,
                 )
             )
             asyncio.create_task(self._handle_reconnect())
@@ -162,6 +163,7 @@ class TranscribeASRExtension(AsyncASRBaseExtension):
                 start_ms=0,
                 duration_ms=0,
                 language=self.config.lang_code,
+                words=[],
                 metadata={"session_id": self.session_id},
             )
             await self.send_asr_transcription(transcription)

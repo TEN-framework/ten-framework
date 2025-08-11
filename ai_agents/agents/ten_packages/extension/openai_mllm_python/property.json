@@ -1,0 +1,15 @@
+{
+    "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+    "temperature": 0.9,
+    "model": "gpt-4o-realtime-preview",
+    "max_tokens": 2048,
+    "voice": "alloy",
+    "language": "en-US",
+    "vad_type": "semantic_vad",
+    "vad_eagerness": "auto",
+    "vad_threshold": 0.5,
+    "vad_prefix_padding_ms": 300,
+    "vad_silence_duration_ms": 500,
+    "history": 10,
+    "enable_storage": false
+}

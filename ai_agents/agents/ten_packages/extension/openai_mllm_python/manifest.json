@@ -1,0 +1,202 @@
+{
+  "type": "extension",
+  "name": "openai_mllm_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "realtime/**.tent",
+      "realtime/**.py"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "base_uri": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "float32"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "server_vad": {
+          "type": "bool"
+        },
+        "audio_out": {
+          "type": "bool"
+        },
+        "input_transcript": {
+          "type": "bool"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "max_history": {
+          "type": "int32"
+        },
+        "enable_storage": {
+          "type": "bool"
+        },
+        "vad_type": {
+          "type": "string"
+        },
+        "vad_eagerness": {
+          "type": "string"
+        },
+        "vad_threshold": {
+          "type": "float32"
+        },
+        "vad_prefix_padding_ms": {
+          "type": "int32"
+        },
+        "vad_silence_duration_ms": {
+          "type": "int32"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "tool_register",
+        "property": {
+          "properties": {
+            "tool": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {}
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "description",
+                "parameters"
+              ]
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "response": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      },
+      {
+        "name": "tool_call",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "append",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "properties": {
+            "stream_id": {
+              "type": "int64"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}

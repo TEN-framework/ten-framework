@@ -1,0 +1,8 @@
+{
+    "params": {
+        "api_key": "${env:XFYUN_ASR_API_KEY}",
+        "app_id": "${env:XFYUN_ASR_APP_ID}",
+        "api_secret": "${env:XFYUN_ASR_API_SECRET}",
+        "lang": "zh_cn"
+    }
+}

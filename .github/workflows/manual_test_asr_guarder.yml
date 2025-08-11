@@ -4,28 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       extension:
-        description: 'Extension name (required)'
+        description: "Extension name (required)"
         required: true
         type: string
-        default: 'azure_asr_python'
+        default: "azure_asr_python"
       config_dir:
-        description: 'Config directory (optional)'
+        description: "Config directory (optional)"
         required: false
         type: string
-        default: 'tests/configs'
+        default: "tests/configs"
       branch:
-        description: 'Branch to test (optional, defaults to current branch)'
+        description: "Branch to test (optional, defaults to current branch)"
+        required: false
+        type: string
+        default: ""
+      env_vars:
+        description: 'Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets.'
         required: false
         type: string
         default: ''
-      env_vars:
-        description: 'Environment variables (one per line, format: KEY=VALUE)'
-        required: false
-        type: string
-        default: |
-          # Example:
-          # AZURE_ASR_API_KEY=your_key
-          # AZURE_ASR_REGION=your_region
 
 permissions:
   contents: read
@@ -34,7 +31,12 @@ jobs:
   asr-guarder-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.15
+
+    env:
+      # Import all secrets as environment variables for dynamic access
+      # Users need to create GitHub Secrets with the same names as their env_vars keys
+      _ALL_SECRETS: ${{ toJSON(secrets) }}
 
     steps:
       - name: Checkout code
@@ -55,43 +57,46 @@ jobs:
           echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
 
       - name: Parse and set custom environment variables
+        shell: bash
         run: |
-          echo "Setting up custom environment variables..."
+          echo "Setting up custom environment variables from GitHub Secrets..."
 
-          # Write user input environment variables to a temporary file
-          cat << 'EOF' > /tmp/user_env_vars.txt
-          ${{ github.event.inputs.env_vars }}
-          EOF
+          # Get the input and process semicolon-separated variable keys
+          ENV_INPUT="${{ github.event.inputs.env_vars }}"
 
-          # Parse and set environment variables
           echo "Custom environment variables:"
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            # Skip empty lines and comment lines
-            if [[ -z "$line" ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
-              continue
-            fi
+          if [ -n "$ENV_INPUT" ]; then
+            # Split by semicolon and process each variable key
+            IFS=';' read -ra ENV_ARRAY <<< "$ENV_INPUT"
+            for env_key in "${ENV_ARRAY[@]}"; do
+              # Remove leading/trailing whitespace
+              env_key=$(echo "$env_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
-            # Check if it is in KEY=VALUE format
-            if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*=.* ]]; then
-              key=$(echo "$line" | cut -d'=' -f1 | xargs)
-              value=$(echo "$line" | cut -d'=' -f2- | xargs)
-
-              # Set environment variable
-              echo "${key}=${value}" >> $GITHUB_ENV
-
-              # Display in log (hide sensitive values)
-              if [[ "$key" =~ (KEY|TOKEN|SECRET|PASSWORD|PASS) ]]; then
-                echo "  ✅ ${key}=*** (hidden for security)"
-              else
-                echo "  ✅ ${key}=${value}"
+              # Skip empty entries
+              if [ -z "$env_key" ]; then
+                continue
               fi
-            else
-              echo "  ⚠️  Skipping invalid format: $line"
-            fi
-          done < /tmp/user_env_vars.txt
 
-          # Clean up temporary file
-          rm -f /tmp/user_env_vars.txt
+              # Check if it is a valid variable name (only letters, numbers, underscore, starting with letter or underscore)
+              if echo "$env_key" | grep -q '^[A-Za-z_][A-Za-z0-9_]*$'; then
+                # Extract the secret value from the JSON using jq
+                secret_value=$(echo "$_ALL_SECRETS" | jq -r --arg key "$env_key" '.[$key] // empty')
+
+                if [ -n "$secret_value" ] && [ "$secret_value" != "null" ]; then
+                  # Set environment variable
+                  echo "${env_key}=${secret_value}" >> $GITHUB_ENV
+                  echo "  ✅ ${env_key}=*** (value loaded from GitHub Secrets)"
+                else
+                  echo "  ❌ ${env_key}: GitHub Secret not found or empty"
+                  echo "  ℹ️  Please create a GitHub Secret named '${env_key}' in the repository settings"
+                fi
+              else
+                echo "  ⚠️  Skipping invalid variable name: $env_key"
+              fi
+            done
+          else
+            echo "  ℹ️  No environment variable keys provided"
+          fi
 
       - name: Display test parameters
         run: |
@@ -100,11 +105,12 @@ jobs:
           echo "Extension: ${{ github.event.inputs.extension }}"
           echo "Config Directory: ${{ github.event.inputs.config_dir }}"
           echo ""
-          echo "Custom Environment Variables:"
-          if [[ -n "${{ github.event.inputs.env_vars }}" ]]; then
-            echo "✅ Custom environment variables have been set (see above for details)"
+          echo "Custom Environment Variables Input:"
+          if [ -n "${{ github.event.inputs.env_vars }}" ]; then
+            echo "✅ Environment variable keys provided (semicolon-separated): ${{ github.event.inputs.env_vars }}"
+            echo "📝 Values loaded from GitHub Secrets (see environment parsing step above for details)"
           else
-            echo "ℹ️  No custom environment variables provided"
+            echo "ℹ️  No custom environment variable keys provided"
           fi
           echo "========================================================"
 

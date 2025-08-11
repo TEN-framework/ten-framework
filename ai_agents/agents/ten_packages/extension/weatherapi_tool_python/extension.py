@@ -109,6 +109,9 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_info(f"config: {self.config}")
         if self.config.api_key:
             await super().on_start(ten_env)
+        else:
+            ten_env.log_error("API key is missing, cannot start WeatherToolExtension.")
+            raise ValueError("API key is required for WeatherToolExtension.")
 
         self.ten_env = ten_env
 

@@ -1,0 +1,41 @@
+{
+  "type": "extension",
+  "name": "tts_data_adapter_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "data_out": [
+      {
+        "name": "tts_text_input",
+        "property": {
+          "properties": {
+            "request_id": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "text_input_end": {
+              "type": "bool"
+            }
+        }
+      }
+    }]
+  }
+}
