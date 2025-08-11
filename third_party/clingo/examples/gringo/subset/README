@@ -1,5 +1,0 @@
-Example showcasing the #heuristic directive.  The call below calculates all
-subset minimal models.
-
-Example calls:
-    clingo --heuristic=domain --enum-mode=domRec 0 example.lp

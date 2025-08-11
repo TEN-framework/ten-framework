@@ -12,13 +12,13 @@ mod tests {
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
-            graphs::connections::{
-                get::{
-                    get_graph_connections_endpoint,
-                    GetGraphConnectionsRequestPayload,
-                    GraphConnectionsSingleResponseData,
+            graphs::{
+                connections::{
+                    DesignerGraphConnection, DesignerGraphDestination,
+                    DesignerGraphLoc, DesignerGraphMessageFlow,
                 },
-                DesignerDestination, DesignerMessageFlow,
+                get::{get_graphs_endpoint, GetGraphsRequestPayload},
+                DesignerGraphInfo,
             },
             response::ApiResponse,
             storage::in_memory::TmanStorageInMemory,
@@ -80,17 +80,16 @@ mod tests {
 
         let app = test::init_service(
             App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/connections",
-                web::post().to(get_graph_connections_endpoint),
+                "/api/designer/v1/graphs",
+                web::post().to(get_graphs_endpoint),
             ),
         )
         .await;
 
-        let request_payload =
-            GetGraphConnectionsRequestPayload { graph_id: default_graph_uuid };
+        let request_payload = GetGraphsRequestPayload {};
 
         let req = test::TestRequest::post()
-            .uri("/api/designer/v1/graphs/connections")
+            .uri("/api/designer/v1/graphs")
             .set_json(request_payload)
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -100,32 +99,49 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let connections: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let graphs_response: ApiResponse<Vec<DesignerGraphInfo>> =
             serde_json::from_str(body_str).unwrap();
 
-        let expected_connections = vec![GraphConnectionsSingleResponseData {
-            app: None,
-            extension: "extension_1".to_string(),
-            subgraph: None,
-            cmd: Some(vec![DesignerMessageFlow {
+        // Find the graph with the expected UUID and extract its connections
+        let connections = graphs_response
+            .data
+            .iter()
+            .find(|graph| graph.graph_id == default_graph_uuid)
+            .expect("Graph not found")
+            .graph
+            .connections
+            .clone();
+
+        let expected_connections = vec![DesignerGraphConnection {
+            loc: DesignerGraphLoc {
+                app: None,
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+                selector: None,
+            },
+            cmd: Some(vec![DesignerGraphMessageFlow {
                 name: "hello_world".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
             data: None,
             audio_frame: None,
             video_frame: None,
         }];
 
-        assert_eq!(connections.data, expected_connections);
-        assert!(!connections.data.is_empty());
+        assert_eq!(connections, expected_connections);
+        assert!(!connections.is_empty());
 
-        let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
-            serde_json::from_str(body_str).unwrap();
-        let pretty_json = serde_json::to_string_pretty(&json).unwrap();
+        let pretty_json =
+            serde_json::to_string_pretty(&graphs_response).unwrap();
         println!("Response body: {pretty_json}");
     }
 
@@ -219,17 +235,16 @@ mod tests {
         let designer_state = Arc::new(designer_state);
         let app = test::init_service(
             App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/connections",
-                web::post().to(get_graph_connections_endpoint),
+                "/api/designer/v1/graphs",
+                web::post().to(get_graphs_endpoint),
             ),
         )
         .await;
 
-        let request_payload =
-            GetGraphConnectionsRequestPayload { graph_id: default_graph_uuid };
+        let request_payload = GetGraphsRequestPayload {};
 
         let req = test::TestRequest::post()
-            .uri("/api/designer/v1/graphs/connections")
+            .uri("/api/designer/v1/graphs")
             .set_json(request_payload)
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -239,53 +254,85 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let connections: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
+        let graphs_response: ApiResponse<Vec<DesignerGraphInfo>> =
             serde_json::from_str(body_str).unwrap();
 
-        let expected_connections = vec![GraphConnectionsSingleResponseData {
-            app: None,
-            extension: "extension_1".to_string(),
-            subgraph: None,
-            cmd: Some(vec![DesignerMessageFlow {
+        // Find the graph with the expected UUID and extract its connections
+        let connections = graphs_response
+            .data
+            .iter()
+            .find(|graph| graph.graph_id == default_graph_uuid)
+            .expect("Graph not found")
+            .graph
+            .connections
+            .clone();
+
+        let expected_connections = vec![DesignerGraphConnection {
+            loc: DesignerGraphLoc {
+                app: None,
+                extension: Some("extension_1".to_string()),
+                subgraph: None,
+                selector: None,
+            },
+            cmd: Some(vec![DesignerGraphMessageFlow {
                 name: "hello_world".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            data: Some(vec![DesignerMessageFlow {
+            data: Some(vec![DesignerGraphMessageFlow {
                 name: "data".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            audio_frame: Some(vec![DesignerMessageFlow {
+            audio_frame: Some(vec![DesignerGraphMessageFlow {
                 name: "pcm".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
-            video_frame: Some(vec![DesignerMessageFlow {
+            video_frame: Some(vec![DesignerGraphMessageFlow {
                 name: "image".to_string(),
-                dest: vec![DesignerDestination {
-                    app: None,
-                    extension: "extension_2".to_string(),
+                dest: vec![DesignerGraphDestination {
+                    loc: DesignerGraphLoc {
+                        app: None,
+                        extension: Some("extension_2".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
                     msg_conversion: None,
                 }],
+                source: vec![],
             }]),
         }];
 
-        assert_eq!(connections.data, expected_connections);
-        assert!(!connections.data.is_empty());
+        assert_eq!(connections, expected_connections);
+        assert!(!connections.is_empty());
 
-        let json: ApiResponse<Vec<GraphConnectionsSingleResponseData>> =
-            serde_json::from_str(body_str).unwrap();
-        let pretty_json = serde_json::to_string_pretty(&json).unwrap();
+        let pretty_json =
+            serde_json::to_string_pretty(&graphs_response).unwrap();
         println!("Response body: {pretty_json}");
     }
 }

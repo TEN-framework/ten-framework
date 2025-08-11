@@ -59,10 +59,25 @@ export interface IBackendConnection {
 }
 
 export interface IGraph {
-  name: string;
-  auto_start: boolean;
-  base_dir: string;
-  uuid: string;
+  graph_id: string;
+  name?: string;
+  auto_start?: boolean;
+  base_dir?: string;
+  graph: {
+    nodes: IBackendNode[];
+    connections: IBackendConnection[];
+    exposed_messages: Array<{
+      type: string;
+      name: string;
+      extension?: string;
+      subgraph?: string;
+    }>;
+    exposed_properties: Array<{
+      extension?: string;
+      subgraph?: string;
+      name: string;
+    }>;
+  };
 }
 
 export type TConnectionItem = {

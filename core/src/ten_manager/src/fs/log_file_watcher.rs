@@ -221,8 +221,23 @@ async fn watch_log_file_task(
                         }
                     }
                     Err(e) => {
-                        // Cannot get metadata, skip this round.
+                        // Cannot get metadata for the path. This can happen if the
+                        // file was removed (e.g. temp dir cleaned up on Windows).
                         eprintln!("({}) Error getting metadata: {e}", path.display());
+
+                        // If the path is gone for longer than the timeout, stop.
+                        if e.kind() == std::io::ErrorKind::NotFound
+                            && Instant::now().duration_since(last_activity)
+                                > options.timeout
+                        {
+                            eprintln!(
+                                "({}) File missing for more than timeout, stopping watcher",
+                                path.display()
+                            );
+                            break;
+                        }
+
+                        // Otherwise, try again on next interval.
                         continue;
                     }
                 }
@@ -232,6 +247,16 @@ async fn watch_log_file_task(
                     Ok(m) => m.len(),
                     Err(e) => {
                         eprintln!("({}) Error getting metadata: {e}", path.display());
+
+                        // If we cannot query the file handle's metadata, and we
+                        // have exceeded the timeout since last activity, stop.
+                        if Instant::now().duration_since(last_activity)
+                            > options.timeout
+                        {
+                            eprintln!("({}) Timeout reached while file metadata unavailable, stopping watcher", path.display());
+                            break;
+                        }
+
                         continue;
                     }
                 };

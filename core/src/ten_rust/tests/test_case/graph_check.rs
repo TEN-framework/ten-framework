@@ -271,6 +271,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();

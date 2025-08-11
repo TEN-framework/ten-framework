@@ -257,14 +257,15 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
         run: |
           cd out/mac/x64/tests/standalone/ten_rust
 
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_rust unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_rust integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
 
           df -h .
 
@@ -274,14 +275,15 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
         run: |
           cd out/mac/x64/tests/standalone/ten_manager
 
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_manager unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_manager integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
 
           df -h .
 

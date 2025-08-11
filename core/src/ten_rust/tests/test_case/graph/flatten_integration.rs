@@ -66,6 +66,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test with current_base_dir as None - should fail because subgraph has
@@ -126,6 +127,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test with current_base_dir as None - should work fine since no
@@ -155,6 +157,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // flatten_graph should return None since there are no subgraphs
@@ -189,6 +192,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a simple subgraph
@@ -203,6 +207,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
