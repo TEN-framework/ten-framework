@@ -83,6 +83,14 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         # Callback instance
         self.recognition_callback: AliyunRecognitionCallback | None = None
 
+
+    @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_deinit(ten_env)
+        if self.audio_dumper:
+            await self.audio_dumper.stop()
+            self.audio_dumper = None
+
     @override
     def vendor(self) -> str:
         """Get ASR vendor name"""
@@ -413,9 +421,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             self.recognition_callback = None
             self.connected = False
             self.ten_env.log_info("Aliyun ASR connection stopped")
-
-            if self.audio_dumper:
-                await self.audio_dumper.stop()
 
         except Exception as e:
             self.ten_env.log_error(f"Error stopping Aliyun ASR connection: {e}")
