@@ -45,6 +45,13 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.reconnect_manager: ReconnectManager | None = None
 
     @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_deinit(ten_env)
+        if self.audio_dumper:
+            await self.audio_dumper.stop()
+            self.audio_dumper = None
+
+    @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
         return "deepgram"
@@ -245,7 +252,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     async def _deepgram_event_handler_on_transcript(self, _, result):
         """Handle the transcript event from Deepgram."""
-        print(f"deepgram event callback on_transcript")
+        print("deepgram event callback on_transcript")
         assert self.config is not None
 
         # SimpleNamespace
@@ -370,8 +377,6 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 self.client = None
                 self.connected = False
                 self.ten_env.log_info("deepgram connection stopped")
-                if self.audio_dumper:
-                    await self.audio_dumper.stop()
         except Exception as e:
             self.ten_env.log_error(f"Error stopping deepgram connection: {e}")
 
