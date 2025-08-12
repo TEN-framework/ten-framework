@@ -1,0 +1,17 @@
+{
+    "api_key": "${env:DEEPGRAM_API_KEY}",
+    "model": "aura-luna-en",
+    "voice": "aura-luna-en",
+    "encoding": "linear16",
+    "sample_rate": 16000,
+    "container": "none",
+    "use_rest_fallback": true,
+    "websocket_timeout": 10.0,
+    "min_audio_threshold": 2000,
+    "reconnect_attempts": 5,
+    "reconnect_delay": 1.0,
+    "keepalive_interval": 30.0,
+    "max_request_retries": 2,
+    "health_check_timeout": 5.0,
+    "dump_path": "/tmp/tts_test_dump"
+}

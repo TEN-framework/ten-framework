@@ -1,0 +1,114 @@
+{
+  "type": "extension",
+  "name": "deepgram_tts2_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int64"
+        },
+        "container": {
+          "type": "string"
+        },
+        "use_rest_fallback": {
+          "type": "bool"
+        },
+        "websocket_timeout": {
+          "type": "float64"
+        },
+        "min_audio_threshold": {
+          "type": "int64"
+        },
+        "reconnect_attempts": {
+          "type": "int64"
+        },
+        "reconnect_delay": {
+          "type": "float64"
+        },
+        "keepalive_interval": {
+          "type": "float64"
+        },
+        "max_request_retries": {
+          "type": "int64"
+        },
+        "health_check_timeout": {
+          "type": "float64"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "tts_text_input"
+      },
+      {
+        "name": "tts_flush"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "tts_text_result"
+      },
+      {
+        "name": "tts_flush_end"
+      },
+      {
+        "name": "tts_audio_start"
+      },
+      {
+        "name": "tts_audio_end"
+      },
+      {
+        "name": "metrics"
+      },
+      {
+        "name": "error"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}
