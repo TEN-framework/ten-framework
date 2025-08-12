@@ -151,28 +151,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 await self.send_tts_error(t.request_id, error)
                 return
 
-            # Text validation - check for invalid text that cannot be synthesized
-            if not self._is_valid_text(t.text):
-                self.ten_env.log_error(f"Invalid text received: '{t.text}' - returning NON_FATAL_ERROR")
-                from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
-
-                error_info = ModuleErrorVendorInfo(
-                    vendor="deepgram",
-                    code="invalid_text",
-                    message=f"Text cannot be synthesized: '{t.text}'"
-                )
-
-                error = ModuleError(
-                    message="Invalid text for TTS synthesis",
-                    module="tts",
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    vendor_info=error_info
-                )
-
-                await self.send_tts_error(t.request_id, error)
-                return
-
-            # Check circuit breaker before processing
             if not self._should_allow_request():
                 self.ten_env.log_error("KEYPOINT: Circuit breaker OPEN - rejecting TTS request")
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
@@ -450,56 +428,4 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             self.ten_env.log_error(f"Error handling data: {str(e)}")
 
-    def _is_valid_text(self, text: str) -> bool:
-        """Check if text is valid for TTS synthesis"""
-        if not text:
-            return False
-        
-        # Remove whitespace and check if anything remains
-        stripped_text = text.strip()
-        if not stripped_text:
-            return False
-        
-        import unicodedata
-        
-        # Count different types of characters
-        letter_count = 0
-        emoji_count = 0
-        symbol_count = 0
-        
-        for char in text:
-            category = unicodedata.category(char)
-            if category.startswith('L'):  # Letter
-                letter_count += 1
-            elif category.startswith('S'):  # Symbol (includes emojis)
-                symbol_count += 1
-            elif category == 'So':  # Other symbols (includes many emojis)
-                emoji_count += 1
-        
-        # If text is mostly emojis or symbols, it's invalid
-        if emoji_count > 0 and letter_count == 0:
-            return False
-        
-        if symbol_count > letter_count and letter_count < 3:
-            return False
-        
-        # Check for math formulas - be more sensitive
-        math_chars = '±√²³¹₂₃₄₅₆₇₈₉₀×÷∞∑∏∫∂∆∇∈∉∪∩⊂⊃⊆⊇∧∨¬→←↔≡≠≤≥≈∝∴∵°='
-        math_count = sum(1 for char in text if char in math_chars)
-        
-        # Also count parentheses and operators as potential math indicators
-        math_operators = '()[]{}+-*/'
-        operator_count = sum(1 for char in text if char in math_operators)
-        
-        total_math_indicators = math_count + operator_count
-        
-        # If we have significant math indicators relative to letters, it's likely a formula
-        if total_math_indicators >= letter_count * 0.5 and math_count > 0:
-            return False
-        
-        # If we have some letters, it's probably valid
-        if letter_count > 0:
-            return True
-        
-        return False
 
