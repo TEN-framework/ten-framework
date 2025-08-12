@@ -26,19 +26,20 @@ async fn load_content_from_http_url(url: &url::Url) -> Result<String> {
     // Create HTTP client
     let client = reqwest::Client::new();
 
+    let url_str = url.as_str().to_owned();
+
     // Make HTTP request
-    let response = client
-        .get(url.as_str())
-        .send()
-        .await
-        .with_context(|| format!("Failed to send HTTP request to {url}"))?;
+    let response =
+        client.get(url.clone()).send().await.with_context(|| {
+            format!("Failed to send HTTP request to {url_str}")
+        })?;
 
     // Check if request was successful
     if !response.status().is_success() {
         return Err(anyhow!(
             "HTTP request failed with status {}: {}",
             response.status(),
-            url
+            url_str
         ));
     }
 
@@ -46,7 +47,7 @@ async fn load_content_from_http_url(url: &url::Url) -> Result<String> {
     response
         .text()
         .await
-        .with_context(|| format!("Failed to read response body from {url}"))
+        .with_context(|| format!("Failed to read response body from {url_str}"))
 }
 
 /// Load content from a URI.

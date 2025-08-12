@@ -25,16 +25,16 @@ typedef struct ten_cmd_start_graph_t {
   // The name of the specified predefined graph.
   ten_value_t predefined_graph_name;  // string
 
+  // The graph json string stored in the start_graph cmd, which will be
+  // flattened into extension_groups_info and extensions_info when the app
+  // processes the cmd, and graph_json will be cleared afterwards.
+  ten_value_t graph_json;  // string
+
   // ten_shared_ptr_t of ten_extension_group_info_t
   ten_list_t extension_groups_info;
 
   // ten_shared_ptr_t of ten_extension_info_t
   ten_list_t extensions_info;
-
-  // The graph json string stored in the start_graph cmd, which will be
-  // flattened into extension_groups_info and extensions_info when the app
-  // processes the cmd, and graph_json will be cleared afterwards.
-  ten_value_t graph_json;  // string
 } ten_cmd_start_graph_t;
 
 TEN_RUNTIME_PRIVATE_API void
