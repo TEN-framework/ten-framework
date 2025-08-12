@@ -1,6 +1,6 @@
 {
     "type": "extension",
-    "name": "xfyun_asr_bigmodel_python",
+    "name": "google_asr_python",
     "version": "0.1.1",
     "dependencies": [
         {
@@ -15,27 +15,22 @@
         }
     ],
     "api": {
-        "interface": [
-            {
-                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
-            }
-        ],
         "property": {
             "properties": {
-                "app_id": {
+                "project_id": {
                     "type": "string"
                 },
-                "api_key": {
+                "adc_credentials_path": {
                     "type": "string"
                 },
-                "api_secret": {
+                "location": {
                     "type": "string"
                 },
-                "lang": {
+                "model": {
                     "type": "string"
                 },
-                "sample_rate": {
-                    "type": "int64"
+                "language": {
+                    "type": "string"
                 }
             }
         }

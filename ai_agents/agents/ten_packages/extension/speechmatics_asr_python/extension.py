@@ -23,6 +23,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         self.client: SpeechmaticsASRClient = None
         self.config: SpeechmaticsASRConfig = None
 
+    def vendor(self) -> str:
+        return "speechmatics"
+
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         ten_env.log_debug(f"on_cmd: {cmd_name}")

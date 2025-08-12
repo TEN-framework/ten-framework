@@ -40,6 +40,9 @@ class AliyunASRExtension(AsyncASRBaseExtension):
         self.client = None
         self.config: AliyunASRConfig = None
 
+    def vendor(self) -> str:
+        return "aliyun"
+
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json = cmd.to_json()
         ten_env.log_info(f"on_cmd json: {cmd_json}")

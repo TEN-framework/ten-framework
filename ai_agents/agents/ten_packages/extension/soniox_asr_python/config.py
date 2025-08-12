@@ -28,13 +28,15 @@ class SonioxASRConfig(BaseModel):
             "sample_rate": self.sample_rate,
         }
 
+        params_map: dict[str, Any] = self.params
+
         for param_key, value in default_params.items():
-            if param_key not in self.params:
-                self.params[param_key] = value
+            if param_key not in params_map:
+                params_map[param_key] = value
 
         # Remove unsupported features
-        if self.params.get("translation"):
-            del self.params["translation"]
+        if "translation" in params_map and params_map["translation"]:
+            del params_map["translation"]
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:
@@ -43,9 +45,10 @@ class SonioxASRConfig(BaseModel):
         config = self.model_copy(deep=True)
 
         if config.params:
-            for key, value in config.params.items():
-                if key == "api_key":
-                    config.params[key] = encrypt(value)
+            params_map: dict[str, Any] = dict(config.params)
+            if "api_key" in params_map:
+                params_map["api_key"] = encrypt(params_map["api_key"])
+            config.params = params_map
 
         return config.model_dump_json()
 

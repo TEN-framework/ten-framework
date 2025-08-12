@@ -37,6 +37,9 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         self.last_finalize_timestamp: int = 0
         self.connected = False
 
+    def vendor(self) -> str:
+        return "gladia"
+
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("GladiaASRExtension on_init")
 
