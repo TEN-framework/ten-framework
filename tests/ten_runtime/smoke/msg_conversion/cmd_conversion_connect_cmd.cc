@@ -78,7 +78,7 @@ TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_conversion_connect_cmd_extension_2,
 
 }  // namespace
 
-TEST(CmdConversionTest, CmdConversionConnectCmd) {  // NOLINT
+TEST(MsgConversionTest, CmdConversionConnectCmd) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);

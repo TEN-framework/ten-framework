@@ -160,7 +160,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
     ) {
         match item {
             Ok(ws::Message::Text(text)) => {
-                println!("Received text: {}", text);
+                println!("Received text: {text}");
 
                 let fut = (self.cmd_parser)(&text);
                 let actor_addr = ctx.address();

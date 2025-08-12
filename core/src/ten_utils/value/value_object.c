@@ -21,7 +21,8 @@ ten_value_t *ten_value_object_peek(ten_value_t *self, const char *key) {
 
   ten_list_foreach (&self->content.object, iter) {
     ten_value_kv_t *kv = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+    TEN_ASSERT(kv, "Invalid argument.");
+    TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
     if (ten_string_is_equal_c_str(&kv->key, key)) {
       return kv->value;
@@ -107,7 +108,8 @@ bool ten_value_object_move(ten_value_t *self, const char *key,
 
   ten_list_foreach (&self->content.object, iter) {
     ten_value_kv_t *kv = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+    TEN_ASSERT(kv, "Invalid argument.");
+    TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
     if (ten_string_is_equal_c_str(&kv->key, key)) {
       found = true;

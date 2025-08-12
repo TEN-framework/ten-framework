@@ -38,7 +38,8 @@ bool ten_value_set_from_json_str(ten_value_t *self, const char *json_str) {
 }
 
 bool ten_value_set_from_json(ten_value_t *self, ten_json_t *json) {
-  TEN_ASSERT(self && json, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(json, "Invalid argument.");
 
   if (!self || !json) {
     return false;
@@ -158,7 +159,8 @@ bool ten_value_set_from_json(ten_value_t *self, ten_json_t *json) {
       ten_json_t *value_json = NULL;
       ten_json_object_foreach(json, key, value_json) {
         ten_value_kv_t *kv = ten_value_kv_from_json(key, value_json);
-        TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+        TEN_ASSERT(kv, "Invalid argument.");
+        TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
         if (!kv) {
           ten_list_clear(&object);
@@ -182,7 +184,8 @@ bool ten_value_set_from_json(ten_value_t *self, ten_json_t *json) {
 }
 
 static bool ten_value_init_from_json(ten_value_t *self, ten_json_t *json) {
-  TEN_ASSERT(self && json, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(json, "Invalid argument.");
 
   if (!self || !json) {
     return false;
@@ -239,7 +242,8 @@ static bool ten_value_init_from_json(ten_value_t *self, ten_json_t *json) {
     ten_json_t *value_json = NULL;
     ten_json_object_foreach(json, key, value_json) {
       ten_value_kv_t *kv = ten_value_kv_from_json(key, value_json);
-      TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+      TEN_ASSERT(kv, "Invalid argument.");
+      TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
       if (kv == NULL) {
         // Something wrong, we should destroy the value and return NULL.

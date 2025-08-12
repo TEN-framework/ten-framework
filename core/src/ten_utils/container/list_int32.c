@@ -13,7 +13,8 @@
 #include "ten_utils/macro/check.h"
 
 ten_listnode_t *ten_list_find_int32(ten_list_t *self, int32_t int32) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   ten_list_foreach (self, iter) {
     int32_t self_value = ten_listnode_to_int32_listnode(iter.node)->int32;

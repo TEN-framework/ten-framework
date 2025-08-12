@@ -9,10 +9,12 @@
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/msg/field/properties.h"
 #include "include_internal/ten_runtime/msg/msg.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
 #include "ten_utils/value/value_kv.h"
 
@@ -49,7 +51,8 @@ bool ten_msg_conversion_per_property_rule_from_original_convert(
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
-  TEN_ASSERT(new_msg && ten_msg_check_integrity(new_msg), "Invalid argument.");
+  TEN_ASSERT(new_msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(new_msg), "Invalid argument.");
   TEN_ASSERT(new_msg_property_path, "Invalid argument.");
 
   ten_value_t *msg_property =
@@ -79,9 +82,10 @@ void ten_msg_conversion_per_property_rule_from_original_from_json(
 
 bool ten_msg_conversion_per_property_rule_from_original_to_json(
     ten_msg_conversion_per_property_rule_from_original_t *self,
-    ten_json_t *json, ten_error_t *err) {
+    ten_json_t *json, TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(json && ten_json_check_integrity(json), "Invalid argument.");
+  TEN_ASSERT(json, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(json), "Invalid argument.");
 
   ten_json_object_set_string(json, TEN_STR_ORIGINAL_PATH,
                              ten_string_get_raw_str(&self->original_path));

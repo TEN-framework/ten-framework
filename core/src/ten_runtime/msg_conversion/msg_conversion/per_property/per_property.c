@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_conversion/base.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_conversion/per_property/rules.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/macro/check.h"
@@ -29,11 +30,11 @@ static ten_shared_ptr_t *ten_msg_conversion_per_property_convert(
   ten_shared_ptr_t *new_msg = NULL;
 
   if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD_RESULT) {
-    new_msg = ten_result_conversion_per_property_rules_convert(
-        per_property_msg_conversion->rules, msg, err);
+    new_msg = ten_msg_conversion_per_property_rules_convert(
+        per_property_msg_conversion->rules, msg, true, err);
   } else {
     new_msg = ten_msg_conversion_per_property_rules_convert(
-        per_property_msg_conversion->rules, msg, err);
+        per_property_msg_conversion->rules, msg, false, err);
   }
 
   return new_msg;

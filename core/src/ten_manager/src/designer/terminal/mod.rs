@@ -136,7 +136,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
-                println!("Received text: {}", text);
+                println!("Received text: {text}");
 
                 // Try to parse the received message as a json.
                 if let Ok(json) = serde_json::from_str::<Value>(&text) {
