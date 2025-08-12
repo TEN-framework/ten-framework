@@ -67,7 +67,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly
+          rustup default nightly-2025-08-10
 
           brew install tree
           brew install gettext
@@ -195,7 +195,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
