@@ -31,6 +31,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.completed_request_ids = set()
         self.pending_flush_data = None
         self.pending_flush_ten_env = None   # Track if flush was requested
+        # Request state tracking 
+        self.current_request_id = None
+        self.current_request_finished = False
+
 
         # Circuit breaker for connection resilience
         self.circuit_breaker = {
@@ -126,31 +130,49 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         return "deepgram"
 
     async def request_tts(self, t: TTSTextInput) -> None:
-        """Handle TTS request using TTS2 interface"""
+        """Handle TTS request using immediate processing approach (like MiniMax)"""
         try:
-            self.ten_env.log_info(f"Received TTS request: {t.request_id} - {t.text[:50]}...")
-            
-            # Check if a request has already been completed
-            if t.request_id in self.completed_request_ids:
-                self.ten_env.log_error(f"Rejecting request {t.request_id} - session already completed")
+            self.ten_env.log_info(f"Received TTS request: {t.request_id} - {t.text[:50]}... (text_input_end: {getattr(t, 'text_input_end', True)})")
+
+            # Check if this is a new request_id
+            if t.request_id != getattr(self, 'current_request_id', None):
+                self.ten_env.log_info(f"New TTS request with ID: {t.request_id}")
+                self.current_request_id = t.request_id
+                self.current_request_finished = False
+
+                # Reset any previous request state
+                if hasattr(self, 'flush_requested'):
+                    self.flush_requested = False
+
+            # Check if request already finished
+            elif getattr(self, 'current_request_finished', False):
+                error_msg = f"Received a message for a finished request_id '{t.request_id}' (text_input_end: {getattr(t, 'text_input_end', True)}). Request already completed."
+                self.ten_env.log_error(error_msg)
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
-                
+            
                 error_info = ModuleErrorVendorInfo(
                     vendor="deepgram",
-                    code="duplicate_request_id",
-                    message="Request ID has already been processed"
+                    code="request_already_finished",
+                    message=error_msg
                 )
-                
+            
                 error = ModuleError(
-                    message="Cannot process duplicate request_id",
+                    message=error_msg,
                     module="tts",
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=error_info
                 )
-                
                 await self.send_tts_error(t.request_id, error)
+                return 
+
+            # Handle empty text
+            if t.text.strip() == "":
+                self.ten_env.log_info("Received empty text for TTS request")
+                if getattr(t, 'text_input_end', True):
+                    self.current_request_finished = True
                 return
 
+            # Check circuit breaker before processing
             if not self._should_allow_request():
                 self.ten_env.log_error("KEYPOINT: Circuit breaker OPEN - rejecting TTS request")
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
@@ -158,11 +180,11 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 error_info = ModuleErrorVendorInfo(
                     vendor="deepgram",
                     code="SERVICE_UNAVAILABLE",
-                    message="Service temporarily unavailable due to connection issues"
+                    message="TTS service temporarily unavailable due to circuit breaker"
                 )
 
                 error = ModuleError(
-                    message="Service temporarily unavailable due to connection issues",
+                    message="TTS service temporarily unavailable",
                     module_name=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=error_info
@@ -170,25 +192,33 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 await self.send_tts_error(t.request_id, error)
                 return
 
-            # If WebSocket is not ready yet, queue the request
-            if not self.websocket_ready:
-                self.ten_env.log_info("WebSocket not ready yet, queuing TTS request for later processing")
-                self.pending_requests.append(t)
-                return
-
-            # Process the request immediately if WebSocket is ready
+            # Process this text chunk immediately (MiniMax approach)
             await self._process_tts_request(t)
 
-        except Exception as e:
-            self.ten_env.log_error(f"request_tts failed: {traceback.format_exc()}")
-            self._record_failure()  # Record failure for circuit breaker
+            # Mark request as finished if this is the last chunk
+            if getattr(t, 'text_input_end', True):
+                self.ten_env.log_info(f"KEYPOINT finish session for request ID: {t.request_id}")
+                self.current_request_finished = True
 
-            # Send error notification with fixed ModuleError structure
+                # Add to completed set for duplicate detection
+                if not hasattr(self, 'completed_request_ids'):
+                    self.completed_request_ids = set()
+                self.completed_request_ids.add(t.request_id)
+
+        except Exception as e:
+            self.ten_env.log_error(f"TTS request processing failed: {str(e)}")
+            import traceback
+            self.ten_env.log_error(f"Traceback: {traceback.format_exc()}")
+
+            # Record failure for circuit breaker
+            self._record_failure()
+
+            # Send error notification
             from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
 
             error_info = ModuleErrorVendorInfo(
                 vendor="deepgram",
-                code="REQUEST_PROCESSING_ERROR",
+                code="PROCESSING_ERROR",
                 message=f"Failed to process TTS request: {str(e)}"
             )
 
