@@ -148,7 +148,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>>
     ) {
         match item {
             Ok(ws::Message::Text(text)) => {
-                println!("Received text: {}", text);
+                println!("Received text: {text}");
 
                 match (self.builtin_function_parser)(&text) {
                     Ok(builtin_function) => match builtin_function {

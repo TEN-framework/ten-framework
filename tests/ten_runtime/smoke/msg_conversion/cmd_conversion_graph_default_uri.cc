@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -24,7 +23,6 @@ class test_extension_1 : public ten::extension_t {
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_world") {
       ten_env.send_cmd(std::move(cmd));
-      return;
     }
   }
 };
@@ -36,13 +34,9 @@ class test_extension_2 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_mapping") {
-      if (cmd->get_property_int64("test_property_name") == 32 &&
-          cmd->get_property_int64("test_original_int") == 33 &&
-          cmd->get_property_string("test_original_str") == "abc") {
-        auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-        cmd_result->set_property("detail", "hello world, too");
-        ten_env.return_result(std::move(cmd_result));
-      }
+      auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
+      cmd_result->set_property("detail", "hello world, too");
+      ten_env.return_result(std::move(cmd_result));
     }
   }
 };
@@ -54,10 +48,10 @@ class test_app : public ten::app_t {
         ten_env,
         // clang-format off
                  R"###({
-                   "type": "app",
-                   "name": "test_app",
-                   "version": "0.1.0"
-                 })###"
+                     "type": "app",
+                     "name": "test_app",
+                     "version": "0.1.0"
+                   })###"
         // clang-format on
     );
     ASSERT_EQ(rc, true);
@@ -72,41 +66,32 @@ class test_app : public ten::app_t {
                         },
                         "predefined_graphs": [{
                           "name": "default",
-                          "auto_start": false,
+                          "auto_start": true,
                           "singleton": true,
                           "graph": {
                             "nodes": [{
-                              "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_1",
-                              "addon": "cmd_mapping_path_keep_original__test_extension_1",
-                              "extension_group": "cmd_mapping_path_keep_original__extension_group"
+                              "addon": "cmd_conversion_graph_default_uri_extension_1",
+                              "extension_group": "cmd_conversion_graph_default_uri_extension_group"
                             },{
-                              "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_2",
-                              "addon": "cmd_mapping_path_keep_original__test_extension_2",
-                              "extension_group": "cmd_mapping_path_keep_original__extension_group"
+                              "addon": "cmd_conversion_graph_default_uri_extension_2",
+                              "extension_group": "cmd_conversion_graph_default_uri_extension_group"
                             }],
                             "connections": [{
-                              "app": "msgpack://127.0.0.1:8001/",
                               "extension": "test_extension_1",
                               "cmd": [{
                                 "name": "hello_world",
                                 "dest": [{
-                                  "app": "msgpack://127.0.0.1:8001/",
                                   "extension": "test_extension_2",
                                   "msg_conversion": {
                                     "type": "per_property",
-                                    "keep_original": true,
                                     "rules": [{
                                       "path": "ten.name",
                                       "conversion_mode": "fixed_value",
                                       "value": "hello_mapping"
-                                    },{
-                                      "path": "test_property_name",
-                                      "conversion_mode": "from_original",
-                                      "original_path": "test_property"
                                     }]
                                   }
                                 }]
@@ -133,13 +118,13 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
 }
 
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    cmd_mapping_path_keep_original__test_extension_1, test_extension_1);
+    cmd_conversion_graph_default_uri_extension_1, test_extension_1);
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    cmd_mapping_path_keep_original__test_extension_2, test_extension_2);
+    cmd_conversion_graph_default_uri_extension_2, test_extension_2);
 
 }  // namespace
 
-TEST(CmdConversionTest, CmdConversionPathKeepOriginal) {  // NOLINT
+TEST(MsgConversionTest, CmdConversionGraphDefaultUri) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -151,13 +136,8 @@ TEST(CmdConversionTest, CmdConversionPathKeepOriginal) {  // NOLINT
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dests(
       {{"msgpack://127.0.0.1:8001/", "default", "test_extension_1"}});
-  hello_world_cmd->set_property("test_property", 32);
-  hello_world_cmd->set_property("test_original_int", 33);
-  hello_world_cmd->set_property("test_original_str", "abc");
-
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));
-
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");
 

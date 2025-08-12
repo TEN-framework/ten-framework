@@ -102,18 +102,6 @@ TEN_UTILS_API bool ten_json_object_peek_or_create_array(ten_json_t *self,
 TEN_UTILS_API bool ten_json_object_set(ten_json_t *self, const char *key,
                                        ten_json_t *value);
 
-TEN_UTILS_API bool ten_json_object_set_string(ten_json_t *self, const char *key,
-                                              const char *value);
-
-TEN_UTILS_API bool ten_json_object_set_int(ten_json_t *self, const char *key,
-                                           int64_t value);
-
-TEN_UTILS_API bool ten_json_object_set_real(ten_json_t *self, const char *key,
-                                            double value);
-
-TEN_UTILS_API bool ten_json_object_set_bool(ten_json_t *self, const char *key,
-                                            bool value);
-
 TEN_UTILS_API bool ten_json_object_iter_init(ten_json_t *self,
                                              ten_json_iter_t *iter);
 

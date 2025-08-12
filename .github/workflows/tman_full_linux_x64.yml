@@ -78,7 +78,7 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
-          rustup default nightly
+          rustup default nightly-2025-08-10
 
           df -h .
 

@@ -110,8 +110,8 @@ RUN export ARCH=$(dpkg --print-architecture) && curl -OL https://go.dev/dl/go1.2
 # Install cargo for rust.
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-  /root/.cargo/bin/rustup install nightly && \
-  /root/.cargo/bin/rustup default nightly && \
+  /root/.cargo/bin/rustup install nightly-2025-08-10 && \
+  /root/.cargo/bin/rustup default nightly-2025-08-10 && \
   /root/.cargo/bin/cargo install --force cbindgen
 
 ENV PATH="/root/.cargo/bin:$PATH"

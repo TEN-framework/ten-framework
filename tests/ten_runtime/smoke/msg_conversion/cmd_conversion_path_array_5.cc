@@ -36,7 +36,10 @@ class test_extension_2 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_mapping") {
-      if (cmd->get_property_int64("test_group[3].test_property_name") == 32) {
+      if (cmd->get_property_int64("test_group[3][4].test_property_name_1") ==
+              32 &&
+          cmd->get_property_string("test_group[2][40].test_property_name_2") ==
+              "may the force be with you.") {
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
         cmd_result->set_property("detail", "hello world, too");
         ten_env.return_result(std::move(cmd_result));
@@ -77,14 +80,14 @@ class test_app : public ten::app_t {
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_1",
-                              "addon": "cmd_mapping_path_array_1__test_extension_1",
-                              "extension_group": "cmd_mapping_path_array_1__extension_group"
+                              "addon": "cmd_mapping_path_array_5__test_extension_1",
+                              "extension_group": "cmd_mapping_path_array_5__extension_group"
                             },{
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_2",
-                              "addon": "cmd_mapping_path_array_1__test_extension_2",
-                              "extension_group": "cmd_mapping_path_array_1__extension_group"
+                              "addon": "cmd_mapping_path_array_5__test_extension_2",
+                              "extension_group": "cmd_mapping_path_array_5__extension_group"
                             }],
                             "connections": [{
                               "app": "msgpack://127.0.0.1:8001/",
@@ -101,9 +104,13 @@ class test_app : public ten::app_t {
                                       "conversion_mode": "fixed_value",
                                       "value": "hello_mapping"
                                     },{
-                                      "path": "test_group[3].test_property_name",
+                                      "path": "test_group[3][4].test_property_name_1",
                                       "conversion_mode": "from_original",
                                       "original_path": "test_property"
+                                    },{
+                                      "path": "test_group[2][40].test_property_name_2",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "may the force be with you."
                                     }]
                                   }
                                 }]
@@ -129,14 +136,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_1__test_extension_1,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_5__test_extension_1,
                                     test_extension_1);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_1__test_extension_2,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_5__test_extension_2,
                                     test_extension_2);
 
 }  // namespace
 
-TEST(CmdConversionTest, CmdConversionPathArray1) {  // NOLINT
+TEST(MsgConversionTest, CmdConversionPathArray5) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -152,7 +159,6 @@ TEST(CmdConversionTest, CmdConversionPathArray1) {  // NOLINT
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));
-
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");
 

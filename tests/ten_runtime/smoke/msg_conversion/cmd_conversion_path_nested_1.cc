@@ -79,14 +79,14 @@ class test_app : public ten::app_t {
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_1",
-                              "addon": "cmd_mapping_path_nested_2__test_extension_1",
-                              "extension_group": "cmd_mapping_path_nested_2__extension_group"
+                              "addon": "cmd_mapping_path_nested_1__test_extension_1",
+                              "extension_group": "cmd_mapping_path_nested_1__extension_group"
                             },{
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_2",
-                              "addon": "cmd_mapping_path_nested_2__test_extension_2",
-                              "extension_group": "cmd_mapping_path_nested_2__extension_group"
+                              "addon": "cmd_mapping_path_nested_1__test_extension_2",
+                              "extension_group": "cmd_mapping_path_nested_1__extension_group"
                             }],
                             "connections": [{
                               "app": "msgpack://127.0.0.1:8001/",
@@ -105,7 +105,7 @@ class test_app : public ten::app_t {
                                     },{
                                       "path": "test_group.test_property_name",
                                       "conversion_mode": "from_original",
-                                      "original_path": "test_group.test_property"
+                                      "original_path": "test_property"
                                     }]
                                   }
                                 }]
@@ -131,14 +131,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_nested_2__test_extension_1,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_nested_1__test_extension_1,
                                     test_extension_1);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_nested_2__test_extension_2,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_nested_1__test_extension_2,
                                     test_extension_2);
 
 }  // namespace
 
-TEST(CmdConversionTest, CmdConversionPathNested2) {  // NOLINT
+TEST(MsgConversionTest, CmdConversionPathNested1) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -150,9 +150,7 @@ TEST(CmdConversionTest, CmdConversionPathNested2) {  // NOLINT
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dests(
       {{"msgpack://127.0.0.1:8001/", "default", "test_extension_1"}});
-  hello_world_cmd->set_property_from_json("test_group", R"({
-             "test_property": 32
-           })");
+  hello_world_cmd->set_property("test_property", 32);
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));
