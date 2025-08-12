@@ -116,6 +116,25 @@ ten_msg_conversion_per_property_rule_conversion_mode_from_string(
   }
 }
 
+static const char *
+ten_msg_conversion_per_property_rule_conversion_mode_to_string(
+    TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE conversion_mode,
+    ten_error_t *err) {
+  switch (conversion_mode) {
+  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FIXED_VALUE:
+    return TEN_STR_FIXED_VALUE;
+  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
+    return TEN_STR_FROM_ORIGINAL;
+  default:
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Unsupported conversion mode '%d'", conversion_mode);
+    }
+    TEN_ASSERT(0, "Should not happen.");
+    return NULL;
+  }
+}
+
 ten_msg_conversion_per_property_rule_t *
 ten_msg_conversion_per_property_rule_from_json(ten_json_t *json,
                                                ten_error_t *err) {
@@ -154,25 +173,6 @@ ten_msg_conversion_per_property_rule_from_json(ten_json_t *json,
   }
 
   return self;
-}
-
-static const char *
-ten_msg_conversion_per_property_rule_conversion_mode_to_string(
-    TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE conversion_mode,
-    ten_error_t *err) {
-  switch (conversion_mode) {
-  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FIXED_VALUE:
-    return TEN_STR_FIXED_VALUE;
-  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
-    return TEN_STR_FROM_ORIGINAL;
-  default:
-    if (err) {
-      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
-                    "Unsupported conversion mode '%d'", conversion_mode);
-    }
-    TEN_ASSERT(0, "Should not happen.");
-    return NULL;
-  }
 }
 
 bool ten_msg_conversion_per_property_rule_to_json(
