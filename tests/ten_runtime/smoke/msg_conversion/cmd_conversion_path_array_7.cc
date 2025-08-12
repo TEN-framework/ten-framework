@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -21,14 +22,8 @@ class test_extension_1 : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "send_data") {
-      auto data = ten::data_t::create("aaa");
-      data->set_property("prop_bool", true);
-      ten_env.send_data(std::move(data));
-
-      auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-      cmd_result->set_property("detail", "data sent");
-      ten_env.return_result(std::move(cmd_result));
+    if (cmd->get_name() == "hello_world") {
+      ten_env.send_cmd(std::move(cmd));
       return;
     }
   }
@@ -40,37 +35,17 @@ class test_extension_2 : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "data_received_check") {
-      if (data_received) {
+    if (cmd->get_name() == "hello_mapping") {
+      if (cmd->get_property_int64("test_group[3][4].test_property_name_1") ==
+              32 &&
+          cmd->get_property_string("test_group[2][40].test_property_name_2") ==
+              "may the force be with you.") {
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-        cmd_result->set_property("detail", "data received");
-        ten_env.return_result(std::move(cmd_result));
-      } else {
-        auto cmd_result =
-            ten::cmd_result_t::create(TEN_STATUS_CODE_ERROR, *cmd);
-        cmd_result->set_property("detail", "data not received");
+        cmd_result->set_property("detail", "hello world, too");
         ten_env.return_result(std::move(cmd_result));
       }
     }
   }
-
-  void on_data(ten::ten_env_t &ten_env,
-               std::unique_ptr<ten::data_t> data) override {
-    std::string name = data->get_name();
-
-    auto test_prop = data->get_property_string("test_prop_string");
-    auto test_prop_bool_fixed = data->get_property_bool("test_prop_bool_fixed");
-    auto test_prop_bool_from_origin =
-        data->get_property_bool("test_prop_bool_from_origin");
-
-    if (name == "bbb" && test_prop == "hello" && test_prop_bool_fixed &&
-        test_prop_bool_from_origin) {
-      data_received = true;
-    }
-  }
-
- private:
-  bool data_received = false;
 };
 
 class test_app : public ten::app_t {
@@ -80,10 +55,10 @@ class test_app : public ten::app_t {
         ten_env,
         // clang-format off
                  R"###({
-                     "type": "app",
-                     "name": "test_app",
-                     "version": "0.1.0"
-                   })###"
+                   "type": "app",
+                   "name": "test_app",
+                   "version": "0.1.0"
+                 })###"
         // clang-format on
     );
     ASSERT_EQ(rc, true);
@@ -105,20 +80,20 @@ class test_app : public ten::app_t {
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_1",
-                              "addon": "cmd_mapping_data_extension_1",
-                              "extension_group": "cmd_mapping_data_extension_group"
+                              "addon": "cmd_mapping_path_array_7__test_extension_1",
+                              "extension_group": "cmd_mapping_path_array_7__extension_group"
                             },{
                               "app": "msgpack://127.0.0.1:8001/",
                               "type": "extension",
                               "name": "test_extension_2",
-                              "addon": "cmd_mapping_data_extension_2",
-                              "extension_group": "cmd_mapping_data_extension_group"
+                              "addon": "cmd_mapping_path_array_7__test_extension_2",
+                              "extension_group": "cmd_mapping_path_array_7__extension_group"
                             }],
                             "connections": [{
                               "app": "msgpack://127.0.0.1:8001/",
                               "extension": "test_extension_1",
-                              "data": [{
-                                "name": "aaa",
+                              "cmd": [{
+                                "name": "hello_world",
                                 "dest": [{
                                   "app": "msgpack://127.0.0.1:8001/",
                                   "extension": "test_extension_2",
@@ -127,19 +102,15 @@ class test_app : public ten::app_t {
                                     "rules": [{
                                       "path": "ten.name",
                                       "conversion_mode": "fixed_value",
-                                      "value": "bbb"
+                                      "value": "hello_mapping"
                                     },{
-                                      "path": "test_prop_string",
-                                      "conversion_mode": "fixed_value",
-                                      "value": "hello"
-                                    },{
-                                      "path": "test_prop_bool_fixed",
-                                      "conversion_mode": "fixed_value",
-                                      "value": true
-                                    },{
-                                      "path": "test_prop_bool_from_origin",
+                                      "path": "test_group[3][4].test_property_name_1",
                                       "conversion_mode": "from_original",
-                                      "original_path": "prop_bool"
+                                      "original_path": "test_property"
+                                    },{
+                                      "path": "test_group[2][40].test_property_name_2",
+                                      "conversion_mode": "fixed_value",
+                                      "value": "may the force be with you."
                                     }]
                                   }
                                 }]
@@ -150,8 +121,7 @@ class test_app : public ten::app_t {
                       }
                     })###"
         // clang-format on
-        ,
-        nullptr);
+    );
     ASSERT_EQ(rc, true);
 
     ten_env.on_configure_done();
@@ -166,14 +136,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_data_extension_1,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_7__test_extension_1,
                                     test_extension_1);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_data_extension_2,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(cmd_mapping_path_array_7__test_extension_2,
                                     test_extension_2);
 
 }  // namespace
 
-TEST(CmdConversionTest, CmdConversionData) {  // NOLINT
+TEST(MsgConversionTest, CmdConversionPathArray7) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -181,22 +151,17 @@ TEST(CmdConversionTest, CmdConversionData) {  // NOLINT
   // Create a client and connect to the app.
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
-  // Send a user-defined 'send_data' command.
-  auto send_data_cmd = ten::cmd_t::create("send_data");
-  send_data_cmd->set_dests(
+  // Send a user-defined 'hello world' command.
+  auto hello_world_cmd = ten::cmd_t::create("hello_world");
+  hello_world_cmd->set_dests(
       {{"msgpack://127.0.0.1:8001/", "default", "test_extension_1"}});
-  auto cmd_result = client->send_cmd_and_recv_result(std::move(send_data_cmd));
-  ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-  ten_test::check_detail_with_string(cmd_result, "data sent");
+  hello_world_cmd->set_property("test_property", 32);
 
-  // Send 'data_received_check' command.
-  auto data_received_check_cmd = ten::cmd_t::create("data_received_check");
-  data_received_check_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "default", "test_extension_2"}});
-  cmd_result =
-      client->send_cmd_and_recv_result(std::move(data_received_check_cmd));
+  auto cmd_result =
+      client->send_cmd_and_recv_result(std::move(hello_world_cmd));
+
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-  ten_test::check_detail_with_string(cmd_result, "data received");
+  ten_test::check_detail_with_string(cmd_result, "hello world, too");
 
   delete client;
 

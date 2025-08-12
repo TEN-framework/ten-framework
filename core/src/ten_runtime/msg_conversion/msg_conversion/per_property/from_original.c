@@ -81,7 +81,8 @@ bool ten_msg_conversion_per_property_rule_from_original_to_json(
     ten_msg_conversion_per_property_rule_from_original_t *self,
     ten_json_t *json, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(json && ten_json_check_integrity(json), "Invalid argument.");
+  TEN_ASSERT(json, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(json), "Invalid argument.");
 
   ten_json_object_set_string(json, TEN_STR_ORIGINAL_PATH,
                              ten_string_get_raw_str(&self->original_path));

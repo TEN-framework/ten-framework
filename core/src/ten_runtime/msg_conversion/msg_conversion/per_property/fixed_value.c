@@ -13,6 +13,7 @@
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/mark.h"
 #include "ten_utils/value/type.h"
 #include "ten_utils/value/value.h"
 #include "ten_utils/value/value_get.h"
@@ -38,19 +39,19 @@ void ten_msg_conversion_per_property_rule_fixed_value_deinit(
 
 bool ten_msg_conversion_per_property_rule_fixed_value_convert(
     ten_msg_conversion_per_property_rule_fixed_value_t *self,
-    ten_shared_ptr_t *new_msg, const char *new_msg_property_path,
-    ten_error_t *err) {
+    ten_shared_ptr_t *msg, const char *msg_property_path, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(new_msg && ten_msg_check_integrity(new_msg), "Invalid argument.");
-  TEN_ASSERT(new_msg_property_path, "Invalid argument.");
+  TEN_ASSERT(msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
+  TEN_ASSERT(msg_property_path, "Invalid argument.");
 
-  return ten_msg_set_property(new_msg, new_msg_property_path,
+  return ten_msg_set_property(msg, msg_property_path,
                               ten_value_clone(self->value), err);
 }
 
 bool ten_msg_conversion_per_property_rule_fixed_value_from_json(
     ten_msg_conversion_per_property_rule_fixed_value_t *self, ten_json_t *json,
-    ten_error_t *err) {
+    TEN_UNUSED ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(json, "Invalid argument.");
 
@@ -60,47 +61,21 @@ bool ten_msg_conversion_per_property_rule_fixed_value_from_json(
   bool success = ten_json_object_peek(json, TEN_STR_VALUE, &value_json);
   TEN_ASSERT(success, "Should not happen.");
 
-  TEN_TYPE data_type = ten_json_get_type(&value_json);
-
-  switch (data_type) {
-  case TEN_TYPE_INT64:
-    self->value =
-        ten_value_create_int64(ten_json_get_integer_value(&value_json));
-    break;
-  case TEN_TYPE_UINT64:
-    self->value =
-        ten_value_create_uint64(ten_json_get_integer_value(&value_json));
-    break;
-  case TEN_TYPE_FLOAT64:
-    self->value =
-        ten_value_create_float64(ten_json_get_real_value(&value_json));
-    break;
-  case TEN_TYPE_BOOL:
-    self->value =
-        ten_value_create_bool(ten_json_get_boolean_value(&value_json));
-    break;
-  case TEN_TYPE_STRING:
-    self->value =
-        ten_value_create_string(ten_json_peek_string_value(&value_json));
-    break;
-  default:
-    TEN_ASSERT(0, "Handle more types: %d", data_type);
-    break;
-  }
-
+  self->value = ten_value_from_json(&value_json);
   if (!self->value) {
     return false;
   }
-
   return true;
 }
 
 bool ten_msg_conversion_per_property_rule_fixed_value_to_json(
     ten_msg_conversion_per_property_rule_fixed_value_t *self, ten_json_t *json,
     ten_error_t *err) {
-  TEN_ASSERT(self && self->value && ten_value_check_integrity(self->value),
-             "Invalid argument.");
-  TEN_ASSERT(json && ten_json_check_integrity(json), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(self->value, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(self->value), "Invalid argument.");
+  TEN_ASSERT(json, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(json), "Invalid argument.");
 
   switch (self->value->type) {
   case TEN_TYPE_INT8:
