@@ -28,7 +28,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.flush_requested = False
         
         # Request completion tracking
-        self.request_completed = False
+        self.completed_request_ids = set()
         self.pending_flush_data = None
         self.pending_flush_ten_env = None   # Track if flush was requested
 
@@ -170,18 +170,18 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(f"Received TTS request: {t.request_id} - {t.text[:50]}...")
             
             # Check if a request has already been completed
-            if self.request_completed:
+            if t.request_id in self.completed_request_ids:
                 self.ten_env.log_error(f"Rejecting request {t.request_id} - session already completed")
                 from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
                 
                 error_info = ModuleErrorVendorInfo(
                     vendor="deepgram",
-                    code="session_completed",
-                    message="Session has already completed a request"
+                    code="duplicate_request_id",
+                    message="Request ID has already been processed"
                 )
                 
                 error = ModuleError(
-                    message="Cannot process new request after session completion",
+                    message="Cannot process duplicate request_id",
                     module="tts",
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=error_info
@@ -341,8 +341,8 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             )
             
             # Mark request as completed
-            self.request_completed = True
-            self.ten_env.log_info(f"Request {t.request_id} marked as completed")
+            self.completed_request_ids.add(t.request_id)
+            self.ten_env.log_info(f"Request {t.request_id} added to completed set")
 
             # If flush was requested, now call base class to send tts_flush_end
             if self.flush_requested and self.pending_flush_data:
