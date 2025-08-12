@@ -8,6 +8,7 @@
 
 #include <stdbool.h>
 
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/signature.h"
@@ -286,7 +287,8 @@ bool ten_json_object_set(ten_json_t *self, const char *key, ten_json_t *value) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
-  TEN_ASSERT(value && ten_json_check_integrity(value), "Invalid argument.");
+  TEN_ASSERT(value, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(value), "Invalid argument.");
 
   if (ten_json_object_peek(self, key, NULL)) {
     TEN_ASSERT(0, "Should not happen.");

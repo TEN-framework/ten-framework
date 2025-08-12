@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/msg/msg.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -57,8 +58,8 @@ bool ten_raw_msg_type_to_json(ten_msg_t *self, ten_json_t *json,
              "Should not happen.");
 
   ten_json_t ten_json = TEN_JSON_INIT_VAL(json->ctx, false);
-  bool success = ten_json_object_peek_or_create_object(
-      json, TEN_STR_TEN, &ten_json);
+  bool success =
+      ten_json_object_peek_or_create_object(json, TEN_STR_TEN, &ten_json);
   TEN_ASSERT(success, "Should not happen.");
 
   ten_json_object_set_string(

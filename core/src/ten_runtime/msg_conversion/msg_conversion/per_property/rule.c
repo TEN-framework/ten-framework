@@ -9,6 +9,7 @@
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_conversion/per_property/fixed_value.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
@@ -77,7 +78,8 @@ bool ten_msg_conversion_per_property_rule_convert(
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
-  TEN_ASSERT(new_msg && ten_msg_check_integrity(new_msg), "Invalid argument.");
+  TEN_ASSERT(new_msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(new_msg), "Invalid argument.");
 
   switch (self->conversion_mode) {
   case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
