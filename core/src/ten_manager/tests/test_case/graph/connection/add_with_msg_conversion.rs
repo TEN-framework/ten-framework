@@ -178,6 +178,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -310,6 +311,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -379,6 +381,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -449,6 +452,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -515,6 +519,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with from_original mode.
@@ -607,6 +612,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with both message and result conversion.
@@ -714,6 +720,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create an invalid message conversion with empty rules.
@@ -788,6 +795,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -877,6 +885,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -965,6 +974,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -1054,6 +1064,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {

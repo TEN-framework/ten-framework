@@ -2,7 +2,7 @@ name: AI Agents (Build & Test)
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main","feat/asr_guarder"]
     paths-ignore:
       - "core/**"
       - "tests/**"
@@ -40,9 +40,8 @@ jobs:
       matrix:
         agent:
           [
-            agents/examples/default,
-            agents/examples/demo,
-            agents/examples/experimental,
+            agents/examples/voice-assistant,
+            agents/examples/voice-assistant-realtime,
           ]
     steps:
       - uses: actions/checkout@v4

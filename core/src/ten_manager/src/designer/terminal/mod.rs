@@ -136,6 +136,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
+                println!("Received text: {}", text);
+
                 // Try to parse the received message as a json.
                 if let Ok(json) = serde_json::from_str::<Value>(&text) {
                     if let Some(message_type) =
@@ -185,9 +187,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                         .unwrap()
                         .write_to_pty(&text)
                         .unwrap_or_else(|_| {
-                            println!(
-                                "Failed to write to PTY with data: {text}"
-                            )
+                            println!("Failed to write to PTY with data: {text}")
                         });
                 }
             }

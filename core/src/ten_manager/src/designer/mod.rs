@@ -105,7 +105,6 @@ pub fn configure_routes(
                     .service(web::resource("/auto-start").route(web::post().to(graphs::auto_start::update_graph_auto_start_endpoint)))
                     .service(
                         web::scope("/nodes")
-                            .service(web::resource("").route(web::post().to(graphs::nodes::get::get_graph_nodes_endpoint)))
                             .service(web::resource("/add").route(web::post().to(graphs::nodes::add::add_graph_node_endpoint)))
                             .service(web::resource("/delete").route(web::post().to(graphs::nodes::delete::delete_graph_node_endpoint)))
                             .service(web::resource("/replace").route(web::post().to(graphs::nodes::replace::replace_graph_node_endpoint)))
@@ -116,7 +115,6 @@ pub fn configure_routes(
                     )
                     .service(
                         web::scope("/connections")
-                            .service(web::resource("").route(web::post().to(graphs::connections::get::get_graph_connections_endpoint)))
                             .service(web::resource("/add").route(web::post().to(graphs::connections::add::add_graph_connection_endpoint)))
                             .service(web::resource("/delete").route(web::post().to(graphs::connections::delete::delete_graph_connection_endpoint)))
                             .service(

@@ -65,7 +65,7 @@ export const ContextMenuItems = (props: { graph: IGraph }) => {
       widget_id:
         GRAPH_ACTIONS_WIDGET_ID +
         `-${type}-` +
-        `${graph?.base_dir}-${graph?.uuid}`,
+        `${graph?.base_dir}-${graph?.graph_id}`,
 
       category: EWidgetCategory.Graph,
       display_type: EWidgetDisplayType.Popup,
@@ -74,7 +74,7 @@ export const ContextMenuItems = (props: { graph: IGraph }) => {
       metadata: {
         type,
         base_dir: graph?.base_dir,
-        graph_id: graph?.uuid,
+        graph_id: graph?.graph_id,
         app_uri: apps?.app_info?.find((app) => app.base_dir === graph?.base_dir)
           ?.app_uri,
       },

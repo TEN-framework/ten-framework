@@ -181,6 +181,9 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_properties: Option<Vec<GraphExposedProperty>>,
+
+    #[serde(skip)]
+    pub pre_flatten: Option<Box<Graph>>,
 }
 
 impl Graph {
@@ -351,6 +354,9 @@ impl Graph {
     ) -> Result<()> {
         // Step 1: Initial validation and completion
         self.validate_and_complete(current_base_dir)?;
+
+        // Step 1.1: Store the pre-flatten graph
+        self.pre_flatten = Some(Box::new(self.clone()));
 
         // Step 2: Attempt to flatten the graph
         // Always attempt to flatten the graph, regardless of current_base_dir

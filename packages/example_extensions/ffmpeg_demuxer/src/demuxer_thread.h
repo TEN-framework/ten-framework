@@ -42,8 +42,8 @@ class demuxer_thread_t {
   friend class demuxer_t;
   friend void *demuxer_thread_main(void *self_);
 
-  void return_error_result_to_start_cmd();
-  void return_success_result_to_start_cmd();
+  void return_error_result_to_prepare_cmd();
+  void return_success_result_to_prepare_cmd();
 
   void send_video_eof();
   void send_audio_eof();
@@ -62,7 +62,7 @@ class demuxer_thread_t {
 
   std::string input_stream_loc_;
 
-  std::unique_ptr<ten::cmd_t> start_cmd_;
+  std::unique_ptr<ten::cmd_t> prepare_cmd_;
 };
 
 }  // namespace ffmpeg_extension

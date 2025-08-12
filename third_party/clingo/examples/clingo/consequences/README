@@ -1,6 +1,0 @@
-This example shows how to enumerate brave consequences using clingo's ability
-to intercept models.
-
-Example calls:
-    clingo brave-py.lp example.lp
-    clingo brave-lua.lp example.lp

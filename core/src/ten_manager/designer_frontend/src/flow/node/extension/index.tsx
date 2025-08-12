@@ -136,8 +136,8 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
       <ContextMenuContent className="w-fit">
         <ContextMenuItems
           node={props as unknown as TExtensionNode}
-          baseDir={data.graph.base_dir}
-          graphId={data.graph.uuid}
+          baseDir={data.graph.base_dir ?? ""}
+          graphId={data.graph.graph_id}
         />
       </ContextMenuContent>
     </ContextMenu>
@@ -281,7 +281,7 @@ const HandleGroupItem = (props: {
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
             extension: data.name,
-            graph: data.graph.uuid,
+            graph: data.graph.graph_id,
             connectionType,
           })}
           isConnectable={isConnectable}
@@ -389,7 +389,7 @@ const HandleGroupItem = (props: {
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "source",
             extension: data.name,
-            graph: data.graph.uuid,
+            graph: data.graph.graph_id,
             connectionType,
           })}
           isConnectable={isConnectable}

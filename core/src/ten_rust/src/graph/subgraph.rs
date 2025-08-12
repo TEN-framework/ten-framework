@@ -919,6 +919,7 @@ impl Graph {
             },
             exposed_messages: updated_exposed_messages,
             exposed_properties: updated_exposed_properties,
+            pre_flatten: Some(Box::new(graph.clone())),
         }))
     }
 }

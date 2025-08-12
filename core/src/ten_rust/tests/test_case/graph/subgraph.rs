@@ -69,6 +69,7 @@ mod tests {
             }]),
             exposed_messages: Some(vec![]),
             exposed_properties: Some(vec![]),
+            pre_flatten: None,
         };
 
         // Create a subgraph to be loaded
@@ -119,6 +120,7 @@ mod tests {
                 name: "app_id".to_string(),
                 subgraph: None,
             }]),
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -289,6 +291,7 @@ mod tests {
                 name: "app_id".to_string(),
                 subgraph: None,
             }]),
+            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages
@@ -325,6 +328,7 @@ mod tests {
                 },
             ]),
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -450,6 +454,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages that doesn't include the
@@ -470,6 +475,7 @@ mod tests {
                 subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -538,6 +544,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a subgraph without exposed_messages
@@ -552,6 +559,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -622,6 +630,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a subgraph that contains another subgraph (nested)
@@ -671,6 +680,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create the innermost subgraph
@@ -717,6 +727,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraphs to files
@@ -866,6 +877,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a subgraph that contains another subgraph (nested)
@@ -897,6 +909,7 @@ mod tests {
                 subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create the innermost subgraph
@@ -925,6 +938,7 @@ mod tests {
                 extension: Some("ext_z".to_string()),
             }]),
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraphs to files
@@ -988,6 +1002,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let result = main_graph.flatten_graph(None).await;
@@ -1152,6 +1167,7 @@ mod tests {
             ]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages for all message types
@@ -1226,6 +1242,7 @@ mod tests {
                 },
             ]),
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -1365,6 +1382,7 @@ mod tests {
                     subgraph: Some("subgraph_1".to_string()),
                 },
             ]),
+            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_properties
@@ -1392,6 +1410,7 @@ mod tests {
                 name: "config_b".to_string(),
                 subgraph: None,
             }]),
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
