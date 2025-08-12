@@ -69,13 +69,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             self.websocket_ready = True
             ten_env.log_info("KEYPOINT: WebSocket connection established - ready to process TTS requests")
 
-            # Process any requests that were queued while WebSocket was connecting
-            if self.pending_requests:
-                ten_env.log_info(f"Processing {len(self.pending_requests)} queued TTS requests")
-                for queued_request in self.pending_requests:
-                    await self._process_tts_request(queued_request)
-                self.pending_requests.clear()
-
             ten_env.log_info("DeepgramTTS extension initialized successfully with WebSocket")
 
         except Exception as e:
