@@ -241,6 +241,11 @@ class DeepgramTTS:
                     OSError) as e:
                 if self.ten_env:
                     self.ten_env.log_error(f"Connection attempt {attempt + 1} failed: {str(e)}")
+                # Check for authentication errors (HTTP 401) - do not retry
+                if "HTTP 401" in str(e):
+                    if self.ten_env:
+                        self.ten_env.log_error("Authentication failed: Invalid API key")
+                    raise Exception("Invalid Deepgram API key")
                 
                 # Exponential backoff with jitter
                 if attempt < self.config.reconnect_attempts - 1:

@@ -50,17 +50,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             # Use TEN framework method to read config as per PR feedback
             config_json, _ = await ten_env.get_property_to_json("")
             self.config = await DeepgramTTSConfig.create_async(ten_env=ten_env)
+            ten_env.log_info(f"DEBUG: Received config - api_key: [{self.config.api_key}], type: {type(self.config.api_key)}")
 
 
-            # Handle environment variable fallback for api_key
-            if not self.config.api_key or self.config.api_key == "test_api_key" or self.config.api_key.startswith("${env:"):
-                # Try to get from environment variables
-                env_key = os.getenv("DEEPGRAM_API_KEY") or os.getenv("DEEPGRAM_TTS_API_KEY")
-                if env_key:
-                    self.config.api_key = env_key
-                    ten_env.log_info("Using API key from environment variable")
-                elif self.config.api_key.startswith("${env:"):
-                    ten_env.log_warn(f"Environment variable not resolved: {self.config.api_key}")
 
             if not self.config.api_key:
                 # Send fatal error using TTS2 base class method
