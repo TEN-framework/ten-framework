@@ -2,7 +2,6 @@ import asyncio
 import os
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from google.cloud import speech_v2 as speech
 from google.cloud.speech_v2.types import (
@@ -64,15 +63,11 @@ class GoogleASRClient:
             await self._initialize_google_client()
             self._stop_event.clear()
             self.is_finalizing = False
-            self._recognition_task = asyncio.create_task(
-                self._run_recognition()
-            )
+            self._recognition_task = asyncio.create_task(self._run_recognition())
             self.ten_env.log_info("Google ASR client started successfully.")
         except Exception as e:
             self.ten_env.log_error(f"Failed to start Google ASR client: {e}")
-            await self.on_error_callback(
-                500, f"Failed to start client: {str(e)}"
-            )
+            await self.on_error_callback(500, f"Failed to start client: {str(e)}")
             raise
 
     async def _initialize_google_client(self) -> None:
@@ -106,15 +101,13 @@ class GoogleASRClient:
                 # Build credentials directly from JSON string (no temp file needed)
                 try:
                     service_account_info = json.loads(credentials_string)
-                    credentials = (
-                        service_account.Credentials.from_service_account_info(
-                            service_account_info
-                        )
+                    credentials = service_account.Credentials.from_service_account_info(
+                        service_account_info
                     )
                 except Exception as cred_err:
                     raise ValueError(
                         f"Invalid adc_credentials_string JSON: {cred_err}"
-                    )
+                    ) from cred_err
             else:
                 self.ten_env.log_info(
                     "No ADC credentials path specified, using default ADC"
@@ -127,14 +120,10 @@ class GoogleASRClient:
                 and self.config.location != "global"
             ):
                 api_endpoint = f"{self.config.location}-speech.googleapis.com"
-                self.ten_env.log_info(
-                    f"Using regional endpoint: {api_endpoint}"
-                )
+                self.ten_env.log_info(f"Using regional endpoint: {api_endpoint}")
 
             client_options = (
-                ClientOptions(api_endpoint=api_endpoint)
-                if api_endpoint
-                else None
+                ClientOptions(api_endpoint=api_endpoint) if api_endpoint else None
             )
 
             # Create client with the determined credentials
@@ -179,9 +168,7 @@ class GoogleASRClient:
                     "Initialized Google Speech V2 client with Application Default Credentials"
                 )
         except Exception as e:
-            self.ten_env.log_error(
-                f"Failed to initialize Google Speech client: {e}"
-            )
+            self.ten_env.log_error(f"Failed to initialize Google Speech client: {e}")
             raise
 
     async def stop(self) -> None:
@@ -271,9 +258,7 @@ class GoogleASRClient:
         ):
             try:
                 if not self.speech_client:
-                    raise ConnectionError(
-                        "Google Speech client is not initialized."
-                    )
+                    raise ConnectionError("Google Speech client is not initialized.")
                 requests = self._audio_generator()
                 self.ten_env.log_info("Starting streaming recognition...")
                 try:
@@ -281,30 +266,19 @@ class GoogleASRClient:
                         requests=requests
                     )
                     if getattr(self.config, "enable_detailed_logging", False):
-                        self.ten_env.log_debug(
-                            "Got streaming response iterator"
-                        )
+                        self.ten_env.log_debug("Got streaming response iterator")
                         self.ten_env.log_debug(f"Responses: {responses}")
 
                     async for response in responses:
                         if self._stop_event.is_set():
                             break
-                        if getattr(
-                            self.config, "enable_detailed_logging", False
-                        ):
-                            self.ten_env.log_debug(
-                                f"Received response: {response}"
-                            )
+                        if getattr(self.config, "enable_detailed_logging", False):
+                            self.ten_env.log_debug(f"Received response: {response}")
                         await self._process_response(response)
                 except grpc.RpcError as e:
-                    error_code = (
-                        e.code().value[0]
-                        if hasattr(e, "code") and hasattr(e.code(), "value")
-                        else 500
-                    )
-                    error_message = (
-                        e.details() if hasattr(e, "details") else str(e)
-                    )
+                    # Simplify: rely only on stringified error
+                    error_code = 500
+                    error_message = str(e)
                     self.ten_env.log_error(
                         f"gRPC error in streaming_recognize ({error_code}): {error_message}"
                     )
@@ -319,31 +293,9 @@ class GoogleASRClient:
                     break  # Clean exit after finalize
 
             except (gcp_exceptions.GoogleAPICallError, grpc.RpcError) as e:
-                error_code = (
-                    e.code().value[0]
-                    if hasattr(e, "code") and hasattr(e.code(), "value")
-                    else 500
-                )
-                error_message = e.details() if hasattr(e, "details") else str(e)
-
-                # Provide more specific error information for common issues
-                if "IAM_PERMISSION_DENIED" in error_message:
-                    self.ten_env.log_error(
-                        f"Google Cloud Speech API permission denied ({error_code}): {error_message}"
-                    )
-                    self.ten_env.log_error(
-                        "Please ensure the service account has the following roles:"
-                    )
-                    self.ten_env.log_error(
-                        "- Speech-to-Text API User (roles/speech.client)"
-                    )
-                    self.ten_env.log_error(
-                        "- Or custom role with 'speech.recognizers.recognize' permission"
-                    )
-                else:
-                    self.ten_env.log_error(
-                        f"Google API/gRPC error ({error_code}): {error_message}"
-                    )
+                # Simplify: use only stringified error
+                error_code = 500
+                error_message = str(e)
 
                 await self.on_error_callback(error_code, error_message)
 
@@ -360,9 +312,7 @@ class GoogleASRClient:
                     break  # Non-retryable error
 
             except Exception as e:
-                self.ten_env.log_error(
-                    f"Unexpected error in recognition loop: {e}"
-                )
+                self.ten_env.log_error(f"Unexpected error in recognition loop: {e}")
                 await self.on_error_callback(500, str(e))
                 break
 
@@ -377,9 +327,7 @@ class GoogleASRClient:
         for result in response.results:
             if not result.alternatives:
                 if getattr(self.config, "enable_detailed_logging", False):
-                    self.ten_env.log_debug(
-                        "Skipping result with no alternatives"
-                    )
+                    self.ten_env.log_debug("Skipping result with no alternatives")
                 continue
 
             # We'll use the first alternative as the primary result.
@@ -400,13 +348,9 @@ class GoogleASRClient:
                     )
                 )
 
-            normalized_lang = self._normalize_language_code(
-                result.language_code
-            )
+            normalized_lang = self._normalize_language_code(result.language_code)
             if not normalized_lang:
-                normalized_lang = self._normalize_language_code(
-                    self.config.language
-                )
+                normalized_lang = self._normalize_language_code(self.config.language)
 
             asr_result = ASRResult(
                 final=result.is_final,
@@ -416,11 +360,7 @@ class GoogleASRClient:
                 language=normalized_lang,
                 start_ms=(int(words[0].start_ms) if words else 0),
                 duration_ms=(
-                    int(
-                        words[-1].start_ms
-                        + words[-1].duration_ms
-                        - words[0].start_ms
-                    )
+                    int(words[-1].start_ms + words[-1].duration_ms - words[0].start_ms)
                     if words
                     else 0
                 ),
