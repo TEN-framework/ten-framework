@@ -60,11 +60,16 @@ class BytedanceASRConfig(BaseModel):
             config.token = encrypt(config.token)
 
         if config.params:
-            for key, value in config.params.items():
+            # Guard for static analyzers: ensure dict semantics for params
+            params_dict: dict[str, Any] = (
+                dict(config.params) if isinstance(config.params, dict) else {}
+            )
+            for key, value in params_dict.items():
                 if key == "appid":
-                    config.params[key] = encrypt(value)
+                    params_dict[key] = encrypt(value)
 
                 if key == "token":
-                    config.params[key] = encrypt(value)
+                    params_dict[key] = encrypt(value)
+            config.params = params_dict
 
         return config.model_dump_json()
