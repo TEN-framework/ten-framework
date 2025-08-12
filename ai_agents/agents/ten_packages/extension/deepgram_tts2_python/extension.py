@@ -51,30 +51,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             config_json, _ = await ten_env.get_property_to_json("")
             self.config = await DeepgramTTSConfig.create_async(ten_env=ten_env)
 
-            # Handle test_miss_required_params scenario
-            # Check if we are running the specific test that expects missing required parameters
-            import os
-            current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
-            if "test_miss_required_params" in current_test or "test_invalid_required_params" in current_test:
-                ten_env.log_error(f"FATAL: {current_test} detected - simulating missing/invalid required parameters")
-
-                # Fixed ModuleError structure as per PR feedback
-                from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo, ModuleType
-
-                error_info = ModuleErrorVendorInfo(
-                    vendor="deepgram",
-                    code="MISSING_API_KEY",
-                    message="Deepgram API key is required"
-                )
-
-                error = ModuleError(
-                    message="Deepgram API key is required",
-                    module_name=ModuleType.TTS,
-                    code=ModuleErrorCode.FATAL_ERROR,
-                    vendor_info=error_info
-                )
-                await self.send_tts_error(None, error)
-                return
 
             # Handle environment variable fallback for api_key
             if not self.config.api_key or self.config.api_key == "test_api_key" or self.config.api_key.startswith("${env:"):
