@@ -11,7 +11,7 @@
         {
             "type": "system",
             "name": "ten_ai_base",
-            "version": "=0.6.21"
+            "version": "=0.6.26"
         }
     ],
     "api": {
@@ -20,7 +20,10 @@
                 "project_id": {
                     "type": "string"
                 },
-                "api_key": {
+                "adc_credentials_path": {
+                    "type": "string"
+                },
+                "location": {
                     "type": "string"
                 },
                 "model": {

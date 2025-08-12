@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 
-
+from datetime import datetime
 import asyncio
 import os
 from ten_runtime import (
@@ -20,7 +20,12 @@ from ten_ai_base.asr import (
     ASRResult,
 )
 
-from ten_ai_base.message import ModuleError, ModuleType, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleType,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_ai_base.dumper import Dumper
 
 from .config import GoogleASRConfig
@@ -39,6 +44,7 @@ class GoogleASRExtension(AsyncASRBaseExtension):
         self.reconnect_manager: ReconnectManager | None = None
         self.stopped: bool = False
         self._reconnect_task: asyncio.Task | None = None
+        self.last_finalize_timestamp: int = 0
 
     @override
     def vendor(self) -> str:
@@ -65,12 +71,17 @@ class GoogleASRExtension(AsyncASRBaseExtension):
             ),
         )
         # For non-fatal errors, attempt reconnect in background
-        if severity == ModuleErrorCode.NON_FATAL_ERROR.value and not self.stopped:
+        if (
+            severity == ModuleErrorCode.NON_FATAL_ERROR.value
+            and not self.stopped
+        ):
             try:
                 # Skip reconnect for client-side normal shutdowns
                 if (code == 1) or ("CANCELLED" in (message or "").upper()):
                     if self.ten_env:
-                        self.ten_env.log_info("Non-fatal CANCELLED received; skip reconnect.")
+                        self.ten_env.log_debug(
+                            "Non-fatal CANCELLED received; skip reconnect."
+                        )
                     return
 
                 # Mark as disconnected and stop client before reconnecting
@@ -83,14 +94,18 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                     self.client = None
                 if self.ten_env:
                     self.ten_env.log_warn(
-                        f"Scheduling reconnect due to non-fatal error ({code}): {message}"
+                        f"Scheduling reconnect due to non-fatal error ({code})"
                     )
                 # Cancel existing pending reconnect task if any
                 if self._reconnect_task and not self._reconnect_task.done():
                     self._reconnect_task.cancel()
-                self._reconnect_task = asyncio.create_task(self._handle_reconnect())
+                self._reconnect_task = asyncio.create_task(
+                    self._handle_reconnect()
+                )
+
                 def _clear_task(_):
                     self._reconnect_task = None
+
                 self._reconnect_task.add_done_callback(_clear_task)
             except Exception:
                 ...
@@ -111,9 +126,27 @@ class GoogleASRExtension(AsyncASRBaseExtension):
 
         # gRPC canonical codes
         # Retryable (non-fatal)
-        grpc_retryable = {1, 2, 4, 8, 10, 13, 14}  # CANCELLED, UNKNOWN, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, ABORTED, INTERNAL, UNAVAILABLE
+        grpc_retryable = {
+            1,
+            2,
+            4,
+            8,
+            10,
+            13,
+            14,
+        }  # CANCELLED, UNKNOWN, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, ABORTED, INTERNAL, UNAVAILABLE
         # Fatal (non-retryable)
-        grpc_fatal = {3, 5, 6, 7, 9, 11, 12, 15, 16}  # INVALID_ARGUMENT, NOT_FOUND, ALREADY_EXISTS, PERMISSION_DENIED, FAILED_PRECONDITION, OUT_OF_RANGE, UNIMPLEMENTED, DATA_LOSS, UNAUTHENTICATED
+        grpc_fatal = {
+            3,
+            5,
+            6,
+            7,
+            9,
+            11,
+            12,
+            15,
+            16,
+        }  # INVALID_ARGUMENT, NOT_FOUND, ALREADY_EXISTS, PERMISSION_DENIED, FAILED_PRECONDITION, OUT_OF_RANGE, UNIMPLEMENTED, DATA_LOSS, UNAUTHENTICATED
 
         # HTTP mappings commonly seen
         http_retryable = {429, 503, 504}
@@ -167,30 +200,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
         await super().on_init(ten_env)
         try:
             config_json, _ = await ten_env.get_property_to_json()
-            # Load full config so root-level fields (e.g., dump, dump_path) are honored
             self.config = GoogleASRConfig.model_validate_json(config_json)
-            # Merge params into top-level fields if provided
             self.config.update(self.config.params)
 
-            # Debug: Print ADC authentication information
-            if self.config.project_id:
-                ten_env.log_info(f"Google ASR Project ID: {self.config.project_id}")
-            else:
-                ten_env.log_info("Google ASR Project ID not set, will use ADC default project")
-
-            if self.config.adc_credentials_path:
-                ten_env.log_info(f"Google ASR ADC credentials path: {self.config.adc_credentials_path}")
-            else:
-                ten_env.log_info("Google ASR ADC credentials path not set, will use environment variable or default ADC")
-
-            is_valid, error_msg = self.config.validate_config()
-            if not is_valid:
-                raise Exception(
-                    f"Google ASR config validation failed: {error_msg}"
-                )
-            ten_env.log_info("Google ASR configuration loaded and validated.")
-
-            # Initialize audio dumper if enabled
             if self.config.dump:
                 dump_dir = self.config.dump_path or "."
                 os.makedirs(dump_dir, exist_ok=True)
@@ -201,7 +213,14 @@ class GoogleASRExtension(AsyncASRBaseExtension):
             self.reconnect_manager = ReconnectManager(logger=ten_env)
         except Exception as e:
             ten_env.log_error(f"Error during Google ASR initialization: {e}")
-            raise Exception(f"Initialization failed: {e}") from e
+            self.config = GoogleASRConfig.model_validate_json("{}")
+            await self.send_asr_error(
+                ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                ),
+            )
 
     @override
     async def start_connection(self) -> None:
@@ -235,7 +254,7 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 self.reconnect_manager.mark_connection_successful()
         except Exception as e:
             self.ten_env.log_error(
-                f"Failed to start Google ASR connection: {e}"
+                f"KEYPOINT Failed to start Google ASR connection: {e}"
             )
             self.connected = False
             await self._on_asr_error(500, f"Failed to start connection: {e}")
@@ -281,9 +300,14 @@ class GoogleASRExtension(AsyncASRBaseExtension):
 
             # Only forward to vendor client when connected
             if self.is_connected() and self.client:
+                self.audio_timeline.add_user_audio(
+                    int(len(buf) / (self.config.sample_rate / 1000 * 2))
+                )
                 await self.client.send_audio(bytes(buf))
             else:
-                self.ten_env.log_warn("Client not connected; audio dumped only.")
+                self.ten_env.log_warn(
+                    "Client not connected; audio dumped only."
+                )
         finally:
             frame.unlock_buf(buf)
 
@@ -296,17 +320,13 @@ class GoogleASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_warn("Cannot finalize, client not connected.")
             return
 
+        self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
+        _ = self.ten_env.log_debug(
+            f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
+        )
+
         self.ten_env.log_info(f"Finalizing ASR for session: {session_id}")
         await self.client.finalize()
-        # Optional grace period for provider to deliver final result
-        try:
-            delay = 0.5
-            if self.config and hasattr(self.config, "finalize_grace_seconds"):
-                # type: ignore[attr-defined]
-                delay = float(getattr(self.config, "finalize_grace_seconds", 0.5))
-            await asyncio.sleep(delay)
-        except Exception:
-            ...
         await self.send_asr_finalize_end()
 
     async def _handle_reconnect(self) -> None:
@@ -324,7 +344,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_debug("Google ASR reconnect attempt completed")
         except Exception as e:
             if self.ten_env:
-                self.ten_env.log_error(f"Reconnect attempt failed with exception: {e}")
+                self.ten_env.log_error(
+                    f"Reconnect attempt failed with exception: {e}"
+                )
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:

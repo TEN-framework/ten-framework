@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -11,6 +12,7 @@ from google.cloud.speech_v2.types import (
 from google.api_core import exceptions as gcp_exceptions
 from google.api_core.client_options import ClientOptions
 import grpc
+from google.oauth2 import service_account
 
 from ten_ai_base.struct import ASRResult, ASRWord
 
@@ -76,35 +78,84 @@ class GoogleASRClient:
     async def _initialize_google_client(self) -> None:
         """Initializes the Google Speech async client using ADC."""
         try:
-            # Check for ADC credentials path from config or environment
-            credentials_path = self.config.adc_credentials_path or os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+            # Check credentials from config or environment
+            credentials_path = self.config.adc_credentials_path or os.getenv(
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            )
+            credentials_string = getattr(
+                self.config, "adc_credentials_string", ""
+            ) or os.getenv("GOOGLE_APPLICATION_CREDENTIALS_STRING", "")
 
-            self.ten_env.log_info(f"ADC credentials path: {credentials_path}")
+            self.ten_env.log_debug(f"ADC credentials path: {credentials_path}")
+            if credentials_string:
+                # Do not log raw credential content
+                self.ten_env.log_debug("ADC credentials JSON string provided.")
 
             if credentials_path:
-                self.ten_env.log_info(f"Using Service Account credentials from: {credentials_path}")
+                self.ten_env.log_debug(
+                    f"Using Service Account credentials from: {credentials_path}"
+                )
                 if not os.path.exists(credentials_path):
-                    raise FileNotFoundError(f"Service Account file not found: {credentials_path}")
+                    raise FileNotFoundError(
+                        f"Service Account file not found: {credentials_path}"
+                    )
 
                 # Set the environment variable for Google Cloud SDK
-                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+            elif credentials_string:
+                # Build credentials directly from JSON string (no temp file needed)
+                try:
+                    service_account_info = json.loads(credentials_string)
+                    credentials = (
+                        service_account.Credentials.from_service_account_info(
+                            service_account_info
+                        )
+                    )
+                except Exception as cred_err:
+                    raise ValueError(
+                        f"Invalid adc_credentials_string JSON: {cred_err}"
+                    )
             else:
-                self.ten_env.log_info("No ADC credentials path specified, using default ADC")
+                self.ten_env.log_info(
+                    "No ADC credentials path specified, using default ADC"
+                )
 
             # Choose regional endpoint if location is set and not global
             api_endpoint: str | None = None
-            if getattr(self.config, "location", "global") and self.config.location != "global":
+            if (
+                getattr(self.config, "location", "global")
+                and self.config.location != "global"
+            ):
                 api_endpoint = f"{self.config.location}-speech.googleapis.com"
-                self.ten_env.log_info(f"Using regional endpoint: {api_endpoint}")
+                self.ten_env.log_info(
+                    f"Using regional endpoint: {api_endpoint}"
+                )
 
-            client_options = ClientOptions(api_endpoint=api_endpoint) if api_endpoint else None
+            client_options = (
+                ClientOptions(api_endpoint=api_endpoint)
+                if api_endpoint
+                else None
+            )
 
-            # Create client with ADC (Application Default Credentials)
-            # This will automatically use the best available credentials
+            # Create client with the determined credentials
+            # Priority: path > JSON string > default ADC
             if credentials_path:
-                # Explicitly pass credentials to ensure they are used
                 from google.auth import default
-                credentials, project = default()
+
+                adc_credentials, _project = default()
+                if client_options:
+                    self.speech_client = speech.SpeechAsyncClient(
+                        credentials=adc_credentials,
+                        client_options=client_options,
+                    )
+                else:
+                    self.speech_client = speech.SpeechAsyncClient(
+                        credentials=adc_credentials
+                    )
+                self.ten_env.log_info(
+                    "Initialized Google Speech V2 client with explicit credentials"
+                )
+            elif credentials_string:
                 if client_options:
                     self.speech_client = speech.SpeechAsyncClient(
                         credentials=credentials, client_options=client_options
@@ -114,7 +165,7 @@ class GoogleASRClient:
                         credentials=credentials
                     )
                 self.ten_env.log_info(
-                    f"Initialized Google Speech V2 client with explicit credentials from {credentials_path}"
+                    "Initialized Google Speech V2 client with explicit credentials"
                 )
             else:
                 # Use default ADC
@@ -162,7 +213,7 @@ class GoogleASRClient:
 
     async def finalize(self) -> None:
         """Signals that the current utterance is complete."""
-        self.ten_env.log_info("Finalizing utterance.")
+        self.ten_env.log_debug("Finalizing utterance.")
         self.is_finalizing = True
         await self._audio_queue.put(None)  # Signal end of audio stream
 
@@ -178,30 +229,33 @@ class GoogleASRClient:
                 },
             )
             recognizer_path = self.config.get_recognizer_path()
-
-            self.ten_env.log_info(f"Using recognizer: {recognizer_path}")
-            self.ten_env.log_info(f"Using streaming config: {streaming_config}")
+            if getattr(self.config, "enable_detailed_logging", False):
+                self.ten_env.log_debug(f"Streaming config: {streaming_config}")
 
             # First request must contain recognizer and streaming_config, not audio
             # recognizer format: projects/{project}/locations/{location}/recognizers/{recognizer}
             # According to Google Cloud Speech V2 docs, recognizer is required
             recognizer_path = self.config.get_recognizer_path()
             if recognizer_path:
-                self.ten_env.log_info(f"Using recognizer: {recognizer_path}")
+                self.ten_env.log_debug(f"Using recognizer: {recognizer_path}")
                 yield StreamingRecognizeRequest(
                     recognizer=recognizer_path,
-                    streaming_config=streaming_config
+                    streaming_config=streaming_config,
                 )
             else:
                 # If no recognizer path, we need to get project_id from ADC
                 # This is a fallback for when project_id is not provided in config
-                self.ten_env.log_error("No recognizer path available. Please provide project_id in config.")
-                raise ValueError("Recognizer path is required for Google Cloud Speech V2 API")
+                self.ten_env.log_error(
+                    "No recognizer path available. Please provide project_id in config."
+                )
+                raise ValueError(
+                    "Recognizer path is required for Google Cloud Speech V2 API"
+                )
 
             while not self._stop_event.is_set():
                 chunk = await self._audio_queue.get()
                 if chunk is None:
-                    self.ten_env.log_info("Received end-of-stream signal")
+                    self.ten_env.log_debug("Received end-of-stream signal")
                     break
                 yield speech.StreamingRecognizeRequest(audio=chunk)
         except Exception as e:
@@ -227,14 +281,20 @@ class GoogleASRClient:
                         requests=requests
                     )
                     if getattr(self.config, "enable_detailed_logging", False):
-                        self.ten_env.log_info("Got streaming response iterator")
+                        self.ten_env.log_debug(
+                            "Got streaming response iterator"
+                        )
                         self.ten_env.log_debug(f"Responses: {responses}")
 
                     async for response in responses:
                         if self._stop_event.is_set():
                             break
-                        if getattr(self.config, "enable_detailed_logging", False):
-                            self.ten_env.log_debug(f"Received response: {response}")
+                        if getattr(
+                            self.config, "enable_detailed_logging", False
+                        ):
+                            self.ten_env.log_debug(
+                                f"Received response: {response}"
+                            )
                         await self._process_response(response)
                 except grpc.RpcError as e:
                     error_code = (
@@ -242,7 +302,9 @@ class GoogleASRClient:
                         if hasattr(e, "code") and hasattr(e.code(), "value")
                         else 500
                     )
-                    error_message = e.details() if hasattr(e, "details") else str(e)
+                    error_message = (
+                        e.details() if hasattr(e, "details") else str(e)
+                    )
                     self.ten_env.log_error(
                         f"gRPC error in streaming_recognize ({error_code}): {error_message}"
                     )
@@ -314,7 +376,10 @@ class GoogleASRClient:
             )
         for result in response.results:
             if not result.alternatives:
-                self.ten_env.log_info("Skipping result with no alternatives")
+                if getattr(self.config, "enable_detailed_logging", False):
+                    self.ten_env.log_debug(
+                        "Skipping result with no alternatives"
+                    )
                 continue
 
             # We'll use the first alternative as the primary result.
@@ -335,9 +400,13 @@ class GoogleASRClient:
                     )
                 )
 
-            normalized_lang = self._normalize_language_code(result.language_code)
+            normalized_lang = self._normalize_language_code(
+                result.language_code
+            )
             if not normalized_lang:
-                normalized_lang = self._normalize_language_code(self.config.language)
+                normalized_lang = self._normalize_language_code(
+                    self.config.language
+                )
 
             asr_result = ASRResult(
                 final=result.is_final,

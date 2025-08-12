@@ -14,9 +14,12 @@ class GoogleASRConfig(BaseModel):
     """
 
     # Google Cloud credentials and project settings
-    project_id: str = ""  # Google Cloud Project ID (optional, will use ADC if not provided)
+    project_id: str = (
+        ""  # Google Cloud Project ID (optional, will use ADC if not provided)
+    )
     location: str = "global"  # Google Cloud location
     adc_credentials_path: str = ""  # Path to ADC credentials file (optional)
+    adc_credentials_string: str = ""  # ADC credentials string (optional)
 
     def get_client_options(self) -> dict[str, str]:
         """Get client options for Google Cloud Speech client."""
@@ -44,7 +47,9 @@ class GoogleASRConfig(BaseModel):
     max_alternatives: int = 1  # Maximum number of recognition alternatives
 
     # Streaming settings
-    single_utterance: bool = False  # Not used in V2 streaming_features; kept for compatibility
+    single_utterance: bool = (
+        False  # Not used in V2 streaming_features; kept for compatibility
+    )
     interim_results: bool = True  # Enable interim results
 
     # Content filtering

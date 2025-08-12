@@ -2,7 +2,8 @@
     "params": {
         "project_id": "${env:GOOGLE_ASR_PROJECT_ID}",
         "location": "us-central1",
-        "adc_credentials_path": "${env:GOOGLE_APPLICATION_CREDENTIALS}",
+        "adc_credentials_path": "${env:GOOGLE_APPLICATION_CREDENTIALS_PATH}",
+        "adc_credentials_string": "${env:GOOGLE_APPLICATION_CREDENTIALS_STRING}",
         "language": "cmn-Hans-CN",
         "model": "chirp_2",
         "sample_rate": 16000,
