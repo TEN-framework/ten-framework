@@ -164,10 +164,10 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
     async def mock_send_text_with_error(text: str):
         vendor_info = ModuleErrorVendorInfo(
             vendor="bytedance",
-            code=40000,
+            code="40000",
             message="Invalid voice type or parameters",
         )
-        raise ModuleVendorException("TTS request failed", vendor_info)
+        raise ModuleVendorException(vendor_info)
 
     mock_instance.send_text.side_effect = mock_send_text_with_error
 

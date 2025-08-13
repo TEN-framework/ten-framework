@@ -73,7 +73,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 "",
                 ModuleError(
                     message=f"Initialization failed: {e}",
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
@@ -199,7 +199,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     self.current_request_id,
                     ModuleError(
                         message=error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
@@ -290,7 +290,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         self.current_request_id or t.request_id,
                         ModuleError(
                             message=error_msg,
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info=ModuleErrorVendorInfo(
                                 vendor=self.vendor()
@@ -319,7 +319,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id or t.request_id,
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),

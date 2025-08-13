@@ -247,7 +247,7 @@ class BytedanceV3Client:
         self.config = config
         self.app_id = config.appid
         self.token = config.token
-        self.speaker = config.voice_type
+        self.speaker = config.speaker
         self.session_id = uuid.uuid4().hex
         self.ws: WebSocketClientProtocol = None
         self.stop_event = asyncio.Event()

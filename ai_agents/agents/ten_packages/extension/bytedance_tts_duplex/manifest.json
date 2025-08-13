@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_tts_duplex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -32,20 +32,31 @@
     ],
     "property": {
       "properties": {
-        "appid": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
           "type": "string"
         },
-        "token": {
-          "type": "string"
-        },
-        "voice_type": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
-        },
-        "api_url": {
-          "type": "string"
+        "params": {
+          "type": "object",
+          "properties": {
+            "appid": {
+              "type": "string"
+            },
+            "token": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "api_url": {
+              "type": "string"
+            }
+          }
         }
       }
     }

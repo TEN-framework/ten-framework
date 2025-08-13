@@ -33,7 +33,7 @@ class BytedanceTTSDuplexConfig(BaseModel):
     token: str
 
     # Refer to: https://www.volcengine.com/docs/6561/1257544.
-    voice_type: str = "zh_female_shuangkuaisisi_moon_bigtts"
+    speaker: str = "zh_female_shuangkuaisisi_moon_bigtts"
     sample_rate: int = 24000
     api_url: str = "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
     dump: bool = False
@@ -43,6 +43,12 @@ class BytedanceTTSDuplexConfig(BaseModel):
 
     def update_params(self) -> None:
         ##### get value from params #####
+        if "appid" in self.params:
+            self.appid = self.params["appid"]
+
+        if "token" in self.params:
+            self.token = self.params["token"]
+
         if (
             "audio_params" in self.params
             and "sample_rate" in self.params["audio_params"]
@@ -69,7 +75,7 @@ class BytedanceTTSDuplexConfig(BaseModel):
         return (
             f"BytedanceTTSDuplexConfig(appid={self.appid}, "
             f"token={mask_sensitive_data(self.token)}, "
-            f"voice_type={self.voice_type}, "
+            f"speaker={self.speaker}, "
             f"sample_rate={self.sample_rate}, "
             f"api_url={self.api_url}, "
             f"dump={self.dump}, "

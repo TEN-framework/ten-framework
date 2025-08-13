@@ -147,7 +147,12 @@ def test_reconnect_after_connection_drop(MockBytedanceV3Client):
         print(f"KEYPOINT send_text_call_count: {send_text_call_count}")
         if send_text_call_count == 1:
             # On the first call, simulate a connection drop
-            raise ConnectionRefusedError("Simulated connection drop from test")
+            vendor_info = ModuleErrorVendorInfo(
+                vendor="bytedance",
+                code="10000",
+                message="Simulated connection drop from test",
+            )
+            raise ModuleVendorException(vendor_info)
         else:
             # On the second call, populate the queue with audio data
             # to simulate successful TTS response

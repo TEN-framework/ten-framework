@@ -69,6 +69,9 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     f"KEYPOINT config: {self.config.to_str()}"
                 )
 
+                # extract audio_params and additions from config
+                self.config.update_params()
+
                 if not self.config.appid:
                     self.ten_env.log_error("get property appid")
                     raise ValueError("appid is required")
@@ -76,9 +79,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 if not self.config.token:
                     self.ten_env.log_error("get property token")
                     raise ValueError("token is required")
-
-                # extract audio_params and additions from config
-                self.config.update_params()
 
             await self._start_connection()
             self.msg_polling_task = asyncio.create_task(self._loop())
@@ -88,7 +88,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.current_request_id or "",
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info={},
                 ),
@@ -286,7 +286,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     t.request_id,
                     ModuleError(
                         message=error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=None,
                     ),
@@ -304,7 +304,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     t.request_id,
                     ModuleError(
                         message=error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=None,
                     ),
@@ -388,7 +388,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.current_request_id,
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=e.error,
                 ),
@@ -402,7 +402,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.current_request_id,
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info={},
                 ),

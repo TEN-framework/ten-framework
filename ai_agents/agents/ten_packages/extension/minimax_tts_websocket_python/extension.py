@@ -78,6 +78,8 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     self.config = MinimaxTTSWebsocketConfig.model_validate_json(
                         config_json
                     )
+                    # extract audio_params and additions from config
+                    self.config.update_params()
                 except Exception as validation_error:
                     error_msg = f"Configuration validation failed: {str(validation_error)}"
                     self.ten_env.log_error(error_msg)
@@ -94,22 +96,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     return
 
                 self.ten_env.log_info(f"Parsed config: {self.config.to_str()}")
-
-                # Check if API key is still a placeholder
-                if self.config.api_key.startswith("${env:"):
-                    error_msg = f"Environment variable not resolved: {self.config.api_key}. Please set the MINIMAX_TTS_API_KEY environment variable."
-                    self.ten_env.log_error(error_msg)
-
-                    await self.send_tts_error(
-                        self.current_request_id or "",
-                        ModuleError(
-                            message=error_msg,
-                            module_name=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={},
-                        ),
-                    )
-                    return
 
                 if not self.config.api_key:
                     error_msg = (
@@ -144,9 +130,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         ),
                     )
                     return
-
-                # extract audio_params and additions from config
-                self.config.update_params()
 
             self.client = MinimaxTTSWebsocket(
                 self.config, ten_env, self.vendor()

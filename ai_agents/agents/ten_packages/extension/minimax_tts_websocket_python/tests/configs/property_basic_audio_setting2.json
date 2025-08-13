@@ -1,9 +1,9 @@
 {
-    "api_key": "${env:MINIMAX_TTS_KEY}",
-    "group_id": "${env:MINIMAX_TTS_GROUPID}",
     "dump": true,
     "dump_path": "./tests/keep_dump_output/",
     "params": {
+        "api_key": "${env:MINIMAX_TTS_KEY}",
+        "group_id": "${env:MINIMAX_TTS_GROUPID}",
         "model": "speech-01-turbo",
         "voice_id": "female-shaonv",
         "audio_setting": {
