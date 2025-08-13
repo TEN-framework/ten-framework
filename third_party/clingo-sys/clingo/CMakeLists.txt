@@ -9,6 +9,12 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+# Important: refer to https://github.com/rust-lang/rust/issues/26003
+if (MSVC)
+  add_compile_options(/GL-)
+  add_link_options(/LTCG-)
+endif()
+
 include(CheckCXXSourceCompiles)
 include(GNUInstallDirs)
 include(CMakeDependentOption)

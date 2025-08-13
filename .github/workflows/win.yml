@@ -74,7 +74,7 @@ jobs:
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly
+          rustup default nightly-2025-08-10
           cargo install --force cbindgen
 
       - name: Get Python executable path
@@ -200,7 +200,7 @@ jobs:
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly
+          rustup default nightly-2025-08-10
           cargo install --force cbindgen
 
       - name: Get Python executable path
@@ -243,24 +243,28 @@ jobs:
           out/win/x64/tests/standalone/ten_runtime_unit_test
 
       - name: Run Tests (ten_rust standalone tests)
+        env:
+          RUST_BACKTRACE: "full"
         run: |
           cd out/win/x64/tests/standalone/ten_rust
 
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_rust unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_rust integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
 
       - name: Run Tests (ten_manager standalone tests)
+        env:
+          RUST_BACKTRACE: "full"
         run: |
           cd out/win/x64/tests/standalone/ten_manager
 
           chmod +x unit_test
           chmod +x integration_test
 
-          ./unit_test --nocapture || { echo "ten_manager unit test failed"; exit 1; }
-          ./integration_test --nocapture || { echo "ten_manager integration test failed"; exit 1; }
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
 
       #   continue-on-error: true
       # - name: Setup tmate session
@@ -321,7 +325,7 @@ jobs:
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly
+          rustup default nightly-2025-08-10
           cargo install --force cbindgen
 
       - name: Get Python executable path

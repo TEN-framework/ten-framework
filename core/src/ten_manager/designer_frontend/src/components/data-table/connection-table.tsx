@@ -188,7 +188,7 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                 }
                 try {
                   await postDeleteConnection({
-                    graph_id: edge.data.graph.uuid,
+                    graph_id: edge.data.graph.graph_id,
                     src_app: edge.data.app,
                     src_extension: edge.source,
                     msg_type: edge.data.connectionType,

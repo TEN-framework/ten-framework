@@ -17,6 +17,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test case 1: Add a valid node.

@@ -2,7 +2,7 @@ name: AI Agents (Build & Test)
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main","feat/asr_guarder"]
     paths-ignore:
       - "core/**"
       - "tests/**"

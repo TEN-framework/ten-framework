@@ -211,7 +211,7 @@ function CustomNodeConnContent(props: {
 
   const [rowsMemo] = React.useMemo(() => {
     const relatedEdges = edges
-      .filter((e) => e.data?.graph?.uuid === graph.uuid)
+      .filter((e) => e.data?.graph?.graph_id === graph.graph_id)
       ?.filter((e) =>
         flowDirection === "upstream"
           ? identifier2data<TCustomNodeData>(e.target).name === source
@@ -235,7 +235,7 @@ function CustomNodeConnContent(props: {
         );
       });
     return [rows, relatedEdges];
-  }, [edges, graph.uuid, flowDirection, source, filters]);
+  }, [edges, graph.graph_id, flowDirection, source, filters]);
 
   const handleRemoveFilter = (label: string) => {
     setFilters(filters.filter((f) => f.label !== label));

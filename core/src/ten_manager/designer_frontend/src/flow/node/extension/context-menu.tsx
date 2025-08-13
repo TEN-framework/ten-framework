@@ -412,7 +412,7 @@ export const ContextMenuItems = (props: {
               toast.success(t("popup.node.deleteNodeSuccess"), {
                 description: `${node.data.name}`,
               });
-              const graph = graphs?.find((graph) => graph.uuid === graphId);
+              const graph = graphs?.find((graph) => graph.graph_id === graphId);
               if (!graph) {
                 throw new Error("Graph not found");
               }
