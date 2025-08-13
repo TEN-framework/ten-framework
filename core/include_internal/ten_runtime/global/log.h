@@ -25,3 +25,6 @@ TEN_RUNTIME_PRIVATE_API void ten_log_rust_log_func(
     const char *msg);
 
 TEN_RUNTIME_PRIVATE_API void ten_log_rust_config_deinit(void *config);
+
+TEN_RUNTIME_PRIVATE_API void ten_log_rust_config_reopen_all(ten_log_t *self,
+                                                            void *config);

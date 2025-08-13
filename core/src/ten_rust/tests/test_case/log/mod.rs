@@ -588,6 +588,119 @@ mod tests {
 
     #[test]
     #[serial]
+    fn test_file_reopen_after_rename() {
+        use tempfile::tempdir;
+
+        // Ensure clean state
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let dir = tempdir().expect("create temp dir");
+        let original_path = dir.path().join("reopen_test.log");
+        let rotated_path = dir.path().join("reopen_test.log.rotated");
+        let original_path_str = original_path.to_str().unwrap().to_string();
+
+        let mut config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
+            matchers: vec![AdvancedLogMatcher {
+                level: AdvancedLogLevel::Info,
+                category: None,
+            }],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path: original_path_str.clone(),
+                encryption: None,
+            }),
+        }]);
+
+        // Init reloadable logging
+        ten_configure_log_reloadable(&config).unwrap();
+
+        // Write a few lines before rename
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Info,
+            "before_fn",
+            "before.rs",
+            1,
+            "before-1",
+        );
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Warn,
+            "before_fn",
+            "before.rs",
+            2,
+            "before-2",
+        );
+
+        // Give the background worker a brief moment
+        thread::sleep(Duration::from_millis(50));
+
+        // Rotate (rename) the current file; writer still holds FD to rotated
+        // file
+        std::fs::rename(&original_path, &rotated_path)
+            .expect("rename log file");
+
+        // Trigger reopen so that subsequent logs go to the original path again
+        ten_rust::log::ten_log_reopen_all(&mut config, true);
+
+        // Write more lines after reopen request
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Info,
+            "after_fn",
+            "after.rs",
+            3,
+            "after-1",
+        );
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Warn,
+            "after_fn",
+            "after.rs",
+            4,
+            "after-2",
+        );
+
+        // Force flush: disable all handlers to drop worker guard(s)
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        // Validate: "before-*" in rotated file only
+        let rotated_content =
+            read_with_backoff(rotated_path.to_str().unwrap(), 0)
+                .expect("read rotated file");
+        println!("Rotated content:\n{rotated_content}");
+        assert!(rotated_content.contains("before-1"));
+        assert!(rotated_content.contains("before-2"));
+        assert!(!rotated_content.contains("after-1"));
+        assert!(!rotated_content.contains("after-2"));
+
+        // Validate: "after-*" in newly opened original path only
+        let new_content = read_with_backoff(original_path.to_str().unwrap(), 0)
+            .expect("read new log file");
+        println!("New content:\n{new_content}");
+        assert!(new_content.contains("after-1"));
+        assert!(new_content.contains("after-2"));
+        assert!(!new_content.contains("before-1"));
+        assert!(!new_content.contains("before-2"));
+    }
+
+    #[test]
+    #[serial]
     fn test_file_emitter_encryption_simple() {
         use tempfile::NamedTempFile;
 

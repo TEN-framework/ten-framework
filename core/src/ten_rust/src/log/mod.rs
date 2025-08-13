@@ -7,13 +7,14 @@
 pub mod bindings;
 pub mod decrypt;
 pub mod encryption;
+pub mod file_appender;
 pub mod formatter;
 pub mod reloadable;
 
 use serde::{Deserialize, Serialize};
 use std::{fmt, io};
 use tracing;
-use tracing_appender::{non_blocking, rolling};
+use tracing_appender::non_blocking;
 use tracing_subscriber::{
     fmt::{self as tracing_fmt},
     layer::SubscriberExt,
@@ -22,6 +23,7 @@ use tracing_subscriber::{
 };
 
 use crate::log::encryption::{EncryptMakeWriter, EncryptionConfig};
+use crate::log::file_appender::FileAppenderGuard;
 use crate::log::formatter::{
     JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter,
 };
@@ -304,9 +306,16 @@ fn create_layer_and_filter(
             LayerWithGuard { layer, guard: None }
         }
         AdvancedLogEmitter::File(file_config) => {
-            // Create file appender for file logging
-            let file_appender = rolling::never(".", &file_config.path);
-            let (non_blocking, guard) = non_blocking(file_appender);
+            // Create our reloadable file appender. It supports CAS-based
+            // reopen.
+            let appender =
+                file_appender::ReloadableFileAppender::new(&file_config.path);
+            let (non_blocking, worker_guard) = non_blocking(appender.clone());
+            // keep both worker_guard and appender in a composite guard
+            let composite_guard = file_appender::FileAppenderGuard {
+                non_blocking_guard: worker_guard,
+                appender: appender.clone(),
+            };
 
             let layer = match handler.formatter.formatter_type {
                 FormatterType::Plain => {
@@ -353,7 +362,7 @@ fn create_layer_and_filter(
                 }
             };
 
-            LayerWithGuard { layer, guard: Some(Box::new(guard)) }
+            LayerWithGuard { layer, guard: Some(Box::new(composite_guard)) }
         }
     };
 
@@ -433,6 +442,25 @@ pub fn ten_configure_log(
         reloadable::ten_configure_log_reloadable(config)
     } else {
         ten_configure_log_non_reloadable(config)
+    }
+}
+
+/// Trigger reopen for all file appenders (applied on next write).
+/// - Non-reloadable: iterate current config guards and trigger
+///   `FileAppenderGuard`.
+/// - Reloadable: delegate to the reloadable log manager.
+pub fn ten_log_reopen_all(config: &mut AdvancedLogConfig, reloadable: bool) {
+    if reloadable {
+        reloadable::request_reopen_all_files();
+        return;
+    }
+
+    // Non-reloadable: iterate config.guards directly
+    for any_guard in config.guards.iter() {
+        if let Some(file_guard) = any_guard.downcast_ref::<FileAppenderGuard>()
+        {
+            file_guard.request_reopen();
+        }
     }
 }
 
