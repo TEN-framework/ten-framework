@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 def mask_sensitive_data(
@@ -28,7 +28,7 @@ class ElevenLabsTTS2Config(BaseModel):
     voice_id: str = "pNInz6obpgDQGcFmaJgB"
     dump: bool = False
     dump_path: str = "./dump/"
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: Dict[str, Any] = {}
 
     def to_str(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:

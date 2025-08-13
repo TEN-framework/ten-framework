@@ -102,7 +102,7 @@ class ElevenLabsTTS2:
                 )
                 await self.error_callback("", module_error)
             else:
-                raise ModuleVendorException(error_info)
+                raise ModuleVendorException(error_info) from e
 
     async def ws_recv_loop(self):
         """WebSocket receive loop, process audio data"""
