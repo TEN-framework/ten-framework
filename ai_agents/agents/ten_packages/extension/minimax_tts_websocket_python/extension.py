@@ -67,7 +67,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={},
                         ),
@@ -88,7 +88,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={},
                         ),
@@ -107,7 +107,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={},
                         ),
@@ -124,7 +124,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.current_request_id or "",
                         ModuleError(
                             message=error_msg,
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={},
                         ),
@@ -147,7 +147,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.current_request_id or "",
                 ModuleError(
                     message=f"Unexpected error during initialization: {str(e)}",
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info={},
                 ),
@@ -309,7 +309,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     t.request_id,
                     ModuleError(
                         message=error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
@@ -457,7 +457,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     self.current_request_id,
                     ModuleError(
                         message=e.error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(
                             vendor=self.vendor(),
@@ -471,7 +471,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     self.current_request_id,
                     ModuleError(
                         message=e.error_msg,
-                        module_name=ModuleType.TTS,
+                        module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(
                             vendor=self.vendor(),
@@ -488,7 +488,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.current_request_id,
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=e.error,
                 ),
@@ -501,7 +501,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.current_request_id,
                 ModuleError(
                     message=str(e),
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),

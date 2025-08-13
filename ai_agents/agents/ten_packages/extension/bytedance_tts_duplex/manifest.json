@@ -32,12 +32,6 @@
     ],
     "property": {
       "properties": {
-        "dump": {
-          "type": "bool"
-        },
-        "dump_path": {
-          "type": "string"
-        },
         "params": {
           "type": "object",
           "properties": {
