@@ -11,7 +11,7 @@ from ten_runtime import (
 import json
 
 # We must import it, which means this test fixture will be automatically executed
-from tests.mock import patch_asr_client  # noqa: F401
+from .mock import patch_asr_client  # noqa: F401
 
 
 class AWSASRExtensionTester(AsyncExtensionTester):
