@@ -3,26 +3,24 @@ import json
 import websockets
 import aiohttp
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from typing import AsyncIterator, Optional, Dict, Any
 from ten_runtime.async_ten_env import AsyncTenEnv
-from ten_ai_base.config import BaseConfig
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 import threading
 from asyncio import Queue
 
 
-@dataclass
-class DeepgramTTSConfig(BaseConfig):
+class DeepgramTTSConfig(BaseModel):
+    """Configuration for Deepgram TTS using BaseModel with parameter transparency"""
     api_key: str = ""
     model: str = "aura-asteria-en"
     voice: str = "aura-asteria-en"
     encoding: str = "linear16"
     sample_rate: int = 24000
     container: str = "none"
-    # Enhanced options
-    use_rest_fallback: bool = True
+    # Connection options
     websocket_timeout: float = 10.0
     min_audio_threshold: int = 1000
     # Persistent connection options
@@ -34,16 +32,72 @@ class DeepgramTTSConfig(BaseConfig):
     # Dump options
     dump_enabled: bool = False
     dump_path: str = "/tmp/tts_test_dump"
+    
+    # Parameter transparency - allows arbitrary parameters to be passed through
+    params: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Modern Pydantic v2 configuration
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+    
+    def update_params(self) -> None:
+        """Update config attributes from params dictionary for parameter transparency."""
+        param_names = [
+            "api_key",
+            "model", 
+            "voice",
+            "encoding",
+            "sample_rate",
+            "container",
+            "websocket_timeout",
+            "min_audio_threshold",
+            "reconnect_attempts",
+            "reconnect_delay",
+            "keepalive_interval",
+            "max_request_retries",
+            "health_check_timeout",
+            "dump_enabled",
+            "dump_path"
+        ]
+        
+        for param_name in param_names:
+            if param_name in self.params:
+                setattr(self, param_name, self.params[param_name])
 
 
-class TTSRequest:
-    """Represents a TTS request with its associated response queue"""
-    def __init__(self, request_id: str, text: str):
+class StreamingTTSRequest:
+    """Represents a streaming TTS request that accumulates text chunks"""
+    def __init__(self, request_id: str):
         self.request_id = request_id
-        self.text = text
-        self.audio_queue: Queue = Queue()
+        self.text_chunks = []
+        self.is_complete = False
+        self.audio_started = False
+        self.start_time = time.time()
+        self.first_audio_time = None
+        self.audio_queue = None  # Will be set when streaming starts
         self.completed = False
-        self.error: Optional[Exception] = None
+        self.error = None
+        
+    def add_text_chunk(self, text: str, is_end: bool = False):
+        """Add a text chunk to the streaming request"""
+        self.text_chunks.append(text)
+        if is_end:
+            self.is_complete = True
+    
+    def get_combined_text(self) -> str:
+        """Get all text chunks combined"""
+        return "".join(self.text_chunks)
+    
+    def mark_audio_started(self):
+        """Mark when first audio chunk is received"""
+        if not self.audio_started:
+            self.audio_started = True
+            self.first_audio_time = time.time()
+    
+    def get_ttfb_ms(self) -> int:
+        """Get time to first byte in milliseconds"""
+        if self.first_audio_time:
+            return int((self.first_audio_time - self.start_time) * 1000)
+        return 0
 
 
 class DeepgramTTS:
@@ -55,21 +109,18 @@ class DeepgramTTS:
             "Authorization": f"Token {config.api_key}"
         }
         
-        # Persistent WebSocket connection management
+        # Lazy connection - don't connect during init
         self.websocket: Optional[websockets.WebSocketServerProtocol] = None
         self.connection_lock = asyncio.Lock()
-        self.is_connecting = False
         self.is_connected = False
-        self.connection_task: Optional[asyncio.Task] = None
+        self.is_connecting = False  # Add missing attribute
         self.message_handler_task: Optional[asyncio.Task] = None
         
-        # Request management
-        self.pending_requests: Dict[str, TTSRequest] = {}
-        self.request_queue: Queue = Queue()
+        # Streaming request management
+        self.active_requests: Dict[str, StreamingTTSRequest] = {}
         self.ten_env: Optional[AsyncTenEnv] = None
         
         # Connection health
-        self.last_ping_time = 0
         self.keepalive_task: Optional[asyncio.Task] = None
 
     def _build_websocket_url(self) -> str:
@@ -138,13 +189,13 @@ class DeepgramTTS:
         self.is_connected = False
         
         # Complete any pending requests with error
-        for request in self.pending_requests.values():
+        for request in self.active_requests.values():
             if not request.completed:
                 request.error = Exception("Connection closed")
                 request.completed = True
                 await request.audio_queue.put(None)  # Signal completion
         
-        self.pending_requests.clear()
+        self.active_requests.clear()
         
         if self.ten_env:
             self.ten_env.log_info("Deepgram TTS cleanup completed")
@@ -152,10 +203,17 @@ class DeepgramTTS:
     async def _ensure_connection(self) -> bool:
         """Ensure WebSocket connection is established with health check"""
         async with self.connection_lock:
+            if self.ten_env:
+                self.ten_env.log_info("DEBUG: _ensure_connection called")
+            
             # Check if connection is truly healthy
             if self.is_connected and self.websocket:
+                if self.ten_env:
+                    self.ten_env.log_info("DEBUG: Connection exists, performing health check")
                 # Perform health check
                 if await self._health_check():
+                    if self.ten_env:
+                        self.ten_env.log_info("DEBUG: Health check passed")
                     return True
                 else:
                     if self.ten_env:
@@ -163,6 +221,8 @@ class DeepgramTTS:
                     self.is_connected = False
             
             if self.is_connecting:
+                if self.ten_env:
+                    self.ten_env.log_info("DEBUG: Already connecting, waiting...")
                 # Wait for ongoing connection attempt
                 while self.is_connecting:
                     await asyncio.sleep(0.1)
@@ -311,7 +371,7 @@ class DeepgramTTS:
             self.ten_env.log_warn("Connection lost, attempting to reconnect...")
         
         # Mark all pending requests as potentially failed
-        for request in self.pending_requests.values():
+        for request in self.active_requests.values():
             if not request.completed:
                 # Don't mark as error yet, give reconnection a chance
                 if self.ten_env:
@@ -325,12 +385,16 @@ class DeepgramTTS:
         if self.ten_env:
             self.ten_env.log_debug(f"Received audio chunk of size: {len(audio_data)} bytes")
         
-        # For now, route to the most recent request
-        # In a more sophisticated implementation, you'd need request correlation
-        if self.pending_requests:
-            # Get the most recent request
-            latest_request = list(self.pending_requests.values())[-1]
-            await latest_request.audio_queue.put(audio_data)
+        # Route to active streaming requests
+        if self.active_requests:
+            # Get the most recent active request (in a real implementation, 
+            # you'd need proper request correlation)
+            latest_request = list(self.active_requests.values())[-1]
+            if latest_request.audio_queue:
+                await latest_request.audio_queue.put(audio_data)
+            else:
+                if self.ten_env:
+                    self.ten_env.log_warn(f"No audio queue for request {latest_request.request_id}")
 
     async def _handle_text_message(self, message: str) -> None:
         """Handle incoming text messages (metadata, errors, etc.)"""
@@ -345,20 +409,21 @@ class DeepgramTTS:
                 if self.ten_env:
                     self.ten_env.log_debug(f"Received metadata: {data}")
             elif message_type == "Flushed":
-                # Signal completion for the most recent request
-                if self.pending_requests:
-                    latest_request = list(self.pending_requests.values())[-1]
-                    latest_request.completed = True
-                    await latest_request.audio_queue.put(None)  # Signal completion
+                # Signal completion for active requests
+                if self.active_requests:
+                    latest_request = list(self.active_requests.values())[-1]
+                    if latest_request.audio_queue:
+                        await latest_request.audio_queue.put(None)  # Signal completion
                 if self.ten_env:
                     self.ten_env.log_info("Audio stream flushed - request complete")
             elif message_type == "Error":
                 error_msg = data.get("error", "Unknown error")
                 if self.ten_env:
                     self.ten_env.log_error(f"Deepgram TTS error: {error_msg}")
-                # Signal error for all pending requests
-                for request in self.pending_requests.values():
-                    if not request.completed:
+                # Signal error for all active requests
+                for request in self.active_requests.values():
+                    if request.audio_queue:
+                        await request.audio_queue.put(None)  # Signal completion with error
                         request.error = Exception(f"Deepgram error: {error_msg}")
                         request.completed = True
                         await request.audio_queue.put(None)
@@ -430,36 +495,155 @@ class DeepgramTTS:
                 if consecutive_failures >= max_consecutive_failures:
                     self.is_connected = False
 
+    async def add_text_chunk(self, request_id: str, text: str, is_end: bool = False) -> None:
+        """Add a text chunk to a streaming request"""
+        if request_id not in self.active_requests:
+            # Create new streaming request
+            self.active_requests[request_id] = StreamingTTSRequest(request_id)
+            if self.ten_env:
+                self.ten_env.log_info(f"Created new streaming request: {request_id}")
+        
+        request = self.active_requests[request_id]
+        request.add_text_chunk(text, is_end)
+        
+        if self.ten_env:
+            self.ten_env.log_info(f"Added text chunk to {request_id}: '{text[:30]}...' (is_end: {is_end})")
+        
+        # If this is the end, start processing the complete request
+        if is_end:
+            await self._process_complete_request(request)
+    
+    async def _process_complete_request(self, request: StreamingTTSRequest) -> None:
+        """Process a complete streaming request"""
+        try:
+            combined_text = request.get_combined_text()
+            if self.ten_env:
+                self.ten_env.log_info(f"Processing complete request {request.request_id}: '{combined_text[:50]}...' (total length: {len(combined_text)})")
+            
+            # Ensure connection
+            if not await self._ensure_connection():
+                raise Exception("Failed to establish WebSocket connection")
+            
+            # Send the complete text to Deepgram
+            await self._send_text_to_deepgram(request.request_id, combined_text)
+            
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error processing complete request {request.request_id}: {str(e)}")
+            # Clean up failed request
+            if request.request_id in self.active_requests:
+                del self.active_requests[request.request_id]
+            raise
+    
+    async def _send_text_to_deepgram(self, request_id: str, text: str) -> None:
+        """Send complete text to Deepgram WebSocket"""
+        try:
+            # Send text message
+            text_message = {
+                "type": "Speak",
+                "text": text
+            }
+            await self.websocket.send(json.dumps(text_message))
+            if self.ten_env:
+                self.ten_env.log_info(f"Sent text to Deepgram for request {request_id}")
+            
+            # Send flush to trigger audio generation
+            flush_command = {"type": "Flush"}
+            await self.websocket.send(json.dumps(flush_command))
+            if self.ten_env:
+                self.ten_env.log_info(f"Sent flush command for request {request_id}")
+            
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error sending text to Deepgram: {str(e)}")
+            raise
+
+    async def get_streaming_audio(self, request_id: str) -> AsyncIterator[bytes]:
+        """Get streaming audio for a specific request"""
+        if request_id not in self.active_requests:
+            raise ValueError(f"Request {request_id} not found")
+        
+        request = self.active_requests[request_id]
+        
+        try:
+            # Create a queue for this request to receive audio chunks
+            audio_queue = asyncio.Queue()
+            request.audio_queue = audio_queue
+            
+            # Stream audio chunks as they arrive from WebSocket message handler
+            chunk_count = 0
+            request_timeout = self.config.websocket_timeout * 2
+            
+            while True:
+                try:
+                    # Wait for audio chunk with timeout
+                    audio_chunk = await asyncio.wait_for(
+                        audio_queue.get(), 
+                        timeout=request_timeout
+                    )
+                    
+                    # Check for end marker
+                    if audio_chunk is None:
+                        if self.ten_env:
+                            self.ten_env.log_info(f"Received end marker for request {request_id}")
+                        break
+                    
+                    chunk_count += 1
+                    if self.ten_env:
+                        self.ten_env.log_debug(f"Yielding audio chunk #{chunk_count} for {request_id}")
+                    yield audio_chunk
+                    
+                except asyncio.TimeoutError:
+                    if self.ten_env:
+                        self.ten_env.log_error(f"Timeout waiting for audio chunks for request {request_id}")
+                    break
+                    
+            if self.ten_env:
+                self.ten_env.log_info(f"Audio streaming completed for {request_id}: {chunk_count} chunks")
+            
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error in streaming audio for {request_id}: {str(e)}")
+            raise
+        finally:
+            # Clean up completed request
+            if request_id in self.active_requests:
+                del self.active_requests[request_id]
+
     async def get(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
         """
         Get TTS audio using persistent WebSocket connection with robust error handling
         """
         request_id = str(uuid.uuid4())
-        request = TTSRequest(request_id, text)
+        request = StreamingTTSRequest(request_id)
         max_retries = 2
         
         for retry_attempt in range(max_retries + 1):
             try:
                 # Ensure connection is available
                 if not await self._ensure_connection():
-                    ten_env.log_error("Failed to establish WebSocket connection")
+                    if self.ten_env:
+                        self.ten_env.log_error("Failed to establish WebSocket connection")
                     if retry_attempt == max_retries:
-                        if self.config.use_rest_fallback:
-                            ten_env.log_info("All WebSocket attempts failed, falling back to REST API")
+                        if hasattr(self.config, 'use_rest_fallback') and self.config.use_rest_fallback:
+                            if self.ten_env:
+                                self.ten_env.log_info("All WebSocket attempts failed, falling back to REST API")
                             async for chunk in self._get_rest_audio_streaming(ten_env, text):
                                 yield chunk
                             return
                         else:
                             raise Exception("WebSocket connection failed and REST API fallback disabled")
                     else:
-                        ten_env.log_info(f"Retrying WebSocket connection (attempt {retry_attempt + 1}/{max_retries + 1})")
+                        if self.ten_env:
+                            self.ten_env.log_info(f"Retrying WebSocket connection (attempt {retry_attempt + 1}/{max_retries + 1})")
                         await asyncio.sleep(1.0 * (retry_attempt + 1))
                         continue
                 
-                # Add request to pending requests
-                self.pending_requests[request_id] = request
+                # Add request to active requests
+                self.active_requests[request_id] = request
                 
-                ten_env.log_info(f"Sending TTS request via persistent WebSocket: {text[:50]}... (attempt {retry_attempt + 1})")
+                if self.ten_env:
+                    self.ten_env.log_info(f"Sending TTS request via persistent WebSocket: {text[:50]}... (attempt {retry_attempt + 1})")
                 
                 # Send the text to be synthesized
                 message = {
@@ -468,114 +652,136 @@ class DeepgramTTS:
                 }
                 
                 await self.websocket.send(json.dumps(message))
-                ten_env.log_info(f"Sent text to Deepgram via persistent connection")
+                if self.ten_env:
+                    self.ten_env.log_info(f"Sent text to Deepgram via persistent connection")
                 
                 # Send Flush command to trigger audio generation
                 flush_command = {"type": "Flush"}
                 await self.websocket.send(json.dumps(flush_command))
-                ten_env.log_info("Sent Flush command via persistent connection")
+                if self.ten_env:
+                    self.ten_env.log_info("Sent Flush command via persistent connection")
+                
+                # Create audio queue for this request
+                audio_queue = asyncio.Queue()
+                request.audio_queue = audio_queue
                 
                 # Stream audio chunks as they arrive
                 chunk_count = 0
-                request_timeout = self.config.websocket_timeout * 2  # Longer timeout for full request
+                request_timeout = self.config.websocket_timeout * 2
                 
-                while not request.completed:
+                while True:
                     try:
-                        # Wait for audio chunk with timeout
                         audio_chunk = await asyncio.wait_for(
-                            request.audio_queue.get(), 
-                            timeout=request_timeout if chunk_count == 0 else self.config.websocket_timeout
+                            audio_queue.get(),
+                            timeout=request_timeout
                         )
                         
-                        if audio_chunk is None:  # Completion signal
+                        # Check for end marker
+                        if audio_chunk is None:
                             break
                         
                         chunk_count += 1
-                        ten_env.log_debug(f"Yielding audio chunk #{chunk_count} of size: {len(audio_chunk)} bytes")
+                        if self.ten_env:
+                            self.ten_env.log_debug(f"Yielding audio chunk #{chunk_count} of size: {len(audio_chunk)} bytes")
                         yield audio_chunk
                         
                     except asyncio.TimeoutError:
-                        ten_env.log_warn(f"Timeout waiting for audio chunk (request_id: {request_id}, chunk: {chunk_count})")
+                        if self.ten_env:
+                            self.ten_env.log_warn(f"Timeout waiting for audio chunk (request_id: {request_id}, chunk: {chunk_count})")
                         if chunk_count == 0:
                             # No audio received at all, this might be a connection issue
                             if not self.is_connected or not self.websocket:
-                                ten_env.log_warn("Connection lost during request, will retry")
+                                if self.ten_env:
+                                    self.ten_env.log_warn("Connection lost during request, will retry")
                                 break
                         # If we got some chunks, continue waiting a bit more
                         if chunk_count > 0:
-                            break
+                            continue
                         else:
-                            # No chunks received, break and retry
                             break
                 
-                if request.error:
-                    raise request.error
+                # Clean up request
+                if request_id in self.active_requests:
+                    del self.active_requests[request_id]
                 
                 if chunk_count > 0:
-                    ten_env.log_info(f"TTS request completed successfully - yielded {chunk_count} chunks")
+                    if self.ten_env:
+                        self.ten_env.log_info(f"TTS request completed successfully - yielded {chunk_count} chunks")
                     return  # Success, exit retry loop
                 else:
-                    ten_env.log_warn(f"No audio chunks received for request {request_id}")
+                    if self.ten_env:
+                        self.ten_env.log_warn(f"No audio chunks received for request {request_id}")
                     if retry_attempt < max_retries:
-                        ten_env.log_info("Retrying request...")
+                        if self.ten_env:
+                            self.ten_env.log_info("Retrying request...")
                         continue
                     else:
-                        raise Exception("No audio data received after all retries")
-                
+                        # All retries failed, fall back to REST API if enabled
+                        if hasattr(self.config, 'use_rest_fallback') and self.config.use_rest_fallback:
+                            async for chunk in self._get_rest_audio_streaming(ten_env, text):
+                                yield chunk
+                            return
+                        else:
+                            raise Exception("No audio received and REST API fallback disabled")
+                        
             except (websockets.exceptions.ConnectionClosed,
                     websockets.exceptions.WebSocketException,
                     ConnectionResetError,
                     OSError) as e:
-                ten_env.log_error(f"WebSocket connection error (attempt {retry_attempt + 1}): {str(e)}")
+                if self.ten_env:
+                    self.ten_env.log_error(f"WebSocket connection error (attempt {retry_attempt + 1}): {str(e)}")
                 self.is_connected = False
                 
                 if retry_attempt < max_retries:
-                    ten_env.log_info("Connection error, retrying with new connection...")
+                    if self.ten_env:
+                        self.ten_env.log_info("Connection error, retrying with new connection...")
                     await asyncio.sleep(1.0 * (retry_attempt + 1))
                     continue
                 else:
                     # All retries failed, fall back to REST API
-                    if self.config.use_rest_fallback:
-                        ten_env.log_info("All WebSocket retries failed, falling back to REST API...")
+                    if hasattr(self.config, 'use_rest_fallback') and self.config.use_rest_fallback:
+                        if self.ten_env:
+                            self.ten_env.log_info("All WebSocket retries failed, falling back to REST API...")
                         try:
                             async for chunk in self._get_rest_audio_streaming(ten_env, text):
                                 yield chunk
                             return
                         except Exception as rest_error:
-                            ten_env.log_error(f"REST API fallback error: {str(rest_error)}")
+                            if self.ten_env:
+                                self.ten_env.log_error(f"REST API fallback error: {str(rest_error)}")
                             raise
                     else:
                         raise
                         
             except Exception as e:
-                ten_env.log_error(f"Unexpected error in TTS request (attempt {retry_attempt + 1}): {str(e)}")
+                if self.ten_env:
+                    self.ten_env.log_error(f"Unexpected error in TTS request (attempt {retry_attempt + 1}): {str(e)}")
                 if retry_attempt < max_retries:
                     await asyncio.sleep(1.0 * (retry_attempt + 1))
                     continue
                 else:
                     # Final attempt failed
-                    if self.config.use_rest_fallback:
-                        ten_env.log_info("Falling back to REST API after unexpected error...")
+                    if hasattr(self.config, 'use_rest_fallback') and self.config.use_rest_fallback:
+                        if self.ten_env:
+                            self.ten_env.log_info("Falling back to REST API after unexpected error...")
                         try:
                             async for chunk in self._get_rest_audio_streaming(ten_env, text):
                                 yield chunk
                             return
                         except Exception as rest_error:
-                            ten_env.log_error(f"REST API fallback error: {str(rest_error)}")
+                            if self.ten_env:
+                                self.ten_env.log_error(f"REST API fallback error: {str(rest_error)}")
                             raise
                     else:
                         raise
-            finally:
-                # Clean up request
-                if request_id in self.pending_requests:
-                    del self.pending_requests[request_id]
 
     async def _get_rest_audio_streaming(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
         """
         Get audio using REST API and stream it in chunks (fallback method)
         """
         try:
-            ten_env.log_info(f"Using Deepgram REST API: {self.rest_url}")
+            if self.ten_env:
+                self.ten_env.log_info(f"Using Deepgram REST API: {self.rest_url}")
             
             headers = {
                 "Authorization": f"Token {self.config.api_key}",
@@ -588,7 +794,8 @@ class DeepgramTTS:
                 async with session.post(self.rest_url, headers=headers, json=data) as response:
                     if response.status == 200:
                         audio_data = await response.read()
-                        ten_env.log_info(f"REST API generated {len(audio_data)} bytes")
+                        if self.ten_env:
+                            self.ten_env.log_info(f"REST API generated {len(audio_data)} bytes")
                         
                         # Stream the audio in chunks
                         chunk_size = 4096
@@ -597,9 +804,11 @@ class DeepgramTTS:
                             yield chunk
                     else:
                         error_text = await response.text()
-                        ten_env.log_error(f"REST API error {response.status}: {error_text}")
+                        if self.ten_env:
+                            self.ten_env.log_error(f"REST API error {response.status}: {error_text}")
                         raise Exception(f"REST API error: {response.status} - {error_text}")
                         
         except Exception as e:
-            ten_env.log_error(f"Error in Deepgram REST API: {str(e)}")
+            if self.ten_env:
+                self.ten_env.log_error(f"Error in Deepgram REST API: {str(e)}")
             raise
