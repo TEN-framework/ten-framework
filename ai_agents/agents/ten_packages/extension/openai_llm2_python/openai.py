@@ -152,14 +152,14 @@ class OpenAIChatGPT:
         return json_dict
 
     async def get_chat_completions(
-        self, input: LLMRequest
+        self, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
-        messages = input.messages
+        messages = request_input.messages
         tools = None
         parsed_messages = []
 
         self.ten_env.log_info(
-            f"get_chat_completions: {len(messages)} messages, streaming: {input.streaming}"
+            f"get_chat_completions: {len(messages)} messages, streaming: {request_input.streaming}"
         )
 
         for message in messages:
@@ -219,7 +219,7 @@ class OpenAIChatGPT:
                         }
                     )
 
-        for tool in input.tools or []:
+        for tool in request_input.tools or []:
             if tools is None:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
@@ -241,12 +241,12 @@ class OpenAIChatGPT:
             "frequency_penalty": self.config.frequency_penalty,
             "max_tokens": self.config.max_tokens,
             "seed": self.config.seed,
-            "stream": input.streaming,
+            "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
 
         # Add additional parameters if they are not in the black list
-        for key, value in (input.parameters or {}).items():
+        for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
             if not self.config.is_black_list_params(key):
                 self.ten_env.log_debug(f"set openai param: {key} = {value}")
@@ -273,10 +273,13 @@ class OpenAIChatGPT:
             parser = ThinkParser()
             reasoning_mode = None
 
+            last_chat_completion: ChatCompletionChunk | None = None
+
             async for chat_completion in response:
                 self.ten_env.log_info(f"Chat completion: {chat_completion}")
-                if len(chat_completion.choices) == 0:
+                if chat_completion is None or len(chat_completion.choices) == 0:
                     continue
+                last_chat_completion = chat_completion
                 choice = chat_completion.choices[0]
                 delta = choice.delta
 
@@ -381,6 +384,10 @@ class OpenAIChatGPT:
                             f"Error processing tool call: {e} {tool_calls_dict}"
                         )
 
+            if last_chat_completion is None:
+                self.ten_env.log_info("No chat completion choices found.")
+                return
+
             # Convert the dictionary to a list
             tool_calls_list = list(tool_calls_dict.values())
 
@@ -392,20 +399,20 @@ class OpenAIChatGPT:
                         f"Tool call22: {choice.delta.model_dump_json()}"
                     )
                     yield LLMResponseToolCall(
-                        response_id=chat_completion.id,
-                        id=chat_completion.id,
+                        response_id=last_chat_completion.id,
+                        id=last_chat_completion.id,
                         tool_call_id=tool_call["id"],
                         name=tool_call["function"]["name"],
                         arguments=arguements,
-                        created=chat_completion.created,
+                        created=last_chat_completion.created,
                     )
 
             # Emit content finished event after the loop completes
             yield LLMResponseMessageDone(
-                response_id=chat_completion.id,
+                response_id=last_chat_completion.id,
                 role="assistant",
                 content=full_content,
-                created=chat_completion.created,
+                created=last_chat_completion.created,
             )
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e

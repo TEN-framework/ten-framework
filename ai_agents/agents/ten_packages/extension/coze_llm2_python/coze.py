@@ -3,6 +3,7 @@
 # ------------------------------
 from dataclasses import dataclass
 import json
+import traceback
 from typing import Any, AsyncGenerator, List, Optional
 import aiohttp
 from cozepy import Chat, ChatEvent, ChatEventType, Message
@@ -239,7 +240,10 @@ class CozeChatClient:
                     break
                 except Exception as e:
                     # Escalate to caller; upper layer should handle & notify
-                    raise
+                    self.ten_env.log_error(
+                        f"[Coze] error processing event: {traceback.format_exc()}"
+                    )
+                    raise e
 
         # Emit terminal message
         yield LLMResponseMessageDone(

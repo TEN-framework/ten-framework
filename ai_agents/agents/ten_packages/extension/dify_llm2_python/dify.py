@@ -1,9 +1,9 @@
 # ------------------------------
 # Config
 # ------------------------------
-from dataclasses import Field, dataclass
+from dataclasses import dataclass
 import json
-from typing import AsyncGenerator, List, Optional
+from typing import AsyncGenerator, Optional
 
 import aiohttp
 from pydantic import BaseModel
@@ -62,7 +62,7 @@ class DifyChatClient:
         return f"{base}/{path.lstrip('/')}"
 
     async def get_chat_completions(
-        self, input: LLMRequest
+        self, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
         """
         Map LLMRequest -> Dify /chat-messages streaming API.
@@ -73,7 +73,7 @@ class DifyChatClient:
 
         # Dify takes a single "query" string. We choose the latest user message text for parity with your old code.
         query_text = ""
-        for m in reversed(input.messages or []):
+        for m in reversed(request_input.messages or []):
             if isinstance(m, LLMMessageContent) and m.role == "user":
                 if isinstance(m.content, str):
                     query_text = m.content
@@ -90,7 +90,7 @@ class DifyChatClient:
 
         if not query_text:
             # As a fallback, take the very last text-looking message
-            for m in reversed(input.messages or []):
+            for m in reversed(request_input.messages or []):
                 if isinstance(m, LLMMessageContent) and isinstance(
                     m.content, str
                 ):

@@ -13,10 +13,9 @@ from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
     ModuleErrorVendorInfo,
-    ModuleType,
     ModuleVendorException,
 )
-from ten_ai_base.struct import TTSFlush, TTSTextInput
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension, DATA_FLUSH
 from ten_runtime import AsyncTenEnv
 

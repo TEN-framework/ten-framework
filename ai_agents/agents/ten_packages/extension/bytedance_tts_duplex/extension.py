@@ -10,7 +10,7 @@ import traceback
 from typing import Tuple
 
 
-from ten_ai_base.helper import PCMWriter, generate_file_name
+from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,

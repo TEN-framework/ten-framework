@@ -107,6 +107,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         self.request_transcript: str = ""
         self.response_transcript: str = ""
         self.available_tools: list[LLMToolMetadata] = []
+        self.loop: asyncio.AbstractEventLoop = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -131,6 +132,12 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def synthesize_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
+    def vendor(self) -> str:
+        return "openai"
+
     async def start_connection(self) -> None:
         try:
             self.conn = RealtimeApiConnection(
@@ -145,7 +152,6 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
             await self.conn.connect()
             item_id = ""  # For truncate
             response_id = ""
-            content_index = 0
             flushed = set()
             session_start_ms = int(
                 time.time() * 1000
@@ -351,7 +357,6 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                                 continue
                             if item_id != message.item_id:
                                 item_id = message.item_id
-                            content_index = message.content_index
                             audio_data = base64.b64decode(message.delta)
                             await self.send_server_output_audio_data(audio_data)
                         case ResponseAudioDone():
@@ -361,8 +366,8 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                                 f"On server listening, in response {response_id}, last item {item_id}"
                             )
                             # Calculate proper truncation time - elapsed milliseconds since session start
-                            current_ms = int(time.time() * 1000)
-                            end_ms = current_ms - session_start_ms
+                            # current_ms = int(time.time() * 1000)
+                            # end_ms = current_ms - session_start_ms
                             # if (
                             #     item_id and end_ms > 0
                             # ):  # Only truncate if we have a valid positive timestamp
@@ -403,7 +408,6 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             item_id = ""
                         case InputAudioBufferSpeechStopped():
                             # Only for server vad
-                            self.input_end = time.time()
                             # Update session start to properly track relative timing
                             session_start_ms = (
                                 int(time.time() * 1000) - message.audio_end_ms

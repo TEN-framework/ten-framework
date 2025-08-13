@@ -7,9 +7,8 @@ import asyncio
 from datetime import datetime
 import os
 import traceback
-from typing import Tuple
 
-from ten_ai_base.helper import PCMWriter, generate_file_name
+from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -455,7 +454,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         except asyncio.CancelledError:
             self.ten_env.log_info("read_audio_data task cancelled")
             raise
-        except Exception as e:
+        except Exception:
             self.ten_env.log_error(
                 f"Error in read_audio_data: {traceback.format_exc()}"
             )

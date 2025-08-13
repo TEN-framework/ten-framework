@@ -4,12 +4,10 @@
 # Created by Wei Hu in 2024-08. Refactor by <you>.
 #
 import asyncio
-import base64
 import json
-import time
 import traceback
 from dataclasses import dataclass
-from typing import Literal, Optional, Iterable, cast
+from typing import Literal
 
 from ten_ai_base.mllm import AsyncMLLMBaseExtension
 from ten_ai_base.struct import (
@@ -21,10 +19,9 @@ from ten_ai_base.struct import (
     MLLMServerOutputTranscript,
     MLLMServerSessionReady,
 )
-from ten_runtime import AudioFrame, AsyncTenEnv, Data
-from ten_runtime.audio_frame import AudioFrameDataFmt
+from ten_runtime import AudioFrame, AsyncTenEnv
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import LLMToolMetadata, TTSPcmOptions
+from ten_ai_base.types import LLMToolMetadata
 
 from google import genai
 from google.genai.live import AsyncSession
@@ -153,6 +150,12 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def synthesize_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
+    def vendor(self) -> str:
+        return "google"
+
     async def _receive_loop(self):
         """receive loop for incoming messages from the server."""
         while not self.stopped:
@@ -256,7 +259,6 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
         self, session_id: str | None = None
     ) -> None:
         """Trigger model response. Gemini responds automatically on input; keep for API parity."""
-        pass
         # No explicit trigger needed; send a small control ping to nudge if desired.
 
     async def send_client_register_tool(self, tool: LLMToolMetadata) -> None:
@@ -383,7 +385,6 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
         """Bridge function calls to host via CMD_TOOL_CALL and return results via LiveClientToolResponse."""
         if not calls:
             return
-        function_responses: list[FunctionResponse] = []
         for call in calls:
             tool_call_id = call.id
             name = call.name

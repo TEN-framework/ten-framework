@@ -6,7 +6,6 @@
 #
 #
 import asyncio
-import json
 import uuid
 
 from .helper import _text_to_base64_chunks

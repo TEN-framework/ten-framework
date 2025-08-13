@@ -150,6 +150,12 @@ class GLMRealtime2Extension(AsyncMLLMBaseExtension):
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def synthesize_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
+    def vendor(self) -> str:
+        return "glm"
+
     async def start_connection(self) -> None:
         try:
             self.conn = RealtimeApiConnection(

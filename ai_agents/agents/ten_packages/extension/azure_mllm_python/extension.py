@@ -153,7 +153,13 @@ class AzureRealtime2Extension(AsyncMLLMBaseExtension):
         if self.conn:
             await self.conn.close()
 
+    def vendor(self) -> str:
+        return "azure"
+
     def input_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
+    def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
     async def start_connection(self) -> None:
@@ -170,7 +176,6 @@ class AzureRealtime2Extension(AsyncMLLMBaseExtension):
 
             item_id = ""
             response_id = ""
-            content_index = 0
             flushed: set[str] = set()
             session_start_ms = int(time.time() * 1000)
 
@@ -320,7 +325,6 @@ class AzureRealtime2Extension(AsyncMLLMBaseExtension):
                                 continue
                             if item_id != message.item_id:
                                 item_id = message.item_id
-                            content_index = message.content_index
                             audio_bytes = base64.b64decode(message.delta)
                             await self.send_server_output_audio_data(
                                 audio_bytes

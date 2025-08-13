@@ -60,6 +60,6 @@ class OpenAILLM2Extension(AsyncLLM2BaseExtension):
         await super().on_deinit(async_ten_env)
 
     def on_call_chat_completion(
-        self, async_ten_env: AsyncTenEnv, input: LLMRequest
+        self, async_ten_env: AsyncTenEnv, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
-        return self.client.get_chat_completions(input)
+        return self.client.get_chat_completions(request_input)

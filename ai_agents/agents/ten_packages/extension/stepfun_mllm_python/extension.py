@@ -135,6 +135,12 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
     def input_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def synthesize_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
+    def vendor(self) -> str:
+        return "stepfun"
+
     async def start_connection(self) -> None:
         try:
             self.conn = RealtimeApiConnection(
@@ -149,7 +155,6 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
             await self.conn.connect()
             item_id = ""  # For truncate tracking
             response_id = ""
-            content_index = 0
             flushed: set[str] = set()
             session_start_ms = int(time.time() * 1000)
 
@@ -327,7 +332,6 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
                                 continue
                             if item_id != message.item_id:
                                 item_id = message.item_id
-                            content_index = message.content_index
                             audio_data = base64.b64decode(message.delta)
                             await self.send_server_output_audio_data(audio_data)
                         case ResponseAudioDone():
@@ -339,8 +343,8 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
                                 f"Server listening, in response {response_id}, last item {item_id}"
                             )
                             # compute relative end time (ms) since session start
-                            current_ms = int(time.time() * 1000)
-                            end_ms = current_ms - session_start_ms
+                            # current_ms = int(time.time() * 1000)
+                            # end_ms = current_ms - session_start_ms
                             # (optional) truncate on-going generation by item_id/content_index if supported
                             if self.config.server_vad:
                                 await self.send_server_interrupted(
@@ -543,6 +547,7 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
             tools = [tool_dict(t) for t in self.available_tools]
 
         # VAD params
+        vad_params = None
         if self.config.vad_type == "server_vad":
             vad_params = ServerVADUpdateParams(
                 threshold=self.config.vad_threshold,

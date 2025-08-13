@@ -5,14 +5,11 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from typing import AsyncIterator
 from .config import ElevenLabsTTS2Config
 import websockets
 import json
 import base64
 import asyncio
-import traceback
-import logging
 from ten_ai_base.message import (
     ModuleVendorException,
     ModuleErrorVendorInfo,
