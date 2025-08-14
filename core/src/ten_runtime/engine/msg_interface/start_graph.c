@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/engine/msg_interface/start_graph.h"
 
 #include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/connection/connection.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/internal/close.h"
@@ -198,8 +199,9 @@ void ten_engine_return_ok_for_cmd_start_graph(
       ten_msg_get_type(cmd_start_graph) == TEN_MSG_TYPE_CMD_START_GRAPH,
       "The command this function handles should be a 'start_graph' command.");
 
-  ten_engine_create_cmd_result_and_dispatch(self, cmd_start_graph,
-                                            TEN_STATUS_CODE_OK, "");
+  ten_engine_create_cmd_result_and_dispatch(
+      self, cmd_start_graph, TEN_STATUS_CODE_OK, TEN_STR_GRAPH_ID,
+      ten_string_get_raw_str(&self->graph_id));
 }
 
 void ten_engine_return_error_for_cmd_start_graph(
@@ -224,9 +226,9 @@ void ten_engine_return_error_for_cmd_start_graph(
 
     va_end(ap);
 
-    ten_engine_create_cmd_result_and_dispatch(self, cmd_start_graph,
-                                              TEN_STATUS_CODE_ERROR,
-                                              ten_string_get_raw_str(detail));
+    ten_engine_create_cmd_result_and_dispatch(
+        self, cmd_start_graph, TEN_STATUS_CODE_ERROR, TEN_STR_DETAIL,
+        ten_string_get_raw_str(detail));
     ten_string_destroy(detail);
   }
 
