@@ -1206,6 +1206,87 @@ mod tests {
 
     #[test]
     #[serial]
+    fn test_log_level_off_specific_category() {
+        use tempfile::NamedTempFile;
+
+        // Create a pre-existing empty file to ensure the path exists even if no
+        // logs are written
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path().to_str().unwrap();
+
+        let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
+            matchers: vec![AdvancedLogMatcher {
+                level: AdvancedLogLevelFilter::OFF,
+                category: Some("auth".to_string()),
+            }],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path: path.to_string(),
+                encryption: None,
+            }),
+        }]);
+
+        ten_configure_log_reloadable(&config).unwrap();
+
+        // These should all be dropped due to global OFF
+        ten_log(
+            &config,
+            "auth",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            1,
+            "aaa",
+        );
+        ten_log(
+            &config,
+            "auth",
+            1,
+            1,
+            LogLevel::Warn,
+            "f",
+            "f.rs",
+            2,
+            "bbb",
+        );
+        ten_log(
+            &config,
+            "database",
+            1,
+            1,
+            LogLevel::Error,
+            "f",
+            "f.rs",
+            3,
+            "ccc",
+        );
+        ten_log(
+            &config,
+            "",
+            1,
+            1,
+            LogLevel::Error,
+            "f",
+            "f.rs",
+            3,
+            "ddd",
+        );
+
+        // Force flush logs (drop workers)
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        // Verify file remains empty
+        let content = read_with_backoff(path, 0).expect("read log file");
+        assert!(content.is_empty(), "Global OFF should produce no output");
+    }
+
+    #[test]
+    #[serial]
     fn test_category_off_overrides_global_debug() {
         use tempfile::NamedTempFile;
 
