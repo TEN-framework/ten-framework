@@ -39,6 +39,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
+        self.first_chunk: bool = False
         self.current_request_finished: bool = False
         self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = (
@@ -154,6 +155,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 raise RuntimeError("Extension is not initialized properly.")
 
             if t.request_id != self.current_request_id:
+                self.first_chunk = True
                 self.sent_ts = datetime.now()
                 self.current_request_id = t.request_id
                 self.total_audio_bytes = 0
@@ -198,8 +200,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error(error_msg)
                 return
 
-            first_chunk = True
-
             async for audio_chunk, event in self.client.get(t.text):
                 if self.current_request_id in self.flushed_request_ids:
                     self.ten_env.log_info(
@@ -210,7 +210,11 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 if event == EVENT_TTS_RESPONSE and audio_chunk:
                     self.total_audio_bytes += len(audio_chunk)
 
-                    if first_chunk and self.sent_ts and self.current_request_id:
+                    if (
+                        self.first_chunk
+                        and self.sent_ts
+                        and self.current_request_id
+                    ):
                         ttfb = int(
                             (datetime.now() - self.sent_ts).total_seconds()
                             * 1000
@@ -219,7 +223,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         await self.send_tts_ttfb_metrics(
                             self.current_request_id, ttfb, self.current_turn_id
                         )
-                        first_chunk = False
+                        self.first_chunk = False
 
                     if (
                         self.config.dump

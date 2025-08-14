@@ -43,6 +43,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
+        self.first_chunk: bool = False
         self.finished_request_ids: set[str] = set()
         self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = (
@@ -217,6 +218,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
+                self.first_chunk = True
                 self.sent_ts = datetime.now()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
@@ -277,7 +279,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             # Get audio stream from Minimax TTS
             self.ten_env.log_info(f"Calling client.get() with text: {t.text}")
             data = self.client.get(t.text)
-            first_chunk = True
 
             self.ten_env.log_info(
                 "Starting async for loop to process audio chunks"
@@ -301,7 +302,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         )
 
                         # Send TTS audio start on first chunk
-                        if first_chunk:
+                        if self.first_chunk:
                             if self.sent_ts:
                                 await self.send_tts_audio_start(
                                     self.current_request_id
@@ -320,7 +321,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                                 self.ten_env.log_info(
                                     f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
                                 )
-                            first_chunk = False
+                            self.first_chunk = False
 
                         # Write to dump file if enabled
                         if (
