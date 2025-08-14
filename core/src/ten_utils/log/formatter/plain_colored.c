@@ -36,9 +36,6 @@ void ten_log_plain_colored_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
   // Determine color based on log level.
   const char *level_color = NULL;
   switch (level) {
-  case TEN_LOG_LEVEL_MANDATORY:
-    level_color = TEN_LOG_COLOR_GOLD;
-    break;
   case TEN_LOG_LEVEL_ERROR:
     level_color = TEN_LOG_COLOR_RED;
     break;

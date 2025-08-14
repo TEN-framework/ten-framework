@@ -573,7 +573,7 @@ static void ten_extension_thread_log_graph_resources(
       graph_id, ten_string_get_raw_str(&extension_threads_json));
 
   // Log the complete JSON
-  TEN_LOGM("[graph resources] {%s}", ten_string_get_raw_str(&log_json));
+  TEN_LOGI("[graph resources] {%s}", ten_string_get_raw_str(&log_json));
 
   // Clean up.
   ten_string_deinit(&log_json);

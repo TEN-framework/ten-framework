@@ -20,8 +20,6 @@ char ten_log_level_char(const TEN_LOG_LEVEL level) {
     return 'W';
   case TEN_LOG_LEVEL_ERROR:
     return 'E';
-  case TEN_LOG_LEVEL_MANDATORY:
-    return 'M';
   default:
     return '?';
   }

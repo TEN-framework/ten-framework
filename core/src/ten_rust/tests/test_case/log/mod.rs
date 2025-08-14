@@ -19,7 +19,7 @@ mod tests {
             encryption::{AesCtrParams, EncryptionConfig, EncryptionParams},
             reloadable::ten_configure_log_reloadable,
             ten_log, AdvancedLogConfig, AdvancedLogEmitter,
-            AdvancedLogFormatter, AdvancedLogHandler, AdvancedLogLevel,
+            AdvancedLogFormatter, AdvancedLogHandler, AdvancedLogLevelFilter,
             AdvancedLogMatcher, ConsoleEmitterConfig, FileEmitterConfig,
             FormatterType, LogLevel, StreamType,
         },
@@ -110,7 +110,7 @@ mod tests {
         assert_eq!(log_config.handlers[0].matchers.len(), 1);
         assert_eq!(
             log_config.handlers[0].matchers[0].level,
-            AdvancedLogLevel::Debug
+            AdvancedLogLevelFilter::Debug
         );
         assert_eq!(
             log_config.handlers[0].formatter.formatter_type,
@@ -134,7 +134,7 @@ mod tests {
 
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -154,7 +154,7 @@ mod tests {
             "test_category",
             1234,
             5678,
-            LogLevel::Verbose,
+            LogLevel::Debug,
             "test_func",
             "test.rs",
             100,
@@ -234,7 +234,8 @@ mod tests {
         let plain_colored_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Trace, // Allow all log levels
+                    level: AdvancedLogLevelFilter::Debug, /* Allow all log
+                                                           * levels */
                     category: None,
                 }],
                 formatter: AdvancedLogFormatter {
@@ -304,7 +305,7 @@ mod tests {
         let plain_no_color_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Info,
+                    level: AdvancedLogLevelFilter::Info,
                     category: None,
                 }],
                 formatter: AdvancedLogFormatter {
@@ -337,7 +338,7 @@ mod tests {
     fn test_formatter_json_no_color() {
         let json_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -369,7 +370,7 @@ mod tests {
     fn test_formatter_json_colored() {
         let json_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Debug,
+                level: AdvancedLogLevelFilter::Debug,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -413,7 +414,7 @@ mod tests {
     fn test_console_emitter_stdout() {
         let stdout_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -445,7 +446,7 @@ mod tests {
     fn test_console_emitter_stderr() {
         let stderr_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Warn,
+                level: AdvancedLogLevelFilter::Warn,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -481,7 +482,7 @@ mod tests {
         let file_plain_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Info,
+                    level: AdvancedLogLevelFilter::Info,
                     category: None,
                 }],
                 formatter: AdvancedLogFormatter {
@@ -544,7 +545,7 @@ mod tests {
         let file_json_config =
             AdvancedLogConfig::new(vec![AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Debug,
+                    level: AdvancedLogLevelFilter::Debug,
                     category: None,
                 }],
                 formatter: AdvancedLogFormatter {
@@ -601,7 +602,7 @@ mod tests {
 
         let mut config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -721,7 +722,7 @@ mod tests {
 
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Debug,
+                level: AdvancedLogLevelFilter::Debug,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -815,11 +816,11 @@ mod tests {
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![
                 AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Info,
+                    level: AdvancedLogLevelFilter::Info,
                     category: Some("auth".to_string()),
                 },
                 AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Debug,
+                    level: AdvancedLogLevelFilter::Debug,
                     category: Some("database".to_string()),
                 },
             ],
@@ -874,11 +875,11 @@ mod tests {
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![
                 AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Info,
+                    level: AdvancedLogLevelFilter::Info,
                     category: Some("auth".to_string()),
                 },
                 AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Debug,
+                    level: AdvancedLogLevelFilter::Debug,
                     category: Some("database".to_string()),
                 },
             ],
@@ -932,7 +933,7 @@ mod tests {
             // Handler 1: Auth logs (INFO and above) to auth_file
             AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Info,
+                    level: AdvancedLogLevelFilter::Info,
                     category: Some("auth".to_string()),
                 }],
                 formatter: AdvancedLogFormatter {
@@ -947,7 +948,7 @@ mod tests {
             // Handler 2: Database logs (all levels) to db_file
             AdvancedLogHandler {
                 matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevel::Debug,
+                    level: AdvancedLogLevelFilter::Debug,
                     category: Some("database".to_string()),
                 }],
                 formatter: AdvancedLogFormatter {
@@ -1060,7 +1061,7 @@ mod tests {
     fn test_actual_logging_output() {
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Trace,
+                level: AdvancedLogLevelFilter::Debug,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -1125,11 +1126,208 @@ mod tests {
             "test_category",
             9999,
             8888,
-            LogLevel::Verbose,
+            LogLevel::Debug,
             "parser",
             "json_parser.rs",
             100,
             "Parse JSON: {\"key\": \"value\"}",
         );
+    }
+
+    #[test]
+    #[serial]
+    fn test_log_level_off_global() {
+        use tempfile::NamedTempFile;
+
+        // Create a pre-existing empty file to ensure the path exists even if no
+        // logs are written
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path().to_str().unwrap();
+
+        let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
+            matchers: vec![AdvancedLogMatcher {
+                level: AdvancedLogLevelFilter::OFF,
+                category: None,
+            }],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path: path.to_string(),
+                encryption: None,
+            }),
+        }]);
+
+        ten_configure_log_reloadable(&config).unwrap();
+
+        // These should all be dropped due to global OFF
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            1,
+            "global-off-info",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Warn,
+            "f",
+            "f.rs",
+            2,
+            "global-off-warn",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Error,
+            "f",
+            "f.rs",
+            3,
+            "global-off-error",
+        );
+
+        // Force flush logs (drop workers)
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        // Verify file remains empty
+        let content = read_with_backoff(path, 0).expect("read log file");
+        assert!(content.is_empty(), "Global OFF should produce no output");
+    }
+
+    #[test]
+    #[serial]
+    fn test_category_off_overrides_global_debug() {
+        use tempfile::NamedTempFile;
+
+        // Ensure clean state
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let log_file = NamedTempFile::new().expect("create temp file");
+        let path = log_file.path().to_str().unwrap().to_string();
+
+        let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
+            matchers: vec![
+                // Allow all categories at debug level and above
+                AdvancedLogMatcher {
+                    level: AdvancedLogLevelFilter::Debug,
+                    category: None,
+                },
+                // But turn off a specific category completely
+                AdvancedLogMatcher {
+                    level: AdvancedLogLevelFilter::OFF,
+                    category: Some("auth".to_string()),
+                },
+            ],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path,
+                encryption: None,
+            }),
+        }]);
+
+        ten_configure_log_reloadable(&config).unwrap();
+
+        // These should be dropped due to auth=off
+        debug!(target: "auth", "auth-debug-should-not-appear");
+        info!(target: "auth", "auth-info-should-not-appear");
+        // This should pass due to default debug for other categories
+        debug!(target: "database", "db-debug-should-appear");
+        info!(target: "database", "db-info-should-appear");
+
+        // Force flush
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let content = read_with_backoff(log_file.path().to_str().unwrap(), 0)
+            .expect("Failed to read log file after retries");
+
+        assert!(!content.contains("auth-debug-should-not-appear"));
+        assert!(!content.contains("auth-info-should-not-appear"));
+        assert!(content.contains("db-debug-should-appear"));
+        assert!(content.contains("db-info-should-appear"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_global_off_then_debug_should_allow_logs() {
+        use tempfile::NamedTempFile;
+
+        // Ensure clean state to avoid prior global config influencing results
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path().to_str().unwrap().to_string();
+
+        // Two matchers in the same handler (both category=None): OFF first,
+        // then DEBUG With equal specificity, the later directive should
+        // override the earlier one; effective level is DEBUG
+        let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
+            matchers: vec![
+                AdvancedLogMatcher {
+                    level: AdvancedLogLevelFilter::OFF,
+                    category: None,
+                },
+                AdvancedLogMatcher {
+                    level: AdvancedLogLevelFilter::Debug,
+                    category: None,
+                },
+            ],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path,
+                encryption: None,
+            }),
+        }]);
+
+        ten_configure_log_reloadable(&config).unwrap();
+
+        // These should be written (effective level is DEBUG)
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Debug,
+            "f",
+            "f.rs",
+            1,
+            "off-then-debug-debug",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            2,
+            "off-then-debug-info",
+        );
+
+        // Force flush
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let content = read_with_backoff(temp_file.path().to_str().unwrap(), 0)
+            .expect("Failed to read log file after retries");
+
+        // Expect log output present
+        assert!(content.contains("off-then-debug-debug"));
+        assert!(content.contains("off-then-debug-info"));
     }
 }

@@ -16,12 +16,6 @@
 
 #define TEN_LOG_SIGNATURE 0xC0EE0CE92149D61AU
 
-#define TEN_LOGM(...)                                                         \
-  do {                                                                        \
-    ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_MANDATORY, __func__, \
-                          __FILE__, __LINE__, __VA_ARGS__);                   \
-  } while (0)
-
 #define TEN_LOGD_AUX(log, ...)                                          \
   do {                                                                  \
     ten_log_log_formatted(log, TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, \
@@ -44,12 +38,6 @@
   do {                                                                  \
     ten_log_log_formatted(log, TEN_LOG_LEVEL_ERROR, __func__, __FILE__, \
                           __LINE__, __VA_ARGS__);                       \
-  } while (0)
-
-#define TEN_LOGM_AUX(log, ...)                                              \
-  do {                                                                      \
-    ten_log_log_formatted(log, TEN_LOG_LEVEL_MANDATORY, __func__, __FILE__, \
-                          __LINE__, __VA_ARGS__);                           \
   } while (0)
 
 typedef struct ten_string_t ten_string_t;

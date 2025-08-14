@@ -1108,7 +1108,7 @@
     "advancedLogLevels": {
       "type": "string",
       "enum": [
-        "trace",
+        "off",
         "debug",
         "info",
         "warn",

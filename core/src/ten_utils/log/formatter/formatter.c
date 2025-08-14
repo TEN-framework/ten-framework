@@ -41,8 +41,6 @@ const char *ten_log_level_to_string(TEN_LOG_LEVEL level) {
     return "WARN";
   case TEN_LOG_LEVEL_ERROR:
     return "ERROR";
-  case TEN_LOG_LEVEL_MANDATORY:
-    return "MANDATORY";
   default:
     return "UNKNOWN";
   }

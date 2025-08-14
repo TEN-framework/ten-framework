@@ -35,26 +35,20 @@ use crate::log::formatter::{
 #[serde(from = "u8")]
 pub enum LogLevel {
     Invalid = 0,
-    Verbose = 1,
-    Debug = 2,
-    Info = 3,
-    Warn = 4,
-    Error = 5,
-    Fatal = 6,
-    Mandatory = 7,
+    Debug = 1,
+    Info = 2,
+    Warn = 3,
+    Error = 4,
 }
 
 impl From<u8> for LogLevel {
     fn from(value: u8) -> Self {
         match value {
             0 => LogLevel::Invalid,
-            1 => LogLevel::Verbose,
-            2 => LogLevel::Debug,
-            3 => LogLevel::Info,
-            4 => LogLevel::Warn,
-            5 => LogLevel::Error,
-            6 => LogLevel::Fatal,
-            7 => LogLevel::Mandatory,
+            1 => LogLevel::Debug,
+            2 => LogLevel::Info,
+            3 => LogLevel::Warn,
+            4 => LogLevel::Error,
             _ => LogLevel::Invalid,
         }
     }
@@ -63,13 +57,10 @@ impl From<u8> for LogLevel {
 impl LogLevel {
     fn to_tracing_level(&self) -> tracing::Level {
         match self {
-            LogLevel::Verbose => tracing::Level::TRACE,
             LogLevel::Debug => tracing::Level::DEBUG,
             LogLevel::Info => tracing::Level::INFO,
             LogLevel::Warn => tracing::Level::WARN,
             LogLevel::Error => tracing::Level::ERROR,
-            LogLevel::Fatal => tracing::Level::ERROR,
-            LogLevel::Mandatory => tracing::Level::ERROR,
             LogLevel::Invalid => tracing::Level::ERROR,
         }
     }
@@ -78,18 +69,18 @@ impl LogLevel {
 // Advanced log level enum that serializes to/from strings
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
-pub enum AdvancedLogLevel {
-    Trace,
+pub enum AdvancedLogLevelFilter {
+    OFF,
     Debug,
     Info,
     Warn,
     Error,
 }
 
-impl fmt::Display for AdvancedLogLevel {
+impl fmt::Display for AdvancedLogLevelFilter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::Trace => "trace",
+            Self::OFF => "off",
             Self::Debug => "debug",
             Self::Info => "info",
             Self::Warn => "warn",
@@ -100,7 +91,7 @@ impl fmt::Display for AdvancedLogLevel {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AdvancedLogMatcher {
-    pub level: AdvancedLogLevel,
+    pub level: AdvancedLogLevelFilter,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub category: Option<String>,
 }
