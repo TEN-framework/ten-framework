@@ -52,7 +52,7 @@ class test_predefined_graph : public ten::extension_t {
           nlohmann::json json =
               nlohmann::json::parse(cmd_result->get_property_to_json());
           if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
-            auto graph_id = cmd_result->get_property_string("detail");
+            auto graph_id = cmd_result->get_property_string("graph_id");
 
             auto hello_world_cmd = ten::cmd_t::create("hello_world");
             hello_world_cmd->set_dests(

@@ -45,7 +45,7 @@ class test_extension_1 : public ten::extension_t {
                        EXPECT_EQ(status_code, TEN_STATUS_CODE_ERROR);
 
                        auto graph_id =
-                           cmd_result->get_property_string("detail");
+                           cmd_result->get_property_string("graph_id");
                        EXPECT_EQ(graph_id, "");
 
                        start_and_stop_graph_is_completed = true;
