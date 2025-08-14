@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-
 use anyhow::{anyhow, Result};
 
 use crate::crypto::{new_cipher, Cipher, CipherAlgorithm};
@@ -43,7 +42,7 @@ pub fn decrypt_records_bytes(
             return Err(anyhow!("parity mismatch at pos {pos}"));
         }
 
-        let len = (((header[3] as usize) << 8) | (header[4] as usize)) as usize;
+        let len = ((header[3] as usize) << 8) | (header[4] as usize);
         if pos + 5 + len > input.len() {
             return Err(anyhow!("record length out of range at pos {pos}"));
         }

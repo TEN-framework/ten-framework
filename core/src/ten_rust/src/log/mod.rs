@@ -11,10 +11,12 @@ pub mod file_appender;
 pub mod formatter;
 pub mod reloadable;
 
-use serde::{Deserialize, Serialize};
 use std::{fmt, io};
+
+use serde::{Deserialize, Serialize};
 use tracing;
 use tracing_appender::non_blocking;
+use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::{
     fmt::{self as tracing_fmt},
     layer::SubscriberExt,
@@ -27,7 +29,6 @@ use crate::log::file_appender::FileAppenderGuard;
 use crate::log::formatter::{
     JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter,
 };
-use tracing_subscriber::fmt::writer::BoxMakeWriter;
 
 // Encryption types and writer are moved to `encryption.rs`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -4,9 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::io;
 
 use serde::{Deserialize, Serialize};
-use std::io;
 use tracing_subscriber::fmt::MakeWriter as TracingMakeWriter;
 
 use crate::crypto::{new_cipher, Cipher, CipherAlgorithm};
