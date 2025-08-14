@@ -143,9 +143,10 @@
 #define TEN_STR_GRAPH_NAME "graph_name"
 #define TEN_STR_GRAPH_ID "graph_id"
 #define TEN_STR_IMPORT_URI "import_uri"
-
+// = is not a valid graph id or name, so use = as a special string for internal
+// use.
+#define TEN_STR_DUPLICATE "==duplicate=="
 #define TEN_STR_CASCADE_CLOSE_UPWARD "cascade_close_upward"
-#define TEN_STR_DUPLICATE "duplicate"
 #define TEN_STR_ADDON "addon"
 #define TEN_STR_TEN_PACKAGES "ten_packages"
 #define TEN_STR_ONE_EVENT_LOOP_PER_ENGINE "one_event_loop_per_engine"
