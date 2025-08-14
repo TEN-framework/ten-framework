@@ -126,7 +126,8 @@ TEN_UTILS_API void ten_log_global_reload(void);
 
 TEN_UTILS_API void ten_log_global_set_advanced_impl_with_config(
     ten_log_advanced_log_func_t impl,
-    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config);
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit,
+    ten_log_advanced_log_reopen_all_func_t reopen_all, void *config);
 
 TEN_UTILS_API void ten_log_global_set_advanced_log_reloadable(void);
 
@@ -138,4 +139,5 @@ TEN_UTILS_API void ten_log_advanced_impl_deinit(ten_log_advanced_impl_t *self);
 
 TEN_UTILS_API void ten_log_set_advanced_impl_with_config(
     ten_log_t *self, ten_log_advanced_log_func_t impl,
-    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config);
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit,
+    ten_log_advanced_log_reopen_all_func_t reopen_all, void *config);

@@ -50,3 +50,18 @@ void ten_log_rust_config_deinit(void *config) {
   ten_rust_log_config_destroy(config);
 #endif
 }
+
+void ten_log_rust_config_reopen_all(ten_log_t *self, void *config) {
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(config, "Invalid argument.");
+
+  char *err_msg = NULL;
+  bool success = ten_rust_log_reopen_all(
+      config, self->advanced_impl.is_reloadable, &err_msg);
+  if (!success) {
+    TEN_LOGE("Failed to reopen log: %s", err_msg);
+    ten_rust_free_cstring(err_msg);
+  }
+#endif
+}

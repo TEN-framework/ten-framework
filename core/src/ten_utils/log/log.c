@@ -109,6 +109,11 @@ void ten_log_reload(ten_log_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
+  if (self->advanced_impl.reopen_all) {
+    self->advanced_impl.reopen_all(self, self->advanced_impl.config);
+    return;
+  }
+
   if (self->output.on_reload) {
     self->output.on_reload(self);
   }
@@ -252,6 +257,7 @@ void ten_log_advanced_impl_init(ten_log_advanced_impl_t *self) {
 
   self->impl = NULL;
   self->on_deinit = NULL;
+  self->reopen_all = NULL;
   self->config = NULL;
   self->is_reloadable = false;
 }
@@ -265,12 +271,14 @@ void ten_log_advanced_impl_deinit(ten_log_advanced_impl_t *self) {
 
   self->impl = NULL;
   self->on_deinit = NULL;
+  self->reopen_all = NULL;
   self->config = NULL;
 }
 
 void ten_log_set_advanced_impl_with_config(
     ten_log_t *self, ten_log_advanced_log_func_t impl,
-    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config) {
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit,
+    ten_log_advanced_log_reopen_all_func_t reopen_all, void *config) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -280,5 +288,6 @@ void ten_log_set_advanced_impl_with_config(
 
   self->advanced_impl.impl = impl;
   self->advanced_impl.on_deinit = on_deinit;
+  self->advanced_impl.reopen_all = reopen_all;
   self->advanced_impl.config = config;
 }
