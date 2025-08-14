@@ -141,7 +141,11 @@ class MainControlExtension(AsyncExtension):
                         await self._send_transcript(
                             role="assistant",
                             text=event.text,
-                            data_type="reasoning" if event.type == "reasoning" else "text",
+                            data_type=(
+                                "reasoning"
+                                if event.type == "reasoning"
+                                else "text"
+                            ),
                             final=event.is_final,
                             stream_id=100,
                         )
@@ -156,7 +160,12 @@ class MainControlExtension(AsyncExtension):
                 )
 
     async def _send_transcript(
-        self, role: str, text: str, final: bool, stream_id: int, data_type:Literal["text"] | Literal["reasoning"] = "text",
+        self,
+        role: str,
+        text: str,
+        final: bool,
+        stream_id: int,
+        data_type: Literal["text"] | Literal["reasoning"] = "text",
     ):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
@@ -183,12 +192,14 @@ class MainControlExtension(AsyncExtension):
                 {
                     "data_type": "raw",
                     "role": role,
-                    "text": json.dumps({
-                        "type": "reasoning",
-                        "data": {
-                            "text": text,
+                    "text": json.dumps(
+                        {
+                            "type": "reasoning",
+                            "data": {
+                                "text": text,
+                            },
                         }
-                    }),
+                    ),
                     "text_ts": int(time.time() * 1000),
                     "is_final": final,
                     "stream_id": stream_id,

@@ -4,3 +4,5 @@
 # See the LICENSE file for more information.
 #
 from . import addon
+
+__all__ = ["addon"]

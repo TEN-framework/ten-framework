@@ -55,9 +55,10 @@ void ten_log_global_reload(void) { ten_log_reload(&ten_global_log); }
 
 void ten_log_global_set_advanced_impl_with_config(
     ten_log_advanced_log_func_t impl,
-    ten_log_advanced_log_config_on_deinit_func_t on_deinit, void *config) {
+    ten_log_advanced_log_config_on_deinit_func_t on_deinit,
+    ten_log_advanced_log_reopen_all_func_t reopen_all, void *config) {
   ten_log_set_advanced_impl_with_config(&ten_global_log, impl, on_deinit,
-                                        config);
+                                        reopen_all, config);
 }
 
 void ten_log_global_set_advanced_log_reloadable() {

@@ -209,6 +209,10 @@ TEN_RUST_PRIVATE_API bool ten_rust_configure_log(AdvancedLogConfig *config,
                                                  bool reloadable,
                                                  char **err_msg);
 
+TEN_RUST_PRIVATE_API bool ten_rust_log_reopen_all(AdvancedLogConfig *config,
+                                                  bool reloadable,
+                                                  char **err_msg);
+
 TEN_RUST_PRIVATE_API void ten_rust_log(AdvancedLogConfig *config,
                                        const char *category, int64_t pid,
                                        int64_t tid, int level,

@@ -271,11 +271,11 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-            # Process the TTS request
-            self.sent_ts = datetime.now()
-            first_chunk = True
-            cur_duration_bytes = 0
-            start_ms = 0
+                # Process the TTS request
+                self.sent_ts = datetime.now()
+                first_chunk = True
+                cur_duration_bytes = 0
+                start_ms = 0
 
             self.ten_env.log_info(
                 f"Processing TTS request for text: '{t.text[:50]}...'"

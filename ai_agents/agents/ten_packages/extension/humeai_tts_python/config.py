@@ -40,6 +40,17 @@ class HumeAiTTSConfig(BaseModel):
         return f"{config}"
 
     def update_params(self) -> None:
-        for key, value in self.params.items():  # pylint: disable=no-member
-            if hasattr(self, key):
-                setattr(self, key, value)
+        ##### get value from params #####
+        if "key" in self.params:
+            self.key = self.params["key"]
+            del self.params["key"]
+        if "voice_id" in self.params:
+            self.voice_id = self.params["voice_id"]
+        if "voice_name" in self.params:
+            self.voice_name = self.params["voice_name"]
+        if "provider" in self.params:
+            self.provider = self.params["provider"]
+        if "speed" in self.params:
+            self.speed = self.params["speed"]
+        if "trailing_silence" in self.params:
+            self.trailing_silence = self.params["trailing_silence"]

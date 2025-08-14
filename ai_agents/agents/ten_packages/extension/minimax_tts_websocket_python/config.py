@@ -30,14 +30,13 @@ def mask_sensitive_data(
 
 class MinimaxTTSWebsocketConfig(BaseModel):
 
-    api_key: str
-    group_id: str
-    url: str = ""
-    voice_id: str = ""
+    api_key: str = ""
+    group_id: str = ""
+    url: str = "wss://api.minimaxi.com/ws/v1/t2a_v2"
     sample_rate: int = 16000
-    model: str = ""
+    channels: int = 1
     dump: bool = False
-    dump_path: str = "/tmp"
+    dump_path: str = ""
     params: Dict[str, Any] = Field(default_factory=dict)
     black_list_params: List[str] = Field(default_factory=list)
 
@@ -46,13 +45,13 @@ class MinimaxTTSWebsocketConfig(BaseModel):
 
     def update_params(self) -> None:
         ##### get value from params #####
-        print(f"params: {self.params}")
         if "api_key" in self.params:
-            print(f"api_key: {self.params['api_key']}")
             self.api_key = self.params["api_key"]
+            del self.params["api_key"]
+
         if "group_id" in self.params:
-            print(f"group_id: {self.params['group_id']}")
             self.group_id = self.params["group_id"]
+            del self.params["group_id"]
 
         if (
             "audio_setting" in self.params
@@ -61,24 +60,15 @@ class MinimaxTTSWebsocketConfig(BaseModel):
             self.sample_rate = int(self.params["audio_setting"]["sample_rate"])
 
         if (
-            "audio_setting" not in self.params
-            or "sample_rate" not in self.params["audio_setting"]
+            "audio_setting" in self.params
+            and "channels" in self.params["audio_setting"]
         ):
-            if "audio_setting" not in self.params:
-                self.params["audio_setting"] = {}
-            self.params["audio_setting"]["sample_rate"] = self.sample_rate
+            self.channels = int(self.params["audio_setting"]["channels"])
 
         ##### use fixed value #####
         if "audio_setting" not in self.params:
             self.params["audio_setting"] = {}
         self.params["audio_setting"]["format"] = "pcm"
-
-        if "voice_setting" not in self.params:
-            self.params["voice_setting"] = {}
-        self.params["voice_setting"]["voice_id"] = self.voice_id
-
-        if "model" not in self.params:
-            self.params["model"] = self.model
 
     def to_str(self) -> str:
         """
@@ -87,9 +77,9 @@ class MinimaxTTSWebsocketConfig(BaseModel):
         return (
             f"MinimaxTTSWebsocketConfig(key={mask_sensitive_data(self.api_key)}, "
             f"group_id={self.group_id}, "
-            f"voice_id={self.voice_id}, "
-            f"sample_rate={self.sample_rate}, "
             f"url={self.url}, "
+            f"sample_rate={self.sample_rate}, "
+            f"channels={self.channels}, "
             f"dump={self.dump}, "
             f"dump_path={self.dump_path}, "
             f"params={self.params}, "

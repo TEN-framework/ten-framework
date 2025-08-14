@@ -182,11 +182,15 @@ class LLMExec:
                 delta = llm_output.delta
                 text = llm_output.content
                 if delta and self.on_reasoning_response:
-                    await self.on_reasoning_response(self.ten_env, delta, text, False)
+                    await self.on_reasoning_response(
+                        self.ten_env, delta, text, False
+                    )
             case LLMResponseReasoningDone():
                 text = llm_output.content
                 if self.on_reasoning_response and text:
-                    await self.on_reasoning_response(self.ten_env, "", text, True)
+                    await self.on_reasoning_response(
+                        self.ten_env, "", text, True
+                    )
             case LLMResponseToolCall():
                 self.ten_env.log_info(
                     f"_handle_llm_response: invoking tool call {llm_output.name}"

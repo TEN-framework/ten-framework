@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_tts_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "name": "ten_runtime_python",
@@ -22,6 +22,7 @@
       "**.tent",
       "**.py",
       "README.md",
+      "src/**",
       "tests/**"
     ]
   },
@@ -33,12 +34,6 @@
     ],
     "property": {
       "properties": {
-        "dump": {
-          "type": "bool"
-        },
-        "dump_path": {
-          "type": "string"
-        },
         "params": {
           "type": "object",
           "properties": {

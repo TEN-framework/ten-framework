@@ -154,7 +154,7 @@ def test_dump_functionality(MockElevenLabsTTS2):
 
     # Set up dump configuration
     dump_config = {
-        "key": "${env:ELEVENLABS_TTS_KEY}",
+        "key": "fake_elevenlabs_key_for_mock_testing",
         "dump": True,
         "dump_path": dump_dir,
         "params": {"audio_params": {"sample_rate": 16000}},

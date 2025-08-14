@@ -6,18 +6,19 @@ import websockets
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel
+from websockets.asyncio.client import ClientConnection
 from ten_ai_base.asr import AsyncASRBaseExtension
-from ten_ai_base.message import ErrorMessage, ErrorMessageVendorInfo, ModuleType
-from ten_ai_base.transcription import UserTranscription
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleType,
+)
+from ten_ai_base.struct import ASRResult
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
-    Cmd,
-    CmdResult,
-    StatusCode,
 )
 
 
@@ -31,9 +32,9 @@ class GladiaASRConfig(BaseModel):
 class GladiaASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
-        self.config: Optional[GladiaASRConfig] = None
-        self.ws: Optional[websockets.client.ClientProtocol] = None
-        self.ws_loop: Optional[asyncio.Task] = None
+        self.config: GladiaASRConfig | None = None
+        self.ws: ClientConnection | None = None
+        self.ws_loop: asyncio.Task | None = None
         self.last_finalize_timestamp: int = 0
         self.connected = False
 
@@ -41,22 +42,24 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         return "gladia"
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("GladiaASRExtension on_init")
         await super().on_init(ten_env)
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result)
+        ten_env.log_info("GladiaASRExtension on_init")
+
+        config_json, _ = await self.ten_env.get_property_to_json("")
+
+        try:
+            self.config = GladiaASRConfig.model_validate_json(config_json)
+        except Exception as e:
+            await self._handle_error(e)
 
     async def start_connection(self) -> None:
         self.ten_env.log_info("Starting Gladia Live session...")
 
-        if self.config is None:
-            config_json, _ = await self.ten_env.get_property_to_json("")
-            self.config = GladiaASRConfig.model_validate_json(config_json)
-
         await self.stop_connection()
+
+        if self.config is None:
+            return
 
         try:
             ws_url = self._init_live_session(self.config)
@@ -91,13 +94,19 @@ class GladiaASRExtension(AsyncASRBaseExtension):
 
     async def _receive_loop(self):
         try:
+            if self.ws is None:
+                return
+
             async for message in self.ws:
-                await self._handle_message(message)
+                await self._handle_message(str(message))
         except Exception as e:
             await self._handle_error(e)
 
     async def _handle_message(self, message: str):
         try:
+            if self.config is None:
+                return
+
             data = json.loads(message)
             if data.get("type") != "transcript":
                 return
@@ -116,7 +125,7 @@ class GladiaASRExtension(AsyncASRBaseExtension):
             final_from_finalize = True
             await self._finalize_counter_if_needed(final_from_finalize)
 
-            transcription = UserTranscription(
+            asr_result = ASRResult(
                 text=text,
                 final=True,
                 start_ms=start_ms,
@@ -124,14 +133,17 @@ class GladiaASRExtension(AsyncASRBaseExtension):
                 language=self.config.language,
                 words=[],
             )
-            await self.send_asr_transcription(transcription)
+            await self.send_asr_result(asr_result)
         except Exception as e:
             await self._handle_error(e)
 
     async def send_audio(
-        self, frame: AudioFrame, session_id: Optional[str]
+        self, frame: AudioFrame, session_id: str | None
     ) -> None:
         try:
+            if self.ws is None:
+                return
+
             self.session_id = session_id
             chunk = base64.b64encode(frame.get_buf()).decode("utf-8")
             msg = json.dumps({"type": "audio_chunk", "data": {"chunk": chunk}})
@@ -139,7 +151,7 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             await self._handle_error(e)
 
-    async def finalize(self, session_id: Optional[str]) -> None:
+    async def finalize(self, session_id: str | None) -> None:
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
         self.ten_env.log_info("Sending stop_recording to Gladia...")
         if self.ws:
@@ -163,19 +175,15 @@ class GladiaASRExtension(AsyncASRBaseExtension):
         return self.connected and self.ws is not None
 
     def input_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        return self.config.sample_rate if self.config else 16000
 
     async def _handle_error(self, error: Exception):
         self.ten_env.log_error(f"Gladia error: {error}")
         await self.send_asr_error(
-            ErrorMessage(
-                code=-1,
-                message=str(error),
-                turn_id=0,
+            ModuleError(
                 module=ModuleType.ASR,
-            ),
-            ErrorMessageVendorInfo(
-                vendor="gladia", code=-1, message=str(error)
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(error),
             ),
         )
 

@@ -16,7 +16,7 @@ from ten_ai_base.message import (
     ModuleType,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import HumeAiTTSConfig
@@ -39,6 +39,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
+        self.first_chunk: bool = False
         self.current_request_finished: bool = False
         self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = (
@@ -154,6 +155,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 raise RuntimeError("Extension is not initialized properly.")
 
             if t.request_id != self.current_request_id:
+                self.first_chunk = True
+                self.sent_ts = datetime.now()
                 self.current_request_id = t.request_id
                 self.total_audio_bytes = 0
                 self.current_request_finished = False
@@ -195,40 +198,23 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
             elif self.current_request_finished:
                 error_msg = f"Received a message for a finished request_id: {self.current_request_id}"
                 self.ten_env.log_error(error_msg)
-                await self.send_tts_error(
-                    self.current_request_id,
-                    ModuleError(
-                        message=error_msg,
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    ),
-                )
                 return
-
-            if not t.text or t.text.isspace():
-                if t.text_input_end and self.current_request_id:
-                    # If it's the end of input, we should still send audio_end
-                    await self.send_tts_audio_end(
-                        self.current_request_id, 0, 0, self.current_turn_id
-                    )
-                return
-
-            self.sent_ts = datetime.now()
-            first_chunk = True
 
             async for audio_chunk, event in self.client.get(t.text):
                 if self.current_request_id in self.flushed_request_ids:
                     self.ten_env.log_info(
                         f"Request {self.current_request_id} was flushed. Stopping processing."
                     )
-                    self.flushed_request_ids.remove(self.current_request_id)
                     break
 
                 if event == EVENT_TTS_RESPONSE and audio_chunk:
                     self.total_audio_bytes += len(audio_chunk)
 
-                    if first_chunk and self.sent_ts and self.current_request_id:
+                    if (
+                        self.first_chunk
+                        and self.sent_ts
+                        and self.current_request_id
+                    ):
                         ttfb = int(
                             (datetime.now() - self.sent_ts).total_seconds()
                             * 1000
@@ -237,7 +223,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         await self.send_tts_ttfb_metrics(
                             self.current_request_id, ttfb, self.current_turn_id
                         )
-                        first_chunk = False
+                        self.first_chunk = False
 
                     if (
                         self.config.dump
@@ -256,19 +242,9 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     event == EVENT_TTS_END
                     and self.sent_ts
                     and self.current_request_id
+                    and t.text_input_end
                 ):
                     duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_text_result(
-                        TTSTextResult(
-                            request_id=self.current_request_id,
-                            text=t.text,
-                            text_input_end=t.text_input_end,
-                            start_ms=0,
-                            duration_ms=duration_ms,
-                            words=[],
-                            metadata={},
-                        )
-                    )
                     request_interval = int(
                         (datetime.now() - self.sent_ts).total_seconds() * 1000
                     )

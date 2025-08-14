@@ -114,6 +114,7 @@ class ExtensionTesterInvalidParams(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="test-request-for-invalid-params",
             text="This text will trigger the mocked error.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
