@@ -31,6 +31,7 @@
 #define TEN_STR_STATUS_CODE "status_code"
 #define TEN_STR_DETAIL "detail"
 #define TEN_STR_IS_FINAL "is_final"
+#define TEN_STR_GRAPH_ID "graph_id"
 
 // Timer relevant fields.
 #define TEN_STR_TIMER_ID "timer_id"

@@ -163,7 +163,7 @@ static void ten_engine_check_if_all_extension_threads_are_ready(
 
       cmd_result = ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_OK,
                                                   original_start_graph_cmd);
-      ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
+      ten_msg_set_property(cmd_result, TEN_STR_GRAPH_ID,
                            ten_value_create_string(body_str), NULL);
 
       // Mark the engine that it could start to handle messages.
