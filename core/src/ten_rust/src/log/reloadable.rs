@@ -13,6 +13,7 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
+use crate::log::file_appender::FileAppenderGuard;
 use crate::log::{create_layer_and_filter, AdvancedLogConfig, LogInitError};
 
 const MAX_HANDLERS: usize = 5;
@@ -165,4 +166,20 @@ pub fn ten_configure_log_reloadable(
     }
 
     Ok(())
+}
+
+/// Request all file appenders managed by the reloadable log manager to reopen
+/// on next write. No-op if the manager isn't initialized yet.
+pub fn request_reopen_all_files() {
+    if let Ok(manager) = LOG_MANAGER.lock() {
+        for guard_opt in manager.guards.iter() {
+            if let Some(any_guard) = guard_opt.as_ref() {
+                if let Some(file_guard) =
+                    any_guard.downcast_ref::<FileAppenderGuard>()
+                {
+                    file_guard.request_reopen();
+                }
+            }
+        }
+    }
 }
