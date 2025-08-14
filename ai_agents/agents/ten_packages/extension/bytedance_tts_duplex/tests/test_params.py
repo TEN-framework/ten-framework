@@ -34,6 +34,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
+
 # ================ test params passthrough ================
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""
@@ -60,7 +61,8 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         print("tester on_start_done")
         ten_env_tester.on_start_done()
 
-@patch('bytedance_tts_duplex.extension.BytedanceV3Client')
+
+@patch("bytedance_tts_duplex.extension.BytedanceV3Client")
 def test_params_passthrough(MockBytedanceV3Client):
     """
     Tests that custom parameters passed in the configuration are correctly
@@ -88,25 +90,18 @@ def test_params_passthrough(MockBytedanceV3Client):
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
     passthrough_params = {
-        "audio_params": {
-            "format": "pcm",
-            "sample_rate": 48000
-        },
-        "voice_params": {
-            "speed": 1.2,
-            "pitch": 2
-        }
+        "audio_params": {"format": "pcm", "sample_rate": 48000},
+        "voice_params": {"speed": 1.2, "pitch": 2},
     }
     passthrough_config = {
         "appid": "a_valid_appid",
         "token": "a_valid_token",
-        "params": passthrough_params
+        "params": passthrough_params,
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "bytedance_tts_duplex",
-        json.dumps(passthrough_config)
+        "bytedance_tts_duplex", json.dumps(passthrough_config)
     )
 
     print("Running passthrough test...")
@@ -124,8 +119,9 @@ def test_params_passthrough(MockBytedanceV3Client):
 
     # Verify that the 'params' dictionary in the config object passed to the
     # client constructor is identical to the one we defined in our test config.
-    assert called_config.params == passthrough_params, \
-        f"Expected params to be {passthrough_params}, but got {called_config.params}"
+    assert (
+        called_config.params == passthrough_params
+    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")

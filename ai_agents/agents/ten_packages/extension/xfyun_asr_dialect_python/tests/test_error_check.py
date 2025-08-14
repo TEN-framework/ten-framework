@@ -1,5 +1,12 @@
 from typing_extensions import override
-from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, AudioFrame, TenError, TenErrorCode
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    Data,
+    AudioFrame,
+    TenError,
+    TenErrorCode,
+)
 import json
 
 
@@ -12,7 +19,12 @@ class XfyunDialectAsrExtensionTester(AsyncExtensionTester):
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
         ten_env_tester.log_info("on_start")
 
-    def stop_test_if_checking_failed(self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str) -> None:
+    def stop_test_if_checking_failed(
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
+    ) -> None:
         if not success:
             err = TenError.create(
                 error_code=TenErrorCode.ErrorCodeGeneric,
@@ -21,7 +33,9 @@ class XfyunDialectAsrExtensionTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         # Expect to receive an error data.
         data_name = data.get_name()
         print(f"data_name: {data_name}")
@@ -42,6 +56,8 @@ def test_error_check():
         "key": "invalid_key",
     }
     tester = XfyunDialectAsrExtensionTester()
-    tester.set_test_mode_single("xfyun_asr_dialect_python", json.dumps(property_json))
+    tester.set_test_mode_single(
+        "xfyun_asr_dialect_python", json.dumps(property_json)
+    )
     err = tester.run()
     assert err is None

@@ -13,7 +13,7 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 | `api_key`                   | `string`   | Azure AI Foundry api key                 |
 | `temperature`               | `float64`  | Sampling temperature, higher values mean more randomness |
 | `model`                     | `string`   | `gpt-4o` or `gpt-4o-realtime-preview`, for details check [azure docs](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live#supported-models-and-regions)   |
-| `base_uri`                 | `string`   | Base URI for your AI Foundry deployment               |
+| `base_url`                 | `string`   | Base URI for your AI Foundry deployment               |
 | `max_tokens`                | `int64`    | Maximum number of tokens to generate      |
 | `prompt`                    | `string`   | Default system message to send to the model       |
 | `server_vad`                | `bool`     | Flag to enable or disable server vad of OpenAI |

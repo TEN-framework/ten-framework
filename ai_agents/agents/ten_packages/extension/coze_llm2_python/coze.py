@@ -1,15 +1,21 @@
-
 # ------------------------------
 # Config (parity with your pattern)
 # ------------------------------
 from dataclasses import dataclass
 import json
+import traceback
 from typing import Any, AsyncGenerator, List, Optional
 import aiohttp
 from cozepy import Chat, ChatEvent, ChatEventType, Message
 from pydantic import BaseModel
 
-from ten_ai_base.struct import LLMMessageContent, LLMRequest, LLMResponse, LLMResponseMessageDelta, LLMResponseMessageDone
+from ten_ai_base.struct import (
+    LLMMessageContent,
+    LLMRequest,
+    LLMResponse,
+    LLMResponseMessageDelta,
+    LLMResponseMessageDone,
+)
 from ten_runtime import AsyncTenEnv
 
 
@@ -22,6 +28,7 @@ class CozeLLM2Config(BaseModel):
     connect_timeout_s: float = 15.0
     total_timeout_s: float = 90.0
     auto_save_history: bool = True
+
 
 # ------------------------------
 # Streaming client
@@ -71,7 +78,11 @@ class CozeChatClient:
                     )
             elif isinstance(content, list):
                 # If multi-part, concatenate text chunks as a simple fallback
-                text_parts = [getattr(x, "text", "") for x in content if hasattr(x, "text")]
+                text_parts = [
+                    getattr(x, "text", "")
+                    for x in content
+                    if hasattr(x, "text")
+                ]
                 text = "\n".join([t for t in text_parts if t])
                 if not text:
                     continue
@@ -109,12 +120,16 @@ class CozeChatClient:
             ChatEventType.CONVERSATION_CHAT_FAILED,
             ChatEventType.CONVERSATION_CHAT_REQUIRES_ACTION,
         ]:
-            return ChatEvent(event=event, chat=Chat.model_validate_json(event_data))
+            return ChatEvent(
+                event=event, chat=Chat.model_validate_json(event_data)
+            )
 
         # Unknown event
         raise ValueError(f"[Coze] invalid chat.event: {event}, {event_data}")
 
-    async def get_chat_completions(self, req: LLMRequest) -> AsyncGenerator[LLMResponse, None]:
+    async def get_chat_completions(
+        self, req: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
         """
         Map LLMRequest -> Coze /v3/chat streaming.
         Emits LLMResponseMessageDelta and LLMResponseMessageDone (no tool calls).
@@ -137,7 +152,9 @@ class CozeChatClient:
         full_content = ""
         event = ""
 
-        async with self._session.post(url, json=payload, headers=self._headers()) as resp:
+        async with self._session.post(
+            url, json=payload, headers=self._headers()
+        ) as resp:
             if resp.status != 200:
                 try:
                     err = await resp.json()
@@ -163,30 +180,50 @@ class CozeChatClient:
                     if decoded.startswith("data:"):
                         data_str = decoded[5:].strip()
                         # Coze returns JSON in data line; feed to model parser
-                        chat_event = self._event_to_chatevent(event=event, event_data=data_str)
+                        chat_event = self._event_to_chatevent(
+                            event=event, event_data=data_str
+                        )
 
-                        if chat_event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
+                        if (
+                            chat_event.event
+                            == ChatEventType.CONVERSATION_MESSAGE_DELTA
+                        ):
                             delta = chat_event.message.content or ""
                             if not delta:
                                 continue
                             full_content += delta
                             yield LLMResponseMessageDelta(
-                                response_id=str(getattr(chat_event.message, "id", "") or ""),
+                                response_id=str(
+                                    getattr(chat_event.message, "id", "") or ""
+                                ),
                                 role="assistant",
                                 content=full_content,
                                 delta=delta,
                                 created=0,
                             )
 
-                        elif chat_event.event == ChatEventType.CONVERSATION_MESSAGE_COMPLETED:
+                        elif (
+                            chat_event.event
+                            == ChatEventType.CONVERSATION_MESSAGE_COMPLETED
+                        ):
                             # No-op here; we emit DONE after stream ends.
                             pass
 
-                        elif chat_event.event == ChatEventType.CONVERSATION_CHAT_FAILED:
+                        elif (
+                            chat_event.event
+                            == ChatEventType.CONVERSATION_CHAT_FAILED
+                        ):
                             last_error = chat_event.chat.last_error
-                            if last_error and getattr(last_error, "code", None) == 4011:
-                                raise RuntimeError("The Coze token has been depleted. Please check your token usage.")
-                            msg = getattr(last_error, "msg", "Unknown Coze chat failure")
+                            if (
+                                last_error
+                                and getattr(last_error, "code", None) == 4011
+                            ):
+                                raise RuntimeError(
+                                    "The Coze token has been depleted. Please check your token usage."
+                                )
+                            msg = getattr(
+                                last_error, "msg", "Unknown Coze chat failure"
+                            )
                             raise RuntimeError(msg)
 
                         # Other chat lifecycle events are informational.
@@ -203,7 +240,10 @@ class CozeChatClient:
                     break
                 except Exception as e:
                     # Escalate to caller; upper layer should handle & notify
-                    raise
+                    self.ten_env.log_error(
+                        f"[Coze] error processing event: {traceback.format_exc()}"
+                    )
+                    raise e
 
         # Emit terminal message
         yield LLMResponseMessageDone(

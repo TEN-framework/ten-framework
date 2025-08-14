@@ -5,17 +5,20 @@ from pathlib import Path
 
 class LoggerManager:
     """Logger manager singleton"""
-    
+
     _instance = None
     _logger = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def _default_logger(
-        self, name: str = "openai_asr", level: str = "INFO", log_path: str | None = None
+        self,
+        name: str = "openai_asr",
+        level: str = "INFO",
+        log_path: str | None = None,
     ):
         FORMAT = "%(asctime)15s %(name)s-%(levelname)s  %(funcName)s:%(lineno)s %(message)s"
         logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -36,12 +39,17 @@ class LoggerManager:
         logger.addHandler(handler)
         logger.setLevel(level)
         return logger
-    
-    def get_logger(self, name: str = "openai_asr", level: str = "INFO", log_path: str | None = None):
+
+    def get_logger(
+        self,
+        name: str = "openai_asr",
+        level: str = "INFO",
+        log_path: str | None = None,
+    ):
         if self._logger is None:
             self._logger = self._default_logger(name, level, log_path)
         return self._logger
-    
+
     def set_logger(self, logger: logging.Logger):
         self._logger = logger
 
@@ -50,7 +58,9 @@ class LoggerManager:
 _logger_manager = LoggerManager()
 
 
-def get_logger(name: str = "tencent_asr", level: str = "INFO", log_path: str | None = None):
+def get_logger(
+    name: str = "tencent_asr", level: str = "INFO", log_path: str | None = None
+):
     """Get logger instance"""
     return _logger_manager.get_logger(name, level, log_path)
 

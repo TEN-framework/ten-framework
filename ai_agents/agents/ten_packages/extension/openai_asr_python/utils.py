@@ -4,7 +4,7 @@ from pydantic import field_serializer
 
 def encrypting_serializer(*fields: str) -> Callable:
     """
-    A factory function that creates a Pydantic serializer for specified fields 
+    A factory function that creates a Pydantic serializer for specified fields
     that encrypts them when serializing to JSON.
 
     Args:
@@ -22,6 +22,7 @@ def encrypting_serializer(*fields: str) -> Callable:
         model = MyModel(secret_field="my_secret_value", another_secret_field="another_secret_value")
         print(model.model_dump_json())  # Outputs encrypted JSON
     """
+
     def _encrypt(key: object) -> str:
         if hasattr(key, "__str__"):
             key = str(key)
@@ -42,4 +43,4 @@ def encrypting_serializer(*fields: str) -> Callable:
     # field_serializer() returns a decorator that we can call directly
     # and pass our generic encryption function as a parameter.
     # `when_used='json'` ensures it only takes effect when calling model_dump_json().
-    return field_serializer(*fields, when_used='json')(_encrypt)
+    return field_serializer(*fields, when_used="json")(_encrypt)

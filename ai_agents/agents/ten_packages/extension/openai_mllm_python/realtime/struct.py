@@ -123,9 +123,7 @@ class Session:
     output_audio_format: AudioFormats = (
         AudioFormats.PCM16
     )  # Audio format for output (e.g., "pcm16")
-    input_audio_transcription: Optional[InputAudioTranscription] = (
-        None
-    )
+    input_audio_transcription: Optional[InputAudioTranscription] = None
     tools: List[Dict[str, Union[str, Any]]] = field(
         default_factory=list
     )  # List of tools available during the session
@@ -157,9 +155,7 @@ class SessionUpdateParams:
     output_audio_format: Optional[AudioFormats] = (
         None  # Output audio format from `AudioFormats` Enum
     )
-    input_audio_transcription: Optional[InputAudioTranscription] = (
-        None
-    )
+    input_audio_transcription: Optional[InputAudioTranscription] = None
 
     tools: Optional[List[Dict[str, Union[str, any]]]] = (
         None  # List of tools (e.g., dictionaries)

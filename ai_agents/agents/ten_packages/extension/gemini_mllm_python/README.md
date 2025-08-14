@@ -23,7 +23,7 @@ Refer to the `api` definition in [manifest.json] and default values in [property
 | `server_vad`                | `bool`     | Flag to enable or disable server VAD for Gemini |
 | `language`                  | `string`   | Language that Gemini model responds in, such as `en-US`, `zh-CN`, etc. |
 | `dump`                      | `bool`     | Flag to enable or disable audio dump for debugging purposes |
-| `base_uri`                  | `string`   | Base URI for connecting to the Gemini service |
+| `base_url`                  | `string`   | Base URI for connecting to the Gemini service |
 | `audio_out`                 | `bool`     | Flag to enable or disable audio output    |
 | `input_transcript`          | `bool`     | Flag to enable input transcript processing |
 | `sample_rate`               | `int32`    | Sample rate for audio processing          |

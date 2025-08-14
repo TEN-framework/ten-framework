@@ -54,7 +54,9 @@ class ReconnectManager:
     async def handle_reconnect(
         self,
         connection_func: Callable[[], Awaitable[None]],
-        error_handler: Optional[Callable[[ModuleError], Awaitable[None]]] = None,
+        error_handler: Optional[
+            Callable[[ModuleError], Awaitable[None]]
+        ] = None,
     ) -> bool:
         """
         Handle a single reconnection attempt with backoff delay.

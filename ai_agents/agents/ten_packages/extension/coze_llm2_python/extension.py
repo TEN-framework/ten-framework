@@ -1,4 +1,3 @@
-
 # ------------------------------
 # Extension (LLM2)
 # ------------------------------
@@ -37,7 +36,9 @@ class CozeLLM2Extension(AsyncLLM2BaseExtension):
                 f"initialized Coze client: base_url={self.config.base_url}, bot_id={self.config.bot_id}"
             )
         except Exception as err:
-            async_ten_env.log_info(f"Failed to initialize CozeChatClient: {err}")
+            async_ten_env.log_info(
+                f"Failed to initialize CozeChatClient: {err}"
+            )
 
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
@@ -50,6 +51,6 @@ class CozeLLM2Extension(AsyncLLM2BaseExtension):
         await super().on_deinit(async_ten_env)
 
     def on_call_chat_completion(
-        self, async_ten_env: AsyncTenEnv, input: LLMRequest
+        self, async_ten_env: AsyncTenEnv, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
-        return self.client.get_chat_completions(input)
+        return self.client.get_chat_completions(request_input)

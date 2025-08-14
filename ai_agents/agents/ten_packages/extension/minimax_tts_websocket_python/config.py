@@ -32,21 +32,28 @@ class MinimaxTTSWebsocketConfig(BaseModel):
 
     api_key: str
     group_id: str
-    url: str
-    voice_id: str
-    sample_rate: int
-    model: str
+    url: str = ""
+    voice_id: str = ""
+    sample_rate: int = 16000
+    model: str = ""
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
     black_list_params: List[str] = Field(default_factory=list)
-
 
     def is_black_list_params(self, key: str) -> bool:
         return key in self.black_list_params
 
     def update_params(self) -> None:
         ##### get value from params #####
+        print(f"params: {self.params}")
+        if "api_key" in self.params:
+            print(f"api_key: {self.params['api_key']}")
+            self.api_key = self.params["api_key"]
+        if "group_id" in self.params:
+            print(f"group_id: {self.params['group_id']}")
+            self.group_id = self.params["group_id"]
+
         if (
             "audio_setting" in self.params
             and "sample_rate" in self.params["audio_setting"]

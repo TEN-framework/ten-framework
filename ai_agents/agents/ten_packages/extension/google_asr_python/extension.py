@@ -71,7 +71,10 @@ class GoogleASRExtension(AsyncASRBaseExtension):
             ),
         )
         # For non-fatal errors, attempt reconnect in background
-        if severity == ModuleErrorCode.NON_FATAL_ERROR.value and not self.stopped:
+        if (
+            severity == ModuleErrorCode.NON_FATAL_ERROR.value
+            and not self.stopped
+        ):
             try:
                 # Skip reconnect for client-side normal shutdowns
                 if (code == 1) or ("CANCELLED" in (message or "").upper()):
@@ -96,7 +99,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 # Cancel existing pending reconnect task if any
                 if self._reconnect_task and not self._reconnect_task.done():
                     self._reconnect_task.cancel()
-                self._reconnect_task = asyncio.create_task(self._handle_reconnect())
+                self._reconnect_task = asyncio.create_task(
+                    self._handle_reconnect()
+                )
 
                 def _clear_task(_):
                     self._reconnect_task = None
@@ -279,7 +284,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
         return self.connected and self.client is not None
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         """Sends an audio frame for recognition."""
         if self.session_id != session_id:
             self.session_id = session_id
@@ -297,7 +304,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 )
                 await self.client.send_audio(bytes(buf))
             else:
-                self.ten_env.log_warn("Client not connected; audio dumped only.")
+                self.ten_env.log_warn(
+                    "Client not connected; audio dumped only."
+                )
         finally:
             frame.unlock_buf(buf)
 
@@ -334,7 +343,9 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_debug("Google ASR reconnect attempt completed")
         except Exception as e:
             if self.ten_env:
-                self.ten_env.log_error(f"Reconnect attempt failed with exception: {e}")
+                self.ten_env.log_error(
+                    f"Reconnect attempt failed with exception: {e}"
+                )
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:

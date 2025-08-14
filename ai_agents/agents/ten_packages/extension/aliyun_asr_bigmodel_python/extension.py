@@ -13,7 +13,11 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -83,7 +87,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         # Callback instance
         self.recognition_callback: AliyunRecognitionCallback | None = None
 
-
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
@@ -106,7 +109,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = AliyunASRBigmodelConfig.model_validate_json(config_json)
+            self.config = AliyunASRBigmodelConfig.model_validate_json(
+                config_json
+            )
             self.config.update(self.config.params)
             ten_env.log_info(
                 f"Aliyun ASR config: {self.config.to_json(sensitive_handling=True)}"
@@ -123,7 +128,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 )
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
 
         except Exception as e:
@@ -146,7 +153,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         try:
             # Check API key
             if not self.config.api_key or self.config.api_key.strip() == "":
-                error_msg = "Aliyun API key is required but not provided or is empty"
+                error_msg = (
+                    "Aliyun API key is required but not provided or is empty"
+                )
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -189,7 +198,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             self.ten_env.log_info("Aliyun ASR connection started successfully")
 
         except Exception as e:
-            self.ten_env.log_error(f"Failed to start Aliyun ASR connection: {e}")
+            self.ten_env.log_error(
+                f"Failed to start Aliyun ASR connection: {e}"
+            )
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -254,7 +265,11 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 self.reconnect_manager.mark_connection_successful()
 
             sentence = result.get_sentence()
-            if isinstance(sentence, dict) and "text" in sentence and sentence["text"]:
+            if (
+                isinstance(sentence, dict)
+                and "text" in sentence
+                and sentence["text"]
+            ):
                 print(sentence)
                 text = sentence["text"]
                 is_final = RecognitionResult.is_sentence_end(sentence)
@@ -297,7 +312,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                         language=self.config.normalized_language,
                     )
                 else:
-                    self.ten_env.log_error("Cannot handle ASR result: config is None")
+                    self.ten_env.log_error(
+                        "Cannot handle ASR result: config is None"
+                    )
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Aliyun ASR result: {e}")
@@ -367,7 +384,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             silence_duration = self.config.mute_pkg_duration_ms / 1000.0
             silence_samples = int(self.config.sample_rate * silence_duration)
             silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
-            self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+            self.audio_timeline.add_silence_audio(
+                self.config.mute_pkg_duration_ms
+            )
             self.recognition.send_audio_frame(silence_data)
             self.ten_env.log_debug("Aliyun ASR finalize mute package sent")
 
@@ -391,14 +410,19 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
 
         # Attempt reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         """Handle finalization end logic"""
@@ -448,7 +472,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         """Send audio data"""
         assert self.config is not None
 

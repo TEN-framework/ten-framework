@@ -55,14 +55,19 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        self.sender_task = asyncio.create_task(self.audio_sender(ten_env_tester))
+        self.sender_task = asyncio.create_task(
+            self.audio_sender(ten_env_tester)
+        )
 
         # send a finalize event after 1.5 seconds
         await asyncio.sleep(1.5)
         await self.send_finalize_event(ten_env_tester)
 
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
             err = TenError.create(
@@ -72,7 +77,9 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         data_name = data.get_name()
         if data_name == "asr_result":
             # Check the data structure.
@@ -151,7 +158,9 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
             # Check the data structure.
             data_json, _ = data.get_property_to_json()
             data_dict = json.loads(data_json)
-            ten_env_tester.log_info(f"tester recv metrics, data_dict: {data_dict}")
+            ten_env_tester.log_info(
+                f"tester recv metrics, data_dict: {data_dict}"
+            )
             self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "id" in data_dict,

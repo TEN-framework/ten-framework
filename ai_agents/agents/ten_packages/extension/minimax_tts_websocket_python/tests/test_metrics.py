@@ -29,6 +29,7 @@ from minimax_tts_websocket_python.minimax_tts import (
     EVENT_TTSResponse,
 )
 
+
 # ================ test metrics ================
 class ExtensionTesterMetrics(ExtensionTester):
     def __init__(self):
@@ -64,7 +65,9 @@ class ExtensionTesterMetrics(ExtensionTester):
             if "ttfb" in nested_metrics:
                 self.ttfb_received = True
                 self.ttfb_value = nested_metrics.get("ttfb", -1)
-                ten_env.log_info(f"Received TTFB metric with value: {self.ttfb_value}")
+                ten_env.log_info(
+                    f"Received TTFB metric with value: {self.ttfb_value}"
+                )
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
@@ -76,10 +79,11 @@ class ExtensionTesterMetrics(ExtensionTester):
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
         """Receives audio frames and confirms the stream is working."""
         if not self.audio_frame_received:
-             self.audio_frame_received = True
-             ten_env.log_info("First audio frame received.")
+            self.audio_frame_received = True
+            ten_env.log_info("First audio frame received.")
 
-@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+
+@patch("minimax_tts_websocket_python.extension.MinimaxTTSWebsocket")
 def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
@@ -97,7 +101,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b'\x11\x22\x33', EVENT_TTSResponse)
+        yield (b"\x11\x22\x33", EVENT_TTSResponse)
         # Simulate the end of the stream
         yield (None, EVENT_TTSSentenceEnd)
 
@@ -111,8 +115,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
-        "minimax_tts_websocket_python",
-        json.dumps(metrics_config)
+        "minimax_tts_websocket_python", json.dumps(metrics_config)
     )
 
     print("Running TTFB metrics test...")
@@ -126,7 +129,8 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
 
     # Check if the TTFB value is reasonable. It should be slightly more than
     # the 0.2s delay we introduced. We check for >= 200ms.
-    assert tester.ttfb_value >= 200, \
-        f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+    assert (
+        tester.ttfb_value >= 200
+    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

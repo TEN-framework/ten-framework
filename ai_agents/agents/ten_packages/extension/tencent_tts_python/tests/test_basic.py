@@ -310,7 +310,7 @@ def test_dump_functionality(MockTencentTTSClient):
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
-    fake_audio_chunk_2 = b"\xAA\xBB\xCC\xDD" * 20
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # This async generator simulates the TTS client's synthesize_audio() method
     async def mock_synthesize_audio_stream(text: str):

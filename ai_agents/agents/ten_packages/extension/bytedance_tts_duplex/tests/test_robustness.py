@@ -34,6 +34,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
+
 # ================ test robustness ================
 class ExtensionTesterRobustness(ExtensionTester):
     def __init__(self):
@@ -45,7 +46,9 @@ class ExtensionTesterRobustness(ExtensionTester):
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends the first TTS request."""
         self.ten_env = ten_env_tester
-        ten_env_tester.log_info("Robustness test started, sending first TTS request.")
+        ten_env_tester.log_info(
+            "Robustness test started, sending first TTS request."
+        )
 
         # First request, expected to fail
         tts_input_1 = TTSTextInput(
@@ -62,11 +65,13 @@ class ExtensionTesterRobustness(ExtensionTester):
         if self.ten_env is None:
             print("Error: ten_env is not initialized.")
             return
-        self.ten_env.log_info("Sending second TTS request to verify reconnection.")
+        self.ten_env.log_info(
+            "Sending second TTS request to verify reconnection."
+        )
         tts_input_2 = TTSTextInput(
             request_id="tts_request_to_succeed",
             text="This request should succeed after reconnection.",
-            text_input_end=True  # Set to True to trigger session finish
+            text_input_end=True,  # Set to True to trigger session finish
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_2.model_dump_json())
@@ -78,30 +83,42 @@ class ExtensionTesterRobustness(ExtensionTester):
         payload = json.loads(json_str) if json_str else {}
 
         # Add debug logging for all events
-        ten_env.log_info(f"DEBUG: Received event '{name}' with payload: {payload}")
+        ten_env.log_info(
+            f"DEBUG: Received event '{name}' with payload: {payload}"
+        )
 
         if name == "error" and payload.get("id") == "tts_request_to_fail":
-            ten_env.log_info(f"Received expected error for the first request: {payload}")
+            ten_env.log_info(
+                f"Received expected error for the first request: {payload}"
+            )
             self.first_request_error = payload
             # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
 
-        elif name == "tts_audio_end" and payload.get("request_id") == "tts_request_to_succeed":
-            ten_env.log_info("Received tts_audio_end for the second request. Test successful.")
+        elif (
+            name == "tts_audio_end"
+            and payload.get("request_id") == "tts_request_to_succeed"
+        ):
+            ten_env.log_info(
+                "Received tts_audio_end for the second request. Test successful."
+            )
             self.second_request_successful = True
             # We can now safely stop the test.
             ten_env.stop_test()
 
         # Also check for tts_audio_end without specific request_id filtering
         elif name == "tts_audio_end":
-            ten_env.log_info(f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'")
+            ten_env.log_info(
+                f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'"
+            )
             # If this is the second request, consider it successful anyway
             if payload.get("id") == "tts_request_to_succeed":
                 ten_env.log_info("Actually this matches! Stopping test.")
                 self.second_request_successful = True
                 ten_env.stop_test()
 
-@patch('bytedance_tts_duplex.extension.BytedanceV3Client')
+
+@patch("bytedance_tts_duplex.extension.BytedanceV3Client")
 def test_reconnect_after_connection_drop(MockBytedanceV3Client):
     """
     Tests that the extension can recover from a connection drop, report a
@@ -130,15 +147,24 @@ def test_reconnect_after_connection_drop(MockBytedanceV3Client):
         print(f"KEYPOINT send_text_call_count: {send_text_call_count}")
         if send_text_call_count == 1:
             # On the first call, simulate a connection drop
-            raise ConnectionRefusedError("Simulated connection drop from test")
+            vendor_info = ModuleErrorVendorInfo(
+                vendor="bytedance",
+                code="10000",
+                message="Simulated connection drop from test",
+            )
+            raise ModuleVendorException(vendor_info)
         else:
             # On the second call, populate the queue with audio data
             # to simulate successful TTS response
             async def populate_queue():
                 EVENT_TTSResponse = 352
                 EVENT_SessionFinished = 152
-                await mock_instance.response_msgs.put((EVENT_TTSResponse, b'\x44\x55\x66'))
-                await mock_instance.response_msgs.put((EVENT_SessionFinished, b''))
+                await mock_instance.response_msgs.put(
+                    (EVENT_TTSResponse, b"\x44\x55\x66")
+                )
+                await mock_instance.response_msgs.put(
+                    (EVENT_SessionFinished, b"")
+                )
 
             asyncio.create_task(populate_queue())
 
@@ -152,12 +178,9 @@ def test_reconnect_after_connection_drop(MockBytedanceV3Client):
     MockBytedanceV3Client.side_effect = mock_client_init
 
     # --- Test Setup ---
-    config = { "appid": "a_valid_appid", "token": "a_valid_token" }
+    config = {"appid": "a_valid_appid", "token": "a_valid_token"}
     tester = ExtensionTesterRobustness()
-    tester.set_test_mode_single(
-        "bytedance_tts_duplex",
-        json.dumps(config)
-    )
+    tester.set_test_mode_single("bytedance_tts_duplex", json.dumps(config))
 
     print("Running robustness test...")
     tester.run()
@@ -165,17 +188,25 @@ def test_reconnect_after_connection_drop(MockBytedanceV3Client):
 
     # --- Assertions ---
     # 1. Verify that the first request resulted in a NON_FATAL_ERROR
-    assert tester.first_request_error is not None, "Did not receive any error message."
-    assert tester.first_request_error.get("code") == 1000, \
-        f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
+    assert (
+        tester.first_request_error is not None
+    ), "Did not receive any error message."
+    assert (
+        tester.first_request_error.get("code") == 1000
+    ), f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
 
     # 2. Verify that vendor_info was included in the error
     vendor_info = tester.first_request_error.get("vendor_info")
     assert vendor_info is not None, "Error message did not contain vendor_info."
-    assert vendor_info.get("vendor") == "bytedance", \
-        f"Expected vendor 'bytedance', got {vendor_info.get('vendor')}"
+    assert (
+        vendor_info.get("vendor") == "bytedance"
+    ), f"Expected vendor 'bytedance', got {vendor_info.get('vendor')}"
 
     # 3. Verify that the second TTS request was successful
-    assert tester.second_request_successful, "The second TTS request after the error did not succeed."
+    assert (
+        tester.second_request_successful
+    ), "The second TTS request after the error did not succeed."
 
-    print("✅ Robustness test passed: Correctly handled simulated connection drop and recovered.")
+    print(
+        "✅ Robustness test passed: Correctly handled simulated connection drop and recovered."
+    )

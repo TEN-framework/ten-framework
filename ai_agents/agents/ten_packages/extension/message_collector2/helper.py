@@ -11,6 +11,7 @@ from ten_runtime import AsyncTenEnv
 
 MAX_CHUNK_SIZE_BYTES = 1024
 
+
 def _text_to_base64_chunks(_: AsyncTenEnv, text: str, msg_id: str) -> list[str]:
     # Ensure msg_id does not exceed 50 characters
     if len(msg_id) > 36:

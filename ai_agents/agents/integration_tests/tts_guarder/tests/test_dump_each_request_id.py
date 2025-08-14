@@ -164,7 +164,7 @@ class DumperByRequestTester(AsyncExtensionTester):
 
     def _check_dump_file_number(self, ten_env: AsyncTenEnvTester) -> None:
         """Check if there are exactly two dump files in the directory."""
-        # 检查 TTS extension dump 目录下的文件数量
+        # Check the number of files in TTS extension dump directory
         if not hasattr(self, 'tts_extension_dump_folder') or not self.tts_extension_dump_folder:
             ten_env.log_error("tts_extension_dump_folder not set")
             self._stop_test_with_error(ten_env, "tts_extension_dump_folder not configured")
@@ -173,8 +173,8 @@ class DumperByRequestTester(AsyncExtensionTester):
         if not os.path.exists(self.tts_extension_dump_folder):
             self._stop_test_with_error(ten_env, f"TTS extension dump folder not found: {self.tts_extension_dump_folder}")
             return
-
-        # 获取目录下的所有文件
+        
+        # Get all files in the directory
         time.sleep(1)
         dump_files = []
         for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
@@ -184,8 +184,8 @@ class DumperByRequestTester(AsyncExtensionTester):
         ten_env.log_info(f"Found {len(dump_files)} dump files in {self.tts_extension_dump_folder}")
         for i, file_path in enumerate(dump_files):
             ten_env.log_info(f"  {i+1}. {os.path.basename(file_path)}")
-
-        # 检查是否有恰好两个 dump 文件
+        
+        # Check if there are exactly two dump files
         if len(dump_files) == 2:
             ten_env.log_info("✅ Found exactly 2 dump files as expected")
 
@@ -237,7 +237,7 @@ def test_dump_each_request_id(extension_name: str, config_dir: str) -> None:
     if not os.path.exists(config["dump_path"]):
         os.makedirs(config["dump_path"])
     else:
-        # 删除目录下的所有文件
+        # Delete all files in the directory
         _delete_dump_file(config["dump_path"])
 
 

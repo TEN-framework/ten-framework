@@ -1,0 +1,5 @@
+{
+    "api_key": "${env:ELEVENLABS_TTS_KEY}",
+    "dump": true,
+    "dump_path": "./tests/dump_output/"
+}

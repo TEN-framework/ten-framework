@@ -1,13 +1,19 @@
 # ------------------------------
 # Config
 # ------------------------------
-from dataclasses import Field, dataclass
+from dataclasses import dataclass
 import json
-from typing import AsyncGenerator, List, Optional
+from typing import AsyncGenerator, Optional
 
 import aiohttp
 from pydantic import BaseModel
-from ten_ai_base.struct import LLMMessageContent, LLMRequest, LLMResponse, LLMResponseMessageDelta, LLMResponseMessageDone
+from ten_ai_base.struct import (
+    LLMMessageContent,
+    LLMRequest,
+    LLMResponse,
+    LLMResponseMessageDelta,
+    LLMResponseMessageDone,
+)
 from ten_runtime import AsyncTenEnv
 
 
@@ -55,7 +61,9 @@ class DifyChatClient:
         base = self.config.base_url.rstrip("/")
         return f"{base}/{path.lstrip('/')}"
 
-    async def get_chat_completions(self, input: LLMRequest) -> AsyncGenerator[LLMResponse, None]:
+    async def get_chat_completions(
+        self, request_input: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
         """
         Map LLMRequest -> Dify /chat-messages streaming API.
         Emit LLMResponseMessageDelta and LLMResponseMessageDone, mirroring the OpenAI LLM2 sample.
@@ -65,21 +73,27 @@ class DifyChatClient:
 
         # Dify takes a single "query" string. We choose the latest user message text for parity with your old code.
         query_text = ""
-        for m in reversed(input.messages or []):
+        for m in reversed(request_input.messages or []):
             if isinstance(m, LLMMessageContent) and m.role == "user":
                 if isinstance(m.content, str):
                     query_text = m.content
                     break
                 if isinstance(m.content, list):
                     # Flatten simple text chunks if present
-                    text_chunks = [getattr(x, "text", "") for x in m.content if hasattr(x, "text")]
+                    text_chunks = [
+                        getattr(x, "text", "")
+                        for x in m.content
+                        if hasattr(x, "text")
+                    ]
                     query_text = "\n".join([t for t in text_chunks if t])
                     break
 
         if not query_text:
             # As a fallback, take the very last text-looking message
-            for m in reversed(input.messages or []):
-                if isinstance(m, LLMMessageContent) and isinstance(m.content, str):
+            for m in reversed(request_input.messages or []):
+                if isinstance(m, LLMMessageContent) and isinstance(
+                    m.content, str
+                ):
                     query_text = m.content
                     break
 
@@ -96,10 +110,14 @@ class DifyChatClient:
         if self.config.user_id:
             payload["user"] = self.config.user_id
 
-        self.ten_env.log_info(f"[Dify] POST {self._url('chat-messages')} payload={payload}")
+        self.ten_env.log_info(
+            f"[Dify] POST {self._url('chat-messages')} payload={payload}"
+        )
 
         full_content = ""
-        async with self._session.post(self._url("chat-messages"), json=payload, headers=self._headers()) as resp:
+        async with self._session.post(
+            self._url("chat-messages"), json=payload, headers=self._headers()
+        ) as resp:
             if resp.status != 200:
                 try:
                     err = await resp.json()
@@ -131,7 +149,9 @@ class DifyChatClient:
                     # cache conversation id once
                     if not self._conversation_id and evt.get("conversation_id"):
                         self._conversation_id = evt["conversation_id"]
-                        self.ten_env.log_info(f"[Dify] conversation_id={self._conversation_id}")
+                        self.ten_env.log_info(
+                            f"[Dify] conversation_id={self._conversation_id}"
+                        )
 
                     delta = evt.get("answer") or ""
                     if not delta:
@@ -150,7 +170,9 @@ class DifyChatClient:
                 elif event_type == "message_end":
                     # Can log metadata; final "DONE" still closes the stream
                     meta = evt.get("metadata", {})
-                    self.ten_env.log_debug(f"[Dify] message_end metadata={meta}")
+                    self.ten_env.log_debug(
+                        f"[Dify] message_end metadata={meta}"
+                    )
 
                 elif event_type == "error":
                     msg = evt.get("message") or "unknown provider error"

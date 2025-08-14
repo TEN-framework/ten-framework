@@ -12,7 +12,11 @@ from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
 from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
@@ -53,7 +57,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
         dump_file_path = None
         try:
             self.config = AWSASRConfig.model_validate_json(config_json)
-            ten_env.log_info(f"KEYPOINT vendor_config: {self.config.model_dump_json()}")
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+            )
 
             if self.config.dump:
                 dump_file_path = Path(self.config.dump_path)
@@ -148,7 +154,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
             except Exception as e:
                 self.connected = False
                 await self._reconnect_aws()
-                self.ten_env.log_error(f"failed to handle transcript event: {e}")
+                self.ten_env.log_error(
+                    f"failed to handle transcript event: {e}"
+                )
 
         asyncio.create_task(_handle_events())
 
@@ -172,7 +180,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
         return self.config.params.media_sample_rate_hz
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         assert self.stream is not None
         try:
             buf = frame.lock_buf()
@@ -181,7 +191,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.add_user_audio(
                 int(len(buf) / (self.input_audio_sample_rate() / 1000 * 2))
             )
-            await self.stream.input_stream.send_audio_event(audio_chunk=bytes(buf))
+            await self.stream.input_stream.send_audio_event(
+                audio_chunk=bytes(buf)
+            )
         except IOError as e:
             # when the stream is closed, it will raise IOError, we need to reconnect
             self.ten_env.log_error(f"failed to send audio: {e}")
@@ -194,7 +206,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
         finally:
             frame.unlock_buf(buf)
-        
+
         return True
 
     @override
@@ -214,7 +226,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
         elif self.config.finalize_mode == "mute_pkg":
             await self._handle_finalize_mute_pkg()
         else:
-            raise ValueError(f"invalid finalize mode: {self.config.finalize_mode}")
+            raise ValueError(
+                f"invalid finalize mode: {self.config.finalize_mode}"
+            )
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
@@ -256,11 +270,14 @@ class AWSASRExtension(AsyncASRBaseExtension):
                     )
                     duration_ms = (
                         int((item.end_time - item.start_time) * 1000)
-                        if item.end_time is not None and item.start_time is not None
+                        if item.end_time is not None
+                        and item.start_time is not None
                         else 0
                     )
                     actual_start_ms = int(
-                        self.audio_timeline.get_audio_duration_before_time(start_ms)
+                        self.audio_timeline.get_audio_duration_before_time(
+                            start_ms
+                        )
                         + self.sent_user_audio_duration_ms_before_last_reset
                     )
 
@@ -275,7 +292,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
             # timestamp processing
             start_ms = (
-                int(result.start_time * 1000) if result.start_time is not None else 0
+                int(result.start_time * 1000)
+                if result.start_time is not None
+                else 0
             )
             duration_ms = (
                 int((result.end_time - result.start_time) * 1000)
@@ -323,17 +342,24 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
         # Attempt a single reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _handle_finalize_disconnect(self):
         if not self.is_connected():
-            _ = self.ten_env.log_debug("finalize disconnect: client is not connected")
+            _ = self.ten_env.log_debug(
+                "finalize disconnect: client is not connected"
+            )
             return
 
         assert self.stream is not None
@@ -343,13 +369,20 @@ class AWSASRExtension(AsyncASRBaseExtension):
     async def _handle_finalize_mute_pkg(self):
         assert self.config is not None
         if not self.is_connected():
-            _ = self.ten_env.log_debug("finalize disconnect: client is not connected")
+            _ = self.ten_env.log_debug(
+                "finalize disconnect: client is not connected"
+            )
             return
         assert self.stream is not None
         empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms * self.input_audio_sample_rate() / 1000 * 2
+            self.config.mute_pkg_duration_ms
+            * self.input_audio_sample_rate()
+            / 1000
+            * 2
         )
         frame = bytearray(empty_audio_bytes_len)
-        await self.stream.input_stream.send_audio_event(audio_chunk=bytes(frame))
+        await self.stream.input_stream.send_audio_event(
+            audio_chunk=bytes(frame)
+        )
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
         self.ten_env.log_debug("finalize mute pkg completed")

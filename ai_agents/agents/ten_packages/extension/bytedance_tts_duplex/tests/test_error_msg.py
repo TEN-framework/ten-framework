@@ -34,6 +34,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
+
 # ================ test empty params ================
 class ExtensionTesterEmptyParams(ExtensionTester):
     def __init__(self):
@@ -59,22 +60,22 @@ class ExtensionTesterEmptyParams(ExtensionTester):
             self.error_code = error_data.get("code")
             self.error_message = error_data.get("message", "")
 
-            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}")
+            ten_env.log_info(
+                f"Received error: code={self.error_code}, message={self.error_message}"
+            )
             ten_env.stop_test()
+
 
 def test_empty_params_fatal_error():
     """Test that empty params raises FATAL ERROR with code -1000"""
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {
-        "params": {}
-    }
+    empty_params_config = {"params": {}}
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
-        "bytedance_tts_duplex",
-        json.dumps(empty_params_config)
+        "bytedance_tts_duplex", json.dumps(empty_params_config)
     )
 
     print("Running test...")
@@ -83,12 +84,17 @@ def test_empty_params_fatal_error():
 
     # Verify FATAL ERROR was received
     assert tester.error_received, "Expected to receive error message"
-    assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
+    assert (
+        tester.error_code == -1000
+    ), f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 
-    print(f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}")
+    print(
+        f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}"
+    )
     print("Test verification completed successfully.")
+
 
 # ================ test invalid params ================
 class ExtensionTesterInvalidParams(ExtensionTester):
@@ -102,7 +108,9 @@ class ExtensionTesterInvalidParams(ExtensionTester):
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request to trigger the logic."""
-        ten_env_tester.log_info("Test started, sending TTS request to trigger mocked error")
+        ten_env_tester.log_info(
+            "Test started, sending TTS request to trigger mocked error"
+        )
 
         tts_input = TTSTextInput(
             request_id="test-request-for-invalid-params",
@@ -128,12 +136,15 @@ class ExtensionTesterInvalidParams(ExtensionTester):
             self.error_module = error_data.get("module", "")
             self.vendor_info = error_data.get("vendor_info", {})
 
-            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}")
+            ten_env.log_info(
+                f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}"
+            )
             ten_env.log_info(f"Vendor info: {self.vendor_info}")
 
             ten_env.stop_test()
 
-@patch('bytedance_tts_duplex.extension.BytedanceV3Client')
+
+@patch("bytedance_tts_duplex.extension.BytedanceV3Client")
 def test_invalid_params_fatal_error(MockBytedanceV3Client):
     """Test that an error from the TTS client is handled correctly with a mock."""
 
@@ -153,10 +164,10 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
     async def mock_send_text_with_error(text: str):
         vendor_info = ModuleErrorVendorInfo(
             vendor="bytedance",
-            code=40000,
-            message="Invalid voice type or parameters"
+            code="40000",
+            message="Invalid voice type or parameters",
         )
-        raise ModuleVendorException("TTS request failed", vendor_info)
+        raise ModuleVendorException(vendor_info)
 
     mock_instance.send_text.side_effect = mock_send_text_with_error
 
@@ -173,15 +184,12 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
     invalid_params_config = {
         "appid": "valid_appid_for_test",
         "token": "valid_token_for_test",
-        "params": {
-            "voice_type": "invalid_voice_type"
-        }
+        "params": {"voice_type": "invalid_voice_type"},
     }
 
     tester = ExtensionTesterInvalidParams()
     tester.set_test_mode_single(
-        "bytedance_tts_duplex",
-        json.dumps(invalid_params_config)
+        "bytedance_tts_duplex", json.dumps(invalid_params_config)
     )
 
     print("Running test with mock...")
@@ -190,17 +198,23 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
 
     # --- Assertions ---
     assert tester.error_received, "Expected to receive error message"
-    assert tester.error_code == 1000, f"Expected error code 1000, got {tester.error_code}"
+    assert (
+        tester.error_code == 1000
+    ), f"Expected error code 1000, got {tester.error_code}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 
     # Verify vendor_info
     vendor_info = tester.vendor_info
     assert vendor_info is not None, "Expected vendor_info to be present"
-    assert vendor_info.get("vendor") == "bytedance", f"Expected vendor 'bytedance', got {vendor_info.get('vendor')}"
+    assert (
+        vendor_info.get("vendor") == "bytedance"
+    ), f"Expected vendor 'bytedance', got {vendor_info.get('vendor')}"
     assert "code" in vendor_info, "Expected 'code' in vendor_info"
     assert "message" in vendor_info, "Expected 'message' in vendor_info"
 
-    print(f"✅ Invalid params test passed with mock: code={tester.error_code}, message={tester.error_message}")
+    print(
+        f"✅ Invalid params test passed with mock: code={tester.error_code}, message={tester.error_message}"
+    )
     print(f"✅ Vendor info: {tester.vendor_info}")
     print("Test verification completed successfully.")

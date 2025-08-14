@@ -8,9 +8,17 @@ import asyncio
 import json
 
 from ten_packages.extension.soniox_asr_python.websocket import (
-    SonioxFinToken, SonioxTranscriptToken)
-from ten_runtime import (AsyncExtensionTester, AsyncTenEnvTester, AudioFrame,
-                         Data, TenError, TenErrorCode)
+    SonioxFinToken,
+    SonioxTranscriptToken,
+)
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    AudioFrame,
+    Data,
+    TenError,
+    TenErrorCode,
+)
 from typing_extensions import override
 
 from .mock import patch_soniox_ws  # noqa: F401

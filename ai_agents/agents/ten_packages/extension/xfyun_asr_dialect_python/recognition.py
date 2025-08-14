@@ -25,6 +25,7 @@ class XfyunWSRecognitionCallback:
 
     async def on_open(self):
         """Called when connection is established"""
+
     async def on_result(self, message_data):
         """
         Recognition result callback
@@ -41,7 +42,15 @@ class XfyunWSRecognitionCallback:
 class XfyunWSRecognition:
     """Async WebSocket-based speech recognition class using new Xfyun ASR dialect API"""
 
-    def __init__(self, app_id, access_key_id, access_key_secret, ten_env=None, config=None, callback=None):
+    def __init__(
+        self,
+        app_id,
+        access_key_id,
+        access_key_secret,
+        ten_env=None,
+        config=None,
+        callback=None,
+    ):
         """
         Initialize WebSocket speech recognition with new API
         :param app_id: Application ID
@@ -64,7 +73,7 @@ class XfyunWSRecognition:
             "samplerate": "16000",
             "multiFuncData": "false",
             "use_tts": "false",
-            "nrtMode": "true"
+            "nrtMode": "true",
         }
 
         # Merge user configuration and default configuration
@@ -105,7 +114,8 @@ class XfyunWSRecognition:
         """
         # 1. Filter parameters
         filtered_params = {
-            k: v for k, v in params.items()
+            k: v
+            for k, v in params.items()
             if v is not None and v != "" and k != "signature"
         }
 
@@ -122,13 +132,15 @@ class XfyunWSRecognition:
         digest = hmac.new(
             access_key_secret.encode("utf-8"),
             base_string.encode("utf-8"),
-            hashlib.sha1
+            hashlib.sha1,
         ).digest()
 
         # 5. Base64 encoding
         return base64.b64encode(digest).decode("utf-8")
 
-    def _get_access_url(self, extend_param, access_key_id, app_id, access_key_secret):
+    def _get_access_url(
+        self, extend_param, access_key_id, app_id, access_key_secret
+    ):
         """
         Generate access URL with signature
         :param extend_param: All request parameters (before URL encoding)
@@ -152,7 +164,7 @@ class XfyunWSRecognition:
 
     def _create_url(self):
         """Generate WebSocket connection URL"""
-        base_url = f'wss://{self.host}/ast/communicate/v1'
+        base_url = f"wss://{self.host}/ast/communicate/v1"
 
         # Build request parameters
         params = {}
@@ -168,9 +180,7 @@ class XfyunWSRecognition:
         params["nrtMode"] = self.config.get("nrtMode", "true")
 
         # Optional parameters
-        optional_params = [
-            "multiFuncData", "use_tts", "nrtMode"
-        ]
+        optional_params = ["multiFuncData", "use_tts", "nrtMode"]
 
         list_params = []
         for param in optional_params:
@@ -183,7 +193,9 @@ class XfyunWSRecognition:
 
         params = OrderedDict(list_params)
         # Generate URL with signature
-        url_params = self._get_access_url(params, self.access_key_id, self.app_id, self.access_key_secret)
+        url_params = self._get_access_url(
+            params, self.access_key_id, self.app_id, self.access_key_secret
+        )
         return f"{base_url}?{url_params}"
 
     async def _handle_message(self, message):
@@ -208,7 +220,9 @@ class XfyunWSRecognition:
                     # Handle error or service closure
                     code = data.get("code")
                     error_message = data.get("message", "Service ended")
-                    self._log_debug(f"ASR service ended: {error_message}, code: {code}")
+                    self._log_debug(
+                        f"ASR service ended: {error_message}, code: {code}"
+                    )
                     if self.callback:
                         await self.callback.on_error(error_message, code)
 
@@ -221,7 +235,9 @@ class XfyunWSRecognition:
 
         except Exception as e:
             error_msg = f"Error processing message: {e}"
-            self._log_debug(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
+            self._log_debug(
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}"
+            )
             if self.callback:
                 await self.callback.on_error(error_msg)
 
@@ -263,9 +279,7 @@ class XfyunWSRecognition:
 
             # Connect to WebSocket with timeout
             self.websocket = await websockets.connect(
-                ws_url,
-                ssl=ssl_context,
-                open_timeout=timeout
+                ws_url, ssl=ssl_context, open_timeout=timeout
             )
 
             self._log_debug("### WebSocket opened ###")
@@ -308,7 +322,9 @@ class XfyunWSRecognition:
             await self.websocket.send(audio_data)
 
         except ConnectionClosed:
-            self._log_debug("WebSocket connection closed while sending audio frame")
+            self._log_debug(
+                "WebSocket connection closed while sending audio frame"
+            )
             self.is_started = False
         except Exception as e:
             self._log_debug(f"Failed to send audio frame: {e}")
@@ -368,7 +384,7 @@ class XfyunWSRecognition:
         # Check if websocket is still open by checking the state
         try:
             # For websockets library, we can check the state attribute
-            if hasattr(self.websocket, 'state'):
+            if hasattr(self.websocket, "state"):
                 return self.is_started and self.websocket.state == State.OPEN
             # Fallback: just check if websocket exists and is_started is True
             else:

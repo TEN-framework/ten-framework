@@ -13,7 +13,7 @@ from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
     ModuleErrorVendorInfo,
-    TTSAudioEndReason
+    TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
@@ -50,7 +50,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         config_json, _ = await ten_env.get_property_to_json()
         try:
             self.config = PollyTTSConfig.model_validate_json(config_json)
-            ten_env.log_info(f"KEYPOINT vendor_config: {self.config.model_dump_json()}")
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+            )
 
             if self.config.dump:
                 self.audio_dumper = {}
@@ -75,7 +77,8 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         if self.client:
             self.client.close()
         if isinstance(self.audio_dumper, Dumper):
-            await self.audio_dumper.stop()
+            dumper: Dumper = self.audio_dumper
+            await dumper.stop()  # pylint: disable=no-member
         elif isinstance(self.audio_dumper, dict):
             for dumper in self.audio_dumper.values():
                 await dumper.stop()
@@ -123,7 +126,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         )
         # check if request_id is in flush_request_ids
         if t.request_id in self.flush_request_ids:
-            error_msg = f"Request ID {t.request_id} was flushed, ignoring TTS request"
+            error_msg = (
+                f"Request ID {t.request_id} was flushed, ignoring TTS request"
+            )
             self.ten_env.log_warn(error_msg)
             await self.send_tts_error(
                 t.request_id,
@@ -136,7 +141,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             return
 
         if t.request_id in self.last_end_request_ids:
-            self.ten_env.log_info(f"KEYPOINT end request ID: {t.request_id} is already ended, ignoring TTS request")
+            self.ten_env.log_info(
+                f"KEYPOINT end request ID: {t.request_id} is already ended, ignoring TTS request"
+            )
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -149,7 +156,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
 
         text = t.text
         if t.request_id != self.current_request_id:
-            self.ten_env.log_info(f"KEYPOINT New TTS request with ID: {t.request_id}")
+            self.ten_env.log_info(
+                f"KEYPOINT New TTS request with ID: {t.request_id}"
+            )
             if (
                 self.current_request_id is not None
                 and self.request_start_ts is not None
@@ -184,7 +193,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                         await self.send_tts_audio_start(
                             t.request_id, self.current_turn_id
                         )
-                        elapsed_time = int((time.time() - self.request_start_ts) * 1000)
+                        elapsed_time = int(
+                            (time.time() - self.request_start_ts) * 1000
+                        )
                         await self.send_tts_ttfb_metrics(
                             t.request_id, elapsed_time, self.current_turn_id
                         )
@@ -196,11 +207,13 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                     continue
 
                 # calculate audio duration
-                self.request_total_audio_duration += self._calculate_audio_duration(
-                    len(chunk),
-                    self.synthesize_audio_sample_rate(),
-                    self.synthesize_audio_channels(),
-                    self.synthesize_audio_sample_width(),
+                self.request_total_audio_duration += (
+                    self._calculate_audio_duration(
+                        len(chunk),
+                        self.synthesize_audio_sample_rate(),
+                        self.synthesize_audio_channels(),
+                        self.synthesize_audio_sample_width(),
+                    )
                 )
 
                 # send audio data to output

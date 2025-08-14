@@ -17,6 +17,4 @@ class HumeaiTTSExtensionAddon(Addon):
         from .extension import HumeaiTTSExtension
 
         ten_env.log_info("HumeaiTTSExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(
-            HumeaiTTSExtension(name), context
-        )
+        ten_env.on_create_instance_done(HumeaiTTSExtension(name), context)

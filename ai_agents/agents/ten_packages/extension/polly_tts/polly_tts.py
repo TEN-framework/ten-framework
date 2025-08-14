@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, ConfigDict, Field
 
-from utils import encrypting_serializer
+from .utils import encrypting_serializer
 
 
 class PollyTTSParams(BaseModel):
@@ -99,6 +99,7 @@ class PollyTTS:
 
         self.session = boto3.Session(**params.to_session_params())
         self.client = self.session.client("polly")
+
     def __enter__(self):
         return self
 
@@ -175,7 +176,8 @@ class PollyTTS:
             # use asyncio.to_thread instead of run_in_executor (Python 3.9+)
             if hasattr(asyncio, "to_thread"):
                 sync_iterator = await asyncio.wait_for(
-                    asyncio.to_thread(self.synthesize_speech, text), timeout=timeout
+                    asyncio.to_thread(self.synthesize_speech, text),
+                    timeout=timeout,
                 )
             else:
                 sync_iterator = await asyncio.wait_for(
@@ -198,7 +200,9 @@ class PollyTTS:
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             error_message = e.response["Error"]["Message"]
-            logging.error(f"AWS Polly API error [{error_code}]: {error_message}")
+            logging.error(
+                f"AWS Polly API error [{error_code}]: {error_message}"
+            )
             raise
         except ValueError as e:
             logging.error(f"audio stream error: {e}")
@@ -241,15 +245,12 @@ class PollyTTS:
                         f"speech synthesis finally failed, retried {self.max_retries} times: {e}"
                     )
                     raise
-            except asyncio.CancelledError:
-                raise
             except Exception as e:
                 logging.error(f"unexpected error in speech synthesis: {e}")
                 raise
 
 
 if __name__ == "__main__":
-    import asyncio
     import os
 
     aws_access_key_id = os.getenv("AWS_TTS_ACCESS_KEY_ID", "")

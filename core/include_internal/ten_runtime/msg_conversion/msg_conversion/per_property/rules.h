@@ -35,12 +35,7 @@ TEN_RUNTIME_PRIVATE_API void ten_msg_conversion_per_property_rules_destroy(
 TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *
 ten_msg_conversion_per_property_rules_convert(
     ten_msg_conversion_per_property_rules_t *self, ten_shared_ptr_t *msg,
-    ten_error_t *err);
-
-TEN_RUNTIME_PRIVATE_API ten_shared_ptr_t *
-ten_result_conversion_per_property_rules_convert(
-    ten_msg_conversion_per_property_rules_t *self, ten_shared_ptr_t *msg,
-    ten_error_t *err);
+    bool is_result, ten_error_t *err);
 
 TEN_RUNTIME_PRIVATE_API ten_msg_conversion_per_property_rules_t *
 ten_msg_conversion_per_property_rules_from_json(ten_json_t *json,

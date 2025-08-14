@@ -34,6 +34,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
+
 # ================ test metrics ================
 class ExtensionTesterMetrics(ExtensionTester):
     def __init__(self):
@@ -69,7 +70,9 @@ class ExtensionTesterMetrics(ExtensionTester):
             if "ttfb" in nested_metrics:
                 self.ttfb_received = True
                 self.ttfb_value = nested_metrics.get("ttfb", -1)
-                ten_env.log_info(f"Received TTFB metric with value: {self.ttfb_value}")
+                ten_env.log_info(
+                    f"Received TTFB metric with value: {self.ttfb_value}"
+                )
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
@@ -81,10 +84,11 @@ class ExtensionTesterMetrics(ExtensionTester):
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
         """Receives audio frames and confirms the stream is working."""
         if not self.audio_frame_received:
-             self.audio_frame_received = True
-             ten_env.log_info("First audio frame received.")
+            self.audio_frame_received = True
+            ten_env.log_info("First audio frame received.")
 
-@patch('bytedance_tts_duplex.extension.BytedanceV3Client')
+
+@patch("bytedance_tts_duplex.extension.BytedanceV3Client")
 def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
@@ -113,8 +117,8 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
             # Simulate network latency before the first byte
             await asyncio.sleep(0.2)
 
-            await response_msgs.put((EVENT_TTSResponse, b'\x11\x22\x33'))
-            await response_msgs.put((EVENT_SessionFinished, b''))
+            await response_msgs.put((EVENT_TTSResponse, b"\x11\x22\x33"))
+            await response_msgs.put((EVENT_SessionFinished, b""))
 
         asyncio.create_task(populate_queue())
         return mock_instance
@@ -128,8 +132,7 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
-        "bytedance_tts_duplex",
-        json.dumps(metrics_config)
+        "bytedance_tts_duplex", json.dumps(metrics_config)
     )
 
     print("Running TTFB metrics test...")
@@ -144,7 +147,8 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     # Check if the TTFB value is reasonable.
     # It should be slightly more than the 0.2s delay we introduced.
     print(f"TTFB value: {tester.ttfb_value}")
-    assert tester.ttfb_value >= 200, \
-        f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+    assert (
+        tester.ttfb_value >= 200
+    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

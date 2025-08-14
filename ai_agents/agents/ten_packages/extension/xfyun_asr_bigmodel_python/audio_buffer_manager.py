@@ -39,7 +39,9 @@ class AudioBufferManager:
     async def push_audio(
         self,
         audio_data: bytes,
-        send_callback: Union[Callable[[bytes], Any], Callable[[bytes], Awaitable[Any]]],
+        send_callback: Union[
+            Callable[[bytes], Any], Callable[[bytes], Awaitable[Any]]
+        ],
         force_send: bool = False,
     ) -> bool:
         """
@@ -92,7 +94,9 @@ class AudioBufferManager:
 
     async def flush(
         self,
-        send_callback: Union[Callable[[bytes], Any], Callable[[bytes], Awaitable[Any]]],
+        send_callback: Union[
+            Callable[[bytes], Any], Callable[[bytes], Awaitable[Any]]
+        ],
     ) -> bool:
         """
         Flush buffer and send all data.
@@ -109,7 +113,9 @@ class AudioBufferManager:
             return False
 
         if self.logger:
-            self.logger.log_debug(f"Flushing audio buffer: {len(self.buffer)} bytes")
+            self.logger.log_debug(
+                f"Flushing audio buffer: {len(self.buffer)} bytes"
+            )
 
         # Send buffer
         buffer_copy = bytes(self.buffer)

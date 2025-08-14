@@ -13,10 +13,9 @@ from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
     ModuleErrorVendorInfo,
-    ModuleType,
     ModuleVendorException,
 )
-from ten_ai_base.struct import TTSFlush, TTSTextInput
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension, DATA_FLUSH
 from ten_runtime import AsyncTenEnv
 
@@ -58,6 +57,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         self.session_id: str = ""
         # Total audio bytes received for current request
         self.total_audio_bytes: int = 0
+
+        self.request_total_audio_duration: int = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:

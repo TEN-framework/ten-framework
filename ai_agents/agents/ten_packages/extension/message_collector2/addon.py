@@ -19,4 +19,6 @@ class MessageCollector2ExtensionAddon(Addon):
         from .extension import MessageCollector2Extension
 
         ten_env.log_info("MessageCollector2ExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(MessageCollector2Extension(name), context)
+        ten_env.on_create_instance_done(
+            MessageCollector2Extension(name), context
+        )

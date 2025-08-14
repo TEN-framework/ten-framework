@@ -26,7 +26,7 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 | `system_message`            | `string`   | Default system message to send to the model       |
 | `voice`                     | `string`   | Voice that OpenAI model speeches, such as `alloy`, `echo`, `shimmer`, etc |
 | `server_vad`                | `bool`     | Flag to enable or disable server vad of OpenAI |
-| `language`                  | `string`   | Language that OpenAO model reponds, such as `en-US`, `zh-CN`, etc | 
+| `language`                  | `string`   | Language that OpenAO model reponds, such as `en-US`, `zh-CN`, etc |
 | `dump`                      | `bool`     | Flag to enable or disable audio dump for debugging purpose  |
 
 ### Data Out:
@@ -56,7 +56,7 @@ This extension also support Azure OpenAI Service, the propoerty settings are as 
 
 ``` json
 {
-    "base_uri": "wss://xxx.openai.azure.com",
+    "base_url": "wss://xxx.openai.azure.com",
     "path": "/openai/realtime?api-version=xxx&deployment=xxx",
     "api_key": "xxx",
     "model": "gpt-4o-realtime-preview",

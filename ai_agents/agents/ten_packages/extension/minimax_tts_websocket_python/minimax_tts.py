@@ -23,6 +23,7 @@ EVENT_TTSFlush = 354
 
 class MinimaxTTSTaskFailedException(Exception):
     """Exception raised when Minimax TTS task fails"""
+
     def __init__(self, error_msg: str, error_code: int):
         self.error_msg = error_msg
         self.error_code = error_code
@@ -34,7 +35,7 @@ class MinimaxTTSWebsocket:
         self,
         config: MinimaxTTSWebsocketConfig,
         ten_env: AsyncTenEnv | None = None,
-        vendor: str = "minimax"
+        vendor: str = "minimax",
     ):
         self.config = config
         self.ten_env = ten_env
@@ -43,7 +44,9 @@ class MinimaxTTSWebsocket:
         self.stopping: bool = False
         self._is_cancelled: bool = False
         self._connection_is_dirty: bool = False
-        self.ws: websockets.ClientConnection | None = None # pylint: disable=no-member
+        self.ws: websockets.ClientConnection | None = (
+            None  # pylint: disable=no-member
+        )
         self.session_id: str = ""
         self.session_trace_id: str = ""
 
@@ -52,10 +55,14 @@ class MinimaxTTSWebsocket:
         try:
             await self._connect()
             if self.ten_env:
-                self.ten_env.log_info("MinimaxTTSWebsocket websocket preheated successfully")
+                self.ten_env.log_info(
+                    "MinimaxTTSWebsocket websocket preheated successfully"
+                )
         except Exception as e:
             if self.ten_env:
-                self.ten_env.log_error(f"Failed to preheat websocket connection: {e}")
+                self.ten_env.log_error(
+                    f"Failed to preheat websocket connection: {e}"
+                )
             # Don't raise here, let it retry during actual TTS requests
 
     async def stop(self):
@@ -68,12 +75,16 @@ class MinimaxTTSWebsocket:
         This will trigger a ConnectionClosed exception in the processing loop.
         """
         if self.ten_env:
-            self.ten_env.log_debug("Cancelling current TTS task by closing websocket.")
+            self.ten_env.log_debug(
+                "Cancelling current TTS task by closing websocket."
+            )
         self._is_cancelled = True
         if self.ws:
             await self.ws.close()
 
-    async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    async def get(
+        self, text: str
+    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
         """Generate TTS audio for the given text, returns (audio_data, event_status)"""
         if not text or text.strip() == "":
             return
@@ -85,7 +96,9 @@ class MinimaxTTSWebsocket:
                 return
 
             # Send TTS request and yield audio chunks with event status
-            async for audio_chunk, event_status in self._process_single_tts(text):
+            async for audio_chunk, event_status in self._process_single_tts(
+                text
+            ):
                 yield audio_chunk, event_status
 
         except Exception as e:
@@ -109,7 +122,9 @@ class MinimaxTTSWebsocket:
                 return True
             except Exception as e:
                 if self.ten_env:
-                    self.ten_env.log_error(f"Failed to establish websocket connection: {e}")
+                    self.ten_env.log_error(
+                        f"Failed to establish websocket connection: {e}"
+                    )
                 return False
         return True
 
@@ -118,7 +133,9 @@ class MinimaxTTSWebsocket:
         headers = {"Authorization": f"Bearer {self.config.api_key}"}
 
         if self.ten_env:
-            self.ten_env.log_info(f"websocket connecting to {self.config.to_str()}")
+            self.ten_env.log_info(
+                f"websocket connecting to {self.config.to_str()}"
+            )
 
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
@@ -136,7 +153,9 @@ class MinimaxTTSWebsocket:
 
         # Get trace info
         self.session_trace_id = self.ws.response.headers.get("Trace-Id", "")
-        session_alb_request_id = self.ws.response.headers.get("alb_request_id", "")
+        session_alb_request_id = self.ws.response.headers.get(
+            "alb_request_id", ""
+        )
 
         elapsed = int((time.time() - session_start_time) * 1000)
         if self.ten_env:
@@ -152,15 +171,21 @@ class MinimaxTTSWebsocket:
             self.ten_env.log_info(f"websocket init response: {init_response}")
 
         if init_response.get("event") != "connected_success":
-            error_msg = init_response.get("base_resp", {}).get("status_msg", "unknown error")
-            error_code = init_response.get("base_resp", {}).get("status_code", 0)
+            error_msg = init_response.get("base_resp", {}).get(
+                "status_msg", "unknown error"
+            )
+            error_code = init_response.get("base_resp", {}).get(
+                "status_code", 0
+            )
             self.ten_env.log_error(f"Websocket connection failed: {error_msg}")
             self.ten_env.log_error(f"Websocket connection failed: {error_code}")
             raise MinimaxTTSTaskFailedException(error_msg, error_code)
 
         self.session_id = init_response.get("session_id", "")
         if self.ten_env:
-            self.ten_env.log_debug(f"websocket connected success, session_id: {self.session_id}")
+            self.ten_env.log_debug(
+                f"websocket connected success, session_id: {self.session_id}"
+            )
 
         # Start task
         start_task_msg = self._create_start_task_msg()
@@ -172,17 +197,25 @@ class MinimaxTTSWebsocket:
         start_task_response = json.loads(start_task_response_bytes)
 
         if self.ten_env:
-            self.ten_env.log_debug(f"start task response: {start_task_response}")
+            self.ten_env.log_debug(
+                f"start task response: {start_task_response}"
+            )
 
         if start_task_response.get("event") != "task_started":
-            error_msg = start_task_response.get("base_resp", {}).get("status_msg", "unknown error")
-            error_code = start_task_response.get("base_resp", {}).get("status_code", 0)
+            error_msg = start_task_response.get("base_resp", {}).get(
+                "status_msg", "unknown error"
+            )
+            error_code = start_task_response.get("base_resp", {}).get(
+                "status_code", 0
+            )
             self.ten_env.log_error(f"Task start failed: {error_msg}")
             self.ten_env.log_error(f"Task start failed: {error_code}")
             raise MinimaxTTSTaskFailedException(error_msg, error_code)
 
         if self.ten_env:
-            self.ten_env.log_debug(f"websocket session ready: {self.session_id}")
+            self.ten_env.log_debug(
+                f"websocket session ready: {self.session_id}"
+            )
 
     def _create_start_task_msg(self) -> dict:
         """Create task start message"""
@@ -190,7 +223,9 @@ class MinimaxTTSWebsocket:
         start_msg["event"] = "task_start"
         return start_msg
 
-    async def _process_single_tts(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    async def _process_single_tts(
+        self, text: str
+    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
         """Process a single TTS request in serial manner (like minimax copy.py)"""
         if not self.ws:
             return
@@ -214,12 +249,18 @@ class MinimaxTTSWebsocket:
                 tts_response_for_print = tts_response.copy()
                 tts_response_for_print.pop("data", None)
                 if self.ten_env:
-                    self.ten_env.log_info(f"recv from websocket: {tts_response_for_print}")
+                    self.ten_env.log_info(
+                        f"recv from websocket: {tts_response_for_print}"
+                    )
 
                 tts_response_event = tts_response.get("event")
                 if tts_response_event == "task_failed":
-                    error_msg = tts_response.get("base_resp", {}).get("status_msg", "unknown error")
-                    error_code = tts_response.get("base_resp", {}).get("status_code", 0)
+                    error_msg = tts_response.get("base_resp", {}).get(
+                        "status_msg", "unknown error"
+                    )
+                    error_code = tts_response.get("base_resp", {}).get(
+                        "status_code", 0
+                    )
                     if self.ten_env:
                         self.ten_env.log_error(f"TTS task failed: {error_msg}")
                         self.ten_env.log_error(f"TTS task failed: {error_code}")
@@ -248,7 +289,9 @@ class MinimaxTTSWebsocket:
                     without_audio.pop("audio", None)
 
                     if self.ten_env:
-                        self.ten_env.log_debug(f"audio chunk #{chunk_counter}, without_audio: {without_audio}")
+                        self.ten_env.log_debug(
+                            f"audio chunk #{chunk_counter}, without_audio: {without_audio}"
+                        )
 
                     audio_bytes = bytes.fromhex(audio)
 
@@ -262,31 +305,43 @@ class MinimaxTTSWebsocket:
                         yield audio_bytes, EVENT_TTSResponse
                 else:
                     if self.ten_env:
-                        self.ten_env.log_warn(f"tts response no audio data, full response: {tts_response}")
+                        self.ten_env.log_warn(
+                            f"tts response no audio data, full response: {tts_response}"
+                        )
                     break  # No more audio data, end this request
 
                 # Check for cancellation signal
                 if self._is_cancelled:
                     if self.ten_env:
-                        self.ten_env.log_info("Cancellation flag detected, stopping TTS processing.")
+                        self.ten_env.log_info(
+                            "Cancellation flag detected, stopping TTS processing."
+                        )
                     break
 
             except websockets.exceptions.ConnectionClosedOK:
                 if self.ten_env:
                     if self._is_cancelled:
-                        self.ten_env.log_warn("Websocket connection closed OK during TTS processing (cancelled)")
+                        self.ten_env.log_warn(
+                            "Websocket connection closed OK during TTS processing (cancelled)"
+                        )
                     else:
-                        self.ten_env.log_warn("Websocket connection closed OK during TTS processing")
+                        self.ten_env.log_warn(
+                            "Websocket connection closed OK during TTS processing"
+                        )
                 self.ws = None
                 break
             except websockets.exceptions.ConnectionClosed:
                 if self.ten_env:
-                    self.ten_env.log_warn("Websocket connection closed during TTS processing")
+                    self.ten_env.log_warn(
+                        "Websocket connection closed during TTS processing"
+                    )
                 self.ws = None
                 break
             except Exception as e:
                 if self.ten_env:
-                    self.ten_env.log_error(f"Error processing TTS response: {e}")
+                    self.ten_env.log_error(
+                        f"Error processing TTS response: {e}"
+                    )
                 raise
 
     async def close(self):

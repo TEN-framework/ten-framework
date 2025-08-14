@@ -9,8 +9,19 @@ import asyncio
 import uuid
 from typing import Callable
 from unittest.mock import MagicMock, patch, AsyncMock
-from openai_asr_client import AsyncOpenAIAsrListener, Session, TranscriptionParam, TranscriptionResultCommitted, TranscriptionResultCompleted, TranscriptionResultDelta
-from openai_asr_client.schemas import SessionTurnDetection, SessionInputAudioTranscription, SessionInputAudioNoiseReduction
+from openai_asr_client import (
+    AsyncOpenAIAsrListener,
+    Session,
+    TranscriptionParam,
+    TranscriptionResultCommitted,
+    TranscriptionResultCompleted,
+    TranscriptionResultDelta,
+)
+from openai_asr_client.schemas import (
+    SessionTurnDetection,
+    SessionInputAudioTranscription,
+    SessionInputAudioNoiseReduction,
+)
 
 
 class MockClient(object):

@@ -12,7 +12,11 @@ from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
@@ -50,7 +54,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         dump_file_path = None
         try:
             self.config = TencentASRConfig.model_validate_json(config_json)
-            ten_env.log_info(f"KEYPOINT vendor_config: {self.config.model_dump_json()}")
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+            )
 
             if self.config.dump:
                 dump_file_path = Path(self.config.dump_path)
@@ -128,7 +134,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         return sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         if not self.is_connected():
             return False
         assert self.client is not None
@@ -159,11 +167,19 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         _ = self.ten_env.log_debug(
             f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
         )
-        if self.config.finalize_mode == TencentASRConfig.FinalizeMode.DISCONNECT:
+        if (
+            self.config.finalize_mode
+            == TencentASRConfig.FinalizeMode.DISCONNECT
+        ):
             await self.client.send_end_of_stream()
-        elif self.config.finalize_mode == TencentASRConfig.FinalizeMode.VENDOR_DEFINED:
+        elif (
+            self.config.finalize_mode
+            == TencentASRConfig.FinalizeMode.VENDOR_DEFINED
+        ):
             await self.client.send_end_of_stream()
-        elif self.config.finalize_mode == TencentASRConfig.FinalizeMode.MUTE_PKG:
+        elif (
+            self.config.finalize_mode == TencentASRConfig.FinalizeMode.MUTE_PKG
+        ):
             empty_audio_bytes_len = int(
                 self.config.mute_pkg_duration_ms
                 * self.input_audio_sample_rate()
@@ -172,7 +188,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             )
             frame = bytearray(empty_audio_bytes_len)
             await self.client.send_pcm_data(bytes(frame))
-            self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+            self.audio_timeline.add_silence_audio(
+                self.config.mute_pkg_duration_ms
+            )
         else:
             _ = self.ten_env.log_error(
                 f"Unknown finalize mode: {self.config.finalize_mode}"
@@ -181,14 +199,18 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
     # tencent asr client event handler
     @override
     async def on_asr_start(self, response: ResponseData):
-        self.ten_env.log_info(f"KEYPOINT on_asr_start: {response.model_dump_json()}")
+        self.ten_env.log_info(
+            f"KEYPOINT on_asr_start: {response.model_dump_json()}"
+        )
 
     @override
     async def on_asr_fail(self, response: ResponseData):
         """
         response.result is tencent asr server error.
         """
-        self.ten_env.log_error(f"KEYPOINT on_asr_fail: {response.model_dump_json()}")
+        self.ten_env.log_error(
+            f"KEYPOINT on_asr_fail: {response.model_dump_json()}"
+        )
         await self.send_asr_error(
             ModuleError(
                 module="asr",
@@ -212,7 +234,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.voice_id is the voice_id of the request.
         response.result is the Exception instance.
         """
-        self.ten_env.log_error(f"KEYPOINT on_asr_error: {response.model_dump_json()}")
+        self.ten_env.log_error(
+            f"KEYPOINT on_asr_error: {response.model_dump_json()}"
+        )
         await self.send_asr_error(
             ModuleError(
                 module="asr",
@@ -262,7 +286,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
         duration_ms = result.end_time - result.start_time
         actual_start_ms = (
-            self.audio_timeline.get_audio_duration_before_time(result.start_time)
+            self.audio_timeline.get_audio_duration_before_time(
+                result.start_time
+            )
             + self.sent_user_audio_duration_ms_before_last_reset
         )
 
@@ -282,7 +308,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         await self.send_asr_result(asr_result)
 
     @override
-    async def on_asr_sentence_start(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_start(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.START.
@@ -295,7 +323,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
-    async def on_asr_sentence_change(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_change(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.PROCESSING.
@@ -308,7 +338,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
-    async def on_asr_sentence_end(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_end(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.END.

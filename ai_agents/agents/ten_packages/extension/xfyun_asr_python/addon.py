@@ -5,6 +5,7 @@ from ten_runtime import (
 )
 from .extension import XfyunASRExtension
 
+
 @register_addon_as_extension("xfyun_asr_python")
 class XfyunASRExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:

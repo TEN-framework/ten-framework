@@ -13,7 +13,11 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -73,7 +77,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
@@ -93,7 +99,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
         try:
             if not self.config.api_key or self.config.api_key.strip() == "":
-                error_msg = "Deepgram API key is required but not provided or is empty"
+                error_msg = (
+                    "Deepgram API key is required but not provided or is empty"
+                )
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -241,7 +249,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     async def _deepgram_event_handler_on_close(self, *args, **kwargs):
         """Handle the close event from Deepgram."""
-        self.ten_env.log_debug(f"deepgram event callback on_close: {args}, {kwargs}")
+        self.ten_env.log_debug(
+            f"deepgram event callback on_close: {args}, {kwargs}"
+        )
         self.connected = False
 
         if not self.stopped:
@@ -271,8 +281,12 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             if not sentence:
                 return
 
-            start_ms = int(result.start * 1000)  # convert seconds to milliseconds
-            duration_ms = int(result.duration * 1000)  # convert seconds to milliseconds
+            start_ms = int(
+                result.start * 1000
+            )  # convert seconds to milliseconds
+            duration_ms = int(
+                result.duration * 1000
+            )  # convert seconds to milliseconds
             actual_start_ms = int(
                 self.audio_timeline.get_audio_duration_before_time(start_ms)
                 + self.sent_user_audio_duration_ms_before_last_reset
@@ -308,7 +322,11 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             ModuleErrorVendorInfo(
                 vendor=self.vendor(),
                 code=str(error.code) if hasattr(error, "code") else "unknown",
-                message=error.message if hasattr(error, "message") else error.to_json(),
+                message=(
+                    error.message
+                    if hasattr(error, "message")
+                    else error.to_json()
+                ),
             ),
         )
 
@@ -349,14 +367,19 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
         # Attempt a single reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         """Handle finalize end logic."""
@@ -394,7 +417,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         assert self.config is not None
         assert self.client is not None
 

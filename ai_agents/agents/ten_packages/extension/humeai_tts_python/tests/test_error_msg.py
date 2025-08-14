@@ -43,6 +43,7 @@ from humeai_tts_python.humeTTS import (
     EVENT_TTS_FLUSH,
 )
 
+
 # ================ test empty params ================
 class ExtensionTesterEmptyParams(ExtensionTester):
     def __init__(self):
@@ -70,23 +71,23 @@ class ExtensionTesterEmptyParams(ExtensionTester):
             self.error_message = error_data.get("message", "")
             self.error_module = error_data.get("module", "")
 
-            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}")
+            ten_env.log_info(
+                f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}"
+            )
             ten_env.log_info("Error received, stopping test immediately")
             ten_env.stop_test()
+
 
 def test_empty_params_fatal_error():
     """Test that empty params raises FATAL ERROR with code -1000"""
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {
-        "params": {}
-    }
+    empty_params_config = {"params": {}}
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
-        "humeai_tts_python",
-        json.dumps(empty_params_config)
+        "humeai_tts_python", json.dumps(empty_params_config)
     )
 
     print("Running test...")
@@ -95,12 +96,17 @@ def test_empty_params_fatal_error():
 
     # Verify FATAL ERROR was received
     assert tester.error_received, "Expected to receive error message"
-    assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
+    assert (
+        tester.error_code == -1000
+    ), f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 
-    print(f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}")
+    print(
+        f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}"
+    )
     print("Test verification completed successfully.")
+
 
 # ================ test invalid api key ================
 class ExtensionTesterInvalidApiKey(ExtensionTester):
@@ -114,7 +120,9 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request to trigger the logic."""
-        ten_env_tester.log_info("Invalid API key test started, sending TTS request")
+        ten_env_tester.log_info(
+            "Invalid API key test started, sending TTS request"
+        )
 
         tts_input = TTSTextInput(
             request_id="test-request-invalid-key",
@@ -140,11 +148,14 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             self.error_module = error_data.get("module", "")
             self.vendor_info = error_data.get("vendor_info", {})
 
-            ten_env.log_info(f"Received error: code={self.error_code}, message={self.error_message}")
+            ten_env.log_info(
+                f"Received error: code={self.error_code}, message={self.error_message}"
+            )
             ten_env.log_info("Error received, stopping test immediately")
             ten_env.stop_test()
 
-@patch('humeai_tts_python.humeTTS.AsyncHumeClient')
+
+@patch("humeai_tts_python.humeTTS.AsyncHumeClient")
 def test_invalid_api_key_error(MockHumeClient):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
@@ -153,7 +164,9 @@ def test_invalid_api_key_error(MockHumeClient):
     mock_client = MockHumeClient.return_value
 
     # Define an async generator that raises the invalid key exception
-    async def mock_tts_error(context=None, utterances=None, format=None, instant_mode=None):
+    async def mock_tts_error(
+        context=None, utterances=None, format=None, instant_mode=None
+    ):
         error_msg = "headers: {'date': 'Thu, 31 Jul 2025 06:47:59 GMT', 'content-type': 'application/json', 'content-length': '90', 'connection': 'keep-alive', 'x-request-id': '9bccec6c-dd26-4b2d-b99b-a9e2a305e0a4', 'via': '1.1 google', 'cf-cache-status': 'DYNAMIC', 'server': 'cloudflare', 'cf-ray': '967b25c22ed66837-NRT'}, status_code: 401, body: {'fault': {'faultstring': 'Invalid ApiKey', 'detail': {'errorcode': 'oauth.v2.InvalidApiKey'}}}"
         raise Exception(error_msg)
         yield  # Unreachable, but makes this an async generator function
@@ -164,13 +177,12 @@ def test_invalid_api_key_error(MockHumeClient):
     invalid_key_config = {
         "key": "invalid_api_key_test",
         "voice_id": "daisy",
-        "params": {}
+        "params": {},
     }
 
     tester = ExtensionTesterInvalidApiKey()
     tester.set_test_mode_single(
-        "humeai_tts_python",
-        json.dumps(invalid_key_config)
+        "humeai_tts_python", json.dumps(invalid_key_config)
     )
 
     print("Running test with mock...")
@@ -179,13 +191,21 @@ def test_invalid_api_key_error(MockHumeClient):
 
     # Verify FATAL ERROR was received for invalid API key
     assert tester.error_received, "Expected to receive error message"
-    assert tester.error_code == -1000, f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
+    assert (
+        tester.error_code == -1000
+    ), f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
     assert tester.error_message is not None, "Error message should not be None"
-    assert "Invalid ApiKey" in tester.error_message, "Error message should mention Invalid ApiKey"
+    assert (
+        "Invalid ApiKey" in tester.error_message
+    ), "Error message should mention Invalid ApiKey"
 
     # Verify vendor_info
     vendor_info = tester.vendor_info
     assert vendor_info is not None, "Expected vendor_info to be present"
-    assert vendor_info.get("vendor") == "humeai", f"Expected vendor 'humeai', got {vendor_info.get('vendor')}"
+    assert (
+        vendor_info.get("vendor") == "humeai"
+    ), f"Expected vendor 'humeai', got {vendor_info.get('vendor')}"
 
-    print(f"✅ Invalid API key test passed: code={tester.error_code}, message={tester.error_message}")
+    print(
+        f"✅ Invalid API key test passed: code={tester.error_code}, message={tester.error_message}"
+    )

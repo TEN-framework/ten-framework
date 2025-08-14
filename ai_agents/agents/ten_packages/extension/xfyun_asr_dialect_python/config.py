@@ -5,6 +5,7 @@ from ten_ai_base.utils import encrypt
 
 class XfyunDialectASRConfig(BaseModel):
     """Xfyun ASR Configuration for new dialect API"""
+
     app_id: str = ""
     access_key_id: str = ""
     access_key_secret: str = ""
@@ -16,7 +17,6 @@ class XfyunDialectASRConfig(BaseModel):
     audio_encode: str = "pcm"  # Audio encoding format
     samplerate: int = 16000  # Sample rate
     codec: str = "pcm"
-
 
     # Engine optimization parameters
     multiFuncData: str = "false"
@@ -42,9 +42,13 @@ class XfyunDialectASRConfig(BaseModel):
         config_dict = self.model_dump()
         if sensitive_handling:
             if self.access_key_id:
-                config_dict["access_key_id"] = encrypt(config_dict["access_key_id"])
+                config_dict["access_key_id"] = encrypt(
+                    config_dict["access_key_id"]
+                )
             if self.access_key_secret:
-                config_dict["access_key_secret"] = encrypt(config_dict["access_key_secret"])
+                config_dict["access_key_secret"] = encrypt(
+                    config_dict["access_key_secret"]
+                )
             if self.app_id:
                 config_dict["app_id"] = encrypt(config_dict["app_id"])
         if config_dict["params"]:

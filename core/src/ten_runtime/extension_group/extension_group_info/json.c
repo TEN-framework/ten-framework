@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/extension_group/extension_group_info/extension_group_info.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/lib/string.h"

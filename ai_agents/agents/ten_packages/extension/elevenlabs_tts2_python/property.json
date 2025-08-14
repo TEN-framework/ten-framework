@@ -8,5 +8,7 @@
     "stability": 0.5,
     "voice_id": "pNInz6obpgDQGcFmaJgB",
     "prompt": "",
-    "base_url": ""
+    "base_url": "",
+    "dump": false,
+    "dump_path": "./dump/"
 }

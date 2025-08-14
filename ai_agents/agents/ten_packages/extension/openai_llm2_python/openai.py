@@ -49,9 +49,9 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
-    black_list_params: List[str] = field(default_factory=lambda: [
-        "messages", "tools", "stream", "n", "model"
-    ])
+    black_list_params: List[str] = field(
+        default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
+    )
 
     def is_black_list_params(self, key: str) -> bool:
         return key in self.black_list_params
@@ -66,17 +66,21 @@ class ThinkParser:
         self.state = "NORMAL"  # States: 'NORMAL', 'THINK'
         self.think_content = ""
         self.content = ""
+        self.think_delta = ""
 
     def process(self, new_chars):
         if new_chars == "<think>":
             self.state = "THINK"
+            self.think_delta = ""
             return True
         elif new_chars == "</think>":
             self.state = "NORMAL"
+            self.think_delta = ""
             return True
         else:
             if self.state == "THINK":
                 self.think_content += new_chars
+                self.think_delta = new_chars
         return False
 
     def process_by_reasoning_content(self, reasoning_content):
@@ -86,8 +90,10 @@ class ThinkParser:
                 self.state = "THINK"
                 state_changed = True
             self.think_content += reasoning_content
+            self.think_delta = reasoning_content
         elif self.state == "THINK":
             self.state = "NORMAL"
+            self.think_delta = ""
             state_changed = True
         return state_changed
 
@@ -118,7 +124,6 @@ class OpenAIChatGPT:
             ten_env.log_info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
-
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json_dict = {
@@ -153,14 +158,14 @@ class OpenAIChatGPT:
         return json_dict
 
     async def get_chat_completions(
-        self, input: LLMRequest
+        self, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
-        messages = input.messages
+        messages = request_input.messages
         tools = None
         parsed_messages = []
 
         self.ten_env.log_info(
-            f"get_chat_completions: {len(messages)} messages, streaming: {input.streaming}"
+            f"get_chat_completions: {len(messages)} messages, streaming: {request_input.streaming}"
         )
 
         for message in messages:
@@ -178,42 +183,49 @@ class OpenAIChatGPT:
                         for item in content:
                             match item:
                                 case TextContent():
-                                    content_items.append({
-                                        "type": "text",
-                                        "text": item.text
-                                    })
+                                    content_items.append(
+                                        {"type": "text", "text": item.text}
+                                    )
                                 case ImageContent():
-                                    content_items.append({
-                                        "type": "image",
-                                        "image_url": {
-                                            "url": item.image_url
+                                    content_items.append(
+                                        {
+                                            "type": "image",
+                                            "image_url": {
+                                                "url": item.image_url
+                                            },
                                         }
-                                    })
+                                    )
                         parsed_messages.append(
                             {"role": role, "content": content_items}
                         )
                 case LLMMessageFunctionCall():
                     # Handle function call messages
-                    parsed_messages.append({
-                        "role": "assistant",
-                        "tool_calls": [{
-                            "id": message.call_id,
-                            "type": "function",
-                            "function": {
-                                "name": message.name,
-                                "arguments": message.arguments,
-                            }
-                        }]
-                    })
+                    parsed_messages.append(
+                        {
+                            "role": "assistant",
+                            "tool_calls": [
+                                {
+                                    "id": message.call_id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": message.name,
+                                        "arguments": message.arguments,
+                                    },
+                                }
+                            ],
+                        }
+                    )
                 case LLMMessageFunctionCallOutput():
                     # Handle function call output messages
-                    parsed_messages.append({
-                        "role": "tool",
-                        "tool_call_id": message.call_id,
-                        "content": message.output,
-                    })
+                    parsed_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": message.call_id,
+                            "content": message.output,
+                        }
+                    )
 
-        for tool in input.tools or []:
+        for tool in request_input.tools or []:
             if tools is None:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
@@ -223,7 +235,8 @@ class OpenAIChatGPT:
             "messages": [
                 {
                     "role": "system",
-                    "content": self.config.prompt or "you are a helpful assistant",
+                    "content": self.config.prompt
+                    or "you are a helpful assistant",
                 },
                 *parsed_messages,
             ],
@@ -234,17 +247,15 @@ class OpenAIChatGPT:
             "frequency_penalty": self.config.frequency_penalty,
             "max_tokens": self.config.max_tokens,
             "seed": self.config.seed,
-            "stream": input.streaming,
+            "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
 
         # Add additional parameters if they are not in the black list
-        for key, value in (input.parameters or {}).items():
+        for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
             if not self.config.is_black_list_params(key):
-                self.ten_env.log_debug(
-                    f"set openai param: {key} = {value}"
-                )
+                self.ten_env.log_debug(f"set openai param: {key} = {value}")
                 req[key] = value
 
         self.ten_env.log_info(f"Requesting chat completions with: {req}")
@@ -268,16 +279,17 @@ class OpenAIChatGPT:
             parser = ThinkParser()
             reasoning_mode = None
 
+            last_chat_completion: ChatCompletionChunk | None = None
+
             async for chat_completion in response:
                 self.ten_env.log_info(f"Chat completion: {chat_completion}")
-                if len(chat_completion.choices) == 0:
+                if chat_completion is None or len(chat_completion.choices) == 0:
                     continue
+                last_chat_completion = chat_completion
                 choice = chat_completion.choices[0]
                 delta = choice.delta
 
-                self.ten_env.log_info(
-                    f"Processing choice: {choice}"
-                )
+                self.ten_env.log_info(f"Processing choice: {choice}")
 
                 content = delta.content if delta and delta.content else ""
                 reasoning_content = (
@@ -292,25 +304,29 @@ class OpenAIChatGPT:
                     reasoning_mode = ReasoningMode.ModeV1
 
                 # Emit content update event (fire-and-forget)
-                if (content or reasoning_mode == ReasoningMode.ModeV1):
+                if content or reasoning_mode == ReasoningMode.ModeV1:
                     prev_state = parser.state
 
                     if reasoning_mode == ReasoningMode.ModeV1:
                         self.ten_env.log_info("process_by_reasoning_content")
-                        think_state_changed = parser.process_by_reasoning_content(
-                            reasoning_content
+                        think_state_changed = (
+                            parser.process_by_reasoning_content(
+                                reasoning_content
+                            )
                         )
                     else:
                         think_state_changed = parser.process(content)
 
                     if not think_state_changed:
-                        self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
+                        self.ten_env.log_info(
+                            f"state: {parser.state}, content: {content}, think: {parser.think_content}"
+                        )
                         if parser.state == "THINK":
                             yield LLMResponseReasoningDelta(
                                 response_id=chat_completion.id,
                                 role="assistant",
                                 content=parser.think_content,
-                                delta=parser.think_content,
+                                delta=parser.think_delta,
                                 created=chat_completion.created,
                             )
                         elif parser.state == "NORMAL":
@@ -374,6 +390,10 @@ class OpenAIChatGPT:
                             f"Error processing tool call: {e} {tool_calls_dict}"
                         )
 
+            if last_chat_completion is None:
+                self.ten_env.log_info("No chat completion choices found.")
+                return
+
             # Convert the dictionary to a list
             tool_calls_list = list(tool_calls_dict.values())
 
@@ -385,20 +405,20 @@ class OpenAIChatGPT:
                         f"Tool call22: {choice.delta.model_dump_json()}"
                     )
                     yield LLMResponseToolCall(
-                        response_id=chat_completion.id,
-                        id=chat_completion.id,
+                        response_id=last_chat_completion.id,
+                        id=last_chat_completion.id,
                         tool_call_id=tool_call["id"],
                         name=tool_call["function"]["name"],
                         arguments=arguements,
-                        created=chat_completion.created,
+                        created=last_chat_completion.created,
                     )
 
             # Emit content finished event after the loop completes
             yield LLMResponseMessageDone(
-                response_id=chat_completion.id,
+                response_id=last_chat_completion.id,
                 role="assistant",
                 content=full_content,
-                created=chat_completion.created,
+                created=last_chat_completion.created,
             )
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e

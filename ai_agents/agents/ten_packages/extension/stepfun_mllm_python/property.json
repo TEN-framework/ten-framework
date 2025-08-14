@@ -8,5 +8,5 @@
     "server_vad": true,
     "history": 10,
     "enable_storage": false,
-    "base_uri": "wss://api.stepfun.com"
+    "base_url": "wss://api.stepfun.com"
 }

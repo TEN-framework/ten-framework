@@ -13,7 +13,9 @@ def patch_xfyun_ws():
     """
     Automatically patch Recognition globally before any test runs.
     """
-    patch_target = "ten_packages.extension.xfyun_asr_python.extension.XfyunWSRecognition"
+    patch_target = (
+        "ten_packages.extension.xfyun_asr_python.extension.XfyunWSRecognition"
+    )
 
     with patch(patch_target) as MockWSClient:
         print(f"✅ Patching {patch_target} before test session.")

@@ -15,7 +15,11 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -64,7 +68,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
             )
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
         except Exception as e:
@@ -115,7 +121,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
             wave_stream_format=speechsdk.audio.AudioStreamWaveFormat.PCM,
         )
 
-        self.stream = speechsdk.audio.PushAudioInputStream(stream_format=stream_format)
+        self.stream = speechsdk.audio.PushAudioInputStream(
+            stream_format=stream_format
+        )
         audio_config = speechsdk.audio.AudioConfig(stream=self.stream)
 
         # Set the silence timeout to 100ms by default.
@@ -125,14 +133,18 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         # Dump the Azure SDK log to the dump path if dump is enabled.
         if self.config.dump and self.config.dump_path:
-            azure_log_file_path = os.path.join(self.config.dump_path, "azure_sdk.log")
+            azure_log_file_path = os.path.join(
+                self.config.dump_path, "azure_sdk.log"
+            )
             speech_config.set_property(
                 speechsdk.PropertyId.Speech_LogFilename, azure_log_file_path
             )
 
         if self.config.advanced_params_json:
             try:
-                params: dict[str, str] = json.loads(self.config.advanced_params_json)
+                params: dict[str, str] = json.loads(
+                    self.config.advanced_params_json
+                )
                 for key, value in params.items():
                     self.ten_env.log_debug(f"set azure param: {key} = {value}")
                     speech_config.set_property_by_name(key, value)
@@ -187,22 +199,26 @@ class AzureASRExtension(AsyncASRBaseExtension):
         assert self.client is not None
         self.client.recognizing.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_recognizing(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_recognizing(evt),
             )
         )
         self.client.recognized.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_recognized(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_recognized(evt),
             )
         )
         self.client.session_started.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_session_started(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_session_started(evt),
             )
         )
         self.client.session_stopped.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_session_stopped(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_session_stopped(evt),
             )
         )
         self.client.canceled.connect(
@@ -231,7 +247,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
         self.connection.disconnected.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_disconnected(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_disconnected(evt),
             )
         )
 
@@ -277,11 +294,15 @@ class AzureASRExtension(AsyncASRBaseExtension):
         if len(self.config.language_list) > 1:
             try:
                 result_json = json.loads(evt.result.json)
-                language_in_result: str = result_json["PrimaryLanguage"]["Language"]
+                language_in_result: str = result_json["PrimaryLanguage"][
+                    "Language"
+                ]
                 if language_in_result != "":
                     language = language_in_result
             except Exception as e:
-                self.ten_env.log_error(f"get language from result json failed: {e}")
+                self.ten_env.log_error(
+                    f"get language from result json failed: {e}"
+                )
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
@@ -317,11 +338,15 @@ class AzureASRExtension(AsyncASRBaseExtension):
         if len(self.config.language_list) > 1:
             try:
                 result_json = json.loads(evt.result.json)
-                language_in_result: str = result_json["PrimaryLanguage"]["Language"]
+                language_in_result: str = result_json["PrimaryLanguage"][
+                    "Language"
+                ]
                 if language_in_result != "":
                     language = language_in_result
             except Exception as e:
-                self.ten_env.log_error(f"get language from result json failed: {e}")
+                self.ten_env.log_error(
+                    f"get language from result json failed: {e}"
+                )
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
@@ -362,7 +387,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.connected = False
 
         if not self.stopped:
-            self.ten_env.log_warn("azure session stopped unexpectedly. Reconnecting...")
+            self.ten_env.log_warn(
+                "azure session stopped unexpectedly. Reconnecting..."
+            )
             await self._handle_reconnect()
 
     async def _azure_event_handler_on_canceled(
@@ -427,7 +454,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         if self.client is None:
-            _ = self.ten_env.log_debug("finalize disconnect: client is not connected")
+            _ = self.ten_env.log_debug(
+                "finalize disconnect: client is not connected"
+            )
             return
 
         self.client.stop_continuous_recognition()
@@ -437,11 +466,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         if self.stream is None:
-            _ = self.ten_env.log_debug("finalize mute pkg: stream is not initialized")
+            _ = self.ten_env.log_debug(
+                "finalize mute pkg: stream is not initialized"
+            )
             return
 
         empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms * self.config.sample_rate / 1000 * 2
+            self.config.mute_pkg_duration_ms
+            * self.config.sample_rate
+            / 1000
+            * 2
         )
         frame = bytearray(empty_audio_bytes_len)
         self.stream.write(bytes(frame))
@@ -467,14 +501,19 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         # Attempt a single reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:
@@ -508,7 +547,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         assert self.config is not None
         assert self.stream is not None
 

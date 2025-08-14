@@ -52,9 +52,9 @@ class BasicAudioSettingTester(AsyncExtensionTester):
         self.dump_file_name = f"tts_basic_audio_setting_{self.session_id}.pcm"
         self.count_audio_end = 0
         self.request_id: int = request_id
-        self.sample_rate: int = 0  # 存储当前测试的 sample_rate
+        self.sample_rate: int = 0  # Store current test sample_rate
         self.test_name: str = test_name
-        self.audio_frame_received: bool = False  # 标记是否已接收到音频帧
+        self.audio_frame_received: bool = False  # Flag whether audio frame has been received
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -161,7 +161,7 @@ class BasicAudioSettingTester(AsyncExtensionTester):
             return
         elif name == "tts_audio_end":
             ten_env.log_info(f"[{self.test_name}] Received tts_audio_end")
-            # 只有在接收到音频帧后才退出测试
+            # Only exit test after receiving audio frame
             if self.audio_frame_received:
                 ten_env.log_info(f"[{self.test_name}] Audio frame received, stopping test")
                 ten_env.stop_test()
@@ -173,19 +173,19 @@ class BasicAudioSettingTester(AsyncExtensionTester):
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
-        # 检查 sample_rate
+                    # Check sample_rate
         sample_rate = audio_frame.get_sample_rate()
         ten_env.log_info(f"[{self.test_name}] Received audio frame with sample_rate: {sample_rate}")
         
-        # 标记已接收到音频帧
+                    # Mark that audio frame has been received
         self.audio_frame_received = True
         
-        # 存储当前测试的 sample_rate
+        # Store current test sample_rate
         if self.sample_rate == 0:
             self.sample_rate = sample_rate
             ten_env.log_info(f"✅ [{self.test_name}] First audio frame received with sample_rate: {sample_rate}")
         else:
-            # 检查 sample_rate 是否一致
+            # Check if sample_rate is consistent
             if self.sample_rate != sample_rate:
                 ten_env.log_warn(f"[{self.test_name}] Sample rate changed from {self.sample_rate} to {sample_rate}")
             else:
@@ -200,14 +200,16 @@ class BasicAudioSettingTester(AsyncExtensionTester):
 
 
 def run_single_test(extension_name: str, config_file: str, test_name: str, request_id: int) -> int:
-    """运行单个测试并返回 sample_rate"""
+    """Run single test and return sample_rate"""
     print(f"\n{'='*80}")
-    print(f"🚀 开始运行测试: {test_name}")
+    print(f"🚀 Starting test: {test_name}")
     print(f"{'='*80}")
     
     # Load config file
     with open(config_file, "r") as f:
         config: dict[str, Any] = json.load(f)
+
+    print(f"config: {json.dumps(config, indent=4)}")
 
     # Create and run tester
     tester = BasicAudioSettingTester(
@@ -228,45 +230,45 @@ def run_single_test(extension_name: str, config_file: str, test_name: str, reque
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
     
-    # 返回测试获得的 sample_rate
+    # Return the sample_rate obtained from the test
     return tester.sample_rate
 
 
 def test_sample_rate_comparison(extension_name: str, config_dir: str) -> None:
-    """比较两个不同配置文件的 sample_rate"""
+    """Compare sample_rate between two different config files"""
     print(f"\n{'='*80}")
     print("🧪 TEST: Sample Rate Comparison")
     print(f"{'='*80}")
-    print("📋 测试目标: 验证不同配置文件产生不同的 sample_rate")
-    print("🎯 预期结果: 两个测试的 sample_rate 应该不同")
+    print("📋 Test objective: Verify that different config files produce different sample_rate")
+    print("🎯 Expected result: Two tests should have different sample_rate")
     print(f"{'='*80}")
     
-    # 测试1: 使用配置文件1
+    # Test 1: Use config file 1
     config_file1 = os.path.join(config_dir, TTS_BASIC_AUDIO_SETTING_CONFIG_FILE1)
     if not os.path.exists(config_file1):
         raise FileNotFoundError(f"Config file not found: {config_file1}")
     
     sample_rate_1 = run_single_test(extension_name, config_file1, "16K_Test", 1)
     
-    # 测试2: 使用配置文件2
+    # Test 2: Use config file 2
     config_file2 = os.path.join(config_dir, TTS_BASIC_AUDIO_SETTING_CONFIG_FILE2)
     if not os.path.exists(config_file2):
         raise FileNotFoundError(f"Config file not found: {config_file2}")
     
     sample_rate_2 = run_single_test(extension_name, config_file2, "32K_Test", 2)
     
-    # 比较结果
+    # Compare results
     print(f"\n{'='*80}")
-    print("📊 测试结果比较")
+    print("📊 Test result comparison")
     print(f"{'='*80}")
-    print(f"测试1 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE1}): sample_rate = {sample_rate_1}")
-    print(f"测试2 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE2}): sample_rate = {sample_rate_2}")
+    print(f"Test 1 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE1}): sample_rate = {sample_rate_1}")
+    print(f"Test 2 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE2}): sample_rate = {sample_rate_2}")
     
     if sample_rate_1 != sample_rate_2:
-        print(f"✅ 测试通过: 两个配置文件产生了不同的 sample_rate")
-        print(f"   差异: {abs(sample_rate_1 - sample_rate_2)} Hz")
+        print(f"✅ Test passed: Two config files produced different sample_rate")
+        print(f"   Difference: {abs(sample_rate_1 - sample_rate_2)} Hz")
     else:
-        print(f"❌ 测试失败: 两个配置文件产生了相同的 sample_rate ({sample_rate_1})")
+        print(f"❌ Test failed: Two config files produced the same sample_rate ({sample_rate_1})")
         raise AssertionError(f"Expected different sample rates, but both are {sample_rate_1}")
     
     print(f"{'='*80}")

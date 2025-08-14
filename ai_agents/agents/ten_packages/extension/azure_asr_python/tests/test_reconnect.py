@@ -26,7 +26,10 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
         pass
 
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
             err = TenError.create(
@@ -36,7 +39,9 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         data_name = data.get_name()
         if data_name == "error":
             self.recv_error_count += 1

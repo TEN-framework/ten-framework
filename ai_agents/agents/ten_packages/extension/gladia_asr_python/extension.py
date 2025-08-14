@@ -42,6 +42,7 @@ class GladiaASRExtension(AsyncASRBaseExtension):
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("GladiaASRExtension on_init")
+        await super().on_init(ten_env)
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_result = CmdResult.create(StatusCode.OK, cmd)

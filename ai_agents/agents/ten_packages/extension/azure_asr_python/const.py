@@ -8,4 +8,3 @@ DUMP_FILE_NAME = "azure_asr_in.pcm"
 STREAM_ID = "stream_id"
 REMOTE_USER_ID = "remote_user_id"
 MODULE_NAME_ASR = "asr"
-

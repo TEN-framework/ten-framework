@@ -9,9 +9,13 @@ from ten_runtime import (
 import json
 from ten_ai_base.tts2 import TTSTextInput
 
+
 class PollyTTSExtensionTester(AsyncExtensionTester):
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
             err = TenError.create(
@@ -22,10 +26,12 @@ class PollyTTSExtensionTester(AsyncExtensionTester):
 
     async def wait_for_test(self, ten_env: AsyncTenEnvTester):
         await asyncio.sleep(10)
-        ten_env.stop_test(TenError.create(
-            error_code=TenErrorCode.ErrorCodeGeneric,
-            error_message="test timeout",
-        ))
+        ten_env.stop_test(
+            TenError.create(
+                error_code=TenErrorCode.ErrorCodeGeneric,
+                error_message="test timeout",
+            )
+        )
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
@@ -54,21 +60,21 @@ class PollyTTSExtensionTester(AsyncExtensionTester):
             )
             self.stop_test_if_checking_failed(
                 ten_env,
-                data_dict['code'] == -1000,
+                data_dict["code"] == -1000,
                 f"error_code is not -1000: {data_dict}",
             )
             # success stop test
             ten_env.stop_test()
 
-    
+
 def test_polly_tts():
     property_json = {
         "log_level": "DEBUG",
         "params": {
-            "region_name_invalid": "us-west-2", # invalid name
+            "region_name_invalid": "us-west-2",  # invalid name
             "aws_access_key_id": "fake_access_key_id",
             "aws_secret_access_key": "fake_secret_access_key",
-        }
+        },
     }
     tester = PollyTTSExtensionTester()
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))

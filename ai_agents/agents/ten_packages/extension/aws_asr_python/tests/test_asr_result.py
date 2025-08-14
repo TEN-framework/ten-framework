@@ -11,7 +11,7 @@ from ten_runtime import (
 import json
 
 # We must import it, which means this test fixture will be automatically executed
-from tests.mock import patch_asr_client  # noqa: F401
+from .mock import patch_asr_client  # noqa: F401
 
 
 class AWSASRExtensionTester(AsyncExtensionTester):
@@ -38,10 +38,15 @@ class AWSASRExtensionTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        self.sender_task = asyncio.create_task(self.audio_sender(ten_env_tester))
+        self.sender_task = asyncio.create_task(
+            self.audio_sender(ten_env_tester)
+        )
 
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
             err = TenError.create(
@@ -51,7 +56,9 @@ class AWSASRExtensionTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         data_name = data.get_name()
         if data_name == "asr_result":
             # Check the data structure.
@@ -133,8 +140,8 @@ def test_asr_result(patch_asr_client):
             "language_code": "en-US",
             "media_sample_rate_hz": 16000,
             "media_encoding": "pcm",
-            "vocabulary_name": "my-vocabulary"
-        }
+            "vocabulary_name": "my-vocabulary",
+        },
     }
 
     tester = AWSASRExtensionTester()

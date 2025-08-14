@@ -9,6 +9,7 @@
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_conversion/per_property/fixed_value.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/error.h"
@@ -77,7 +78,8 @@ bool ten_msg_conversion_per_property_rule_convert(
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
-  TEN_ASSERT(new_msg && ten_msg_check_integrity(new_msg), "Invalid argument.");
+  TEN_ASSERT(new_msg, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(new_msg), "Invalid argument.");
 
   switch (self->conversion_mode) {
   case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
@@ -111,6 +113,25 @@ ten_msg_conversion_per_property_rule_conversion_mode_from_string(
     }
     TEN_ASSERT(0, "Should not happen.");
     return TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_INVALID;
+  }
+}
+
+static const char *
+ten_msg_conversion_per_property_rule_conversion_mode_to_string(
+    TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE conversion_mode,
+    ten_error_t *err) {
+  switch (conversion_mode) {
+  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FIXED_VALUE:
+    return TEN_STR_FIXED_VALUE;
+  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
+    return TEN_STR_FROM_ORIGINAL;
+  default:
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Unsupported conversion mode '%d'", conversion_mode);
+    }
+    TEN_ASSERT(0, "Should not happen.");
+    return NULL;
   }
 }
 
@@ -152,25 +173,6 @@ ten_msg_conversion_per_property_rule_from_json(ten_json_t *json,
   }
 
   return self;
-}
-
-static const char *
-ten_msg_conversion_per_property_rule_conversion_mode_to_string(
-    TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE conversion_mode,
-    ten_error_t *err) {
-  switch (conversion_mode) {
-  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FIXED_VALUE:
-    return TEN_STR_FIXED_VALUE;
-  case TEN_MSG_CONVERSION_PER_PROPERTY_RULE_CONVERSION_MODE_FROM_ORIGINAL:
-    return TEN_STR_FROM_ORIGINAL;
-  default:
-    if (err) {
-      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
-                    "Unsupported conversion mode '%d'", conversion_mode);
-    }
-    TEN_ASSERT(0, "Should not happen.");
-    return NULL;
-  }
 }
 
 bool ten_msg_conversion_per_property_rule_to_json(

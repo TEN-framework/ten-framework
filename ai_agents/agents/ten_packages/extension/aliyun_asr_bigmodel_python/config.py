@@ -23,7 +23,9 @@ class AliyunASRBigmodelConfig(BaseModel):
     vocabulary_prefix: str = "prefix"
     vocabulary_target_model: str = "paraformer-realtime-v2"
     vocabulary_list: List[Dict[str, Any]] = []
-    mute_pkg_duration_ms: int = 1000  # must be greater than max_sentence_silence
+    mute_pkg_duration_ms: int = (
+        1000  # must be greater than max_sentence_silence
+    )
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)

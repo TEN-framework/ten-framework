@@ -43,6 +43,7 @@ from humeai_tts_python.humeTTS import (
     EVENT_TTS_FLUSH,
 )
 
+
 # ================ test metrics ================
 class ExtensionTesterMetrics(ExtensionTester):
     def __init__(self):
@@ -78,7 +79,9 @@ class ExtensionTesterMetrics(ExtensionTester):
             if "ttfb" in nested_metrics:
                 self.ttfb_received = True
                 self.ttfb_value = nested_metrics.get("ttfb", -1)
-                ten_env.log_info(f"Received TTFB metric with value: {self.ttfb_value}")
+                ten_env.log_info(
+                    f"Received TTFB metric with value: {self.ttfb_value}"
+                )
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
@@ -90,10 +93,11 @@ class ExtensionTesterMetrics(ExtensionTester):
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
         """Receives audio frames and confirms the stream is working."""
         if not self.audio_frame_received:
-             self.audio_frame_received = True
-             ten_env.log_info("First audio frame received.")
+            self.audio_frame_received = True
+            ten_env.log_info("First audio frame received.")
 
-@patch('humeai_tts_python.extension.HumeAiTTS')
+
+@patch("humeai_tts_python.extension.HumeAiTTS")
 def test_ttfb_metric_is_sent(MockHumeAiTTS):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
@@ -109,7 +113,7 @@ def test_ttfb_metric_is_sent(MockHumeAiTTS):
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b'\x11\x22\x33', EVENT_TTS_RESPONSE)
+        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
         # Simulate the end of the stream
         yield (None, EVENT_TTS_END)
 
@@ -117,16 +121,9 @@ def test_ttfb_metric_is_sent(MockHumeAiTTS):
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
-    metrics_config = {
-        "key": "test_api_key",
-        "voice_id": "daisy",
-        "params": {}
-    }
+    metrics_config = {"key": "test_api_key", "voice_id": "daisy", "params": {}}
     tester = ExtensionTesterMetrics()
-    tester.set_test_mode_single(
-        "humeai_tts_python",
-        json.dumps(metrics_config)
-    )
+    tester.set_test_mode_single("humeai_tts_python", json.dumps(metrics_config))
 
     print("Running TTFB metrics test...")
     tester.run()
@@ -139,7 +136,8 @@ def test_ttfb_metric_is_sent(MockHumeAiTTS):
 
     # Check if the TTFB value is reasonable. It should be slightly more than
     # the 0.2s delay we introduced. We check for >= 200ms.
-    assert tester.ttfb_value >= 200, \
-        f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+    assert (
+        tester.ttfb_value >= 200
+    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

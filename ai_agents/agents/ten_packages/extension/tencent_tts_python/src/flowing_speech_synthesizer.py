@@ -1,3 +1,4 @@
+# pylint: skip-file
 # -*- coding: utf-8 -*-
 import sys
 import hmac
@@ -257,7 +258,9 @@ class FlowingSpeechSynthesizer:
             if self.status == FINAL or self.status == CLOSED:
                 return
             self.status = ERROR
-            logger.error("error={}, session_id={}".format(error, self.session_id))
+            logger.error(
+                "error={}, session_id={}".format(error, self.session_id)
+            )
             _close_conn("after recv error")
 
         def _on_close(ws, close_status_code, close_msg):

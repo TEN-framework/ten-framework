@@ -6,7 +6,6 @@
 #
 #
 import asyncio
-import json
 import uuid
 
 from .helper import _text_to_base64_chunks
@@ -55,15 +54,12 @@ class MessageCollector2Extension(AsyncExtension):
             try:
                 # Generate a unique message ID for this batch of parts
                 message_id = str(uuid.uuid4())[:8]
-                chunks = _text_to_base64_chunks(
-                    ten_env, message, message_id
-                )
+                chunks = _text_to_base64_chunks(ten_env, message, message_id)
                 for chunk in chunks:
                     await self._queue_message(chunk)
 
             except Exception as e:
                 ten_env.log_warn(f"on_data new_data error: {e}")
-
 
     async def _queue_message(self, data: str):
         await self.queue.put(data)

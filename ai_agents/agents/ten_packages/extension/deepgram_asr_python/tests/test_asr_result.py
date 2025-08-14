@@ -41,10 +41,15 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
-        self.sender_task = asyncio.create_task(self.audio_sender(ten_env_tester))
+        self.sender_task = asyncio.create_task(
+            self.audio_sender(ten_env_tester)
+        )
 
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
             err = TenError.create(
@@ -54,7 +59,9 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         data_name = data.get_name()
         print(f"tester on_data, data_name: {data_name}")
         if data_name == "asr_result":
@@ -127,12 +134,13 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
                 pass
 
 
-
 def test_asr_result(patch_deepgram_ws):
     async def trigger_transcript_events():
         async def trigger_open_event():
             print("KEYPOINT trigger_open_event")
-            await patch_deepgram_ws.event_handlers["open"]({}, SimpleNamespace())
+            await patch_deepgram_ws.event_handlers["open"](
+                {}, SimpleNamespace()
+            )
             # schedule_delayed_async(1, trigger_interim_transcript())
             await asyncio.sleep(1)
             await trigger_interim_transcript()
@@ -150,7 +158,9 @@ def test_asr_result(patch_deepgram_ws):
                 duration=1.0,
                 is_final=False,
             )
-            print(f"Triggering interim transcript event {patch_deepgram_ws.event_handlers}")
+            print(
+                f"Triggering interim transcript event {patch_deepgram_ws.event_handlers}"
+            )
             await patch_deepgram_ws.event_handlers["transcript"]({}, result)
 
         async def trigger_final_transcript():
@@ -185,6 +195,8 @@ def test_asr_result(patch_deepgram_ws):
     }
 
     tester = DeepgramAsrExtensionTester()
-    tester.set_test_mode_single("deepgram_asr_python", json.dumps(property_json))
+    tester.set_test_mode_single(
+        "deepgram_asr_python", json.dumps(property_json)
+    )
     err = tester.run()
     assert err is None, f"test_asr_result err: {err}"

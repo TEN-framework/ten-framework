@@ -33,7 +33,7 @@
     ],
     "property": {
       "properties": {
-        "base_uri": {
+        "base_url": {
           "type": "string"
         },
         "api_key": {
@@ -74,21 +74,6 @@
         },
         "vendor": {
           "type": "string"
-        },
-        "stream_id": {
-          "type": "int32"
-        },
-        "dump": {
-          "type": "bool"
-        },
-        "greeting": {
-          "type": "string"
-        },
-        "max_history": {
-          "type": "int32"
-        },
-        "enable_storage": {
-          "type": "bool"
         },
         "vad_type": {
           "type": "string"

@@ -7,6 +7,11 @@
       "type": "system",
       "name": "ten_runtime_python",
       "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
     }
   ],
   "package": {
@@ -21,6 +26,11 @@
     ]
   },
   "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/llm-interface.json"
+      }
+    ],
     "property": {
       "properties": {
         "base_url": {
@@ -34,48 +44,8 @@
         },
         "user_id": {
           "type": "string"
-        },
-        "prompt": {
-          "type": "string"
-        },
-        "greeting": {
-          "type": "string"
         }
       }
-    },
-    "cmd_in": [
-      {
-        "name": "flush"
-      }
-    ],
-    "cmd_out": [
-      {
-        "name": "flush"
-      }
-    ],
-    "data_in": [
-      {
-        "name": "text_data",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    ]
+    }
   }
 }

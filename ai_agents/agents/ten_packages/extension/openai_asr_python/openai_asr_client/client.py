@@ -122,7 +122,9 @@ class OpenAIAsrClient(WebSocketClient):
                 ("OpenAI-Organization", self.organization)
             )
         if self.project:
-            kwargs["additional_headers"].append(("OpenAI-Project", self.project))
+            kwargs["additional_headers"].append(
+                ("OpenAI-Project", self.project)
+            )
 
         # for beta realtime api, we must connect with the server first,
         # then send the transcription session update param to the server.
@@ -137,7 +139,7 @@ class OpenAIAsrClient(WebSocketClient):
             await func(*args, **kwargs)
         else:
             func(*args, **kwargs)
-    
+
     async def _update_session(self):
         self.params_ready_event.clear()
         session = Session[TranscriptionParam](
@@ -146,34 +148,51 @@ class OpenAIAsrClient(WebSocketClient):
             session=self._params,
         )
         await self.send(session.model_dump_json(exclude_none=True))
-    
+
     async def _handle_event(self, message: dict):
         _type = message.get("type")
         if _type == "transcription_session.updated":
             self.params_ready_event.set()
-            await self._call_listener(self._listener.on_asr_start, Session[TranscriptionParam](
-                type="transcription_session.update",
-                event_id=None,
-                session=self._params,
-            ))
+            await self._call_listener(
+                self._listener.on_asr_start,
+                Session[TranscriptionParam](
+                    type="transcription_session.update",
+                    event_id=None,
+                    session=self._params,
+                ),
+            )
             return
         elif _type == "conversation.item.input_audio_transcription.delta":
-            await self._call_listener(self._listener.on_asr_delta, TranscriptionResultDelta.model_validate(message))
+            await self._call_listener(
+                self._listener.on_asr_delta,
+                TranscriptionResultDelta.model_validate(message),
+            )
             return
         elif _type == "conversation.item.input_audio_transcription.completed":
-            await self._call_listener(self._listener.on_asr_completed, TranscriptionResultCompleted.model_validate(message))
+            await self._call_listener(
+                self._listener.on_asr_completed,
+                TranscriptionResultCompleted.model_validate(message),
+            )
             return
         elif _type == "input_audio_buffer.committed":
-            await self._call_listener(self._listener.on_asr_committed, TranscriptionResultCommitted.model_validate(message))
+            await self._call_listener(
+                self._listener.on_asr_committed,
+                TranscriptionResultCommitted.model_validate(message),
+            )
             return
         else:
             await self._call_listener(self._listener.on_other_event, message)
             return
-    
+
     async def _handle_error(self, message: Session[Error]):
-        if not self.params_ready_event.is_set() and message.session.type == "invalid_request_error":
+        if (
+            not self.params_ready_event.is_set()
+            and message.session.type == "invalid_request_error"
+        ):
             # params invalid, call the server error listener then stop the client
-            await self._call_listener(self._listener.on_asr_server_error, message)
+            await self._call_listener(
+                self._listener.on_asr_server_error, message
+            )
             await self.stop()
             return
 
@@ -190,34 +209,44 @@ class OpenAIAsrClient(WebSocketClient):
             # unexpected message, call the client error listener
             msg = f"💥 An error occurred to parse message: {message}"
             self.logger.error(msg)
-            await self._call_listener(self._listener.on_asr_client_error, msg, e)
+            await self._call_listener(
+                self._listener.on_asr_client_error, msg, e
+            )
             await self.stop()
             return
         assert isinstance(message, dict), f"message is not a dict: {message}"
 
         _type = message.get("type")
         if _type is None:
-            self.logger.error(f"💥 An error occurred. unknown message type: {message}")
+            self.logger.error(
+                f"💥 An error occurred. unknown message type: {message}"
+            )
             # ignore the error, just return
             return
-        
+
         if _type == "error":
-            await self._handle_error(Session[Error](
-                type="error",
-                event_id=message.get("event_id"),
-                session=Error.model_validate(message.get("error")),
-            ))
+            await self._handle_error(
+                Session[Error](
+                    type="error",
+                    event_id=message.get("event_id"),
+                    session=Error.model_validate(message.get("error")),
+                )
+            )
             return
         await self._handle_event(message)
 
     @override
     async def on_close(self, code: int, reason: str):
-        self.logger.warning(f"🔴 Connection closed. Code: {code}, Reason: {reason}")
+        self.logger.warning(
+            f"🔴 Connection closed. Code: {code}, Reason: {reason}"
+        )
 
     @override
     async def on_error(self, error: Exception):
         self.logger.error(f"💥 An error occurred: {error}")
-        await self._call_listener(self._listener.on_asr_client_error, str(error), error)
+        await self._call_listener(
+            self._listener.on_asr_client_error, str(error), error
+        )
         return
 
     @override
@@ -229,7 +258,9 @@ class OpenAIAsrClient(WebSocketClient):
     async def send_pcm_data(self, data: bytes):
         base64_data = base64.b64encode(data).decode("utf-8")
         await self.send(
-            json.dumps({"type": "input_audio_buffer.append", "audio": base64_data})
+            json.dumps(
+                {"type": "input_audio_buffer.append", "audio": base64_data}
+            )
         )
 
     async def send_end_of_stream(self):

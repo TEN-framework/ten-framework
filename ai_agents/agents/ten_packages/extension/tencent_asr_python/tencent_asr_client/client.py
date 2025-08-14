@@ -27,19 +27,25 @@ class AsyncTencentAsrListener:
         response.result is the Exception instance.
         """
 
-    async def on_asr_sentence_start(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_start(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.START.
         """
 
-    async def on_asr_sentence_change(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_change(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.PROCESSING.
         """
 
-    async def on_asr_sentence_end(self, response: ResponseData[RecoginizeResult]):
+    async def on_asr_sentence_end(
+        self, response: ResponseData[RecoginizeResult]
+    ):
         """
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.END.
@@ -58,7 +64,9 @@ class TencentAsrListener:
     def on_asr_fail(self, response: ResponseData):
         pass
 
-    def on_asr_error(self, response: ResponseData[str], error: Exception | None = None):
+    def on_asr_error(
+        self, response: ResponseData[str], error: Exception | None = None
+    ):
         pass
 
     def on_asr_sentence_start(self, response: ResponseData[RecoginizeResult]):
@@ -154,11 +162,16 @@ class TencentAsrClient(WebSocketClient):
         # code, message, voice_id, message_id, result, final
         # result should be RecoginizeResult instance.
         try:
-            response = ResponseData[RecoginizeResult].model_validate_json(message)
+            response = ResponseData[RecoginizeResult].model_validate_json(
+                message
+            )
         except Exception as e:
             self.logger.error(f"💥 An error occurred: {e}")
             response = ResponseData[str](
-                code=9999, message="error", voice_id=self._params.voice_id, result=str(e)
+                code=9999,
+                message="error",
+                voice_id=self._params.voice_id,
+                result=str(e),
             )
             await self._call_listener(self._listener.on_asr_error, response, e)
             return
@@ -169,15 +182,25 @@ class TencentAsrClient(WebSocketClient):
         if response.result is None:
             return
         if response.result.slice_type == RecoginizeResult.SliceType.START:
-            await self._call_listener(self._listener.on_asr_sentence_start, response)
-        elif response.result.slice_type == RecoginizeResult.SliceType.PROCESSING:
-            await self._call_listener(self._listener.on_asr_sentence_change, response)
+            await self._call_listener(
+                self._listener.on_asr_sentence_start, response
+            )
+        elif (
+            response.result.slice_type == RecoginizeResult.SliceType.PROCESSING
+        ):
+            await self._call_listener(
+                self._listener.on_asr_sentence_change, response
+            )
         elif response.result.slice_type == RecoginizeResult.SliceType.END:
-            await self._call_listener(self._listener.on_asr_sentence_end, response)
+            await self._call_listener(
+                self._listener.on_asr_sentence_end, response
+            )
 
     @override
     async def on_close(self, code: int, reason: str):
-        self.logger.warning(f"🔴 Connection closed. Code: {code}, Reason: {reason}")
+        self.logger.warning(
+            f"🔴 Connection closed. Code: {code}, Reason: {reason}"
+        )
 
     @override
     async def on_error(self, error: Exception):
@@ -196,9 +219,9 @@ class TencentAsrClient(WebSocketClient):
         self._uri = self._params.uri(self._app_id, self._secret_key)
 
     async def send_pcm_data(self, data: bytes):
-        assert self._params.voice_format == RequestParams.VoiceFormat.PCM, (
-            "the params.voice_format is not PCM"
-        )
+        assert (
+            self._params.voice_format == RequestParams.VoiceFormat.PCM
+        ), "the params.voice_format is not PCM"
         await self.send(data)
 
     async def send_end_of_stream(self):
@@ -215,7 +238,9 @@ if __name__ == "__main__":
 
     async def send_audio_data(client: TencentAsrClient):
         with open(
-            Path(__file__).parent.parent / "tests/test_data/16k_en_us_helloworld.pcm", "rb"
+            Path(__file__).parent.parent
+            / "tests/test_data/16k_en_us_helloworld.pcm",
+            "rb",
         ) as f:
             sample_rate = 16000
             total_ms = 10000
@@ -246,7 +271,6 @@ if __name__ == "__main__":
             params=params,
             log_level="DEBUG",
             auto_reconnect=True,
-
         )
         logger = client.logger
 

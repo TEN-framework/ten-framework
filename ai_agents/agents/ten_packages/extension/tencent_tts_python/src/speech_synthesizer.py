@@ -1,3 +1,4 @@
+# pylint: skip-file
 # -*- coding: utf-8 -*-
 import sys
 import hmac
@@ -76,9 +77,14 @@ class SpeechSynthesizer:
         session_id = str(uuid.uuid1())
         params = self.__gen_params(session_id, text)
         signature = self.__gen_signature(params)
-        headers = {"Content-Type": "application/json", "Authorization": str(signature)}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": str(signature),
+        }
         url = _PROTOCOL + _HOST + _PATH
-        r = requests.post(url, headers=headers, data=json.dumps(params), stream=True)
+        r = requests.post(
+            url, headers=headers, data=json.dumps(params), stream=True
+        )
         data = None
         response = dict()
         response["session_id"] = session_id

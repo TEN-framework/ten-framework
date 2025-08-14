@@ -15,6 +15,7 @@ from amazon_transcribe.model import (
     Item,
 )
 
+
 class MockInputStream:
     def __init__(self):
         self._input_stream = MagicMock()
@@ -34,6 +35,7 @@ class MockInputStream:
         """simulate end stream"""
         self._input_stream.closed = True
         self._input_stream.__done = True
+
 
 class MockOutputStream:
     def __init__(self):
@@ -57,14 +59,14 @@ class MockOutputStream:
     async def __anext__(self):
         if self.current_index >= len(self.words):
             raise StopAsyncIteration
-        
+
         word = self.words[self.current_index]
         self.current_index += 1
-        
+
         # Create a real TranscriptEvent object
         # The last word is set to a non-partial result (final)
         is_partial = self.current_index < len(self.words)
-        
+
         # Create Item
         item = Item(
             content=word,
@@ -74,14 +76,14 @@ class MockOutputStream:
             vocabulary_filter_match=False,
             stable=True,
         )
-        
+
         # Create Alternative
         alternative = Alternative(
-            transcript=" ".join(self.words[:self.current_index]),
+            transcript=" ".join(self.words[: self.current_index]),
             items=[item],
-            entities=[]
+            entities=[],
         )
-        
+
         # Create TranscriptResult
         result = MagicMock()
         result.result_id = "test_result"
@@ -89,14 +91,14 @@ class MockOutputStream:
         result.end_time = 1.0
         result.is_partial = is_partial
         result.alternatives = [alternative]
-        
+
         # Create Transcript
         transcript = Transcript(results=[result])
-        
+
         # Create TranscriptEvent
         event = TranscriptEvent(transcript=transcript)
         await asyncio.sleep(0.2)
-        
+
         return event
 
 
@@ -105,7 +107,6 @@ class MockStream(object):
         super().__init__()
         self.output_stream = MockOutputStream()
         self.input_stream = MockInputStream()
-    
 
 
 class MockClient(object):
@@ -113,9 +114,9 @@ class MockClient(object):
         super().__init__()
         self.stream = MockStream()
 
-    
     async def start_stream_transcription(self, *args, **kwargs):
         return self.stream
+
 
 @pytest.fixture(scope="function")
 def patch_asr_client():

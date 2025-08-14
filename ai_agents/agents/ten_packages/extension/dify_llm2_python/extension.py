@@ -12,6 +12,7 @@ from ten_runtime import (
     AsyncTenEnv,
 )
 
+
 class DifyLLM2Extension(AsyncLLM2BaseExtension):
     """
     Drop-in provider that mirrors OpenAILLM2Extension structure:
@@ -46,7 +47,9 @@ class DifyLLM2Extension(AsyncLLM2BaseExtension):
                 f"initialized Dify client: base_url={self.config.base_url}, user_id={self.config.user_id}"
             )
         except Exception as err:
-            async_ten_env.log_info(f"Failed to initialize DifyChatClient: {err}")
+            async_ten_env.log_info(
+                f"Failed to initialize DifyChatClient: {err}"
+            )
 
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
@@ -59,7 +62,7 @@ class DifyLLM2Extension(AsyncLLM2BaseExtension):
         await super().on_deinit(async_ten_env)
 
     def on_call_chat_completion(
-        self, async_ten_env: AsyncTenEnv, input: LLMRequest
+        self, async_ten_env: AsyncTenEnv, request_input: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
         # Delegate to provider client (matches OpenAILLM2Extension)
-        return self.client.get_chat_completions(input)
+        return self.client.get_chat_completions(request_input)

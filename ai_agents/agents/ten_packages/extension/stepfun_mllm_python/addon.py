@@ -19,4 +19,6 @@ class StepFunRealtime2ExtensionAddon(Addon):
         from .extension import StepFunRealtime2Extension
 
         ten_env.log_info("StepFunRealtime2ExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(StepFunRealtime2Extension(name), context)
+        ten_env.on_create_instance_done(
+            StepFunRealtime2Extension(name), context
+        )

@@ -7,8 +7,13 @@
 import asyncio
 import json
 
-from ten_runtime import (AsyncExtensionTester, AsyncTenEnvTester, AudioFrame,
-                         TenError, TenErrorCode)
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    AudioFrame,
+    TenError,
+    TenErrorCode,
+)
 from typing_extensions import override
 
 from .mock import patch_soniox_ws  # noqa: F401

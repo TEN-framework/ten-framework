@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 
+
 @pytest.fixture
 def patch_google_asr():
     """
@@ -29,5 +30,5 @@ def patch_google_asr():
     return {
         "client_class": speech_client_mock,
         "recognizer_instance": recognizer_instance,
-        "from_service_account_file": from_service_account_mock
+        "from_service_account_file": from_service_account_mock,
     }

@@ -34,6 +34,7 @@ from ten_runtime import (
     TenError,
 )
 
+
 # ================ test params passthrough ================
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""
@@ -61,7 +62,8 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         print("tester on_start_done")
         ten_env_tester.on_start_done()
 
-@patch('minimax_tts_websocket_python.extension.MinimaxTTSWebsocket')
+
+@patch("minimax_tts_websocket_python.extension.MinimaxTTSWebsocket")
 def test_params_passthrough(MockMinimaxTTSWebsocket):
     """
     Tests that custom parameters passed in the configuration are correctly
@@ -72,32 +74,25 @@ def test_params_passthrough(MockMinimaxTTSWebsocket):
     # --- Mock Configuration ---
     mock_instance = MockMinimaxTTSWebsocket.return_value
     mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock() # Required for clean shutdown in on_stop
+    mock_instance.stop = AsyncMock()  # Required for clean shutdown in on_stop
 
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
     passthrough_params = {
         "model": "tts_v2",
-        "audio_setting": {
-            "format": "pcm",
-            "sample_rate": 16000,
-            "channels": 1
-        },
-        "voice_setting": {
-            "voice_id": "male-qn-qingse"
-        }
+        "audio_setting": {"format": "pcm", "sample_rate": 16000, "channels": 1},
+        "voice_setting": {"voice_id": "male-qn-qingse"},
     }
     passthrough_config = {
         "api_key": "a_valid_key",
         "group_id": "a_valid_group",
-        "params": passthrough_params
+        "params": passthrough_params,
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "minimax_tts_websocket_python",
-        json.dumps(passthrough_config)
+        "minimax_tts_websocket_python", json.dumps(passthrough_config)
     )
 
     print("Running passthrough test...")
@@ -116,8 +111,9 @@ def test_params_passthrough(MockMinimaxTTSWebsocket):
 
     # Verify that the 'params' dictionary in the config object passed to the
     # client constructor is identical to the one we defined in our test config.
-    assert called_config.params == passthrough_params, \
-        f"Expected params to be {passthrough_params}, but got {called_config.params}"
+    assert (
+        called_config.params == passthrough_params
+    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")

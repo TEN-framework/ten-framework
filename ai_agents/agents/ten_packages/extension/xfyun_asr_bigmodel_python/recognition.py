@@ -41,7 +41,13 @@ class XfyunWSRecognition:
     """Async WebSocket-based speech recognition class"""
 
     def __init__(
-        self, app_id, api_key, api_secret, ten_env=None, config=None, callback=None
+        self,
+        app_id,
+        api_key,
+        api_secret,
+        ten_env=None,
+        config=None,
+        callback=None,
     ):
         """
         Initialize WebSocket speech recognition
@@ -151,9 +157,9 @@ class XfyunWSRecognition:
         signature_sha = base64.b64encode(signature_sha).decode(encoding="utf-8")
 
         authorization_origin = f'api_key="{self.api_key}", algorithm="hmac-sha256", headers="host date request-line", signature="{signature_sha}"'
-        authorization = base64.b64encode(authorization_origin.encode("utf-8")).decode(
-            encoding="utf-8"
-        )
+        authorization = base64.b64encode(
+            authorization_origin.encode("utf-8")
+        ).decode(encoding="utf-8")
 
         # Combine authentication parameters into dictionary
         v = {"authorization": authorization, "host": self.host, "date": date}
@@ -299,7 +305,9 @@ class XfyunWSRecognition:
             await self.websocket.send(json.dumps(d))
 
         except websockets.exceptions.ConnectionClosed:
-            self._log_debug("WebSocket connection closed while sending audio frame")
+            self._log_debug(
+                "WebSocket connection closed while sending audio frame"
+            )
             self.is_started = False
         except Exception as e:
             self._log_debug(f"Failed to send audio frame: {e}")

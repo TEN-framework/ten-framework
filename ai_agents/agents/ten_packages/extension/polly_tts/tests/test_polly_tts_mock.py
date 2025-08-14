@@ -20,10 +20,15 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         self.max_wait_time = 10
 
     def stop_test_if_checking_failed(
-        self, ten_env_tester: AsyncTenEnvTester, success: bool, error_message: str
+        self,
+        ten_env_tester: AsyncTenEnvTester,
+        success: bool,
+        error_message: str,
     ) -> None:
         if not success:
-            ten_env_tester.log_error(f"stop_test_if_checking_failed: {error_message}")
+            ten_env_tester.log_error(
+                f"stop_test_if_checking_failed: {error_message}"
+            )
             err = TenError.create(
                 error_code=TenErrorCode.ErrorCodeGeneric,
                 error_message=error_message,
@@ -32,10 +37,12 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
 
     async def wait_for_test(self, ten_env: AsyncTenEnvTester):
         await asyncio.sleep(self.max_wait_time)
-        ten_env.stop_test(TenError.create(
-            error_code=TenErrorCode.ErrorCodeGeneric,
-            error_message="test timeout",
-        ))
+        ten_env.stop_test(
+            TenError.create(
+                error_code=TenErrorCode.ErrorCodeGeneric,
+                error_message="test timeout",
+            )
+        )
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
@@ -54,8 +61,7 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
         name = data.get_name()
         ten_env.log_info(f"on_data name: {name}")
-        
-        
+
         if name == "error":
             ten_env.log_info("Received error, stopping test.")
             data_json, _ = data.get_property_to_json()
@@ -67,7 +73,7 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
             )
             self.stop_test_if_checking_failed(
                 ten_env,
-                data_dict['code'] == int(self.expect_error_code),
+                data_dict["code"] == int(self.expect_error_code),
                 f"error_code is not {self.expect_error_code}: {data_dict}",
             )
             # success stop test
@@ -83,7 +89,7 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
             )
             self.stop_test_if_checking_failed(
                 ten_env,
-                data_dict['request_id'] == "tts_request_1",
+                data_dict["request_id"] == "tts_request_1",
                 f"request_id is not tts_request_1: {data_dict}",
             )
             # success stop test
@@ -97,39 +103,40 @@ def create_mock_polly_response():
     duration_ms = 1000  # 1秒音频
     bytes_per_sample = 2  # 16bit = 2 bytes
     channels = 1  # 单声道
-    
+
     # 计算音频数据大小
     total_samples = int(sample_rate * duration_ms / 1000)
     audio_data_size = total_samples * bytes_per_sample * channels
-    
+
     # 生成模拟的音频数据 (随机字节)
     import random
+
     audio_data = bytes([random.randint(0, 255) for _ in range(audio_data_size)])
-    
+
     # 创建模拟的流对象，包含iter_chunks方法
     class MockAudioStream:
         def __init__(self, data, chunk_size=320):
             self.data = data
             self.chunk_size = chunk_size
             self.position = 0
-        
+
         def iter_chunks(self, chunk_size=None):
             if chunk_size is None:
                 chunk_size = self.chunk_size
-            
+
             while self.position < len(self.data):
                 end_pos = min(self.position + chunk_size, len(self.data))
-                yield self.data[self.position:end_pos]
+                yield self.data[self.position : end_pos]
                 self.position = end_pos
-        
+
         def close(self):
             pass
-    
+
     return MockAudioStream(audio_data)
 
 
-@patch('boto3.Session')
-@patch('boto3.client')
+@patch("boto3.Session")
+@patch("boto3.client")
 def test_polly_tts_success_mock(mock_boto_client, mock_boto_session):
     """test polly tts success mock"""
     # 设置mock
@@ -137,15 +144,15 @@ def test_polly_tts_success_mock(mock_boto_client, mock_boto_session):
     mock_polly = MagicMock()
     mock_boto_session.return_value = mock_session
     mock_session.client.return_value = mock_polly
-    
+
     # 模拟Polly的synthesize_speech响应
     mock_response = {
-        'AudioStream': create_mock_polly_response(),
-        'ContentType': 'audio/pcm',
-        'RequestCharacters': 25
+        "AudioStream": create_mock_polly_response(),
+        "ContentType": "audio/pcm",
+        "RequestCharacters": 25,
     }
     mock_polly.synthesize_speech.return_value = mock_response
-    
+
     property_json = {
         "log_level": "DEBUG",
         "params": {
@@ -156,19 +163,21 @@ def test_polly_tts_success_mock(mock_boto_client, mock_boto_session):
             "voice": "Joanna",
             "sample_rate": "16000",
             "lang_code": "en-US",
-            "audio_format": "pcm"
-        }
+            "audio_format": "pcm",
+        },
     }
-    
+
     tester = MockPollyTTSExtensionTester()
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     tester.max_wait_time = 30
     err = tester.run()
-    assert err is None, f"test_polly_tts_success_mock err: {err.error_message()}"
+    assert (
+        err is None
+    ), f"test_polly_tts_success_mock err: {err.error_message()}"
 
 
-@patch('boto3.Session')
-@patch('boto3.client')
+@patch("boto3.Session")
+@patch("boto3.client")
 def test_polly_tts_error_mock(mock_boto_client, mock_boto_session):
     """test polly tts error mock"""
     # set mock
@@ -176,19 +185,20 @@ def test_polly_tts_error_mock(mock_boto_client, mock_boto_session):
     mock_polly = MagicMock()
     mock_boto_session.return_value = mock_session
     mock_session.client.return_value = mock_polly
-    
+
     # mock polly synthesize_speech throw exception
     from botocore.exceptions import ClientError
+
     error_response = {
-        'Error': {
-            'Code': 'InvalidParameterValue',
-            'Message': 'Invalid parameter value'
+        "Error": {
+            "Code": "InvalidParameterValue",
+            "Message": "Invalid parameter value",
         }
     }
     mock_polly.synthesize_speech.side_effect = ClientError(
-        error_response, 'synthesize_speech'
+        error_response, "synthesize_speech"
     )
-    
+
     property_json = {
         "log_level": "DEBUG",
         "params": {
@@ -199,41 +209,44 @@ def test_polly_tts_error_mock(mock_boto_client, mock_boto_session):
             "voice": "InvalidVoice",  # invalid voice
             "sample_rate": "16000",
             "lang_code": "en-US",
-            "audio_format": "pcm"
-        }
+            "audio_format": "pcm",
+        },
     }
-    
+
     tester = MockPollyTTSExtensionTester()
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
     assert err is None, f"test_polly_tts_error_mock err: {err.error_message}"
 
 
-@patch('boto3.Session')
+@patch("boto3.Session")
 def test_polly_tts_invalid_credentials_mock(mock_boto_session):
     """test polly tts invalid credentials mock"""
     # set mock throw authentication error
     from botocore.exceptions import NoCredentialsError
+
     mock_boto_session.side_effect = NoCredentialsError()
-    
+
     property_json = {
         "log_level": "DEBUG",
         "params": {
             "region_name": "us-west-2",
             "aws_access_key_id": "invalid_key",
             "aws_secret_access_key": "invalid_secret",
-        }
+        },
     }
-    
+
     tester = MockPollyTTSExtensionTester()
     tester.expect_error_code = ModuleErrorCode.FATAL_ERROR.value
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
-    assert err is None, f"test_polly_tts_invalid_credentials_mock err: {err.error_message}"
+    assert (
+        err is None
+    ), f"test_polly_tts_invalid_credentials_mock err: {err.error_message}"
 
 
-@patch('boto3.Session')
-@patch('boto3.client')
+@patch("boto3.Session")
+@patch("boto3.client")
 def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
     """test polly tts network timeout mock"""
     # set mock
@@ -241,14 +254,15 @@ def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
     mock_polly = MagicMock()
     mock_boto_session.return_value = mock_session
     mock_session.client.return_value = mock_polly
-    
+
     # mock network timeout
     from botocore.exceptions import ReadTimeoutError
+
     mock_polly.synthesize_speech.side_effect = ReadTimeoutError(
-        endpoint_url='https://polly.us-west-2.amazonaws.com',
-        operation_name='synthesize_speech'
+        endpoint_url="https://polly.us-west-2.amazonaws.com",
+        operation_name="synthesize_speech",
     )
-    
+
     property_json = {
         "log_level": "DEBUG",
         "params": {
@@ -259,21 +273,23 @@ def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
             "voice": "Joanna",
             "sample_rate": "16000",
             "lang_code": "en-US",
-            "audio_format": "pcm"
-        }
+            "audio_format": "pcm",
+        },
     }
-    
+
     tester = MockPollyTTSExtensionTester()
     tester.expect_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
-    assert err is None, f"test_polly_tts_network_timeout_mock err: {err.error_message}"
+    assert (
+        err is None
+    ), f"test_polly_tts_network_timeout_mock err: {err.error_message}"
 
 
 def test_polly_tts_params_validation():
     """test polly tts params validation"""
     from polly_tts import PollyTTSParams
-    
+
     # test valid params
     valid_params = PollyTTSParams(
         aws_access_key_id="test_key",
@@ -283,21 +299,20 @@ def test_polly_tts_params_validation():
         voice="Joanna",
         sample_rate="16000",
         lang_code="en-US",
-        audio_format="pcm"
+        audio_format="pcm",
     )
-    
+
     assert valid_params.aws_access_key_id == "test_key"
     assert valid_params.aws_secret_access_key == "test_secret"
     assert valid_params.region_name == "us-west-2"
     assert valid_params.engine == "neural"
     assert valid_params.voice == "Joanna"
-    
+
     # test default params
     default_params = PollyTTSParams(
-        aws_access_key_id="test_key",
-        aws_secret_access_key="test_secret"
+        aws_access_key_id="test_key", aws_secret_access_key="test_secret"
     )
-    
+
     assert default_params.engine == "neural"
     assert default_params.voice == "Joanna"
     assert default_params.sample_rate == "16000"

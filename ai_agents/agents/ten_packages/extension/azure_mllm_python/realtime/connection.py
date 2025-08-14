@@ -38,7 +38,7 @@ class RealtimeApiConnection:
     def __init__(
         self,
         ten_env: AsyncTenEnv,
-        base_uri: str,
+        base_url: str,
         path: str,
         api_version: str,
         model: str,
@@ -47,15 +47,15 @@ class RealtimeApiConnection:
     ):
         self.ten_env = ten_env
 
-        # Normalize base_uri and path to avoid double slashes
-        base_uri = base_uri.rstrip("/")
+        # Normalize base_url and path to avoid double slashes
+        base_url = base_url.rstrip("/")
         path = path.lstrip("/")
-        base_url = f"{base_uri}/{path}"
+        base_url = f"{base_url}/{path}"
 
         # Ensure scheme is wss:// or ws://
         parsed_url = urlparse(base_url)
         if parsed_url.scheme not in ("ws", "wss"):
-            raise ValueError("base_uri must start with 'ws://' or 'wss://'")
+            raise ValueError("base_url must start with 'ws://' or 'wss://'")
 
         # Merge query parameters
         query_params = parse_qs(parsed_url.query)

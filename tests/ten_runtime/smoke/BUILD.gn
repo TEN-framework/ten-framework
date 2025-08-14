@@ -35,7 +35,7 @@ ten_executable("ten_runtime_smoke_test") {
     "audio_frame_test",
     "basic",
     "close_app",
-    "cmd_conversion",
+    "msg_conversion",
     "cmd_result_test",
     "command",
     "concurrent",

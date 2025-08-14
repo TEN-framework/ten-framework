@@ -84,13 +84,13 @@ class FlushTester(AsyncExtensionTester):
         tts_text_input_obj = Data.create("tts_text_input")
         tts_text_input_obj.set_property_string("text", text)
         tts_text_input_obj.set_property_string("request_id", "test_flush_request_id_1")
-        tts_text_input_obj.set_property_bool("text_input_end", True)
+        tts_text_input_obj.set_property_bool("text_input_end", False)
         metadata = {
             "session_id": "test_flush_session_123",
             "turn_id": 1,
         }
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
-        await ten_env.send_data(tts_text_input_obj)
+        await ten_env.send_data(tts_text_input_obj)     
         ten_env.log_info(f"✅ tts text input sent: {text}")
 
     def _stop_test_with_error(

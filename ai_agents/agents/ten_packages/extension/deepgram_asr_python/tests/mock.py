@@ -11,9 +11,7 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture(scope="function")
 def patch_deepgram_ws():
-    patch_target = (
-        "ten_packages.extension.deepgram_asr_python.extension.deepgram.AsyncListenWebSocketClient"
-    )
+    patch_target = "ten_packages.extension.deepgram_asr_python.extension.deepgram.AsyncListenWebSocketClient"
 
     with patch(patch_target) as MockClient, patch(
         "ten_packages.extension.deepgram_asr_python.extension.deepgram.DeepgramClientOptions"

@@ -195,7 +195,7 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     if not os.path.exists(config["dump_path"]):
         os.makedirs(config["dump_path"])
     else:
-        # 删除目录下的所有文件
+        # Delete all files in the directory
         _delete_dump_file(config["dump_path"])
 
 

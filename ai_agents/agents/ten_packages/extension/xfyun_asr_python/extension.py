@@ -13,7 +13,11 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -109,7 +113,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}"
             )
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
 
         except Exception as e:
@@ -132,7 +138,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         try:
             # Check required credentials
             if not self.config.app_id or self.config.app_id.strip() == "":
-                error_msg = "Xfyun App ID is required but not provided or is empty"
+                error_msg = (
+                    "Xfyun App ID is required but not provided or is empty"
+                )
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -144,7 +152,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 return
 
             if not self.config.api_key or self.config.api_key.strip() == "":
-                error_msg = "Xfyun API key is required but not provided or is empty"
+                error_msg = (
+                    "Xfyun API key is required but not provided or is empty"
+                )
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -155,8 +165,13 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 )
                 return
 
-            if not self.config.api_secret or self.config.api_secret.strip() == "":
-                error_msg = "Xfyun API secret is required but not provided or is empty"
+            if (
+                not self.config.api_secret
+                or self.config.api_secret.strip() == ""
+            ):
+                error_msg = (
+                    "Xfyun API secret is required but not provided or is empty"
+                )
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -204,7 +219,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             success = await self.recognition.start()
             if success:
                 self.is_finalize_disconnect = False
-                self.ten_env.log_info("Xfyun ASR connection started successfully")
+                self.ten_env.log_info(
+                    "Xfyun ASR connection started successfully"
+                )
             else:
                 error_msg = "Failed to start Xfyun ASR connection"
                 self.ten_env.log_error(error_msg)
@@ -287,7 +304,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
             if pgs:
                 if pgs == "apd":  # Append mode
-                    self.ten_env.log_debug(f"Xfyun ASR wpgs append mode, sn: {sn}")
+                    self.ten_env.log_debug(
+                        f"Xfyun ASR wpgs append mode, sn: {sn}"
+                    )
                     # Store current result in buffer with timing information
                     self.wpgs_buffer[sn] = {
                         "text": result,
@@ -303,7 +322,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                     result_to_send = combined_result
 
                 elif pgs == "rpl":  # Replace mode
-                    self.ten_env.log_debug(f"Xfyun ASR wpgs replace mode, sn: {sn}")
+                    self.ten_env.log_debug(
+                        f"Xfyun ASR wpgs replace mode, sn: {sn}"
+                    )
                     # Get replacement range
                     rg = result_data.get("rg", [])
                     if len(rg) >= 2:
@@ -339,17 +360,27 @@ class XfyunASRExtension(AsyncASRBaseExtension):
             # Handle sentence final result
             if result_data.get("sub_end") is True:
                 is_final = False
-                self.ten_env.log_debug(f"Xfyun ASR sub sentence end: {result_to_send}")
+                self.ten_env.log_debug(
+                    f"Xfyun ASR sub sentence end: {result_to_send}"
+                )
                 # self.wpgs_buffer.clear()
 
             if status == 2:
                 is_final = True
-                self.ten_env.log_debug(f"Xfyun ASR complete result: {result_to_send}")
+                self.ten_env.log_debug(
+                    f"Xfyun ASR complete result: {result_to_send}"
+                )
                 # Clear buffer when recognition completes
-                min_sn = min(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
-                max_sn = max(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                min_sn = (
+                    min(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                )
+                max_sn = (
+                    max(self.wpgs_buffer.keys()) if self.wpgs_buffer else sn
+                )
                 start_ms = (
-                    self.wpgs_buffer[min_sn]["bg"] if self.wpgs_buffer else start_ms
+                    self.wpgs_buffer[min_sn]["bg"]
+                    if self.wpgs_buffer
+                    else start_ms
                 )
                 duration_ms = (
                     self.wpgs_buffer[max_sn]["ed"] - start_ms
@@ -382,7 +413,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 )
 
             else:
-                self.ten_env.log_error("Cannot handle ASR result: config is None")
+                self.ten_env.log_error(
+                    "Cannot handle ASR result: config is None"
+                )
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Xfyun ASR result: {e}")
@@ -391,7 +424,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         self, error_msg: str, error_code: Optional[int] = None
     ) -> None:
         """Handle error callback"""
-        self.ten_env.log_error(f"Xfyun ASR error: {error_msg} code: {error_code}")
+        self.ten_env.log_error(
+            f"Xfyun ASR error: {error_msg} code: {error_code}"
+        )
         await self._handle_reconnect()
 
         # Send error information
@@ -434,7 +469,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
         # Flush any buffered audio data
         if self.audio_buffer_manager and self.recognition:
-            await self.audio_buffer_manager.flush(self.recognition.send_audio_frame)
+            await self.audio_buffer_manager.flush(
+                self.recognition.send_audio_frame
+            )
             self.ten_env.log_debug("Flushed audio buffer during finalization")
 
         await self._handle_finalize_disconnect()
@@ -491,14 +528,19 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
         # Attempt reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         """Handle finalization end logic"""
@@ -554,7 +596,9 @@ class XfyunASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, _session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, _session_id: str | None
+    ) -> bool:
         """Send audio data"""
         assert self.config is not None
 

@@ -1,4 +1,6 @@
 {
-    "appid": "invalid",
-    "token": "invalid"
+    "params": {
+        "appid": "invalid",
+        "token": "invalid"
+    }
 }

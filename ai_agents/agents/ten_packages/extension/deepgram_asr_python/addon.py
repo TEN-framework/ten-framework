@@ -6,6 +6,7 @@ from ten_runtime import (
 
 from .extension import DeepgramASRExtension
 
+
 @register_addon_as_extension("deepgram_asr_python")
 class DeepgramASRExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:

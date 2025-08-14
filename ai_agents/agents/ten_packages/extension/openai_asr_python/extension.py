@@ -13,7 +13,11 @@ from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+)
 from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
@@ -32,6 +36,7 @@ from .openai_asr_client import (
 )
 from .config import OpenAIASRConfig
 from ten_ai_base.dumper import Dumper
+
 
 class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     def __init__(self, name: str):
@@ -54,7 +59,9 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         dump_file_path = None
         try:
             self.config = OpenAIASRConfig.model_validate_json(config_json)
-            ten_env.log_info(f"KEYPOINT vendor_config: {self.config.model_dump_json()}")
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+            )
 
             if self.config.dump:
                 dump_file_path = Path(self.config.dump_path)
@@ -113,7 +120,11 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     @override
     def is_connected(self) -> bool:
-        return self.client is not None and self.client.is_connected() and self.client.is_ready()
+        return (
+            self.client is not None
+            and self.client.is_connected()
+            and self.client.is_ready()
+        )
 
     @override
     async def stop_connection(self) -> None:
@@ -127,7 +138,9 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         return 24000
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         if not self.is_connected():
             return False
         assert self.client is not None
@@ -163,11 +176,15 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     # openai asr client event handler
     @override
     async def on_asr_start(self, response: Session[TranscriptionParam]):
-        self.ten_env.log_info(f"KEYPOINT on_asr_start: {response.model_dump_json()}")
+        self.ten_env.log_info(
+            f"KEYPOINT on_asr_start: {response.model_dump_json()}"
+        )
 
     @override
     async def on_asr_server_error(self, response: Session[Error]):
-        self.ten_env.log_error(f"KEYPOINT on_asr_server_error: {response.model_dump_json()}")
+        self.ten_env.log_error(
+            f"KEYPOINT on_asr_server_error: {response.model_dump_json()}"
+        )
         await self.send_asr_error(
             ModuleError(
                 module="asr",
@@ -196,14 +213,16 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     def _get_language(self) -> str:
         assert self.config is not None
-        language = self.config.params.input_audio_transcription.get("language", "en")
+        language = self.config.params.input_audio_transcription.get(
+            "language", "en"
+        )
 
         language_to_iso_639_1 = {
             "zh": "zh-CN",
             "en": "en-US",
             "ja": "ja-JP",
             "fr": "fr-FR",
-            "de": "de-DE"
+            "de": "de-DE",
         }
 
         return language_to_iso_639_1.get(language, language) or "en-US"
@@ -238,13 +257,13 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
-        
+
         # TODO: duration_ms, start_ms is not correct
         duration_ms = 10
         if response.usage is not None and response.usage.seconds is not None:
             duration_ms = int(response.usage.seconds * 1000)
 
-        asr_result = ASRResult( 
+        asr_result = ASRResult(
             id=response.event_id,
             text=response.transcript,
             final=True,
@@ -267,9 +286,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     @override
     async def on_other_event(self, response: dict):
-        self.ten_env.log_info(
-            f"KEYPOINT on_other_event: {response}"
-        )
+        self.ten_env.log_info(f"KEYPOINT on_other_event: {response}")
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:

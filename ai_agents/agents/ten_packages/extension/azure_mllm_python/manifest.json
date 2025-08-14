@@ -22,9 +22,14 @@
     ]
   },
   "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/mllm-interface.json"
+      }
+    ],
     "property": {
       "properties": {
-        "base_uri": {
+        "base_url": {
           "type": "string"
         },
         "api_key": {
@@ -75,21 +80,6 @@
         "sample_rate": {
           "type": "int32"
         },
-        "stream_id": {
-          "type": "int32"
-        },
-        "dump": {
-          "type": "bool"
-        },
-        "greeting": {
-          "type": "string"
-        },
-        "max_history": {
-          "type": "int32"
-        },
-        "enable_storage": {
-          "type": "bool"
-        },
         "input_audio_echo_cancellation": {
           "type": "bool"
         },
@@ -97,107 +87,6 @@
           "type": "bool"
         }
       }
-    },
-    "cmd_in": [
-      {
-        "name": "tool_register",
-        "property": {
-          "properties": {
-            "tool": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "parameters": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {}
-                  }
-                }
-              },
-              "required": [
-                "name",
-                "description",
-                "parameters"
-              ]
-            }
-          }
-        },
-        "result": {
-          "property": {
-            "properties": {
-              "response": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    ],
-    "cmd_out": [
-      {
-        "name": "flush"
-      },
-      {
-        "name": "tool_call",
-        "property": {
-          "properties": {
-            "name": {
-              "type": "string"
-            },
-            "args": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "name"
-          ]
-        }
-      }
-    ],
-    "data_out": [
-      {
-        "name": "text_data",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      {
-        "name": "append",
-        "property": {
-          "properties": {
-            "text": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    ],
-    "audio_frame_in": [
-      {
-        "name": "pcm_frame",
-        "property": {
-          "properties": {
-            "stream_id": {
-              "type": "int64"
-            }
-          }
-        }
-      }
-    ],
-    "audio_frame_out": [
-      {
-        "name": "pcm_frame"
-      }
-    ]
+    }
   }
 }

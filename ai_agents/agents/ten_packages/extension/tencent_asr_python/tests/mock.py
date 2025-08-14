@@ -9,7 +9,11 @@ import asyncio
 import uuid
 from typing import Callable
 from unittest.mock import MagicMock, patch, AsyncMock
-from tencent_asr_client import ResponseData, RecoginizeResult, AsyncTencentAsrListener
+from tencent_asr_client import (
+    ResponseData,
+    RecoginizeResult,
+    AsyncTencentAsrListener,
+)
 
 
 class MockClient(object):

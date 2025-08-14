@@ -1,29 +1,61 @@
-# elevenlabs_tts_python
+# ElevenLabs TTS Python Extension
 
-<!-- brief introduction for the extension -->
+A Text-to-Speech extension for TEN Framework using ElevenLabs API.
 
 ## Features
 
-<!-- main features introduction -->
-
-- xxx feature
+- Real-time text-to-speech synthesis
+- WebSocket-based streaming audio
+- Support for multiple voice models
+- Configurable audio parameters
+- Automatic reconnection handling
+- Audio dump functionality
 
 ## API
 
-Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
-
-<!-- Additional API.md can be referred to if extra introduction needed -->
+Refer to `api` definition in [manifest.json](manifest.json) and default values in [property.json](property.json).
 
 ## Development
 
 ### Build
 
-<!-- build dependencies and steps -->
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 ### Unit test
 
-<!-- how to do unit test for the extension -->
+Run tests using pytest:
+```bash
+pytest tests/
+```
 
-## Misc
+## Configuration
 
-<!-- others if applicable -->
+Configure the extension in `property.json`:
+
+```json
+{
+  "params": {
+    "api_key": "your_elevenlabs_api_key",
+    "model_id": "eleven_multilingual_v2",
+    "voice_id": "pNInz6obpgDQGcFmaJgB",
+    "sample_rate": 16000,
+    "optimize_streaming_latency": 0,
+    "similarity_boost": 0.75,
+    "stability": 0.5,
+    "style": 0.0,
+    "speaker_boost": false
+  }
+}
+```
+
+## Usage
+
+The extension automatically handles WebSocket connections and audio streaming. It supports:
+
+- Real-time text input processing
+- Audio data streaming
+- Error handling and recovery
+- Connection health monitoring

@@ -12,12 +12,15 @@ class AWSTranscriptionConfig(BaseModel):
     access_key_id: str = Field(..., description="AWS access key id")
     secret_access_key: str = Field(..., description="AWS secret access key")
 
-    language_code: str = Field(..., description="Language code, e.g. 'en-US', 'zh-CN'")
+    language_code: str = Field(
+        ..., description="Language code, e.g. 'en-US', 'zh-CN'"
+    )
     media_sample_rate_hz: int = Field(
-
         ..., description="Audio sample rate (Hz), e.g. 16000"
     )
-    media_encoding: str = Field(..., description="Audio encoding format, e.g. 'pcm'")
+    media_encoding: str = Field(
+        ..., description="Audio encoding format, e.g. 'pcm'"
+    )
     vocabulary_name: Optional[str] = Field(
         default=None, description="Custom vocabulary name"
     )
@@ -38,7 +41,8 @@ class AWSTranscriptionConfig(BaseModel):
         default=None, description="Number of channels"
     )
     enable_partial_results_stabilization: Optional[bool] = Field(
-        default=None, description="Whether to enable partial results stabilization"
+        default=None,
+        description="Whether to enable partial results stabilization",
     )
     partial_results_stability: Optional[str] = Field(
         default=None, description="Partial results stability setting"
@@ -57,7 +61,8 @@ class AWSTranscriptionConfig(BaseModel):
             Dict[str, Any]: Parameters that can be directly passed to start_stream_transcription
         """
         return self.model_dump(
-            exclude_none=True, exclude={"region", "access_key_id", "secret_access_key"}
+            exclude_none=True,
+            exclude={"region", "access_key_id", "secret_access_key"},
         )
 
     def to_client_params(self) -> Dict[str, Any]:
@@ -69,10 +74,12 @@ class AWSTranscriptionConfig(BaseModel):
             "credential_resolver": StaticCredentialResolver(
                 access_key_id=self.access_key_id,
                 secret_access_key=self.secret_access_key,
-            )
+            ),
         }
 
-    _encrypt_serializer = encrypting_serializer("access_key_id", "secret_access_key")
+    _encrypt_serializer = encrypting_serializer(
+        "access_key_id", "secret_access_key"
+    )
 
 
 class AWSASRConfig(BaseModel):
@@ -84,7 +91,10 @@ class AWSASRConfig(BaseModel):
         description="AWS ASR dump path",
     )
     log_level: str = Field(default="INFO", description="AWS ASR log level")
-    finalize_mode: Literal["disconnect", "mute_pkg"] = Field(default="disconnect", description="AWS ASR finalize mode")
-    mute_pkg_duration_ms: int = Field(default=800, description="AWS ASR mute pkg duration (ms)")
+    finalize_mode: Literal["disconnect", "mute_pkg"] = Field(
+        default="disconnect", description="AWS ASR finalize mode"
+    )
+    mute_pkg_duration_ms: int = Field(
+        default=800, description="AWS ASR mute pkg duration (ms)"
+    )
     params: AWSTranscriptionConfig = Field(..., description="AWS ASR params")
-    

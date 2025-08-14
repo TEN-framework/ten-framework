@@ -1,6 +1,12 @@
 from typing_extensions import override
-from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, AudioFrame
+from ten_runtime import (
+    AsyncExtensionTester,
+    AsyncTenEnvTester,
+    Data,
+    AudioFrame,
+)
 import json
+
 
 class AliyunASRBigmodelExtensionTester(AsyncExtensionTester):
 
@@ -9,7 +15,9 @@ class AliyunASRBigmodelExtensionTester(AsyncExtensionTester):
         ten_env_tester.log_info("on_start")
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         # Expect to receive an error data.
         data_name = data.get_name()
         if data_name == "error":
@@ -26,5 +34,7 @@ def test_invalid_params():
         "api_key": "invalid",
     }
     tester = AliyunASRBigmodelExtensionTester()
-    tester.set_test_mode_single("aliyun_asr_bigmodel_python", json.dumps(property_json))
+    tester.set_test_mode_single(
+        "aliyun_asr_bigmodel_python", json.dumps(property_json)
+    )
     err = tester.run()

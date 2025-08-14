@@ -43,6 +43,7 @@ from humeai_tts_python.humeTTS import (
     EVENT_TTS_FLUSH,
 )
 
+
 # ================ test params passthrough ================
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""
@@ -86,7 +87,8 @@ class ExtensionTesterForPassthrough(ExtensionTester):
             self.tts_completed = True
             ten_env.stop_test()
 
-@patch('humeai_tts_python.extension.HumeAiTTS')
+
+@patch("humeai_tts_python.extension.HumeAiTTS")
 def test_params_passthrough(MockHumeAiTTS):
     """
     Tests that custom parameters passed in the configuration are correctly
@@ -96,10 +98,12 @@ def test_params_passthrough(MockHumeAiTTS):
 
     # --- Mock Configuration ---
     mock_instance = MockHumeAiTTS.return_value
-    mock_instance.cancel = AsyncMock() # Required for clean shutdown in on_flush
+    mock_instance.cancel = (
+        AsyncMock()
+    )  # Required for clean shutdown in on_flush
 
     async def mock_get_audio_stream(text: str):
-        yield (b'\x11\x22\x33', EVENT_TTS_RESPONSE)
+        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
         yield (None, EVENT_TTS_END)
 
     mock_instance.get.side_effect = mock_get_audio_stream
@@ -110,18 +114,17 @@ def test_params_passthrough(MockHumeAiTTS):
     passthrough_params = {
         "speed": 1.5,
         "trailing_silence": 0.8,
-        "custom_param": "test_value"
+        "custom_param": "test_value",
     }
     passthrough_config = {
         "key": "test_api_key",
         "voice_id": "daisy",
-        "params": passthrough_params
+        "params": passthrough_params,
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "humeai_tts_python",
-        json.dumps(passthrough_config)
+        "humeai_tts_python", json.dumps(passthrough_config)
     )
 
     print("Running passthrough test...")
@@ -136,14 +139,22 @@ def test_params_passthrough(MockHumeAiTTS):
     # The constructor is called with keyword arguments like config=...
     # so we inspect the keyword arguments dictionary.
     call_args, call_kwargs = MockHumeAiTTS.call_args
-    called_config = call_kwargs['config']
+    called_config = call_kwargs["config"]
 
     # Verify that the configuration object contains our expected parameters
     # Note: HumeAi uses update_params() to merge params into the config
-    assert hasattr(called_config, 'speed'), "Config should have speed parameter"
-    assert called_config.speed == 1.5, f"Expected speed to be 1.5, but got {called_config.speed}"
-    assert hasattr(called_config, 'trailing_silence'), "Config should have trailing_silence parameter"
-    assert called_config.trailing_silence == 0.8, f"Expected trailing_silence to be 0.8, but got {called_config.trailing_silence}"
+    assert hasattr(called_config, "speed"), "Config should have speed parameter"
+    assert (
+        called_config.speed == 1.5
+    ), f"Expected speed to be 1.5, but got {called_config.speed}"
+    assert hasattr(
+        called_config, "trailing_silence"
+    ), "Config should have trailing_silence parameter"
+    assert (
+        called_config.trailing_silence == 0.8
+    ), f"Expected trailing_silence to be 0.8, but got {called_config.trailing_silence}"
 
     print("✅ Params passthrough test passed successfully.")
-    print(f"✅ Verified config speed: {called_config.speed}, trailing_silence: {called_config.trailing_silence}")
+    print(
+        f"✅ Verified config speed: {called_config.speed}, trailing_silence: {called_config.trailing_silence}"
+    )
