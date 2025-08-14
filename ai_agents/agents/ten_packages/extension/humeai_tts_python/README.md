@@ -25,8 +25,3 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 <!-- how to do unit test for the extension -->
 
 ## Misc
-
-<!-- others if applicable -->
-
-### raise OSError('PortAudio library not found')
-apt-get update && apt-get install -y portaudio19-dev python3-pyaudio

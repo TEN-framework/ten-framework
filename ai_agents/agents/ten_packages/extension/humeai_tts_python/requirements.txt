@@ -1,3 +1,2 @@
 hume
 pydantic
-sounddevice==0.4.7
