@@ -7,12 +7,29 @@
 use std::{fs::OpenOptions, path::Path};
 
 use anyhow::{Context, Result};
-use std::io::{BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write};
 use ten_rust::pkg_info::constants::{
     MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME,
 };
 
+use ten_rust::pkg_info::property::Property;
+
 use crate::constants::BUF_WRITER_BUF_SIZE;
+
+/// Read json file from disk
+fn read_json_file_to_map(
+    path: &str,
+) -> Result<serde_json::Map<String, serde_json::Value>> {
+    let property_file = OpenOptions::new()
+        .read(true)
+        .open(path)
+        .context("Failed to open property.json file")?;
+    let buf_reader = BufReader::new(property_file);
+    let property_json: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_reader(buf_reader)
+            .context("Failed to parse property.json file as JSON object")?;
+    Ok(property_json)
+}
 
 fn write_json_map_to_file(
     path: &str,
@@ -57,4 +74,38 @@ pub fn write_manifest_json_file(
         Path::new(base_dir).join(MANIFEST_JSON_FILENAME).to_str().unwrap(),
         manifest_json,
     )
+}
+
+/// Patch the property.json file with the given property.
+fn patch_property_json_file(base_dir: &str, property: &Property) -> Result<()> {
+    //read from property.json
+    let mut whole_property_json = serde_json::Value::Object(
+        read_json_file_to_map(
+            Path::new(base_dir).join(PROPERTY_JSON_FILENAME).to_str().unwrap(),
+        )
+        .context("Failed to read property.json file")?,
+    );
+    // generate patch from the difference between
+    // "ten" field in property.json and
+    // property.ten data structure
+    let ten_field_str = get_ten_field_string();
+    let old_ten_json: serde_json::Value =
+        whole_property_json.get(&ten_field_str).cloned().unwrap_or(Value::Null);
+
+    let new_ten_json: serde_json::Value =
+        serde_json::to_value(&property.ten)
+            .context("Failed to convert property.ten to JSON value")?;
+
+    let patch = json_patch::diff(&old_ten_json, &new_ten_json);
+
+    //apply patch to property.json, so that only "ten" field is updated
+    //(there could be other fields added by user at the top level )
+    json_patch::patch(&mut whole_property_json, &patch)?;
+
+    let whole_property_json_map: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_value(whole_property_json)
+            .context("Failed to convert JSON value to map")?;
+
+    write_property_json_file(base_dir, &whole_property_json_map)?;
+    Ok(())
 }
