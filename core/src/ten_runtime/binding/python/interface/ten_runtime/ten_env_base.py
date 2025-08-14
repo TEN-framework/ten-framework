@@ -20,9 +20,6 @@ class TenEnvBase:
     def __del__(self) -> None:
         pass
 
-    def log_verbose(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.VERBOSE, msg, 2)
-
     def log_debug(self, msg: str) -> TenError | None:
         return self._log_internal(LogLevel.DEBUG, msg, 2)
 
@@ -34,9 +31,6 @@ class TenEnvBase:
 
     def log_error(self, msg: str) -> TenError | None:
         return self._log_internal(LogLevel.ERROR, msg, 2)
-
-    def log_fatal(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.FATAL, msg, 2)
 
     def log(self, level: LogLevel, msg: str) -> TenError | None:
         return self._log_internal(level, msg, 2)

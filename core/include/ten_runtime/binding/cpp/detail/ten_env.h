@@ -574,11 +574,6 @@ class ten_env_t {
     return rc;
   }
 
-#define TEN_ENV_LOG_VERBOSE(ten_env, msg)                                      \
-  do {                                                                         \
-    (ten_env).log(TEN_LOG_LEVEL_VERBOSE, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
 #define TEN_ENV_LOG_DEBUG(ten_env, msg)                                      \
   do {                                                                       \
     (ten_env).log(TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, __LINE__, (msg)); \
@@ -597,11 +592,6 @@ class ten_env_t {
 #define TEN_ENV_LOG_ERROR(ten_env, msg)                                      \
   do {                                                                       \
     (ten_env).log(TEN_LOG_LEVEL_ERROR, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
-#define TEN_ENV_LOG_FATAL(ten_env, msg)                                      \
-  do {                                                                       \
-    (ten_env).log(TEN_LOG_LEVEL_FATAL, __func__, __FILE__, __LINE__, (msg)); \
   } while (0)
 
 #define TEN_ENV_LOG(ten_env, level, msg)                       \

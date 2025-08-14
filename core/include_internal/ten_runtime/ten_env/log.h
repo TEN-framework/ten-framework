@@ -10,12 +10,6 @@
 
 #include "ten_utils/log/log.h"
 
-#define TEN_ENV_LOG_VERBOSE_INTERNAL(ten_env, ...)                            \
-  do {                                                                        \
-    ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_VERBOSE, __func__, __FILE__, \
-                          __LINE__, __VA_ARGS__);                             \
-  } while (0)
-
 #define TEN_ENV_LOG_DEBUG_INTERNAL(ten_env, ...)                            \
   do {                                                                      \
     ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, \
@@ -37,12 +31,6 @@
 #define TEN_ENV_LOG_ERROR_INTERNAL(ten_env, ...)                            \
   do {                                                                      \
     ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_ERROR, __func__, __FILE__, \
-                          __LINE__, __VA_ARGS__);                           \
-  } while (0)
-
-#define TEN_ENV_LOG_FATAL_INTERNAL(ten_env, ...)                            \
-  do {                                                                      \
-    ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_FATAL, __func__, __FILE__, \
                           __LINE__, __VA_ARGS__);                           \
   } while (0)
 

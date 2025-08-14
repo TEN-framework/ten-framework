@@ -24,9 +24,6 @@ class TenEnvTesterBase:
     def stop_test(self, error: TenError | None = None) -> TenError | None:
         return self._internal.stop_test(error)
 
-    def log_verbose(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.VERBOSE, msg, 2)
-
     def log_debug(self, msg: str) -> TenError | None:
         return self._log_internal(LogLevel.DEBUG, msg, 2)
 
@@ -38,9 +35,6 @@ class TenEnvTesterBase:
 
     def log_error(self, msg: str) -> TenError | None:
         return self._log_internal(LogLevel.ERROR, msg, 2)
-
-    def log_fatal(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.FATAL, msg, 2)
 
     def log(self, level: LogLevel, msg: str) -> TenError | None:
         return self._log_internal(level, msg, 2)

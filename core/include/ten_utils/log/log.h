@@ -14,12 +14,6 @@
 
 #include "ten_utils/lib/signature.h"
 
-#define TEN_LOGV(...)                                                       \
-  do {                                                                      \
-    ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_VERBOSE, __func__, \
-                          __FILE__, __LINE__, __VA_ARGS__);                 \
-  } while (0)
-
 #define TEN_LOGD(...)                                                     \
   do {                                                                    \
     ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_DEBUG, __func__, \
@@ -44,24 +38,16 @@
                           __FILE__, __LINE__, __VA_ARGS__);               \
   } while (0)
 
-#define TEN_LOGF(...)                                                     \
-  do {                                                                    \
-    ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_FATAL, __func__, \
-                          __FILE__, __LINE__, __VA_ARGS__);               \
-  } while (0)
-
 typedef struct ten_string_t ten_string_t;
 typedef struct ten_log_t ten_log_t;
 
 typedef enum TEN_LOG_LEVEL {
   TEN_LOG_LEVEL_INVALID,
 
-  TEN_LOG_LEVEL_VERBOSE,
   TEN_LOG_LEVEL_DEBUG,
   TEN_LOG_LEVEL_INFO,
   TEN_LOG_LEVEL_WARN,
   TEN_LOG_LEVEL_ERROR,
-  TEN_LOG_LEVEL_FATAL,
 
   TEN_LOG_LEVEL_MANDATORY,
 } TEN_LOG_LEVEL;

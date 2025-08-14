@@ -39,12 +39,10 @@ type TenEnvTester interface {
 
 	StopTest(testResult *TenError) error
 
-	LogVerbose(msg string) error
 	LogDebug(msg string) error
 	LogInfo(msg string) error
 	LogWarn(msg string) error
 	LogError(msg string) error
-	LogFatal(msg string) error
 	Log(level LogLevel, msg string) error
 }
 
@@ -310,10 +308,6 @@ func (p *tenEnvTester) stopTest(testResult *TenError) error {
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) LogVerbose(msg string) error {
-	return p.logInternal(LogLevelVerbose, msg, 2)
-}
-
 func (p *tenEnvTester) LogDebug(msg string) error {
 	return p.logInternal(LogLevelDebug, msg, 2)
 }
@@ -328,10 +322,6 @@ func (p *tenEnvTester) LogWarn(msg string) error {
 
 func (p *tenEnvTester) LogError(msg string) error {
 	return p.logInternal(LogLevelError, msg, 2)
-}
-
-func (p *tenEnvTester) LogFatal(msg string) error {
-	return p.logInternal(LogLevelFatal, msg, 2)
 }
 
 func (p *tenEnvTester) Log(level LogLevel, msg string) error {

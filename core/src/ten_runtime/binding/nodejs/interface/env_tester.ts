@@ -113,10 +113,6 @@ export class TenEnvTester {
     return ten_addon.ten_nodejs_ten_env_tester_stop_test(this, 0, "");
   }
 
-  logVerbose(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.VERBOSE, message);
-  }
-
   logDebug(message: string): TenError | undefined {
     return this.log_internal(LogLevel.DEBUG, message);
   }
@@ -131,10 +127,6 @@ export class TenEnvTester {
 
   logError(message: string): TenError | undefined {
     return this.log_internal(LogLevel.ERROR, message);
-  }
-
-  logFatal(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.FATAL, message);
   }
 
   log(level: LogLevel, message: string): TenError | undefined {
